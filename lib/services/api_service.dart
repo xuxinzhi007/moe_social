@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
+import 'dart:io' show Platform, SocketException;
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../auth_service.dart';
@@ -44,10 +44,12 @@ class ApiService {
       // Web平台使用localhost
       return _developmentUrl;
     } else if (Platform.isAndroid) {
-      // Android模拟器使用10.0.2.2，真机需要使用电脑IP
-      // TODO: 真机测试时需要修改为电脑的实际IP地址
-      // 例如：return 'http://192.168.1.16:8888';
-      return 'http://http://74fd3e66.r3.cpolar.top'; // Android模拟器
+      // Android真机需要使用电脑IP或生产环境地址
+      // 如果本地连接有问题，可以临时使用生产环境地址
+      // return 'http://74fd3e66.r3.cpolar.top'; // 使用生产环境
+      // 或者使用电脑IP（需要根据实际情况修改）
+      // return 'http://192.168.1.16:8888'; // 替换为你的电脑IP
+      return 'http://74fd3e66.r3.cpolar.top'; // Android模拟器使用这个
     } else if (Platform.isIOS) {
       // iOS模拟器使用localhost，真机需要使用电脑IP
       return _developmentUrl; // iOS模拟器
@@ -61,6 +63,12 @@ class ApiService {
     {String method = 'GET', dynamic body}) async {
     try {
       final uri = Uri.parse('$baseUrl$path');
+      
+      // 调试日志
+      print('📡 API Request: $method $uri');
+      if (body != null) {
+        print('📤 Request Body: ${json.encode(body)}');
+      }
       
       // 构建请求头
       final headers = <String, String>{
@@ -95,6 +103,10 @@ class ApiService {
         throw ApiException('不支持的HTTP方法: $method', null);
       }
       
+      // 调试日志
+      print('📥 API Response: ${response.statusCode}');
+      print('📥 Response Body: ${response.body}');
+      
       // 检查响应体是否为空
       if (response.body.isEmpty) {
         throw ApiException('服务器返回空响应', response.statusCode);
@@ -105,6 +117,8 @@ class ApiService {
       try {
         result = json.decode(response.body) as Map<String, dynamic>;
       } catch (e) {
+        print('❌ JSON解析失败: $e');
+        print('❌ 响应内容: ${response.body}');
         throw ApiException('服务器响应格式错误: ${response.body}', response.statusCode);
       }
       
@@ -112,12 +126,14 @@ class ApiService {
       if (result.containsKey('success') && result['success'] == false) {
         final errorMessage = result['message'] ?? '请求失败';
         final errorCode = result['code'] ?? response.statusCode;
+        print('❌ API错误: $errorMessage (code: $errorCode)');
         throw ApiException(errorMessage, errorCode);
       }
       
       // 检查HTTP状态码
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final errorMessage = result['message'] ?? '请求失败';
+        print('❌ HTTP错误: $errorMessage (status: ${response.statusCode})');
         throw ApiException(errorMessage, response.statusCode);
       }
       
@@ -125,8 +141,16 @@ class ApiService {
     } on ApiException {
       rethrow;
     } on http.ClientException catch (e) {
+      print('❌ 网络连接错误: ${e.message}');
+      print('❌ 请求URL: $baseUrl$path');
       throw ApiException('无法连接到服务器，请检查后端服务是否启动: ${e.message}', null);
-    } catch (e) {
+    } on SocketException catch (e) {
+      print('❌ Socket错误: ${e.message}');
+      print('❌ 请求URL: $baseUrl$path');
+      throw ApiException('网络连接失败，请检查网络设置和API地址: ${e.message}', null);
+    } catch (e, stack) {
+      print('❌ 未知错误: $e');
+      print('❌ 堆栈: $stack');
       throw ApiException('请求失败: ${e.toString()}', null);
     }
   }

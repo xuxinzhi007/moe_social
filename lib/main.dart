@@ -19,33 +19,33 @@ import 'models/post.dart';
 import 'services/post_service.dart';
 
 void main() {
-  // 确保Flutter绑定已初始化
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // 捕获Flutter框架错误
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    // 输出详细错误信息
-    print('═══════════════════════════════════════');
-    print('Flutter Error:');
-    print('Exception: ${details.exception}');
-    print('Stack: ${details.stack}');
-    print('Library: ${details.library}');
-    print('═══════════════════════════════════════');
-  };
-  
-  // 捕获异步错误
-  PlatformDispatcher.instance.onError = (error, stack) {
-    print('═══════════════════════════════════════');
-    print('Platform Error:');
-    print('Error: $error');
-    print('Stack: $stack');
-    print('═══════════════════════════════════════');
-    return true;
-  };
-  
   // 使用runZonedGuarded捕获所有未捕获的错误
   runZonedGuarded(() {
+    // 确保Flutter绑定已初始化（必须在zone内部）
+    WidgetsFlutterBinding.ensureInitialized();
+    
+    // 捕获Flutter框架错误
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      // 输出详细错误信息
+      print('═══════════════════════════════════════');
+      print('Flutter Error:');
+      print('Exception: ${details.exception}');
+      print('Stack: ${details.stack}');
+      print('Library: ${details.library}');
+      print('═══════════════════════════════════════');
+    };
+    
+    // 捕获异步错误
+    PlatformDispatcher.instance.onError = (error, stack) {
+      print('═══════════════════════════════════════');
+      print('Platform Error:');
+      print('Error: $error');
+      print('Stack: $stack');
+      print('═══════════════════════════════════════');
+      return true;
+    };
+    
     print('🚀 App starting...');
     print('📱 Platform: ${Platform.operatingSystem}');
     print('🌐 API Base URL: ${ApiService.baseUrl}');
