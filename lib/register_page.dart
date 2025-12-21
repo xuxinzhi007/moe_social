@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
+import 'utils/validators.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -10,6 +11,7 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -22,7 +24,8 @@ class _RegisterPageState extends State<RegisterPage> {
         _isLoading = true;
       });
 
-      final success = await AuthService.register(
+      final result = await AuthService.register(
+        _usernameController.text,
         _emailController.text,
         _passwordController.text,
       );
@@ -33,11 +36,11 @@ class _RegisterPageState extends State<RegisterPage> {
         _isLoading = false;
       });
 
-      if (success) {
+      if (result.success) {
         _showCustomSnackBar(context, '注册成功！请登录', isError: false);
         Navigator.pop(context);
       } else {
-        _showCustomSnackBar(context, '该邮箱已被注册', isError: true);
+        _showCustomSnackBar(context, result.errorMessage ?? '注册失败，请稍后重试', isError: true);
       }
     }
   }
@@ -95,16 +98,24 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 40),
                   TextFormField(
+                    controller: _usernameController,
+                    decoration: const InputDecoration(
+                      labelText: '用户名',
+                      prefixIcon: Icon(Icons.person_outline),
+                      hintText: '3-20个字符，支持字母、数字、下划线',
+                    ),
+                    validator: Validators.username,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
                     controller: _emailController,
                     decoration: const InputDecoration(
                       labelText: '电子邮箱',
                       prefixIcon: Icon(Icons.email_outlined),
+                      hintText: 'example@email.com',
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) return '请输入邮箱';
-                      if (!value.contains('@')) return '请输入有效的邮箱地址';
-                      return null;
-                    },
+                    keyboardType: TextInputType.emailAddress,
+                    validator: Validators.email,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -118,11 +129,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                     ),
                     obscureText: _obscurePassword,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) return '请输入密码';
-                      if (value.length < 6) return '密码长度不能少于6位';
-                      return null;
-                    },
+                    validator: (value) => Validators.password(value),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -132,11 +139,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       prefixIcon: Icon(Icons.lock_reset_outlined),
                     ),
                     obscureText: _obscurePassword,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) return '请再次确认密码';
-                      if (value != _passwordController.text) return '两次输入的密码不一致';
-                      return null;
-                    },
+                    validator: (value) => Validators.confirmPassword(value, _passwordController.text),
                   ),
                   const SizedBox(height: 30),
                   _isLoading
@@ -167,6 +170,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   void dispose() {
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();

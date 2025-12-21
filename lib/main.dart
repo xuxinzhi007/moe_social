@@ -3,6 +3,15 @@ import 'login_page.dart';
 import 'register_page.dart';
 import 'profile_page.dart';
 import 'settings_page.dart';
+import 'create_post_page.dart';
+import 'comments_page.dart';
+import 'edit_profile_page.dart';
+import 'vip_center_page.dart';
+import 'vip_purchase_page.dart';
+import 'vip_orders_page.dart';
+import 'vip_history_page.dart';
+import 'models/post.dart';
+import 'services/post_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -41,6 +50,17 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const MainPage(),
         '/profile': (context) => const ProfilePage(),
         '/settings': (context) => const SettingsPage(),
+        '/create-post': (context) => const CreatePostPage(),
+        '/comments': (context) => CommentsPage(
+              postId: ModalRoute.of(context)!.settings.arguments as String,
+            ),
+        '/edit-profile': (context) => EditProfilePage(
+              user: ModalRoute.of(context)!.settings.arguments as dynamic,
+            ),
+        '/vip-center': (context) => const VipCenterPage(),
+        '/vip-purchase': (context) => const VipPurchasePage(),
+        '/vip-orders': (context) => const VipOrdersPage(),
+        '/vip-history': (context) => const VipHistoryPage(),
       },
     );
   }
@@ -97,6 +117,49 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  List<Post> _posts = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPosts();
+  }
+
+  Future<void> _fetchPosts() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      final posts = await PostService.getPosts();
+      setState(() {
+        _posts = posts;
+      });
+    } catch (e) {
+      print('Failed to fetch posts: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _toggleLike(String postId) async {
+    try {
+      final updatedPost = await PostService.toggleLike(postId);
+      setState(() {
+        _posts = _posts.map((post) {
+          if (post.id == postId) {
+            return updatedPost;
+          }
+          return post;
+        }).toList();
+      });
+    } catch (e) {
+      print('Failed to toggle like: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,6 +172,16 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {},
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final result = await Navigator.pushNamed(context, '/create-post');
+          if (result == true) {
+            _fetchPosts();
+          }
+        },
+        backgroundColor: Colors.blueAccent,
+        child: const Icon(Icons.add),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -166,26 +239,20 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: 5,
-              itemBuilder: (context, index) {
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.blue[100],
-                      child: Text('${index + 1}'),
-                    ),
-                    title: Text('精彩动态内容 #$index'),
-                    subtitle: const Text('这里是一些详细的描述文字内容...'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {},
+            _isLoading
+                ? const Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _posts.length,
+                    itemBuilder: (context, index) {
+                      final post = _posts[index];
+                      return _buildPostCard(post, index);
+                    },
                   ),
-                );
-              },
-            ),
           ],
         ),
       ),
@@ -207,5 +274,156 @@ class _HomePageState extends State<HomePage> {
         Text(label, style: const TextStyle(fontSize: 12)),
       ],
     );
+  }
+
+  Widget _buildPostCard(Post post, int index) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 用户信息
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundImage: NetworkImage(post.userAvatar),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        post.userName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        _formatTime(post.createdAt),
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.more_horiz),
+                  color: Colors.grey,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // 帖子内容
+            Text(post.content),
+            const SizedBox(height: 12),
+
+            // 帖子图片
+            if (post.images.isNotEmpty)
+              SizedBox(
+                height: 200,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: post.images.length,
+                  itemBuilder: (context, imgIndex) {
+                    return Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      width: 200,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        image: DecorationImage(
+                          image: NetworkImage(post.images[imgIndex]),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            const SizedBox(height: 12),
+
+            // 帖子互动
+            Row(
+              children: [
+                IconButton(
+                  onPressed: () => _toggleLike(post.id),
+                  icon: Icon(
+                    post.isLiked ? Icons.favorite : Icons.favorite_border,
+                    color: post.isLiked ? Colors.red : Colors.grey,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${post.likes}',
+                  style: TextStyle(
+                    color: post.isLiked ? Colors.red : Colors.grey[700],
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(width: 24),
+                IconButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/comments', arguments: post.id);
+                  },
+                  icon: const Icon(Icons.comment_outlined, color: Colors.grey),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${post.comments}',
+                  style: TextStyle(
+                    color: Colors.grey[700],
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(width: 24),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.share_outlined, color: Colors.grey),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '分享',
+                  style: TextStyle(
+                    color: Colors.grey[700],
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatTime(DateTime time) {
+    final now = DateTime.now();
+    final difference = now.difference(time);
+    
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}分钟前';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}小时前';
+    } else if (difference.inDays < 30) {
+      return '${difference.inDays}天前';
+    } else {
+      return '${time.month}月${time.day}日';
+    }
   }
 }

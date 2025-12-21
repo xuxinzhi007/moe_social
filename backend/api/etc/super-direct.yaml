@@ -1,0 +1,10 @@
+Name: Super
+Host: 0.0.0.0
+Port: 8888
+
+# RPC服务配置 - 直接连接方式（不使用etcd）
+SuperRpc:
+  Endpoints:
+  - 127.0.0.1:8080
+  NonBlock: true
+

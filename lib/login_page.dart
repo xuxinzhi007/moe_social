@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
+import 'utils/validators.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -21,7 +22,7 @@ class _LoginPageState extends State<LoginPage> {
         _isLoading = true;
       });
 
-      final success = await AuthService.login(
+      final result = await AuthService.login(
         _emailController.text,
         _passwordController.text,
       );
@@ -32,11 +33,11 @@ class _LoginPageState extends State<LoginPage> {
         _isLoading = false;
       });
 
-      if (success) {
+      if (result.success) {
         _showCustomSnackBar(context, '登录成功', isError: false);
         Navigator.pushReplacementNamed(context, '/home');
       } else {
-        _showCustomSnackBar(context, '邮箱或密码错误', isError: true);
+        _showCustomSnackBar(context, result.errorMessage ?? '登录失败，请稍后重试', isError: true);
       }
     }
   }
@@ -95,12 +96,10 @@ class _LoginPageState extends State<LoginPage> {
                     decoration: const InputDecoration(
                       labelText: '邮箱',
                       prefixIcon: Icon(Icons.email_outlined),
+                      hintText: 'example@email.com',
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) return '请输入邮箱';
-                      if (!value.contains('@')) return '请输入有效的邮箱地址';
-                      return null;
-                    },
+                    keyboardType: TextInputType.emailAddress,
+                    validator: Validators.email,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -114,10 +113,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     obscureText: _obscurePassword,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) return '请输入密码';
-                      return null;
-                    },
+                    validator: (value) => Validators.password(value),
                   ),
                   const SizedBox(height: 10),
                   Align(

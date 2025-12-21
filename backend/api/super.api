@@ -1,0 +1,502 @@
+syntax = "v1"
+
+info (
+	title:   "Super API"
+	desc:    "Super WebProject API documentation"
+	author:  "Super Team"
+	email:   "team@super.com"
+	version: "1.0.0"
+)
+
+// 通用响应结构
+type BaseResp {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Success bool   `json:"success"`
+}
+
+// 用户相关结构
+type User {
+	Id           string `json:"id"`
+	Username     string `json:"username"`
+	Email        string `json:"email"`
+	Avatar       string `json:"avatar"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
+	IsVip        bool   `json:"is_vip"`
+	VipExpiresAt string `json:"vip_expires_at"`
+	AutoRenew    bool   `json:"auto_renew"`
+}
+
+// VIP套餐相关结构
+type VipPlan {
+	Id           string  `json:"id"`
+	Name         string  `json:"name"`
+	Description  string  `json:"description"`
+	Price        float64 `json:"price"`
+	DurationDays int     `json:"duration_days"`
+	CreatedAt    string  `json:"created_at"`
+	UpdatedAt    string  `json:"updated_at"`
+}
+
+// VIP订单相关结构
+type VipOrder {
+	Id        string  `json:"id"`
+	UserId    string  `json:"user_id"`
+	PlanId    string  `json:"plan_id"`
+	PlanName  string  `json:"plan_name"`
+	Amount    float64 `json:"amount"`
+	Status    string  `json:"status"`
+	CreatedAt string  `json:"created_at"`
+	PaidAt    string  `json:"paid_at"`
+}
+
+// VIP记录相关结构
+type VipRecord {
+	Id        string `json:"id"`
+	UserId    string `json:"user_id"`
+	PlanId    string `json:"plan_id"`
+	PlanName  string `json:"plan_name"`
+	StartAt   string `json:"start_at"`
+	EndAt     string `json:"end_at"`
+	Status    string `json:"status"`
+	CreatedAt string `json:"created_at"`
+}
+
+// 帖子相关结构
+type Post {
+	Id         string   `json:"id"`
+	UserId     string   `json:"user_id"`
+	UserName   string   `json:"user_name"`
+	UserAvatar string   `json:"user_avatar"`
+	Content    string   `json:"content"`
+	Images     []string `json:"images"`
+	Likes      int      `json:"likes"`
+	Comments   int      `json:"comments"`
+	IsLiked    bool     `json:"is_liked"`
+	CreatedAt  string   `json:"created_at"`
+}
+
+// 评论相关结构
+type Comment {
+	Id         string `json:"id"`
+	PostId     string `json:"post_id"`
+	UserId     string `json:"user_id"`
+	UserName   string `json:"user_name"`
+	UserAvatar string `json:"user_avatar"`
+	Content    string `json:"content"`
+	Likes      int    `json:"likes"`
+	IsLiked    bool   `json:"is_liked"`
+	CreatedAt  string `json:"created_at"`
+}
+
+// 请求和响应结构
+// 通用请求
+type EmptyReq {}
+
+// 用户相关请求
+type RegisterReq {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Email    string `json:"email"`
+}
+
+type LoginReq {
+	Username string `json:"username,optional"`
+	Email    string `json:"email,optional"`
+	Password string `json:"password"`
+}
+
+type GetUserInfoReq {
+	UserId string `path:"user_id"`
+}
+
+type GetUserReq {
+	UserId string `path:"user_id"`
+}
+
+type UpdateUserInfoReq {
+	UserId   string `path:"user_id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Avatar   string `json:"avatar"`
+}
+
+type UpdateUserPasswordReq {
+	UserId      string `path:"user_id"`
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
+}
+
+type DeleteUserReq {
+	UserId string `path:"user_id"`
+}
+
+type UpdateUserVipReq {
+	UserId     string `path:"user_id"`
+	IsVip      bool   `json:"is_vip"`
+	VipExpires string `json:"vip_expires"`
+}
+
+type GetUsersReq {
+	Page     int `form:"page,default=1"`
+	PageSize int `form:"page_size,default=10"`
+}
+
+// VIP相关请求
+type GetVipPlanReq {
+	PlanId string `path:"plan_id"`
+}
+
+type CreateVipPlanReq {
+	Name         string  `json:"name"`
+	Description  string  `json:"description"`
+	Price        float64 `json:"price"`
+	DurationDays int     `json:"duration_days"`
+}
+
+type UpdateAutoRenewReq {
+	UserId    string `path:"user_id"`
+	AutoRenew bool   `json:"auto_renew"`
+}
+
+type GetVipOrdersReq {
+	UserId   string `path:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type GetVipHistoryReq {
+	UserId   string `path:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type CreateVipOrderReq {
+	UserId string `path:"user_id"`
+	PlanId string `json:"plan_id"`
+}
+
+type CheckUserVipReq {
+	UserId string `path:"user_id"`
+}
+
+type SyncUserVipStatusReq {
+	UserId string `path:"user_id"`
+}
+
+type GetUserActiveVipRecordReq {
+	UserId string `path:"user_id"`
+}
+
+// 帖子相关请求
+type GetPostsReq {
+	Page     int `form:"page,default=1"`
+	PageSize int `form:"page_size,default=10"`
+}
+
+type GetPostReq {
+	PostId string `path:"post_id"`
+}
+
+type CreatePostReq {
+	UserId  string   `json:"user_id"`
+	Content string   `json:"content"`
+	Images  []string `json:"images,optional"`
+}
+
+type LikePostReq {
+	PostId string `path:"post_id"`
+	UserId string `json:"user_id"`
+}
+
+type GetPostCommentsReq {
+	PostId   string `path:"post_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+// 评论相关请求
+type CreateCommentReq {
+	PostId  string `json:"post_id"`
+	UserId  string `json:"user_id"`
+	Content string `json:"content"`
+}
+
+type LikeCommentReq {
+	CommentId string `path:"comment_id"`
+	UserId    string `json:"user_id"`
+}
+
+// 通用响应
+type EmptyResp {}
+
+// 用户相关响应
+type RegisterResp {
+	BaseResp
+	Data User `json:"data"`
+}
+
+type LoginData {
+	User  User   `json:"user"`
+	Token string `json:"token"`
+}
+
+type LoginResp {
+	BaseResp
+	Data LoginData `json:"data"`
+}
+
+type GetUserInfoResp {
+	BaseResp
+	Data User `json:"data"`
+}
+
+type GetUserResp {
+	BaseResp
+	Data User `json:"data"`
+}
+
+type UpdateUserInfoResp {
+	BaseResp
+	Data User `json:"data"`
+}
+
+type UpdateUserPasswordResp {
+	BaseResp
+}
+
+type DeleteUserResp {
+	BaseResp
+}
+
+type UpdateUserVipResp {
+	BaseResp
+	Data User `json:"data"`
+}
+
+type GetUsersResp {
+	BaseResp
+	Data  []User `json:"data"`
+	Total int    `json:"total"`
+}
+
+type GetUserCountResp {
+	BaseResp
+	Data int `json:"data"`
+}
+
+// VIP相关响应
+type GetVipPlanResp {
+	BaseResp
+	Data VipPlan `json:"data"`
+}
+
+type CreateVipPlanResp {
+	BaseResp
+	Data VipPlan `json:"data"`
+}
+
+type GetVipPlansResp {
+	BaseResp
+	Data []VipPlan `json:"data"`
+}
+
+type CreateVipOrderResp {
+	BaseResp
+	Data VipOrder `json:"data"`
+}
+
+type GetVipOrdersResp {
+	BaseResp
+	Data  []VipOrder `json:"data"`
+	Total int        `json:"total"`
+}
+
+type GetVipHistoryResp {
+	BaseResp
+	Data  []VipRecord `json:"data"`
+	Total int         `json:"total"`
+}
+
+type GetUserActiveVipRecordResp {
+	BaseResp
+	Data VipRecord `json:"data"`
+}
+
+// 嵌套类型定义
+type UserVipStatusData {
+	IsVip     bool   `json:"is_vip"`
+	ExpiresAt string `json:"expires_at"`
+	AutoRenew bool   `json:"auto_renew"`
+}
+
+type SyncUserVipStatusData {
+	IsVip     bool   `json:"is_vip"`
+	ExpiresAt string `json:"expires_at"`
+}
+
+// 响应类型定义
+type GetUserVipStatusResp {
+	BaseResp
+	Data UserVipStatusData `json:"data"`
+}
+
+type CheckUserVipResp {
+	BaseResp
+	Data bool `json:"data"`
+}
+
+type SyncUserVipStatusResp {
+	BaseResp
+	Data SyncUserVipStatusData `json:"data"`
+}
+
+// 帖子相关响应
+type GetPostsResp {
+	BaseResp
+	Data  []Post `json:"data"`
+	Total int    `json:"total"`
+}
+
+type GetPostResp {
+	BaseResp
+	Data Post `json:"data"`
+}
+
+type CreatePostResp {
+	BaseResp
+	Data Post `json:"data"`
+}
+
+type LikePostResp {
+	BaseResp
+	Data Post `json:"data"`
+}
+
+type GetPostCommentsResp {
+	BaseResp
+	Data  []Comment `json:"data"`
+	Total int       `json:"total"`
+}
+
+// 评论相关响应
+type CreateCommentResp {
+	BaseResp
+	Data Comment `json:"data"`
+}
+
+type LikeCommentResp {
+	BaseResp
+	Data Comment `json:"data"`
+}
+
+// 用户相关API服务
+@server (
+	group: user
+)
+service Super {
+	@handler register
+	post /api/user/register (RegisterReq) returns (RegisterResp)
+
+	@handler login
+	post /api/user/login (LoginReq) returns (LoginResp)
+
+	@handler getUserInfo
+	get /api/user/:user_id (GetUserInfoReq) returns (GetUserInfoResp)
+
+	@handler getUser
+	get /api/user/:user_id/detail (GetUserReq) returns (GetUserResp)
+
+	@handler updateUserInfo
+	put /api/user/:user_id (UpdateUserInfoReq) returns (UpdateUserInfoResp)
+
+	@handler updateUserPassword
+	put /api/user/:user_id/password (UpdateUserPasswordReq) returns (UpdateUserPasswordResp)
+
+	@handler deleteUser
+	delete /api/user/:user_id (DeleteUserReq) returns (DeleteUserResp)
+
+	@handler updateUserVip
+	post /api/user/:user_id/vip (UpdateUserVipReq) returns (UpdateUserVipResp)
+
+	@handler getUsers
+	get /api/users (GetUsersReq) returns (GetUsersResp)
+
+	@handler getUserCount
+	get /api/users/count (EmptyReq) returns (GetUserCountResp)
+
+	// VIP相关用户API
+	@handler getUserVipStatus
+	get /api/user/:user_id/vip (GetUserInfoReq) returns (GetUserVipStatusResp)
+
+	@handler checkUserVip
+	get /api/user/:user_id/vip/check (CheckUserVipReq) returns (CheckUserVipResp)
+
+	@handler updateAutoRenew
+	put /api/user/:user_id/vip/auto-renew (UpdateAutoRenewReq) returns (BaseResp)
+
+	@handler syncUserVipStatus
+	post /api/user/:user_id/vip/sync (SyncUserVipStatusReq) returns (SyncUserVipStatusResp)
+
+	@handler getVipOrders
+	get /api/user/:user_id/vip/orders (GetVipOrdersReq) returns (GetVipOrdersResp)
+
+	@handler getVipHistory
+	get /api/user/:user_id/vip/records (GetVipHistoryReq) returns (GetVipHistoryResp)
+
+	@handler createVipOrder
+	post /api/user/:user_id/vip/orders (CreateVipOrderReq) returns (CreateVipOrderResp)
+
+	@handler getUserActiveVipRecord
+	get /api/user/:user_id/vip/active (GetUserActiveVipRecordReq) returns (GetUserActiveVipRecordResp)
+}
+
+// VIP相关API服务
+@server (
+	group: vip
+)
+service Super {
+	@handler getVipPlans
+	get /api/vip/plans (EmptyReq) returns (GetVipPlansResp)
+
+	@handler getVipPlan
+	get /api/vip/plans/:plan_id (GetVipPlanReq) returns (GetVipPlanResp)
+
+	@handler createVipPlan
+	post /api/vip/plans (CreateVipPlanReq) returns (CreateVipPlanResp)
+}
+
+// 帖子相关API服务
+@server (
+	group: post
+)
+service Super {
+	@handler getPosts
+	get /api/posts (GetPostsReq) returns (GetPostsResp)
+
+	@handler getPost
+	get /api/posts/:post_id (GetPostReq) returns (GetPostResp)
+
+	@handler createPost
+	post /api/posts (CreatePostReq) returns (CreatePostResp)
+
+	@handler likePost
+	post /api/posts/:post_id/like (LikePostReq) returns (LikePostResp)
+
+	@handler getPostComments
+	get /api/posts/:post_id/comments (GetPostCommentsReq) returns (GetPostCommentsResp)
+}
+
+// 评论相关API服务
+@server (
+	group: comment
+)
+service Super {
+	@handler createComment
+	post /api/comments (CreateCommentReq) returns (CreateCommentResp)
+
+	@handler likeComment
+	post /api/comments/:comment_id/like (LikeCommentReq) returns (LikeCommentResp)
+}
+

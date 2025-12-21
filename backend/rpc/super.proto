@@ -1,0 +1,419 @@
+
+syntax = "proto3";
+
+package super;
+
+option go_package="./rpc";
+
+// 用户相关消息
+message User {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string avatar = 4;
+  string created_at = 5;
+  string updated_at = 6;
+  bool is_vip = 7;
+  string vip_expires_at = 8;
+  bool auto_renew = 9;
+}
+
+// 用户注册请求
+message RegisterReq {
+  string username = 1;
+  string password = 2;
+  string email = 3;
+}
+
+// 用户注册响应
+message RegisterResp {
+  User user = 1;
+}
+
+// 用户登录请求
+message LoginReq {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+}
+
+// 用户登录响应
+message LoginResp {
+  User user = 1;
+  string token = 2;
+}
+
+message GetUserInfoReq {
+  string user_id = 1;
+}
+
+message GetUserInfoResp {
+  User user = 1;
+}
+
+// 获取单个用户请求
+message GetUserReq {
+  string user_id = 1;
+}
+
+// 获取单个用户响应
+message GetUserResp {
+  User user = 1;
+}
+
+// 更新用户信息请求
+message UpdateUserInfoReq {
+  string user_id = 1;
+  string username = 2;
+  string email = 3;
+  string avatar = 4;
+}
+
+// 更新用户信息响应
+message UpdateUserInfoResp {
+  User user = 1;
+}
+
+// 更新用户密码请求
+message UpdateUserPasswordReq {
+  string user_id = 1;
+  string old_password = 2;
+  string new_password = 3;
+}
+
+// 更新用户密码响应
+message UpdateUserPasswordResp {
+}
+
+// 删除用户请求
+message DeleteUserReq {
+  string user_id = 1;
+}
+
+// 删除用户响应
+message DeleteUserResp {
+}
+
+// 更新用户VIP状态请求
+message UpdateUserVipReq {
+  string user_id = 1;
+  bool is_vip = 2;
+  string vip_expires = 3;
+}
+
+// 更新用户VIP状态响应
+message UpdateUserVipResp {
+  User user = 1;
+}
+
+message GetUsersReq {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message GetUsersResp {
+  repeated User users = 1;
+  int32 total = 2;
+}
+
+message GetUserCountReq {
+}
+
+message GetUserCountResp {
+  int32 count = 1;
+}
+
+// VIP套餐相关消息
+message VipPlan {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  float price = 4;
+  int32 duration_days = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+// 获取单个VIP套餐请求
+message GetVipPlanReq {
+  string plan_id = 1;
+}
+
+// 获取单个VIP套餐响应
+message GetVipPlanResp {
+  VipPlan plan = 1;
+}
+
+// 创建VIP套餐请求
+message CreateVipPlanReq {
+  string name = 1;
+  string description = 2;
+  float price = 3;
+  int32 duration_days = 4;
+}
+
+// 创建VIP套餐响应
+message CreateVipPlanResp {
+  VipPlan plan = 1;
+}
+
+message GetVipPlansReq {
+}
+
+message GetVipPlansResp {
+  repeated VipPlan plans = 1;
+}
+
+// VIP订单相关消息
+message VipOrder {
+  string id = 1;
+  string user_id = 2;
+  string plan_id = 3;
+  string plan_name = 4;
+  float amount = 5;
+  string status = 6;
+  string created_at = 7;
+  string paid_at = 8;
+}
+
+message CreateVipOrderReq {
+  string user_id = 1;
+  string plan_id = 2;
+}
+
+message CreateVipOrderResp {
+  VipOrder order = 1;
+}
+
+message GetVipOrdersReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetVipOrdersResp {
+  repeated VipOrder orders = 1;
+  int32 total = 2;
+}
+
+// VIP记录相关消息
+message VipRecord {
+  string id = 1;
+  string user_id = 2;
+  string plan_id = 3;
+  string plan_name = 4;
+  string start_at = 5;
+  string end_at = 6;
+  string status = 7;
+  string created_at = 8;
+}
+
+message GetVipRecordsReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetVipRecordsResp {
+  repeated VipRecord records = 1;
+  int32 total = 2;
+}
+
+// 获取用户活跃VIP记录请求
+message GetUserActiveVipRecordReq {
+  string user_id = 1;
+}
+
+// 获取用户活跃VIP记录响应
+message GetUserActiveVipRecordResp {
+  VipRecord record = 1;
+}
+
+// VIP状态相关消息
+message GetUserVipStatusReq {
+  string user_id = 1;
+}
+
+message GetUserVipStatusResp {
+  bool is_vip = 1;
+  string expires_at = 2;
+  bool auto_renew = 3;
+}
+
+message CheckUserVipReq {
+  string user_id = 1;
+}
+
+message CheckUserVipResp {
+  bool is_vip = 1;
+}
+
+message UpdateAutoRenewReq {
+  string user_id = 1;
+  bool auto_renew = 2;
+}
+
+message UpdateAutoRenewResp {
+}
+
+message SyncUserVipStatusReq {
+  string user_id = 1;
+}
+
+message SyncUserVipStatusResp {
+  bool is_vip = 1;
+  string expires_at = 2;
+}
+
+// 帖子相关消息
+message Post {
+  string id = 1;
+  string user_id = 2;
+  string user_name = 3;
+  string user_avatar = 4;
+  string content = 5;
+  repeated string images = 6;
+  int32 likes = 7;
+  int32 comments = 8;
+  bool is_liked = 9;
+  string created_at = 10;
+}
+
+// 获取帖子列表请求
+message GetPostsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+// 获取帖子列表响应
+message GetPostsResp {
+  repeated Post posts = 1;
+  int32 total = 2;
+}
+
+// 获取单个帖子请求
+message GetPostReq {
+  string post_id = 1;
+}
+
+// 获取单个帖子响应
+message GetPostResp {
+  Post post = 1;
+}
+
+// 创建帖子请求
+message CreatePostReq {
+  string user_id = 1;
+  string content = 2;
+  repeated string images = 3;
+}
+
+// 创建帖子响应
+message CreatePostResp {
+  Post post = 1;
+}
+
+// 点赞帖子请求
+message LikePostReq {
+  string post_id = 1;
+  string user_id = 2;
+}
+
+// 点赞帖子响应
+message LikePostResp {
+  Post post = 1;
+}
+
+// 获取帖子评论请求
+message GetPostCommentsReq {
+  string post_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+// 获取帖子评论响应
+message GetPostCommentsResp {
+  repeated Comment comments = 1;
+  int32 total = 2;
+}
+
+// 评论相关消息
+message Comment {
+  string id = 1;
+  string post_id = 2;
+  string user_id = 3;
+  string user_name = 4;
+  string user_avatar = 5;
+  string content = 6;
+  int32 likes = 7;
+  bool is_liked = 8;
+  string created_at = 9;
+}
+
+// 创建评论请求
+message CreateCommentReq {
+  string post_id = 1;
+  string user_id = 2;
+  string content = 3;
+}
+
+// 创建评论响应
+message CreateCommentResp {
+  Comment comment = 1;
+}
+
+// 点赞评论请求
+message LikeCommentReq {
+  string comment_id = 1;
+  string user_id = 2;
+}
+
+// 点赞评论响应
+message LikeCommentResp {
+  Comment comment = 1;
+}
+
+// 服务定义
+service Super {
+  // 用户相关服务
+  rpc Register(RegisterReq) returns (RegisterResp);
+  rpc Login(LoginReq) returns (LoginResp);
+  rpc GetUserInfo(GetUserInfoReq) returns (GetUserInfoResp);
+  rpc GetUser(GetUserReq) returns (GetUserResp);
+  rpc UpdateUserInfo(UpdateUserInfoReq) returns (UpdateUserInfoResp);
+  rpc UpdateUserPassword(UpdateUserPasswordReq) returns (UpdateUserPasswordResp);
+  rpc DeleteUser(DeleteUserReq) returns (DeleteUserResp);
+  rpc UpdateUserVip(UpdateUserVipReq) returns (UpdateUserVipResp);
+  rpc GetUsers(GetUsersReq) returns (GetUsersResp);
+  rpc GetUserCount(GetUserCountReq) returns (GetUserCountResp);
+  
+  // VIP套餐相关服务
+  rpc GetVipPlans(GetVipPlansReq) returns (GetVipPlansResp);
+  rpc GetVipPlan(GetVipPlanReq) returns (GetVipPlanResp);
+  rpc CreateVipPlan(CreateVipPlanReq) returns (CreateVipPlanResp);
+  
+  // VIP订单相关服务
+  rpc CreateVipOrder(CreateVipOrderReq) returns (CreateVipOrderResp);
+  rpc GetVipOrders(GetVipOrdersReq) returns (GetVipOrdersResp);
+  
+  // VIP记录相关服务
+  rpc GetVipRecords(GetVipRecordsReq) returns (GetVipRecordsResp);
+  rpc GetUserActiveVipRecord(GetUserActiveVipRecordReq) returns (GetUserActiveVipRecordResp);
+  
+  // VIP状态相关服务
+  rpc GetUserVipStatus(GetUserVipStatusReq) returns (GetUserVipStatusResp);
+  rpc CheckUserVip(CheckUserVipReq) returns (CheckUserVipResp);
+  rpc UpdateAutoRenew(UpdateAutoRenewReq) returns (UpdateAutoRenewResp);
+  rpc SyncUserVipStatus(SyncUserVipStatusReq) returns (SyncUserVipStatusResp);
+  
+  // 帖子相关服务
+  rpc GetPosts(GetPostsReq) returns (GetPostsResp);
+  rpc GetPost(GetPostReq) returns (GetPostResp);
+  rpc CreatePost(CreatePostReq) returns (CreatePostResp);
+  rpc LikePost(LikePostReq) returns (LikePostResp);
+  rpc GetPostComments(GetPostCommentsReq) returns (GetPostCommentsResp);
+  
+  // 评论相关服务
+  rpc CreateComment(CreateCommentReq) returns (CreateCommentResp);
+  rpc LikeComment(LikeCommentReq) returns (LikeCommentResp);
+}
