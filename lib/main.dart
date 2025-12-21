@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:ui';
 import 'dart:async';
 import 'dart:io' show Platform;
@@ -47,7 +48,12 @@ void main() {
     };
     
     print('🚀 App starting...');
-    print('📱 Platform: ${Platform.operatingSystem}');
+    // Web平台不支持Platform.operatingSystem，使用kIsWeb判断
+    if (kIsWeb) {
+      print('📱 Platform: web');
+    } else {
+      print('📱 Platform: ${Platform.operatingSystem}');
+    }
     print('🌐 API Base URL: ${ApiService.baseUrl}');
     
     runApp(const MyApp());
