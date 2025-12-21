@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Simple Auth App',
+      title: 'Moe Social',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -206,7 +206,7 @@ class _HomePageState extends State<HomePage> {
                     Icon(Icons.rocket_launch, size: 50, color: Colors.white),
                     SizedBox(height: 10),
                     Text(
-                      '欢迎使用 Simple Auth',
+                      '欢迎使用 Moe Social',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 20,
