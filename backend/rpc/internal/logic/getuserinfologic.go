@@ -2,6 +2,7 @@ package logic
 
 import (
 	"context"
+	"strconv"
 
 	"backend/model"
 	"backend/rpc/internal/errorx"
@@ -42,14 +43,15 @@ func (l *GetUserInfoLogic) GetUserInfo(in *rpc.GetUserInfoReq) (*rpc.GetUserInfo
 
 	return &rpc.GetUserInfoResp{
 		User: &rpc.User{
-			Id:           string(rune(user.ID)),
+			Id:           strconv.Itoa(int(user.ID)),
 			Username:     user.Username,
 			Email:        user.Email,
+			Avatar:       user.Avatar,
 			CreatedAt:    user.CreatedAt.Format("2006-01-02 15:04:05"),
 			UpdatedAt:    user.UpdatedAt.Format("2006-01-02 15:04:05"),
 			IsVip:        user.IsVip,
 			VipExpiresAt: vipEndAt,
-			AutoRenew:    false, // 模型中暂时没有auto_renew字段
+			AutoRenew:    user.AutoRenew,
 		},
 	}, nil
 }

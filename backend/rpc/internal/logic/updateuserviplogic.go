@@ -96,11 +96,12 @@ func (l *UpdateUserVipLogic) UpdateUserVip(in *rpc.UpdateUserVipReq) (*rpc.Updat
 			Id:           strconv.Itoa(int(user.ID)),
 			Username:     user.Username,
 			Email:        user.Email,
+			Avatar:       user.Avatar,
 			CreatedAt:    user.CreatedAt.Format("2006-01-02 15:04:05"),
 			UpdatedAt:    user.UpdatedAt.Format("2006-01-02 15:04:05"),
 			IsVip:        user.IsVip,
 			VipExpiresAt: vipEndAt,
-			AutoRenew:    false,
+			AutoRenew:    user.AutoRenew,
 		},
 	}, nil
 }

@@ -13,7 +13,7 @@ type User struct {
 	Username    string         `gorm:"uniqueIndex;size:50;not null" json:"username"`
 	Password    string         `gorm:"size:100;not null" json:"-"`
 	Email       string         `gorm:"uniqueIndex;size:100;not null" json:"email"`
-	Avatar      string         `gorm:"size:255" json:"avatar"` // 头像URL
+	Avatar      string         `gorm:"type:text" json:"avatar"` // 头像URL，支持长URL（如base64 data URI）
 	IsVip       bool           `gorm:"default:false" json:"is_vip"`
 	VipStartAt  *time.Time     `json:"vip_start_at,omitempty"`
 	VipEndAt    *time.Time     `json:"vip_end_at,omitempty"`

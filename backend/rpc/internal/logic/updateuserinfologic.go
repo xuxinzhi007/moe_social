@@ -42,6 +42,8 @@ func (l *UpdateUserInfoLogic) UpdateUserInfo(in *rpc.UpdateUserInfoReq) (*rpc.Up
 	if in.Email != "" {
 		user.Email = in.Email
 	}
+	// 更新头像（即使为空字符串也要更新，允许清空头像）
+	user.Avatar = in.Avatar
 
 	// 3. 保存更新
 	err := l.svcCtx.DB.Save(&user).Error
@@ -61,11 +63,12 @@ func (l *UpdateUserInfoLogic) UpdateUserInfo(in *rpc.UpdateUserInfoReq) (*rpc.Up
 			Id:           strconv.Itoa(int(user.ID)),
 			Username:     user.Username,
 			Email:        user.Email,
+			Avatar:       user.Avatar,
 			CreatedAt:    user.CreatedAt.Format("2006-01-02 15:04:05"),
 			UpdatedAt:    user.UpdatedAt.Format("2006-01-02 15:04:05"),
 			IsVip:        user.IsVip,
 			VipExpiresAt: vipEndAt,
-			AutoRenew:    false,
+			AutoRenew:    user.AutoRenew,
 		},
 	}, nil
 }
