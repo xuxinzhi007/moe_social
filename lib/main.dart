@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:ui';
+import 'dart:async';
+import 'dart:io' show Platform;
 import 'login_page.dart';
+import 'services/api_service.dart';
 import 'register_page.dart';
 import 'profile_page.dart';
 import 'settings_page.dart';
@@ -14,7 +19,45 @@ import 'models/post.dart';
 import 'services/post_service.dart';
 
 void main() {
-  runApp(const MyApp());
+  // 确保Flutter绑定已初始化
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // 捕获Flutter框架错误
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    // 输出详细错误信息
+    print('═══════════════════════════════════════');
+    print('Flutter Error:');
+    print('Exception: ${details.exception}');
+    print('Stack: ${details.stack}');
+    print('Library: ${details.library}');
+    print('═══════════════════════════════════════');
+  };
+  
+  // 捕获异步错误
+  PlatformDispatcher.instance.onError = (error, stack) {
+    print('═══════════════════════════════════════');
+    print('Platform Error:');
+    print('Error: $error');
+    print('Stack: $stack');
+    print('═══════════════════════════════════════');
+    return true;
+  };
+  
+  // 使用runZonedGuarded捕获所有未捕获的错误
+  runZonedGuarded(() {
+    print('🚀 App starting...');
+    print('📱 Platform: ${Platform.operatingSystem}');
+    print('🌐 API Base URL: ${ApiService.baseUrl}');
+    
+    runApp(const MyApp());
+  }, (error, stack) {
+    print('═══════════════════════════════════════');
+    print('Uncaught Error:');
+    print('Error: $error');
+    print('Stack: $stack');
+    print('═══════════════════════════════════════');
+  });
 }
 
 class MyApp extends StatelessWidget {

@@ -1,5 +1,6 @@
-package com.example.simple_auth_app
+package com.example.moe_social
 
 import io.flutter.embedding.android.FlutterActivity
 
 class MainActivity : FlutterActivity()
+

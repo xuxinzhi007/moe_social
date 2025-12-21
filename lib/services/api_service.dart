@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../auth_service.dart';
 import '../models/post.dart';
 import '../models/comment.dart';
@@ -20,7 +22,38 @@ class ApiException implements Exception {
 }
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:8888';
+  // 环境配置
+  // 设置为 true 使用生产环境，false 使用开发环境
+  static const bool _isProduction = false; // 修改这里切换环境
+  
+  // 生产环境地址（cpolar隧道）
+  static const String _productionUrl = 'http://74fd3e66.r3.cpolar.top';
+  
+  // 开发环境地址
+  static const String _developmentUrl = 'http://localhost:8888';
+  
+  // 根据环境和平台自动选择API地址
+  static String get baseUrl {
+    // 如果设置为生产环境，直接返回生产地址
+    if (_isProduction) {
+      return _productionUrl;
+    }
+    
+    // 开发环境根据平台选择
+    if (kIsWeb) {
+      // Web平台使用localhost
+      return _developmentUrl;
+    } else if (Platform.isAndroid) {
+      // Android模拟器使用10.0.2.2，真机需要使用电脑IP
+      // TODO: 真机测试时需要修改为电脑的实际IP地址
+      // 例如：return 'http://192.168.1.16:8888';
+      return 'http://http://74fd3e66.r3.cpolar.top'; // Android模拟器
+    } else if (Platform.isIOS) {
+      // iOS模拟器使用localhost，真机需要使用电脑IP
+      return _developmentUrl; // iOS模拟器
+    }
+    return _developmentUrl;
+  }
 
   // 通用请求方法
   static Future<Map<String, dynamic>> _request(
