@@ -1,4 +1,4 @@
-# simple_auth_app
+# Moe Social
 
 A new Flutter project.
 
