@@ -3,6 +3,7 @@ import 'auth_service.dart';
 import 'services/api_service.dart';
 import 'models/user.dart';
 import 'utils/validators.dart';
+import 'widgets/avatar_image.dart';
 
 class EditProfilePage extends StatefulWidget {
   final User user;
@@ -110,14 +111,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
             // 头像编辑
             Stack(
               children: [
-                CircleAvatar(
+                NetworkAvatarImage(
+                  imageUrl: _avatarController.text.isNotEmpty
+                      ? _avatarController.text
+                      : null,
                   radius: 60,
-                  backgroundImage: _avatarController.text.isNotEmpty
-                      ? NetworkImage(_avatarController.text)
-                      : null,
-                  child: _avatarController.text.isEmpty
-                      ? const Icon(Icons.person, size: 60, color: Colors.grey)
-                      : null,
+                  placeholderIcon: Icons.person,
+                  placeholderColor: Colors.grey,
                 ),
                 Positioned(
                   bottom: 0,

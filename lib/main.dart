@@ -18,6 +18,7 @@ import 'vip_orders_page.dart';
 import 'vip_history_page.dart';
 import 'models/post.dart';
 import 'services/post_service.dart';
+import 'widgets/avatar_image.dart';
 
 void main() {
   // 使用runZonedGuarded捕获所有未捕获的错误
@@ -338,9 +339,10 @@ class _HomePageState extends State<HomePage> {
             // 用户信息
             Row(
               children: [
-                CircleAvatar(
+                NetworkAvatarImage(
+                  imageUrl: post.userAvatar,
                   radius: 24,
-                  backgroundImage: NetworkImage(post.userAvatar),
+                  placeholderIcon: Icons.person,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

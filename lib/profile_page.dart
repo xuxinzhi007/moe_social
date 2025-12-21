@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'services/api_service.dart';
 import 'models/user.dart';
+import 'widgets/avatar_image.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -93,14 +94,11 @@ class _ProfilePageState extends State<ProfilePage> {
                     Center(
                       child: Column(
                         children: [
-                          CircleAvatar(
+                          NetworkAvatarImage(
+                            imageUrl: _user?.avatar,
                             radius: 50,
-                            backgroundImage: _user?.avatar != null && _user!.avatar.isNotEmpty
-                                ? NetworkImage(_user!.avatar)
-                                : null,
-                            child: _user?.avatar == null || _user!.avatar.isEmpty
-                                ? const Icon(Icons.person, size: 50, color: Colors.white)
-                                : null,
+                            placeholderIcon: Icons.person,
+                            placeholderColor: Colors.white,
                           ),
                           const SizedBox(height: 10),
                           Text(

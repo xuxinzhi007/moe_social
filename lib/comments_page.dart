@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'models/comment.dart';
 import 'services/post_service.dart';
+import 'widgets/avatar_image.dart';
 
 class CommentsPage extends StatefulWidget {
   final String postId;
@@ -225,9 +226,10 @@ class _CommentsPageState extends State<CommentsPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
+          NetworkAvatarImage(
+            imageUrl: comment.userAvatar,
             radius: 20,
-            backgroundImage: NetworkImage(comment.userAvatar),
+            placeholderIcon: Icons.person,
           ),
           const SizedBox(width: 12),
           Expanded(
