@@ -310,9 +310,10 @@ class ApiService {
   }
 
   // 点赞/取消点赞帖子
-  static Future<Post> toggleLike(String postId) async {
+  static Future<Post> toggleLike(String postId, String userId) async {
     final result = await _request('/api/posts/$postId/like',
-      method: 'POST'
+      method: 'POST',
+      body: {'user_id': userId}
     );
     return Post.fromJson(result['data']);
   }

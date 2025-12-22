@@ -6,6 +6,7 @@ import '../models/post.dart';
 import '../services/api_service.dart';
 import '../services/post_service.dart';
 import '../utils/error_handler.dart';
+import '../widgets/avatar_image.dart';
 
 class CreatePostPage extends StatefulWidget {
   const CreatePostPage({super.key});
@@ -18,7 +19,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
   final TextEditingController _contentController = TextEditingController();
   final List<File> _selectedImages = [];
   bool _isLoading = false;
+  bool _isLoadingUser = true;
   final ImagePicker _picker = ImagePicker();
+  String? _userName;
+  String? _userAvatar;
 
   Future<void> _addImage() async {
     // 使用image_picker选择图片
@@ -41,6 +45,36 @@ class _CreatePostPageState extends State<CreatePostPage> {
     });
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+
+  Future<void> _loadUserInfo() async {
+    final userId = AuthService.currentUser;
+    if (userId == null) {
+      setState(() {
+        _isLoadingUser = false;
+      });
+      return;
+    }
+
+    try {
+      final user = await ApiService.getUserInfo(userId);
+      setState(() {
+        _userName = user.username;
+        _userAvatar = user.avatar.isNotEmpty ? user.avatar : null;
+        _isLoadingUser = false;
+      });
+    } catch (e) {
+      print('加载用户信息失败: $e');
+      setState(() {
+        _isLoadingUser = false;
+      });
+    }
+  }
+
   Future<void> _publishPost() async {
     if (_contentController.text.trim().isEmpty) {
       ErrorHandler.showError(context, '请输入帖子内容');
@@ -59,11 +93,17 @@ class _CreatePostPageState extends State<CreatePostPage> {
         imageUrls.add(imageUrl);
       }
 
+      final userId = AuthService.currentUser;
+      if (userId == null) {
+        ErrorHandler.showError(context, '请先登录');
+        return;
+      }
+
       final newPost = Post(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: AuthService.currentUser ?? 'current_user',
-        userName: '当前用户',
-        userAvatar: 'https://randomuser.me/api/portraits/men/97.jpg',
+        userId: userId,
+        userName: _userName ?? '用户',
+        userAvatar: _userAvatar ?? 'https://via.placeholder.com/150',
         content: _contentController.text.trim(),
         images: imageUrls,
         likes: 0,
@@ -115,24 +155,32 @@ class _CreatePostPageState extends State<CreatePostPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 用户信息
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundImage: NetworkImage(
-                    'https://randomuser.me/api/portraits/men/97.jpg',
+            if (_isLoadingUser)
+              const Row(
+                children: [
+                  CircleAvatar(radius: 24, child: CircularProgressIndicator()),
+                  SizedBox(width: 12),
+                  Text('加载中...'),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  NetworkAvatarImage(
+                    imageUrl: _userAvatar,
+                    radius: 24,
+                    placeholderIcon: Icons.person,
                   ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  '当前用户',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                  const SizedBox(width: 12),
+                  Text(
+                    _userName ?? '用户',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
             const SizedBox(height: 16),
 
             // 帖子内容输入

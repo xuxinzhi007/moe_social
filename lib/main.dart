@@ -252,8 +252,16 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _toggleLike(String postId) async {
+    final userId = AuthService.currentUser;
+    if (userId == null) {
+      if (mounted) {
+        ErrorHandler.showError(context, '请先登录');
+      }
+      return;
+    }
+    
     try {
-      final updatedPost = await PostService.toggleLike(postId);
+      final updatedPost = await PostService.toggleLike(postId, userId);
       setState(() {
         _posts = _posts.map((post) {
           if (post.id == postId) {

@@ -25,8 +25,8 @@ class PostService {
   }
 
   // 点赞/取消点赞帖子
-  static Future<Post> toggleLike(String postId) async {
-    return await ApiService.toggleLike(postId);
+  static Future<Post> toggleLike(String postId, String userId) async {
+    return await ApiService.toggleLike(postId, userId);
   }
 
   // 增加评论数

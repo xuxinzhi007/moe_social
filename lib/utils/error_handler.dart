@@ -13,7 +13,9 @@ class ErrorHandler {
               color: Colors.white,
             ),
             const SizedBox(width: 10),
-            Text(message),
+            Expanded(
+              child: Text(message),
+            ),
           ],
         ),
         backgroundColor: isError ? Colors.redAccent : Colors.green,
