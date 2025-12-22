@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io' show Platform, SocketException;
+import 'dart:io' show File, Platform, SocketException;
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../auth_service.dart';
@@ -57,101 +57,169 @@ class ApiService {
     return _developmentUrl;
   }
 
+  // 刷新token的端点
+  static const String _refreshTokenEndpoint = '/api/user/refresh-token';
+  
+  // 防止并发刷新token
+  static bool _isRefreshing = false;
+  // 等待刷新token的请求队列
+  static final List<Function(String)> _refreshCallbacks = [];
+
   // 通用请求方法
   static Future<Map<String, dynamic>> _request(
     String path,
     {String method = 'GET', dynamic body}) async {
     try {
-      final uri = Uri.parse('$baseUrl$path');
-      
-      // 调试日志
-      print('📡 API Request: $method $uri');
-      if (body != null) {
-        print('📤 Request Body: ${json.encode(body)}');
+      final result = await _performRequest(path, method, body);
+      return result;
+    } on ApiException catch (e) {
+      // 检查是否是token过期错误（根据后端返回的错误码判断）
+      if (e.code == 401 || e.message.contains('token') || e.message.contains('Token')) {
+        // Token过期，尝试刷新token
+        final newToken = await _refreshToken();
+        if (newToken != null) {
+          // 刷新成功，使用新token重新请求
+          return await _performRequest(path, method, body);
+        } else {
+          // 刷新token失败，清除登录状态
+          AuthService.logout();
+          // 抛出错误，让上层处理
+          throw ApiException('登录已过期，请重新登录', 401);
+        }
       }
+      // 其他错误直接抛出
+      rethrow;
+    }
+  }
+
+  // 执行实际的HTTP请求
+  static Future<Map<String, dynamic>> _performRequest(
+    String path,
+    String method,
+    dynamic body) async {
+    final uri = Uri.parse('$baseUrl$path');
+    
+    // 调试日志
+    print('📡 API Request: $method $uri');
+    if (body != null) {
+      print('📤 Request Body: ${json.encode(body)}');
+    }
+    
+    // 构建请求头
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+    };
+    
+    // 添加认证令牌
+    final token = AuthService.token;
+    if (token != null) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    
+    // 发送请求
+    http.Response response;
+    if (method == 'GET') {
+      response = await http.get(uri, headers: headers);
+    } else if (method == 'POST') {
+      response = await http.post(
+        uri,
+        headers: headers,
+        body: body != null ? json.encode(body) : null,
+      );
+    } else if (method == 'PUT') {
+      response = await http.put(
+        uri,
+        headers: headers,
+        body: body != null ? json.encode(body) : null,
+      );
+    } else if (method == 'DELETE') {
+      response = await http.delete(uri, headers: headers);
+    } else {
+      throw ApiException('不支持的HTTP方法: $method', null);
+    }
+    
+    // 调试日志
+    print('📥 API Response: ${response.statusCode}');
+    print('📥 Response Body: ${response.body}');
+    
+    // 检查响应体是否为空
+    if (response.body.isEmpty) {
+      throw ApiException('服务器返回空响应', response.statusCode);
+    }
+    
+    // 解析响应
+    Map<String, dynamic> result;
+    try {
+      result = json.decode(response.body) as Map<String, dynamic>;
+    } catch (e) {
+      print('❌ JSON解析失败: $e');
+      print('❌ 响应内容: ${response.body}');
+      throw ApiException('服务器响应格式错误: ${response.body}', response.statusCode);
+    }
+    
+    // 检查响应体中的success字段（go-zero框架的错误响应）
+    if (result.containsKey('success') && result['success'] == false) {
+      final errorMessage = result['message'] ?? '请求失败';
+      final errorCode = result['code'] ?? response.statusCode;
+      print('❌ API错误: $errorMessage (code: $errorCode)');
+      throw ApiException(errorMessage, errorCode);
+    }
+    
+    // 检查HTTP状态码
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final errorMessage = result['message'] ?? '请求失败';
+      print('❌ HTTP错误: $errorMessage (status: ${response.statusCode})');
+      throw ApiException(errorMessage, response.statusCode);
+    }
+    
+    return result;
+  }
+
+  // 刷新token
+  static Future<String?> _refreshToken() async {
+    // 如果正在刷新token，等待刷新完成
+    if (_isRefreshing) {
+      return await Future.delayed(const Duration(milliseconds: 100), () {
+        return _refreshToken();
+      });
+    }
+
+    try {
+      _isRefreshing = true;
+      print('🔄 正在刷新token...');
       
-      // 构建请求头
+      // 调用刷新token的API
+      final uri = Uri.parse('$baseUrl$_refreshTokenEndpoint');
       final headers = <String, String>{
         'Content-Type': 'application/json',
       };
       
-      // 添加认证令牌
-      final token = AuthService.token;
-      if (token != null) {
-        headers['Authorization'] = 'Bearer $token';
+      // 使用当前token请求刷新
+      final currentToken = AuthService.token;
+      if (currentToken != null) {
+        headers['Authorization'] = 'Bearer $currentToken';
       }
       
-      // 发送请求
-      http.Response response;
-      if (method == 'GET') {
-        response = await http.get(uri, headers: headers);
-      } else if (method == 'POST') {
-        response = await http.post(
-          uri,
-          headers: headers,
-          body: body != null ? json.encode(body) : null,
-        );
-      } else if (method == 'PUT') {
-        response = await http.put(
-          uri,
-          headers: headers,
-          body: body != null ? json.encode(body) : null,
-        );
-      } else if (method == 'DELETE') {
-        response = await http.delete(uri, headers: headers);
+      final response = await http.post(uri, headers: headers);
+      
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body) as Map<String, dynamic>;
+        final newToken = result['data']['token'] as String;
+        
+        // 更新token
+        await AuthService.updateToken(newToken);
+        print('✅ Token刷新成功');
+        
+        return newToken;
       } else {
-        throw ApiException('不支持的HTTP方法: $method', null);
+        print('❌ Token刷新失败: ${response.statusCode}');
+        return null;
       }
-      
-      // 调试日志
-      print('📥 API Response: ${response.statusCode}');
-      print('📥 Response Body: ${response.body}');
-      
-      // 检查响应体是否为空
-      if (response.body.isEmpty) {
-        throw ApiException('服务器返回空响应', response.statusCode);
-      }
-      
-      // 解析响应
-      Map<String, dynamic> result;
-      try {
-        result = json.decode(response.body) as Map<String, dynamic>;
-      } catch (e) {
-        print('❌ JSON解析失败: $e');
-        print('❌ 响应内容: ${response.body}');
-        throw ApiException('服务器响应格式错误: ${response.body}', response.statusCode);
-      }
-      
-      // 检查响应体中的success字段（go-zero框架的错误响应）
-      if (result.containsKey('success') && result['success'] == false) {
-        final errorMessage = result['message'] ?? '请求失败';
-        final errorCode = result['code'] ?? response.statusCode;
-        print('❌ API错误: $errorMessage (code: $errorCode)');
-        throw ApiException(errorMessage, errorCode);
-      }
-      
-      // 检查HTTP状态码
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        final errorMessage = result['message'] ?? '请求失败';
-        print('❌ HTTP错误: $errorMessage (status: ${response.statusCode})');
-        throw ApiException(errorMessage, response.statusCode);
-      }
-      
-      return result;
-    } on ApiException {
-      rethrow;
-    } on http.ClientException catch (e) {
-      print('❌ 网络连接错误: ${e.message}');
-      print('❌ 请求URL: $baseUrl$path');
-      throw ApiException('无法连接到服务器，请检查后端服务是否启动: ${e.message}', null);
-    } on SocketException catch (e) {
-      print('❌ Socket错误: ${e.message}');
-      print('❌ 请求URL: $baseUrl$path');
-      throw ApiException('网络连接失败，请检查网络设置和API地址: ${e.message}', null);
-    } catch (e, stack) {
-      print('❌ 未知错误: $e');
-      print('❌ 堆栈: $stack');
-      throw ApiException('请求失败: ${e.toString()}', null);
+    } catch (e) {
+      print('❌ Token刷新异常: $e');
+      return null;
+    } finally {
+      _isRefreshing = false;
     }
   }
 
@@ -170,10 +238,34 @@ class ApiService {
       body: {'username': username, 'email': email, 'password': password}
     );
   }
+  
+  // 发送重置密码验证码
+  static Future<Map<String, dynamic>> sendResetPasswordCode(String email) async {
+    return await _request('/api/user/send-reset-code',
+      method: 'POST',
+      body: {'email': email}
+    );
+  }
+  
+  // 验证重置密码验证码
+  static Future<Map<String, dynamic>> verifyResetCode(String email, String code) async {
+    return await _request('/api/user/verify-reset-code',
+      method: 'POST',
+      body: {'email': email, 'code': code}
+    );
+  }
+  
+  // 重置密码
+  static Future<Map<String, dynamic>> resetPassword(String email, String code, String newPassword) async {
+    return await _request('/api/user/reset-password',
+      method: 'POST',
+      body: {'email': email, 'code': code, 'new_password': newPassword}
+    );
+  }
 
-  // 获取帖子列表
-  static Future<List<Post>> getPosts() async {
-    final result = await _request('/api/posts');
+  // 获取帖子列表（支持分页）
+  static Future<List<Post>> getPosts({int page = 1, int pageSize = 10}) async {
+    final result = await _request('/api/posts?page=$page&page_size=$pageSize');
     final postsJson = result['data'] as List;
     return postsJson.map((json) => Post.fromJson(json)).toList();
   }
@@ -385,5 +477,48 @@ class ApiService {
       }
     );
     return VipPlan.fromJson(result['data']);
+  }
+  
+  // 上传图片
+  static Future<String> uploadImage(File image) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/upload/image');
+      
+      // 构建请求头
+      final headers = <String, String>{
+        'Authorization': 'Bearer ${AuthService.token}',
+      };
+      
+      // 构建multipart请求
+      final request = http.MultipartRequest('POST', uri)..headers.addAll(headers);
+      
+      // 添加图片文件
+      final stream = http.ByteStream(image.openRead());
+      final length = await image.length();
+      final multipartFile = http.MultipartFile(
+        'image',
+        stream,
+        length,
+        filename: image.path.split('/').last,
+      );
+      
+      request.files.add(multipartFile);
+      
+      // 发送请求
+      final response = await request.send();
+      
+      // 解析响应
+      final responseString = await response.stream.bytesToString();
+      final result = json.decode(responseString) as Map<String, dynamic>;
+      
+      if (response.statusCode == 200) {
+        return result['data']['url'] as String;
+      } else {
+        throw ApiException(result['message'] ?? '图片上传失败', response.statusCode);
+      }
+    } catch (e) {
+      print('❌ 图片上传失败: $e');
+      throw ApiException('图片上传失败，请稍后重试', 500);
+    }
   }
 }

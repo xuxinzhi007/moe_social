@@ -4,9 +4,9 @@ import '../models/comment.dart';
 import 'api_service.dart';
 
 class PostService {
-  // 获取所有帖子
-  static Future<List<Post>> getPosts() async {
-    return await ApiService.getPosts();
+  // 获取所有帖子（支持分页）
+  static Future<List<Post>> getPosts({int page = 1, int pageSize = 10}) async {
+    return await ApiService.getPosts(page: page, pageSize: pageSize);
   }
 
   // 获取单个帖子

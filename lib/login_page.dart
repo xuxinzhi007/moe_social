@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'utils/validators.dart';
+import 'utils/error_handler.dart';
+import 'forgot_password_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -22,45 +24,32 @@ class _LoginPageState extends State<LoginPage> {
         _isLoading = true;
       });
 
-      final result = await AuthService.login(
-        _emailController.text,
-        _passwordController.text,
-      );
+      try {
+        final result = await AuthService.login(
+          _emailController.text,
+          _passwordController.text,
+        );
 
-      if (!mounted) return;
+        if (!mounted) return;
 
-      setState(() {
-        _isLoading = false;
-      });
+        setState(() {
+          _isLoading = false;
+        });
 
-      if (result.success) {
-        _showCustomSnackBar(context, '登录成功', isError: false);
-        Navigator.pushReplacementNamed(context, '/home');
-      } else {
-        _showCustomSnackBar(context, result.errorMessage ?? '登录失败，请稍后重试', isError: true);
+        if (result.success) {
+          ErrorHandler.showSuccess(context, '登录成功');
+          Navigator.pushReplacementNamed(context, '/home');
+        } else {
+          ErrorHandler.showError(context, result.errorMessage ?? '登录失败，请稍后重试');
+        }
+      } catch (e) {
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+        });
+        ErrorHandler.handleException(context, e as Exception);
       }
     }
-  }
-
-  void _showCustomSnackBar(BuildContext context, String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 10),
-            Text(message),
-          ],
-        ),
-        backgroundColor: isError ? Colors.redAccent : Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
   }
 
   @override
@@ -119,7 +108,12 @@ class _LoginPageState extends State<LoginPage> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+                        );
+                      },
                       child: const Text('忘记密码？'),
                     ),
                   ),

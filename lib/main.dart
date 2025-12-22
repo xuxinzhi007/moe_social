@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:provider/provider.dart';
 import 'dart:ui';
 import 'dart:async';
 import 'dart:io' show Platform;
+import 'auth_service.dart';
 import 'login_page.dart';
 import 'services/api_service.dart';
 import 'register_page.dart';
@@ -16,15 +18,28 @@ import 'vip_center_page.dart';
 import 'vip_purchase_page.dart';
 import 'vip_orders_page.dart';
 import 'vip_history_page.dart';
+import 'forgot_password_page.dart';
+import 'verify_code_page.dart';
+import 'reset_password_page.dart';
+import 'notification_center_page.dart';
 import 'models/post.dart';
 import 'services/post_service.dart';
 import 'widgets/avatar_image.dart';
+import 'utils/error_handler.dart';
+import 'providers/theme_provider.dart';
 
-void main() {
+void main() async {
   // 使用runZonedGuarded捕获所有未捕获的错误
-  runZonedGuarded(() {
+  runZonedGuarded(() async {
     // 确保Flutter绑定已初始化（必须在zone内部）
     WidgetsFlutterBinding.ensureInitialized();
+    
+    // 初始化认证服务，从持久化存储加载登录状态
+    await AuthService.init();
+    
+    // 创建主题提供者
+    final themeProvider = ThemeProvider();
+    await themeProvider.init();
     
     // 捕获Flutter框架错误
     FlutterError.onError = (FlutterErrorDetails details) {
@@ -56,8 +71,14 @@ void main() {
       print('📱 Platform: ${Platform.operatingSystem}');
     }
     print('🌐 API Base URL: ${ApiService.baseUrl}');
+    print('🔐 User logged in: ${AuthService.isLoggedIn}');
     
-    runApp(const MyApp());
+    runApp(
+      ChangeNotifierProvider.value(
+        value: themeProvider,
+        child: const MyApp(),
+      ),
+    );
   }, (error, stack) {
     print('═══════════════════════════════════════');
     print('Uncaught Error:');
@@ -72,28 +93,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    
     return MaterialApp(
       title: 'Moe Social',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blueAccent,
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 50),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          filled: true,
-          fillColor: Colors.grey[50],
-        ),
-      ),
-      initialRoute: '/login',
+      theme: themeProvider.currentTheme,
+      initialRoute: AuthService.isLoggedIn ? '/home' : '/login',
       routes: {
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
@@ -111,6 +117,18 @@ class MyApp extends StatelessWidget {
         '/vip-purchase': (context) => const VipPurchasePage(),
         '/vip-orders': (context) => const VipOrdersPage(),
         '/vip-history': (context) => const VipHistoryPage(),
+        '/forgot-password': (context) => const ForgotPasswordPage(),
+        '/verify-code': (context) => VerifyCodePage(
+              email: ModalRoute.of(context)!.settings.arguments as String,
+            ),
+        '/reset-password': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+          return ResetPasswordPage(
+            email: args['email'] as String,
+            code: args['code'] as String,
+          );
+        },
+        '/notifications': (context) => const NotificationCenterPage(),
       },
     );
   }
@@ -169,6 +187,10 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<Post> _posts = [];
   bool _isLoading = false;
+  bool _isLoadingMore = false;
+  int _currentPage = 1;
+  bool _hasMore = true;
+  static const int _pageSize = 10;
 
   @override
   void initState() {
@@ -179,18 +201,50 @@ class _HomePageState extends State<HomePage> {
   Future<void> _fetchPosts() async {
     setState(() {
       _isLoading = true;
+      _currentPage = 1;
+      _hasMore = true;
     });
     
     try {
-      final posts = await PostService.getPosts();
+      final posts = await PostService.getPosts(page: 1, pageSize: _pageSize);
       setState(() {
         _posts = posts;
+        _hasMore = posts.length == _pageSize;
       });
     } catch (e) {
-      print('Failed to fetch posts: $e');
+      if (mounted) {
+        ErrorHandler.handleException(context, e as Exception);
+      }
     } finally {
       setState(() {
         _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadMorePosts() async {
+    if (_isLoadingMore || !_hasMore) return;
+    
+    setState(() {
+      _isLoadingMore = true;
+    });
+    
+    try {
+      final nextPage = _currentPage + 1;
+      final morePosts = await PostService.getPosts(page: nextPage, pageSize: _pageSize);
+      
+      setState(() {
+        _posts.addAll(morePosts);
+        _currentPage = nextPage;
+        _hasMore = morePosts.length == _pageSize;
+      });
+    } catch (e) {
+      if (mounted) {
+        ErrorHandler.handleException(context, e as Exception);
+      }
+    } finally {
+      setState(() {
+        _isLoadingMore = false;
       });
     }
   }
@@ -207,7 +261,9 @@ class _HomePageState extends State<HomePage> {
         }).toList();
       });
     } catch (e) {
-      print('Failed to toggle like: $e');
+      if (mounted) {
+        ErrorHandler.handleException(context, e as Exception);
+      }
     }
   }
 
@@ -217,9 +273,40 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text('发现'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none),
-            onPressed: () {},
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_none),
+                onPressed: () {
+                  Navigator.pushNamed(context, '/notifications');
+                },
+              ),
+              // 添加未读通知标记
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: const Text(
+                    '3',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -233,77 +320,107 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Colors.blueAccent,
         child: const Icon(Icons.add),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Banner Section
-            Container(
-              margin: const EdgeInsets.all(16),
-              height: 180,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.blueAccent, Colors.blue[300]!],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.rocket_launch, size: 50, color: Colors.white),
-                    SizedBox(height: 10),
-                    Text(
-                      '欢迎使用 Moe Social',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+      body: RefreshIndicator(
+        onRefresh: _fetchPosts,
+        child: ListView.builder(
+          itemCount: _posts.length + 2, // +1 for header, +1 for loading more
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              // Header Section
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Banner Section
+                  Container(
+                    margin: const EdgeInsets.all(16),
+                    height: 180,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.blueAccent, Colors.blue[300]!],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.rocket_launch, size: 50, color: Colors.white),
+                          SizedBox(height: 10),
+                          Text(
+                            '欢迎使用 Moe Social',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-            // Quick Actions
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildQuickAction(Icons.grid_view_rounded, '全部分类'),
-                  _buildQuickAction(Icons.star_rounded, '热门推荐'),
-                  _buildQuickAction(Icons.history_rounded, '最近浏览'),
-                  _buildQuickAction(Icons.download_for_offline_rounded, '离线内容'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            // List Section
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                '热门动态',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-            _isLoading
-                ? const Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _posts.length,
-                    itemBuilder: (context, index) {
-                      final post = _posts[index];
-                      return _buildPostCard(post, index);
-                    },
                   ),
-          ],
+                  // Quick Actions
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildQuickAction(Icons.grid_view_rounded, '全部分类'),
+                        _buildQuickAction(Icons.star_rounded, '热门推荐'),
+                        _buildQuickAction(Icons.history_rounded, '最近浏览'),
+                        _buildQuickAction(Icons.download_for_offline_rounded, '离线内容'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // List Section Title
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      '热门动态',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              );
+            }
+            
+            final postIndex = index - 1;
+            if (postIndex < _posts.length) {
+              // Post Item
+              final post = _posts[postIndex];
+              return _buildPostCard(post, postIndex);
+            } else {
+              // Loading More or End of List
+              if (_isLoadingMore) {
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              } else if (_hasMore) {
+                // Trigger load more when user scrolls to the end
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _loadMorePosts();
+                });
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              } else {
+                // End of List
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(
+                    child: Text(
+                      '没有更多帖子了',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                );
+              }
+            }
+          },
         ),
       ),
     );

@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import '../auth_service.dart';
 import '../models/post.dart';
+import '../services/api_service.dart';
 import '../services/post_service.dart';
+import '../utils/error_handler.dart';
 
 class CreatePostPage extends StatefulWidget {
   const CreatePostPage({super.key});
@@ -11,14 +16,23 @@ class CreatePostPage extends StatefulWidget {
 
 class _CreatePostPageState extends State<CreatePostPage> {
   final TextEditingController _contentController = TextEditingController();
-  final List<String> _selectedImages = [];
+  final List<File> _selectedImages = [];
   bool _isLoading = false;
+  final ImagePicker _picker = ImagePicker();
 
-  void _addImage() {
-    // 模拟添加图片，实际应用中可以使用image_picker插件
-    setState(() {
-      _selectedImages.add('https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?w=300');
-    });
+  Future<void> _addImage() async {
+    // 使用image_picker选择图片
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+      maxWidth: 1920,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImages.add(File(pickedFile.path));
+      });
+    }
   }
 
   void _removeImage(int index) {
@@ -29,7 +43,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   Future<void> _publishPost() async {
     if (_contentController.text.trim().isEmpty) {
-      _showCustomSnackBar(context, '请输入帖子内容', isError: true);
+      ErrorHandler.showError(context, '请输入帖子内容');
       return;
     }
 
@@ -38,13 +52,20 @@ class _CreatePostPageState extends State<CreatePostPage> {
     });
 
     try {
+      // 上传所有选中的图片
+      final List<String> imageUrls = [];
+      for (final image in _selectedImages) {
+        final imageUrl = await ApiService.uploadImage(image);
+        imageUrls.add(imageUrl);
+      }
+
       final newPost = Post(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: 'current_user',
+        userId: AuthService.currentUser ?? 'current_user',
         userName: '当前用户',
         userAvatar: 'https://randomuser.me/api/portraits/men/97.jpg',
         content: _contentController.text.trim(),
-        images: List.from(_selectedImages),
+        images: imageUrls,
         likes: 0,
         comments: 0,
         isLiked: false,
@@ -55,11 +76,11 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
       if (!mounted) return;
 
-      _showCustomSnackBar(context, '帖子发布成功！', isError: false);
+      ErrorHandler.showSuccess(context, '帖子发布成功！');
       Navigator.pop(context, true); // 返回首页并刷新
     } catch (e) {
       if (mounted) {
-        _showCustomSnackBar(context, '发布失败，请重试', isError: true);
+        ErrorHandler.handleException(context, e as Exception);
       }
     } finally {
       if (mounted) {
@@ -68,27 +89,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
         });
       }
     }
-  }
-
-  void _showCustomSnackBar(BuildContext context, String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 10),
-            Text(message),
-          ],
-        ),
-        backgroundColor: isError ? Colors.redAccent : Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
   }
 
   @override
@@ -165,7 +165,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             image: DecorationImage(
-                              image: NetworkImage(_selectedImages[index]),
+                              image: FileImage(_selectedImages[index]),
                               fit: BoxFit.cover,
                             ),
                           ),

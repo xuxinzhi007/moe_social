@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'utils/validators.dart';
+import 'utils/error_handler.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -24,46 +25,33 @@ class _RegisterPageState extends State<RegisterPage> {
         _isLoading = true;
       });
 
-      final result = await AuthService.register(
-        _usernameController.text,
-        _emailController.text,
-        _passwordController.text,
-      );
+      try {
+        final result = await AuthService.register(
+          _usernameController.text,
+          _emailController.text,
+          _passwordController.text,
+        );
 
-      if (!mounted) return;
+        if (!mounted) return;
 
-      setState(() {
-        _isLoading = false;
-      });
+        setState(() {
+          _isLoading = false;
+        });
 
-      if (result.success) {
-        _showCustomSnackBar(context, '注册成功！请登录', isError: false);
-        Navigator.pop(context);
-      } else {
-        _showCustomSnackBar(context, result.errorMessage ?? '注册失败，请稍后重试', isError: true);
+        if (result.success) {
+          ErrorHandler.showSuccess(context, '注册成功！请登录');
+          Navigator.pop(context);
+        } else {
+          ErrorHandler.showError(context, result.errorMessage ?? '注册失败，请稍后重试');
+        }
+      } catch (e) {
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+        });
+        ErrorHandler.handleException(context, e as Exception);
       }
     }
-  }
-
-  void _showCustomSnackBar(BuildContext context, String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 10),
-            Text(message),
-          ],
-        ),
-        backgroundColor: isError ? Colors.redAccent : Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
   }
 
   @override

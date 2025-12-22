@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'auth_service.dart';
 import 'services/api_service.dart';
+import 'providers/theme_provider.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -11,7 +13,6 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _notificationsEnabled = true;
-  bool _darkMode = false;
   
   void _showChangePasswordDialog() {
     final oldPasswordController = TextEditingController();
@@ -109,6 +110,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('设置'),
@@ -133,16 +136,148 @@ class _SettingsPageState extends State<SettingsPage> {
             },
             secondary: const Icon(Icons.notifications_active_outlined),
           ),
-          SwitchListTile(
-            title: const Text('深色模式'),
-            subtitle: const Text('切换应用主题颜色'),
-            value: _darkMode,
-            onChanged: (bool value) {
-              setState(() {
-                _darkMode = value;
-              });
+          const Divider(),
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              '主题设置',
+              style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold),
+            ),
+          ),
+          ListTile(
+            title: const Text('主题模式'),
+            subtitle: const Text('选择应用主题'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                builder: (context) {
+                  return SafeArea(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          title: const Text('浅色模式'),
+                          trailing: Radio<String>(
+                            value: ThemeProvider.lightMode,
+                            groupValue: themeProvider.themeMode,
+                            onChanged: (value) {
+                              if (value != null) {
+                                themeProvider.setThemeMode(value);
+                                Navigator.pop(context);
+                              }
+                            },
+                          ),
+                          onTap: () {
+                            themeProvider.setThemeMode(ThemeProvider.lightMode);
+                            Navigator.pop(context);
+                          },
+                        ),
+                        ListTile(
+                          title: const Text('深色模式'),
+                          trailing: Radio<String>(
+                            value: ThemeProvider.darkMode,
+                            groupValue: themeProvider.themeMode,
+                            onChanged: (value) {
+                              if (value != null) {
+                                themeProvider.setThemeMode(value);
+                                Navigator.pop(context);
+                              }
+                            },
+                          ),
+                          onTap: () {
+                            themeProvider.setThemeMode(ThemeProvider.darkMode);
+                            Navigator.pop(context);
+                          },
+                        ),
+                        ListTile(
+                          title: const Text('跟随系统'),
+                          trailing: Radio<String>(
+                            value: ThemeProvider.systemMode,
+                            groupValue: themeProvider.themeMode,
+                            onChanged: (value) {
+                              if (value != null) {
+                                themeProvider.setThemeMode(value);
+                                Navigator.pop(context);
+                              }
+                            },
+                          ),
+                          onTap: () {
+                            themeProvider.setThemeMode(ThemeProvider.systemMode);
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
             },
-            secondary: const Icon(Icons.dark_mode_outlined),
+            leading: const Icon(Icons.color_lens_outlined),
+          ),
+          ListTile(
+            title: const Text('主题颜色'),
+            subtitle: const Text('选择应用主题颜色'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                builder: (context) {
+                  return SafeArea(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Text(
+                            '选择主题颜色',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        GridView.count(
+                          crossAxisCount: 5,
+                          shrinkWrap: true,
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          physics: const NeverScrollableScrollPhysics(),
+                          mainAxisSpacing: 16.0,
+                          crossAxisSpacing: 16.0,
+                          children: ThemeProvider.presetColors.map((color) {
+                            return GestureDetector(
+                              onTap: () {
+                                themeProvider.setPrimaryColor(color);
+                                Navigator.pop(context);
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  borderRadius: BorderRadius.circular(8.0),
+                                  border: Border.all(
+                                    color: themeProvider.primaryColor == color ? Colors.white : Colors.transparent,
+                                    width: 3.0,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 4.0,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: themeProvider.primaryColor == color
+                                    ? const Icon(Icons.check, color: Colors.white, size: 24.0)
+                                    : null,
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 16.0),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+            leading: const Icon(Icons.palette_outlined),
           ),
           const Divider(),
           const Padding(

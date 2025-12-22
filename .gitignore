@@ -92,3 +92,5 @@ x86/
 *.[Cc]ache
 !*.[Cc]ache/
 default.etcd
+backend/rpc/super.exe
+backend/api/super.exe
