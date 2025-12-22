@@ -45,33 +45,54 @@ class Comment {
     );
   }
 
-  // 从JSON创建Comment实例
+  // 从JSON创建Comment实例（支持snake_case和camelCase）
   factory Comment.fromJson(Map<String, dynamic> json) {
-    return Comment(
-      id: json['id'] as String,
-      postId: json['postId'] as String,
-      userId: json['userId'] as String,
-      userName: json['userName'] as String,
-      userAvatar: json['userAvatar'] as String,
-      content: json['content'] as String,
-      likes: json['likes'] as int,
-      isLiked: json['isLiked'] as bool,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-    );
+    try {
+      // 解析日期，支持多种格式
+      DateTime createdAt;
+      final createdAtStr = json['created_at'] as String? ?? json['createdAt'] as String?;
+      if (createdAtStr != null) {
+        try {
+          createdAt = DateTime.parse(createdAtStr);
+        } catch (e) {
+          // 如果标准格式解析失败，尝试自定义格式
+          try {
+            createdAt = DateTime.parse(createdAtStr.replaceAll(' ', 'T') + 'Z');
+          } catch (e2) {
+            // 如果还是失败，使用当前时间
+            print('⚠️ 日期解析失败: $createdAtStr, 使用当前时间');
+            createdAt = DateTime.now();
+          }
+        }
+      } else {
+        createdAt = DateTime.now();
+      }
+
+      return Comment(
+        id: (json['id'] ?? '').toString(),
+        postId: (json['post_id'] ?? json['postId'] ?? '').toString(),
+        userId: (json['user_id'] ?? json['userId'] ?? '').toString(),
+        userName: (json['user_name'] ?? json['userName'] ?? '未知用户').toString(),
+        userAvatar: (json['user_avatar'] ?? json['userAvatar'] ?? 'https://via.placeholder.com/150').toString(),
+        content: (json['content'] ?? '').toString(),
+        likes: (json['likes'] as int?) ?? 0,
+        isLiked: (json['is_liked'] ?? json['isLiked'] ?? false) as bool,
+        createdAt: createdAt,
+      );
+    } catch (e, stackTrace) {
+      print('❌ Comment.fromJson错误: $e');
+      print('❌ JSON数据: $json');
+      print('❌ 堆栈跟踪: $stackTrace');
+      rethrow;
+    }
   }
 
-  // 转换为JSON
+  // 转换为JSON（使用snake_case匹配后端期望）
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'postId': postId,
-      'userId': userId,
-      'userName': userName,
-      'userAvatar': userAvatar,
+      'post_id': postId,
+      'user_id': userId,
       'content': content,
-      'likes': likes,
-      'isLiked': isLiked,
-      'createdAt': createdAt.toIso8601String(),
     };
   }
 }

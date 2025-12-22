@@ -48,7 +48,7 @@ class PostService {
   }
 
   // 点赞/取消点赞评论
-  static Future<Comment> toggleCommentLike(String commentId) async {
-    return await ApiService.toggleCommentLike(commentId);
+  static Future<Comment> toggleCommentLike(String commentId, String userId) async {
+    return await ApiService.toggleCommentLike(commentId, userId);
   }
 }

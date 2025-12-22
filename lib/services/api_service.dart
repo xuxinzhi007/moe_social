@@ -335,9 +335,10 @@ class ApiService {
   }
 
   // 点赞/取消点赞评论
-  static Future<Comment> toggleCommentLike(String commentId) async {
+  static Future<Comment> toggleCommentLike(String commentId, String userId) async {
     final result = await _request('/api/comments/$commentId/like',
-      method: 'POST'
+      method: 'POST',
+      body: {'user_id': userId}
     );
     return Comment.fromJson(result['data']);
   }

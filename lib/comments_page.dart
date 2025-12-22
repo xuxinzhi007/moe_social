@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'models/comment.dart';
 import 'services/post_service.dart';
+import 'services/api_service.dart';
+import 'auth_service.dart';
 import 'widgets/avatar_image.dart';
 
 class CommentsPage extends StatefulWidget {
@@ -20,11 +22,29 @@ class _CommentsPageState extends State<CommentsPage> {
   List<Comment> _comments = [];
   bool _isLoading = false;
   bool _isSubmitting = false;
+  String? _userName;
+  String? _userAvatar;
 
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _fetchComments();
+  }
+
+  Future<void> _loadUserInfo() async {
+    final userId = AuthService.currentUser;
+    if (userId == null) return;
+
+    try {
+      final user = await ApiService.getUserInfo(userId);
+      setState(() {
+        _userName = user.username;
+        _userAvatar = user.avatar.isNotEmpty ? user.avatar : null;
+      });
+    } catch (e) {
+      print('加载用户信息失败: $e');
+    }
   }
 
   Future<void> _fetchComments() async {
@@ -57,25 +77,32 @@ class _CommentsPageState extends State<CommentsPage> {
       _isSubmitting = true;
     });
 
+    final userId = AuthService.currentUser;
+    if (userId == null) {
+      _showCustomSnackBar(context, '请先登录', isError: true);
+      return;
+    }
+
     try {
-      final newComment = Comment(
+      final comment = Comment(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         postId: widget.postId,
-        userId: 'current_user',
-        userName: '当前用户',
-        userAvatar: 'https://randomuser.me/api/portraits/men/97.jpg',
+        userId: userId,
+        userName: _userName ?? '用户',
+        userAvatar: _userAvatar ?? 'https://via.placeholder.com/150',
         content: _commentController.text.trim(),
         likes: 0,
         isLiked: false,
         createdAt: DateTime.now(),
       );
 
-      await PostService.addComment(newComment);
+      await PostService.addComment(comment);
       
-      setState(() {
-        _comments.add(newComment);
-        _commentController.clear();
-      });
+      // 清空输入框
+      _commentController.clear();
+      
+      // 重新获取评论列表，确保数据同步
+      await _fetchComments();
 
       _showCustomSnackBar(context, '评论成功', isError: false);
     } catch (e) {
@@ -89,8 +116,14 @@ class _CommentsPageState extends State<CommentsPage> {
   }
 
   Future<void> _toggleCommentLike(String commentId) async {
+    final userId = AuthService.currentUser;
+    if (userId == null) {
+      _showCustomSnackBar(context, '请先登录', isError: true);
+      return;
+    }
+
     try {
-      final updatedComment = await PostService.toggleCommentLike(commentId);
+      final updatedComment = await PostService.toggleCommentLike(commentId, userId);
       setState(() {
         _comments = _comments.map((comment) {
           if (comment.id == commentId) {
@@ -101,6 +134,7 @@ class _CommentsPageState extends State<CommentsPage> {
       });
     } catch (e) {
       print('Failed to toggle comment like: $e');
+      _showCustomSnackBar(context, '操作失败', isError: true);
     }
   }
 
@@ -174,11 +208,10 @@ class _CommentsPageState extends State<CommentsPage> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                CircleAvatar(
+                NetworkAvatarImage(
+                  imageUrl: _userAvatar,
                   radius: 20,
-                  backgroundImage: NetworkImage(
-                    'https://randomuser.me/api/portraits/men/97.jpg',
-                  ),
+                  placeholderIcon: Icons.person,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

@@ -552,8 +552,11 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(width: 24),
                 IconButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/comments', arguments: post.id);
+                  onPressed: () async {
+                    // 跳转到评论页面，返回时刷新帖子列表
+                    await Navigator.pushNamed(context, '/comments', arguments: post.id);
+                    // 返回后刷新帖子列表，更新评论数
+                    _fetchPosts();
                   },
                   icon: const Icon(Icons.comment_outlined, color: Colors.grey),
                   padding: EdgeInsets.zero,
