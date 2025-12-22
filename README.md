@@ -65,6 +65,17 @@
 - 已安装 IDE（VS Code、Android Studio 或 IntelliJ IDEA）并配置 Flutter 插件
 
 ### 安装步骤
+没有安装的话  （macOS 用户）
+```bash
+# 1. 安装 Flutter（会自动处理依赖和路径）
+brew install flutter
+
+# 2. 验证安装
+flutter --version
+
+# 3. 同样运行 doctor 检查环境
+flutter doctor
+```
 
 1. 克隆仓库
 2. 运行 `flutter pub get` 安装依赖
