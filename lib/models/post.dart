@@ -51,33 +51,51 @@ class Post {
 
   // 从JSON创建Post实例
   factory Post.fromJson(Map<String, dynamic> json) {
-    return Post(
-      id: json['id'] as String,
-      userId: json['userId'] as String,
-      userName: json['userName'] as String,
-      userAvatar: json['userAvatar'] as String,
-      content: json['content'] as String,
-      images: List<String>.from(json['images'] as List<dynamic>),
-      likes: json['likes'] as int,
-      comments: json['comments'] as int,
-      isLiked: json['isLiked'] as bool,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-    );
+    try {
+      // 解析日期，支持多种格式
+      DateTime createdAt;
+      final createdAtStr = json['createdAt'] as String;
+      try {
+        createdAt = DateTime.parse(createdAtStr);
+      } catch (e) {
+        // 如果标准格式解析失败，尝试自定义格式
+        try {
+          createdAt = DateTime.parse(createdAtStr.replaceAll(' ', 'T') + 'Z');
+        } catch (e2) {
+          // 如果还是失败，使用当前时间
+          print('⚠️ 日期解析失败: $createdAtStr, 使用当前时间');
+          createdAt = DateTime.now();
+        }
+      }
+      
+      return Post(
+        id: json['id'] as String,
+        userId: json['userId'] as String,
+        userName: json['userName'] as String,
+        userAvatar: json['userAvatar'] as String,
+        content: json['content'] as String,
+        images: json['images'] != null 
+            ? List<String>.from(json['images'] as List<dynamic>)
+            : <String>[],
+        likes: json['likes'] as int? ?? 0,
+        comments: json['comments'] as int? ?? 0,
+        isLiked: json['isLiked'] as bool? ?? false,
+        createdAt: createdAt,
+      );
+    } catch (e, stackTrace) {
+      print('❌ Post.fromJson错误: $e');
+      print('❌ JSON数据: $json');
+      print('❌ 堆栈跟踪: $stackTrace');
+      rethrow;
+    }
   }
 
-  // 转换为JSON
+  // 转换为JSON，注意使用下划线命名格式匹配后端期望
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'userId': userId,
-      'userName': userName,
-      'userAvatar': userAvatar,
+      'user_id': userId,
       'content': content,
       'images': images,
-      'likes': likes,
-      'comments': comments,
-      'isLiked': isLiked,
-      'createdAt': createdAt.toIso8601String(),
     };
   }
 }

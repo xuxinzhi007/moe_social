@@ -53,6 +53,7 @@ func (l *RegisterLogic) Register(in *rpc.RegisterReq) (*rpc.RegisterResp, error)
 		Username: in.Username,
 		Password: in.Password,
 		Email:    in.Email,
+		Avatar:   "https://via.placeholder.com/150", // 设置默认头像
 		IsVip:    false,
 	}
 

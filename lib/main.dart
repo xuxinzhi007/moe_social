@@ -241,6 +241,8 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       if (mounted) {
         ErrorHandler.handleException(context, e as Exception);
+        // 请求失败时，停止尝试加载更多，避免无限请求
+        _hasMore = false;
       }
     } finally {
       setState(() {

@@ -244,15 +244,15 @@ type LoginResp struct {
 
 type Post struct {
 	Id         string   `json:"id"`
-	UserId     string   `json:"user_id"`
-	UserName   string   `json:"user_name"`
-	UserAvatar string   `json:"user_avatar"`
+	UserId     string   `json:"userId"`
+	UserName   string   `json:"userName"`
+	UserAvatar string   `json:"userAvatar"`
 	Content    string   `json:"content"`
 	Images     []string `json:"images"`
 	Likes      int      `json:"likes"`
 	Comments   int      `json:"comments"`
-	IsLiked    bool     `json:"is_liked"`
-	CreatedAt  string   `json:"created_at"`
+	IsLiked    bool     `json:"isLiked"`
+	CreatedAt  string   `json:"createdAt"`
 }
 
 type RegisterReq struct {

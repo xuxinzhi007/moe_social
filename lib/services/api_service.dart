@@ -271,8 +271,26 @@ class ApiService {
   // 获取帖子列表（支持分页）
   static Future<List<Post>> getPosts({int page = 1, int pageSize = 10}) async {
     final result = await _request('/api/posts?page=$page&page_size=$pageSize');
+    print('📥 getPosts响应数据: $result');
+    print('📥 data类型: ${result['data'].runtimeType}');
+    print('📥 data内容: ${result['data']}');
+    print('📥 total: ${result['total']}');
+    
     final postsJson = result['data'] as List;
-    return postsJson.map((json) => Post.fromJson(json)).toList();
+    print('📥 postsJson长度: ${postsJson.length}');
+    
+    try {
+      final posts = postsJson.map((json) {
+        print('📥 解析帖子JSON: $json');
+        return Post.fromJson(json);
+      }).toList();
+      print('📥 成功解析${posts.length}条帖子');
+      return posts;
+    } catch (e, stackTrace) {
+      print('❌ 解析帖子失败: $e');
+      print('❌ 堆栈跟踪: $stackTrace');
+      rethrow;
+    }
   }
 
   // 获取单个帖子
@@ -287,7 +305,8 @@ class ApiService {
       method: 'POST',
       body: post.toJson()
     );
-    return Post.fromJson(result['data']);
+    // 这里不需要转换为Post对象，因为我们只需要知道创建成功即可
+    return post;
   }
 
   // 点赞/取消点赞帖子

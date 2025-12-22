@@ -32,6 +32,7 @@ func (l *GetPostsLogic) GetPosts(req *types.GetPostsReq) (resp *types.GetPostsRe
 		PageSize: int32(req.PageSize),
 	})
 	if err != nil {
+		l.Error("调用RPC服务失败:", err)
 		return &types.GetPostsResp{
 			BaseResp: common.HandleRPCError(err, ""),
 			Data:     nil,
@@ -39,9 +40,16 @@ func (l *GetPostsLogic) GetPosts(req *types.GetPostsReq) (resp *types.GetPostsRe
 		}, nil
 	}
 
+	l.Debug("RPC响应，帖子数量:", len(rpcResp.Posts), "总数:", rpcResp.Total)
+
 	// 转换为API响应格式
 	respPosts := make([]types.Post, 0, len(rpcResp.Posts))
-	for _, post := range rpcResp.Posts {
+	for i, post := range rpcResp.Posts {
+		contentPreview := post.Content
+		if len(contentPreview) > 50 {
+			contentPreview = contentPreview[:50] + "..."
+		}
+		l.Debug("转换帖子", i, "ID:", post.Id, "内容:", contentPreview)
 		respPosts = append(respPosts, types.Post{
 			Id:         post.Id,
 			UserId:     post.UserId,
@@ -55,6 +63,8 @@ func (l *GetPostsLogic) GetPosts(req *types.GetPostsReq) (resp *types.GetPostsRe
 			CreatedAt:  post.CreatedAt,
 		})
 	}
+
+	l.Debug("API响应，帖子数量:", len(respPosts), "总数:", rpcResp.Total)
 
 	return &types.GetPostsResp{
 		BaseResp: common.HandleRPCError(nil, "获取帖子列表成功"),
