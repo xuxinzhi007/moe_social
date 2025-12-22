@@ -35,7 +35,10 @@ class ErrorHandler {
     String userFriendlyMessage = e.message;
     
     if (e.code == 401) {
-      userFriendlyMessage = '登录已过期，请重新登录';
+      // 优先使用后端返回的具体错误信息，只有当没有具体信息时才显示默认的登录过期提示
+      if (e.message.isEmpty || e.message.contains('token') || e.message.contains('Token')) {
+        userFriendlyMessage = '登录已过期，请重新登录';
+      }
     } else if (e.code == 403) {
       userFriendlyMessage = '权限不足，无法执行此操作';
     } else if (e.code == 404) {

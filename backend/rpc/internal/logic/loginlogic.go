@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"backend/model"
 	"backend/rpc/internal/errorx"
@@ -50,6 +51,10 @@ func (l *LoginLogic) Login(in *rpc.LoginReq) (*rpc.LoginResp, error) {
 
 	if err != nil {
 		l.Error("查找用户失败: ", err)
+		// 检查是否是用户不存在的错误
+		if strings.Contains(err.Error(), "record not found") {
+			return nil, errorx.New(401, "账户未注册")
+		}
 		return nil, errorx.New(401, "用户名或密码错误")
 	}
 
