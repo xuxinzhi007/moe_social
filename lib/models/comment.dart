@@ -50,7 +50,7 @@ class Comment {
     try {
       // 解析日期，支持多种格式
       DateTime createdAt;
-      final createdAtStr = json['created_at'] as String? ?? json['createdAt'] as String?;
+      final createdAtStr = json['created_at'] as String?;
       if (createdAtStr != null) {
         try {
           createdAt = DateTime.parse(createdAtStr);
@@ -70,13 +70,13 @@ class Comment {
 
       return Comment(
         id: (json['id'] ?? '').toString(),
-        postId: (json['post_id'] ?? json['postId'] ?? '').toString(),
-        userId: (json['user_id'] ?? json['userId'] ?? '').toString(),
-        userName: (json['user_name'] ?? json['userName'] ?? '未知用户').toString(),
-        userAvatar: (json['user_avatar'] ?? json['userAvatar'] ?? 'https://via.placeholder.com/150').toString(),
+        postId: (json['post_id'] ?? '').toString(),
+        userId: (json['user_id'] ?? '').toString(),
+        userName: (json['user_name'] ?? '未知用户').toString(),
+        userAvatar: (json['user_avatar'] ?? 'https://via.placeholder.com/150').toString(),
         content: (json['content'] ?? '').toString(),
         likes: (json['likes'] as int?) ?? 0,
-        isLiked: (json['is_liked'] ?? json['isLiked'] ?? false) as bool,
+        isLiked: (json['is_liked'] ?? false) as bool,
         createdAt: createdAt,
       );
     } catch (e, stackTrace) {

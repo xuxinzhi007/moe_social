@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'models/user.dart';
 import 'services/api_service.dart';
 
 // 认证结果类，包含成功状态和错误信息
@@ -83,10 +85,41 @@ class AuthService {
     await prefs.remove(_userIdKey);
   }
   
-  // 更新token（用于令牌刷新）
+  // 获取当前用户ID
+  static Future<String> getUserId() async {
+    if (_currentUser != null) {
+      return _currentUser!;
+    }
+    // 如果内存中没有用户ID，从持久化存储中读取
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString(_userIdKey);
+    if (userId != null) {
+      _currentUser = userId;
+      return userId;
+    }
+    throw Exception('用户未登录');
+  }
+
+  // 获取用户信息
+  static Future<User> getUserInfo() async {
+    final userId = await getUserId();
+    final prefs = await SharedPreferences.getInstance();
+    final userInfoJson = prefs.getString('user_info');
+    if (userInfoJson != null) {
+      final userInfoMap = json.decode(userInfoJson) as Map<String, dynamic>;
+      return User.fromJson(userInfoMap);
+    }
+    // 如果本地没有用户信息，从服务器获取
+    final userInfo = await ApiService.getUserInfo(userId);
+    await prefs.setString('user_info', json.encode(userInfo.toJson()));
+    return userInfo;
+  }
+  
+  // 更新token
   static Future<void> updateToken(String newToken) async {
     _token = newToken;
-    await _saveAuthData();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tokenKey, newToken);
   }
 }
 

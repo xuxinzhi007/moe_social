@@ -22,6 +22,8 @@ import 'forgot_password_page.dart';
 import 'verify_code_page.dart';
 import 'reset_password_page.dart';
 import 'notification_center_page.dart';
+import 'wallet_page.dart';
+import 'recharge_page.dart';
 import 'models/post.dart';
 import 'services/post_service.dart';
 import 'widgets/avatar_image.dart';
@@ -129,6 +131,8 @@ class MyApp extends StatelessWidget {
           );
         },
         '/notifications': (context) => const NotificationCenterPage(),
+        '/wallet': (context) => const WalletPage(),
+        '/recharge': (context) => const RechargePage(),
       },
     );
   }
@@ -223,7 +227,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadMorePosts() async {
-    if (_isLoadingMore || !_hasMore) return;
+    // 如果正在刷新、正在加载更多或没有更多数据，则不执行
+    if (_isLoading || _isLoadingMore || !_hasMore) return;
     
     setState(() {
       _isLoadingMore = true;

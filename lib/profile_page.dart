@@ -3,6 +3,7 @@ import 'auth_service.dart';
 import 'services/api_service.dart';
 import 'models/user.dart';
 import 'widgets/avatar_image.dart';
+import 'wallet_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -137,6 +138,21 @@ class _ProfilePageState extends State<ProfilePage> {
                                 style: TextStyle(color: Colors.grey[600], fontSize: 12),
                               ),
                             ),
+                          // 钱包余额显示
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.wallet, size: 16, color: Colors.green),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '余额: ¥${_user?.balance.toStringAsFixed(2) ?? '0.00'}',
+                                  style: TextStyle(color: Colors.green, fontSize: 14, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -174,7 +190,12 @@ class _ProfilePageState extends State<ProfilePage> {
                         }),
                         _buildMenuItem(Icons.favorite_outline, '我的收藏', () {}),
                         _buildMenuItem(Icons.history, '浏览历史', () {}),
-                        _buildMenuItem(Icons.wallet_outlined, '我的钱包', () {}),
+                        _buildMenuItem(Icons.wallet_outlined, '我的钱包', () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => WalletPage()),
+                          );
+                        }),
                         _buildMenuItem(Icons.help_outline, '帮助与反馈', () {}),
                         const Divider(),
                         ListTile(

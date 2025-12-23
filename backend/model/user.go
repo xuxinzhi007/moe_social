@@ -18,6 +18,7 @@ type User struct {
 	VipStartAt  *time.Time     `json:"vip_start_at,omitempty"`
 	VipEndAt    *time.Time     `json:"vip_end_at,omitempty"`
 	AutoRenew   bool           `gorm:"default:false" json:"auto_renew"` // 自动续费
+	Balance     float64        `gorm:"default:0" json:"balance"`        // 钱包余额
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`

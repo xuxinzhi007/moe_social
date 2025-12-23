@@ -505,46 +505,38 @@ class ApiService {
     return VipPlan.fromJson(result['data']);
   }
   
-  // 上传图片
-  static Future<String> uploadImage(File image) async {
-    try {
-      final uri = Uri.parse('$baseUrl/api/upload/image');
-      
-      // 构建请求头
-      final headers = <String, String>{
-        'Authorization': 'Bearer ${AuthService.token}',
-      };
-      
-      // 构建multipart请求
-      final request = http.MultipartRequest('POST', uri)..headers.addAll(headers);
-      
-      // 添加图片文件
-      final stream = http.ByteStream(image.openRead());
-      final length = await image.length();
-      final multipartFile = http.MultipartFile(
-        'image',
-        stream,
-        length,
-        filename: image.path.split('/').last,
-      );
-      
-      request.files.add(multipartFile);
-      
-      // 发送请求
-      final response = await request.send();
-      
-      // 解析响应
-      final responseString = await response.stream.bytesToString();
-      final result = json.decode(responseString) as Map<String, dynamic>;
-      
-      if (response.statusCode == 200) {
-        return result['data']['url'] as String;
-      } else {
-        throw ApiException(result['message'] ?? '图片上传失败', response.statusCode);
+  // ========== 钱包相关API ==========
+
+  // 充值
+  static Future<Map<String, dynamic>> recharge(String userId, double amount, String description) async {
+    final result = await _request('/api/user/$userId/wallet/recharge',
+      method: 'POST',
+      body: {
+        'amount': amount,
+        'description': description,
       }
-    } catch (e) {
-      print('❌ 图片上传失败: $e');
-      throw ApiException('图片上传失败，请稍后重试', 500);
-    }
+    );
+    return result;
+  }
+
+  // 获取交易记录
+  static Future<Map<String, dynamic>> getTransactions(String userId, {int page = 1, int pageSize = 10}) async {
+    final result = await _request('/api/user/$userId/transactions?page=$page&page_size=$pageSize');
+    return result;
+  }
+
+  // 获取单个交易记录
+  static Future<Map<String, dynamic>> getTransaction(String transactionId) async {
+    final result = await _request('/api/transactions/$transactionId');
+    return result;
+  }
+  
+  // 上传图片（模拟实现，实际项目中需要后端支持）
+  static Future<String> uploadImage(File image) async {
+    // 这里是模拟实现，实际项目中需要调用真实的图片上传API
+    // 模拟上传延迟
+    await Future.delayed(const Duration(seconds: 1));
+    // 返回模拟的图片URL
+    return 'https://via.placeholder.com/600/333333';
   }
 }

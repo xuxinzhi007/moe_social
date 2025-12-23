@@ -16,6 +16,7 @@ message User {
   bool is_vip = 7;
   string vip_expires_at = 8;
   bool auto_renew = 9;
+  float balance = 10; // 钱包余额
 }
 
 // 用户注册请求
@@ -265,7 +266,54 @@ message SyncUserVipStatusResp {
   string expires_at = 2;
 }
 
-// 帖子相关消息
+// 充值请求
+message RechargeReq {
+  string user_id = 1;
+  float amount = 2;
+  string description = 3;
+}
+
+// 充值响应
+message RechargeResp {
+  string message = 1;
+  float new_balance = 2;
+}
+
+// 获取交易记录请求
+message GetTransactionsReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+// 交易记录
+message Transaction {
+  string id = 1;
+  string user_id = 2;
+  float amount = 3;
+  string type = 4;
+  string status = 5;
+  string description = 6;
+  string created_at = 7;
+}
+
+// 交易记录响应
+message GetTransactionsResp {
+  repeated Transaction transactions = 1;
+  int32 total = 2;
+}
+
+// 获取单个交易记录请求
+message GetTransactionReq {
+  string id = 1;
+}
+
+// 获取单个交易记录响应
+message GetTransactionResp {
+  Transaction transaction = 1;
+}
+
+// 服务定义帖子相关消息
 message Post {
   string id = 1;
   string user_id = 2;
@@ -416,4 +464,11 @@ service Super {
   // 评论相关服务
   rpc CreateComment(CreateCommentReq) returns (CreateCommentResp);
   rpc LikeComment(LikeCommentReq) returns (LikeCommentResp);
+  
+  // 钱包相关服务
+  rpc Recharge(RechargeReq) returns (RechargeResp);
+  
+  // 交易记录相关服务
+  rpc GetTransactions(GetTransactionsReq) returns (GetTransactionsResp);
+  rpc GetTransaction(GetTransactionReq) returns (GetTransactionResp);
 }

@@ -6,6 +6,7 @@ class User {
   final bool isVip;
   final String? vipExpiresAt; // 后端返回的是字符串格式
   final bool autoRenew;
+  final double balance; // 钱包余额
   final String createdAt; // 后端返回的是字符串格式
   final String updatedAt; // 后端返回的是字符串格式
 
@@ -17,6 +18,7 @@ class User {
     this.isVip = false,
     this.vipExpiresAt,
     this.autoRenew = false,
+    this.balance = 0.0,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -31,6 +33,7 @@ class User {
       isVip: json['is_vip'] as bool? ?? false,
       vipExpiresAt: json['vip_expires_at'] as String?,
       autoRenew: json['auto_renew'] as bool? ?? false,
+      balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
       createdAt: json['created_at'] as String,
       updatedAt: json['updated_at'] as String,
     );
@@ -46,6 +49,7 @@ class User {
       'is_vip': isVip,
       'vip_expires_at': vipExpiresAt,
       'auto_renew': autoRenew,
+      'balance': balance,
       'created_at': createdAt,
       'updated_at': updatedAt,
     };

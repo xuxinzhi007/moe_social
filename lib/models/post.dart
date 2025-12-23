@@ -54,7 +54,7 @@ class Post {
     try {
       // 解析日期，支持多种格式
       DateTime createdAt;
-      final createdAtStr = json['createdAt'] as String;
+      final createdAtStr = json['created_at'] as String;
       try {
         createdAt = DateTime.parse(createdAtStr);
       } catch (e) {
@@ -69,17 +69,17 @@ class Post {
       }
       
       return Post(
-        id: json['id'] as String,
-        userId: json['userId'] as String,
-        userName: json['userName'] as String,
-        userAvatar: json['userAvatar'] as String,
-        content: json['content'] as String,
+        id: (json['id'] ?? '').toString(),
+        userId: (json['user_id'] ?? '').toString(),
+        userName: (json['user_name'] ?? '未知用户').toString(),
+        userAvatar: (json['user_avatar'] ?? '').toString(),
+        content: (json['content'] ?? '').toString(),
         images: json['images'] != null 
             ? List<String>.from(json['images'] as List<dynamic>)
             : <String>[],
-        likes: json['likes'] as int? ?? 0,
-        comments: json['comments'] as int? ?? 0,
-        isLiked: json['isLiked'] as bool? ?? false,
+        likes: (json['likes'] as int?) ?? 0,
+        comments: (json['comments'] as int?) ?? 0,
+        isLiked: (json['is_liked'] as bool?) ?? false,
         createdAt: createdAt,
       );
     } catch (e, stackTrace) {
