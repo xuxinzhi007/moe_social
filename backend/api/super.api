@@ -63,6 +63,17 @@ type VipRecord {
 	CreatedAt string `json:"created_at"`
 }
 
+// 交易记录相关结构
+type Transaction {
+	Id          string  `json:"id"`
+	UserId      string  `json:"user_id"`
+	Type        string  `json:"type"`
+	Amount      float64 `json:"amount"`
+	Description string  `json:"description"`
+	Status      string  `json:"status"`
+	CreatedAt   string  `json:"created_at"`
+}
+
 // 帖子相关结构
 type Post {
 	Id         string   `json:"id"`
@@ -228,6 +239,22 @@ type LikeCommentReq {
 	UserId    string `json:"user_id"`
 }
 
+type GetTransactionsReq {
+	UserId   string `path:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type GetTransactionReq {
+	TransactionId string `path:"transaction_id"`
+}
+
+type RechargeReq {
+	UserId      string  `path:"user_id"`
+	Amount      float64 `json:"amount"`
+	Description string  `json:"description"`
+}
+
 // 通用响应
 type EmptyResp {}
 
@@ -322,6 +349,22 @@ type GetVipHistoryResp {
 type GetUserActiveVipRecordResp {
 	BaseResp
 	Data VipRecord `json:"data"`
+}
+
+type GetTransactionsResp {
+	BaseResp
+	Data  []Transaction `json:"data"`
+	Total int           `json:"total"`
+}
+
+type GetTransactionResp {
+	BaseResp
+	Data Transaction `json:"data"`
+}
+
+type RechargeResp {
+	BaseResp
+	Data Transaction `json:"data"`
 }
 
 // 嵌套类型定义
@@ -450,6 +493,16 @@ service Super {
 
 	@handler getUserActiveVipRecord
 	get /api/user/:user_id/vip/active (GetUserActiveVipRecordReq) returns (GetUserActiveVipRecordResp)
+
+	// 钱包相关API
+	@handler getTransactions
+	get /api/user/:user_id/transactions (GetTransactionsReq) returns (GetTransactionsResp)
+
+	@handler getTransaction
+	get /api/transactions/:transaction_id (GetTransactionReq) returns (GetTransactionResp)
+
+	@handler recharge
+	post /api/user/:user_id/wallet/recharge (RechargeReq) returns (RechargeResp)
 }
 
 // VIP相关API服务

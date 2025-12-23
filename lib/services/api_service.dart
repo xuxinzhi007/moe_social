@@ -522,6 +522,15 @@ class ApiService {
   // 获取交易记录
   static Future<Map<String, dynamic>> getTransactions(String userId, {int page = 1, int pageSize = 10}) async {
     final result = await _request('/api/user/$userId/transactions?page=$page&page_size=$pageSize');
+    
+    // 如果 result['data'] 为 null，返回空列表
+    if (result['data'] == null) {
+      return {
+        'data': [],
+        'total': result['total'] ?? 0,
+      };
+    }
+    
     return result;
   }
 

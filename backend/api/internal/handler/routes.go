@@ -65,6 +65,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
+				Path:    "/api/transactions/:transaction_id",
+				Handler: user.GetTransactionHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/user/:user_id",
 				Handler: user.GetUserInfoHandler(serverCtx),
 			},
@@ -87,6 +92,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodPut,
 				Path:    "/api/user/:user_id/password",
 				Handler: user.UpdateUserPasswordHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/user/:user_id/transactions",
+				Handler: user.GetTransactionsHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodPost,
@@ -132,6 +142,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodPost,
 				Path:    "/api/user/:user_id/vip/sync",
 				Handler: user.SyncUserVipStatusHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/user/:user_id/wallet/recharge",
+				Handler: user.RechargeHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodPost,

@@ -120,6 +120,27 @@ type GetPostsResp struct {
 	Total int    `json:"total"`
 }
 
+type GetTransactionReq struct {
+	TransactionId string `path:"transaction_id"`
+}
+
+type GetTransactionResp struct {
+	BaseResp
+	Data Transaction `json:"data"`
+}
+
+type GetTransactionsReq struct {
+	UserId   string `path:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type GetTransactionsResp struct {
+	BaseResp
+	Data  []Transaction `json:"data"`
+	Total int           `json:"total"`
+}
+
 type GetUserActiveVipRecordReq struct {
 	UserId string `path:"user_id"`
 }
@@ -255,6 +276,17 @@ type Post struct {
 	CreatedAt  string   `json:"created_at"`
 }
 
+type RechargeReq struct {
+	UserId      string  `path:"user_id"`
+	Amount      float64 `json:"amount"`
+	Description string  `json:"description"`
+}
+
+type RechargeResp struct {
+	BaseResp
+	Data Transaction `json:"data"`
+}
+
 type RegisterReq struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -278,6 +310,16 @@ type SyncUserVipStatusReq struct {
 type SyncUserVipStatusResp struct {
 	BaseResp
 	Data SyncUserVipStatusData `json:"data"`
+}
+
+type Transaction struct {
+	Id          string  `json:"id"`
+	UserId      string  `json:"user_id"`
+	Type        string  `json:"type"`
+	Amount      float64 `json:"amount"`
+	Description string  `json:"description"`
+	Status      string  `json:"status"`
+	CreatedAt   string  `json:"created_at"`
 }
 
 type UpdateAutoRenewReq struct {
