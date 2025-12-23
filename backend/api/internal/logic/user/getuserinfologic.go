@@ -48,6 +48,7 @@ func (l *GetUserInfoLogic) GetUserInfo(req *types.GetUserInfoReq) (resp *types.G
 			IsVip:        rpcResp.User.IsVip,
 			VipExpiresAt: rpcResp.User.VipExpiresAt,
 			AutoRenew:    rpcResp.User.AutoRenew,
+			Balance:      float64(rpcResp.User.Balance),
 		},
 	}, nil
 }

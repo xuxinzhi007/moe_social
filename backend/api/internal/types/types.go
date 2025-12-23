@@ -361,15 +361,16 @@ type UpdateUserVipResp struct {
 }
 
 type User struct {
-	Id           string `json:"id"`
-	Username     string `json:"username"`
-	Email        string `json:"email"`
-	Avatar       string `json:"avatar"`
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
-	IsVip        bool   `json:"is_vip"`
-	VipExpiresAt string `json:"vip_expires_at"`
-	AutoRenew    bool   `json:"auto_renew"`
+	Id           string  `json:"id"`
+	Username     string  `json:"username"`
+	Email        string  `json:"email"`
+	Avatar       string  `json:"avatar"`
+	CreatedAt    string  `json:"created_at"`
+	UpdatedAt    string  `json:"updated_at"`
+	IsVip        bool    `json:"is_vip"`
+	VipExpiresAt string  `json:"vip_expires_at"`
+	AutoRenew    bool    `json:"auto_renew"`
+	Balance      float64 `json:"balance"`
 }
 
 type UserVipStatusData struct {
