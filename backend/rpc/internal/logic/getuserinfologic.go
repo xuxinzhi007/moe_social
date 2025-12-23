@@ -52,6 +52,7 @@ func (l *GetUserInfoLogic) GetUserInfo(in *rpc.GetUserInfoReq) (*rpc.GetUserInfo
 			IsVip:        user.IsVip,
 			VipExpiresAt: vipEndAt,
 			AutoRenew:    user.AutoRenew,
+			Balance:      float32(user.Balance),
 		},
 	}, nil
 }

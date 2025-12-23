@@ -59,11 +59,24 @@ class _WalletPageState extends State<WalletPage> {
       final transactions = result['data'] as List;
       final total = result['total'] as int;
 
+      // 解析amount为double，防止int/double类型错误
+      final parsedTransactions = transactions.map((t) {
+        if (t is Map<String, dynamic>) {
+          if (t['amount'] is int) {
+            t['amount'] = (t['amount'] as int).toDouble();
+          }
+          if (t['amount'] is String) {
+            t['amount'] = double.tryParse(t['amount']) ?? 0.0;
+          }
+        }
+        return t;
+      }).toList();
+
       setState(() {
         if (_page == 1) {
-          _transactions = transactions;
+          _transactions = parsedTransactions;
         } else {
-          _transactions.addAll(transactions);
+          _transactions.addAll(parsedTransactions);
         }
         _total = total;
         _hasMore = _transactions.length < total;
