@@ -27,6 +27,7 @@ import 'recharge_page.dart';
 import 'models/post.dart';
 import 'services/post_service.dart';
 import 'widgets/avatar_image.dart';
+import 'widgets/network_image.dart';
 import 'utils/error_handler.dart';
 import 'providers/theme_provider.dart';
 
@@ -522,12 +523,12 @@ class _HomePageState extends State<HomePage> {
                     return Container(
                       margin: const EdgeInsets.only(right: 8),
                       width: 200,
-                      decoration: BoxDecoration(
+                      child: NetworkImageWidget(
+                        imageUrl: post.images[imgIndex],
+                        width: 200,
+                        height: 200,
+                        fit: BoxFit.cover,
                         borderRadius: BorderRadius.circular(12),
-                        image: DecorationImage(
-                          image: NetworkImage(post.images[imgIndex]),
-                          fit: BoxFit.cover,
-                        ),
                       ),
                     );
                   },

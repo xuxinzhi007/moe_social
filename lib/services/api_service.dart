@@ -152,14 +152,42 @@ class ApiService {
       throw ApiException('服务器返回空响应', response.statusCode);
     }
     
+    // 检查是否是HTML响应（通常是404页面或服务器错误页面）
+    if (response.body.trim().startsWith('<!DOCTYPE html>') || 
+        response.body.trim().startsWith('<html>')) {
+      String errorMessage = '无法连接到服务器';
+      if (response.statusCode == 404) {
+        if (baseUrl.contains('cpolar.top')) {
+          errorMessage = 'cpolar隧道可能已断开或地址已变更，请检查隧道状态或更新API地址';
+        } else {
+          errorMessage = 'API端点不存在，请检查后端服务是否正常运行';
+        }
+      } else {
+        errorMessage = '服务器返回错误页面 (状态码: ${response.statusCode})';
+      }
+      print('❌ 收到HTML响应，可能是服务器错误或404页面');
+      print('❌ 当前API地址: $baseUrl');
+      throw ApiException(errorMessage, response.statusCode);
+    }
+    
     // 解析响应
     Map<String, dynamic> result;
     try {
       result = json.decode(response.body) as Map<String, dynamic>;
     } catch (e) {
       print('❌ JSON解析失败: $e');
-      print('❌ 响应内容: ${response.body}');
-      throw ApiException('服务器响应格式错误: ${response.body}', response.statusCode);
+      print('❌ 响应内容: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}...');
+      
+      // 如果响应看起来像HTML，给出更友好的错误提示
+      if (response.body.contains('<html>') || response.body.contains('<!DOCTYPE')) {
+        String errorMessage = '服务器返回了HTML页面而不是JSON数据';
+        if (response.statusCode == 404 && baseUrl.contains('cpolar.top')) {
+          errorMessage = 'cpolar隧道可能已断开，请检查隧道状态或切换到本地开发环境';
+        }
+        throw ApiException(errorMessage, response.statusCode);
+      }
+      
+      throw ApiException('服务器响应格式错误，无法解析JSON', response.statusCode);
     }
     
     // 检查响应体中的success字段（go-zero框架的错误响应）
