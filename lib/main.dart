@@ -26,6 +26,7 @@ import 'wallet_page.dart';
 import 'recharge_page.dart';
 import 'models/post.dart';
 import 'services/post_service.dart';
+import 'user_profile_page.dart';
 import 'widgets/avatar_image.dart';
 import 'widgets/network_image.dart';
 import 'widgets/post_skeleton.dart';
@@ -136,6 +137,21 @@ class MyApp extends StatelessWidget {
         '/notifications': (context) => const NotificationCenterPage(),
         '/wallet': (context) => const WalletPage(),
         '/recharge': (context) => const RechargePage(),
+        '/user-profile': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args is! Map<String, dynamic>) {
+            // 如果参数丢失（例如Web端刷新），重定向回首页或显示错误页
+            return const Scaffold(
+              body: Center(child: Text('页面参数丢失，请返回首页重新进入')),
+            );
+          }
+          return UserProfilePage(
+            userId: args['userId'] as String,
+            userName: args['userName'] as String?,
+            userAvatar: args['userAvatar'] as String?,
+            heroTag: args['heroTag'] as String?,
+          );
+        },
       },
     );
   }
@@ -499,9 +515,18 @@ class _HomePageState extends State<HomePage> {
                 // Hero 动画：点击头像平滑过渡
                 GestureDetector(
                   onTap: () {
-                    // 如果有用户ID，跳转到个人主页
-                    // Navigator.pushNamed(context, '/profile', arguments: post.userId);
-                    // 暂时没有用户ID字段，先空着
+                    final heroTag = 'avatar_${post.id}'; // 使用 post.id 确保列表中的唯一性
+                    // 跳转到用户详情页
+                    Navigator.pushNamed(
+                      context, 
+                      '/user-profile', 
+                      arguments: {
+                        'userId': post.userId,
+                        'userName': post.userName,
+                        'userAvatar': post.userAvatar,
+                        'heroTag': heroTag, // 传递 tag 给详情页
+                      }
+                    );
                   },
                   child: Hero(
                     tag: 'avatar_${post.id}', // 使用 post.id 确保唯一性

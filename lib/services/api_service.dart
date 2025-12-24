@@ -212,6 +212,9 @@ class ApiService {
     } on SocketException catch (e) {
       print('❌ 网络连接错误: $e');
       throw ApiException('无法连接到服务器，请检查网络设置或服务器是否开启', 503);
+    } on http.ClientException catch (e) {
+      print('❌ 客户端连接错误: $e');
+      throw ApiException('无法连接到服务器，请检查网络设置或服务器是否开启', 503);
     } catch (e) {
       if (e is ApiException) rethrow;
       print('❌ 未知请求错误: $e');
