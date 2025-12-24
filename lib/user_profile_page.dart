@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'models/user.dart';
+import 'models/post.dart';
 import 'services/api_service.dart';
 import 'widgets/avatar_image.dart';
+import 'widgets/network_image.dart';
 
 class UserProfilePage extends StatefulWidget {
   final String userId;
@@ -23,12 +25,16 @@ class UserProfilePage extends StatefulWidget {
 
 class _UserProfilePageState extends State<UserProfilePage> {
   User? _user;
+  bool _isFollowing = false;
+  List<Post> _userPosts = [];
+  bool _isLoadingPosts = true;
 
   @override
   void initState() {
     super.initState();
-    // 异步加载最新数据，但不阻塞页面显示
+    // 异步加载最新数据
     _loadData();
+    _loadUserPosts();
   }
 
   Future<void> _loadData() async {
@@ -41,25 +47,60 @@ class _UserProfilePageState extends State<UserProfilePage> {
       }
     } catch (e) {
       print('后台加载用户数据失败: $e');
-      // 失败了也不弹窗，保持显示传递过来的基础信息即可
     }
+  }
+
+  Future<void> _loadUserPosts() async {
+    try {
+      // 临时方案：获取最新帖子并在前端过滤
+      // 扩大获取范围到100条，以增加匹配几率
+      final allPosts = await ApiService.getPosts(page: 1, pageSize: 100);
+
+      final myPosts = allPosts.where((p) => p.userId.toString() == widget.userId.toString()).toList();
+      
+      if (mounted) {
+        setState(() {
+          _userPosts = myPosts;
+          _isLoadingPosts = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingPosts = false;
+        });
+      }
+    }
+  }
+
+  void _toggleFollow() {
+    setState(() {
+      _isFollowing = !_isFollowing;
+    });
+    
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(_isFollowing ? '已关注' : '已取消关注'),
+        duration: const Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // 优先使用加载到的最新数据，否则使用跳转传过来的数据
     final name = _user?.username ?? widget.userName ?? '用户 ${widget.userId}';
     final avatar = _user?.avatar ?? widget.userAvatar;
     final email = _user?.email ?? '';
-    final balance = _user?.balance ?? 0.0;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100], // 浅灰背景
-      extendBodyBehindAppBar: true, // 让内容延伸到 AppBar 后面
+      backgroundColor: Colors.grey[100],
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('个人主页'),
         elevation: 0,
-        backgroundColor: Colors.transparent, // 透明背景
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -70,9 +111,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
               clipBehavior: Clip.none,
               alignment: Alignment.center,
               children: [
-                // 1. 背景渐变色块 (现在延伸到顶部了)
                 Container(
-                  height: 200, // 增加高度以覆盖状态栏和AppBar
+                  height: 200,
                   width: double.infinity,
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
@@ -82,9 +122,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     ),
                   ),
                 ),
-                // 2. 个人信息卡片（重叠在背景上）
                 Container(
-                  margin: const EdgeInsets.fromLTRB(16, 120, 16, 0), // 调整顶部距离
+                  margin: const EdgeInsets.fromLTRB(16, 120, 16, 0),
                   padding: const EdgeInsets.fromLTRB(16, 50, 16, 16),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -113,36 +152,39 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           style: TextStyle(color: Colors.grey[600]),
                         ),
                       const SizedBox(height: 16),
-                      // 统计数据
-                      const Row(
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          _StatItem(label: '动态', value: '0'),
-                          _StatItem(label: '关注', value: '0'),
-                          _StatItem(label: '粉丝', value: '0'),
+                          _StatItem(label: '动态', value: '${_userPosts.length}'), // 实时显示动态数
+                          const _StatItem(label: '关注', value: '0'),
+                          const _StatItem(label: '粉丝', value: '0'),
                         ],
                       ),
                       const SizedBox(height: 20),
-                      // 按钮组
                       Row(
                         children: [
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: () {},
+                              onPressed: _toggleFollow,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blueAccent,
-                                foregroundColor: Colors.white,
+                                backgroundColor: _isFollowing ? Colors.grey[200] : Colors.blueAccent,
+                                foregroundColor: _isFollowing ? Colors.black87 : Colors.white,
+                                elevation: _isFollowing ? 0 : 2,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                               ),
-                              child: const Text('关注'),
+                              child: Text(_isFollowing ? '已关注' : '关注'),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: OutlinedButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('私信功能开发中')),
+                                );
+                              },
                               style: OutlinedButton.styleFrom(
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
@@ -156,9 +198,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     ],
                   ),
                 ),
-                // 3. 头像（绝对定位在卡片上方）
                 Positioned(
-                  top: 80, // 调整头像位置
+                  top: 80,
                   child: Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
@@ -170,7 +211,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         ),
                       ],
                     ),
-                    // 暂时不用 Hero，确保稳定
                     child: NetworkAvatarImage(
                       imageUrl: avatar,
                       radius: 40,
@@ -183,24 +223,53 @@ class _UserProfilePageState extends State<UserProfilePage> {
             
             const SizedBox(height: 20),
             
-            // 内容区域
+            // 动态列表区域
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
               ),
               width: double.infinity,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.article_outlined, size: 64, color: Colors.grey[200]),
-                  const SizedBox(height: 16),
-                  Text(
-                    '暂无动态',
-                    style: TextStyle(color: Colors.grey[400]),
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text(
+                      '个人动态',
+                      style: TextStyle(
+                        fontSize: 18, 
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 40), // 撑开一点高度
+                  const Divider(height: 1),
+                  if (_isLoadingPosts)
+                    const Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (_userPosts.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.article_outlined, size: 64, color: Colors.grey[200]),
+                            const SizedBox(height: 16),
+                            Text(
+                              '暂无动态',
+                              style: TextStyle(color: Colors.grey[400]),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    ..._userPosts.map((post) => _buildSimplePostItem(post)),
+                  
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -209,6 +278,82 @@ class _UserProfilePageState extends State<UserProfilePage> {
         ),
       ),
     );
+  }
+
+  // 简化的帖子列表项
+  Widget _buildSimplePostItem(Post post) {
+    return InkWell(
+      onTap: () {
+        // 可以跳转到帖子详情
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: Colors.grey[100]!),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  _formatTime(post.createdAt),
+                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                ),
+                const Spacer(),
+                Icon(Icons.more_horiz, color: Colors.grey[400], size: 16),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              post.content,
+              style: const TextStyle(fontSize: 15),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (post.images.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: NetworkImageWidget(
+                    imageUrl: post.images.first,
+                    width: double.infinity,
+                    height: 150,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.favorite_border, size: 16, color: Colors.grey[400]),
+                const SizedBox(width: 4),
+                Text('${post.likes}', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                const SizedBox(width: 16),
+                Icon(Icons.chat_bubble_outline, size: 16, color: Colors.grey[400]),
+                const SizedBox(width: 4),
+                Text('${post.comments}', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatTime(DateTime time) {
+    final now = DateTime.now();
+    final difference = now.difference(time);
+    if (difference.inDays > 0) {
+      return '${time.year}-${time.month}-${time.day}';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}小时前';
+    } else {
+      return '${difference.inMinutes}分钟前';
+    }
   }
 }
 

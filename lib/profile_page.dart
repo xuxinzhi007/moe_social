@@ -17,6 +17,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Map<String, dynamic>? _vipStatus;
   bool _isLoading = true;
   bool _isVip = false;
+  int _postCount = 0; // 动态数量
 
   @override
   void initState() {
@@ -33,31 +34,36 @@ class _ProfilePageState extends State<ProfilePage> {
     });
 
     try {
-      // 获取用户信息
-      final user = await ApiService.getUserInfo(userId);
-      
-      // 获取VIP状态
-      Map<String, dynamic>? vipStatus;
-      bool isVip = false;
-      try {
-        vipStatus = await ApiService.getUserVipStatus(userId);
-        isVip = vipStatus['is_vip'] as bool? ?? false;
-      } catch (e) {
-        // VIP状态获取失败不影响页面显示
-        print('获取VIP状态失败: $e');
-      }
+      // 并行请求：用户信息、VIP状态、帖子数量
+      final futures = await Future.wait([
+        ApiService.getUserInfo(userId),
+        ApiService.getUserVipStatus(userId).catchError((_) => <String, dynamic>{}),
+        // 获取所有帖子并过滤出自己的，计算数量
+        ApiService.getPosts(page: 1, pageSize: 100).then((posts) {
+          return posts.where((p) => p.userId.toString() == userId.toString()).length;
+        }).catchError((_) => 0),
+      ]);
 
-      setState(() {
-        _user = user;
-        _vipStatus = vipStatus;
-        _isVip = isVip;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
+      final user = futures[0] as User;
+      final vipStatus = futures[1] as Map<String, dynamic>;
+      final postCount = futures[2] as int;
+
+      bool isVip = vipStatus['is_vip'] as bool? ?? false;
+
       if (mounted) {
+        setState(() {
+          _user = user;
+          _vipStatus = vipStatus;
+          _isVip = isVip;
+          _postCount = postCount;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('加载用户信息失败: $e')),
         );
@@ -161,7 +167,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _buildStatItem('动态', '0'),
+                        _buildStatItem('动态', '$_postCount'),
                         _buildStatItem('关注', '0'),
                         _buildStatItem('粉丝', '0'),
                       ],
@@ -193,7 +199,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         _buildMenuItem(Icons.wallet_outlined, '我的钱包', () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => WalletPage()),
+                            MaterialPageRoute(builder: (context) => const WalletPage()),
                           );
                         }),
                         _buildMenuItem(Icons.help_outline, '帮助与反馈', () {}),
@@ -256,4 +262,3 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 }
-
