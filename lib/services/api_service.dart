@@ -102,110 +102,121 @@ class ApiService {
     String path,
     String method,
     dynamic body) async {
-    final uri = Uri.parse('$baseUrl$path');
-    
-    // 调试日志
-    print('📡 API Request: $method $uri');
-    if (body != null) {
-      print('📤 Request Body: ${json.encode(body)}');
-    }
-    
-    // 构建请求头
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
-    
-    // 添加认证令牌
-    final token = AuthService.token;
-    if (token != null) {
-      headers['Authorization'] = 'Bearer $token';
-    }
-    
-    // 发送请求
-    http.Response response;
-    if (method == 'GET') {
-      response = await http.get(uri, headers: headers);
-    } else if (method == 'POST') {
-      response = await http.post(
-        uri,
-        headers: headers,
-        body: body != null ? json.encode(body) : null,
-      );
-    } else if (method == 'PUT') {
-      response = await http.put(
-        uri,
-        headers: headers,
-        body: body != null ? json.encode(body) : null,
-      );
-    } else if (method == 'DELETE') {
-      response = await http.delete(uri, headers: headers);
-    } else {
-      throw ApiException('不支持的HTTP方法: $method', null);
-    }
-    
-    // 调试日志
-    print('📥 API Response: ${response.statusCode}');
-    print('📥 Response Body: ${response.body}');
-    
-    // 检查响应体是否为空
-    if (response.body.isEmpty) {
-      throw ApiException('服务器返回空响应', response.statusCode);
-    }
-    
-    // 检查是否是HTML响应（通常是404页面或服务器错误页面）
-    if (response.body.trim().startsWith('<!DOCTYPE html>') || 
-        response.body.trim().startsWith('<html>')) {
-      String errorMessage = '无法连接到服务器';
-      if (response.statusCode == 404) {
-        if (baseUrl.contains('cpolar.top')) {
-          errorMessage = 'cpolar隧道可能已断开或地址已变更，请检查隧道状态或更新API地址';
-        } else {
-          errorMessage = 'API端点不存在，请检查后端服务是否正常运行';
-        }
-      } else {
-        errorMessage = '服务器返回错误页面 (状态码: ${response.statusCode})';
-      }
-      print('❌ 收到HTML响应，可能是服务器错误或404页面');
-      print('❌ 当前API地址: $baseUrl');
-      throw ApiException(errorMessage, response.statusCode);
-    }
-    
-    // 解析响应
-    Map<String, dynamic> result;
     try {
-      result = json.decode(response.body) as Map<String, dynamic>;
-    } catch (e) {
-      print('❌ JSON解析失败: $e');
-      print('❌ 响应内容: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}...');
+      final uri = Uri.parse('$baseUrl$path');
       
-      // 如果响应看起来像HTML，给出更友好的错误提示
-      if (response.body.contains('<html>') || response.body.contains('<!DOCTYPE')) {
-        String errorMessage = '服务器返回了HTML页面而不是JSON数据';
-        if (response.statusCode == 404 && baseUrl.contains('cpolar.top')) {
-          errorMessage = 'cpolar隧道可能已断开，请检查隧道状态或切换到本地开发环境';
+      // 调试日志
+      print('📡 API Request: $method $uri');
+      if (body != null) {
+        print('📤 Request Body: ${json.encode(body)}');
+      }
+      
+      // 构建请求头
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+      };
+      
+      // 添加认证令牌
+      final token = AuthService.token;
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+      
+      // 发送请求
+      http.Response response;
+      if (method == 'GET') {
+        response = await http.get(uri, headers: headers);
+      } else if (method == 'POST') {
+        response = await http.post(
+          uri,
+          headers: headers,
+          body: body != null ? json.encode(body) : null,
+        );
+      } else if (method == 'PUT') {
+        response = await http.put(
+          uri,
+          headers: headers,
+          body: body != null ? json.encode(body) : null,
+        );
+      } else if (method == 'DELETE') {
+        response = await http.delete(uri, headers: headers);
+      } else {
+        throw ApiException('不支持的HTTP方法: $method', null);
+      }
+      
+      // 调试日志
+      print('📥 API Response: ${response.statusCode}');
+      print('📥 Response Body: ${response.body}');
+      
+      // 检查响应体是否为空
+      if (response.body.isEmpty) {
+        throw ApiException('服务器返回空响应', response.statusCode);
+      }
+      
+      // 检查是否是HTML响应（通常是404页面或服务器错误页面）
+      if (response.body.trim().startsWith('<!DOCTYPE html>') || 
+          response.body.trim().startsWith('<html>')) {
+        String errorMessage = '无法连接到服务器';
+        if (response.statusCode == 404) {
+          if (baseUrl.contains('cpolar.top')) {
+            errorMessage = 'cpolar隧道可能已断开或地址已变更，请检查隧道状态或更新API地址';
+          } else {
+            errorMessage = 'API端点不存在，请检查后端服务是否正常运行';
+          }
+        } else if (response.statusCode == 502 || response.statusCode == 503 || response.statusCode == 504) {
+            errorMessage = '服务器暂时不可用或正在维护中';
+        } else {
+          errorMessage = '服务器返回错误页面 (状态码: ${response.statusCode})';
         }
+        print('❌ 收到HTML响应，可能是服务器错误或404页面');
+        print('❌ 当前API地址: $baseUrl');
         throw ApiException(errorMessage, response.statusCode);
       }
       
-      throw ApiException('服务器响应格式错误，无法解析JSON', response.statusCode);
+      // 解析响应
+      Map<String, dynamic> result;
+      try {
+        result = json.decode(response.body) as Map<String, dynamic>;
+      } catch (e) {
+        print('❌ JSON解析失败: $e');
+        print('❌ 响应内容: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}...');
+        
+        // 如果响应看起来像HTML，给出更友好的错误提示
+        if (response.body.contains('<html>') || response.body.contains('<!DOCTYPE')) {
+          String errorMessage = '服务器返回了HTML页面而不是JSON数据';
+          if (response.statusCode == 404 && baseUrl.contains('cpolar.top')) {
+            errorMessage = 'cpolar隧道可能已断开，请检查隧道状态或切换到本地开发环境';
+          }
+          throw ApiException(errorMessage, response.statusCode);
+        }
+        
+        throw ApiException('服务器响应格式错误，无法解析JSON', response.statusCode);
+      }
+      
+      // 检查响应体中的success字段（go-zero框架的错误响应）
+      if (result.containsKey('success') && result['success'] == false) {
+        final errorMessage = result['message'] ?? '请求失败';
+        final errorCode = result['code'] ?? response.statusCode;
+        print('❌ API错误: $errorMessage (code: $errorCode)');
+        throw ApiException(errorMessage, errorCode);
+      }
+      
+      // 检查HTTP状态码
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final errorMessage = result['message'] ?? '请求失败';
+        print('❌ HTTP错误: $errorMessage (status: ${response.statusCode})');
+        throw ApiException(errorMessage, response.statusCode);
+      }
+      
+      return result;
+    } on SocketException catch (e) {
+      print('❌ 网络连接错误: $e');
+      throw ApiException('无法连接到服务器，请检查网络设置或服务器是否开启', 503);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      print('❌ 未知请求错误: $e');
+      throw ApiException('网络请求发生错误: $e', null);
     }
-    
-    // 检查响应体中的success字段（go-zero框架的错误响应）
-    if (result.containsKey('success') && result['success'] == false) {
-      final errorMessage = result['message'] ?? '请求失败';
-      final errorCode = result['code'] ?? response.statusCode;
-      print('❌ API错误: $errorMessage (code: $errorCode)');
-      throw ApiException(errorMessage, errorCode);
-    }
-    
-    // 检查HTTP状态码
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      final errorMessage = result['message'] ?? '请求失败';
-      print('❌ HTTP错误: $errorMessage (status: ${response.statusCode})');
-      throw ApiException(errorMessage, response.statusCode);
-    }
-    
-    return result;
   }
 
   // 刷新token
