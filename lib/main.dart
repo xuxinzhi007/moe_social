@@ -28,6 +28,8 @@ import 'models/post.dart';
 import 'services/post_service.dart';
 import 'widgets/avatar_image.dart';
 import 'widgets/network_image.dart';
+import 'widgets/post_skeleton.dart';
+import 'widgets/fade_in_up.dart';
 import 'utils/error_handler.dart';
 import 'providers/theme_provider.dart';
 
@@ -339,7 +341,9 @@ class _HomePageState extends State<HomePage> {
       body: RefreshIndicator(
         onRefresh: _fetchPosts,
         child: ListView.builder(
-          itemCount: _posts.length + 2, // +1 for header, +1 for loading more
+          itemCount: _isLoading && _posts.isEmpty 
+              ? 6 // 显示骨架屏时显示6个占位符 (1个Banner + 5个帖子)
+              : _posts.length + 2, // +1 for header, +1 for loading more
           itemBuilder: (context, index) {
             if (index == 0) {
               // Header Section
@@ -357,6 +361,13 @@ class _HomePageState extends State<HomePage> {
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blueAccent.withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
                     ),
                     child: const Center(
                       child: Column(
@@ -402,11 +413,20 @@ class _HomePageState extends State<HomePage> {
               );
             }
             
+            // 如果正在加载且没有数据，显示骨架屏
+            if (_isLoading && _posts.isEmpty) {
+               return const PostSkeleton();
+            }
+            
             final postIndex = index - 1;
             if (postIndex < _posts.length) {
               // Post Item
               final post = _posts[postIndex];
-              return _buildPostCard(post, postIndex);
+              // 使用 FadeInUp 添加入场动画，带有交错延迟
+              return FadeInUp(
+                delay: Duration(milliseconds: 50 * (postIndex % 10)), // 简单的交错逻辑
+                child: _buildPostCard(post, postIndex),
+              );
             } else {
               // Loading More or End of List
               if (_isLoadingMore) {
@@ -445,13 +465,17 @@ class _HomePageState extends State<HomePage> {
   Widget _buildQuickAction(IconData icon, String label) {
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue[50],
-            borderRadius: BorderRadius.circular(15),
+        InkWell(
+          onTap: () {},
+          borderRadius: BorderRadius.circular(15),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue[50],
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(icon, color: Colors.blueAccent),
           ),
-          child: Icon(icon, color: Colors.blueAccent),
         ),
         const SizedBox(height: 8),
         Text(label, style: const TextStyle(fontSize: 12)),
@@ -472,10 +496,21 @@ class _HomePageState extends State<HomePage> {
             // 用户信息
             Row(
               children: [
-                NetworkAvatarImage(
-                  imageUrl: post.userAvatar,
-                  radius: 24,
-                  placeholderIcon: Icons.person,
+                // Hero 动画：点击头像平滑过渡
+                GestureDetector(
+                  onTap: () {
+                    // 如果有用户ID，跳转到个人主页
+                    // Navigator.pushNamed(context, '/profile', arguments: post.userId);
+                    // 暂时没有用户ID字段，先空着
+                  },
+                  child: Hero(
+                    tag: 'avatar_${post.id}', // 使用 post.id 确保唯一性
+                    child: NetworkAvatarImage(
+                      imageUrl: post.userAvatar,
+                      radius: 24,
+                      placeholderIcon: Icons.person,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -523,12 +558,20 @@ class _HomePageState extends State<HomePage> {
                     return Container(
                       margin: const EdgeInsets.only(right: 8),
                       width: 200,
-                      child: NetworkImageWidget(
-                        imageUrl: post.images[imgIndex],
-                        width: 200,
-                        height: 200,
-                        fit: BoxFit.cover,
-                        borderRadius: BorderRadius.circular(12),
+                      child: GestureDetector(
+                        onTap: () {
+                          // 点击图片查看大图（此处可以添加Hero动画）
+                        },
+                        child: Hero(
+                          tag: 'post_img_${post.id}_$imgIndex',
+                          child: NetworkImageWidget(
+                            imageUrl: post.images[imgIndex],
+                            width: 200,
+                            height: 200,
+                            fit: BoxFit.cover,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     );
                   },
@@ -539,22 +582,11 @@ class _HomePageState extends State<HomePage> {
             // 帖子互动
             Row(
               children: [
-                IconButton(
-                  onPressed: () => _toggleLike(post.id),
-                  icon: Icon(
-                    post.isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: post.isLiked ? Colors.red : Colors.grey,
-                  ),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${post.likes}',
-                  style: TextStyle(
-                    color: post.isLiked ? Colors.red : Colors.grey[700],
-                    fontSize: 14,
-                  ),
+                // 点赞动画按钮
+                LikeButton(
+                  isLiked: post.isLiked,
+                  likeCount: post.likes,
+                  onTap: () => _toggleLike(post.id),
                 ),
                 const SizedBox(width: 24),
                 IconButton(
@@ -612,5 +644,92 @@ class _HomePageState extends State<HomePage> {
     } else {
       return '${time.month}月${time.day}日';
     }
+  }
+}
+
+// 带有弹性动画的点赞按钮
+class LikeButton extends StatefulWidget {
+  final bool isLiked;
+  final int likeCount;
+  final VoidCallback onTap;
+
+  const LikeButton({
+    super.key,
+    required this.isLiked,
+    required this.likeCount,
+    required this.onTap,
+  });
+
+  @override
+  State<LikeButton> createState() => _LikeButtonState();
+}
+
+class _LikeButtonState extends State<LikeButton> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  bool _isLiked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isLiked = widget.isLiked;
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 50), // 放大
+      TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0), weight: 50), // 恢复
+    ]).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void didUpdateWidget(LikeButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isLiked != _isLiked) {
+      _isLiked = widget.isLiked;
+      if (_isLiked) {
+        _controller.forward().then((_) => _controller.reset());
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: () {
+            widget.onTap();
+            if (!widget.isLiked) {
+              _controller.forward().then((_) => _controller.reset());
+            }
+          },
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Icon(
+              widget.isLiked ? Icons.favorite : Icons.favorite_border,
+              color: widget.isLiked ? Colors.red : Colors.grey,
+              size: 24,
+            ),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          '${widget.likeCount}',
+          style: TextStyle(
+            color: widget.isLiked ? Colors.red : Colors.grey[700],
+            fontSize: 14,
+          ),
+        ),
+      ],
+    );
   }
 }
