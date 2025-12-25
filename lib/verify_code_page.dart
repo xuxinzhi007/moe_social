@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'services/api_service.dart';
 import 'reset_password_page.dart';
+import 'widgets/fade_in_up.dart';
 
 class VerifyCodePage extends StatefulWidget {
   final String email;
@@ -62,9 +63,8 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
 
       try {
         await ApiService.verifyResetCode(widget.email, _codeController.text);
-        _showCustomSnackBar(context, '验证码验证成功', isError: false);
+        _showCustomSnackBar(context, '验证成功！(≧∇≦)/', isError: false);
         
-        // 跳转到密码重置页面
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -122,88 +122,171 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
+      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('验证验证码'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-      ),
-      extendBodyBehindAppBar: true,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue[50]!, Colors.white],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 80),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  const Icon(Icons.verified_user_rounded, size: 70, color: Colors.blueAccent),
-                  const SizedBox(height: 20),
-                  const Text(
-                    '验证身份',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '我们已向 ${widget.email} 发送了一封包含验证码的邮件',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 40),
-                  TextFormField(
-                    controller: _codeController,
-                    decoration: const InputDecoration(
-                      labelText: '验证码',
-                      prefixIcon: Icon(Icons.security_outlined),
-                      hintText: '请输入6位验证码',
+      ),
+      body: SingleChildScrollView(
+        child: SizedBox(
+          height: size.height,
+          child: Stack(
+            children: [
+              // 背景层
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: size.height * 0.4,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '请输入验证码';
-                      }
-                      if (value.length != 6) {
-                        return '验证码必须是6位';
-                      }
-                      return null;
-                    },
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(60),
+                      bottomRight: Radius.circular(60),
+                    ),
                   ),
-                  const SizedBox(height: 30),
-                  _isLoading
-                      ? const CircularProgressIndicator()
-                      : ElevatedButton(
-                          onPressed: _verifyCode,
-                          child: const Text('验证并重置密码', style: TextStyle(fontSize: 16)),
-                        ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                ),
+              ),
+
+              // 内容层
+              Positioned.fill(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
                     children: [
-                      Text(
-                        _countdown > 0 ? '${_countdown}秒后重新发送' : '未收到验证码？',
-                        style: const TextStyle(color: Colors.grey),
+                      SizedBox(height: MediaQuery.of(context).padding.top + 40),
+                      
+                      FadeInUp(
+                        duration: const Duration(milliseconds: 800),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.security_rounded, size: 60, color: Colors.white),
+                        ),
                       ),
-                      TextButton(
-                        onPressed: _countdown == 0 ? _resendCode : null,
-                        child: Text(
-                          '重新发送',
+                      const SizedBox(height: 20),
+                      
+                      FadeInUp(
+                        duration: const Duration(milliseconds: 800),
+                        delay: const Duration(milliseconds: 100),
+                        child: const Text(
+                          '安全验证',
                           style: TextStyle(
-                            color: _countdown == 0 ? Colors.blueAccent : Colors.grey,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 1.2,
                           ),
                         ),
                       ),
+                      
+                      const Spacer(),
+
+                      FadeInUp(
+                        duration: const Duration(milliseconds: 1000),
+                        delay: const Duration(milliseconds: 200),
+                        child: Container(
+                          padding: const EdgeInsets.all(32),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              children: [
+                                Text(
+                                  '我们已向您的邮箱发送了验证码',
+                                  style: TextStyle(color: Colors.grey[600]),
+                                ),
+                                Text(
+                                  widget.email,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, height: 1.5),
+                                ),
+                                const SizedBox(height: 30),
+                                TextFormField(
+                                  controller: _codeController,
+                                  decoration: InputDecoration(
+                                    labelText: '6位验证码',
+                                    prefixIcon: const Icon(Icons.verified_user_outlined, color: Color(0xFF7F7FD5)),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide(color: Colors.grey[200]!),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: const BorderSide(color: Color(0xFF7F7FD5)),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.grey[50],
+                                    suffixIcon: _countdown > 0 
+                                      ? Padding(
+                                          padding: const EdgeInsets.all(12),
+                                          child: Text('${_countdown}s', style: const TextStyle(color: Colors.grey)),
+                                        )
+                                      : TextButton(
+                                          onPressed: _resendCode,
+                                          child: const Text('重发', style: TextStyle(color: Color(0xFF7F7FD5))),
+                                        ),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  validator: (value) => (value?.length ?? 0) != 6 ? '请输入6位验证码' : null,
+                                ),
+                                const SizedBox(height: 30),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 50,
+                                  child: ElevatedButton(
+                                    onPressed: _isLoading ? null : _verifyCode,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF7F7FD5),
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(25),
+                                      ),
+                                      elevation: 5,
+                                    ),
+                                    child: _isLoading 
+                                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                        : const Text('验证并重置', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      const Spacer(flex: 2),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),

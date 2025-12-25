@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'services/api_service.dart';
 import 'utils/validators.dart';
+import 'widgets/fade_in_up.dart';
 
 class ResetPasswordPage extends StatefulWidget {
   final String email;
@@ -31,9 +32,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           widget.code,
           _newPasswordController.text,
         );
-        _showCustomSnackBar(context, '密码重置成功', isError: false);
+        _showCustomSnackBar(context, '密码重置成功，请重新登录 (｡♥‿♥｡)', isError: false);
         
-        // 重置成功后跳转到登录页面
         Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
       } on ApiException catch (e) {
         _showCustomSnackBar(context, e.message, isError: true);
@@ -77,81 +77,178 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
+      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('重置密码'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-      ),
-      extendBodyBehindAppBar: true,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue[50]!, Colors.white],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 80),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  const Icon(Icons.lock_rounded, size: 70, color: Colors.blueAccent),
-                  const SizedBox(height: 20),
-                  const Text(
-                    '设置新密码',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    '请设置您的新密码',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 40),
-                  TextFormField(
-                    controller: _newPasswordController,
-                    decoration: InputDecoration(
-                      labelText: '新密码',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                      ),
+      ),
+      body: SingleChildScrollView(
+        child: SizedBox(
+          height: size.height,
+          child: Stack(
+            children: [
+              // 背景层
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: size.height * 0.4,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF86A8E7), Color(0xFF91EAE4)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    obscureText: _obscurePassword,
-                    validator: (value) => Validators.password(value),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _confirmPasswordController,
-                    decoration: const InputDecoration(
-                      labelText: '确认密码',
-                      prefixIcon: Icon(Icons.lock_reset_outlined),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(60),
+                      bottomRight: Radius.circular(60),
                     ),
-                    obscureText: _obscurePassword,
-                    validator: (value) => Validators.confirmPassword(value, _newPasswordController.text),
                   ),
-                  const SizedBox(height: 30),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _resetPassword,
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+
+              // 内容层
+              Positioned.fill(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    children: [
+                      SizedBox(height: MediaQuery.of(context).padding.top + 40),
+                      
+                      FadeInUp(
+                        duration: const Duration(milliseconds: 800),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.lock_person_rounded, size: 60, color: Colors.white),
                         ),
                       ),
-                      child: const Text('确认重置', style: TextStyle(fontSize: 16)),
-                    ),
+                      const SizedBox(height: 20),
+                      
+                      FadeInUp(
+                        duration: const Duration(milliseconds: 800),
+                        delay: const Duration(milliseconds: 100),
+                        child: const Text(
+                          '设置新密码',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                      
+                      const Spacer(),
+
+                      FadeInUp(
+                        duration: const Duration(milliseconds: 1000),
+                        delay: const Duration(milliseconds: 200),
+                        child: Container(
+                          padding: const EdgeInsets.all(32),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              children: [
+                                TextFormField(
+                                  controller: _newPasswordController,
+                                  decoration: InputDecoration(
+                                    labelText: '新密码',
+                                    prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF7F7FD5)),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: Colors.grey),
+                                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                    ),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide(color: Colors.grey[200]!),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: const BorderSide(color: Color(0xFF7F7FD5)),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.grey[50],
+                                  ),
+                                  obscureText: _obscurePassword,
+                                  validator: Validators.password,
+                                ),
+                                const SizedBox(height: 20),
+                                TextFormField(
+                                  controller: _confirmPasswordController,
+                                  decoration: InputDecoration(
+                                    labelText: '确认密码',
+                                    prefixIcon: const Icon(Icons.lock_reset_outlined, color: Color(0xFF7F7FD5)),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide(color: Colors.grey[200]!),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: const BorderSide(color: Color(0xFF7F7FD5)),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.grey[50],
+                                  ),
+                                  obscureText: _obscurePassword,
+                                  validator: (value) => Validators.confirmPassword(value, _newPasswordController.text),
+                                ),
+                                const SizedBox(height: 30),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 50,
+                                  child: ElevatedButton(
+                                    onPressed: _isLoading ? null : _resetPassword,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF7F7FD5),
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(25),
+                                      ),
+                                      elevation: 5,
+                                    ),
+                                    child: _isLoading
+                                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                      : const Text('确认重置', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      const Spacer(flex: 2),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
