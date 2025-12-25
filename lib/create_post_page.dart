@@ -25,7 +25,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
   String? _userAvatar;
 
   Future<void> _addImage() async {
-    // 使用image_picker选择图片
     final XFile? pickedFile = await _picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 80,
@@ -86,7 +85,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
     });
 
     try {
-      // 上传所有选中的图片
       final List<String> imageUrls = [];
       for (final image in _selectedImages) {
         final imageUrl = await ApiService.uploadImage(image);
@@ -116,8 +114,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
       if (!mounted) return;
 
-      ErrorHandler.showSuccess(context, '帖子发布成功！');
-      Navigator.pop(context, true); // 返回首页并刷新
+      ErrorHandler.showSuccess(context, '帖子发布成功！(≧∇≦)/');
+      Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
         ErrorHandler.handleException(context, e as Exception);
@@ -134,145 +132,236 @@ class _CreatePostPageState extends State<CreatePostPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('发布新帖子'),
+        title: const Text('发布新动态', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.close_rounded, color: Colors.black87),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _publishPost,
-            child: Text(
-              '发布',
-              style: TextStyle(
-                color: _isLoading ? Colors.grey : Colors.blueAccent,
-                fontWeight: FontWeight.bold,
+          // 修复：使用 Container + Alignment 代替 Padding，解决 RenderBox size 错误
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            alignment: Alignment.center,
+            child: SizedBox(
+              height: 32, // 给定固定高度
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _publishPost,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7F7FD5),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  minimumSize: Size.zero, // 允许更小的尺寸
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap, // 紧凑布局
+                ),
+                child: _isLoading 
+                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('发布', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               ),
             ),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 用户信息
-            if (_isLoadingUser)
-              const Row(
-                children: [
-                  CircleAvatar(radius: 24, child: CircularProgressIndicator()),
-                  SizedBox(width: 12),
-                  Text('加载中...'),
-                ],
-              )
-            else
+            // 用户信息栏
+            if (!_isLoadingUser)
               Row(
                 children: [
-                  NetworkAvatarImage(
-                    imageUrl: _userAvatar,
-                    radius: 24,
-                    placeholderIcon: Icons.person,
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 5),
+                      ],
+                    ),
+                    child: NetworkAvatarImage(
+                      imageUrl: _userAvatar,
+                      radius: 24,
+                      placeholderIcon: Icons.person,
+                    ),
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    _userName ?? '用户',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _userName ?? '用户',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const Text(
+                        '分享此时此刻...',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            const SizedBox(height: 16),
+            
+            const SizedBox(height: 20),
 
-            // 帖子内容输入
-            TextField(
-              controller: _contentController,
-              maxLines: 8,
-              decoration: const InputDecoration(
-                hintText: '分享你的想法...',
-                border: InputBorder.none,
-                hintStyle: TextStyle(color: Colors.grey),
+            // 内容输入卡片
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
               ),
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 16),
-
-            // 图片选择区域
-            if (_selectedImages.isNotEmpty)
-              SizedBox(
-                height: 120,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _selectedImages.length,
-                  itemBuilder: (context, index) {
-                    return Stack(
-                      children: [
-                        Container(
-                          margin: const EdgeInsets.only(right: 12),
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            image: DecorationImage(
-                              image: FileImage(_selectedImages[index]),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 4,
-                          right: 16,
-                          child: GestureDetector(
-                            onTap: () => _removeImage(index),
-                            child: Container(
-                              width: 24,
-                              height: 24,
-                              decoration: const BoxDecoration(
-                                color: Colors.black54,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.close,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            const SizedBox(height: 16),
-
-            // 添加图片按钮
-            GestureDetector(
-              onTap: _addImage,
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[300]!),
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.grey[50],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.add_photo_alternate_outlined,
-                      size: 40,
-                      color: Colors.grey[400],
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _contentController,
+                    maxLines: 8,
+                    decoration: const InputDecoration(
+                      hintText: '写点什么吧... (例如: 今天天气真好~)',
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.all(20),
+                      hintStyle: TextStyle(color: Colors.black26),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '添加图片',
-                      style: TextStyle(color: Colors.grey[500]),
+                    style: const TextStyle(fontSize: 16, height: 1.5),
+                  ),
+                  
+                  // 图片预览区域
+                  if (_selectedImages.isNotEmpty)
+                    Container(
+                      height: 120,
+                      margin: const EdgeInsets.only(bottom: 20),
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _selectedImages.length,
+                        itemBuilder: (context, index) {
+                          return Container(
+                             margin: const EdgeInsets.only(right: 12),
+                             width: 110, // 明确宽度
+                             height: 110, // 明确高度
+                             child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Positioned.fill(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      image: DecorationImage(
+                                        image: FileImage(_selectedImages[index]),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: -5,
+                                  right: -5,
+                                  child: GestureDetector(
+                                    onTap: () => _removeImage(index),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.6),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 1),
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  ],
-                ),
+                ],
               ),
             ),
+            
+            const SizedBox(height: 20),
+
+            // 工具栏
+            Row(
+              children: [
+                _buildToolButton(
+                  icon: Icons.image_rounded,
+                  label: '图片',
+                  color: Colors.green,
+                  onTap: _addImage,
+                ),
+                const SizedBox(width: 12),
+                _buildToolButton(
+                  icon: Icons.alternate_email_rounded,
+                  label: '提到',
+                  color: Colors.orange,
+                  onTap: () {},
+                ),
+                const SizedBox(width: 12),
+                _buildToolButton(
+                  icon: Icons.tag_rounded,
+                  label: '话题',
+                  color: Colors.blue,
+                  onTap: () {},
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToolButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.05),
+              blurRadius: 5,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 6),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
           ],
         ),
       ),

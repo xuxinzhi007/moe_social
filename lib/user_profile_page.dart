@@ -4,6 +4,7 @@ import 'models/post.dart';
 import 'services/api_service.dart';
 import 'widgets/avatar_image.dart';
 import 'widgets/network_image.dart';
+import 'widgets/fade_in_up.dart';
 
 class UserProfilePage extends StatefulWidget {
   final String userId;
@@ -84,6 +85,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         content: Text(_isFollowing ? '已关注' : '已取消关注'),
         duration: const Duration(seconds: 1),
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -95,7 +97,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     final email = _user?.email ?? '';
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: const Color(0xFFF5F7FA), // 浅灰背景
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('个人主页'),
@@ -106,33 +108,55 @@ class _UserProfilePageState extends State<UserProfilePage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // 顶部头部区域
+            // 顶部头部区域 (Moe 风格)
             Stack(
               clipBehavior: Clip.none,
               alignment: Alignment.center,
               children: [
                 Container(
-                  height: 200,
+                  height: 260,
                   width: double.infinity,
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.blueAccent, Colors.blue],
+                      colors: [
+                         Color(0xFF7F7FD5),
+                         Color(0xFF86A8E7),
+                         Color(0xFF91EAE4),
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(40),
+                      bottomRight: Radius.circular(40),
+                    ),
                   ),
                 ),
+                // 装饰圆
+                Positioned(
+                  top: -60,
+                  left: -40,
+                  child: Container(
+                    width: 200,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+
                 Container(
-                  margin: const EdgeInsets.fromLTRB(16, 120, 16, 0),
-                  padding: const EdgeInsets.fromLTRB(16, 50, 16, 16),
+                  margin: const EdgeInsets.fromLTRB(16, 140, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
+                        blurRadius: 15,
+                        offset: const Offset(0, 8),
                       ),
                     ],
                   ),
@@ -149,27 +173,28 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       if (email.isNotEmpty)
                         Text(
                           email,
-                          style: TextStyle(color: Colors.grey[600]),
+                          style: TextStyle(color: Colors.grey[500]),
                         ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          _StatItem(label: '动态', value: '${_userPosts.length}'), // 实时显示动态数
+                          _StatItem(label: '动态', value: '${_userPosts.length}'), 
                           const _StatItem(label: '关注', value: '0'),
                           const _StatItem(label: '粉丝', value: '0'),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
                       Row(
                         children: [
                           Expanded(
                             child: ElevatedButton(
                               onPressed: _toggleFollow,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: _isFollowing ? Colors.grey[200] : Colors.blueAccent,
+                                backgroundColor: _isFollowing ? Colors.grey[200] : const Color(0xFF7F7FD5),
                                 foregroundColor: _isFollowing ? Colors.black87 : Colors.white,
-                                elevation: _isFollowing ? 0 : 2,
+                                elevation: _isFollowing ? 0 : 4,
+                                shadowColor: const Color(0xFF7F7FD5).withOpacity(0.4),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
                                 ),
@@ -186,6 +211,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                 );
                               },
                               style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF7F7FD5),
+                                side: const BorderSide(color: Color(0xFF7F7FD5)),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
                                 ),
@@ -199,78 +226,104 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   ),
                 ),
                 Positioned(
-                  top: 80,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                    child: NetworkAvatarImage(
-                      imageUrl: avatar,
-                      radius: 40,
-                      placeholderIcon: Icons.person,
+                  top: 90,
+                  child: Hero(
+                    tag: widget.heroTag ?? 'user_avatar_${widget.userId}',
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 4),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+                      child: NetworkAvatarImage(
+                        imageUrl: avatar,
+                        radius: 44,
+                        placeholderIcon: Icons.person,
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
             
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             
             // 动态列表区域
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              width: double.infinity,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text(
-                      '个人动态',
-                      style: TextStyle(
-                        fontSize: 18, 
-                        fontWeight: FontWeight.bold,
+            FadeInUp(
+              delay: const Duration(milliseconds: 300),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                width: double.infinity,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 4, 
+                            height: 18, 
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF7F7FD5),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            '个人动态',
+                            style: TextStyle(
+                              fontSize: 18, 
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  const Divider(height: 1),
-                  if (_isLoadingPosts)
-                    const Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  else if (_userPosts.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.all(32.0),
-                      child: Center(
-                        child: Column(
-                          children: [
-                            Icon(Icons.article_outlined, size: 64, color: Colors.grey[200]),
-                            const SizedBox(height: 16),
-                            Text(
-                              '暂无动态',
-                              style: TextStyle(color: Colors.grey[400]),
-                            ),
-                          ],
+                    const Divider(height: 1),
+                    if (_isLoadingPosts)
+                      const Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (_userPosts.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(40.0),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(Icons.bubble_chart_outlined, size: 64, color: Colors.grey[200]),
+                              const SizedBox(height: 16),
+                              Text(
+                                '这里还空空如也哦 ~',
+                                style: TextStyle(color: Colors.grey[400]),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    )
-                  else
-                    ..._userPosts.map((post) => _buildSimplePostItem(post)),
-                  
-                  const SizedBox(height: 16),
-                ],
+                      )
+                    else
+                      ..._userPosts.map((post) => _buildSimplePostItem(post)),
+                    
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 40),
@@ -287,7 +340,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         // 可以跳转到帖子详情
       },
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(color: Colors.grey[100]!),
@@ -300,28 +353,28 @@ class _UserProfilePageState extends State<UserProfilePage> {
               children: [
                 Text(
                   _formatTime(post.createdAt),
-                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
                 ),
                 const Spacer(),
-                Icon(Icons.more_horiz, color: Colors.grey[400], size: 16),
+                Icon(Icons.more_horiz, color: Colors.grey[300], size: 16),
               ],
             ),
             const SizedBox(height: 8),
             Text(
               post.content,
-              style: const TextStyle(fontSize: 15),
+              style: const TextStyle(fontSize: 15, height: 1.5),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
             if (post.images.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.only(top: 8.0),
+                padding: const EdgeInsets.only(top: 12.0),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                   child: NetworkImageWidget(
                     imageUrl: post.images.first,
                     width: double.infinity,
-                    height: 150,
+                    height: 160,
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -329,13 +382,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
             const SizedBox(height: 12),
             Row(
               children: [
-                Icon(Icons.favorite_border, size: 16, color: Colors.grey[400]),
+                Icon(Icons.favorite_rounded, size: 16, color: Colors.pink[100]),
                 const SizedBox(width: 4),
-                Text('${post.likes}', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                Text('${post.likes}', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
                 const SizedBox(width: 16),
-                Icon(Icons.chat_bubble_outline, size: 16, color: Colors.grey[400]),
+                Icon(Icons.chat_bubble_rounded, size: 16, color: Colors.blue[100]),
                 const SizedBox(width: 4),
-                Text('${post.comments}', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                Text('${post.comments}', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
               ],
             ),
           ],
@@ -378,7 +431,7 @@ class _StatItem extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            color: Colors.grey[600],
+            color: Colors.grey[500],
             fontSize: 12,
           ),
         ),

@@ -4,6 +4,7 @@ import 'services/post_service.dart';
 import 'services/api_service.dart';
 import 'auth_service.dart';
 import 'widgets/avatar_image.dart';
+import 'widgets/fade_in_up.dart';
 
 class CommentsPage extends StatefulWidget {
   final String postId;
@@ -98,10 +99,7 @@ class _CommentsPageState extends State<CommentsPage> {
 
       await PostService.addComment(comment);
       
-      // 清空输入框
       _commentController.clear();
-      
-      // 重新获取评论列表，确保数据同步
       await _fetchComments();
 
       _showCustomSnackBar(context, '评论成功', isError: false);
@@ -159,26 +157,15 @@ class _CommentsPageState extends State<CommentsPage> {
     );
   }
 
-  String _formatTime(DateTime time) {
-    final now = DateTime.now();
-    final difference = now.difference(time);
-    
-    if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}分钟前';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}小时前';
-    } else if (difference.inDays < 30) {
-      return '${difference.inDays}天前';
-    } else {
-      return '${time.month}月${time.day}日';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text('评论 (${_comments.length})'),
+        title: Text('评论 (${_comments.length})', style: const TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
       ),
       body: Column(
         children: [
@@ -187,65 +174,103 @@ class _CommentsPageState extends State<CommentsPage> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _comments.isEmpty
-                    ? const Center(
-                        child: Text(
-                          '暂无评论，快来抢沙发吧！',
-                          style: TextStyle(color: Colors.grey),
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.chat_bubble_outline_rounded, size: 60, color: Colors.grey[300]),
+                            const SizedBox(height: 16),
+                            const Text(
+                              '暂无评论，快来抢沙发吧！',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ],
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                         itemCount: _comments.length,
                         itemBuilder: (context, index) {
                           final comment = _comments[index];
-                          return _buildCommentItem(comment);
+                          return FadeInUp(
+                            delay: Duration(milliseconds: 30 * index),
+                            child: _buildCommentItem(comment)
+                          );
                         },
                       ),
           ),
 
-          // 评论输入框
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                NetworkAvatarImage(
-                  imageUrl: _userAvatar,
-                  radius: 20,
-                  placeholderIcon: Icons.person,
+          // 底部输入区域
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, -2),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _commentController,
-                    decoration: InputDecoration(
-                      hintText: '写下你的评论...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide.none,
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: SafeArea(
+              child: Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.grey[200]!, width: 1),
+                    ),
+                    child: NetworkAvatarImage(
+                      imageUrl: _userAvatar,
+                      radius: 20,
+                      placeholderIcon: Icons.person,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(24),
                       ),
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
+                      child: TextField(
+                        controller: _commentController,
+                        decoration: const InputDecoration(
+                          hintText: '写下你的评论...',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
+                          hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                _isSubmitting
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : IconButton(
-                        onPressed: _addComment,
-                        icon: const Icon(Icons.send),
-                        color: Colors.blueAccent,
-                        iconSize: 24,
-                      ),
-              ],
+                  const SizedBox(width: 12),
+                  _isSubmitting
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Container(
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF7F7FD5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            onPressed: _addComment,
+                            icon: const Icon(Icons.arrow_upward_rounded),
+                            color: Colors.white,
+                            iconSize: 20,
+                            padding: const EdgeInsets.all(8),
+                            constraints: const BoxConstraints(),
+                          ),
+                        ),
+                ],
+              ),
             ),
           ),
         ],
@@ -266,85 +291,125 @@ class _CommentsPageState extends State<CommentsPage> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(16),
-              ),
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        comment.userName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      Text(
-                        _formatTime(comment.createdAt),
-                        style: TextStyle(
-                          color: Colors.grey[500],
-                          fontSize: 12,
-                        ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(20),
+                      bottomLeft: Radius.circular(20),
+                      bottomRight: Radius.circular(20),
+                      topLeft: Radius.circular(5),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.05),
+                        blurRadius: 5,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(comment.content),
-                  const SizedBox(height: 8),
-                  Row(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      IconButton(
-                        onPressed: () => _toggleCommentLike(comment.id),
-                        icon: Icon(
-                          comment.isLiked ? Icons.favorite : Icons.favorite_border,
-                          color: comment.isLiked ? Colors.red : Colors.grey,
-                          size: 16,
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            comment.userName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            _formatTime(comment.createdAt),
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(height: 8),
                       Text(
-                        '${comment.likes}',
-                        style: TextStyle(
-                          color: comment.isLiked ? Colors.red : Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      IconButton(
-                        onPressed: () {},
-                        icon: const Icon(
-                          Icons.reply_outlined,
-                          color: Colors.grey,
-                          size: 16,
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '回复',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
+                        comment.content,
+                        style: const TextStyle(height: 1.4, fontSize: 15),
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: () => _toggleCommentLike(comment.id),
+                      child: Row(
+                        children: [
+                          Icon(
+                            comment.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                            color: comment.isLiked ? Colors.pinkAccent : Colors.grey[400],
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            comment.likes > 0 ? '${comment.likes}' : '赞',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    InkWell(
+                      onTap: () {},
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.reply_rounded,
+                            color: Colors.grey[400],
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '回复',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _formatTime(DateTime time) {
+    final now = DateTime.now();
+    final difference = now.difference(time);
+    
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}分钟前';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}小时前';
+    } else if (difference.inDays < 30) {
+      return '${difference.inDays}天前';
+    } else {
+      return '${time.month}月${time.day}日';
+    }
   }
 
   @override

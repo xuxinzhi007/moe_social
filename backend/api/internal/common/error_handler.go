@@ -57,3 +57,20 @@ func HandleRPCError(err error, successMessage string) types.BaseResp {
 		Success: false,
 	}
 }
+
+// HandleError 处理普通错误并转换为 API 响应
+func HandleError(err error) types.BaseResp {
+	if err == nil {
+		return types.BaseResp{
+			Code:    200,
+			Message: "操作成功",
+			Success: true,
+		}
+	}
+
+	return types.BaseResp{
+		Code:    500,
+		Message: err.Error(),
+		Success: false,
+	}
+}

@@ -140,6 +140,11 @@ type UpdateUserPasswordReq {
 	NewPassword string `json:"new_password"`
 }
 
+type ResetPasswordReq {
+	Email       string `json:"email"`
+	NewPassword string `json:"new_password"`
+}
+
 type DeleteUserReq {
 	UserId string `path:"user_id"`
 }
@@ -291,6 +296,10 @@ type UpdateUserInfoResp {
 }
 
 type UpdateUserPasswordResp {
+	BaseResp
+}
+
+type ResetPasswordResp {
 	BaseResp
 }
 
@@ -458,6 +467,9 @@ service Super {
 	@handler updateUserPassword
 	put /api/user/:user_id/password (UpdateUserPasswordReq) returns (UpdateUserPasswordResp)
 
+	@handler resetPassword
+	post /api/user/reset-password (ResetPasswordReq) returns (ResetPasswordResp)
+
 	@handler deleteUser
 	delete /api/user/:user_id (DeleteUserReq) returns (DeleteUserResp)
 
@@ -553,4 +565,3 @@ service Super {
 	@handler likeComment
 	post /api/comments/:comment_id/like (LikeCommentReq) returns (LikeCommentResp)
 }
-

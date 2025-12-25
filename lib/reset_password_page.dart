@@ -136,12 +136,19 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     validator: (value) => Validators.confirmPassword(value, _newPasswordController.text),
                   ),
                   const SizedBox(height: 30),
-                  _isLoading
-                      ? const CircularProgressIndicator()
-                      : ElevatedButton(
-                          onPressed: _resetPassword,
-                          child: const Text('确认重置', style: TextStyle(fontSize: 16)),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _resetPassword,
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
+                      ),
+                      child: const Text('确认重置', style: TextStyle(fontSize: 16)),
+                    ),
+                  ),
                 ],
               ),
             ),

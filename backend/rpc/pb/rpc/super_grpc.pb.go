@@ -25,6 +25,7 @@ const (
 	Super_GetUser_FullMethodName                = "/super.Super/GetUser"
 	Super_UpdateUserInfo_FullMethodName         = "/super.Super/UpdateUserInfo"
 	Super_UpdateUserPassword_FullMethodName     = "/super.Super/UpdateUserPassword"
+	Super_ResetPassword_FullMethodName          = "/super.Super/ResetPassword"
 	Super_DeleteUser_FullMethodName             = "/super.Super/DeleteUser"
 	Super_UpdateUserVip_FullMethodName          = "/super.Super/UpdateUserVip"
 	Super_GetUsers_FullMethodName               = "/super.Super/GetUsers"
@@ -63,6 +64,7 @@ type SuperClient interface {
 	GetUser(ctx context.Context, in *GetUserReq, opts ...grpc.CallOption) (*GetUserResp, error)
 	UpdateUserInfo(ctx context.Context, in *UpdateUserInfoReq, opts ...grpc.CallOption) (*UpdateUserInfoResp, error)
 	UpdateUserPassword(ctx context.Context, in *UpdateUserPasswordReq, opts ...grpc.CallOption) (*UpdateUserPasswordResp, error)
+	ResetPassword(ctx context.Context, in *ResetPasswordReq, opts ...grpc.CallOption) (*ResetPasswordResp, error)
 	DeleteUser(ctx context.Context, in *DeleteUserReq, opts ...grpc.CallOption) (*DeleteUserResp, error)
 	UpdateUserVip(ctx context.Context, in *UpdateUserVipReq, opts ...grpc.CallOption) (*UpdateUserVipResp, error)
 	GetUsers(ctx context.Context, in *GetUsersReq, opts ...grpc.CallOption) (*GetUsersResp, error)
@@ -154,6 +156,15 @@ func (c *superClient) UpdateUserInfo(ctx context.Context, in *UpdateUserInfoReq,
 func (c *superClient) UpdateUserPassword(ctx context.Context, in *UpdateUserPasswordReq, opts ...grpc.CallOption) (*UpdateUserPasswordResp, error) {
 	out := new(UpdateUserPasswordResp)
 	err := c.cc.Invoke(ctx, Super_UpdateUserPassword_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) ResetPassword(ctx context.Context, in *ResetPasswordReq, opts ...grpc.CallOption) (*ResetPasswordResp, error) {
+	out := new(ResetPasswordResp)
+	err := c.cc.Invoke(ctx, Super_ResetPassword_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -396,6 +407,7 @@ type SuperServer interface {
 	GetUser(context.Context, *GetUserReq) (*GetUserResp, error)
 	UpdateUserInfo(context.Context, *UpdateUserInfoReq) (*UpdateUserInfoResp, error)
 	UpdateUserPassword(context.Context, *UpdateUserPasswordReq) (*UpdateUserPasswordResp, error)
+	ResetPassword(context.Context, *ResetPasswordReq) (*ResetPasswordResp, error)
 	DeleteUser(context.Context, *DeleteUserReq) (*DeleteUserResp, error)
 	UpdateUserVip(context.Context, *UpdateUserVipReq) (*UpdateUserVipResp, error)
 	GetUsers(context.Context, *GetUsersReq) (*GetUsersResp, error)
@@ -453,6 +465,9 @@ func (UnimplementedSuperServer) UpdateUserInfo(context.Context, *UpdateUserInfoR
 }
 func (UnimplementedSuperServer) UpdateUserPassword(context.Context, *UpdateUserPasswordReq) (*UpdateUserPasswordResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateUserPassword not implemented")
+}
+func (UnimplementedSuperServer) ResetPassword(context.Context, *ResetPasswordReq) (*ResetPasswordResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResetPassword not implemented")
 }
 func (UnimplementedSuperServer) DeleteUser(context.Context, *DeleteUserReq) (*DeleteUserResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteUser not implemented")
@@ -646,6 +661,24 @@ func _Super_UpdateUserPassword_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SuperServer).UpdateUserPassword(ctx, req.(*UpdateUserPasswordReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_ResetPassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResetPasswordReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).ResetPassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_ResetPassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).ResetPassword(ctx, req.(*ResetPasswordReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1130,6 +1163,10 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateUserPassword",
 			Handler:    _Super_UpdateUserPassword_Handler,
+		},
+		{
+			MethodName: "ResetPassword",
+			Handler:    _Super_ResetPassword_Handler,
 		},
 		{
 			MethodName: "DeleteUser",

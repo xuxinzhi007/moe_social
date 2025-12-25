@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'utils/validators.dart';
 import 'utils/error_handler.dart';
+import 'widgets/fade_in_up.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -18,6 +19,11 @@ class _RegisterPageState extends State<RegisterPage> {
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+
+  // 使用与登录页相同的配色
+  final Color _primaryColor = const Color(0xFF7F7FD5);
+  final Color _secondaryColor = const Color(0xFF86A8E7);
+  final Color _accentColor = const Color(0xFF91EAE4);
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
@@ -39,7 +45,7 @@ class _RegisterPageState extends State<RegisterPage> {
         });
 
         if (result.success) {
-          ErrorHandler.showSuccess(context, '注册成功！请登录');
+          ErrorHandler.showSuccess(context, '欢迎加入 Moe Social！(≧∇≦)/');
           Navigator.pop(context);
         } else {
           ErrorHandler.showError(context, result.errorMessage ?? '注册失败，请稍后重试');
@@ -56,102 +62,261 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
+      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: true, // 让AppBar浮在背景上
       appBar: AppBar(
-        title: const Text('创建账户'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-      ),
-      extendBodyBehindAppBar: true,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue[50]!, Colors.white],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 80),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  const Icon(Icons.app_registration_rounded, size: 70, color: Colors.blueAccent),
-                  const SizedBox(height: 20),
-                  const Text(
-                    '立即加入',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 40),
-                  TextFormField(
-                    controller: _usernameController,
-                    decoration: const InputDecoration(
-                      labelText: '用户名',
-                      prefixIcon: Icon(Icons.person_outline),
-                      hintText: '3-20个字符，支持字母、数字、下划线',
+      ),
+      body: SingleChildScrollView(
+        child: SizedBox(
+          height: size.height, // 确保高度撑满
+          child: Stack(
+            children: [
+              // 1. 背景层
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: size.height * 0.35, // 稍微调小一点，给表单更多空间
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [_secondaryColor, _primaryColor], // 反转渐变，增加变化
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    validator: Validators.username,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _emailController,
-                    decoration: const InputDecoration(
-                      labelText: '电子邮箱',
-                      prefixIcon: Icon(Icons.email_outlined),
-                      hintText: 'example@email.com',
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(60),
+                      bottomRight: Radius.circular(60),
                     ),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: Validators.email,
                   ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _passwordController,
-                    decoration: InputDecoration(
-                      labelText: '设置密码',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                      ),
-                    ),
-                    obscureText: _obscurePassword,
-                    validator: (value) => Validators.password(value),
+                ),
+              ),
+              // 装饰
+              Positioned(
+                top: -30,
+                left: -30,
+                child: Container(
+                  width: 150,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    shape: BoxShape.circle,
                   ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _confirmPasswordController,
-                    decoration: const InputDecoration(
-                      labelText: '确认密码',
-                      prefixIcon: Icon(Icons.lock_reset_outlined),
-                    ),
-                    obscureText: _obscurePassword,
-                    validator: (value) => Validators.confirmPassword(value, _passwordController.text),
-                  ),
-                  const SizedBox(height: 30),
-                  _isLoading
-                      ? const CircularProgressIndicator()
-                      : ElevatedButton(
-                          onPressed: _register,
-                          child: const Text('注册并登录', style: TextStyle(fontSize: 16)),
-                        ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                ),
+              ),
+
+              // 2. 内容层
+              Positioned.fill(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
                     children: [
-                      const Text('已有账户？'),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('去登录'),
+                      SizedBox(height: MediaQuery.of(context).padding.top + 40),
+                      
+                      // 标题
+                      FadeInUp(
+                        duration: const Duration(milliseconds: 800),
+                        child: const Text(
+                          '创建账号',
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      FadeInUp(
+                        duration: const Duration(milliseconds: 800),
+                        delay: const Duration(milliseconds: 100),
+                        child: Text(
+                          '开始你的萌系社交之旅',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      // 注册表单卡片
+                      Expanded( // 使用Expanded填充剩余空间，避免溢出
+                        child: FadeInUp(
+                          duration: const Duration(milliseconds: 1000),
+                          delay: const Duration(milliseconds: 200),
+                          child: Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(bottom: 30),
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(30),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.1),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: SingleChildScrollView( // 卡片内部可滚动
+                              child: Form(
+                                key: _formKey,
+                                child: Column(
+                                  children: [
+                                    _buildTextField(
+                                      controller: _usernameController,
+                                      label: '用户名',
+                                      icon: Icons.person_outline,
+                                      validator: Validators.username,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildTextField(
+                                      controller: _emailController,
+                                      label: '电子邮箱',
+                                      icon: Icons.email_outlined,
+                                      validator: Validators.email,
+                                      keyboardType: TextInputType.emailAddress,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildTextField(
+                                      controller: _passwordController,
+                                      label: '设置密码',
+                                      icon: Icons.lock_outline,
+                                      isPassword: true,
+                                      validator: Validators.password,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildTextField(
+                                      controller: _confirmPasswordController,
+                                      label: '确认密码',
+                                      icon: Icons.lock_reset_outlined,
+                                      isPassword: true,
+                                      validator: (value) => Validators.confirmPassword(
+                                          value, _passwordController.text),
+                                    ),
+                                    const SizedBox(height: 32),
+                                    _isLoading
+                                        ? CircularProgressIndicator(color: _primaryColor)
+                                        : SizedBox(
+                                            width: double.infinity,
+                                            height: 50,
+                                            child: ElevatedButton(
+                                              onPressed: _register,
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: _primaryColor,
+                                                foregroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(25),
+                                                ),
+                                                elevation: 5,
+                                                shadowColor: _primaryColor.withOpacity(0.4),
+                                              ),
+                                              child: const Text(
+                                                '立即注册',
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                    const SizedBox(height: 20),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          '已有账户？',
+                                          style: TextStyle(color: Colors.grey[600]),
+                                        ),
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: Text(
+                                            '直接登录',
+                                            style: TextStyle(
+                                              color: _primaryColor,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool isPassword = false,
+    String? Function(String?)? validator,
+    TextInputType? keyboardType,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: isPassword ? _obscurePassword : false,
+      validator: validator,
+      keyboardType: keyboardType,
+      style: const TextStyle(color: Colors.black87),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.grey[600]),
+        prefixIcon: Icon(icon, color: _primaryColor.withOpacity(0.7)),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.grey[400],
+                ),
+                onPressed: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
+              )
+            : null,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: BorderSide(color: Colors.grey[200]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: BorderSide(color: _primaryColor),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: BorderSide(color: Colors.red[200]!),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: BorderSide(color: Colors.red[400]!),
+        ),
+        filled: true,
+        fillColor: Colors.grey[50],
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
     );
   }
@@ -165,4 +330,3 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 }
-

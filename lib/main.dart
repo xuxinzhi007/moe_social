@@ -176,25 +176,39 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _pages[_selectedIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (int index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: '首页',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: '个人中心',
-          ),
-        ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: NavigationBar(
+          elevation: 0,
+          backgroundColor: Colors.white,
+          indicatorColor: Theme.of(context).primaryColor.withOpacity(0.2),
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: (int index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home_rounded),
+              label: '首页',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person_rounded),
+              label: '我的',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -305,12 +319,32 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('发现'),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.favorite_rounded,
+                color: Theme.of(context).primaryColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              'Moe Social',
+              style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
+            ),
+          ],
+        ),
         actions: [
           Stack(
             children: [
               IconButton(
-                icon: const Icon(Icons.notifications_none),
+                icon: const Icon(Icons.notifications_outlined),
                 onPressed: () {
                   Navigator.pushNamed(context, '/notifications');
                 },
@@ -320,28 +354,20 @@ class _HomePageState extends State<HomePage> {
                 top: 8,
                 right: 8,
                 child: Container(
-                  padding: const EdgeInsets.all(2),
+                  padding: const EdgeInsets.all(4),
                   decoration: const BoxDecoration(
-                    color: Colors.red,
+                    color: Colors.redAccent,
                     shape: BoxShape.circle,
                   ),
                   constraints: const BoxConstraints(
-                    minWidth: 16,
-                    minHeight: 16,
-                  ),
-                  child: const Text(
-                    '3',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
+                    minWidth: 8,
+                    minHeight: 8,
                   ),
                 ),
               ),
             ],
           ),
+          const SizedBox(width: 8),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -351,14 +377,16 @@ class _HomePageState extends State<HomePage> {
             _fetchPosts();
           }
         },
-        backgroundColor: Colors.blueAccent,
-        child: const Icon(Icons.add),
+        backgroundColor: Theme.of(context).primaryColor,
+        elevation: 4,
+        child: const Icon(Icons.add_rounded, size: 30),
       ),
       body: RefreshIndicator(
         onRefresh: _fetchPosts,
+        color: Theme.of(context).primaryColor,
         child: ListView.builder(
           itemCount: _isLoading && _posts.isEmpty 
-              ? 6 // 显示骨架屏时显示6个占位符 (1个Banner + 5个帖子)
+              ? 6 // 显示骨架屏
               : _posts.length + 2, // +1 for header, +1 for loading more
           itemBuilder: (context, index) {
             if (index == 0) {
@@ -371,36 +399,78 @@ class _HomePageState extends State<HomePage> {
                     margin: const EdgeInsets.all(16),
                     height: 180,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.blueAccent, Colors.blue[300]!],
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFF7F7FD5), // 薰衣草紫
+                          Color(0xFF86A8E7), // 天空蓝
+                          Color(0xFF91EAE4), // 薄荷绿
+                        ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.blueAccent.withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
+                          color: const Color(0xFF7F7FD5).withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
                         ),
                       ],
                     ),
-                    child: const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.rocket_launch, size: 50, color: Colors.white),
-                          SizedBox(height: 10),
-                          Text(
-                            '欢迎使用 Moe Social',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                    child: Stack(
+                      children: [
+                        // 装饰圆圈
+                        Positioned(
+                          right: -20,
+                          top: -20,
+                          child: Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1),
+                              shape: BoxShape.circle,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                        Positioned(
+                          left: -30,
+                          bottom: -30,
+                          child: Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                        // 内容
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.explore_rounded, size: 40, color: Colors.white),
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                '发现更可爱的世界',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   // Quick Actions
@@ -409,22 +479,36 @@ class _HomePageState extends State<HomePage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildQuickAction(Icons.grid_view_rounded, '全部分类'),
-                        _buildQuickAction(Icons.star_rounded, '热门推荐'),
-                        _buildQuickAction(Icons.history_rounded, '最近浏览'),
-                        _buildQuickAction(Icons.download_for_offline_rounded, '离线内容'),
+                        _buildQuickAction(Icons.category_rounded, '分区', Colors.pink[50]!, Colors.pinkAccent),
+                        _buildQuickAction(Icons.whatshot_rounded, '热门', Colors.orange[50]!, Colors.orange),
+                        _buildQuickAction(Icons.new_releases_rounded, '最新', Colors.blue[50]!, Colors.blueAccent),
+                        _buildQuickAction(Icons.star_rounded, '关注', Colors.purple[50]!, Colors.purpleAccent),
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
                   // List Section Title
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      '热门动态',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 4,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).primaryColor,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          '热门动态',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                      ],
                     ),
                   ),
+                  const SizedBox(height: 8),
                 ],
               );
             }
@@ -438,9 +522,8 @@ class _HomePageState extends State<HomePage> {
             if (postIndex < _posts.length) {
               // Post Item
               final post = _posts[postIndex];
-              // 使用 FadeInUp 添加入场动画，带有交错延迟
               return FadeInUp(
-                delay: Duration(milliseconds: 50 * (postIndex % 10)), // 简单的交错逻辑
+                delay: Duration(milliseconds: 30 * (postIndex % 5)),
                 child: _buildPostCard(post, postIndex),
               );
             } else {
@@ -461,12 +544,18 @@ class _HomePageState extends State<HomePage> {
                 );
               } else {
                 // End of List
-                return const Padding(
-                  padding: EdgeInsets.all(16),
+                return Padding(
+                  padding: const EdgeInsets.all(32),
                   child: Center(
-                    child: Text(
-                      '没有更多帖子了',
-                      style: TextStyle(color: Colors.grey),
+                    child: Column(
+                      children: [
+                        Icon(Icons.check_circle_outline, color: Colors.grey[300], size: 40),
+                        const SizedBox(height: 8),
+                        Text(
+                          '已经到底啦 ~',
+                          style: TextStyle(color: Colors.grey[400]),
+                        ),
+                      ],
                     ),
                   ),
                 );
@@ -478,23 +567,30 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildQuickAction(IconData icon, String label) {
+  Widget _buildQuickAction(IconData icon, String label, Color bgColor, Color iconColor) {
     return Column(
       children: [
         InkWell(
           onTap: () {},
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(20),
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.blue[50],
-              borderRadius: BorderRadius.circular(15),
+              color: bgColor,
+              borderRadius: BorderRadius.circular(20),
             ),
-            child: Icon(icon, color: Colors.blueAccent),
+            child: Icon(icon, color: iconColor, size: 28),
           ),
         ),
         const SizedBox(height: 8),
-        Text(label, style: const TextStyle(fontSize: 12)),
+        Text(
+          label, 
+          style: const TextStyle(
+            fontSize: 13, 
+            fontWeight: FontWeight.w500,
+            color: Colors.black87
+          )
+        ),
       ],
     );
   }
@@ -502,8 +598,12 @@ class _HomePageState extends State<HomePage> {
   Widget _buildPostCard(Post post, int index) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 2,
+      elevation: 0, // 去除默认阴影，使用边框或自定义阴影
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: Colors.grey[100]!, width: 1),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -512,11 +612,9 @@ class _HomePageState extends State<HomePage> {
             // 用户信息
             Row(
               children: [
-                // Hero 动画：点击头像平滑过渡
                 GestureDetector(
                   onTap: () {
-                    final heroTag = 'avatar_${post.id}'; // 使用 post.id 确保列表中的唯一性
-                    // 跳转到用户详情页
+                    final heroTag = 'avatar_${post.id}';
                     Navigator.pushNamed(
                       context, 
                       '/user-profile', 
@@ -524,16 +622,25 @@ class _HomePageState extends State<HomePage> {
                         'userId': post.userId,
                         'userName': post.userName,
                         'userAvatar': post.userAvatar,
-                        'heroTag': heroTag, // 传递 tag 给详情页
+                        'heroTag': heroTag,
                       }
                     );
                   },
                   child: Hero(
-                    tag: 'avatar_${post.id}', // 使用 post.id 确保唯一性
-                    child: NetworkAvatarImage(
-                      imageUrl: post.userAvatar,
-                      radius: 24,
-                      placeholderIcon: Icons.person,
+                    tag: 'avatar_${post.id}',
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Theme.of(context).primaryColor.withOpacity(0.2),
+                          width: 2
+                        ),
+                      ),
+                      child: NetworkAvatarImage(
+                        imageUrl: post.userAvatar,
+                        radius: 22,
+                        placeholderIcon: Icons.person,
+                      ),
                     ),
                   ),
                 ),
@@ -552,7 +659,7 @@ class _HomePageState extends State<HomePage> {
                       Text(
                         _formatTime(post.createdAt),
                         style: TextStyle(
-                          color: Colors.grey[600],
+                          color: Colors.grey[400],
                           fontSize: 12,
                         ),
                       ),
@@ -561,15 +668,18 @@ class _HomePageState extends State<HomePage> {
                 ),
                 IconButton(
                   onPressed: () {},
-                  icon: const Icon(Icons.more_horiz),
-                  color: Colors.grey,
+                  icon: const Icon(Icons.more_horiz_rounded),
+                  color: Colors.grey[400],
                 ),
               ],
             ),
             const SizedBox(height: 12),
 
             // 帖子内容
-            Text(post.content),
+            Text(
+              post.content,
+              style: const TextStyle(fontSize: 15, height: 1.5),
+            ),
             const SizedBox(height: 12),
 
             // 帖子图片
@@ -578,23 +688,24 @@ class _HomePageState extends State<HomePage> {
                 height: 200,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
                   itemCount: post.images.length,
                   itemBuilder: (context, imgIndex) {
                     return Container(
-                      margin: const EdgeInsets.only(right: 8),
+                      margin: const EdgeInsets.only(right: 10),
                       width: 200,
                       child: GestureDetector(
-                        onTap: () {
-                          // 点击图片查看大图（此处可以添加Hero动画）
-                        },
+                        onTap: () {},
                         child: Hero(
                           tag: 'post_img_${post.id}_$imgIndex',
-                          child: NetworkImageWidget(
-                            imageUrl: post.images[imgIndex],
-                            width: 200,
-                            height: 200,
-                            fit: BoxFit.cover,
-                            borderRadius: BorderRadius.circular(12),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: NetworkImageWidget(
+                              imageUrl: post.images[imgIndex],
+                              width: 200,
+                              height: 200,
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       ),
@@ -602,53 +713,63 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
               ),
-            const SizedBox(height: 12),
+            
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 8),
 
             // 帖子互动
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                // 点赞动画按钮
                 LikeButton(
                   isLiked: post.isLiked,
                   likeCount: post.likes,
                   onTap: () => _toggleLike(post.id),
                 ),
-                const SizedBox(width: 24),
-                IconButton(
-                  onPressed: () async {
-                    // 跳转到评论页面，返回时刷新帖子列表
+                _buildActionButton(
+                  icon: Icons.chat_bubble_outline_rounded,
+                  count: post.comments,
+                  onTap: () async {
                     await Navigator.pushNamed(context, '/comments', arguments: post.id);
-                    // 返回后刷新帖子列表，更新评论数
                     _fetchPosts();
-                  },
-                  icon: const Icon(Icons.comment_outlined, color: Colors.grey),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
+                  }
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  '${post.comments}',
-                  style: TextStyle(
-                    color: Colors.grey[700],
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(width: 24),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.share_outlined, color: Colors.grey),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '分享',
-                  style: TextStyle(
-                    color: Colors.grey[700],
-                    fontSize: 14,
-                  ),
+                _buildActionButton(
+                  icon: Icons.share_rounded,
+                  label: '分享',
+                  onTap: () {}
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon, 
+    int? count, 
+    String? label,
+    required VoidCallback onTap
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.grey[600], size: 22),
+            const SizedBox(width: 6),
+            Text(
+              count?.toString() ?? label ?? '',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
@@ -728,33 +849,38 @@ class _LikeButtonState extends State<LikeButton> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        GestureDetector(
-          onTap: () {
-            widget.onTap();
-            if (!widget.isLiked) {
-              _controller.forward().then((_) => _controller.reset());
-            }
-          },
-          child: ScaleTransition(
-            scale: _scaleAnimation,
-            child: Icon(
-              widget.isLiked ? Icons.favorite : Icons.favorite_border,
-              color: widget.isLiked ? Colors.red : Colors.grey,
-              size: 24,
+    return InkWell(
+      onTap: () {
+        widget.onTap();
+        if (!widget.isLiked) {
+          _controller.forward().then((_) => _controller.reset());
+        }
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            ScaleTransition(
+              scale: _scaleAnimation,
+              child: Icon(
+                widget.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                color: widget.isLiked ? Colors.pinkAccent : Colors.grey[600],
+                size: 22,
+              ),
             ),
-          ),
+            const SizedBox(width: 6),
+            Text(
+              '${widget.likeCount}',
+              style: TextStyle(
+                color: widget.isLiked ? Colors.pinkAccent : Colors.grey[600],
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 4),
-        Text(
-          '${widget.likeCount}',
-          style: TextStyle(
-            color: widget.isLiked ? Colors.red : Colors.grey[700],
-            fontSize: 14,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

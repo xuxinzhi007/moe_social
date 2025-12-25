@@ -4,8 +4,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ThemeProvider with ChangeNotifier {
   // 主题模式：light、dark、system
   String _themeMode = 'system';
-  // 自定义主题颜色
-  Color _primaryColor = Colors.blueAccent;
+  
+  // 自定义主题颜色 - 默认改为 Moe 风格的薰衣草紫
+  Color _primaryColor = const Color(0xFF7F7FD5);
+  
+  // Moe 风格配色板
+  static const Color primaryPurple = Color(0xFF7F7FD5);
+  static const Color primaryBlue = Color(0xFF86A8E7);
+  static const Color primaryMint = Color(0xFF91EAE4);
+  
   // 主题模式常量
   static const String lightMode = 'light';
   static const String darkMode = 'dark';
@@ -78,59 +85,61 @@ class ThemeProvider with ChangeNotifier {
         seedColor: _primaryColor,
         brightness: brightness,
         primary: _primaryColor,
-        secondary: _primaryColor,
-        background: isDark ? Colors.grey[900]! : Colors.white,
+        secondary: primaryBlue, // 使用次色调
+        tertiary: primaryMint, // 使用三色调
+        background: isDark ? Colors.grey[900]! : const Color(0xFFF5F7FA), // 浅灰背景，比纯白更有质感
         surface: isDark ? Colors.grey[800]! : Colors.white,
-        onPrimary: Colors.white,
-        onSecondary: Colors.white,
-        onBackground: isDark ? Colors.white : Colors.black,
-        onSurface: isDark ? Colors.white : Colors.black,
       ),
       useMaterial3: true,
+      fontFamily: 'Roboto', // 建议后续引入圆形字体
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(double.infinity, 50),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), // 更圆润
+          elevation: 2,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
         filled: true,
         fillColor: isDark ? Colors.grey[800] : Colors.grey[50],
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
-      scaffoldBackgroundColor: isDark ? Colors.grey[900] : Colors.white,
-      cardColor: isDark ? Colors.grey[800] : Colors.white,
-      textTheme: TextTheme(
-        bodyLarge: TextStyle(color: isDark ? Colors.white : Colors.black),
-        bodyMedium: TextStyle(color: isDark ? Colors.grey[300] : Colors.grey[800]),
-        titleLarge: TextStyle(color: isDark ? Colors.white : Colors.black),
-        titleMedium: TextStyle(color: isDark ? Colors.white : Colors.black),
-        titleSmall: TextStyle(color: isDark ? Colors.grey[300] : Colors.grey[800]),
-      ),
+      scaffoldBackgroundColor: isDark ? Colors.grey[900] : const Color(0xFFF5F7FA),
+      // cardTheme: CardTheme(
+      //   color: isDark ? Colors.grey[800] : Colors.white,
+      //   elevation: 2,
+      //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), // 卡片更圆润
+      //   shadowColor: Colors.black.withOpacity(0.1),
+      // ),
       appBarTheme: AppBarTheme(
         backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-        titleTextStyle: TextStyle(color: isDark ? Colors.white : Colors.black),
-        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          color: isDark ? Colors.white : Colors.black87,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black87),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: isDark ? Colors.grey[900] : Colors.white,
         selectedItemColor: _primaryColor,
-        unselectedItemColor: isDark ? Colors.grey[400] : Colors.grey[600],
+        unselectedItemColor: isDark ? Colors.grey[400] : Colors.grey[400],
+        type: BottomNavigationBarType.fixed,
+        elevation: 10,
       ),
     );
   }
 
   // 预设主题颜色列表，符合二次元风格
   static List<Color> presetColors = [
-    Colors.blueAccent,
+    const Color(0xFF7F7FD5), // 薰衣草紫
+    const Color(0xFF86A8E7), // 天空蓝
+    const Color(0xFF91EAE4), // 薄荷绿
     Colors.pinkAccent,
-    Colors.purpleAccent,
-    Colors.greenAccent,
     Colors.orangeAccent,
-    Colors.redAccent,
-    Colors.tealAccent,
-    Colors.amberAccent,
-    Colors.deepPurpleAccent,
-    Colors.deepOrangeAccent,
+    const Color(0xFFFAD961), // 奶油黄
   ];
 }

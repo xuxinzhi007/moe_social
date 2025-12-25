@@ -54,6 +54,11 @@ func (s *SuperServer) UpdateUserPassword(ctx context.Context, in *rpc.UpdateUser
 	return l.UpdateUserPassword(in)
 }
 
+func (s *SuperServer) ResetPassword(ctx context.Context, in *rpc.ResetPasswordReq) (*rpc.ResetPasswordResp, error) {
+	l := logic.NewResetPasswordLogic(ctx, s.svcCtx)
+	return l.ResetPassword(in)
+}
+
 func (s *SuperServer) DeleteUser(ctx context.Context, in *rpc.DeleteUserReq) (*rpc.DeleteUserResp, error) {
 	l := logic.NewDeleteUserLogic(ctx, s.svcCtx)
 	return l.DeleteUser(in)

@@ -159,6 +159,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: user.RegisterHandler(serverCtx),
 			},
 			{
+				Method:  http.MethodPost,
+				Path:    "/api/user/reset-password",
+				Handler: user.ResetPasswordHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodGet,
 				Path:    "/api/users",
 				Handler: user.GetUsersHandler(serverCtx),

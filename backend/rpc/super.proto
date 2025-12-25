@@ -86,6 +86,16 @@ message UpdateUserPasswordReq {
 message UpdateUserPasswordResp {
 }
 
+// 重置用户密码请求
+message ResetPasswordReq {
+  string email = 1;
+  string new_password = 2;
+}
+
+// 重置用户密码响应
+message ResetPasswordResp {
+}
+
 // 删除用户请求
 message DeleteUserReq {
   string user_id = 1;
@@ -430,6 +440,7 @@ service Super {
   rpc GetUser(GetUserReq) returns (GetUserResp);
   rpc UpdateUserInfo(UpdateUserInfoReq) returns (UpdateUserInfoResp);
   rpc UpdateUserPassword(UpdateUserPasswordReq) returns (UpdateUserPasswordResp);
+  rpc ResetPassword(ResetPasswordReq) returns (ResetPasswordResp);
   rpc DeleteUser(DeleteUserReq) returns (DeleteUserResp);
   rpc UpdateUserVip(UpdateUserVipReq) returns (UpdateUserVipResp);
   rpc GetUsers(GetUsersReq) returns (GetUsersResp);

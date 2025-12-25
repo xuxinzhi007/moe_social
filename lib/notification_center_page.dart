@@ -3,6 +3,7 @@ import './models/notification.dart';
 import './services/notification_service.dart';
 import './widgets/avatar_image.dart';
 import './utils/error_handler.dart';
+import './widgets/fade_in_up.dart';
 
 class NotificationCenterPage extends StatefulWidget {
   const NotificationCenterPage({super.key});
@@ -68,6 +69,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text('清除所有通知'),
           content: const Text('确定要清除所有通知吗？此操作不可恢复。'),
           actions: [
@@ -138,49 +140,63 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
   }
 
   Widget _buildNotificationIcon(String type) {
+    IconData icon;
+    Color color;
+    
     switch (type) {
       case NotificationModel.like:
-        return const Icon(Icons.favorite, color: Colors.red);
+        icon = Icons.favorite_rounded;
+        color = Colors.pinkAccent;
+        break;
       case NotificationModel.comment:
-        return const Icon(Icons.comment, color: Colors.blueAccent);
+        icon = Icons.chat_bubble_rounded;
+        color = Colors.blueAccent;
+        break;
       case NotificationModel.follow:
-        return const Icon(Icons.person_add, color: Colors.green);
+        icon = Icons.person_add_rounded;
+        color = Colors.green;
+        break;
       case NotificationModel.system:
-        return const Icon(Icons.notifications, color: Colors.orange);
+        icon = Icons.notifications_rounded;
+        color = Colors.orange;
+        break;
       default:
-        return const Icon(Icons.notifications, color: Colors.grey);
+        icon = Icons.notifications_rounded;
+        color = Colors.grey;
     }
+    
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, color: color, size: 24),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('通知'),
+        title: const Text('消息中心', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
         actions: [
           if (_unreadCount > 0)
-            TextButton(
+            TextButton.icon(
               onPressed: _markAllAsRead,
-              child: const Text('全部已读'),
-            ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'clear') {
-                _clearAllNotifications();
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'clear',
-                child: const Row(
-                  children: [
-                    Icon(Icons.delete_outline, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('清除所有通知'),
-                  ],
-                ),
+              icon: const Icon(Icons.done_all_rounded, size: 16),
+              label: const Text('全部已读'),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF7F7FD5),
               ),
-            ],
+            ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline_rounded, color: Colors.grey),
+            onPressed: _clearAllNotifications,
           ),
         ],
       ),
@@ -191,78 +207,111 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.notifications_off, size: 64, color: Colors.grey),
-                      const SizedBox(height: 16),
-                      const Text('暂无通知', style: TextStyle(color: Colors.grey)),
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10),
+                          ],
+                        ),
+                        child: Icon(Icons.notifications_none_rounded, size: 64, color: Colors.grey[300]),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text('暂无新消息', style: TextStyle(color: Colors.grey, fontSize: 16)),
                     ],
                   ),
                 )
-              : ListView.builder(
+              : ListView.separated(
+                  padding: const EdgeInsets.all(16),
                   itemCount: _notifications.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final notification = _notifications[index];
-                    return GestureDetector(
-                      onTap: () {
-                        // 标记为已读
-                        if (!notification.isRead) {
-                          _markAsRead(notification.id);
-                        }
-                        // 根据通知类型跳转到相关页面
-                        // if (notification.type == NotificationModel.like || notification.type == NotificationModel.comment) {
-                        //   if (notification.relatedPostId != null) {
-                        //     Navigator.pushNamed(context, '/post-detail', arguments: notification.relatedPostId);
-                        //   }
-                        // } else if (notification.type == NotificationModel.follow) {
-                        //   if (notification.relatedUserId != null) {
-                        //     Navigator.pushNamed(context, '/user-profile', arguments: notification.relatedUserId);
-                        //   }
-                        // }
-                      },
-                      child: Container(
-                        color: notification.isRead ? null : Colors.blue[50],
-                        child: ListTile(
-                          leading: notification.relatedUserAvatar != null
-                              ? NetworkAvatarImage(
-                                  imageUrl: notification.relatedUserAvatar!,
-                                  radius: 32,
-                                  placeholderIcon: Icons.person,
-                                )
-                              : Container(
-                                  width: 64,
-                                  height: 64,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(32),
-                                  ),
-                                  child: _buildNotificationIcon(notification.type),
-                                ),
-                          title: Text(
-                            notification.title,
-                            style: TextStyle(
-                              fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(notification.content),
-                              const SizedBox(height: 4),
-                              Text(
-                                _formatTime(notification.createdAt),
-                                style: TextStyle(fontSize: 12, color: Colors.grey),
+                    return FadeInUp(
+                      delay: Duration(milliseconds: 30 * (index % 10)),
+                      child: GestureDetector(
+                        onTap: () {
+                          if (!notification.isRead) {
+                            _markAsRead(notification.id);
+                          }
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.05),
+                                blurRadius: 5,
+                                offset: const Offset(0, 2),
                               ),
                             ],
+                            border: !notification.isRead 
+                                ? Border.all(color: const Color(0xFF7F7FD5).withOpacity(0.3), width: 1.5)
+                                : null,
                           ),
-                          trailing: !notification.isRead
-                              ? Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.blueAccent,
-                                    shape: BoxShape.circle,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                notification.relatedUserAvatar != null
+                                    ? NetworkAvatarImage(
+                                        imageUrl: notification.relatedUserAvatar!,
+                                        radius: 24,
+                                        placeholderIcon: Icons.person,
+                                      )
+                                    : _buildNotificationIcon(notification.type),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              notification.title,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 15,
+                                                color: Colors.grey[800],
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          if (!notification.isRead)
+                                            Container(
+                                              margin: const EdgeInsets.only(left: 8),
+                                              width: 8,
+                                              height: 8,
+                                              decoration: const BoxDecoration(
+                                                color: Color(0xFF7F7FD5),
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        notification.content,
+                                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        _formatTime(notification.createdAt),
+                                        style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                                      ),
+                                    ],
                                   ),
-                                )
-                              : const SizedBox(width: 8),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     );

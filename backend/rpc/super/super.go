@@ -68,6 +68,8 @@ type (
 	RechargeResp               = rpc.RechargeResp
 	RegisterReq                = rpc.RegisterReq
 	RegisterResp               = rpc.RegisterResp
+	ResetPasswordReq           = rpc.ResetPasswordReq
+	ResetPasswordResp          = rpc.ResetPasswordResp
 	SyncUserVipStatusReq       = rpc.SyncUserVipStatusReq
 	SyncUserVipStatusResp      = rpc.SyncUserVipStatusResp
 	Transaction                = rpc.Transaction
@@ -92,6 +94,7 @@ type (
 		GetUser(ctx context.Context, in *GetUserReq, opts ...grpc.CallOption) (*GetUserResp, error)
 		UpdateUserInfo(ctx context.Context, in *UpdateUserInfoReq, opts ...grpc.CallOption) (*UpdateUserInfoResp, error)
 		UpdateUserPassword(ctx context.Context, in *UpdateUserPasswordReq, opts ...grpc.CallOption) (*UpdateUserPasswordResp, error)
+		ResetPassword(ctx context.Context, in *ResetPasswordReq, opts ...grpc.CallOption) (*ResetPasswordResp, error)
 		DeleteUser(ctx context.Context, in *DeleteUserReq, opts ...grpc.CallOption) (*DeleteUserResp, error)
 		UpdateUserVip(ctx context.Context, in *UpdateUserVipReq, opts ...grpc.CallOption) (*UpdateUserVipResp, error)
 		GetUsers(ctx context.Context, in *GetUsersReq, opts ...grpc.CallOption) (*GetUsersResp, error)
@@ -167,6 +170,11 @@ func (m *defaultSuper) UpdateUserInfo(ctx context.Context, in *UpdateUserInfoReq
 func (m *defaultSuper) UpdateUserPassword(ctx context.Context, in *UpdateUserPasswordReq, opts ...grpc.CallOption) (*UpdateUserPasswordResp, error) {
 	client := rpc.NewSuperClient(m.cli.Conn())
 	return client.UpdateUserPassword(ctx, in, opts...)
+}
+
+func (m *defaultSuper) ResetPassword(ctx context.Context, in *ResetPasswordReq, opts ...grpc.CallOption) (*ResetPasswordResp, error) {
+	client := rpc.NewSuperClient(m.cli.Conn())
+	return client.ResetPassword(ctx, in, opts...)
 }
 
 func (m *defaultSuper) DeleteUser(ctx context.Context, in *DeleteUserReq, opts ...grpc.CallOption) (*DeleteUserResp, error) {

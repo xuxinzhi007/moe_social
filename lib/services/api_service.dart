@@ -306,7 +306,7 @@ class ApiService {
   static Future<Map<String, dynamic>> resetPassword(String email, String code, String newPassword) async {
     return await _request('/api/user/reset-password',
       method: 'POST',
-      body: {'email': email, 'code': code, 'new_password': newPassword}
+      body: {'email': email, 'new_password': newPassword}
     );
   }
 

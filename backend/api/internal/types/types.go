@@ -349,6 +349,15 @@ type UpdateUserPasswordResp struct {
 	BaseResp
 }
 
+type ResetPasswordReq struct {
+	Email       string `json:"email"`
+	NewPassword string `json:"new_password"`
+}
+
+type ResetPasswordResp struct {
+	BaseResp
+}
+
 type UpdateUserVipReq struct {
 	UserId     string `path:"user_id"`
 	IsVip      bool   `json:"is_vip"`

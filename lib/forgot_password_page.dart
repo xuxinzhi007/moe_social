@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
-import 'verify_code_page.dart';
-import 'services/api_service.dart';
+import 'reset_password_page.dart';
 import 'utils/validators.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -14,80 +12,25 @@ class ForgotPasswordPage extends StatefulWidget {
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  bool _isLoading = false;
-  int _countdown = 0;
-  Timer? _timer;
 
-  void _startCountdown() {
-    setState(() {
-      _countdown = 60;
-    });
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        if (_countdown > 0) {
-          _countdown--;
-        } else {
-          _timer?.cancel();
-        }
-      });
-    });
-  }
-
-  Future<void> _sendCode() async {
+  void _nextStep() {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
-
-      try {
-        await ApiService.sendResetPasswordCode(_emailController.text);
-        _showCustomSnackBar(context, '验证码已发送到您的邮箱', isError: false);
-        _startCountdown();
-        
-        // 跳转到验证码验证页面
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => VerifyCodePage(email: _emailController.text),
+      // 直接跳转到重置密码页面，不需要验证码
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ResetPasswordPage(
+            email: _emailController.text,
+            code: "", // 不再需要验证码
           ),
-        );
-      } on ApiException catch (e) {
-        _showCustomSnackBar(context, e.message, isError: true);
-      } catch (e) {
-        _showCustomSnackBar(context, '发送失败，请稍后重试', isError: true);
-      } finally {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  void _showCustomSnackBar(BuildContext context, String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 10),
-            Text(message),
-          ],
         ),
-        backgroundColor: isError ? Colors.redAccent : Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+      );
+    }
   }
 
   @override
   void dispose() {
     _emailController.dispose();
-    _timer?.cancel();
     super.dispose();
   }
 
@@ -123,7 +66,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   ),
                   const SizedBox(height: 10),
                   const Text(
-                    '请输入您的邮箱地址，我们将发送验证码到您的邮箱',
+                    '请输入您的邮箱地址以重置密码',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey),
                   ),
@@ -139,12 +82,19 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     validator: Validators.email,
                   ),
                   const SizedBox(height: 30),
-                  _isLoading
-                      ? const CircularProgressIndicator()
-                      : ElevatedButton(
-                          onPressed: _sendCode,
-                          child: const Text('发送验证码', style: TextStyle(fontSize: 16)),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _nextStep,
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
+                      ),
+                      child: const Text('下一步', style: TextStyle(fontSize: 16)),
+                    ),
+                  ),
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
