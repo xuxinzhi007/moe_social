@@ -150,6 +150,15 @@ type GetUserActiveVipRecordResp struct {
 	Data VipRecord `json:"data"`
 }
 
+type GetUserByEmailReq struct {
+	Email string `json:"email"`
+}
+
+type GetUserByEmailResp struct {
+	BaseResp
+	Data User `json:"data"`
+}
+
 type GetUserCountResp struct {
 	BaseResp
 	Data int `json:"data"`
@@ -298,6 +307,15 @@ type RegisterResp struct {
 	Data User `json:"data"`
 }
 
+type ResetPasswordReq struct {
+	Email       string `json:"email"`
+	NewPassword string `json:"new_password"`
+}
+
+type ResetPasswordResp struct {
+	BaseResp
+}
+
 type SyncUserVipStatusData struct {
 	IsVip     bool   `json:"is_vip"`
 	ExpiresAt string `json:"expires_at"`
@@ -346,15 +364,6 @@ type UpdateUserPasswordReq struct {
 }
 
 type UpdateUserPasswordResp struct {
-	BaseResp
-}
-
-type ResetPasswordReq struct {
-	Email       string `json:"email"`
-	NewPassword string `json:"new_password"`
-}
-
-type ResetPasswordResp struct {
 	BaseResp
 }
 

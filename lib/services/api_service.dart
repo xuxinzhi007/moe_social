@@ -302,6 +302,15 @@ class ApiService {
     );
   }
   
+  // 检查邮箱是否存在
+  static Future<User> checkUserByEmail(String email) async {
+    final result = await _request('/api/user/check-email',
+      method: 'POST',
+      body: {'email': email}
+    );
+    return User.fromJson(result['data']);
+  }
+
   // 重置密码
   static Future<Map<String, dynamic>> resetPassword(String email, String code, String newPassword) async {
     return await _request('/api/user/reset-password',

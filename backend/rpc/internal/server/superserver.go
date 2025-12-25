@@ -44,6 +44,11 @@ func (s *SuperServer) GetUser(ctx context.Context, in *rpc.GetUserReq) (*rpc.Get
 	return l.GetUser(in)
 }
 
+func (s *SuperServer) GetUserByEmail(ctx context.Context, in *rpc.GetUserByEmailReq) (*rpc.GetUserByEmailResp, error) {
+	l := logic.NewGetUserByEmailLogic(ctx, s.svcCtx)
+	return l.GetUserByEmail(in)
+}
+
 func (s *SuperServer) UpdateUserInfo(ctx context.Context, in *rpc.UpdateUserInfoReq) (*rpc.UpdateUserInfoResp, error) {
 	l := logic.NewUpdateUserInfoLogic(ctx, s.svcCtx)
 	return l.UpdateUserInfo(in)

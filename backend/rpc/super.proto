@@ -62,6 +62,16 @@ message GetUserResp {
   User user = 1;
 }
 
+// 根据邮箱获取用户请求
+message GetUserByEmailReq {
+  string email = 1;
+}
+
+// 根据邮箱获取用户响应
+message GetUserByEmailResp {
+  User user = 1;
+}
+
 // 更新用户信息请求
 message UpdateUserInfoReq {
   string user_id = 1;
@@ -438,6 +448,7 @@ service Super {
   rpc Login(LoginReq) returns (LoginResp);
   rpc GetUserInfo(GetUserInfoReq) returns (GetUserInfoResp);
   rpc GetUser(GetUserReq) returns (GetUserResp);
+  rpc GetUserByEmail(GetUserByEmailReq) returns (GetUserByEmailResp);
   rpc UpdateUserInfo(UpdateUserInfoReq) returns (UpdateUserInfoResp);
   rpc UpdateUserPassword(UpdateUserPasswordReq) returns (UpdateUserPasswordResp);
   rpc ResetPassword(ResetPasswordReq) returns (ResetPasswordResp);

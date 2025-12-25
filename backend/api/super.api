@@ -303,6 +303,15 @@ type ResetPasswordResp {
 	BaseResp
 }
 
+type GetUserByEmailReq {
+	Email string `json:"email"`
+}
+
+type GetUserByEmailResp {
+	BaseResp
+	Data User `json:"data"`
+}
+
 type DeleteUserResp {
 	BaseResp
 }
@@ -467,6 +476,9 @@ service Super {
 	@handler updateUserPassword
 	put /api/user/:user_id/password (UpdateUserPasswordReq) returns (UpdateUserPasswordResp)
 
+	@handler checkUserByEmail
+	post /api/user/check-email (GetUserByEmailReq) returns (GetUserByEmailResp)
+
 	@handler resetPassword
 	post /api/user/reset-password (ResetPasswordReq) returns (ResetPasswordResp)
 
@@ -565,3 +577,4 @@ service Super {
 	@handler likeComment
 	post /api/comments/:comment_id/like (LikeCommentReq) returns (LikeCommentResp)
 }
+

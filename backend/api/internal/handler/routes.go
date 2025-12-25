@@ -150,6 +150,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodPost,
+				Path:    "/api/user/check-email",
+				Handler: user.CheckUserByEmailHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
 				Path:    "/api/user/login",
 				Handler: user.LoginHandler(serverCtx),
 			},

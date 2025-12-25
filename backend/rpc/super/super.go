@@ -39,6 +39,8 @@ type (
 	GetTransactionsResp        = rpc.GetTransactionsResp
 	GetUserActiveVipRecordReq  = rpc.GetUserActiveVipRecordReq
 	GetUserActiveVipRecordResp = rpc.GetUserActiveVipRecordResp
+	GetUserByEmailReq          = rpc.GetUserByEmailReq
+	GetUserByEmailResp         = rpc.GetUserByEmailResp
 	GetUserCountReq            = rpc.GetUserCountReq
 	GetUserCountResp           = rpc.GetUserCountResp
 	GetUserInfoReq             = rpc.GetUserInfoReq
@@ -92,6 +94,7 @@ type (
 		Login(ctx context.Context, in *LoginReq, opts ...grpc.CallOption) (*LoginResp, error)
 		GetUserInfo(ctx context.Context, in *GetUserInfoReq, opts ...grpc.CallOption) (*GetUserInfoResp, error)
 		GetUser(ctx context.Context, in *GetUserReq, opts ...grpc.CallOption) (*GetUserResp, error)
+		GetUserByEmail(ctx context.Context, in *GetUserByEmailReq, opts ...grpc.CallOption) (*GetUserByEmailResp, error)
 		UpdateUserInfo(ctx context.Context, in *UpdateUserInfoReq, opts ...grpc.CallOption) (*UpdateUserInfoResp, error)
 		UpdateUserPassword(ctx context.Context, in *UpdateUserPasswordReq, opts ...grpc.CallOption) (*UpdateUserPasswordResp, error)
 		ResetPassword(ctx context.Context, in *ResetPasswordReq, opts ...grpc.CallOption) (*ResetPasswordResp, error)
@@ -160,6 +163,11 @@ func (m *defaultSuper) GetUserInfo(ctx context.Context, in *GetUserInfoReq, opts
 func (m *defaultSuper) GetUser(ctx context.Context, in *GetUserReq, opts ...grpc.CallOption) (*GetUserResp, error) {
 	client := rpc.NewSuperClient(m.cli.Conn())
 	return client.GetUser(ctx, in, opts...)
+}
+
+func (m *defaultSuper) GetUserByEmail(ctx context.Context, in *GetUserByEmailReq, opts ...grpc.CallOption) (*GetUserByEmailResp, error) {
+	client := rpc.NewSuperClient(m.cli.Conn())
+	return client.GetUserByEmail(ctx, in, opts...)
 }
 
 func (m *defaultSuper) UpdateUserInfo(ctx context.Context, in *UpdateUserInfoReq, opts ...grpc.CallOption) (*UpdateUserInfoResp, error) {

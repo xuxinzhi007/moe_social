@@ -23,6 +23,7 @@ const (
 	Super_Login_FullMethodName                  = "/super.Super/Login"
 	Super_GetUserInfo_FullMethodName            = "/super.Super/GetUserInfo"
 	Super_GetUser_FullMethodName                = "/super.Super/GetUser"
+	Super_GetUserByEmail_FullMethodName         = "/super.Super/GetUserByEmail"
 	Super_UpdateUserInfo_FullMethodName         = "/super.Super/UpdateUserInfo"
 	Super_UpdateUserPassword_FullMethodName     = "/super.Super/UpdateUserPassword"
 	Super_ResetPassword_FullMethodName          = "/super.Super/ResetPassword"
@@ -62,6 +63,7 @@ type SuperClient interface {
 	Login(ctx context.Context, in *LoginReq, opts ...grpc.CallOption) (*LoginResp, error)
 	GetUserInfo(ctx context.Context, in *GetUserInfoReq, opts ...grpc.CallOption) (*GetUserInfoResp, error)
 	GetUser(ctx context.Context, in *GetUserReq, opts ...grpc.CallOption) (*GetUserResp, error)
+	GetUserByEmail(ctx context.Context, in *GetUserByEmailReq, opts ...grpc.CallOption) (*GetUserByEmailResp, error)
 	UpdateUserInfo(ctx context.Context, in *UpdateUserInfoReq, opts ...grpc.CallOption) (*UpdateUserInfoResp, error)
 	UpdateUserPassword(ctx context.Context, in *UpdateUserPasswordReq, opts ...grpc.CallOption) (*UpdateUserPasswordResp, error)
 	ResetPassword(ctx context.Context, in *ResetPasswordReq, opts ...grpc.CallOption) (*ResetPasswordResp, error)
@@ -138,6 +140,15 @@ func (c *superClient) GetUserInfo(ctx context.Context, in *GetUserInfoReq, opts 
 func (c *superClient) GetUser(ctx context.Context, in *GetUserReq, opts ...grpc.CallOption) (*GetUserResp, error) {
 	out := new(GetUserResp)
 	err := c.cc.Invoke(ctx, Super_GetUser_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) GetUserByEmail(ctx context.Context, in *GetUserByEmailReq, opts ...grpc.CallOption) (*GetUserByEmailResp, error) {
+	out := new(GetUserByEmailResp)
+	err := c.cc.Invoke(ctx, Super_GetUserByEmail_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -405,6 +416,7 @@ type SuperServer interface {
 	Login(context.Context, *LoginReq) (*LoginResp, error)
 	GetUserInfo(context.Context, *GetUserInfoReq) (*GetUserInfoResp, error)
 	GetUser(context.Context, *GetUserReq) (*GetUserResp, error)
+	GetUserByEmail(context.Context, *GetUserByEmailReq) (*GetUserByEmailResp, error)
 	UpdateUserInfo(context.Context, *UpdateUserInfoReq) (*UpdateUserInfoResp, error)
 	UpdateUserPassword(context.Context, *UpdateUserPasswordReq) (*UpdateUserPasswordResp, error)
 	ResetPassword(context.Context, *ResetPasswordReq) (*ResetPasswordResp, error)
@@ -459,6 +471,9 @@ func (UnimplementedSuperServer) GetUserInfo(context.Context, *GetUserInfoReq) (*
 }
 func (UnimplementedSuperServer) GetUser(context.Context, *GetUserReq) (*GetUserResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
+}
+func (UnimplementedSuperServer) GetUserByEmail(context.Context, *GetUserByEmailReq) (*GetUserByEmailResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserByEmail not implemented")
 }
 func (UnimplementedSuperServer) UpdateUserInfo(context.Context, *UpdateUserInfoReq) (*UpdateUserInfoResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateUserInfo not implemented")
@@ -625,6 +640,24 @@ func _Super_GetUser_Handler(srv interface{}, ctx context.Context, dec func(inter
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SuperServer).GetUser(ctx, req.(*GetUserReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_GetUserByEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserByEmailReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).GetUserByEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_GetUserByEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).GetUserByEmail(ctx, req.(*GetUserByEmailReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1155,6 +1188,10 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUser",
 			Handler:    _Super_GetUser_Handler,
+		},
+		{
+			MethodName: "GetUserByEmail",
+			Handler:    _Super_GetUserByEmail_Handler,
 		},
 		{
 			MethodName: "UpdateUserInfo",
