@@ -65,7 +65,7 @@ class ApiService {
   // 等待刷新token的请求队列
   static final List<Function(String)> _refreshCallbacks = [];
 
-  // 通用请求方法
+  // 通用请求方法（私有）
   static Future<Map<String, dynamic>> _request(
     String path,
     {String method = 'GET', dynamic body}) async {
@@ -95,6 +95,16 @@ class ApiService {
       // 其他错误直接抛出
       rethrow;
     }
+  }
+
+  // 公开的 GET 请求方法
+  static Future<Map<String, dynamic>> get(String path) async {
+    return await _request(path, method: 'GET');
+  }
+
+  // 公开的 POST 请求方法
+  static Future<Map<String, dynamic>> post(String path, {dynamic body}) async {
+    return await _request(path, method: 'POST', body: body);
   }
 
   // 执行实际的HTTP请求

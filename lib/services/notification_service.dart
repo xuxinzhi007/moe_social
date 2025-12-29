@@ -1,4 +1,3 @@
-import 'dart:convert';
 import '../models/notification.dart';
 import '../auth_service.dart';
 import 'api_service.dart';
@@ -10,7 +9,7 @@ class NotificationService {
     if (userId == null) return [];
 
     try {
-      final response = await ApiService.get('/notifications?user_id=$userId&page=$page&page_size=$pageSize');
+      final response = await ApiService.get('/api/notifications?user_id=$userId&page=$page&page_size=$pageSize');
       if (response['code'] == 200) {
         final List<dynamic> list = response['data']['data'] ?? [];
         return list.map((e) => NotificationModel.fromJson(e)).toList();
@@ -29,7 +28,7 @@ class NotificationService {
     if (userId == null) return 0;
 
     try {
-      final response = await ApiService.get('/notifications/unread?user_id=$userId');
+      final response = await ApiService.get('/api/notifications/unread?user_id=$userId');
       if (response['code'] == 200) {
         return response['data'] as int;
       }
@@ -45,7 +44,7 @@ class NotificationService {
     if (userId == null) return false;
 
     try {
-      await ApiService.post('/notifications/read-all', {'user_id': userId});
+      await ApiService.post('/api/notifications/read-all', body: {'user_id': userId});
       return true;
     } catch (e) {
       return false;
@@ -58,7 +57,20 @@ class NotificationService {
     if (userId == null) return false;
 
     try {
-      await ApiService.post('/notifications/$id/read', {'user_id': userId});
+      await ApiService.post('/api/notifications/$id/read', body: {'user_id': userId});
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // 清除所有通知
+  static Future<bool> clearAllNotifications() async {
+    final userId = AuthService.currentUser;
+    if (userId == null) return false;
+
+    try {
+      await ApiService.post('/api/notifications/clear-all', body: {'user_id': userId});
       return true;
     } catch (e) {
       return false;

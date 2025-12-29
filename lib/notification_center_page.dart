@@ -51,7 +51,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
     try {
       await NotificationService.markAllAsRead();
       setState(() {
-        _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
+        _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList().cast<NotificationModel>();
         _unreadCount = 0;
       });
       ErrorHandler.showSuccess(context, '所有通知已标记为已读');
@@ -116,7 +116,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
             return n.copyWith(isRead: true);
           }
           return n;
-        }).toList();
+        }).toList().cast<NotificationModel>();
         _unreadCount = _notifications.where((n) => !n.isRead).length;
       });
     } catch (e) {
@@ -139,7 +139,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
     }
   }
 
-  Widget _buildNotificationIcon(String type) {
+  Widget _buildNotificationIcon(int type) {
     IconData icon;
     Color color;
     
