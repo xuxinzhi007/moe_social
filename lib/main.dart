@@ -24,6 +24,7 @@ import 'reset_password_page.dart';
 import 'notification_center_page.dart';
 import 'wallet_page.dart';
 import 'recharge_page.dart';
+import 'gacha_page.dart'; // 引入扭蛋页
 import 'models/post.dart';
 import 'services/post_service.dart';
 import 'user_profile_page.dart';
@@ -137,6 +138,7 @@ class MyApp extends StatelessWidget {
         '/notifications': (context) => const NotificationCenterPage(),
         '/wallet': (context) => const WalletPage(),
         '/recharge': (context) => const RechargePage(),
+        '/gacha': (context) => const GachaPage(), // 注册扭蛋页路由
         '/user-profile': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
           if (args is! Map<String, dynamic>) {
@@ -169,6 +171,7 @@ class _MainPageState extends State<MainPage> {
 
   final List<Widget> _pages = [
     const HomePage(),
+    const GachaPage(), // 将扭蛋页作为第二个 Tab
     const ProfilePage(),
   ];
 
@@ -203,6 +206,11 @@ class _MainPageState extends State<MainPage> {
               label: '首页',
             ),
             NavigationDestination(
+              icon: Icon(Icons.casino_outlined), // 使用扭蛋/赌博机图标
+              selectedIcon: Icon(Icons.casino_rounded),
+              label: '扭蛋',
+            ),
+            NavigationDestination(
               icon: Icon(Icons.person_outline),
               selectedIcon: Icon(Icons.person_rounded),
               label: '我的',
@@ -214,6 +222,7 @@ class _MainPageState extends State<MainPage> {
   }
 }
 
+// ... existing HomePage code ...
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
