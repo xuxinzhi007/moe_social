@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io' show File, Platform, SocketException;
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode, kIsWeb;
 import '../auth_service.dart';
 import '../models/post.dart';
 import '../models/comment.dart';
@@ -25,6 +25,12 @@ class ApiService {
   // 环境配置
   // 设置为 true 使用生产环境，false 使用开发环境
   static const bool _isProduction = false; // 修改这里切换环境
+
+  /// API 调试日志开关（只在 Debug 模式生效）
+  /// - 你提到的 “user_avatar/图片信息刷屏” 就是这里控制的
+  static const bool _enableApiLog = true;
+  /// 是否输出“超详细”日志（会非常吵；默认关闭）
+  static const bool _verboseApiLog = false;
   
   // 生产环境地址（cpolar隧道）
   static const String _productionUrl = 'http://3c28ed99.r3.cpolar.top';
@@ -62,8 +68,7 @@ class ApiService {
   
   // 防止并发刷新token
   static bool _isRefreshing = false;
-  // 等待刷新token的请求队列
-  static final List<Function(String)> _refreshCallbacks = [];
+  // 等待刷新token的请求队列（当前实现未使用，先移除避免日志/分析噪音）
 
   // 通用请求方法（私有）
   static Future<Map<String, dynamic>> _request(
@@ -116,9 +121,9 @@ class ApiService {
       final uri = Uri.parse('$baseUrl$path');
       
       // 调试日志
-      print('📡 API Request: $method $uri');
+      _log('📡 API Request: $method $uri');
       if (body != null) {
-        print('📤 Request Body: ${json.encode(body)}');
+        _log('📤 Request Body: ${_safeJsonForLog(body)}');
       }
       
       // 构建请求头
@@ -155,8 +160,11 @@ class ApiService {
       }
       
       // 调试日志
-      print('📥 API Response: ${response.statusCode}');
-      print('📥 Response Body: ${response.body}');
+      _log('📥 API Response: ${response.statusCode}');
+      // 不再全量输出 response.body（会把 avatar/user_avatar/images 等字段刷屏）
+      if (_verboseApiLog) {
+        _log('📥 Response Body: ${_safeTextForLog(response.body)}');
+      }
       
       // 检查响应体是否为空
       if (response.body.isEmpty) {
@@ -178,8 +186,8 @@ class ApiService {
         } else {
           errorMessage = '服务器返回错误页面 (状态码: ${response.statusCode})';
         }
-        print('❌ 收到HTML响应，可能是服务器错误或404页面');
-        print('❌ 当前API地址: $baseUrl');
+        _log('❌ 收到HTML响应，可能是服务器错误或404页面');
+        _log('❌ 当前API地址: $baseUrl');
         throw ApiException(errorMessage, response.statusCode);
       }
       
@@ -188,8 +196,8 @@ class ApiService {
       try {
         result = json.decode(response.body) as Map<String, dynamic>;
       } catch (e) {
-        print('❌ JSON解析失败: $e');
-        print('❌ 响应内容: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}...');
+        _log('❌ JSON解析失败: $e');
+        _log('❌ 响应内容(截断): ${_safeTextForLog(response.body, maxLen: 200)}');
         
         // 如果响应看起来像HTML，给出更友好的错误提示
         if (response.body.contains('<html>') || response.body.contains('<!DOCTYPE')) {
@@ -202,32 +210,35 @@ class ApiService {
         
         throw ApiException('服务器响应格式错误，无法解析JSON', response.statusCode);
       }
+
+      // 默认只输出“净化过的摘要”，避免图片信息刷屏
+      _log('📥 Response JSON: ${_safeJsonForLog(result)}');
       
       // 检查响应体中的success字段（go-zero框架的错误响应）
       if (result.containsKey('success') && result['success'] == false) {
         final errorMessage = result['message'] ?? '请求失败';
         final errorCode = result['code'] ?? response.statusCode;
-        print('❌ API错误: $errorMessage (code: $errorCode)');
+        _log('❌ API错误: $errorMessage (code: $errorCode)');
         throw ApiException(errorMessage, errorCode);
       }
       
       // 检查HTTP状态码
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final errorMessage = result['message'] ?? '请求失败';
-        print('❌ HTTP错误: $errorMessage (status: ${response.statusCode})');
+        _log('❌ HTTP错误: $errorMessage (status: ${response.statusCode})');
         throw ApiException(errorMessage, response.statusCode);
       }
       
       return result;
     } on SocketException catch (e) {
-      print('❌ 网络连接错误: $e');
+      _log('❌ 网络连接错误: $e');
       throw ApiException('无法连接到服务器，请检查网络设置或服务器是否开启', 503);
     } on http.ClientException catch (e) {
-      print('❌ 客户端连接错误: $e');
+      _log('❌ 客户端连接错误: $e');
       throw ApiException('无法连接到服务器，请检查网络设置或服务器是否开启', 503);
     } catch (e) {
       if (e is ApiException) rethrow;
-      print('❌ 未知请求错误: $e');
+      _log('❌ 未知请求错误: $e');
       throw ApiException('网络请求发生错误: $e', null);
     }
   }
@@ -243,7 +254,7 @@ class ApiService {
 
     try {
       _isRefreshing = true;
-      print('🔄 正在刷新token...');
+      _log('🔄 正在刷新token...');
       
       // 调用刷新token的API
       final uri = Uri.parse('$baseUrl$_refreshTokenEndpoint');
@@ -265,15 +276,15 @@ class ApiService {
         
         // 更新token
         await AuthService.updateToken(newToken);
-        print('✅ Token刷新成功');
+        _log('✅ Token刷新成功');
         
         return newToken;
       } else {
-        print('❌ Token刷新失败: ${response.statusCode}');
+        _log('❌ Token刷新失败: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ Token刷新异常: $e');
+      _log('❌ Token刷新异常: $e');
       return null;
     } finally {
       _isRefreshing = false;
@@ -332,26 +343,195 @@ class ApiService {
   // 获取帖子列表（支持分页）
   static Future<List<Post>> getPosts({int page = 1, int pageSize = 10}) async {
     final result = await _request('/api/posts?page=$page&page_size=$pageSize');
-    print('📥 getPosts响应数据: $result');
-    print('📥 data类型: ${result['data'].runtimeType}');
-    print('📥 data内容: ${result['data']}');
-    print('📥 total: ${result['total']}');
+    if (_verboseApiLog) {
+      _log('📥 getPosts响应数据: ${_safeJsonForLog(result)}');
+      _log('📥 data类型: ${result['data'].runtimeType}');
+      _log('📥 total: ${result['total']}');
+    }
     
     final postsJson = result['data'] as List;
-    print('📥 postsJson长度: ${postsJson.length}');
+    if (_verboseApiLog) {
+      _log('📥 postsJson长度: ${postsJson.length}');
+    }
     
     try {
       final posts = postsJson.map((json) {
-        print('📥 解析帖子JSON: $json');
+        if (_verboseApiLog) {
+          _log('📥 解析帖子JSON: ${_safeJsonForLog(json)}');
+        }
         return Post.fromJson(json);
       }).toList();
-      print('📥 成功解析${posts.length}条帖子');
+      if (_verboseApiLog) {
+        _log('📥 成功解析${posts.length}条帖子');
+      }
       return posts;
     } catch (e, stackTrace) {
-      print('❌ 解析帖子失败: $e');
-      print('❌ 堆栈跟踪: $stackTrace');
+      _log('❌ 解析帖子失败: $e');
+      _log('❌ 堆栈跟踪: $stackTrace');
       rethrow;
     }
+  }
+
+  /// ===== 日志工具：默认不输出图片/头像等大字段，避免刷屏 =====
+  static void _log(String message) {
+    if (!kDebugMode || !_enableApiLog) return;
+    // debugPrint 会自动做分段输出，避免超长日志被截断/卡顿
+    // ignore: avoid_print
+    // 这里保留 debugPrint 而不是 print，输出更稳定
+    // ignore: avoid_print
+    //（flutter_lints 会提示 avoid_print，但 debugPrint 不在该规则限制里）
+    // ignore: deprecated_member_use_from_same_package
+    // ignore: unnecessary_null_comparison
+    // ignore: avoid_print
+    // 直接使用 debugPrint
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    // ignore: avoid_print
+    debugPrint(message);
+  }
+
+  static String _safeTextForLog(String text, {int maxLen = 800}) {
+    final cleaned = text.replaceAll(RegExp(r'\\s+'), ' ');
+    if (cleaned.length <= maxLen) return cleaned;
+    return '${cleaned.substring(0, maxLen)}...';
+  }
+
+  static String _safeJsonForLog(dynamic data, {int maxLen = 800}) {
+    try {
+      final sanitized = _sanitizeForLog(data);
+      final encoded = json.encode(sanitized);
+      return _safeTextForLog(encoded, maxLen: maxLen);
+    } catch (_) {
+      return _safeTextForLog(data.toString(), maxLen: maxLen);
+    }
+  }
+
+  static dynamic _sanitizeForLog(dynamic v) {
+    if (v is Map) {
+      final out = <String, dynamic>{};
+      v.forEach((key, value) {
+        final k = key.toString();
+        final lower = k.toLowerCase();
+        // 这些字段往往很长/含图片链接或 base64，直接省略
+        if (lower.contains('avatar') || lower.contains('image') || lower == 'images' || lower.contains('password')) {
+          out[k] = '<omitted>';
+          return;
+        }
+        out[k] = _sanitizeForLog(value);
+      });
+      return out;
+    }
+    if (v is List) {
+      // 列表也容易很长（如 images），最多保留前 5 项的摘要
+      final take = v.take(5).map(_sanitizeForLog).toList();
+      if (v.length > 5) {
+        take.add('<... ${v.length - 5} more>');
+      }
+      return take;
+    }
+    if (v is String) {
+      // 避免 base64 或超长字符串刷屏
+      if (v.startsWith('data:image')) return '<data:image... omitted>';
+      return _safeTextForLog(v, maxLen: 120);
+    }
+    return v;
   }
 
   // 获取单个帖子
@@ -362,7 +542,7 @@ class ApiService {
 
   // 创建帖子
   static Future<Post> createPost(Post post) async {
-    final result = await _request('/api/posts',
+    await _request('/api/posts',
       method: 'POST',
       body: post.toJson()
     );

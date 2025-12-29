@@ -21,7 +21,7 @@ class FadeInUp extends StatefulWidget {
 class _FadeInUpState extends State<FadeInUp> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _opacityAnimation;
-  late Animation<Offset> _slideAnimation;
+  late Animation<double> _translateYAnimation;
 
   @override
   void initState() {
@@ -35,10 +35,11 @@ class _FadeInUpState extends State<FadeInUp> with SingleTickerProviderStateMixin
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: Offset(0, widget.offset / 100), // 简单的偏移量估算
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    // 使用像素位移而不是 SlideTransition（FractionalTranslation）
+    // 这样在 Web/复杂布局下更不容易触发 RenderFractionalTranslation 的 hasSize 断言
+    _translateYAnimation = Tween<double>(begin: widget.offset, end: 0.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
 
     if (widget.delay == Duration.zero) {
       _controller.forward();
@@ -59,9 +60,15 @@ class _FadeInUpState extends State<FadeInUp> with SingleTickerProviderStateMixin
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: _opacityAnimation,
-      child: SlideTransition(
-        position: _slideAnimation,
+      child: AnimatedBuilder(
+        animation: _translateYAnimation,
         child: widget.child,
+        builder: (context, child) {
+          return Transform.translate(
+            offset: Offset(0, _translateYAnimation.value),
+            child: child,
+          );
+        },
       ),
     );
   }

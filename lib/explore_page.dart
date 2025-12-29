@@ -5,7 +5,6 @@ import 'widgets/network_image.dart';
 import 'widgets/avatar_image.dart';
 import 'models/post.dart';
 import 'services/post_service.dart';
-import 'widgets/fade_in_up.dart';
 
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});

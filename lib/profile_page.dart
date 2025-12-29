@@ -335,41 +335,54 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           const Icon(Icons.star_rounded, color: Colors.white, size: 40),
           const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'VIP会员中心',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-              if (_vipStatus != null && _vipStatus!['expires_at'] != null)
-                Text(
-                  '到期: ${_vipStatus!['expires_at']}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                )
-              else
+          // 在 Web 的某些约束组合下 Row 子节点可能拿到 Infinity 宽度，导致按钮 layout 断言失败
+          // 这里显式用 Expanded 给中间文案区域一个“可计算宽度”，并给按钮一个有限宽度，避免白屏
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 const Text(
-                  '开通享特权',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                  'VIP会员中心',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
                 ),
-            ],
-          ),
-          const Spacer(),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pushNamed(context, '/vip-center');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.orange,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-              elevation: 0,
+                if (_vipStatus != null && _vipStatus!['expires_at'] != null)
+                  Text(
+                    '到期: ${_vipStatus!['expires_at']}',
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                else
+                  const Text(
+                    '开通享特权',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
             ),
-            child: const Text('立即查看'),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 96,
+            height: 36,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/vip-center');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.orange,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                elevation: 0,
+                padding: EdgeInsets.zero,
+              ),
+              child: const Text('立即查看'),
+            ),
           ),
         ],
       ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'dart:math';
 import 'dart:async';
-import 'widgets/fade_in_up.dart';
 import 'widgets/avatar_image.dart';
 import 'models/post.dart';
 import 'services/post_service.dart';
@@ -41,6 +41,7 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
 
   Timer? _physicsTimer;
   final Random _random = Random();
+  bool _isUpdating = false; // 防止重复更新
 
   bool _isPlaying = false;
   bool _showResult = false;
@@ -90,85 +91,112 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  // 物理引擎核心循环
+  // 当页面变为不可见时停止物理循环
+  @override
+  void deactivate() {
+    super.deactivate();
+    _physicsTimer?.cancel();
+    _isUpdating = false;
+  }
+
+    // 物理引擎核心循环
   void _startPhysicsLoop() {
     _physicsTimer?.cancel();
     // 60FPS 左右
     _physicsTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
-      if (!mounted) return;
-      setState(() {
-        for (var ball in _balls) {
-          if (_isPlaying) {
-            // --- 搅动模式 (强风乱飞) ---
-            
-            // 1. 施加力
-            // 向上浮力 (抗重力)
-            ball.vy -= 0.002; 
-            // 随机扰动 (模拟气流湍流)
-            ball.vx += (_random.nextDouble() - 0.5) * 0.005;
-            ball.vy += (_random.nextDouble() - 0.5) * 0.005;
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      
+      // 更新物理状态（不触发 setState）
+      // 使用变量副本或同步锁逻辑来避免并发修改问题（虽然Dart是单线程，但逻辑上要清晰）
+      // 这里没有直接修改 _balls 列表长度，只是修改元素属性，是安全的
 
-            // 限制最大速度 (防止穿墙)
-            ball.vx = ball.vx.clamp(-0.03, 0.03);
-            ball.vy = ball.vy.clamp(-0.03, 0.03);
+      for (var ball in _balls) {
+        if (_isPlaying) {
+          // --- 搅动模式 (强风乱飞) ---
+          
+          // 1. 施加力
+          // 向上浮力 (抗重力)
+          ball.vy -= 0.002; 
+          // 随机扰动 (模拟气流湍流)
+          ball.vx += (_random.nextDouble() - 0.5) * 0.005;
+          ball.vy += (_random.nextDouble() - 0.5) * 0.005;
 
-            // 2. 更新位置
-            ball.x += ball.vx;
-            ball.y += ball.vy;
-            ball.rotation += ball.vx * 10; // 旋转随速度变化
+          // 限制最大速度 (防止穿墙)
+          ball.vx = ball.vx.clamp(-0.03, 0.03);
+          ball.vy = ball.vy.clamp(-0.03, 0.03);
 
-            // 3. 边界反弹 (Box Collision)
-            // 考虑球体大小，假设容器大概 200x200，球36，占比约 0.18
-            double ballRatio = 0.18; 
-            
-            // 左右墙壁
-            if (ball.x < 0) {
-              ball.x = 0;
-              ball.vx = -ball.vx * 0.8; // 反弹并损耗能量
-            } else if (ball.x > 1.0 - ballRatio) {
-              ball.x = 1.0 - ballRatio;
-              ball.vx = -ball.vx * 0.8;
-            }
+          // 2. 更新位置
+          ball.x += ball.vx;
+          ball.y += ball.vy;
+          ball.rotation += ball.vx * 10; // 旋转随速度变化
 
-            // 上下墙壁
-            if (ball.y < 0) {
-              ball.y = 0;
-              ball.vy = -ball.vy * 0.8;
-            } else if (ball.y > 1.0 - ballRatio) {
-              ball.y = 1.0 - ballRatio;
-              ball.vy = -ball.vy * 0.8;
-            }
-
-          } else {
-            // --- 沉降模式 (重力恢复) ---
-            
-            // 1. 施加重力
-            ball.vy += 0.002;
-            // 空气阻力
-            ball.vx *= 0.98;
-            
-            // 2. 更新位置
-            ball.x += ball.vx;
-            ball.y += ball.vy;
-            ball.rotation += ball.vx * 5;
-
-            double ballRatio = 0.18; 
-            
-            // 底部碰撞
-            if (ball.y > 1.0 - ballRatio) {
-              ball.y = 1.0 - ballRatio;
-              // 落地反弹 (能量损失大，甚至不反弹直接停)
-              ball.vy = -ball.vy * 0.5; 
-              // 地面摩擦力
-              ball.vx *= 0.9;
-            }
-            
-            // 左右墙壁限制
-            if (ball.x < 0) { ball.x = 0; ball.vx = -ball.vx * 0.5; }
-            if (ball.x > 1.0 - ballRatio) { ball.x = 1.0 - ballRatio; ball.vx = -ball.vx * 0.5; }
+          // 3. 边界反弹 (Box Collision)
+          // 考虑球体大小，假设容器大概 200x200，球36，占比约 0.18
+          double ballRatio = 0.18; 
+          
+          // 左右墙壁
+          if (ball.x < 0) {
+            ball.x = 0;
+            ball.vx = -ball.vx * 0.8; // 反弹并损耗能量
+          } else if (ball.x > 1.0 - ballRatio) {
+            ball.x = 1.0 - ballRatio;
+            ball.vx = -ball.vx * 0.8;
           }
+
+          // 上下墙壁
+          if (ball.y < 0) {
+            ball.y = 0;
+            ball.vy = -ball.vy * 0.8;
+          } else if (ball.y > 1.0 - ballRatio) {
+            ball.y = 1.0 - ballRatio;
+            ball.vy = -ball.vy * 0.8;
+          }
+
+        } else {
+          // --- 沉降模式 (重力恢复) ---
+          
+          // 1. 施加重力
+          ball.vy += 0.002;
+          // 空气阻力
+          ball.vx *= 0.98;
+          
+          // 2. 更新位置
+          ball.x += ball.vx;
+          ball.y += ball.vy;
+          ball.rotation += ball.vx * 5;
+
+          double ballRatio = 0.18; 
+          
+          // 底部碰撞
+          if (ball.y > 1.0 - ballRatio) {
+            ball.y = 1.0 - ballRatio;
+            // 落地反弹 (能量损失大，甚至不反弹直接停)
+            ball.vy = -ball.vy * 0.5; 
+            // 地面摩擦力
+            ball.vx *= 0.9;
+          }
+          
+          // 左右墙壁限制
+          if (ball.x < 0) { ball.x = 0; ball.vx = -ball.vx * 0.5; }
+          if (ball.x > 1.0 - ballRatio) { ball.x = 1.0 - ballRatio; ball.vx = -ball.vx * 0.5; }
         }
-      });
+      }
+      
+      // 使用 SchedulerBinding 确保在帧结束后更新，避免布局冲突
+      if (!_isUpdating) {
+        _isUpdating = true;
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          _isUpdating = false;
+          if (mounted) {
+            setState(() {
+              // setState 触发重建，但物理状态已经在上面更新了
+            });
+          }
+        });
+      }
     });
   }
 
@@ -439,6 +467,9 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
                         borderRadius: BorderRadius.circular(100),
                         child: LayoutBuilder(
                           builder: (context, constraints) {
+                            if (constraints.maxWidth == 0 || constraints.maxHeight == 0) {
+                              return const SizedBox.shrink();
+                            }
                             return Stack(
                               children: [
                                 // 动态小球

@@ -24,7 +24,6 @@ import 'reset_password_page.dart';
 import 'notification_center_page.dart';
 import 'wallet_page.dart';
 import 'recharge_page.dart';
-import 'explore_page.dart';
 import 'gacha_page.dart';
 import 'models/post.dart';
 import 'services/post_service.dart';
@@ -64,6 +63,61 @@ void main() async {
       print('Stack: ${details.stack}');
       print('Library: ${details.library}');
       print('═══════════════════════════════════════');
+    };
+
+    // 避免“白屏”：当 widget build/layout 抛错时，用一个可见的错误卡片替代
+    // 这对定位 RenderBox was not laid out 类问题非常关键（否则 Web 上很像没报错的白屏）
+    ErrorWidget.builder = (FlutterErrorDetails details) {
+      // 保持控制台输出，便于复制排查
+      FlutterError.presentError(details);
+
+      return Material(
+        color: const Color(0xFFF5F7FA), // Moe 背景色
+        child: SafeArea(
+          child: Center(
+            child: Container(
+              margin: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF7F7FD5).withOpacity(0.18),
+                    blurRadius: 18,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+                border: Border.all(color: const Color(0xFF7F7FD5).withOpacity(0.25)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '页面渲染出错啦 (；´д｀)ゞ',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF7F7FD5),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    details.exceptionAsString(),
+                    style: const TextStyle(color: Colors.black87, height: 1.3),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    '提示：这通常不是接口数据问题，而是布局约束导致的 RenderBox 未完成 layout。\n请把控制台里最早出现的那条异常（不是后面一堆 hasSize 重复）截图发我。',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12, height: 1.35),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
     };
     
     // 捕获异步错误
