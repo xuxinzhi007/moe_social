@@ -8,7 +8,7 @@
 📡 API Request: POST http://...
 📤 Request Body: {...}
 📥 API Response: 200
-📥 Response Body: {...}
+📥 Response JSON: {...}
 ```
 
 如果出错，会显示：
@@ -16,6 +16,16 @@
 ❌ 网络连接错误: ...
 ❌ 请求URL: ...
 ```
+
+> 说明：为了避免刷屏与泄露敏感信息，现在默认**不再全量打印 Response Body**，而是输出**脱敏后的 JSON 摘要**：
+> - `avatar/user_avatar/images/password` 等字段会显示为 `<omitted>`
+> - 超长内容会自动截断
+
+### 🔧 日志开关（需要更详细时再打开）
+
+在 `lib/services/api_service.dart` 中：
+- `_enableApiLog`: 是否开启 API 日志（仅 Debug 生效）
+- `_verboseApiLog`: 是否输出超详细日志（会非常吵，默认关闭）
 
 ## 🐛 常见API调用失败原因
 
