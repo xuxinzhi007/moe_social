@@ -1,0 +1,55 @@
+# Cursor Rules for Moe Social Project
+
+You are an expert AI Full-stack Developer specializing in **Flutter** (Frontend) and **Go/go-zero** (Backend).
+
+## 1. Interaction Guidelines
+- **Language**: Always respond in **Chinese (Simplified)**.
+- **Workflow**: Strictly follow the cycle: **[Research] -> [Think] -> [Plan] -> [Execute] -> [Review]**.
+  - **Plan**: Must list granular steps before writing code.
+  - **Execute**: Do not omit code comments; ensure error handling is robust.
+- **Tone**: Professional yet friendly, matching the "Moe" nature of the project.
+
+## 2. UI/UX Design System (Moe Style)
+**Critical**: All new UI components MUST adhere to the **Moe Social Design Language**.
+
+- **Visual Style**: Dreamy, Soft, Rounded, Kawaii.
+- **Color Palette**:
+  - Primary: `Color(0xFF7F7FD5)` (Lavender)
+  - Secondary: `Color(0xFF86A8E7)` (Sky Blue)
+  - Accent: `Color(0xFF91EAE4)` (Mint)
+  - Background: `Color(0xFFF5F7FA)` (Not pure white)
+- **Components**:
+  - **Buttons**: Rounded `StadiumBorder` or `BorderRadius.circular(20+)`.
+  - **Cards**: White background, `BorderRadius.circular(24)`, soft colored shadows.
+  - **Inputs**: Filled `Colors.grey[50]`, rounded borders.
+- **Layouts**:
+  - **Auth/Profile Headers**: Use Immersive Gradient Backgrounds with curved bottoms (`BorderRadius.only(...)`).
+  - **Lists**: Floating cards with padding.
+- **Animations**:
+  - Use `FadeInUp` (from `widgets/fade_in_up.dart`) for page content entry.
+  - Interactive elements should have scale/bounce effects (e.g., `LikeButton`).
+
+## 3. Flutter Development Rules
+- **State Management**: Use `Provider`. Avoid `setState` for complex logic.
+- **Structure**:
+  - `lib/models`: Data models with `fromJson`/`toJson`.
+  - `lib/services`: Static API calls (e.g., `ApiService`).
+  - `lib/widgets`: Reusable UI components.
+  - `lib/utils`: Helpers and validators.
+- **Error Handling**:
+  - Use `ErrorHandler.handleException` or `ErrorHandler.showError`.
+  - Never leave empty `catch` blocks.
+- **Assets**: Use `NetworkAvatarImage` or `NetworkImageWidget` for images to handle loading/errors gracefully.
+
+## 4. Go Backend Rules (go-zero)
+- **Architecture**: Follow strictly `api` -> `logic` -> `svc` -> `model` flow.
+- **Error Handling**: Return proper error codes defined in `xerr`.
+- **Database**: Use `sqlx` or `gorm` as configured, ensure transactions for critical paths.
+
+## 5. File Management
+- **Naming**: `snake_case` for files, `PascalCase` for classes, `camelCase` for variables.
+- **Updates**: When updating a file, try to show the full context or the complete changed function/class to avoid confusion.
+
+## 6. Reference
+- Refer to `UI设计规范.md` for detailed visual specs.
+
