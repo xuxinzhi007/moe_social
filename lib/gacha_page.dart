@@ -4,7 +4,7 @@ import 'dart:async';
 import 'widgets/fade_in_up.dart';
 import 'widgets/avatar_image.dart';
 import 'models/post.dart';
-import 'services/post_service.dart'; // 暂时借用 PostService 获取数据
+import 'services/post_service.dart';
 
 class GachaPage extends StatefulWidget {
   const GachaPage({super.key});
@@ -13,43 +13,66 @@ class GachaPage extends StatefulWidget {
   State<GachaPage> createState() => _GachaPageState();
 }
 
-class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
-  // 动画控制器
-  late AnimationController _shakeController;
-  late Animation<double> _shakeAnimation;
+class _GachaBall {
+  double x; // 0.0 - 1.0 (相对位置)
+  double y; // 0.0 - 1.0
+  double vx; // 速度 X
+  double vy; // 速度 Y
+  Color color;
+  double rotation;
+  double rotateSpeed;
+  double size;
   
+  _GachaBall({
+    required this.x,
+    required this.y,
+    this.vx = 0,
+    this.vy = 0,
+    required this.color,
+    this.rotation = 0,
+    this.rotateSpeed = 0,
+    this.size = 36, // 稍微调小一点，避免太拥挤
+  });
+}
+
+class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
   late AnimationController _ballDropController;
   late Animation<double> _ballDropAnimation;
 
-  // 状态
+  Timer? _physicsTimer;
+  final Random _random = Random();
+
   bool _isPlaying = false;
   bool _showResult = false;
   Post? _gachaResult;
   Color _currentBallColor = Colors.blueAccent;
 
-  // 扭蛋球颜色池
+  final List<_GachaBall> _balls = [];
   final List<Color> _ballColors = [
-    const Color(0xFFFF9A9E), // 樱花粉
-    const Color(0xFFFECFEF), // 浅粉
-    const Color(0xFFA18CD1), // 薰衣草
-    const Color(0xFF84FAB0), // 薄荷
-    const Color(0xFF8FD3F4), // 天空
+    const Color(0xFFFF9A9E),
+    const Color(0xFFFECFEF),
+    const Color(0xFFA18CD1),
+    const Color(0xFF84FAB0),
+    const Color(0xFF8FD3F4),
   ];
 
   @override
   void initState() {
     super.initState();
     
-    // 震动动画：机器摇晃
-    _shakeController = AnimationController(
-      duration: const Duration(milliseconds: 500),
-      vsync: this,
-    );
-    _shakeAnimation = Tween<double>(begin: 0, end: 10)
-        .chain(CurveTween(curve: Curves.elasticIn))
-        .animate(_shakeController);
+    // 初始化小球 (位置在底部堆叠)
+    for (int i = 0; i < 12; i++) {
+      _balls.add(_GachaBall(
+        x: 0.2 + _random.nextDouble() * 0.6,
+        y: 0.8 + _random.nextDouble() * 0.1,
+        vx: (_random.nextDouble() - 0.5) * 0.01,
+        vy: 0,
+        color: _ballColors[i % _ballColors.length],
+        rotation: _random.nextDouble() * 2 * pi,
+        rotateSpeed: (_random.nextDouble() - 0.5) * 0.1,
+      ));
+    }
 
-    // 掉落动画：球从出口滚出
     _ballDropController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -62,35 +85,121 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _shakeController.dispose();
+    _physicsTimer?.cancel();
     _ballDropController.dispose();
     super.dispose();
   }
 
-  // 开始抽扭蛋
+  // 物理引擎核心循环
+  void _startPhysicsLoop() {
+    _physicsTimer?.cancel();
+    // 60FPS 左右
+    _physicsTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
+      if (!mounted) return;
+      setState(() {
+        for (var ball in _balls) {
+          if (_isPlaying) {
+            // --- 搅动模式 (强风乱飞) ---
+            
+            // 1. 施加力
+            // 向上浮力 (抗重力)
+            ball.vy -= 0.002; 
+            // 随机扰动 (模拟气流湍流)
+            ball.vx += (_random.nextDouble() - 0.5) * 0.005;
+            ball.vy += (_random.nextDouble() - 0.5) * 0.005;
+
+            // 限制最大速度 (防止穿墙)
+            ball.vx = ball.vx.clamp(-0.03, 0.03);
+            ball.vy = ball.vy.clamp(-0.03, 0.03);
+
+            // 2. 更新位置
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+            ball.rotation += ball.vx * 10; // 旋转随速度变化
+
+            // 3. 边界反弹 (Box Collision)
+            // 考虑球体大小，假设容器大概 200x200，球36，占比约 0.18
+            double ballRatio = 0.18; 
+            
+            // 左右墙壁
+            if (ball.x < 0) {
+              ball.x = 0;
+              ball.vx = -ball.vx * 0.8; // 反弹并损耗能量
+            } else if (ball.x > 1.0 - ballRatio) {
+              ball.x = 1.0 - ballRatio;
+              ball.vx = -ball.vx * 0.8;
+            }
+
+            // 上下墙壁
+            if (ball.y < 0) {
+              ball.y = 0;
+              ball.vy = -ball.vy * 0.8;
+            } else if (ball.y > 1.0 - ballRatio) {
+              ball.y = 1.0 - ballRatio;
+              ball.vy = -ball.vy * 0.8;
+            }
+
+          } else {
+            // --- 沉降模式 (重力恢复) ---
+            
+            // 1. 施加重力
+            ball.vy += 0.002;
+            // 空气阻力
+            ball.vx *= 0.98;
+            
+            // 2. 更新位置
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+            ball.rotation += ball.vx * 5;
+
+            double ballRatio = 0.18; 
+
+            // 底部碰撞
+            if (ball.y > 1.0 - ballRatio) {
+              ball.y = 1.0 - ballRatio;
+              // 落地反弹 (能量损失大，甚至不反弹直接停)
+              ball.vy = -ball.vy * 0.5; 
+              // 地面摩擦力
+              ball.vx *= 0.9;
+            }
+            
+            // 左右墙壁限制
+            if (ball.x < 0) { ball.x = 0; ball.vx = -ball.vx * 0.5; }
+            if (ball.x > 1.0 - ballRatio) { ball.x = 1.0 - ballRatio; ball.vx = -ball.vx * 0.5; }
+          }
+        }
+      });
+    });
+  }
+
   void _startGacha() async {
     if (_isPlaying) return;
 
     setState(() {
       _isPlaying = true;
       _showResult = false;
-      _currentBallColor = _ballColors[Random().nextInt(_ballColors.length)];
+      _currentBallColor = _balls[_random.nextInt(_balls.length)].color;
     });
 
-    // 1. 播放震动动画
-    await _shakeController.forward();
-    _shakeController.reverse();
+    // 1. 启动物理循环
+    _startPhysicsLoop();
 
-    // 2. 模拟网络请求 (获取随机内容)
-    // 实际项目中这里调用 ApiService.drawGacha()
+    // 2. 模拟请求
     await _fetchRandomPost();
 
-    // 3. 播放掉落动画
+    // 持续搅动 2.5秒
+    await Future.delayed(const Duration(milliseconds: 2500));
+
+    // 3. 停止搅动，球自然落下
+    setState(() {
+      _isPlaying = false;
+    });
+    
+    // 4. 出货动画
     await _ballDropController.forward();
 
-    // 4. 短暂停顿后打开
-    await Future.delayed(const Duration(milliseconds: 500));
-    
+    // 5. 显示结果
+    await Future.delayed(const Duration(milliseconds: 300));
     if (mounted) {
       setState(() {
         _showResult = true;
@@ -98,21 +207,15 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
       _showResultDialog();
     }
 
-    // 重置动画状态
     _ballDropController.reset();
-    setState(() {
-      _isPlaying = false;
-    });
   }
 
   Future<void> _fetchRandomPost() async {
     try {
-      // 临时逻辑：获取第一页帖子，然后随机选一个
-      // 后续应替换为后端专门的随机接口
       final posts = await PostService.getPosts(page: 1, pageSize: 20);
       if (posts.isNotEmpty) {
         setState(() {
-          _gachaResult = posts[Random().nextInt(posts.length)];
+          _gachaResult = posts[_random.nextInt(posts.length)];
         });
       }
     } catch (e) {
@@ -151,7 +254,6 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // 顶部彩带装饰
                     Container(
                       width: 60,
                       height: 60,
@@ -162,8 +264,6 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
                       child: Icon(Icons.auto_awesome_rounded, color: _currentBallColor, size: 30),
                     ),
                     const SizedBox(height: 20),
-                    
-                    // 用户信息
                     Row(
                       children: [
                         NetworkAvatarImage(
@@ -171,36 +271,40 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
                           radius: 20,
                         ),
                         const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _gachaResult!.userName,
-                              style: const TextStyle(
-                                fontSize: 16, 
-                                fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _gachaResult!.userName,
+                                style: const TextStyle(
+                                  fontSize: 16, 
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            const Text(
-                              '来自于远方的扭蛋',
-                              style: TextStyle(
-                                fontSize: 12, 
-                                color: Colors.grey,
+                              const Text(
+                                '来自于远方的扭蛋',
+                                style: TextStyle(
+                                  fontSize: 12, 
+                                  color: Colors.grey,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    
-                    // 内容
-                    Text(
-                      _gachaResult!.content,
-                      style: const TextStyle(fontSize: 16, height: 1.5),
-                      textAlign: TextAlign.center,
+                    Container(
+                      constraints: const BoxConstraints(maxHeight: 200),
+                      child: SingleChildScrollView(
+                        child: Text(
+                          _gachaResult!.content,
+                          style: const TextStyle(fontSize: 16, height: 1.5),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     ),
-                    
                     if (_gachaResult!.images.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 16),
@@ -219,10 +323,7 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
                           ),
                         ),
                       ),
-
                     const SizedBox(height: 24),
-                    
-                    // 按钮
                     Row(
                       children: [
                         Expanded(
@@ -231,6 +332,7 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
                             style: OutlinedButton.styleFrom(
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                               side: BorderSide(color: Colors.grey[300]!),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
                             child: const Text('收下', style: TextStyle(color: Colors.grey)),
                           ),
@@ -240,15 +342,16 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
                           child: ElevatedButton(
                             onPressed: () {
                               Navigator.pop(context);
-                              // 这里可以跳转到回复页面
+                              Navigator.pushNamed(context, '/comments', arguments: _gachaResult!.id);
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _currentBallColor,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                               elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
-                            child: const Text('回复'),
+                            child: const Text('回复Ta'),
                           ),
                         ),
                       ],
@@ -266,7 +369,7 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDFBF7), // 温暖的米色背景
+      backgroundColor: const Color(0xFFFDFBF7),
       appBar: AppBar(
         title: const Text('心情扭蛋机', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
@@ -275,7 +378,7 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
       ),
       body: Stack(
         children: [
-          // 背景装饰
+          // 装饰背景
           Positioned(
             top: -100,
             right: -100,
@@ -288,34 +391,14 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
               ),
             ),
           ),
-          Positioned(
-            bottom: -50,
-            left: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                color: Colors.blue[50],
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-
-          // 主体内容
+          
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Spacer(),
-                // 扭蛋机主体
-                AnimatedBuilder(
-                  animation: _shakeAnimation,
-                  builder: (context, child) {
-                    return Transform.translate(
-                      offset: Offset(_shakeAnimation.value * sin(DateTime.now().millisecondsSinceEpoch), 0),
-                      child: child,
-                    );
-                  },
+                GestureDetector(
+                  onTap: _isPlaying ? null : _startGacha,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
@@ -324,7 +407,11 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
                         width: 280,
                         height: 400,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFB7C5), // 萌粉色
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFFB7C5), Color(0xFFFFA5B5)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
                           borderRadius: BorderRadius.circular(40),
                           boxShadow: [
                             BoxShadow(
@@ -341,46 +428,66 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
                             Container(
                               margin: const EdgeInsets.all(20),
                               height: 200,
+                              width: 200,
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.5),
-                                borderRadius: BorderRadius.circular(100), // 半圆
+                                borderRadius: BorderRadius.circular(100),
                                 border: Border.all(color: Colors.white.withOpacity(0.8), width: 2),
-                              ),
-                              child: Stack(
-                                children: [
-                                  // 里面的球 (静态装饰)
-                                  for (int i = 0; i < 8; i++)
-                                    Positioned(
-                                      top: 40.0 + Random().nextInt(100),
-                                      left: 20.0 + Random().nextInt(180),
-                                      child: Container(
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          color: _ballColors[i % _ballColors.length],
-                                          shape: BoxShape.circle,
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(0.1),
-                                              blurRadius: 5,
-                                              offset: const Offset(2, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Container(
-                                          margin: const EdgeInsets.all(5),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(0.3),
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.white.withOpacity(0.2),
+                                    blurRadius: 10,
+                                    offset: const Offset(-5, -5),
+                                  ),
                                 ],
                               ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(100),
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return Stack(
+                                      children: [
+                                        // 动态小球
+                                        for (var ball in _balls)
+                                          Positioned(
+                                            // 修复：确保小球在容器内
+                                            left: ball.x * constraints.maxWidth, 
+                                            top: ball.y * constraints.maxHeight,
+                                            child: Transform.rotate(
+                                              angle: ball.rotation,
+                                              child: Container(
+                                                width: ball.size,
+                                                height: ball.size,
+                                                decoration: BoxDecoration(
+                                                  color: ball.color,
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black.withOpacity(0.1),
+                                                      blurRadius: 2,
+                                                      offset: const Offset(1, 1),
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: Container(
+                                                  margin: const EdgeInsets.all(8),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white.withOpacity(0.3),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ),
                             ),
-                            // 操作区
                             const Spacer(),
+                            // 操作面板
                             Container(
                               width: 180,
                               height: 120,
@@ -393,13 +500,24 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Icon(Icons.touch_app_rounded, color: Colors.pinkAccent, size: 30),
+                                    TweenAnimationBuilder<double>(
+                                      tween: Tween(begin: 0, end: _isPlaying ? 8 * pi : 0),
+                                      duration: const Duration(seconds: 2),
+                                      builder: (context, value, child) {
+                                        return Transform.rotate(
+                                          angle: value,
+                                          child: Icon(Icons.settings_rounded, color: Colors.pinkAccent[100], size: 40),
+                                        );
+                                      },
+                                    ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      '点击抽取',
+                                      _isPlaying ? '搅拌中...' : '点击这里',
+                                      textAlign: TextAlign.center,
                                       style: TextStyle(
                                         color: Colors.pink[300],
                                         fontWeight: FontWeight.bold,
+                                        fontSize: 12,
                                       ),
                                     ),
                                   ],
@@ -416,36 +534,34 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
                         child: AnimatedBuilder(
                           animation: _ballDropAnimation,
                           builder: (context, child) {
-                            // 简单的掉落位移
-                            double yOffset = 100 * _ballDropAnimation.value;
-                            double scale = _ballDropAnimation.value;
+                            double yOffset = 150 * _ballDropAnimation.value;
+                            double scale = _ballDropAnimation.value * 1.5;
                             return Opacity(
                               opacity: _ballDropAnimation.value,
                               child: Transform.translate(
                                 offset: Offset(0, yOffset),
                                 child: Transform.scale(
                                   scale: scale,
-                                  child: child,
+                                  child: Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      color: _currentBallColor,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white, width: 3),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: _currentBallColor.withOpacity(0.5),
+                                          blurRadius: 15,
+                                          spreadRadius: 2,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ),
                             );
                           },
-                          child: Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: _currentBallColor,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 3),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: _currentBallColor.withOpacity(0.5),
-                                  blurRadius: 15,
-                                  spreadRadius: 2,
-                                ),
-                              ],
-                            ),
-                          ),
                         ),
                       ),
                     ],
@@ -454,33 +570,37 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
                 
                 const Spacer(),
                 
-                // 按钮
+                // 底部按钮
                 Padding(
                   padding: const EdgeInsets.only(bottom: 60),
                   child: SizedBox(
-                    width: 200,
-                    height: 60,
+                    width: 220,
+                    height: 64,
                     child: ElevatedButton(
                       onPressed: _isPlaying ? null : _startGacha,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF7F7FD5),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                          borderRadius: BorderRadius.circular(32),
                         ),
                         elevation: 8,
                         shadowColor: const Color(0xFF7F7FD5).withOpacity(0.5),
                       ),
                       child: _isPlaying
-                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
+                          ? const Text('扭蛋中...', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
                           : const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.casino_rounded, size: 28),
+                                Icon(Icons.monetization_on_rounded, size: 28, color: Colors.amberAccent),
                                 SizedBox(width: 12),
-                                Text(
-                                  '投入一枚硬币',
-                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('投入硬币', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                    Text('今日剩余: 3次', style: TextStyle(fontSize: 10, color: Colors.white70)),
+                                  ],
                                 ),
                               ],
                             ),
@@ -495,4 +615,3 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
     );
   }
 }
-
