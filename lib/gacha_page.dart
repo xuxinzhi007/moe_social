@@ -153,7 +153,7 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
             ball.rotation += ball.vx * 5;
 
             double ballRatio = 0.18; 
-
+            
             // 底部碰撞
             if (ball.y > 1.0 - ballRatio) {
               ball.y = 1.0 - ballRatio;
@@ -377,6 +377,7 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
         centerTitle: true,
       ),
       body: Stack(
+        fit: StackFit.expand, // 填满屏幕
         children: [
           // 装饰背景
           Positioned(
@@ -392,222 +393,236 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
             ),
           ),
           
+          // 机器主体 (居中)
           Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Spacer(),
-                GestureDetector(
-                  onTap: _isPlaying ? null : _startGacha,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // 机器外壳
-                      Container(
-                        width: 280,
-                        height: 400,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFFB7C5), Color(0xFFFFA5B5)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+            child: GestureDetector(
+              onTap: _isPlaying ? null : _startGacha,
+              child: Container(
+                width: 280,
+                height: 400,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFB7C5), Color(0xFFFFA5B5)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(40),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.pink.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                  border: Border.all(color: Colors.white, width: 4),
+                ),
+                child: Column(
+                  children: [
+                    // 玻璃罩
+                    Container(
+                      margin: const EdgeInsets.all(20),
+                      height: 200,
+                      width: 200,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(100),
+                        border: Border.all(color: Colors.white.withOpacity(0.8), width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.2),
+                            blurRadius: 10,
+                            offset: const Offset(-5, -5),
                           ),
-                          borderRadius: BorderRadius.circular(40),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.pink.withOpacity(0.3),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                          border: Border.all(color: Colors.white, width: 4),
-                        ),
-                        child: Column(
-                          children: [
-                            // 玻璃罩
-                            Container(
-                              margin: const EdgeInsets.all(20),
-                              height: 200,
-                              width: 200,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.5),
-                                borderRadius: BorderRadius.circular(100),
-                                border: Border.all(color: Colors.white.withOpacity(0.8), width: 2),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.white.withOpacity(0.2),
-                                    blurRadius: 10,
-                                    offset: const Offset(-5, -5),
-                                  ),
-                                ],
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(100),
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    return Stack(
-                                      children: [
-                                        // 动态小球
-                                        for (var ball in _balls)
-                                          Positioned(
-                                            // 修复：确保小球在容器内
-                                            left: ball.x * constraints.maxWidth, 
-                                            top: ball.y * constraints.maxHeight,
-                                            child: Transform.rotate(
-                                              angle: ball.rotation,
-                                              child: Container(
-                                                width: ball.size,
-                                                height: ball.size,
-                                                decoration: BoxDecoration(
-                                                  color: ball.color,
-                                                  shape: BoxShape.circle,
-                                                  border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: Colors.black.withOpacity(0.1),
-                                                      blurRadius: 2,
-                                                      offset: const Offset(1, 1),
-                                                    ),
-                                                  ],
-                                                ),
-                                                child: Container(
-                                                  margin: const EdgeInsets.all(8),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white.withOpacity(0.3),
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                ),
-                                              ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(100),
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            return Stack(
+                              children: [
+                                // 动态小球
+                                for (var ball in _balls)
+                                  Positioned(
+                                    left: ball.x * constraints.maxWidth, 
+                                    top: ball.y * constraints.maxHeight,
+                                    child: Transform.rotate(
+                                      angle: ball.rotation,
+                                      child: Container(
+                                        width: ball.size,
+                                        height: ball.size,
+                                        decoration: BoxDecoration(
+                                          color: ball.color,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(0.1),
+                                              blurRadius: 2,
+                                              offset: const Offset(1, 1),
                                             ),
+                                          ],
+                                        ),
+                                        child: Container(
+                                          margin: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withOpacity(0.3),
+                                            shape: BoxShape.circle,
                                           ),
-                                      ],
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                            const Spacer(),
-                            // 操作面板
-                            Container(
-                              width: 180,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: const BorderRadius.vertical(top: Radius.circular(60), bottom: Radius.circular(20)),
-                                border: Border.all(color: Colors.pink[100]!, width: 2),
-                              ),
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    TweenAnimationBuilder<double>(
-                                      tween: Tween(begin: 0, end: _isPlaying ? 8 * pi : 0),
-                                      duration: const Duration(seconds: 2),
-                                      builder: (context, value, child) {
-                                        return Transform.rotate(
-                                          angle: value,
-                                          child: Icon(Icons.settings_rounded, color: Colors.pinkAccent[100], size: 40),
-                                        );
-                                      },
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      _isPlaying ? '搅拌中...' : '点击这里',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.pink[300],
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
+                                        ),
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                          ],
-                        ),
-                      ),
-                      // 出货口动画球
-                      Positioned(
-                        bottom: 40,
-                        child: AnimatedBuilder(
-                          animation: _ballDropAnimation,
-                          builder: (context, child) {
-                            double yOffset = 150 * _ballDropAnimation.value;
-                            double scale = _ballDropAnimation.value * 1.5;
-                            return Opacity(
-                              opacity: _ballDropAnimation.value,
-                              child: Transform.translate(
-                                offset: Offset(0, yOffset),
-                                child: Transform.scale(
-                                  scale: scale,
-                                  child: Container(
-                                    width: 60,
-                                    height: 60,
-                                    decoration: BoxDecoration(
-                                      color: _currentBallColor,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: Colors.white, width: 3),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: _currentBallColor.withOpacity(0.5),
-                                          blurRadius: 15,
-                                          spreadRadius: 2,
-                                        ),
-                                      ],
-                                    ),
                                   ),
-                                ),
-                              ),
+                              ],
                             );
                           },
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    const Spacer(),
+                            // 装饰性机械结构 (仅在运行时旋转)
+                            Container(
+                              height: 120,
+                              alignment: Alignment.center,
+                              child: _isPlaying 
+                                  ? TweenAnimationBuilder<double>(
+                                      tween: Tween(begin: 0, end: 8 * pi),
+                                      duration: const Duration(seconds: 2),
+                                      builder: (context, value, child) {
+                                        return Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Transform.rotate(
+                                              angle: value,
+                                              child: Icon(Icons.settings_rounded, color: Colors.white.withOpacity(0.9), size: 48),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            const Text(
+                                              'Gachaing...',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                letterSpacing: 1,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    )
+                                  : Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.stars_rounded, color: Colors.white.withOpacity(0.6), size: 32),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Moe Social',
+                                          style: TextStyle(
+                                            color: Colors.white.withOpacity(0.8),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                            fontFamily: 'Courier', // 机械感字体
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                    const SizedBox(height: 20),
+                  ],
                 ),
-                
-                const Spacer(),
-                
-                // 底部按钮
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 60),
-                  child: SizedBox(
-                    width: 220,
-                    height: 64,
-                    child: ElevatedButton(
-                      onPressed: _isPlaying ? null : _startGacha,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF7F7FD5),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(32),
-                        ),
-                        elevation: 8,
-                        shadowColor: const Color(0xFF7F7FD5).withOpacity(0.5),
-                      ),
-                      child: _isPlaying
-                          ? const Text('扭蛋中...', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
-                          : const Row(
+              ),
+            ),
+          ),
+          
+          // 投币按钮 (固定在底部)
+          Positioned(
+            bottom: 60,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: SizedBox(
+                width: 220,
+                height: 64,
+                child: ElevatedButton(
+                  onPressed: _isPlaying ? null : _startGacha,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF7F7FD5),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(32),
+                    ),
+                    elevation: 8,
+                    shadowColor: const Color(0xFF7F7FD5).withOpacity(0.5),
+                  ),
+                  child: _isPlaying
+                      ? const Text('扭蛋中...', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
+                      : const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.monetization_on_rounded, size: 28, color: Colors.amberAccent),
+                            SizedBox(width: 12),
+                            Column(
                               mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(Icons.monetization_on_rounded, size: 28, color: Colors.amberAccent),
-                                SizedBox(width: 12),
-                                Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('投入硬币', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                    Text('今日剩余: 3次', style: TextStyle(fontSize: 10, color: Colors.white70)),
-                                  ],
-                                ),
+                                Text('投入硬币', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                Text('今日剩余: 3次', style: TextStyle(fontSize: 10, color: Colors.white70)),
                               ],
                             ),
+                          ],
+                        ),
+                ),
+              ),
+            ),
+          ),
+
+          // 出货口动画球 (放在最顶层，绝对定位)
+          // 目标：停在齿轮位置 (机器下半部分)
+          Align(
+            alignment: Alignment.center,
+            child: AnimatedBuilder(
+              animation: _ballDropAnimation,
+              builder: (context, child) {
+                // 初始位置：玻璃罩底部 (50) -> 结束位置：齿轮区域 (130)
+                // 使用非线性插值模拟弹跳
+                double value = _ballDropAnimation.value;
+                double yOffset = 50 + (80 * value); 
+                double scale = 0.5 + (1.0 * value); // 从小变大
+                
+                // 旋转动画 (滚出来)
+                double rotation = value * 2 * pi;
+
+                if (value == 0) return const SizedBox.shrink();
+
+                return Transform.translate(
+                  offset: Offset(0, yOffset),
+                  child: Transform.rotate(
+                    angle: rotation,
+                    child: Transform.scale(
+                      scale: scale,
+                      child: Container(
+                        width: 80, // 变大一点，更有满足感
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: _currentBallColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: _currentBallColor.withOpacity(0.6),
+                              blurRadius: 20,
+                              spreadRadius: 5,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        // 加个问号或者礼物图标
+                        child: Icon(Icons.question_mark_rounded, color: Colors.white.withOpacity(0.8), size: 40),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                );
+              },
             ),
           ),
         ],

@@ -24,7 +24,8 @@ import 'reset_password_page.dart';
 import 'notification_center_page.dart';
 import 'wallet_page.dart';
 import 'recharge_page.dart';
-import 'gacha_page.dart'; // 引入扭蛋页
+import 'explore_page.dart';
+import 'gacha_page.dart';
 import 'models/post.dart';
 import 'services/post_service.dart';
 import 'user_profile_page.dart';
@@ -138,7 +139,7 @@ class MyApp extends StatelessWidget {
         '/notifications': (context) => const NotificationCenterPage(),
         '/wallet': (context) => const WalletPage(),
         '/recharge': (context) => const RechargePage(),
-        '/gacha': (context) => const GachaPage(), // 注册扭蛋页路由
+        '/gacha': (context) => GachaPage(), // 注册扭蛋页路由
         '/user-profile': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
           if (args is! Map<String, dynamic>) {
@@ -170,9 +171,9 @@ class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    const HomePage(),
-    const GachaPage(), // 将扭蛋页作为第二个 Tab
-    const ProfilePage(),
+    HomePage(),
+    GachaPage(), // 扭蛋机回归
+    ProfilePage(),
   ];
 
   @override
@@ -206,7 +207,7 @@ class _MainPageState extends State<MainPage> {
               label: '首页',
             ),
             NavigationDestination(
-              icon: Icon(Icons.casino_outlined), // 使用扭蛋/赌博机图标
+              icon: Icon(Icons.casino_outlined),
               selectedIcon: Icon(Icons.casino_rounded),
               label: '扭蛋',
             ),
@@ -488,10 +489,34 @@ class _HomePageState extends State<HomePage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildQuickAction(Icons.category_rounded, '分区', Colors.pink[50]!, Colors.pinkAccent),
-                        _buildQuickAction(Icons.whatshot_rounded, '热门', Colors.orange[50]!, Colors.orange),
-                        _buildQuickAction(Icons.new_releases_rounded, '最新', Colors.blue[50]!, Colors.blueAccent),
-                        _buildQuickAction(Icons.star_rounded, '关注', Colors.purple[50]!, Colors.purpleAccent),
+                        _buildQuickAction(
+                          Icons.category_rounded, 
+                          '分区', 
+                          Colors.pink[50]!, 
+                          Colors.pinkAccent,
+                          onTap: () {},
+                        ),
+                        _buildQuickAction(
+                          Icons.whatshot_rounded, 
+                          '热门', 
+                          Colors.orange[50]!, 
+                          Colors.orange,
+                          onTap: () {},
+                        ),
+                        _buildQuickAction(
+                          Icons.new_releases_rounded, 
+                          '最新', 
+                          Colors.blue[50]!, 
+                          Colors.blueAccent,
+                          onTap: () {},
+                        ),
+                        _buildQuickAction(
+                          Icons.star_rounded, 
+                          '关注', 
+                          Colors.purple[50]!, 
+                          Colors.purpleAccent,
+                          onTap: () {},
+                        ),
                       ],
                     ),
                   ),
@@ -576,11 +601,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildQuickAction(IconData icon, String label, Color bgColor, Color iconColor) {
+  Widget _buildQuickAction(IconData icon, String label, Color bgColor, Color iconColor, {required VoidCallback onTap}) {
     return Column(
       children: [
         InkWell(
-          onTap: () {},
+          onTap: onTap,
           borderRadius: BorderRadius.circular(20),
           child: Container(
             padding: const EdgeInsets.all(16),
