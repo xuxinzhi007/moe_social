@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewGetUserActiveVipRecordLogic(ctx context.Context, svcCtx *svc.ServiceCont
 
 func (l *GetUserActiveVipRecordLogic) GetUserActiveVipRecord(req *types.GetUserActiveVipRecordReq) (resp *types.GetUserActiveVipRecordResp, err error) {
 	// 调用RPC服务
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetUserActiveVipRecord(l.ctx, &rpc.GetUserActiveVipRecordReq{
+	rpcResp, err := l.svcCtx.SuperRpcClient.GetUserActiveVipRecord(l.ctx, &super.GetUserActiveVipRecordReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

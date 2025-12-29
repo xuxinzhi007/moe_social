@@ -6,7 +6,7 @@ import (
 
 	"backend/model"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewLikeCommentLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LikeC
 	}
 }
 
-func (l *LikeCommentLogic) LikeComment(in *rpc.LikeCommentReq) (*rpc.LikeCommentResp, error) {
+func (l *LikeCommentLogic) LikeComment(in *super.LikeCommentReq) (*super.LikeCommentResp, error) {
 	// 解析ID
 	commentID, err := strconv.ParseUint(in.CommentId, 10, 32)
 	if err != nil {
@@ -123,7 +123,7 @@ func (l *LikeCommentLogic) LikeComment(in *rpc.LikeCommentReq) (*rpc.LikeComment
 	isLiked := l.svcCtx.DB.Where("comment_id = ? AND user_id = ?", commentID, userID).First(&currentLike).Error == nil
 
 	// 构建响应
-	rpcComment := &rpc.Comment{
+	rpcComment := &super.Comment{
 		Id:         strconv.FormatUint(uint64(comment.ID), 10),
 		PostId:     strconv.FormatUint(uint64(comment.PostID), 10),
 		UserId:     strconv.FormatUint(uint64(comment.UserID), 10),
@@ -135,7 +135,7 @@ func (l *LikeCommentLogic) LikeComment(in *rpc.LikeCommentReq) (*rpc.LikeComment
 		CreatedAt:  comment.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 
-	return &rpc.LikeCommentResp{
+	return &super.LikeCommentResp{
 		Comment: rpcComment,
 	}, nil
 }

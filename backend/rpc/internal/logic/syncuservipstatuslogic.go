@@ -7,7 +7,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewSyncUserVipStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	}
 }
 // 用户相关服务
-func (l *SyncUserVipStatusLogic) SyncUserVipStatus(in *rpc.SyncUserVipStatusReq) (*rpc.SyncUserVipStatusResp, error) {
+func (l *SyncUserVipStatusLogic) SyncUserVipStatus(in *super.SyncUserVipStatusReq) (*super.SyncUserVipStatusResp, error) {
 	// 验证用户是否存在
 	var user model.User
 	result := l.svcCtx.DB.First(&user, in.UserId)
@@ -49,7 +49,7 @@ func (l *SyncUserVipStatusLogic) SyncUserVipStatus(in *rpc.SyncUserVipStatusReq)
 		}
 	}
 
-	return &rpc.SyncUserVipStatusResp{
+	return &super.SyncUserVipStatusResp{
 		IsVip:     isVip,
 		ExpiresAt: vipEndAt,
 	}, nil

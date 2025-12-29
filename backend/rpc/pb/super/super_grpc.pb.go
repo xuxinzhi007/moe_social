@@ -4,7 +4,7 @@
 // - protoc             v6.33.1
 // source: super.proto
 
-package rpc
+package super
 
 import (
 	context "context"
@@ -49,6 +49,10 @@ const (
 	Super_GetPostComments_FullMethodName        = "/super.Super/GetPostComments"
 	Super_CreateComment_FullMethodName          = "/super.Super/CreateComment"
 	Super_LikeComment_FullMethodName            = "/super.Super/LikeComment"
+	Super_GetNotifications_FullMethodName       = "/super.Super/GetNotifications"
+	Super_GetUnreadCount_FullMethodName         = "/super.Super/GetUnreadCount"
+	Super_ReadNotification_FullMethodName       = "/super.Super/ReadNotification"
+	Super_ReadAllNotifications_FullMethodName   = "/super.Super/ReadAllNotifications"
 	Super_Recharge_FullMethodName               = "/super.Super/Recharge"
 	Super_GetTransactions_FullMethodName        = "/super.Super/GetTransactions"
 	Super_GetTransaction_FullMethodName         = "/super.Super/GetTransaction"
@@ -95,6 +99,11 @@ type SuperClient interface {
 	// 评论相关服务
 	CreateComment(ctx context.Context, in *CreateCommentReq, opts ...grpc.CallOption) (*CreateCommentResp, error)
 	LikeComment(ctx context.Context, in *LikeCommentReq, opts ...grpc.CallOption) (*LikeCommentResp, error)
+	// 通知相关服务
+	GetNotifications(ctx context.Context, in *GetNotificationsReq, opts ...grpc.CallOption) (*GetNotificationsResp, error)
+	GetUnreadCount(ctx context.Context, in *GetUnreadCountReq, opts ...grpc.CallOption) (*GetUnreadCountResp, error)
+	ReadNotification(ctx context.Context, in *ReadNotificationReq, opts ...grpc.CallOption) (*ReadNotificationResp, error)
+	ReadAllNotifications(ctx context.Context, in *ReadAllNotificationsReq, opts ...grpc.CallOption) (*ReadAllNotificationsResp, error)
 	// 钱包相关服务
 	Recharge(ctx context.Context, in *RechargeReq, opts ...grpc.CallOption) (*RechargeResp, error)
 	// 交易记录相关服务
@@ -380,6 +389,42 @@ func (c *superClient) LikeComment(ctx context.Context, in *LikeCommentReq, opts 
 	return out, nil
 }
 
+func (c *superClient) GetNotifications(ctx context.Context, in *GetNotificationsReq, opts ...grpc.CallOption) (*GetNotificationsResp, error) {
+	out := new(GetNotificationsResp)
+	err := c.cc.Invoke(ctx, Super_GetNotifications_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) GetUnreadCount(ctx context.Context, in *GetUnreadCountReq, opts ...grpc.CallOption) (*GetUnreadCountResp, error) {
+	out := new(GetUnreadCountResp)
+	err := c.cc.Invoke(ctx, Super_GetUnreadCount_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) ReadNotification(ctx context.Context, in *ReadNotificationReq, opts ...grpc.CallOption) (*ReadNotificationResp, error) {
+	out := new(ReadNotificationResp)
+	err := c.cc.Invoke(ctx, Super_ReadNotification_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) ReadAllNotifications(ctx context.Context, in *ReadAllNotificationsReq, opts ...grpc.CallOption) (*ReadAllNotificationsResp, error) {
+	out := new(ReadAllNotificationsResp)
+	err := c.cc.Invoke(ctx, Super_ReadAllNotifications_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *superClient) Recharge(ctx context.Context, in *RechargeReq, opts ...grpc.CallOption) (*RechargeResp, error) {
 	out := new(RechargeResp)
 	err := c.cc.Invoke(ctx, Super_Recharge_FullMethodName, in, out, opts...)
@@ -448,6 +493,11 @@ type SuperServer interface {
 	// 评论相关服务
 	CreateComment(context.Context, *CreateCommentReq) (*CreateCommentResp, error)
 	LikeComment(context.Context, *LikeCommentReq) (*LikeCommentResp, error)
+	// 通知相关服务
+	GetNotifications(context.Context, *GetNotificationsReq) (*GetNotificationsResp, error)
+	GetUnreadCount(context.Context, *GetUnreadCountReq) (*GetUnreadCountResp, error)
+	ReadNotification(context.Context, *ReadNotificationReq) (*ReadNotificationResp, error)
+	ReadAllNotifications(context.Context, *ReadAllNotificationsReq) (*ReadAllNotificationsResp, error)
 	// 钱包相关服务
 	Recharge(context.Context, *RechargeReq) (*RechargeResp, error)
 	// 交易记录相关服务
@@ -549,6 +599,18 @@ func (UnimplementedSuperServer) CreateComment(context.Context, *CreateCommentReq
 }
 func (UnimplementedSuperServer) LikeComment(context.Context, *LikeCommentReq) (*LikeCommentResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LikeComment not implemented")
+}
+func (UnimplementedSuperServer) GetNotifications(context.Context, *GetNotificationsReq) (*GetNotificationsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetNotifications not implemented")
+}
+func (UnimplementedSuperServer) GetUnreadCount(context.Context, *GetUnreadCountReq) (*GetUnreadCountResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUnreadCount not implemented")
+}
+func (UnimplementedSuperServer) ReadNotification(context.Context, *ReadNotificationReq) (*ReadNotificationResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReadNotification not implemented")
+}
+func (UnimplementedSuperServer) ReadAllNotifications(context.Context, *ReadAllNotificationsReq) (*ReadAllNotificationsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReadAllNotifications not implemented")
 }
 func (UnimplementedSuperServer) Recharge(context.Context, *RechargeReq) (*RechargeResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Recharge not implemented")
@@ -1112,6 +1174,78 @@ func _Super_LikeComment_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Super_GetNotifications_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetNotificationsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).GetNotifications(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_GetNotifications_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).GetNotifications(ctx, req.(*GetNotificationsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_GetUnreadCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUnreadCountReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).GetUnreadCount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_GetUnreadCount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).GetUnreadCount(ctx, req.(*GetUnreadCountReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_ReadNotification_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReadNotificationReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).ReadNotification(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_ReadNotification_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).ReadNotification(ctx, req.(*ReadNotificationReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_ReadAllNotifications_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReadAllNotificationsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).ReadAllNotifications(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_ReadAllNotifications_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).ReadAllNotifications(ctx, req.(*ReadAllNotificationsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Super_Recharge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RechargeReq)
 	if err := dec(in); err != nil {
@@ -1292,6 +1426,22 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LikeComment",
 			Handler:    _Super_LikeComment_Handler,
+		},
+		{
+			MethodName: "GetNotifications",
+			Handler:    _Super_GetNotifications_Handler,
+		},
+		{
+			MethodName: "GetUnreadCount",
+			Handler:    _Super_GetUnreadCount_Handler,
+		},
+		{
+			MethodName: "ReadNotification",
+			Handler:    _Super_ReadNotification_Handler,
+		},
+		{
+			MethodName: "ReadAllNotifications",
+			Handler:    _Super_ReadAllNotifications_Handler,
 		},
 		{
 			MethodName: "Recharge",

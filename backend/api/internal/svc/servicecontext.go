@@ -2,14 +2,14 @@ package svc
 
 import (
 	"backend/api/internal/config"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/zrpc"
 )
 
 type ServiceContext struct {
 	Config         config.Config
-	SuperRpcClient rpc.SuperClient
+	SuperRpcClient super.SuperClient
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -18,6 +18,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 	return &ServiceContext{
 		Config:         c,
-		SuperRpcClient: rpc.NewSuperClient(rpcClient.Conn()),
+		SuperRpcClient: super.NewSuperClient(rpcClient.Conn()),
 	}
 }

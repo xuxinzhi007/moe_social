@@ -8,7 +8,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewGetUserActiveVipRecordLogic(ctx context.Context, svcCtx *svc.ServiceCont
 	}
 }
 
-func (l *GetUserActiveVipRecordLogic) GetUserActiveVipRecord(in *rpc.GetUserActiveVipRecordReq) (*rpc.GetUserActiveVipRecordResp, error) {
+func (l *GetUserActiveVipRecordLogic) GetUserActiveVipRecord(in *super.GetUserActiveVipRecordReq) (*super.GetUserActiveVipRecordResp, error) {
 	// 1. 查找用户当前激活的VIP记录
 	var record model.VipRecord
 	result := l.svcCtx.DB.Where("user_id = ? AND is_active = ? AND end_at > ?", in.UserId, true, time.Now()).First(&record)
@@ -41,8 +41,8 @@ func (l *GetUserActiveVipRecordLogic) GetUserActiveVipRecord(in *rpc.GetUserActi
 	l.svcCtx.DB.First(&plan, record.PlanID)
 
 	// 3. 构建响应
-	return &rpc.GetUserActiveVipRecordResp{
-		Record: &rpc.VipRecord{
+	return &super.GetUserActiveVipRecordResp{
+		Record: &super.VipRecord{
 			Id:        strconv.Itoa(int(record.ID)),
 			UserId:    strconv.Itoa(int(record.UserID)),
 			PlanId:    strconv.Itoa(int(record.PlanID)),

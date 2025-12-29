@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	comment "backend/api/internal/handler/comment"
+	notification "backend/api/internal/handler/notification"
 	post "backend/api/internal/handler/post"
 	user "backend/api/internal/handler/user"
 	vip "backend/api/internal/handler/vip"
@@ -27,6 +28,31 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodPost,
 				Path:    "/api/comments/:comment_id/like",
 				Handler: comment.LikeCommentHandler(serverCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/notifications",
+				Handler: notification.GetNotificationsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/notifications/:id/read",
+				Handler: notification.ReadNotificationHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/notifications/read-all",
+				Handler: notification.ReadAllNotificationsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/notifications/unread",
+				Handler: notification.GetUnreadCountHandler(serverCtx),
 			},
 		},
 	)

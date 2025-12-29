@@ -35,6 +35,7 @@ import 'widgets/post_skeleton.dart';
 import 'widgets/fade_in_up.dart';
 import 'utils/error_handler.dart';
 import 'providers/theme_provider.dart';
+import 'providers/notification_provider.dart';
 
 void main() async {
   // 使用runZonedGuarded捕获所有未捕获的错误
@@ -48,6 +49,10 @@ void main() async {
     // 创建主题提供者
     final themeProvider = ThemeProvider();
     await themeProvider.init();
+    
+    // 创建通知提供者
+    final notificationProvider = NotificationProvider();
+    notificationProvider.init(); // 启动轮询
     
     // 捕获Flutter框架错误
     FlutterError.onError = (FlutterErrorDetails details) {
@@ -82,8 +87,11 @@ void main() async {
     print('🔐 User logged in: ${AuthService.isLoggedIn}');
     
     runApp(
-      ChangeNotifierProvider.value(
-        value: themeProvider,
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: themeProvider),
+          ChangeNotifierProvider.value(value: notificationProvider),
+        ],
         child: const MyApp(),
       ),
     );
@@ -359,21 +367,29 @@ class _HomePageState extends State<HomePage> {
                   Navigator.pushNamed(context, '/notifications');
                 },
               ),
-              // 添加未读通知标记
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.redAccent,
-                    shape: BoxShape.circle,
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 8,
-                    minHeight: 8,
-                  ),
-                ),
+              // 未读通知标记
+              Consumer<NotificationProvider>(
+                builder: (context, provider, child) {
+                  if (provider.unreadCount == 0) return const SizedBox.shrink();
+                  return Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.redAccent,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 8,
+                        minHeight: 8,
+                      ),
+                      child: provider.unreadCount > 99 
+                          ? const Text('99+', style: TextStyle(color: Colors.white, fontSize: 8))
+                          : null,
+                    ),
+                  );
+                },
               ),
             ],
           ),

@@ -7,7 +7,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewCreateVipPlanLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cre
 	}
 }
 
-func (l *CreateVipPlanLogic) CreateVipPlan(in *rpc.CreateVipPlanReq) (*rpc.CreateVipPlanResp, error) {
+func (l *CreateVipPlanLogic) CreateVipPlan(in *super.CreateVipPlanReq) (*super.CreateVipPlanResp, error) {
 	// 1. 创建VIP套餐
 	plan := model.VipPlan{
 		Name:     in.Name,
@@ -43,8 +43,8 @@ func (l *CreateVipPlanLogic) CreateVipPlan(in *rpc.CreateVipPlanReq) (*rpc.Creat
 	}
 
 	// 3. 构建响应
-	return &rpc.CreateVipPlanResp{
-		Plan: &rpc.VipPlan{
+	return &super.CreateVipPlanResp{
+		Plan: &super.VipPlan{
 			Id:           strconv.Itoa(int(plan.ID)),
 			Name:         plan.Name,
 			Description:  plan.Features,

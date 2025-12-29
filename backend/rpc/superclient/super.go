@@ -2,91 +2,100 @@
 // goctl 1.8.5
 // Source: super.proto
 
-package super
+package superclient
 
 import (
 	"context"
 
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/zrpc"
 	"google.golang.org/grpc"
 )
 
 type (
-	CheckUserVipReq            = rpc.CheckUserVipReq
-	CheckUserVipResp           = rpc.CheckUserVipResp
-	Comment                    = rpc.Comment
-	CreateCommentReq           = rpc.CreateCommentReq
-	CreateCommentResp          = rpc.CreateCommentResp
-	CreatePostReq              = rpc.CreatePostReq
-	CreatePostResp             = rpc.CreatePostResp
-	CreateVipOrderReq          = rpc.CreateVipOrderReq
-	CreateVipOrderResp         = rpc.CreateVipOrderResp
-	CreateVipPlanReq           = rpc.CreateVipPlanReq
-	CreateVipPlanResp          = rpc.CreateVipPlanResp
-	DeleteUserReq              = rpc.DeleteUserReq
-	DeleteUserResp             = rpc.DeleteUserResp
-	GetPostCommentsReq         = rpc.GetPostCommentsReq
-	GetPostCommentsResp        = rpc.GetPostCommentsResp
-	GetPostReq                 = rpc.GetPostReq
-	GetPostResp                = rpc.GetPostResp
-	GetPostsReq                = rpc.GetPostsReq
-	GetPostsResp               = rpc.GetPostsResp
-	GetTransactionReq          = rpc.GetTransactionReq
-	GetTransactionResp         = rpc.GetTransactionResp
-	GetTransactionsReq         = rpc.GetTransactionsReq
-	GetTransactionsResp        = rpc.GetTransactionsResp
-	GetUserActiveVipRecordReq  = rpc.GetUserActiveVipRecordReq
-	GetUserActiveVipRecordResp = rpc.GetUserActiveVipRecordResp
-	GetUserByEmailReq          = rpc.GetUserByEmailReq
-	GetUserByEmailResp         = rpc.GetUserByEmailResp
-	GetUserCountReq            = rpc.GetUserCountReq
-	GetUserCountResp           = rpc.GetUserCountResp
-	GetUserInfoReq             = rpc.GetUserInfoReq
-	GetUserInfoResp            = rpc.GetUserInfoResp
-	GetUserReq                 = rpc.GetUserReq
-	GetUserResp                = rpc.GetUserResp
-	GetUserVipStatusReq        = rpc.GetUserVipStatusReq
-	GetUserVipStatusResp       = rpc.GetUserVipStatusResp
-	GetUsersReq                = rpc.GetUsersReq
-	GetUsersResp               = rpc.GetUsersResp
-	GetVipOrdersReq            = rpc.GetVipOrdersReq
-	GetVipOrdersResp           = rpc.GetVipOrdersResp
-	GetVipPlanReq              = rpc.GetVipPlanReq
-	GetVipPlanResp             = rpc.GetVipPlanResp
-	GetVipPlansReq             = rpc.GetVipPlansReq
-	GetVipPlansResp            = rpc.GetVipPlansResp
-	GetVipRecordsReq           = rpc.GetVipRecordsReq
-	GetVipRecordsResp          = rpc.GetVipRecordsResp
-	LikeCommentReq             = rpc.LikeCommentReq
-	LikeCommentResp            = rpc.LikeCommentResp
-	LikePostReq                = rpc.LikePostReq
-	LikePostResp               = rpc.LikePostResp
-	LoginReq                   = rpc.LoginReq
-	LoginResp                  = rpc.LoginResp
-	Post                       = rpc.Post
-	RechargeReq                = rpc.RechargeReq
-	RechargeResp               = rpc.RechargeResp
-	RegisterReq                = rpc.RegisterReq
-	RegisterResp               = rpc.RegisterResp
-	ResetPasswordReq           = rpc.ResetPasswordReq
-	ResetPasswordResp          = rpc.ResetPasswordResp
-	SyncUserVipStatusReq       = rpc.SyncUserVipStatusReq
-	SyncUserVipStatusResp      = rpc.SyncUserVipStatusResp
-	Transaction                = rpc.Transaction
-	UpdateAutoRenewReq         = rpc.UpdateAutoRenewReq
-	UpdateAutoRenewResp        = rpc.UpdateAutoRenewResp
-	UpdateUserInfoReq          = rpc.UpdateUserInfoReq
-	UpdateUserInfoResp         = rpc.UpdateUserInfoResp
-	UpdateUserPasswordReq      = rpc.UpdateUserPasswordReq
-	UpdateUserPasswordResp     = rpc.UpdateUserPasswordResp
-	UpdateUserVipReq           = rpc.UpdateUserVipReq
-	UpdateUserVipResp          = rpc.UpdateUserVipResp
-	User                       = rpc.User
-	VipOrder                   = rpc.VipOrder
-	VipPlan                    = rpc.VipPlan
-	VipRecord                  = rpc.VipRecord
+	CheckUserVipReq            = super.CheckUserVipReq
+	CheckUserVipResp           = super.CheckUserVipResp
+	Comment                    = super.Comment
+	CreateCommentReq           = super.CreateCommentReq
+	CreateCommentResp          = super.CreateCommentResp
+	CreatePostReq              = super.CreatePostReq
+	CreatePostResp             = super.CreatePostResp
+	CreateVipOrderReq          = super.CreateVipOrderReq
+	CreateVipOrderResp         = super.CreateVipOrderResp
+	CreateVipPlanReq           = super.CreateVipPlanReq
+	CreateVipPlanResp          = super.CreateVipPlanResp
+	DeleteUserReq              = super.DeleteUserReq
+	DeleteUserResp             = super.DeleteUserResp
+	GetNotificationsReq        = super.GetNotificationsReq
+	GetNotificationsResp       = super.GetNotificationsResp
+	GetPostCommentsReq         = super.GetPostCommentsReq
+	GetPostCommentsResp        = super.GetPostCommentsResp
+	GetPostReq                 = super.GetPostReq
+	GetPostResp                = super.GetPostResp
+	GetPostsReq                = super.GetPostsReq
+	GetPostsResp               = super.GetPostsResp
+	GetTransactionReq          = super.GetTransactionReq
+	GetTransactionResp         = super.GetTransactionResp
+	GetTransactionsReq         = super.GetTransactionsReq
+	GetTransactionsResp        = super.GetTransactionsResp
+	GetUnreadCountReq          = super.GetUnreadCountReq
+	GetUnreadCountResp         = super.GetUnreadCountResp
+	GetUserActiveVipRecordReq  = super.GetUserActiveVipRecordReq
+	GetUserActiveVipRecordResp = super.GetUserActiveVipRecordResp
+	GetUserByEmailReq          = super.GetUserByEmailReq
+	GetUserByEmailResp         = super.GetUserByEmailResp
+	GetUserCountReq            = super.GetUserCountReq
+	GetUserCountResp           = super.GetUserCountResp
+	GetUserInfoReq             = super.GetUserInfoReq
+	GetUserInfoResp            = super.GetUserInfoResp
+	GetUserReq                 = super.GetUserReq
+	GetUserResp                = super.GetUserResp
+	GetUserVipStatusReq        = super.GetUserVipStatusReq
+	GetUserVipStatusResp       = super.GetUserVipStatusResp
+	GetUsersReq                = super.GetUsersReq
+	GetUsersResp               = super.GetUsersResp
+	GetVipOrdersReq            = super.GetVipOrdersReq
+	GetVipOrdersResp           = super.GetVipOrdersResp
+	GetVipPlanReq              = super.GetVipPlanReq
+	GetVipPlanResp             = super.GetVipPlanResp
+	GetVipPlansReq             = super.GetVipPlansReq
+	GetVipPlansResp            = super.GetVipPlansResp
+	GetVipRecordsReq           = super.GetVipRecordsReq
+	GetVipRecordsResp          = super.GetVipRecordsResp
+	LikeCommentReq             = super.LikeCommentReq
+	LikeCommentResp            = super.LikeCommentResp
+	LikePostReq                = super.LikePostReq
+	LikePostResp               = super.LikePostResp
+	LoginReq                   = super.LoginReq
+	LoginResp                  = super.LoginResp
+	Notification               = super.Notification
+	Post                       = super.Post
+	ReadAllNotificationsReq    = super.ReadAllNotificationsReq
+	ReadAllNotificationsResp   = super.ReadAllNotificationsResp
+	ReadNotificationReq        = super.ReadNotificationReq
+	ReadNotificationResp       = super.ReadNotificationResp
+	RechargeReq                = super.RechargeReq
+	RechargeResp               = super.RechargeResp
+	RegisterReq                = super.RegisterReq
+	RegisterResp               = super.RegisterResp
+	ResetPasswordReq           = super.ResetPasswordReq
+	ResetPasswordResp          = super.ResetPasswordResp
+	SyncUserVipStatusReq       = super.SyncUserVipStatusReq
+	SyncUserVipStatusResp      = super.SyncUserVipStatusResp
+	Transaction                = super.Transaction
+	UpdateAutoRenewReq         = super.UpdateAutoRenewReq
+	UpdateAutoRenewResp        = super.UpdateAutoRenewResp
+	UpdateUserInfoReq          = super.UpdateUserInfoReq
+	UpdateUserInfoResp         = super.UpdateUserInfoResp
+	UpdateUserPasswordReq      = super.UpdateUserPasswordReq
+	UpdateUserPasswordResp     = super.UpdateUserPasswordResp
+	UpdateUserVipReq           = super.UpdateUserVipReq
+	UpdateUserVipResp          = super.UpdateUserVipResp
+	User                       = super.User
+	VipOrder                   = super.VipOrder
+	VipPlan                    = super.VipPlan
+	VipRecord                  = super.VipRecord
 
 	Super interface {
 		// 用户相关服务
@@ -126,6 +135,11 @@ type (
 		// 评论相关服务
 		CreateComment(ctx context.Context, in *CreateCommentReq, opts ...grpc.CallOption) (*CreateCommentResp, error)
 		LikeComment(ctx context.Context, in *LikeCommentReq, opts ...grpc.CallOption) (*LikeCommentResp, error)
+		// 通知相关服务
+		GetNotifications(ctx context.Context, in *GetNotificationsReq, opts ...grpc.CallOption) (*GetNotificationsResp, error)
+		GetUnreadCount(ctx context.Context, in *GetUnreadCountReq, opts ...grpc.CallOption) (*GetUnreadCountResp, error)
+		ReadNotification(ctx context.Context, in *ReadNotificationReq, opts ...grpc.CallOption) (*ReadNotificationResp, error)
+		ReadAllNotifications(ctx context.Context, in *ReadAllNotificationsReq, opts ...grpc.CallOption) (*ReadAllNotificationsResp, error)
 		// 钱包相关服务
 		Recharge(ctx context.Context, in *RechargeReq, opts ...grpc.CallOption) (*RechargeResp, error)
 		// 交易记录相关服务
@@ -146,174 +160,195 @@ func NewSuper(cli zrpc.Client) Super {
 
 // 用户相关服务
 func (m *defaultSuper) Register(ctx context.Context, in *RegisterReq, opts ...grpc.CallOption) (*RegisterResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.Register(ctx, in, opts...)
 }
 
 func (m *defaultSuper) Login(ctx context.Context, in *LoginReq, opts ...grpc.CallOption) (*LoginResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.Login(ctx, in, opts...)
 }
 
 func (m *defaultSuper) GetUserInfo(ctx context.Context, in *GetUserInfoReq, opts ...grpc.CallOption) (*GetUserInfoResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.GetUserInfo(ctx, in, opts...)
 }
 
 func (m *defaultSuper) GetUser(ctx context.Context, in *GetUserReq, opts ...grpc.CallOption) (*GetUserResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.GetUser(ctx, in, opts...)
 }
 
 func (m *defaultSuper) GetUserByEmail(ctx context.Context, in *GetUserByEmailReq, opts ...grpc.CallOption) (*GetUserByEmailResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.GetUserByEmail(ctx, in, opts...)
 }
 
 func (m *defaultSuper) UpdateUserInfo(ctx context.Context, in *UpdateUserInfoReq, opts ...grpc.CallOption) (*UpdateUserInfoResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.UpdateUserInfo(ctx, in, opts...)
 }
 
 func (m *defaultSuper) UpdateUserPassword(ctx context.Context, in *UpdateUserPasswordReq, opts ...grpc.CallOption) (*UpdateUserPasswordResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.UpdateUserPassword(ctx, in, opts...)
 }
 
 func (m *defaultSuper) ResetPassword(ctx context.Context, in *ResetPasswordReq, opts ...grpc.CallOption) (*ResetPasswordResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.ResetPassword(ctx, in, opts...)
 }
 
 func (m *defaultSuper) DeleteUser(ctx context.Context, in *DeleteUserReq, opts ...grpc.CallOption) (*DeleteUserResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.DeleteUser(ctx, in, opts...)
 }
 
 func (m *defaultSuper) UpdateUserVip(ctx context.Context, in *UpdateUserVipReq, opts ...grpc.CallOption) (*UpdateUserVipResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.UpdateUserVip(ctx, in, opts...)
 }
 
 func (m *defaultSuper) GetUsers(ctx context.Context, in *GetUsersReq, opts ...grpc.CallOption) (*GetUsersResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.GetUsers(ctx, in, opts...)
 }
 
 func (m *defaultSuper) GetUserCount(ctx context.Context, in *GetUserCountReq, opts ...grpc.CallOption) (*GetUserCountResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.GetUserCount(ctx, in, opts...)
 }
 
 // VIP套餐相关服务
 func (m *defaultSuper) GetVipPlans(ctx context.Context, in *GetVipPlansReq, opts ...grpc.CallOption) (*GetVipPlansResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.GetVipPlans(ctx, in, opts...)
 }
 
 func (m *defaultSuper) GetVipPlan(ctx context.Context, in *GetVipPlanReq, opts ...grpc.CallOption) (*GetVipPlanResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.GetVipPlan(ctx, in, opts...)
 }
 
 func (m *defaultSuper) CreateVipPlan(ctx context.Context, in *CreateVipPlanReq, opts ...grpc.CallOption) (*CreateVipPlanResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.CreateVipPlan(ctx, in, opts...)
 }
 
 // VIP订单相关服务
 func (m *defaultSuper) CreateVipOrder(ctx context.Context, in *CreateVipOrderReq, opts ...grpc.CallOption) (*CreateVipOrderResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.CreateVipOrder(ctx, in, opts...)
 }
 
 func (m *defaultSuper) GetVipOrders(ctx context.Context, in *GetVipOrdersReq, opts ...grpc.CallOption) (*GetVipOrdersResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.GetVipOrders(ctx, in, opts...)
 }
 
 // VIP记录相关服务
 func (m *defaultSuper) GetVipRecords(ctx context.Context, in *GetVipRecordsReq, opts ...grpc.CallOption) (*GetVipRecordsResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.GetVipRecords(ctx, in, opts...)
 }
 
 func (m *defaultSuper) GetUserActiveVipRecord(ctx context.Context, in *GetUserActiveVipRecordReq, opts ...grpc.CallOption) (*GetUserActiveVipRecordResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.GetUserActiveVipRecord(ctx, in, opts...)
 }
 
 // VIP状态相关服务
 func (m *defaultSuper) GetUserVipStatus(ctx context.Context, in *GetUserVipStatusReq, opts ...grpc.CallOption) (*GetUserVipStatusResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.GetUserVipStatus(ctx, in, opts...)
 }
 
 func (m *defaultSuper) CheckUserVip(ctx context.Context, in *CheckUserVipReq, opts ...grpc.CallOption) (*CheckUserVipResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.CheckUserVip(ctx, in, opts...)
 }
 
 func (m *defaultSuper) UpdateAutoRenew(ctx context.Context, in *UpdateAutoRenewReq, opts ...grpc.CallOption) (*UpdateAutoRenewResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.UpdateAutoRenew(ctx, in, opts...)
 }
 
 func (m *defaultSuper) SyncUserVipStatus(ctx context.Context, in *SyncUserVipStatusReq, opts ...grpc.CallOption) (*SyncUserVipStatusResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.SyncUserVipStatus(ctx, in, opts...)
 }
 
 // 帖子相关服务
 func (m *defaultSuper) GetPosts(ctx context.Context, in *GetPostsReq, opts ...grpc.CallOption) (*GetPostsResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.GetPosts(ctx, in, opts...)
 }
 
 func (m *defaultSuper) GetPost(ctx context.Context, in *GetPostReq, opts ...grpc.CallOption) (*GetPostResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.GetPost(ctx, in, opts...)
 }
 
 func (m *defaultSuper) CreatePost(ctx context.Context, in *CreatePostReq, opts ...grpc.CallOption) (*CreatePostResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.CreatePost(ctx, in, opts...)
 }
 
 func (m *defaultSuper) LikePost(ctx context.Context, in *LikePostReq, opts ...grpc.CallOption) (*LikePostResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.LikePost(ctx, in, opts...)
 }
 
 func (m *defaultSuper) GetPostComments(ctx context.Context, in *GetPostCommentsReq, opts ...grpc.CallOption) (*GetPostCommentsResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.GetPostComments(ctx, in, opts...)
 }
 
 // 评论相关服务
 func (m *defaultSuper) CreateComment(ctx context.Context, in *CreateCommentReq, opts ...grpc.CallOption) (*CreateCommentResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.CreateComment(ctx, in, opts...)
 }
 
 func (m *defaultSuper) LikeComment(ctx context.Context, in *LikeCommentReq, opts ...grpc.CallOption) (*LikeCommentResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.LikeComment(ctx, in, opts...)
+}
+
+// 通知相关服务
+func (m *defaultSuper) GetNotifications(ctx context.Context, in *GetNotificationsReq, opts ...grpc.CallOption) (*GetNotificationsResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.GetNotifications(ctx, in, opts...)
+}
+
+func (m *defaultSuper) GetUnreadCount(ctx context.Context, in *GetUnreadCountReq, opts ...grpc.CallOption) (*GetUnreadCountResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.GetUnreadCount(ctx, in, opts...)
+}
+
+func (m *defaultSuper) ReadNotification(ctx context.Context, in *ReadNotificationReq, opts ...grpc.CallOption) (*ReadNotificationResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.ReadNotification(ctx, in, opts...)
+}
+
+func (m *defaultSuper) ReadAllNotifications(ctx context.Context, in *ReadAllNotificationsReq, opts ...grpc.CallOption) (*ReadAllNotificationsResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.ReadAllNotifications(ctx, in, opts...)
 }
 
 // 钱包相关服务
 func (m *defaultSuper) Recharge(ctx context.Context, in *RechargeReq, opts ...grpc.CallOption) (*RechargeResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.Recharge(ctx, in, opts...)
 }
 
 // 交易记录相关服务
 func (m *defaultSuper) GetTransactions(ctx context.Context, in *GetTransactionsReq, opts ...grpc.CallOption) (*GetTransactionsResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.GetTransactions(ctx, in, opts...)
 }
 
 func (m *defaultSuper) GetTransaction(ctx context.Context, in *GetTransactionReq, opts ...grpc.CallOption) (*GetTransactionResp, error) {
-	client := rpc.NewSuperClient(m.cli.Conn())
+	client := super.NewSuperClient(m.cli.Conn())
 	return client.GetTransaction(ctx, in, opts...)
 }

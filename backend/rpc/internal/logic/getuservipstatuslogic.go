@@ -6,7 +6,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewGetUserVipStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 // 用户相关服务
-func (l *GetUserVipStatusLogic) GetUserVipStatus(in *rpc.GetUserVipStatusReq) (*rpc.GetUserVipStatusResp, error) {
+func (l *GetUserVipStatusLogic) GetUserVipStatus(in *super.GetUserVipStatusReq) (*super.GetUserVipStatusResp, error) {
 	var user model.User
 	result := l.svcCtx.DB.First(&user, in.UserId)
 	if result.Error != nil {
@@ -39,7 +39,7 @@ func (l *GetUserVipStatusLogic) GetUserVipStatus(in *rpc.GetUserVipStatusReq) (*
 		vipEndAt = user.VipEndAt.Format("2006-01-02 15:04:05")
 	}
 
-	return &rpc.GetUserVipStatusResp{
+	return &super.GetUserVipStatusResp{
 		IsVip:     user.IsVip,
 		ExpiresAt: vipEndAt,
 		AutoRenew: false, // 模型中暂时没有auto_renew字段

@@ -7,7 +7,7 @@ import (
 
 	"backend/model"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewLikePostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LikePost
 	}
 }
 
-func (l *LikePostLogic) LikePost(in *rpc.LikePostReq) (*rpc.LikePostResp, error) {
+func (l *LikePostLogic) LikePost(in *super.LikePostReq) (*super.LikePostResp, error) {
 	// 解析ID
 	postID, err := strconv.ParseUint(in.PostId, 10, 32)
 	if err != nil {
@@ -133,7 +133,7 @@ func (l *LikePostLogic) LikePost(in *rpc.LikePostReq) (*rpc.LikePostResp, error)
 	isLiked := l.svcCtx.DB.Where("post_id = ? AND user_id = ?", postID, userID).First(&currentLike).Error == nil
 
 	// 构建响应
-	rpcPost := &rpc.Post{
+	rpcPost := &super.Post{
 		Id:         strconv.FormatUint(uint64(post.ID), 10),
 		UserId:     strconv.FormatUint(uint64(post.UserID), 10),
 		UserName:   username,
@@ -146,7 +146,7 @@ func (l *LikePostLogic) LikePost(in *rpc.LikePostReq) (*rpc.LikePostResp, error)
 		CreatedAt:  post.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 
-	return &rpc.LikePostResp{
+	return &super.LikePostResp{
 		Post: rpcPost,
 	}, nil
 }

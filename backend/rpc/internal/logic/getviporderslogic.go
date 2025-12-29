@@ -6,7 +6,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewGetVipOrdersLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetV
 	}
 }
 // 用户相关服务
-func (l *GetVipOrdersLogic) GetVipOrders(in *rpc.GetVipOrdersReq) (*rpc.GetVipOrdersResp, error) {
+func (l *GetVipOrdersLogic) GetVipOrders(in *super.GetVipOrdersReq) (*super.GetVipOrdersResp, error) {
 	// 确保page和page_size有默认值
 	page := in.Page
 	if page <= 0 {
@@ -54,7 +54,7 @@ func (l *GetVipOrdersLogic) GetVipOrders(in *rpc.GetVipOrdersReq) (*rpc.GetVipOr
 	}
 
 	// 构建响应
-	respOrders := make([]*rpc.VipOrder, len(orders))
+	respOrders := make([]*super.VipOrder, len(orders))
 	for i, order := range orders {
 		paidAt := ""
 		// 这里可以根据订单状态设置paid_at
@@ -62,7 +62,7 @@ func (l *GetVipOrdersLogic) GetVipOrders(in *rpc.GetVipOrdersReq) (*rpc.GetVipOr
 		//     paidAt = order.UpdatedAt.Format("2006-01-02 15:04:05")
 		// }
 
-		respOrders[i] = &rpc.VipOrder{
+		respOrders[i] = &super.VipOrder{
 			Id:        string(rune(order.ID)),
 			UserId:    in.UserId,
 			PlanId:    string(rune(order.PlanID)),
@@ -74,7 +74,7 @@ func (l *GetVipOrdersLogic) GetVipOrders(in *rpc.GetVipOrdersReq) (*rpc.GetVipOr
 		}
 	}
 
-	return &rpc.GetVipOrdersResp{
+	return &super.GetVipOrdersResp{
 		Orders: respOrders,
 		Total:  int32(total),
 	}, nil

@@ -5,7 +5,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewGetTransactionLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 }
 
 func (l *GetTransactionLogic) GetTransaction(req *types.GetTransactionReq) (resp *types.GetTransactionResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetTransaction(l.ctx, &rpc.GetTransactionReq{
+	rpcResp, err := l.svcCtx.SuperRpcClient.GetTransaction(l.ctx, &super.GetTransactionReq{
 		Id: req.TransactionId,
 	})
 	if err != nil {

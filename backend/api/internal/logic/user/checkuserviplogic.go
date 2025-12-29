@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewCheckUserVipLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Chec
 
 func (l *CheckUserVipLogic) CheckUserVip(req *types.CheckUserVipReq) (resp *types.CheckUserVipResp, err error) {
 	// 调用RPC服务检查用户VIP状态
-	rpcResp, err := l.svcCtx.SuperRpcClient.CheckUserVip(l.ctx, &rpc.CheckUserVipReq{
+	rpcResp, err := l.svcCtx.SuperRpcClient.CheckUserVip(l.ctx, &super.CheckUserVipReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

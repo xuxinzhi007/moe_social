@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewSyncUserVipStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 
 func (l *SyncUserVipStatusLogic) SyncUserVipStatus(req *types.SyncUserVipStatusReq) (resp *types.SyncUserVipStatusResp, err error) {
 	// 调用RPC服务同步用户VIP状态
-	rpcResp, err := l.svcCtx.SuperRpcClient.SyncUserVipStatus(l.ctx, &rpc.SyncUserVipStatusReq{
+	rpcResp, err := l.svcCtx.SuperRpcClient.SyncUserVipStatus(l.ctx, &super.SyncUserVipStatusReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

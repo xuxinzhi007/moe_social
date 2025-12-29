@@ -6,7 +6,7 @@ import (
 
 	"backend/model"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewGetUsersLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetUsers
 	}
 }
 // 用户相关服务
-func (l *GetUsersLogic) GetUsers(in *rpc.GetUsersReq) (*rpc.GetUsersResp, error) {
+func (l *GetUsersLogic) GetUsers(in *super.GetUsersReq) (*super.GetUsersResp, error) {
 	// 确保page和page_size有默认值
 	page := in.Page
 	if page <= 0 {
@@ -53,14 +53,14 @@ func (l *GetUsersLogic) GetUsers(in *rpc.GetUsersReq) (*rpc.GetUsersResp, error)
 	}
 
 	// 构建响应
-	respUsers := make([]*rpc.User, len(users))
+	respUsers := make([]*super.User, len(users))
 	for i, user := range users {
 		vipEndAt := ""
 		if user.VipEndAt != nil {
 			vipEndAt = user.VipEndAt.Format("2006-01-02 15:04:05")
 		}
 
-		respUsers[i] = &rpc.User{
+		respUsers[i] = &super.User{
 			Id:           strconv.Itoa(int(user.ID)),
 			Username:     user.Username,
 			Email:        user.Email,
@@ -73,7 +73,7 @@ func (l *GetUsersLogic) GetUsers(in *rpc.GetUsersReq) (*rpc.GetUsersResp, error)
 		}
 	}
 
-	return &rpc.GetUsersResp{
+	return &super.GetUsersResp{
 		Users: respUsers,
 		Total: int32(total),
 	}, nil

@@ -7,7 +7,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewUpdateUserInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Up
 	}
 }
 
-func (l *UpdateUserInfoLogic) UpdateUserInfo(in *rpc.UpdateUserInfoReq) (*rpc.UpdateUserInfoResp, error) {
+func (l *UpdateUserInfoLogic) UpdateUserInfo(in *super.UpdateUserInfoReq) (*super.UpdateUserInfoResp, error) {
 	// 1. 查找用户
 	var user model.User
 	result := l.svcCtx.DB.First(&user, in.UserId)
@@ -58,8 +58,8 @@ func (l *UpdateUserInfoLogic) UpdateUserInfo(in *rpc.UpdateUserInfoReq) (*rpc.Up
 		vipEndAt = user.VipEndAt.Format("2006-01-02 15:04:05")
 	}
 
-	return &rpc.UpdateUserInfoResp{
-		User: &rpc.User{
+	return &super.UpdateUserInfoResp{
+		User: &super.User{
 			Id:           strconv.Itoa(int(user.ID)),
 			Username:     user.Username,
 			Email:        user.Email,

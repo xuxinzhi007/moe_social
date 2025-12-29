@@ -7,7 +7,7 @@ import (
 
 	"backend/model"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewGetPostsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPosts
 }
 
 // 帖子相关服务
-func (l *GetPostsLogic) GetPosts(in *rpc.GetPostsReq) (*rpc.GetPostsResp, error) {
+func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, error) {
 	// 设置默认分页参数
 	page := in.Page
 	pageSize := in.PageSize
@@ -75,8 +75,8 @@ func (l *GetPostsLogic) GetPosts(in *rpc.GetPostsReq) (*rpc.GetPostsResp, error)
 	}
 
 	// 构建响应
-	resp := &rpc.GetPostsResp{
-		Posts: make([]*rpc.Post, 0, len(posts)),
+	resp := &super.GetPostsResp{
+		Posts: make([]*super.Post, 0, len(posts)),
 		Total: int32(total),
 	}
 
@@ -103,7 +103,7 @@ func (l *GetPostsLogic) GetPosts(in *rpc.GetPostsReq) (*rpc.GetPostsResp, error)
 		}
 
 		// 构建Post对象
-		rpcPost := &rpc.Post{
+		rpcPost := &super.Post{
 			Id:         strconv.FormatUint(uint64(post.ID), 10),
 			UserId:     strconv.FormatUint(uint64(post.UserID), 10),
 			UserName:   username,

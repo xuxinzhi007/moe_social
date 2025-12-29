@@ -6,7 +6,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewCheckUserVipLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Chec
 	}
 }
 // 用户相关服务
-func (l *CheckUserVipLogic) CheckUserVip(in *rpc.CheckUserVipReq) (*rpc.CheckUserVipResp, error) {
+func (l *CheckUserVipLogic) CheckUserVip(in *super.CheckUserVipReq) (*super.CheckUserVipResp, error) {
 	var user model.User
 	result := l.svcCtx.DB.First(&user, in.UserId)
 	if result.Error != nil {
@@ -33,7 +33,7 @@ func (l *CheckUserVipLogic) CheckUserVip(in *rpc.CheckUserVipReq) (*rpc.CheckUse
 		return nil, errorx.NotFound("用户不存在")
 	}
 
-	return &rpc.CheckUserVipResp{
+	return &super.CheckUserVipResp{
 		IsVip: user.IsVip,
 	}, nil
 }

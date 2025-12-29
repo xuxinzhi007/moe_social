@@ -6,7 +6,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewGetVipRecordsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 }
 
 // 用户相关服务
-func (l *GetVipRecordsLogic) GetVipRecords(in *rpc.GetVipRecordsReq) (*rpc.GetVipRecordsResp, error) {
+func (l *GetVipRecordsLogic) GetVipRecords(in *super.GetVipRecordsReq) (*super.GetVipRecordsResp, error) {
 	// 确保page和page_size有默认值
 	page := in.Page
 	if page <= 0 {
@@ -55,14 +55,14 @@ func (l *GetVipRecordsLogic) GetVipRecords(in *rpc.GetVipRecordsReq) (*rpc.GetVi
 	}
 
 	// 构建响应
-	respRecords := make([]*rpc.VipRecord, len(records))
+	respRecords := make([]*super.VipRecord, len(records))
 	for i, record := range records {
 		status := "inactive"
 		if record.IsActive {
 			status = "active"
 		}
 
-		respRecords[i] = &rpc.VipRecord{
+		respRecords[i] = &super.VipRecord{
 			Id:        string(rune(record.ID)),
 			UserId:    in.UserId,
 			PlanId:    string(rune(record.PlanID)),
@@ -74,7 +74,7 @@ func (l *GetVipRecordsLogic) GetVipRecords(in *rpc.GetVipRecordsReq) (*rpc.GetVi
 		}
 	}
 
-	return &rpc.GetVipRecordsResp{
+	return &super.GetVipRecordsResp{
 		Records: respRecords,
 		Total:   int32(total),
 	}, nil

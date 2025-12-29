@@ -7,7 +7,7 @@ import (
 	"backend/rpc/internal/config"
 	"backend/rpc/internal/server"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/service"
@@ -26,7 +26,7 @@ func main() {
 	ctx := svc.NewServiceContext(c)
 
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
-		rpc.RegisterSuperServer(grpcServer, server.NewSuperServer(ctx))
+		super.RegisterSuperServer(grpcServer, server.NewSuperServer(ctx))
 
 		if c.Mode == service.DevMode || c.Mode == service.TestMode {
 			reflection.Register(grpcServer)

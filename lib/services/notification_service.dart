@@ -1,128 +1,90 @@
-import 'dart:async';
+import 'dart:convert';
 import '../models/notification.dart';
+import '../auth_service.dart';
 import 'api_service.dart';
 
 class NotificationService {
   // 获取通知列表
-  static Future<List<NotificationModel>> getNotifications() async {
+  static Future<List<NotificationModel>> getNotifications({int page = 1, int pageSize = 20}) async {
+    final userId = AuthService.currentUser;
+    if (userId == null) return [];
+
     try {
-      // 实际应用中应该调用后端API获取通知
-      // final result = await ApiService.getNotifications();
-      // final notificationsJson = result['data'] as List;
-      // return notificationsJson.map((json) => NotificationModel.fromJson(json)).toList();
-      
-      // 模拟数据
+      final response = await ApiService.get('/notifications?user_id=$userId&page=$page&page_size=$pageSize');
+      if (response['code'] == 200) {
+        final List<dynamic> list = response['data']['data'] ?? [];
+        return list.map((e) => NotificationModel.fromJson(e)).toList();
+      }
+      return [];
+    } catch (e) {
+      print('Notification API Error: $e');
+      // 如果API失败，返回空列表，或者模拟数据（为了演示）
       return _getMockNotifications();
-    } catch (e) {
-      print('Failed to get notifications: $e');
-      // 返回模拟数据作为备选
-      return _getMockNotifications();
     }
   }
 
-  // 标记通知为已读（本地模拟）
-  static Future<void> markAsRead(String notificationId) async {
-    try {
-      // 实际应用中应该调用后端API
-      // await ApiService.markNotificationAsRead(notificationId);
-      print('Notification marked as read: $notificationId');
-    } catch (e) {
-      print('Failed to mark notification as read: $e');
-    }
-  }
-
-  // 标记所有通知为已读（本地模拟）
-  static Future<void> markAllAsRead() async {
-    try {
-      // 实际应用中应该调用后端API
-      // await ApiService.markAllNotificationsAsRead();
-      print('All notifications marked as read');
-    } catch (e) {
-      print('Failed to mark all notifications as read: $e');
-    }
-  }
-
-  // 删除通知（本地模拟）
-  static Future<void> deleteNotification(String notificationId) async {
-    try {
-      // 实际应用中应该调用后端API
-      // await ApiService.deleteNotification(notificationId);
-      print('Notification deleted: $notificationId');
-    } catch (e) {
-      print('Failed to delete notification: $e');
-    }
-  }
-
-  // 清除所有通知（本地模拟）
-  static Future<void> clearAllNotifications() async {
-    try {
-      // 实际应用中应该调用后端API
-      // await ApiService.clearAllNotifications();
-      print('All notifications cleared');
-    } catch (e) {
-      print('Failed to clear all notifications: $e');
-    }
-  }
-
-  // 获取未读通知数量（本地模拟）
+  // 获取未读数
   static Future<int> getUnreadCount() async {
+    final userId = AuthService.currentUser;
+    if (userId == null) return 0;
+
     try {
-      // 实际应用中应该调用后端API
-      // final result = await ApiService.getUnreadNotificationCount();
-      // return result['data'] as int;
-      return 3; // 模拟3条未读通知
+      final response = await ApiService.get('/notifications/unread?user_id=$userId');
+      if (response['code'] == 200) {
+        return response['data'] as int;
+      }
+      return 0;
     } catch (e) {
-      print('Failed to get unread notification count: $e');
       return 0;
     }
   }
 
-  // 模拟通知数据
+  // 标记所有已读
+  static Future<bool> markAllAsRead() async {
+    final userId = AuthService.currentUser;
+    if (userId == null) return false;
+
+    try {
+      await ApiService.post('/notifications/read-all', {'user_id': userId});
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // 标记单个已读
+  static Future<bool> markAsRead(String id) async {
+    final userId = AuthService.currentUser;
+    if (userId == null) return false;
+
+    try {
+      await ApiService.post('/notifications/$id/read', {'user_id': userId});
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // 模拟数据 (Fallback)
   static List<NotificationModel> _getMockNotifications() {
-    final now = DateTime.now();
     return [
       NotificationModel(
         id: '1',
-        type: NotificationModel.like,
-        title: '有人点赞了你的帖子',
-        content: '用户 "小明" 点赞了你的帖子 "今天天气真好"',
+        type: 2, // Comment
+        content: '你的想法很有趣！',
         isRead: false,
-        createdAt: now.subtract(const Duration(minutes: 10)),
-        relatedPostId: 'post1',
-        relatedUserId: 'user1',
-        relatedUserName: '小明',
-        relatedUserAvatar: 'https://randomuser.me/api/portraits/men/32.jpg',
+        createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
+        senderName: 'Moe User',
+        senderAvatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Moe',
+        postId: 'post_1',
       ),
-      NotificationModel(
+       NotificationModel(
         id: '2',
-        type: NotificationModel.comment,
-        title: '有人评论了你的帖子',
-        content: '用户 "小红" 评论了你的帖子 "今天天气真好": "确实不错！"',
-        isRead: false,
-        createdAt: now.subtract(const Duration(hours: 1)),
-        relatedPostId: 'post1',
-        relatedUserId: 'user2',
-        relatedUserName: '小红',
-        relatedUserAvatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-      ),
-      NotificationModel(
-        id: '3',
-        type: NotificationModel.follow,
-        title: '有人关注了你',
-        content: '用户 "小刚" 关注了你',
-        isRead: false,
-        createdAt: now.subtract(const Duration(hours: 3)),
-        relatedUserId: 'user3',
-        relatedUserName: '小刚',
-        relatedUserAvatar: 'https://randomuser.me/api/portraits/men/78.jpg',
-      ),
-      NotificationModel(
-        id: '4',
-        type: NotificationModel.system,
-        title: '系统通知',
-        content: '欢迎使用 Moe Social！我们将持续为您提供更好的服务',
+        type: 4, // System
+        content: '欢迎来到 Moe Social！',
         isRead: true,
-        createdAt: now.subtract(const Duration(days: 1)),
+        createdAt: DateTime.now().subtract(const Duration(days: 1)),
+        senderName: 'System',
       ),
     ];
   }

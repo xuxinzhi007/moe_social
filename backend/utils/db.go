@@ -91,11 +91,12 @@ func autoMigrate() error {
 		&model.VipPlan{},
 		&model.VipOrder{},
 		&model.VipRecord{},
-		&model.Transaction{}, // 交易记录表
-		&model.Post{},        // 帖子表
-		&model.PostLike{},    // 帖子点赞表
-		&model.Comment{},     // 评论表
-		&model.CommentLike{}, // 评论点赞表
+		&model.Transaction{},  // 交易记录表
+		&model.Post{},         // 帖子表
+		&model.PostLike{},     // 帖子点赞表
+		&model.Comment{},      // 评论表
+		&model.CommentLike{},  // 评论点赞表
+		&model.Notification{}, // 通知表
 	)
 }
 

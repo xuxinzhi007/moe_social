@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewGetVipPlanLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetVip
 
 func (l *GetVipPlanLogic) GetVipPlan(req *types.GetVipPlanReq) (resp *types.GetVipPlanResp, err error) {
 	// 调用RPC服务
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetVipPlan(l.ctx, &rpc.GetVipPlanReq{
+	rpcResp, err := l.svcCtx.SuperRpcClient.GetVipPlan(l.ctx, &super.GetVipPlanReq{
 		PlanId: req.PlanId,
 	})
 	if err != nil {

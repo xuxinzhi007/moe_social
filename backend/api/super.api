@@ -102,6 +102,50 @@ type Comment {
 	CreatedAt  string `json:"created_at"`
 }
 
+// 通知相关结构
+type Notification {
+	Id           string `json:"id"`
+	UserId       string `json:"user_id"`
+	SenderId     string `json:"sender_id"`
+	SenderName   string `json:"sender_name"`
+	SenderAvatar string `json:"sender_avatar"`
+	Type         int    `json:"type"` // 1:点赞 2:评论 3:关注 4:系统
+	PostId       string `json:"post_id,optional"`
+	Content      string `json:"content,optional"`
+	IsRead       bool   `json:"is_read"`
+	CreatedAt    string `json:"created_at"`
+}
+
+type GetNotificationsReq {
+	UserId   string `form:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type GetNotificationsResp {
+	BaseResp
+	Data  []Notification `json:"data"`
+	Total int            `json:"total"`
+}
+
+type GetUnreadCountReq {
+	UserId string `form:"user_id"`
+}
+
+type GetUnreadCountResp {
+	BaseResp
+	Data int `json:"data"`
+}
+
+type ReadNotificationReq {
+	Id     string `path:"id"`
+	UserId string `json:"user_id"`
+}
+
+type ReadAllNotificationsReq {
+	UserId string `json:"user_id"`
+}
+
 // 请求和响应结构
 // 通用请求
 type EmptyReq {}
@@ -576,5 +620,23 @@ service Super {
 
 	@handler likeComment
 	post /api/comments/:comment_id/like (LikeCommentReq) returns (LikeCommentResp)
+}
+
+// 通知相关API服务
+@server (
+	group: notification
+)
+service Super {
+	@handler getNotifications
+	get /api/notifications (GetNotificationsReq) returns (GetNotificationsResp)
+
+	@handler getUnreadCount
+	get /api/notifications/unread (GetUnreadCountReq) returns (GetUnreadCountResp)
+
+	@handler readNotification
+	post /api/notifications/:id/read (ReadNotificationReq) returns (BaseResp)
+
+	@handler readAllNotifications
+	post /api/notifications/read-all (ReadAllNotificationsReq) returns (BaseResp)
 }
 

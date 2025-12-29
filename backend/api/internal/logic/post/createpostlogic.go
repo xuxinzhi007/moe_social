@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewCreatePostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Create
 
 func (l *CreatePostLogic) CreatePost(req *types.CreatePostReq) (resp *types.CreatePostResp, err error) {
 	// 调用RPC服务创建帖子
-	rpcResp, err := l.svcCtx.SuperRpcClient.CreatePost(l.ctx, &rpc.CreatePostReq{
+	rpcResp, err := l.svcCtx.SuperRpcClient.CreatePost(l.ctx, &super.CreatePostReq{
 		UserId:  req.UserId,
 		Content: req.Content,
 		Images:  req.Images,

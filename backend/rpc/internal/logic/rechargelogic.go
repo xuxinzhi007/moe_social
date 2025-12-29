@@ -8,7 +8,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewRechargeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Recharge
 	}
 }
 
-func (l *RechargeLogic) Recharge(in *rpc.RechargeReq) (*rpc.RechargeResp, error) {
+func (l *RechargeLogic) Recharge(in *super.RechargeReq) (*super.RechargeResp, error) {
 	// 1. 验证参数
 	if in.UserId == "" {
 		return nil, errorx.New(400, "用户ID不能为空")
@@ -85,7 +85,7 @@ func (l *RechargeLogic) Recharge(in *rpc.RechargeReq) (*rpc.RechargeResp, error)
 	}
 
 	// 6. 返回响应
-	return &rpc.RechargeResp{
+	return &super.RechargeResp{
 		Message:    "充值成功",
 		NewBalance: float32(newBalance),
 	}, nil

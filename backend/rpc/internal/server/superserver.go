@@ -9,12 +9,12 @@ import (
 
 	"backend/rpc/internal/logic"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 )
 
 type SuperServer struct {
 	svcCtx *svc.ServiceContext
-	rpc.UnimplementedSuperServer
+	super.UnimplementedSuperServer
 }
 
 func NewSuperServer(svcCtx *svc.ServiceContext) *SuperServer {
@@ -24,175 +24,196 @@ func NewSuperServer(svcCtx *svc.ServiceContext) *SuperServer {
 }
 
 // 用户相关服务
-func (s *SuperServer) Register(ctx context.Context, in *rpc.RegisterReq) (*rpc.RegisterResp, error) {
+func (s *SuperServer) Register(ctx context.Context, in *super.RegisterReq) (*super.RegisterResp, error) {
 	l := logic.NewRegisterLogic(ctx, s.svcCtx)
 	return l.Register(in)
 }
 
-func (s *SuperServer) Login(ctx context.Context, in *rpc.LoginReq) (*rpc.LoginResp, error) {
+func (s *SuperServer) Login(ctx context.Context, in *super.LoginReq) (*super.LoginResp, error) {
 	l := logic.NewLoginLogic(ctx, s.svcCtx)
 	return l.Login(in)
 }
 
-func (s *SuperServer) GetUserInfo(ctx context.Context, in *rpc.GetUserInfoReq) (*rpc.GetUserInfoResp, error) {
+func (s *SuperServer) GetUserInfo(ctx context.Context, in *super.GetUserInfoReq) (*super.GetUserInfoResp, error) {
 	l := logic.NewGetUserInfoLogic(ctx, s.svcCtx)
 	return l.GetUserInfo(in)
 }
 
-func (s *SuperServer) GetUser(ctx context.Context, in *rpc.GetUserReq) (*rpc.GetUserResp, error) {
+func (s *SuperServer) GetUser(ctx context.Context, in *super.GetUserReq) (*super.GetUserResp, error) {
 	l := logic.NewGetUserLogic(ctx, s.svcCtx)
 	return l.GetUser(in)
 }
 
-func (s *SuperServer) GetUserByEmail(ctx context.Context, in *rpc.GetUserByEmailReq) (*rpc.GetUserByEmailResp, error) {
+func (s *SuperServer) GetUserByEmail(ctx context.Context, in *super.GetUserByEmailReq) (*super.GetUserByEmailResp, error) {
 	l := logic.NewGetUserByEmailLogic(ctx, s.svcCtx)
 	return l.GetUserByEmail(in)
 }
 
-func (s *SuperServer) UpdateUserInfo(ctx context.Context, in *rpc.UpdateUserInfoReq) (*rpc.UpdateUserInfoResp, error) {
+func (s *SuperServer) UpdateUserInfo(ctx context.Context, in *super.UpdateUserInfoReq) (*super.UpdateUserInfoResp, error) {
 	l := logic.NewUpdateUserInfoLogic(ctx, s.svcCtx)
 	return l.UpdateUserInfo(in)
 }
 
-func (s *SuperServer) UpdateUserPassword(ctx context.Context, in *rpc.UpdateUserPasswordReq) (*rpc.UpdateUserPasswordResp, error) {
+func (s *SuperServer) UpdateUserPassword(ctx context.Context, in *super.UpdateUserPasswordReq) (*super.UpdateUserPasswordResp, error) {
 	l := logic.NewUpdateUserPasswordLogic(ctx, s.svcCtx)
 	return l.UpdateUserPassword(in)
 }
 
-func (s *SuperServer) ResetPassword(ctx context.Context, in *rpc.ResetPasswordReq) (*rpc.ResetPasswordResp, error) {
+func (s *SuperServer) ResetPassword(ctx context.Context, in *super.ResetPasswordReq) (*super.ResetPasswordResp, error) {
 	l := logic.NewResetPasswordLogic(ctx, s.svcCtx)
 	return l.ResetPassword(in)
 }
 
-func (s *SuperServer) DeleteUser(ctx context.Context, in *rpc.DeleteUserReq) (*rpc.DeleteUserResp, error) {
+func (s *SuperServer) DeleteUser(ctx context.Context, in *super.DeleteUserReq) (*super.DeleteUserResp, error) {
 	l := logic.NewDeleteUserLogic(ctx, s.svcCtx)
 	return l.DeleteUser(in)
 }
 
-func (s *SuperServer) UpdateUserVip(ctx context.Context, in *rpc.UpdateUserVipReq) (*rpc.UpdateUserVipResp, error) {
+func (s *SuperServer) UpdateUserVip(ctx context.Context, in *super.UpdateUserVipReq) (*super.UpdateUserVipResp, error) {
 	l := logic.NewUpdateUserVipLogic(ctx, s.svcCtx)
 	return l.UpdateUserVip(in)
 }
 
-func (s *SuperServer) GetUsers(ctx context.Context, in *rpc.GetUsersReq) (*rpc.GetUsersResp, error) {
+func (s *SuperServer) GetUsers(ctx context.Context, in *super.GetUsersReq) (*super.GetUsersResp, error) {
 	l := logic.NewGetUsersLogic(ctx, s.svcCtx)
 	return l.GetUsers(in)
 }
 
-func (s *SuperServer) GetUserCount(ctx context.Context, in *rpc.GetUserCountReq) (*rpc.GetUserCountResp, error) {
+func (s *SuperServer) GetUserCount(ctx context.Context, in *super.GetUserCountReq) (*super.GetUserCountResp, error) {
 	l := logic.NewGetUserCountLogic(ctx, s.svcCtx)
 	return l.GetUserCount(in)
 }
 
 // VIP套餐相关服务
-func (s *SuperServer) GetVipPlans(ctx context.Context, in *rpc.GetVipPlansReq) (*rpc.GetVipPlansResp, error) {
+func (s *SuperServer) GetVipPlans(ctx context.Context, in *super.GetVipPlansReq) (*super.GetVipPlansResp, error) {
 	l := logic.NewGetVipPlansLogic(ctx, s.svcCtx)
 	return l.GetVipPlans(in)
 }
 
-func (s *SuperServer) GetVipPlan(ctx context.Context, in *rpc.GetVipPlanReq) (*rpc.GetVipPlanResp, error) {
+func (s *SuperServer) GetVipPlan(ctx context.Context, in *super.GetVipPlanReq) (*super.GetVipPlanResp, error) {
 	l := logic.NewGetVipPlanLogic(ctx, s.svcCtx)
 	return l.GetVipPlan(in)
 }
 
-func (s *SuperServer) CreateVipPlan(ctx context.Context, in *rpc.CreateVipPlanReq) (*rpc.CreateVipPlanResp, error) {
+func (s *SuperServer) CreateVipPlan(ctx context.Context, in *super.CreateVipPlanReq) (*super.CreateVipPlanResp, error) {
 	l := logic.NewCreateVipPlanLogic(ctx, s.svcCtx)
 	return l.CreateVipPlan(in)
 }
 
 // VIP订单相关服务
-func (s *SuperServer) CreateVipOrder(ctx context.Context, in *rpc.CreateVipOrderReq) (*rpc.CreateVipOrderResp, error) {
+func (s *SuperServer) CreateVipOrder(ctx context.Context, in *super.CreateVipOrderReq) (*super.CreateVipOrderResp, error) {
 	l := logic.NewCreateVipOrderLogic(ctx, s.svcCtx)
 	return l.CreateVipOrder(in)
 }
 
-func (s *SuperServer) GetVipOrders(ctx context.Context, in *rpc.GetVipOrdersReq) (*rpc.GetVipOrdersResp, error) {
+func (s *SuperServer) GetVipOrders(ctx context.Context, in *super.GetVipOrdersReq) (*super.GetVipOrdersResp, error) {
 	l := logic.NewGetVipOrdersLogic(ctx, s.svcCtx)
 	return l.GetVipOrders(in)
 }
 
 // VIP记录相关服务
-func (s *SuperServer) GetVipRecords(ctx context.Context, in *rpc.GetVipRecordsReq) (*rpc.GetVipRecordsResp, error) {
+func (s *SuperServer) GetVipRecords(ctx context.Context, in *super.GetVipRecordsReq) (*super.GetVipRecordsResp, error) {
 	l := logic.NewGetVipRecordsLogic(ctx, s.svcCtx)
 	return l.GetVipRecords(in)
 }
 
-func (s *SuperServer) GetUserActiveVipRecord(ctx context.Context, in *rpc.GetUserActiveVipRecordReq) (*rpc.GetUserActiveVipRecordResp, error) {
+func (s *SuperServer) GetUserActiveVipRecord(ctx context.Context, in *super.GetUserActiveVipRecordReq) (*super.GetUserActiveVipRecordResp, error) {
 	l := logic.NewGetUserActiveVipRecordLogic(ctx, s.svcCtx)
 	return l.GetUserActiveVipRecord(in)
 }
 
 // VIP状态相关服务
-func (s *SuperServer) GetUserVipStatus(ctx context.Context, in *rpc.GetUserVipStatusReq) (*rpc.GetUserVipStatusResp, error) {
+func (s *SuperServer) GetUserVipStatus(ctx context.Context, in *super.GetUserVipStatusReq) (*super.GetUserVipStatusResp, error) {
 	l := logic.NewGetUserVipStatusLogic(ctx, s.svcCtx)
 	return l.GetUserVipStatus(in)
 }
 
-func (s *SuperServer) CheckUserVip(ctx context.Context, in *rpc.CheckUserVipReq) (*rpc.CheckUserVipResp, error) {
+func (s *SuperServer) CheckUserVip(ctx context.Context, in *super.CheckUserVipReq) (*super.CheckUserVipResp, error) {
 	l := logic.NewCheckUserVipLogic(ctx, s.svcCtx)
 	return l.CheckUserVip(in)
 }
 
-func (s *SuperServer) UpdateAutoRenew(ctx context.Context, in *rpc.UpdateAutoRenewReq) (*rpc.UpdateAutoRenewResp, error) {
+func (s *SuperServer) UpdateAutoRenew(ctx context.Context, in *super.UpdateAutoRenewReq) (*super.UpdateAutoRenewResp, error) {
 	l := logic.NewUpdateAutoRenewLogic(ctx, s.svcCtx)
 	return l.UpdateAutoRenew(in)
 }
 
-func (s *SuperServer) SyncUserVipStatus(ctx context.Context, in *rpc.SyncUserVipStatusReq) (*rpc.SyncUserVipStatusResp, error) {
+func (s *SuperServer) SyncUserVipStatus(ctx context.Context, in *super.SyncUserVipStatusReq) (*super.SyncUserVipStatusResp, error) {
 	l := logic.NewSyncUserVipStatusLogic(ctx, s.svcCtx)
 	return l.SyncUserVipStatus(in)
 }
 
 // 帖子相关服务
-func (s *SuperServer) GetPosts(ctx context.Context, in *rpc.GetPostsReq) (*rpc.GetPostsResp, error) {
+func (s *SuperServer) GetPosts(ctx context.Context, in *super.GetPostsReq) (*super.GetPostsResp, error) {
 	l := logic.NewGetPostsLogic(ctx, s.svcCtx)
 	return l.GetPosts(in)
 }
 
-func (s *SuperServer) GetPost(ctx context.Context, in *rpc.GetPostReq) (*rpc.GetPostResp, error) {
+func (s *SuperServer) GetPost(ctx context.Context, in *super.GetPostReq) (*super.GetPostResp, error) {
 	l := logic.NewGetPostLogic(ctx, s.svcCtx)
 	return l.GetPost(in)
 }
 
-func (s *SuperServer) CreatePost(ctx context.Context, in *rpc.CreatePostReq) (*rpc.CreatePostResp, error) {
+func (s *SuperServer) CreatePost(ctx context.Context, in *super.CreatePostReq) (*super.CreatePostResp, error) {
 	l := logic.NewCreatePostLogic(ctx, s.svcCtx)
 	return l.CreatePost(in)
 }
 
-func (s *SuperServer) LikePost(ctx context.Context, in *rpc.LikePostReq) (*rpc.LikePostResp, error) {
+func (s *SuperServer) LikePost(ctx context.Context, in *super.LikePostReq) (*super.LikePostResp, error) {
 	l := logic.NewLikePostLogic(ctx, s.svcCtx)
 	return l.LikePost(in)
 }
 
-func (s *SuperServer) GetPostComments(ctx context.Context, in *rpc.GetPostCommentsReq) (*rpc.GetPostCommentsResp, error) {
+func (s *SuperServer) GetPostComments(ctx context.Context, in *super.GetPostCommentsReq) (*super.GetPostCommentsResp, error) {
 	l := logic.NewGetPostCommentsLogic(ctx, s.svcCtx)
 	return l.GetPostComments(in)
 }
 
 // 评论相关服务
-func (s *SuperServer) CreateComment(ctx context.Context, in *rpc.CreateCommentReq) (*rpc.CreateCommentResp, error) {
+func (s *SuperServer) CreateComment(ctx context.Context, in *super.CreateCommentReq) (*super.CreateCommentResp, error) {
 	l := logic.NewCreateCommentLogic(ctx, s.svcCtx)
 	return l.CreateComment(in)
 }
 
-func (s *SuperServer) LikeComment(ctx context.Context, in *rpc.LikeCommentReq) (*rpc.LikeCommentResp, error) {
+func (s *SuperServer) LikeComment(ctx context.Context, in *super.LikeCommentReq) (*super.LikeCommentResp, error) {
 	l := logic.NewLikeCommentLogic(ctx, s.svcCtx)
 	return l.LikeComment(in)
 }
 
+// 通知相关服务
+func (s *SuperServer) GetNotifications(ctx context.Context, in *super.GetNotificationsReq) (*super.GetNotificationsResp, error) {
+	l := logic.NewGetNotificationsLogic(ctx, s.svcCtx)
+	return l.GetNotifications(in)
+}
+
+func (s *SuperServer) GetUnreadCount(ctx context.Context, in *super.GetUnreadCountReq) (*super.GetUnreadCountResp, error) {
+	l := logic.NewGetUnreadCountLogic(ctx, s.svcCtx)
+	return l.GetUnreadCount(in)
+}
+
+func (s *SuperServer) ReadNotification(ctx context.Context, in *super.ReadNotificationReq) (*super.ReadNotificationResp, error) {
+	l := logic.NewReadNotificationLogic(ctx, s.svcCtx)
+	return l.ReadNotification(in)
+}
+
+func (s *SuperServer) ReadAllNotifications(ctx context.Context, in *super.ReadAllNotificationsReq) (*super.ReadAllNotificationsResp, error) {
+	l := logic.NewReadAllNotificationsLogic(ctx, s.svcCtx)
+	return l.ReadAllNotifications(in)
+}
+
 // 钱包相关服务
-func (s *SuperServer) Recharge(ctx context.Context, in *rpc.RechargeReq) (*rpc.RechargeResp, error) {
+func (s *SuperServer) Recharge(ctx context.Context, in *super.RechargeReq) (*super.RechargeResp, error) {
 	l := logic.NewRechargeLogic(ctx, s.svcCtx)
 	return l.Recharge(in)
 }
 
 // 交易记录相关服务
-func (s *SuperServer) GetTransactions(ctx context.Context, in *rpc.GetTransactionsReq) (*rpc.GetTransactionsResp, error) {
+func (s *SuperServer) GetTransactions(ctx context.Context, in *super.GetTransactionsReq) (*super.GetTransactionsResp, error) {
 	l := logic.NewGetTransactionsLogic(ctx, s.svcCtx)
 	return l.GetTransactions(in)
 }
 
-func (s *SuperServer) GetTransaction(ctx context.Context, in *rpc.GetTransactionReq) (*rpc.GetTransactionResp, error) {
+func (s *SuperServer) GetTransaction(ctx context.Context, in *super.GetTransactionReq) (*super.GetTransactionResp, error) {
 	l := logic.NewGetTransactionLogic(ctx, s.svcCtx)
 	return l.GetTransaction(in)
 }

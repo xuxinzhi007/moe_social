@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewGetPostsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPosts
 
 func (l *GetPostsLogic) GetPosts(req *types.GetPostsReq) (resp *types.GetPostsResp, err error) {
 	// 调用RPC服务获取帖子列表
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetPosts(l.ctx, &rpc.GetPostsReq{
+	rpcResp, err := l.svcCtx.SuperRpcClient.GetPosts(l.ctx, &super.GetPostsReq{
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
 	})

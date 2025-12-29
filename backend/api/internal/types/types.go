@@ -88,6 +88,18 @@ type EmptyReq struct {
 type EmptyResp struct {
 }
 
+type GetNotificationsReq struct {
+	UserId   string `form:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type GetNotificationsResp struct {
+	BaseResp
+	Data  []Notification `json:"data"`
+	Total int            `json:"total"`
+}
+
 type GetPostCommentsReq struct {
 	PostId   string `path:"post_id"`
 	Page     int    `form:"page,default=1"`
@@ -139,6 +151,15 @@ type GetTransactionsResp struct {
 	BaseResp
 	Data  []Transaction `json:"data"`
 	Total int           `json:"total"`
+}
+
+type GetUnreadCountReq struct {
+	UserId string `form:"user_id"`
+}
+
+type GetUnreadCountResp struct {
+	BaseResp
+	Data int `json:"data"`
 }
 
 type GetUserActiveVipRecordReq struct {
@@ -272,6 +293,19 @@ type LoginResp struct {
 	Data LoginData `json:"data"`
 }
 
+type Notification struct {
+	Id           string `json:"id"`
+	UserId       string `json:"user_id"`
+	SenderId     string `json:"sender_id"`
+	SenderName   string `json:"sender_name"`
+	SenderAvatar string `json:"sender_avatar"`
+	Type         int    `json:"type"` // 1:点赞 2:评论 3:关注 4:系统
+	PostId       string `json:"post_id,optional"`
+	Content      string `json:"content,optional"`
+	IsRead       bool   `json:"is_read"`
+	CreatedAt    string `json:"created_at"`
+}
+
 type Post struct {
 	Id         string   `json:"id"`
 	UserId     string   `json:"user_id"`
@@ -283,6 +317,15 @@ type Post struct {
 	Comments   int      `json:"comments"`
 	IsLiked    bool     `json:"is_liked"`
 	CreatedAt  string   `json:"created_at"`
+}
+
+type ReadAllNotificationsReq struct {
+	UserId string `json:"user_id"`
+}
+
+type ReadNotificationReq struct {
+	Id     string `path:"id"`
+	UserId string `json:"user_id"`
 }
 
 type RechargeReq struct {

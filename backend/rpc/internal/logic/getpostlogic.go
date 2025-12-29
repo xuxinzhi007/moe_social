@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,8 +23,8 @@ func NewGetPostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPostLo
 	}
 }
 
-func (l *GetPostLogic) GetPost(in *rpc.GetPostReq) (*rpc.GetPostResp, error) {
+func (l *GetPostLogic) GetPost(in *super.GetPostReq) (*super.GetPostResp, error) {
 	// todo: add your logic here and delete this line
 
-	return &rpc.GetPostResp{}, nil
+	return &super.GetPostResp{}, nil
 }

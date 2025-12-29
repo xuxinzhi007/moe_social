@@ -3,7 +3,7 @@ syntax = "proto3";
 
 package super;
 
-option go_package="./rpc";
+option go_package="./super";
 
 // 用户相关消息
 message User {
@@ -441,6 +441,54 @@ message LikeCommentResp {
   Comment comment = 1;
 }
 
+// 通知相关消息
+message Notification {
+  string id = 1;
+  string user_id = 2;
+  string sender_id = 3;
+  string sender_name = 4;
+  string sender_avatar = 5;
+  int32 type = 6;
+  string post_id = 7;
+  string content = 8;
+  bool is_read = 9;
+  string created_at = 10;
+}
+
+message GetNotificationsReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetNotificationsResp {
+  repeated Notification notifications = 1;
+  int32 total = 2;
+}
+
+message GetUnreadCountReq {
+  string user_id = 1;
+}
+
+message GetUnreadCountResp {
+  int32 count = 1;
+}
+
+message ReadNotificationReq {
+  string id = 1;
+  string user_id = 2;
+}
+
+message ReadNotificationResp {
+}
+
+message ReadAllNotificationsReq {
+  string user_id = 1;
+}
+
+message ReadAllNotificationsResp {
+}
+
 // 服务定义
 service Super {
   // 用户相关服务
@@ -486,6 +534,12 @@ service Super {
   // 评论相关服务
   rpc CreateComment(CreateCommentReq) returns (CreateCommentResp);
   rpc LikeComment(LikeCommentReq) returns (LikeCommentResp);
+  
+  // 通知相关服务
+  rpc GetNotifications(GetNotificationsReq) returns (GetNotificationsResp);
+  rpc GetUnreadCount(GetUnreadCountReq) returns (GetUnreadCountResp);
+  rpc ReadNotification(ReadNotificationReq) returns (ReadNotificationResp);
+  rpc ReadAllNotifications(ReadAllNotificationsReq) returns (ReadAllNotificationsResp);
   
   // 钱包相关服务
   rpc Recharge(RechargeReq) returns (RechargeResp);

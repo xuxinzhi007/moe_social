@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewGetVipOrdersLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetV
 
 func (l *GetVipOrdersLogic) GetVipOrders(req *types.GetVipOrdersReq) (resp *types.GetVipOrdersResp, err error) {
 	// 调用RPC服务获取VIP订单列表
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetVipOrders(l.ctx, &rpc.GetVipOrdersReq{
+	rpcResp, err := l.svcCtx.SuperRpcClient.GetVipOrders(l.ctx, &super.GetVipOrdersReq{
 		UserId:   req.UserId,
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),

@@ -7,7 +7,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewGetUserByEmailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 	}
 }
 
-func (l *GetUserByEmailLogic) GetUserByEmail(in *rpc.GetUserByEmailReq) (*rpc.GetUserByEmailResp, error) {
+func (l *GetUserByEmailLogic) GetUserByEmail(in *super.GetUserByEmailReq) (*super.GetUserByEmailResp, error) {
 	var user model.User
 	result := l.svcCtx.DB.Where("email = ?", in.Email).First(&user)
 	if result.Error != nil {
@@ -39,8 +39,8 @@ func (l *GetUserByEmailLogic) GetUserByEmail(in *rpc.GetUserByEmailReq) (*rpc.Ge
 		vipEndAt = user.VipEndAt.Format("2006-01-02 15:04:05")
 	}
 
-	return &rpc.GetUserByEmailResp{
-		User: &rpc.User{
+	return &super.GetUserByEmailResp{
+		User: &super.User{
 			Id:           strconv.Itoa(int(user.ID)),
 			Username:     user.Username,
 			Email:        user.Email,

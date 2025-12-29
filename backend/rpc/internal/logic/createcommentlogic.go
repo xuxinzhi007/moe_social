@@ -6,7 +6,7 @@ import (
 
 	"backend/model"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewCreateCommentLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cre
 }
 
 // 评论相关服务
-func (l *CreateCommentLogic) CreateComment(in *rpc.CreateCommentReq) (*rpc.CreateCommentResp, error) {
+func (l *CreateCommentLogic) CreateComment(in *super.CreateCommentReq) (*super.CreateCommentResp, error) {
 	// 解析ID
 	postID, err := strconv.ParseUint(in.PostId, 10, 32)
 	if err != nil {
@@ -73,6 +73,21 @@ func (l *CreateCommentLogic) CreateComment(in *rpc.CreateCommentReq) (*rpc.Creat
 		// 不返回错误，因为评论已经创建成功
 	}
 
+	// 创建通知 (如果不是自己评论自己)
+	if uint(userID) != post.UserID {
+		notification := model.Notification{
+			UserID:   post.UserID,
+			SenderID: uint(userID),
+			Type:     2, // 2:评论
+			PostID:   uint(postID),
+			Content:  in.Content,
+			IsRead:   false,
+		}
+		if err := l.svcCtx.DB.Create(&notification).Error; err != nil {
+			l.Error("创建通知失败:", err)
+		}
+	}
+
 	// 重新查询评论（获取最新数据）并加载用户信息
 	if err := l.svcCtx.DB.Preload("User").First(&comment, comment.ID).Error; err != nil {
 		l.Error("重新查询评论失败:", err)
@@ -94,7 +109,7 @@ func (l *CreateCommentLogic) CreateComment(in *rpc.CreateCommentReq) (*rpc.Creat
 	}
 
 	// 构建响应
-	rpcComment := &rpc.Comment{
+	rpcComment := &super.Comment{
 		Id:         strconv.FormatUint(uint64(comment.ID), 10),
 		PostId:     strconv.FormatUint(uint64(comment.PostID), 10),
 		UserId:     strconv.FormatUint(uint64(comment.UserID), 10),
@@ -106,7 +121,7 @@ func (l *CreateCommentLogic) CreateComment(in *rpc.CreateCommentReq) (*rpc.Creat
 		CreatedAt:  comment.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 
-	return &rpc.CreateCommentResp{
+	return &super.CreateCommentResp{
 		Comment: rpcComment,
 	}, nil
 }

@@ -7,7 +7,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
@@ -27,7 +27,7 @@ func NewGetTransactionsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 	}
 }
 
-func (l *GetTransactionsLogic) GetTransactions(in *rpc.GetTransactionsReq) (*rpc.GetTransactionsResp, error) {
+func (l *GetTransactionsLogic) GetTransactions(in *super.GetTransactionsReq) (*super.GetTransactionsResp, error) {
 	// 1. 转换用户ID
 	userID, err := strconv.Atoi(in.UserId)
 	if err != nil {
@@ -69,9 +69,9 @@ func (l *GetTransactionsLogic) GetTransactions(in *rpc.GetTransactionsReq) (*rpc
 	}
 
 	// 6. 转换为RPC响应格式
-	rpcTransactions := make([]*rpc.Transaction, len(transactions))
+	rpcTransactions := make([]*super.Transaction, len(transactions))
 	for i, t := range transactions {
-		rpcTransactions[i] = &rpc.Transaction{
+		rpcTransactions[i] = &super.Transaction{
 			Id:          strconv.Itoa(int(t.ID)),
 			UserId:      strconv.Itoa(int(t.UserID)),
 			Amount:      float32(t.Amount),
@@ -83,7 +83,7 @@ func (l *GetTransactionsLogic) GetTransactions(in *rpc.GetTransactionsReq) (*rpc
 	}
 
 	// 7. 构建响应
-	return &rpc.GetTransactionsResp{
+	return &super.GetTransactionsResp{
 		Transactions: rpcTransactions,
 		Total:        int32(total),
 	}, nil

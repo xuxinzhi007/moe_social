@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewGetPostCommentsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 
 func (l *GetPostCommentsLogic) GetPostComments(req *types.GetPostCommentsReq) (resp *types.GetPostCommentsResp, err error) {
 	// 调用RPC服务获取帖子评论
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetPostComments(l.ctx, &rpc.GetPostCommentsReq{
+	rpcResp, err := l.svcCtx.SuperRpcClient.GetPostComments(l.ctx, &super.GetPostCommentsReq{
 		PostId:   req.PostId,
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),

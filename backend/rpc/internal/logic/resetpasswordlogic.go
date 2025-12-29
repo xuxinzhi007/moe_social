@@ -6,7 +6,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewResetPasswordLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Res
 	}
 }
 
-func (l *ResetPasswordLogic) ResetPassword(in *rpc.ResetPasswordReq) (*rpc.ResetPasswordResp, error) {
+func (l *ResetPasswordLogic) ResetPassword(in *super.ResetPasswordReq) (*super.ResetPasswordResp, error) {
 	// 1. 查找用户
 	var user model.User
 	result := l.svcCtx.DB.Where("email = ?", in.Email).First(&user)
@@ -47,5 +47,5 @@ func (l *ResetPasswordLogic) ResetPassword(in *rpc.ResetPasswordReq) (*rpc.Reset
 		return nil, errorx.Internal("更新密码失败，请稍后重试")
 	}
 
-	return &rpc.ResetPasswordResp{}, nil
+	return &super.ResetPasswordResp{}, nil
 }

@@ -8,7 +8,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
@@ -28,7 +28,7 @@ func NewCreatePostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Create
 	}
 }
 
-func (l *CreatePostLogic) CreatePost(in *rpc.CreatePostReq) (*rpc.CreatePostResp, error) {
+func (l *CreatePostLogic) CreatePost(in *super.CreatePostReq) (*super.CreatePostResp, error) {
 	// 1. 参数验证
 	if in.UserId == "" {
 		return nil, errorx.New(400, "用户ID不能为空")
@@ -80,8 +80,8 @@ func (l *CreatePostLogic) CreatePost(in *rpc.CreatePostReq) (*rpc.CreatePostResp
 	}
 	
 	// 7. 构建响应
-	return &rpc.CreatePostResp{
-		Post: &rpc.Post{
+	return &super.CreatePostResp{
+		Post: &super.Post{
 			Id:         strconv.FormatUint(uint64(post.ID), 10),
 			UserId:     in.UserId,
 			UserName:   user.Username,

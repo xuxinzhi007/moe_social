@@ -7,7 +7,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewCreateVipOrderLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cr
 }
 
 // 用户相关服务
-func (l *CreateVipOrderLogic) CreateVipOrder(in *rpc.CreateVipOrderReq) (*rpc.CreateVipOrderResp, error) {
+func (l *CreateVipOrderLogic) CreateVipOrder(in *super.CreateVipOrderReq) (*super.CreateVipOrderResp, error) {
 	// 验证用户是否存在
 	var user model.User
 	userResult := l.svcCtx.DB.First(&user, in.UserId)
@@ -64,8 +64,8 @@ func (l *CreateVipOrderLogic) CreateVipOrder(in *rpc.CreateVipOrderReq) (*rpc.Cr
 	}
 
 	// 构建响应
-	return &rpc.CreateVipOrderResp{
-		Order: &rpc.VipOrder{
+	return &super.CreateVipOrderResp{
+		Order: &super.VipOrder{
 			Id:        string(rune(order.ID)),
 			UserId:    in.UserId,
 			PlanId:    in.PlanId,

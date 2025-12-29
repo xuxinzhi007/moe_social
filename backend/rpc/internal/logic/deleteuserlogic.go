@@ -6,7 +6,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewDeleteUserLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Delete
 	}
 }
 
-func (l *DeleteUserLogic) DeleteUser(in *rpc.DeleteUserReq) (*rpc.DeleteUserResp, error) {
+func (l *DeleteUserLogic) DeleteUser(in *super.DeleteUserReq) (*super.DeleteUserResp, error) {
 	// 1. 查找用户，确认用户存在
 	var user model.User
 	result := l.svcCtx.DB.First(&user, in.UserId)
@@ -42,5 +42,5 @@ func (l *DeleteUserLogic) DeleteUser(in *rpc.DeleteUserReq) (*rpc.DeleteUserResp
 	}
 
 	// 3. 构建响应
-	return &rpc.DeleteUserResp{}, nil
+	return &super.DeleteUserResp{}, nil
 }

@@ -5,7 +5,7 @@ import (
 
 	"backend/model"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,11 +25,11 @@ func NewGetUserCountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetU
 }
 
 // 用户相关服务
-func (l *GetUserCountLogic) GetUserCount(in *rpc.GetUserCountReq) (*rpc.GetUserCountResp, error) {
+func (l *GetUserCountLogic) GetUserCount(in *super.GetUserCountReq) (*super.GetUserCountResp, error) {
 	var total int64
 	l.svcCtx.DB.Model(&model.User{}).Count(&total)
 
-	return &rpc.GetUserCountResp{
+	return &super.GetUserCountResp{
 		Count: int32(total),
 	}, nil
 }

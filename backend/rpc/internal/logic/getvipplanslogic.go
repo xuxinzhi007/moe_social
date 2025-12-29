@@ -6,7 +6,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewGetVipPlansLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetVi
 }
 
 // VIP套餐相关服务
-func (l *GetVipPlansLogic) GetVipPlans(in *rpc.GetVipPlansReq) (*rpc.GetVipPlansResp, error) {
+func (l *GetVipPlansLogic) GetVipPlans(in *super.GetVipPlansReq) (*super.GetVipPlansResp, error) {
 	var plans []model.VipPlan
 	result := l.svcCtx.DB.Find(&plans)
 	if result.Error != nil {
@@ -35,9 +35,9 @@ func (l *GetVipPlansLogic) GetVipPlans(in *rpc.GetVipPlansReq) (*rpc.GetVipPlans
 	}
 
 	// 构建响应
-	respPlans := make([]*rpc.VipPlan, len(plans))
+	respPlans := make([]*super.VipPlan, len(plans))
 	for i, plan := range plans {
-		respPlans[i] = &rpc.VipPlan{
+		respPlans[i] = &super.VipPlan{
 			Id:           string(rune(plan.ID)),
 			Name:         plan.Name,
 			Description:  plan.Features,
@@ -48,7 +48,7 @@ func (l *GetVipPlansLogic) GetVipPlans(in *rpc.GetVipPlansReq) (*rpc.GetVipPlans
 		}
 	}
 
-	return &rpc.GetVipPlansResp{
+	return &super.GetVipPlansResp{
 		Plans: respPlans,
 	}, nil
 }

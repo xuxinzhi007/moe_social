@@ -7,7 +7,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
@@ -28,7 +28,7 @@ func NewRegisterLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Register
 }
 
 // 用户相关服务
-func (l *RegisterLogic) Register(in *rpc.RegisterReq) (*rpc.RegisterResp, error) {
+func (l *RegisterLogic) Register(in *super.RegisterReq) (*super.RegisterResp, error) {
 	// 1. 检查用户名是否已存在
 	var existingUser model.User
 	err := l.svcCtx.DB.Where("username = ?", in.Username).First(&existingUser).Error
@@ -70,8 +70,8 @@ func (l *RegisterLogic) Register(in *rpc.RegisterReq) (*rpc.RegisterResp, error)
 		vipEndAt = user.VipEndAt.Format("2006-01-02 15:04:05")
 	}
 
-	return &rpc.RegisterResp{
-		User: &rpc.User{
+	return &super.RegisterResp{
+		User: &super.User{
 			Id:           strconv.Itoa(int(user.ID)),
 			Username:     user.Username,
 			Email:        user.Email,

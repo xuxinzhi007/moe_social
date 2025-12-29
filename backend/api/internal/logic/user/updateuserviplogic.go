@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewUpdateUserVipLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Upd
 
 func (l *UpdateUserVipLogic) UpdateUserVip(req *types.UpdateUserVipReq) (resp *types.UpdateUserVipResp, err error) {
 	// 调用RPC服务
-	rpcResp, err := l.svcCtx.SuperRpcClient.UpdateUserVip(l.ctx, &rpc.UpdateUserVipReq{
+	rpcResp, err := l.svcCtx.SuperRpcClient.UpdateUserVip(l.ctx, &super.UpdateUserVipReq{
 		UserId:     req.UserId,
 		IsVip:      req.IsVip,
 		VipExpires: req.VipExpires,

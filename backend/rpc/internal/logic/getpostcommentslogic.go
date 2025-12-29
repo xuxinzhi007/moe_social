@@ -6,7 +6,7 @@ import (
 
 	"backend/model"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewGetPostCommentsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 	}
 }
 
-func (l *GetPostCommentsLogic) GetPostComments(in *rpc.GetPostCommentsReq) (*rpc.GetPostCommentsResp, error) {
+func (l *GetPostCommentsLogic) GetPostComments(in *super.GetPostCommentsReq) (*super.GetPostCommentsResp, error) {
 	// 解析帖子ID
 	postID, err := strconv.ParseUint(in.PostId, 10, 32)
 	if err != nil {
@@ -86,8 +86,8 @@ func (l *GetPostCommentsLogic) GetPostComments(in *rpc.GetPostCommentsReq) (*rpc
 	}
 
 	// 构建响应
-	resp := &rpc.GetPostCommentsResp{
-		Comments: make([]*rpc.Comment, 0, len(comments)),
+	resp := &super.GetPostCommentsResp{
+		Comments: make([]*super.Comment, 0, len(comments)),
 		Total:    int32(total),
 	}
 
@@ -107,7 +107,7 @@ func (l *GetPostCommentsLogic) GetPostComments(in *rpc.GetPostCommentsReq) (*rpc
 			}
 		}
 
-		rpcComment := &rpc.Comment{
+		rpcComment := &super.Comment{
 			Id:         strconv.FormatUint(uint64(comment.ID), 10),
 			PostId:     strconv.FormatUint(uint64(comment.PostID), 10),
 			UserId:     strconv.FormatUint(uint64(comment.UserID), 10),

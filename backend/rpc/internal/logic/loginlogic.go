@@ -8,7 +8,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/rpc"
+	"backend/rpc/pb/super"
 	"backend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -28,7 +28,7 @@ func NewLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LoginLogic 
 	}
 }
 
-func (l *LoginLogic) Login(in *rpc.LoginReq) (*rpc.LoginResp, error) {
+func (l *LoginLogic) Login(in *super.LoginReq) (*super.LoginResp, error) {
 	// 1. 查找用户
 	var user model.User
 	var err error
@@ -76,8 +76,8 @@ func (l *LoginLogic) Login(in *rpc.LoginReq) (*rpc.LoginResp, error) {
 		vipEndAt = user.VipEndAt.Format("2006-01-02 15:04:05")
 	}
 
-	return &rpc.LoginResp{
-		User: &rpc.User{
+	return &super.LoginResp{
+		User: &super.User{
 			Id:           strconv.Itoa(int(user.ID)),
 			Username:     user.Username,
 			Email:        user.Email,
