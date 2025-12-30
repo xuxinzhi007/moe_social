@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'autoglm/autoglm_page.dart'; // Import AutoGLM Page
 import 'auth_service.dart';
 import 'services/api_service.dart';
 import 'models/user.dart';
@@ -187,6 +188,17 @@ class _ProfilePageState extends State<ProfilePage> {
                                 title: '帮助与反馈',
                                 color: Colors.purpleAccent,
                                 onTap: () {},
+                              ),
+                              _MenuItem(
+                                icon: Icons.smart_toy_outlined, 
+                                title: 'AutoGLM 助手 (实验性)',
+                                color: Colors.indigoAccent,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const AutoGLMPage()),
+                                  );
+                                },
                               ),
                             ]),
                           ),
