@@ -34,6 +34,31 @@ class AutoGLMService {
     }
   }
 
+  /// 启动应用
+  static Future<bool> launchApp(String appName) async {
+    try {
+      await platform.invokeMethod('launchApp', {'appName': appName});
+      return true;
+    } catch (e) {
+      print("Error launching app $appName: $e");
+      return false;
+    }
+  }
+
+  /// 获取手机上已安装的应用列表
+  static Future<Map<String, String>> getInstalledApps() async {
+    try {
+      final result = await platform.invokeMethod('getInstalledApps');
+      if (result is Map) {
+        return Map<String, String>.from(result);
+      }
+      return {};
+    } catch (e) {
+      print("Error getting installed apps: $e");
+      return {};
+    }
+  }
+
   /// 执行点击操作
   static Future<void> performClick(double x, double y) async {
     try {

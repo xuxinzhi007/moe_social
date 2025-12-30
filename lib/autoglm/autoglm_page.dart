@@ -27,7 +27,13 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
   final String _apiKey = "ms-fa33637f-6572-4170-82b1-95f458fe9e7b"; // 您的 Key
   final String _model = "ZhipuAI/AutoGLM-Phone-9B";
 
-  static const String _systemPrompt = """
+  // 动态生成 System Prompt（包含已安装应用列表）
+  String _generateSystemPrompt(List<String> installedApps) {
+    String appList = installedApps.isEmpty 
+        ? "微信、QQ、抖音、小红书、淘宝、京东、设置等常用应用"
+        : installedApps.join("、");
+    
+    return """
 你是一个智能体分析专家，可以根据操作历史和当前状态图执行一系列操作来完成任务。
 你必须严格按照要求输出以下格式：
 <think>{think}</think>
@@ -38,26 +44,35 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
 - {action} 是本次执行的具体操作指令，必须严格遵循下方定义的指令格式。
 
 操作指令及其作用如下：
+- do(action="Launch", app="xxx")  
+    Launch是启动目标app的操作，这比通过主屏幕导航更快。此操作完成后，您将自动收到结果状态的截图。
 - do(action="Tap", element=[x,y])  
-    Tap是点击操作，点击屏幕上的特定点。坐标系统从左上角 (0,0) 开始到右下角（999,999)结束。
+    Tap是点击操作，点击屏幕上的特定点。可用此操作点击按钮、选择项目、从主屏幕打开应用程序，或与任何可点击的用户界面元素进行交互。坐标系统从左上角 (0,0) 开始到右下角（999,999)结束。此操作完成后，您将自动收到结果状态的截图。
 - do(action="Swipe", start=[x1,y1], end=[x2,y2])  
-    Swipe是滑动操作。坐标系统从左上角 (0,0) 开始到右下角（999,999)结束。
+    Swipe是滑动操作，通过从起始坐标拖动到结束坐标来执行滑动手势。可用于滚动内容、在屏幕之间导航、下拉通知栏以及项目栏或进行基于手势的导航。坐标系统从左上角 (0,0) 开始到右下角（999,999)结束。滑动持续时间会自动调整以实现自然的移动。此操作完成后，您将自动收到结果状态的截图。
 - do(action="Back")  
-    导航返回到上一个屏幕。
+    导航返回到上一个屏幕或关闭当前对话框。相当于按下 Android 的返回按钮。使用此操作可以从更深的屏幕返回、关闭弹出窗口或退出当前上下文。此操作完成后，您将自动收到结果状态的截图。
 - do(action="Home") 
-    Home是回到系统桌面的操作。
+    Home是回到系统桌面的操作，相当于按下 Android 主屏幕按钮。使用此操作可退出当前应用并返回启动器，或从已知状态启动新任务。此操作完成后，您将自动收到结果状态的截图。
 - do(action="Wait", duration="x seconds")  
     等待页面加载，x为需要等待多少秒。
 - finish(message="xxx")  
     finish是结束任务的操作，表示准确完整完成任务，message是终止信息。 
 
 必须遵循的规则：
-1. 在执行任何操作前，先检查当前app是否是目标app，如果不是，先执行 Launch (暂不支持，请手动打开或使用Home/Back找到)。
-2. 如果进入到了无关页面，先执行 Back。
-3. 如果页面未加载出内容，最多连续 Wait 三次，否则执行 Back重新进入。
-4. 坐标均为相对坐标 (0-1000)。
-5. 每次只输出一个动作。
+1. **应用切换**：在执行任何操作前，先检查当前app是否是目标app，如果不是，先执行 Home 返回桌面，然后执行 Launch 启动目标应用。
+2. **错误恢复**：如果连续3步操作后仍然在错误的页面或应用内，**立即执行 Home 返回桌面**，然后重新 Launch 目标应用。
+3. **页面导航**：如果进入到了无关页面，先尝试执行 Back。如果执行Back后页面没有变化，请点击页面左上角的返回键进行返回，或者右上角的X号关闭。如果还是无效，执行 Home 返回桌面。
+4. **页面加载**：如果页面未加载出内容，最多连续 Wait 2 次（每次2秒），如果还是空白，执行 Home 返回桌面重新开始。
+5. **网络问题**：如果页面显示网络问题，点击重新加载按钮。如果没有重新加载按钮，执行 Home 返回桌面重新开始。
+6. **内容查找**：如果当前页面找不到目标联系人、商品、店铺等信息，可以尝试 Swipe 滑动查找（最多滑动3次）。如果滑动3次后仍未找到，执行 Home 返回桌面。
+7. **操作验证**：在执行下一步操作前请一定要检查上一步的操作是否生效。如果点击没生效，等待1秒后重试，如果还是不生效，执行 Home 返回桌面。
+8. **任务完成**：在结束任务前请一定要仔细检查任务是否完整准确的完成。
+9. **重要**：当你感到迷失、不确定当前位置、或连续失败时，**不要犹豫，立即使用 Home 返回桌面重新开始**。
+10. **本设备上已安装的应用（只能启动这些应用）**：$appList
+11. 坐标系统使用相对坐标：从(0,0)到(999,999)，其中(0,0)是屏幕左上角，(999,999)是屏幕右下角。
 """;
+  }
 
   @override
   void initState() {
@@ -113,6 +128,15 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
     AutoGLMService.updateOverlayLog(log);
   }
 
+  bool _isStopping = false;
+
+  void _stopTask() {
+    setState(() {
+      _isStopping = true;
+    });
+    _addLog("🛑 正在停止任务...");
+  }
+
   // 核心逻辑：执行任务
   Future<void> _startTask() async {
     if (!_isServiceEnabled) {
@@ -145,14 +169,24 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
 
     setState(() {
       _isProcessing = true;
+      _isStopping = false;
       _history = []; // 清空历史
       _stepCount = 0;
     });
     
+    // 获取已安装应用列表
+    _addLog("📱 正在获取已安装应用列表...");
+    Map<String, String> installedAppsMap = await AutoGLMService.getInstalledApps();
+    List<String> installedAppNames = installedAppsMap.keys.toList();
+    _addLog("✅ 找到 ${installedAppNames.length} 个已安装应用");
+    
+    // 生成包含已安装应用的系统Prompt
+    String systemPrompt = _generateSystemPrompt(installedAppNames);
+    
     // 初始化系统Prompt
     _history.add({
       "role": "system", 
-      "content": _systemPrompt
+      "content": systemPrompt
     });
 
     _addLog("🤖 开始任务: $task");
@@ -160,6 +194,11 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
     try {
       bool finished = false;
       while (!finished && _stepCount < _maxSteps) {
+        if (_isStopping) {
+          _addLog("🛑 任务已手动停止");
+          break;
+        }
+
         _stepCount++;
         _addLog("🔄 步骤 $_stepCount 执行中...");
 
@@ -216,6 +255,11 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
            break;
         }
 
+        if (_isStopping) {
+          _addLog("🛑 任务已手动停止");
+          break;
+        }
+
         // 4. 解析与执行
         final content = response['content'];
         _history.add({
@@ -232,8 +276,41 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
            think = parts[0].replaceAll("<think>", "").replaceAll("</think>", "").trim();
            actionStr = parts[1].replaceAll("</answer>", "").trim();
         } else {
-          // 尝试直接匹配 do(...) 或 finish(...)
-          actionStr = content;
+           // 增强的解析逻辑：尝试从混杂文本中提取 do(...) 或 finish(...)
+           // 正则匹配 do(action=...) 或 finish(message=...)
+           // 优先匹配 finish，因为它是终止信号
+           final finishMatch = RegExp(r'finish\(message=".*?"\)').firstMatch(content);
+           if (finishMatch != null) {
+             actionStr = finishMatch.group(0)!;
+           } else {
+             // 匹配 do(...)，注意可能跨行或包含嵌套引号，这里简化匹配
+             // 假设指令在一行内或者格式比较标准
+             final doMatch = RegExp(r'do\(action=".*?".*?\)').firstMatch(content);
+             if (doMatch != null) {
+               actionStr = doMatch.group(0)!;
+             } else {
+               // 最后的兜底：如果整个内容看起来像指令
+               if (content.trim().startsWith("do") || content.trim().startsWith("finish")) {
+                 actionStr = content.trim();
+               }
+             }
+           }
+           
+           // 如果提取到了指令，剩下的部分作为 think
+           if (actionStr.isNotEmpty) {
+             think = content.replaceFirst(actionStr, "").trim();
+           } else {
+             // 如果没提取到，可能只是一段对话
+             think = content;
+             // 尝试看看有没有可能是 Wait 命令被拆分了
+             if (content.contains('Wait') && content.contains('seconds')) {
+                // 简单的启发式修复
+                final waitMatch = RegExp(r'Wait.*?(\d+)\s*seconds').firstMatch(content);
+                if (waitMatch != null) {
+                   actionStr = 'do(action="Wait", duration="${waitMatch.group(1)} seconds")';
+                }
+             }
+           }
         }
         
         if (think.isNotEmpty) {
@@ -242,7 +319,10 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
         
         if (actionStr.isEmpty) {
            _addLog("❌ 无法解析动作: $content");
-           break;
+           // 不直接 break，而是再给一次机会或者提示用户
+           // break; 
+           // 暂时跳过本次执行
+           continue; 
         }
 
         _addLog("🎯 动作: $actionStr");
@@ -265,6 +345,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
       if (mounted) {
         setState(() {
           _isProcessing = false;
+          _isStopping = false;
         });
       }
       // 任务结束，稍后隐藏悬浮窗 (可选，这里先不隐藏以便用户查看最终状态)
@@ -365,7 +446,17 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
       // 现在的 AutoGLMAccessibilityService 已经能够直接接受 0-1000 的相对坐标
       // 并使用 DisplayMetrics 自动计算物理坐标，所以这里直接传递原始值
       
-      if (actionType == "Tap") {
+      if (actionType == "Launch") {
+        final appMatch = RegExp(r'app="(.*?)"').firstMatch(actionStr);
+        if (appMatch != null) {
+          final appName = appMatch.group(1)!;
+          _addLog("🚀 启动应用: $appName");
+          bool success = await AutoGLMService.launchApp(appName);
+          if (!success) {
+            _addLog("⚠️ 应用启动失败或未找到: $appName");
+          }
+        }
+      } else if (actionType == "Tap") {
         final elementMatch = RegExp(r'element=\[(\d+),\s*(\d+)\]').firstMatch(actionStr);
         if (elementMatch != null) {
           final x = double.parse(elementMatch.group(1)!);
@@ -387,7 +478,14 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
       } else if (actionType == "Home") {
         await AutoGLMService.performHome();
       } else if (actionType == "Wait") {
-        await Future.delayed(const Duration(seconds: 2));
+        // 解析 duration="2 seconds"
+        int seconds = 2;
+        final durationMatch = RegExp(r'duration="(\d+)\s*seconds?"').firstMatch(actionStr);
+        if (durationMatch != null) {
+          seconds = int.tryParse(durationMatch.group(1)!) ?? 2;
+        }
+        _addLog("⏳ 等待 $seconds 秒...");
+        await Future.delayed(Duration(seconds: seconds));
       } else {
         _addLog("⚠️ 不支持的动作: $actionType");
       }
@@ -446,6 +544,54 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                     const Icon(Icons.chevron_right, color: Colors.orange),
                 ],
               ),
+            ),
+          ),
+
+          // 悬浮窗控制按钮
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            color: Colors.blue[50],
+            child: Row(
+              children: [
+                Icon(Icons.picture_in_picture_alt, color: Colors.blue[700], size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '悬浮窗日志显示',
+                    style: TextStyle(color: Colors.blue[900], fontSize: 13),
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    await AutoGLMService.showOverlay();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('悬浮窗已显示，可拖动和折叠'))
+                    );
+                  },
+                  icon: const Icon(Icons.open_in_new, size: 16),
+                  label: const Text('显示'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    minimumSize: Size.zero,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    await AutoGLMService.removeOverlay();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('悬浮窗已隐藏'))
+                    );
+                  },
+                  icon: const Icon(Icons.close, size: 16),
+                  label: const Text('隐藏'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    minimumSize: Size.zero,
+                    backgroundColor: Colors.grey[600],
+                  ),
+                ),
+              ],
             ),
           ),
           
@@ -508,12 +654,16 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                   ),
                   const SizedBox(width: 12),
                   FloatingActionButton(
-                    onPressed: _isProcessing ? null : _startTask,
+                    onPressed: _isProcessing 
+                      ? (_isStopping ? null : _stopTask) 
+                      : _startTask,
                     elevation: 0,
-                    backgroundColor: _isProcessing ? Colors.grey : Theme.of(context).primaryColor,
+                    backgroundColor: _isProcessing ? Colors.red : Theme.of(context).primaryColor,
                     mini: true,
                     child: _isProcessing 
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      ? (_isStopping 
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Icon(Icons.stop_rounded))
                       : const Icon(Icons.send_rounded),
                   ),
                 ],

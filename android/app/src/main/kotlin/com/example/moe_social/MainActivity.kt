@@ -60,6 +60,32 @@ class MainActivity : FlutterActivity() {
                 "checkService" -> {
                     result.success(true)
                 }
+                "getInstalledApps" -> {
+                    val installedApps = service.getInstalledApps()
+                    result.success(installedApps)
+                }
+                "launchApp" -> {
+                    val appName = call.argument<String>("appName") ?: ""
+                    val packageName = AppPackages.getPackageName(appName)
+                    
+                    if (packageName == null) {
+                        result.error("APP_NOT_FOUND", "未找到应用: $appName", null)
+                        return@setMethodCallHandler
+                    }
+                    
+                    try {
+                        val intent = packageManager.getLaunchIntentForPackage(packageName)
+                        if (intent != null) {
+                            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            startActivity(intent)
+                            result.success(true)
+                        } else {
+                            result.error("NO_LAUNCHER", "应用无启动Activity: $appName", null)
+                        }
+                    } catch (e: Exception) {
+                        result.error("LAUNCH_FAILED", "启动失败: ${e.message}", null)
+                    }
+                }
                 "performClick" -> {
                     val x = call.argument<Double>("x")?.toFloat() ?: 0f
                     val y = call.argument<Double>("y")?.toFloat() ?: 0f
