@@ -1,3 +1,5 @@
+import 'topic_tag.dart';
+
 class Post {
   final String id;
   final String userId;
@@ -9,6 +11,7 @@ class Post {
   final int comments;
   final bool isLiked;
   final DateTime createdAt;
+  final List<TopicTag> topicTags; // 话题标签列表
 
   Post({
     required this.id,
@@ -21,6 +24,7 @@ class Post {
     this.comments = 0,
     this.isLiked = false,
     required this.createdAt,
+    this.topicTags = const [], // 话题标签参数
   });
 
   Post copyWith({
@@ -34,6 +38,7 @@ class Post {
     int? comments,
     bool? isLiked,
     DateTime? createdAt,
+    List<TopicTag>? topicTags,
   }) {
     return Post(
       id: id ?? this.id,
@@ -46,6 +51,7 @@ class Post {
       comments: comments ?? this.comments,
       isLiked: isLiked ?? this.isLiked,
       createdAt: createdAt ?? this.createdAt,
+      topicTags: topicTags ?? this.topicTags,
     );
   }
 
@@ -68,19 +74,29 @@ class Post {
         }
       }
       
+      // 解析话题标签
+      List<TopicTag> topicTags = [];
+      if (json['topic_tags'] != null) {
+        final tagsList = json['topic_tags'] as List<dynamic>;
+        topicTags = tagsList
+            .map((tagJson) => TopicTag.fromJson(tagJson as Map<String, dynamic>))
+            .toList();
+      }
+
       return Post(
         id: (json['id'] ?? '').toString(),
         userId: (json['user_id'] ?? '').toString(),
         userName: (json['user_name'] ?? '未知用户').toString(),
         userAvatar: (json['user_avatar'] ?? '').toString(),
         content: (json['content'] ?? '').toString(),
-        images: json['images'] != null 
+        images: json['images'] != null
             ? List<String>.from(json['images'] as List<dynamic>)
             : <String>[],
         likes: (json['likes'] as int?) ?? 0,
         comments: (json['comments'] as int?) ?? 0,
         isLiked: (json['is_liked'] as bool?) ?? false,
         createdAt: createdAt,
+        topicTags: topicTags,
       );
     } catch (e, stackTrace) {
       print('❌ Post.fromJson错误: $e');
@@ -92,10 +108,17 @@ class Post {
 
   // 转换为JSON，注意使用下划线命名格式匹配后端期望
   Map<String, dynamic> toJson() {
-    return {
+    final json = {
       'user_id': userId,
       'content': content,
       'images': images,
     };
+
+    // 添加话题标签（如果存在）
+    if (topicTags.isNotEmpty) {
+      json['topic_tags'] = topicTags.map((tag) => tag.toJson()).toList();
+    }
+
+    return json;
   }
 }

@@ -3,10 +3,12 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../auth_service.dart';
 import '../models/post.dart';
+import '../models/topic_tag.dart';
 import '../services/api_service.dart';
 import '../services/post_service.dart';
 import '../utils/error_handler.dart';
 import '../widgets/avatar_image.dart';
+import '../widgets/topic_tag_selector.dart';
 
 class CreatePostPage extends StatefulWidget {
   const CreatePostPage({super.key});
@@ -23,6 +25,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
   final ImagePicker _picker = ImagePicker();
   String? _userName;
   String? _userAvatar;
+  List<TopicTag> _selectedTopicTags = []; // 话题标签列表
 
   Future<void> _addImage() async {
     final XFile? pickedFile = await _picker.pickImage(
@@ -108,6 +111,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
         comments: 0,
         isLiked: false,
         createdAt: DateTime.now(),
+        topicTags: _selectedTopicTags, // 添加话题标签
       );
 
       await PostService.createPost(newPost);
@@ -303,6 +307,20 @@ class _CreatePostPageState extends State<CreatePostPage> {
               ),
             ),
             
+            const SizedBox(height: 20),
+
+            // 话题标签选择器
+            TopicTagSelector(
+              selectedTags: _selectedTopicTags,
+              onTagsChanged: (tags) {
+                setState(() {
+                  _selectedTopicTags = tags;
+                });
+              },
+              userId: AuthService.currentUser ?? 'guest',
+              maxTags: 3,
+            ),
+
             const SizedBox(height: 20),
 
             // 工具栏
