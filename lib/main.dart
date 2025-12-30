@@ -32,6 +32,7 @@ import 'widgets/avatar_image.dart';
 import 'widgets/network_image.dart';
 import 'widgets/post_skeleton.dart';
 import 'widgets/fade_in_up.dart';
+import 'widgets/topic_tag_selector.dart';
 import 'utils/error_handler.dart';
 import 'providers/theme_provider.dart';
 import 'providers/notification_provider.dart';
@@ -784,6 +785,24 @@ class _HomePageState extends State<HomePage> {
               post.content,
               style: const TextStyle(fontSize: 15, height: 1.5),
             ),
+
+            // 话题标签
+            if (post.topicTags.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: post.topicTags.map((tag) => TopicTagDisplay(
+                  tag: tag,
+                  fontSize: 12,
+                  showUsageCount: false,
+                  onTap: () {
+                    // TODO: 点击标签可以跳转到标签页面或筛选相关帖子
+                  },
+                )).toList(),
+              ),
+            ],
+
             const SizedBox(height: 12),
 
             // 帖子图片

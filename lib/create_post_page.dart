@@ -8,7 +8,7 @@ import '../services/api_service.dart';
 import '../services/post_service.dart';
 import '../utils/error_handler.dart';
 import '../widgets/avatar_image.dart';
-import '../widgets/topic_tag_selector.dart';
+import '../widgets/compact_topic_selector.dart';
 
 class CreatePostPage extends StatefulWidget {
   const CreatePostPage({super.key});
@@ -309,8 +309,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
             
             const SizedBox(height: 20),
 
-            // 话题标签选择器
-            TopicTagSelector(
+            // 话题标签选择器 - 紧凑版
+            CompactTopicSelector(
               selectedTags: _selectedTopicTags,
               onTagsChanged: (tags) {
                 setState(() {

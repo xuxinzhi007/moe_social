@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'dart:io' show File, Platform, SocketException;
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart' show debugPrint, kDebugMode, kIsWeb;
-import '../auth_service.dart';
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode, kIsWeb, VoidCallback;
 import '../models/post.dart';
 import '../models/comment.dart';
 import '../models/user.dart';
@@ -22,6 +21,27 @@ class ApiException implements Exception {
 }
 
 class ApiService {
+  // 静态变量存储认证信息和回调函数
+  static String? _currentToken;
+  static VoidCallback? _onLogoutCallback;
+  static Function(String)? _onTokenUpdateCallback;
+
+  // 设置认证相关回调函数
+  static void setAuthCallbacks({
+    VoidCallback? onLogout,
+    Function(String)? onTokenUpdate,
+  }) {
+    _onLogoutCallback = onLogout;
+    _onTokenUpdateCallback = onTokenUpdate;
+  }
+
+  // 设置当前 token
+  static void setToken(String? token) {
+    _currentToken = token;
+  }
+
+  // 获取当前 token
+  static String? get token => _currentToken;
   // 环境配置
   // 设置为 true 使用生产环境，false 使用开发环境
   static const bool _isProduction = false; // 修改这里切换环境
@@ -92,7 +112,7 @@ class ApiService {
           return await _performRequest(path, method, body);
         } else {
           // 刷新token失败，清除登录状态
-          AuthService.logout();
+          _onLogoutCallback?.call();
           // 抛出错误，让上层处理
           throw ApiException('登录已过期，请重新登录', 401);
         }
@@ -132,7 +152,7 @@ class ApiService {
       };
       
       // 添加认证令牌
-      final token = AuthService.token;
+      final token = _currentToken;
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
       }
@@ -263,7 +283,7 @@ class ApiService {
       };
       
       // 使用当前token请求刷新
-      final currentToken = AuthService.token;
+      final currentToken = _currentToken;
       if (currentToken != null) {
         headers['Authorization'] = 'Bearer $currentToken';
       }
@@ -275,7 +295,8 @@ class ApiService {
         final newToken = result['data']['token'] as String;
         
         // 更新token
-        await AuthService.updateToken(newToken);
+        _currentToken = newToken;
+        _onTokenUpdateCallback?.call(newToken);
         _log('✅ Token刷新成功');
         
         return newToken;

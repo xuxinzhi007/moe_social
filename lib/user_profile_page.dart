@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'models/user.dart';
 import 'models/post.dart';
+import 'models/achievement_badge.dart';
+import 'models/gift.dart';
 import 'services/api_service.dart';
+import 'services/achievement_service.dart';
 import 'widgets/avatar_image.dart';
 import 'widgets/network_image.dart';
 import 'widgets/fade_in_up.dart';
+import 'widgets/achievement_badge_display.dart';
+import 'widgets/gift_selector.dart';
+import 'widgets/gift_animation.dart';
 
 class UserProfilePage extends StatefulWidget {
   final String userId;
@@ -29,6 +35,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
   bool _isFollowing = false;
   List<Post> _userPosts = [];
   bool _isLoadingPosts = true;
+  List<AchievementBadge> _userBadges = [];
+  final AchievementService _achievementService = AchievementService();
 
   @override
   void initState() {
@@ -41,9 +49,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
   Future<void> _loadData() async {
     try {
       final user = await ApiService.getUserInfo(widget.userId);
+      // 加载用户徽章
+      final userBadges = _achievementService.getUserBadges(widget.userId);
+
       if (mounted) {
         setState(() {
           _user = user;
+          _userBadges = userBadges;
         });
       }
     } catch (e) {
@@ -179,11 +191,61 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          _StatItem(label: '动态', value: '${_userPosts.length}'), 
+                          _StatItem(label: '动态', value: '${_userPosts.length}'),
                           const _StatItem(label: '关注', value: '0'),
                           const _StatItem(label: '粉丝', value: '0'),
                         ],
                       ),
+
+                      // 用户徽章展示
+                      if (_userBadges.where((badge) => badge.isUnlocked).isNotEmpty) ...[
+                        const SizedBox(height: 20),
+                        const Divider(),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            const Icon(Icons.military_tech, size: 16, color: Colors.amber),
+                            const SizedBox(width: 6),
+                            const Text(
+                              '成就徽章',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '${_userBadges.where((b) => b.isUnlocked).length} 个',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: _userBadges
+                                .where((badge) => badge.isUnlocked)
+                                .take(8) // 最多显示8个徽章
+                                .map((badge) => Container(
+                                      margin: const EdgeInsets.only(right: 8),
+                                      child: BadgeCard(
+                                        badge: badge,
+                                        size: 36,
+                                        showProgress: false,
+                                        onTap: () => _showBadgeDetails(badge),
+                                      ),
+                                    ))
+                                .toList(),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+
                       const SizedBox(height: 24),
                       Row(
                         children: [
@@ -202,7 +264,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                               child: Text(_isFollowing ? '已关注' : '关注'),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: OutlinedButton(
                               onPressed: () {
@@ -218,6 +280,23 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                 ),
                               ),
                               child: const Text('私信'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _showGiftSelector,
+                              icon: const Icon(Icons.card_giftcard, size: 16),
+                              label: const Text('送礼'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.pink[400],
+                                foregroundColor: Colors.white,
+                                elevation: 4,
+                                shadowColor: Colors.pink.withOpacity(0.4),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
                             ),
                           ),
                         ],
@@ -393,6 +472,239 @@ class _UserProfilePageState extends State<UserProfilePage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showGiftSelector() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          children: [
+            // 顶部拖拽指示器
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // 标题
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                children: [
+                  const Icon(Icons.card_giftcard, color: Colors.pink),
+                  const SizedBox(width: 8),
+                  Text(
+                    '送礼给 ${_user?.username ?? widget.userName ?? '用户'}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('取消'),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            // 礼物选择器
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: _buildGiftGrid(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGiftGrid() {
+    final gifts = Gift.getPopularGifts(limit: 12);
+    return GridView.builder(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 0.8,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: gifts.length,
+      itemBuilder: (context, index) {
+        final gift = gifts[index];
+        return GestureDetector(
+          onTap: () {
+            Navigator.pop(context);
+            _sendGift(gift);
+          },
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: gift.color.withOpacity(0.3)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(gift.emoji, style: const TextStyle(fontSize: 32)),
+                const SizedBox(height: 8),
+                Text(
+                  gift.name,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '¥${gift.price.toStringAsFixed(gift.price == gift.price.roundToDouble() ? 0 : 1)}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: gift.color,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _sendGift(Gift gift) {
+    // 显示礼物发送动画
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
+      builder: (context) => GiftSendAnimation(
+        gift: gift,
+        onAnimationComplete: () {
+          Navigator.of(context).pop();
+          // 显示发送成功提示
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Text(gift.emoji, style: const TextStyle(fontSize: 20)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '已送出${gift.name}给 ${_user?.username ?? widget.userName ?? '用户'}',
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showBadgeDetails(AchievementBadge badge) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: badge.color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                badge.emoji,
+                style: const TextStyle(fontSize: 48),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              badge.name,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              badge.description,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey[600],
+                height: 1.4,
+              ),
+            ),
+            if (badge.isUnlocked) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green[200]!),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                    const SizedBox(width: 6),
+                    const Text(
+                      '已解锁',
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('关闭'),
+          ),
+        ],
       ),
     );
   }

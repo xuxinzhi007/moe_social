@@ -50,7 +50,7 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      backgroundColor: Colors.black54,
+      barrierColor: Colors.black54,
       builder: (context) => GiftSendAnimation(
         gift: gift,
         onAnimationComplete: () {
@@ -65,7 +65,7 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      backgroundColor: Colors.black54,
+      barrierColor: Colors.black54,
       builder: (context) => BadgeUnlockAnimation(
         badgeName: badge.name,
         badgeEmoji: badge.emoji,
@@ -123,7 +123,7 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    '• 情绪标签系统 - 表达真实感受\n• 互动礼物系统 - 传递温暖心意\n• 成就徽章系统 - 记录精彩时刻',
+                    '• 话题标签系统 - 创建和分享话题\n• 互动礼物系统 - 传递温暖心意\n• 成就徽章系统 - 记录精彩时刻',
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.white,
@@ -136,56 +136,65 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
 
             const SizedBox(height: 24),
 
-            // 情绪标签功能区
+            // 话题标签功能区
             _buildSectionCard(
-              title: '😊 情绪标签系统',
-              subtitle: '选择你的心情状态',
+              title: '🏷️ 话题标签系统',
+              subtitle: '选择或创建你的话题',
               child: Column(
                 children: [
-                  EmotionTagSelector(
-                    selectedTag: _selectedEmotion,
-                    onTagSelected: (tag) {
+                  TopicTagSelector(
+                    selectedTags: _selectedTopicTags,
+                    onTagsChanged: (tags) {
                       setState(() {
-                        _selectedEmotion = tag;
+                        _selectedTopicTags = tags;
                       });
                     },
-                    showAllTags: true,
+                    userId: 'demo_user',
+                    maxTags: 3,
                   ),
-                  if (_selectedEmotion != null) ...[
+                  if (_selectedTopicTags.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _selectedEmotion!.color.withOpacity(0.1),
+                        color: Colors.blue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: _selectedEmotion!.color.withOpacity(0.3),
+                          color: Colors.blue.withOpacity(0.3),
                         ),
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(_selectedEmotion!.emoji, style: const TextStyle(fontSize: 24)),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '当前心情：${_selectedEmotion!.name}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: _selectedEmotion!.color,
-                                  ),
+                          const Text(
+                            '已选择的话题标签：',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: _selectedTopicTags.map((tag) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: tag.color.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: tag.color.withOpacity(0.5)),
                                 ),
-                                Text(
-                                  _selectedEmotion!.description,
+                                child: Text(
+                                  tag.name,
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.grey[600],
+                                    color: tag.color,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                              ],
-                            ),
+                              );
+                            }).toList(),
                           ),
                         ],
                       ),
@@ -397,7 +406,7 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
                   ),
                   SizedBox(height: 12),
                   Text(
-                    '• 情绪标签：发布动态时可以选择当前心情，让朋友更了解你\n'
+                    '• 话题标签：发布动态时可以选择或创建话题标签，让内容更有条理\n'
                     '• 互动礼物：在帖子下方点击礼物按钮，向作者发送虚拟礼物\n'
                     '• 成就徽章：完成各种社交行为即可解锁对应的成就徽章',
                     style: TextStyle(

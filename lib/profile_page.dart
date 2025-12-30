@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'services/api_service.dart';
 import 'models/user.dart';
+import 'models/achievement_badge.dart';
+import 'services/achievement_service.dart';
 import 'widgets/avatar_image.dart';
+import 'widgets/achievement_badge_display.dart';
 import 'wallet_page.dart';
 import 'widgets/fade_in_up.dart';
 
@@ -19,6 +22,8 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isLoading = true;
   bool _isVip = false;
   int _postCount = 0;
+  List<AchievementBadge> _userBadges = [];
+  final AchievementService _achievementService = AchievementService();
 
   @override
   void initState() {
@@ -49,12 +54,16 @@ class _ProfilePageState extends State<ProfilePage> {
 
       bool isVip = vipStatus['is_vip'] as bool? ?? false;
 
+      // 加载用户徽章
+      final userBadges = _achievementService.getUserBadges(userId);
+
       if (mounted) {
         setState(() {
           _user = user;
           _vipStatus = vipStatus;
           _isVip = isVip;
           _postCount = postCount;
+          _userBadges = userBadges;
           _isLoading = false;
         });
       }
@@ -118,7 +127,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             delay: const Duration(milliseconds: 200),
                             child: _buildMenuCard([
                               _MenuItem(
-                                icon: Icons.edit_outlined, 
+                                icon: Icons.edit_outlined,
                                 title: '编辑资料',
                                 color: Colors.blueAccent,
                                 onTap: () async {
@@ -135,13 +144,20 @@ class _ProfilePageState extends State<ProfilePage> {
                                 },
                               ),
                               _MenuItem(
-                                icon: Icons.favorite_border_rounded, 
+                                icon: Icons.military_tech_outlined,
+                                title: '成就徽章',
+                                subtitle: '已解锁 ${_userBadges.where((b) => b.isUnlocked).length} 个',
+                                color: Colors.amber,
+                                onTap: _showAllBadges,
+                              ),
+                              _MenuItem(
+                                icon: Icons.favorite_border_rounded,
                                 title: '我的收藏',
                                 color: Colors.pinkAccent,
                                 onTap: () {},
                               ),
                               _MenuItem(
-                                icon: Icons.history_rounded, 
+                                icon: Icons.history_rounded,
                                 title: '浏览历史',
                                 color: Colors.orangeAccent,
                                 onTap: () {},
@@ -297,6 +313,56 @@ class _ProfilePageState extends State<ProfilePage> {
                   ],
                 ),
               ),
+
+              // 徽章展示区域
+              if (_userBadges.where((badge) => badge.isUnlocked).isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.military_tech, color: Colors.white, size: 16),
+                          const SizedBox(width: 6),
+                          const Text(
+                            '成就徽章',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: _userBadges
+                              .where((badge) => badge.isUnlocked)
+                              .take(6) // 最多显示6个徽章
+                              .map((badge) => Container(
+                                    margin: const EdgeInsets.only(right: 8),
+                                    child: BadgeCard(
+                                      badge: badge,
+                                      size: 28,
+                                      showProgress: false,
+                                      onTap: () => _showBadgeDetails(badge),
+                                    ),
+                                  ))
+                              .toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -435,6 +501,142 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           );
         }).toList(),
+      ),
+    );
+  }
+
+  void _showBadgeDetails(AchievementBadge badge) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: badge.color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                badge.emoji,
+                style: const TextStyle(fontSize: 48),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              badge.name,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              badge.description,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey[600],
+                height: 1.4,
+              ),
+            ),
+            if (badge.isUnlocked) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green[200]!),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                    const SizedBox(width: 6),
+                    const Text(
+                      '已解锁',
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('关闭'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAllBadges() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          children: [
+            // 顶部拖拽指示器
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // 标题
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                children: [
+                  const Text(
+                    '我的成就徽章',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('完成'),
+                  ),
+                ],
+              ),
+            ),
+            // 徽章网格
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: BadgeGrid(
+                  badges: _userBadges,
+                  badgeSize: 80,
+                  crossAxisCount: 3,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

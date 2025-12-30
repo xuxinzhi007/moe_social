@@ -31,6 +31,17 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString(_tokenKey);
     _currentUser = prefs.getString(_userIdKey);
+
+    // 设置ApiService回调
+    ApiService.setAuthCallbacks(
+      onLogout: logout,
+      onTokenUpdate: updateToken,
+    );
+
+    // 如果有token，设置到ApiService
+    if (_token != null) {
+      ApiService.setToken(_token);
+    }
   }
 
   static Future<AuthResult> login(String email, String password) async {
@@ -43,7 +54,10 @@ class AuthService {
       
       // 持久化存储登录状态
       await _saveAuthData();
-      
+
+      // 设置ApiService的token
+      ApiService.setToken(_token);
+
       return AuthResult.success();
     } on ApiException catch (e) {
       return AuthResult.failure(e.message);
@@ -69,6 +83,8 @@ class AuthService {
     _token = null;
     // 清除持久化存储
     _clearAuthData();
+    // 清除ApiService的token
+    ApiService.setToken(null);
   }
   
   // 持久化存储认证数据
@@ -120,6 +136,8 @@ class AuthService {
     _token = newToken;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, newToken);
+    // 更新ApiService的token
+    ApiService.setToken(newToken);
   }
 }
 
