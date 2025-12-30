@@ -48,6 +48,8 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
     Launch是启动目标app的操作，这比通过主屏幕导航更快。此操作完成后，您将自动收到结果状态的截图。
 - do(action="Tap", element=[x,y])  
     Tap是点击操作，点击屏幕上的特定点。可用此操作点击按钮、选择项目、从主屏幕打开应用程序，或与任何可点击的用户界面元素进行交互。坐标系统从左上角 (0,0) 开始到右下角（999,999)结束。此操作完成后，您将自动收到结果状态的截图。
+- do(action="Type", text="xxx")  
+    Type是输入文本的操作。使用此操作前，请确保输入框已被聚焦（先点击它）。可用于输入中文、英文、数字等任何文本内容。此操作完成后，您将自动收到结果状态的截图。
 - do(action="Swipe", start=[x1,y1], end=[x2,y2])  
     Swipe是滑动操作，通过从起始坐标拖动到结束坐标来执行滑动手势。可用于滚动内容、在屏幕之间导航、下拉通知栏以及项目栏或进行基于手势的导航。坐标系统从左上角 (0,0) 开始到右下角（999,999)结束。滑动持续时间会自动调整以实现自然的移动。此操作完成后，您将自动收到结果状态的截图。
 - do(action="Back")  
@@ -446,7 +448,17 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
       // 现在的 AutoGLMAccessibilityService 已经能够直接接受 0-1000 的相对坐标
       // 并使用 DisplayMetrics 自动计算物理坐标，所以这里直接传递原始值
       
-      if (actionType == "Launch") {
+      if (actionType == "Type") {
+        final textMatch = RegExp(r'text="(.*?)"', dotAll: true).firstMatch(actionStr);
+        if (textMatch != null) {
+          final text = textMatch.group(1)!;
+          _addLog("⌨️ 输入文本: $text");
+          await AutoGLMService.performType(text);
+          _addLog("✅ 文本已输入");
+        } else {
+          _addLog("⚠️ Type指令缺少text参数");
+        }
+      } else if (actionType == "Launch") {
         final appMatch = RegExp(r'app="(.*?)"').firstMatch(actionStr);
         if (appMatch != null) {
           final appName = appMatch.group(1)!;

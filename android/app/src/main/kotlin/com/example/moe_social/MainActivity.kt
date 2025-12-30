@@ -86,6 +86,29 @@ class MainActivity : FlutterActivity() {
                         result.error("LAUNCH_FAILED", "启动失败: ${e.message}", null)
                     }
                 }
+                "performType" -> {
+                    val text = call.argument<String>("text") ?: ""
+                    // 先切换到 ADB Keyboard
+                    val originalIme = service.switchToAdbKeyboard()
+                    // 输入文本
+                    service.performType(text)
+                    // 恢复原输入法
+                    service.restoreKeyboard(originalIme)
+                    result.success(true)
+                }
+                "switchToAdbKeyboard" -> {
+                    val ime = service.switchToAdbKeyboard()
+                    result.success(ime)
+                }
+                "restoreKeyboard" -> {
+                    val ime = call.argument<String>("ime")
+                    service.restoreKeyboard(ime)
+                    result.success(true)
+                }
+                "clearText" -> {
+                    service.clearText()
+                    result.success(true)
+                }
                 "performClick" -> {
                     val x = call.argument<Double>("x")?.toFloat() ?: 0f
                     val y = call.argument<Double>("y")?.toFloat() ?: 0f

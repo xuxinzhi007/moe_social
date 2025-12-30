@@ -29,11 +29,18 @@ class AutoGLMAccessibilityService : AccessibilityService() {
 
     private var windowManager: WindowManager? = null
     private var overlayView: View? = null
+    private var miniIconView: View? = null  // 最小化图标
+    private var expandedView: View? = null  // 展开的窗口
     private var logTextView: TextView? = null
-    private var isExpanded = true // 是否展开
+    private var isExpanded = false // 默认为最小化状态
     private val logBuffer = mutableListOf<String>() // 日志缓冲区
-    private val maxLogLines = 30 // 最多显示30条日志
+    private val maxLogLines = 50 // 最多显示50条日志
     private var overlayParams: WindowManager.LayoutParams? = null
+    private val iconSize = 60 // dp
+    
+    // 记住小图标的位置
+    private var savedIconX = -1
+    private var savedIconY = -1
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -58,21 +65,195 @@ class AutoGLMAccessibilityService : AccessibilityService() {
 
     // --- 悬浮窗相关 ---
 
+    private fun dpToPx(dp: Int): Int {
+        return (dp * resources.displayMetrics.density).toInt()
+    }
+
     fun showOverlay() {
         if (overlayView != null) return
         
-        // 创建一个容器
+        createMiniIcon()
+        logBuffer.clear()
+        logBuffer.add("🤖 AutoGLM 已启动")
+    }
+    
+    // 创建最小化的圆形图标
+    private fun createMiniIcon() {
+        val iconSizePx = dpToPx(iconSize)
+        
+        // 创建圆形图标容器
+        val iconContainer = FrameLayout(this).apply {
+            layoutParams = ViewGroup.LayoutParams(iconSizePx, iconSizePx)
+        }
+        
+        // 圆形背景
+        val iconBackground = View(this).apply {
+            layoutParams = FrameLayout.LayoutParams(iconSizePx, iconSizePx)
+            setBackgroundColor(Color.parseColor("#FF6B35"))
+            // 设置圆形shape
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                setColor(Color.parseColor("#FF6B35"))
+                setStroke(dpToPx(2), Color.WHITE)
+            }
+        }
+        
+        // 图标文本
+        val iconText = TextView(this).apply {
+            text = "🤖"
+            textSize = 24f
+            gravity = Gravity.CENTER
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+        
+        iconContainer.addView(iconBackground)
+        iconContainer.addView(iconText)
+        
+        miniIconView = iconContainer
+        overlayView = miniIconView
+        
+        // 窗口参数 - 小图标
+        val screenWidth = resources.displayMetrics.widthPixels
+        val screenHeight = resources.displayMetrics.heightPixels
+        
+        overlayParams = WindowManager.LayoutParams(
+            iconSizePx,
+            iconSizePx,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) 
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY 
+            else 
+                WindowManager.LayoutParams.TYPE_PHONE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or 
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or 
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+            // 如果有保存的位置，恢复到保存的位置，否则使用默认位置
+            if (savedIconX >= 0 && savedIconY >= 0) {
+                x = savedIconX
+                y = savedIconY
+            } else {
+                x = screenWidth - iconSizePx - dpToPx(10) // 初始位置：右边缘
+                y = screenHeight / 2 // 初始位置：屏幕中间
+            }
+        }
+        
+        // 拖动和点击逻辑
+        setupMiniIconTouchListener()
+        
+        try {
+            windowManager?.addView(overlayView, overlayParams)
+        } catch (e: Exception) {
+            println("❌ Error adding mini icon: $e")
+        }
+    }
+    
+    // 设置小图标的触摸监听
+    private fun setupMiniIconTouchListener() {
+        var initialX = 0
+        var initialY = 0
+        var initialTouchX = 0f
+        var initialTouchY = 0f
+        var hasMoved = false
+        
+        miniIconView?.setOnTouchListener { _, event ->
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    initialX = overlayParams!!.x
+                    initialY = overlayParams!!.y
+                    initialTouchX = event.rawX
+                    initialTouchY = event.rawY
+                    hasMoved = false
+                    true
+                }
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    val deltaX = event.rawX - initialTouchX
+                    val deltaY = event.rawY - initialTouchY
+                    
+                    if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+                        hasMoved = true
+                    }
+                    
+                    if (hasMoved) {
+                        overlayParams!!.x = initialX + deltaX.toInt()
+                        overlayParams!!.y = initialY + deltaY.toInt()
+                        windowManager?.updateViewLayout(overlayView, overlayParams)
+                    }
+                    true
+                }
+                android.view.MotionEvent.ACTION_UP -> {
+                    if (!hasMoved) {
+                        // 点击：展开窗口
+                        expandWindow()
+                    } else {
+                        // 拖动结束：吸附到边缘
+                        snapToEdge()
+                    }
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+    
+    // 吸附到屏幕边缘
+    private fun snapToEdge() {
+        val screenWidth = resources.displayMetrics.widthPixels
+        val currentX = overlayParams!!.x
+        val iconSizePx = dpToPx(iconSize)
+        
+        // 判断靠近左边还是右边
+        val targetX = if (currentX < screenWidth / 2) {
+            -iconSizePx / 2 // 左边，隐藏一半
+        } else {
+            screenWidth - iconSizePx / 2 // 右边，隐藏一半
+        }
+        
+        // 动画移动到边缘
+        android.animation.ValueAnimator.ofInt(currentX, targetX).apply {
+            duration = 200
+            addUpdateListener { animator ->
+                overlayParams!!.x = animator.animatedValue as Int
+                windowManager?.updateViewLayout(overlayView, overlayParams)
+            }
+            start()
+        }
+    }
+    
+    // 展开窗口
+    private fun expandWindow() {
+        isExpanded = true
+        
+        // 保存小图标当前位置
+        savedIconX = overlayParams?.x ?: -1
+        savedIconY = overlayParams?.y ?: -1
+        
+        // 移除小图标
+        try {
+            windowManager?.removeView(miniIconView)
+        } catch (e: Exception) {}
+        
+        // 创建展开的窗口
+        createExpandedWindow()
+    }
+    
+    // 创建展开的日志窗口
+    private fun createExpandedWindow() {
         val container = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#DD000000")) // 深色半透明背景
+            setBackgroundColor(Color.parseColor("#DD000000"))
             setPadding(0, 0, 0, 0)
         }
         
-        // 标题栏（可拖动、可点击折叠）
+        // 标题栏
         val titleBar = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.HORIZONTAL
-            setBackgroundColor(Color.parseColor("#FF6B35")) // 橙色标题栏
-            setPadding(16, 12, 16, 12)
+            setBackgroundColor(Color.parseColor("#FF6B35"))
+            setPadding(dpToPx(16), dpToPx(12), dpToPx(16), dpToPx(12))
             gravity = Gravity.CENTER_VERTICAL
         }
         
@@ -87,104 +268,66 @@ class AutoGLMAccessibilityService : AccessibilityService() {
             )
         }
         
-        val toggleButton = TextView(this).apply {
-            text = "▼"
-            textSize = 16f
+        // 缩小按钮
+        val minimizeButton = TextView(this).apply {
+            text = "－"
+            textSize = 18f
             setTextColor(Color.WHITE)
-            setPadding(8, 0, 8, 0)
-            isClickable = true
-            isFocusable = false
-        }
-        
-        // 折叠按钮的独立点击事件
-        toggleButton.setOnTouchListener { _, event ->
-            when (event.action) {
-                android.view.MotionEvent.ACTION_DOWN -> {
-                    toggleButton.alpha = 0.6f
-                    true
-                }
-                android.view.MotionEvent.ACTION_UP -> {
-                    toggleButton.alpha = 1f
-                    isExpanded = !isExpanded
-                    if (isExpanded) {
-                        logTextView?.visibility = View.VISIBLE
-                        toggleButton.text = "▼"
-                    } else {
-                        logTextView?.visibility = View.GONE
-                        toggleButton.text = "▲"
-                    }
-                    true
-                }
-                android.view.MotionEvent.ACTION_CANCEL -> {
-                    toggleButton.alpha = 1f
-                    true
-                }
-                else -> true
+            setPadding(dpToPx(8), 0, dpToPx(8), 0)
+            setOnClickListener {
+                minimizeWindow()
             }
         }
         
+        // 关闭按钮
         val closeButton = TextView(this).apply {
             text = "✕"
             textSize = 18f
             setTextColor(Color.WHITE)
-            setPadding(8, 0, 0, 0)
-            isClickable = true
-            isFocusable = false
-        }
-        
-        // 关闭按钮的独立点击事件（消费所有触摸事件，防止被拖动逻辑干扰）
-        closeButton.setOnTouchListener { _, event ->
-            when (event.action) {
-                android.view.MotionEvent.ACTION_DOWN -> {
-                    // 高亮效果
-                    closeButton.alpha = 0.6f
-                    true
-                }
-                android.view.MotionEvent.ACTION_UP -> {
-                    closeButton.alpha = 1f
-                    removeOverlay()
-                    true
-                }
-                android.view.MotionEvent.ACTION_CANCEL -> {
-                    closeButton.alpha = 1f
-                    true
-                }
-                else -> true // 消费所有事件
+            setPadding(dpToPx(8), 0, 0, 0)
+            setOnClickListener {
+                removeOverlay()
             }
         }
         
         titleBar.addView(titleText)
-        titleBar.addView(toggleButton)
+        titleBar.addView(minimizeButton)
         titleBar.addView(closeButton)
         
-        // 日志文本区域
+        // 日志文本区域（使用 ScrollView 包裹）
+        val scrollView = android.widget.ScrollView(this).apply {
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                dpToPx(300) // 固定高度300dp
+            )
+        }
+        
         logTextView = TextView(this).apply {
-            text = "等待任务..."
-            textSize = 11f
+            text = logBuffer.joinToString("\n")
+            textSize = 10f
             setTextColor(Color.parseColor("#E0E0E0"))
             setBackgroundColor(Color.TRANSPARENT)
-            setPadding(16, 12, 16, 12)
-            maxLines = 20
-            layoutParams = android.widget.LinearLayout.LayoutParams(
+            setPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12))
+            layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
-            movementMethod = android.text.method.ScrollingMovementMethod()
-            isVerticalScrollBarEnabled = true
         }
         
+        scrollView.addView(logTextView)
         container.addView(titleBar)
-        container.addView(logTextView)
+        container.addView(scrollView)
         
-        overlayView = container
+        expandedView = container
+        overlayView = expandedView
         
-        // 窗口参数 - 使用绝对坐标定位
+        // 展开窗口的窗口参数
         val screenWidth = resources.displayMetrics.widthPixels
         val screenHeight = resources.displayMetrics.heightPixels
-        val windowWidth = (screenWidth * 0.9).toInt()
+        val windowWidth = (screenWidth * 0.85).toInt()
         
         overlayParams = WindowManager.LayoutParams(
-            windowWidth, // 90% 屏幕宽度
+            windowWidth,
             WindowManager.LayoutParams.WRAP_CONTENT,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) 
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY 
@@ -195,9 +338,9 @@ class AutoGLMAccessibilityService : AccessibilityService() {
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.TOP or Gravity.START // 使用左上角作为参考点
-            x = (screenWidth - windowWidth) / 2 // 初始位置：水平居中
-            y = screenHeight - 600 // 初始位置：距离底部600像素
+            gravity = Gravity.TOP or Gravity.START
+            x = (screenWidth - windowWidth) / 2 // 居中
+            y = screenHeight / 2 - dpToPx(200) // 垂直居中偏上
         }
         
         // 标题栏拖动和点击功能
@@ -295,6 +438,27 @@ class AutoGLMAccessibilityService : AccessibilityService() {
         }
     }
 
+    // 缩小窗口回到小图标
+    private fun minimizeWindow() {
+        isExpanded = false
+        
+        // 缩小动画（如果展开的窗口存在）
+        expandedView?.animate()
+            ?.scaleX(0.3f)
+            ?.scaleY(0.3f)
+            ?.alpha(0f)
+            ?.setDuration(200)
+            ?.withEndAction {
+                try {
+                    windowManager?.removeView(expandedView)
+                } catch (e: Exception) {}
+                
+                // 显示小图标
+                createMiniIcon()
+            }
+            ?.start()
+    }
+
     fun removeOverlay() {
         if (overlayView != null) {
             try {
@@ -384,6 +548,130 @@ class AutoGLMAccessibilityService : AccessibilityService() {
         println("🏠 [AutoGLM] Performing Global Home")
         val success = performGlobalAction(GLOBAL_ACTION_HOME)
         println(if (success) "✅ [AutoGLM] Home action completed" else "❌ [AutoGLM] Home action failed")
+    }
+
+    // 执行文本输入（使用 ADB Keyboard）
+    fun performType(text: String) {
+        println("⌨️ [AutoGLM] Typing text: $text")
+        try {
+            // 方法1：使用 ADB Keyboard（推荐，支持中文）
+            val encodedText = android.util.Base64.encodeToString(
+                text.toByteArray(Charsets.UTF_8),
+                android.util.Base64.NO_WRAP
+            )
+            
+            println("📝 [AutoGLM] Encoded text (base64): $encodedText")
+            
+            // 发送广播到 ADB Keyboard
+            val intent = android.content.Intent().apply {
+                action = "ADB_INPUT_B64"
+                putExtra("msg", encodedText)
+            }
+            sendBroadcast(intent)
+            
+            println("✅ [AutoGLM] Broadcast sent to ADB Keyboard")
+            
+            // 等待输入完成
+            Thread.sleep(500)
+            
+        } catch (e: Exception) {
+            println("❌ [AutoGLM] ADB Keyboard input failed: ${e.message}")
+            println("⚠️ [AutoGLM] Trying fallback method...")
+            
+            // 方法2：尝试使用 Accessibility Service 直接设置文本（备用）
+            try {
+                val rootNode = rootInActiveWindow
+                if (rootNode != null) {
+                    val focusedNode = rootNode.findFocus(android.view.accessibility.AccessibilityNodeInfo.FOCUS_INPUT)
+                    if (focusedNode != null) {
+                        val arguments = android.os.Bundle()
+                        arguments.putCharSequence(
+                            android.view.accessibility.AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
+                            text
+                        )
+                        val success = focusedNode.performAction(
+                            android.view.accessibility.AccessibilityNodeInfo.ACTION_SET_TEXT,
+                            arguments
+                        )
+                        focusedNode.recycle()
+                        rootNode.recycle()
+                        
+                        if (success) {
+                            println("✅ [AutoGLM] Fallback: Text set using ACTION_SET_TEXT")
+                            return
+                        }
+                    }
+                    rootNode.recycle()
+                }
+                println("❌ [AutoGLM] All text input methods failed")
+            } catch (e2: Exception) {
+                println("❌ [AutoGLM] Fallback also failed: ${e2.message}")
+            }
+        }
+    }
+    
+    // 清除输入框文本（使用 ADB Keyboard）
+    fun clearText() {
+        println("🗑️ [AutoGLM] Clearing text field")
+        try {
+            val intent = android.content.Intent().apply {
+                action = "ADB_CLEAR_TEXT"
+            }
+            sendBroadcast(intent)
+            println("✅ [AutoGLM] Clear text broadcast sent")
+            Thread.sleep(200)
+        } catch (e: Exception) {
+            println("❌ [AutoGLM] Clear text failed: ${e.message}")
+        }
+    }
+    
+    // 切换到 ADB Keyboard
+    fun switchToAdbKeyboard(): String? {
+        println("⌨️ [AutoGLM] Switching to ADB Keyboard")
+        try {
+            // 获取当前输入法
+            val currentIme = android.provider.Settings.Secure.getString(
+                contentResolver,
+                android.provider.Settings.Secure.DEFAULT_INPUT_METHOD
+            )
+            println("📱 [AutoGLM] Current IME: $currentIme")
+            
+            // 如果不是 ADB Keyboard，则切换
+            if (currentIme != null && !currentIme.contains("com.android.adbkeyboard/.AdbIME")) {
+                val process = Runtime.getRuntime().exec(
+                    arrayOf("settings", "put", "secure", "default_input_method", "com.android.adbkeyboard/.AdbIME")
+                )
+                process.waitFor()
+                println("✅ [AutoGLM] Switched to ADB Keyboard")
+                
+                // 预热 ADB Keyboard
+                Thread.sleep(500)
+                performType("")
+                
+                return currentIme
+            }
+            
+            return currentIme
+        } catch (e: Exception) {
+            println("❌ [AutoGLM] Failed to switch keyboard: ${e.message}")
+            return null
+        }
+    }
+    
+    // 恢复原输入法
+    fun restoreKeyboard(ime: String?) {
+        if (ime != null && ime.isNotEmpty()) {
+            println("⌨️ [AutoGLM] Restoring keyboard: $ime")
+            try {
+                val process = Runtime.getRuntime().exec(
+                    arrayOf("settings", "put", "secure", "default_input_method", ime)
+                )
+                process.waitFor()
+                println("✅ [AutoGLM] Keyboard restored")
+            } catch (e: Exception) {
+                println("❌ [AutoGLM] Failed to restore keyboard: ${e.message}")
+            }
+        }
     }
 
     // 获取已安装的应用列表

@@ -59,6 +59,15 @@ class AutoGLMService {
     }
   }
 
+  /// 执行文本输入
+  static Future<void> performType(String text) async {
+    try {
+      await platform.invokeMethod('performType', {'text': text});
+    } catch (e) {
+      print("Error performing type: $e");
+    }
+  }
+
   /// 执行点击操作
   static Future<void> performClick(double x, double y) async {
     try {
