@@ -88,12 +88,16 @@ class MainActivity : FlutterActivity() {
                 }
                 "performType" -> {
                     val text = call.argument<String>("text") ?: ""
-                    // 先切换到 ADB Keyboard
-                    val originalIme = service.switchToAdbKeyboard()
-                    // 输入文本
+                    // 直接调用服务方法，服务方法会处理切换/不切换逻辑
                     service.performType(text)
-                    // 恢复原输入法
-                    service.restoreKeyboard(originalIme)
+                    result.success(true)
+                }
+                "enableInputMode" -> {
+                    service.enableInputMode()
+                    result.success(true)
+                }
+                "disableInputMode" -> {
+                    service.disableInputMode()
                     result.success(true)
                 }
                 "switchToAdbKeyboard" -> {

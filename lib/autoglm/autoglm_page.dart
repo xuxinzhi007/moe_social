@@ -201,6 +201,9 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
 
     _addLog("🤖 开始任务: $task");
 
+    // 开启输入模式 (切换到 ADB Keyboard)
+    await AutoGLMService.enableInputMode();
+
     try {
       bool finished = false;
       while (!finished && _stepCount < _maxSteps) {
@@ -352,6 +355,9 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
     } catch (e) {
       _addLog("❌ 发生异常: $e");
     } finally {
+      // 关闭输入模式 (恢复原输入法)
+      await AutoGLMService.disableInputMode();
+
       if (mounted) {
         setState(() {
           _isProcessing = false;

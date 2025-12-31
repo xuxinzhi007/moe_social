@@ -7,6 +7,24 @@ class AutoGLMService {
   // 全局控制：是否允许显示悬浮窗（由外部开关控制）
   static bool enableOverlay = false;
 
+  /// 开启输入模式（切换到 ADB Keyboard）
+  static Future<void> enableInputMode() async {
+    try {
+      await platform.invokeMethod('enableInputMode');
+    } catch (e) {
+      print("Error enabling input mode: $e");
+    }
+  }
+
+  /// 关闭输入模式（恢复原输入法）
+  static Future<void> disableInputMode() async {
+    try {
+      await platform.invokeMethod('disableInputMode');
+    } catch (e) {
+      print("Error disabling input mode: $e");
+    }
+  }
+
   /// 检查无障碍服务是否开启
   static Future<bool> checkServiceStatus() async {
     try {

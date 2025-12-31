@@ -43,6 +43,9 @@ class AutoGLMAccessibilityService : AccessibilityService() {
     // 记住小图标的位置
     private var savedIconX = -1
     private var savedIconY = -1
+    
+    // 输入法会话管理
+    private var sessionOriginalIme: String? = null
 
     // --- 日志气泡 (Tooltip) 相关变量 ---
     private var tooltipView: View? = null
@@ -414,10 +417,22 @@ class AutoGLMAccessibilityService : AccessibilityService() {
 
         try {
             windowManager?.addView(overlayView, overlayParams)
-            logBuffer.clear()
-            logBuffer.add("🤖 AutoGLM 已启动")
+            // 恢复窗口时自动滚动到底部
+            scrollToBottom()
         } catch (e: Exception) {
             println("❌ Error adding overlay view: $e")
+        }
+    }
+
+    private fun scrollToBottom() {
+        logTextView?.post {
+            val layout = logTextView?.layout
+            if (layout != null && logTextView!!.lineCount > 0) {
+                val scrollAmount = layout.getLineTop(logTextView!!.lineCount) - logTextView!!.height
+                if (scrollAmount > 0) {
+                    logTextView?.scrollTo(0, scrollAmount)
+                }
+            }
         }
     }
 
@@ -441,15 +456,7 @@ class AutoGLMAccessibilityService : AccessibilityService() {
                 logTextView?.text = displayText
                 
                 // 自动滚动到底部
-                logTextView?.post {
-                    val layout = logTextView?.layout
-                    if (layout != null && logTextView!!.lineCount > 0) {
-                        val scrollAmount = layout.getLineTop(logTextView!!.lineCount) - logTextView!!.height
-                        if (scrollAmount > 0) {
-                            logTextView?.scrollTo(0, scrollAmount)
-                        }
-                    }
-                }
+                scrollToBottom()
             } else {
                 // 如果是最小化状态，显示气泡提示
                 showTooltip(log)
@@ -673,7 +680,7 @@ class AutoGLMAccessibilityService : AccessibilityService() {
             println("⌨️ [AutoGLM] Typing text (Background Thread): $text")
             
             // 1. 尝试自动切换到 ADB Keyboard
-            val originalIme = switchToAdbKeyboard()
+            val tempOriginalIme = switchToAdbKeyboard()
             
             try {
                 // 方法1：使用 ADB Keyboard（推荐，支持中文）
@@ -720,8 +727,10 @@ class AutoGLMAccessibilityService : AccessibilityService() {
                             
                             if (success) {
                                 println("✅ [AutoGLM] Fallback: Text set using ACTION_SET_TEXT")
-                                // 即使备用方法成功，也要记得恢复输入法
-                                restoreKeyboard(originalIme)
+                                // 如果不是会话模式，恢复输入法
+                                if (sessionOriginalIme == null) {
+                                    restoreKeyboard(tempOriginalIme)
+                                }
                                 return@Thread
                             }
                         }
@@ -744,7 +753,9 @@ class AutoGLMAccessibilityService : AccessibilityService() {
                                 
                                 if (success) {
                                     println("✅ [AutoGLM] Fallback: Text pasted using ACTION_PASTE")
-                                    restoreKeyboard(originalIme)
+                                    if (sessionOriginalIme == null) {
+                                        restoreKeyboard(tempOriginalIme)
+                                    }
                                     rootNode2.recycle()
                                     return@Thread
                                 }
@@ -760,8 +771,10 @@ class AutoGLMAccessibilityService : AccessibilityService() {
                     println("❌ [AutoGLM] Fallback also failed: ${e2.message}")
                 }
             } finally {
-                // 3. 无论成功失败，都尝试恢复原输入法
-                restoreKeyboard(originalIme)
+                // 3. 无论成功失败，只有在非会话模式下才恢复原输入法
+                if (sessionOriginalIme == null) {
+                    restoreKeyboard(tempOriginalIme)
+                }
             }
         }.start()
     }
@@ -827,6 +840,32 @@ class AutoGLMAccessibilityService : AccessibilityService() {
             } catch (e: Exception) {
                 println("❌ [AutoGLM] Failed to restore keyboard: ${e.message}")
             }
+        }
+    }
+
+    // 开启输入模式（切换到 ADB Keyboard 并保持）
+    fun enableInputMode() {
+        println("⌨️ [AutoGLM] Enabling Input Mode (Session Start)")
+        if (sessionOriginalIme == null) {
+            // 只有当之前没有开启会话时，才保存当前的 IME
+            sessionOriginalIme = switchToAdbKeyboard()
+            println("⌨️ [AutoGLM] Input Mode Enabled. Original IME saved: $sessionOriginalIme")
+        } else {
+             // 已经开启了，确保是 ADB Keyboard
+             switchToAdbKeyboard()
+             println("⌨️ [AutoGLM] Input Mode already enabled. Re-enforced ADB Keyboard.")
+        }
+    }
+
+    // 关闭输入模式（恢复原输入法）
+    fun disableInputMode() {
+        println("⌨️ [AutoGLM] Disabling Input Mode (Session End)")
+        if (sessionOriginalIme != null) {
+            restoreKeyboard(sessionOriginalIme)
+            sessionOriginalIme = null
+            println("⌨️ [AutoGLM] Input Mode Disabled. Keyboard restored.")
+        } else {
+            println("⌨️ [AutoGLM] Input Mode not enabled. Nothing to restore.")
         }
     }
 
