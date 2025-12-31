@@ -90,6 +90,31 @@ flutter doctor
 - macOS: `flutter build macos`
 - Linux: `flutter build linux`
 
+## 🚀 CI/CD 与自动更新
+
+本项目集成了 GitHub Actions 实现自动化构建与发布，并支持 App 内自动检测更新。
+
+### 1. 自动构建发布
+当推送形如 `v*` 的 Tag（例如 `v1.0.0`）到仓库时，会自动触发构建流程：
+- 自动构建 Release APK
+- 自动发布到 [GitHub Releases](https://github.com/xuxinzhi007/moe_social/releases)
+
+**操作命令**：
+```bash
+git tag v1.0.3
+git push origin v1.0.3
+```
+
+### 2. 产物下载
+构建完成后，APK 文件会出现在 Releases 页面：
+- **下载地址**: [Releases 页面](https://github.com/xuxinzhi007/moe_social/releases)
+- **文件名**: `app-release.apk`
+
+### 3. 检查更新
+App 内置了更新检测功能：
+- **检测原理**: 对比本地版本与 [GitHub API](https://api.github.com/repos/xuxinzhi007/moe_social/releases/latest) 返回的最新 Tag。
+- **操作方式**: 进入 `设置` -> `常规设置` -> 点击 `软件版本` 即可手动检查。
+
 ## 项目结构
 
 ```
