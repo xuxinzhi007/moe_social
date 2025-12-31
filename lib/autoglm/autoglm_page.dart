@@ -160,6 +160,9 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
       return;
     }
     
+    // 尽早保存当前输入法 (在弹出任何切换窗口之前)
+    await AutoGLMService.saveCurrentIme();
+    
     String task = _controller.text;
     if (task.isEmpty) return;
 

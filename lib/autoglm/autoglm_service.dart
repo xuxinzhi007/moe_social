@@ -13,6 +13,15 @@ class AutoGLMService {
   // 全局控制：是否允许显示悬浮窗（由外部开关控制）
   static bool enableOverlay = false;
 
+  /// 保存当前输入法（用于后续恢复）
+  static Future<void> saveCurrentIme() async {
+    try {
+      await platform.invokeMethod('saveCurrentIme');
+    } catch (e) {
+      print("Error saving current ime: $e");
+    }
+  }
+
   /// 开启输入模式（切换到 ADB Keyboard）
   static Future<void> enableInputMode() async {
     try {

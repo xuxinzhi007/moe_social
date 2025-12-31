@@ -853,6 +853,23 @@ class AutoGLMAccessibilityService : AccessibilityService() {
         }
     }
 
+    // 显式保存当前输入法为“原输入法”
+    fun saveCurrentIme() {
+        try {
+            val currentIme = android.provider.Settings.Secure.getString(
+                contentResolver,
+                android.provider.Settings.Secure.DEFAULT_INPUT_METHOD
+            )
+            // 只有当 sessionOriginalIme 为空时才保存，防止覆盖
+            if (sessionOriginalIme == null && currentIme != null) {
+                sessionOriginalIme = currentIme
+                log("💾 [AutoGLM] Saved original IME: $currentIme")
+            }
+        } catch (e: Exception) {
+            log("❌ [AutoGLM] Failed to save IME: $e")
+        }
+    }
+
     // 开启输入模式（切换到 ADB Keyboard 并保持）
     fun enableInputMode() {
         log("⌨️ [AutoGLM] Enabling Input Mode (Session Start)")

@@ -186,6 +186,10 @@ class MainActivity : FlutterActivity() {
                     imm.showInputMethodPicker()
                     result.success(true)
                 }
+                "saveCurrentIme" -> {
+                    service.saveCurrentIme()
+                    result.success(true)
+                }
                 "isAdbKeyboardEnabled" -> {
                     val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
                     val enabledInputMethods = imm.enabledInputMethodList
