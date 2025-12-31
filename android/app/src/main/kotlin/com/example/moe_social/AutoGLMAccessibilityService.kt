@@ -16,6 +16,8 @@ import android.view.WindowManager
 import android.widget.TextView
 import android.graphics.Color
 import android.content.Context
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -559,6 +561,10 @@ class AutoGLMAccessibilityService : AccessibilityService() {
     // 执行文本输入（使用 ADB Keyboard）
     fun performType(text: String) {
         println("⌨️ [AutoGLM] Typing text: $text")
+        
+        // 1. 尝试自动切换到 ADB Keyboard
+        val originalIme = switchToAdbKeyboard()
+        
         try {
             // 方法1：使用 ADB Keyboard（推荐，支持中文）
             val encodedText = android.util.Base64.encodeToString(
@@ -578,7 +584,7 @@ class AutoGLMAccessibilityService : AccessibilityService() {
             println("✅ [AutoGLM] Broadcast sent to ADB Keyboard")
             
             // 等待输入完成
-            Thread.sleep(500)
+            Thread.sleep(1000) //稍微多等一会，给切换输入法和处理广播留时间
             
         } catch (e: Exception) {
             println("❌ [AutoGLM] ADB Keyboard input failed: ${e.message}")
@@ -604,15 +610,49 @@ class AutoGLMAccessibilityService : AccessibilityService() {
                         
                         if (success) {
                             println("✅ [AutoGLM] Fallback: Text set using ACTION_SET_TEXT")
+                            // 即使备用方法成功，也要记得恢复输入法（虽然备用方法不依赖输入法，但前面可能已经切换了）
+                            restoreKeyboard(originalIme)
                             return
                         }
                     }
                     rootNode.recycle()
                 }
+                
+                // 如果 SET_TEXT 失败，尝试方法3：复制粘贴 (Paste)
+                println("⚠️ [AutoGLM] ACTION_SET_TEXT failed, trying Clipboard Paste...")
+                try {
+                    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    val clip = ClipData.newPlainText("AutoGLM Input", text)
+                    clipboard.setPrimaryClip(clip)
+                    
+                    val rootNode2 = rootInActiveWindow
+                    if (rootNode2 != null) {
+                        val focusedNode = rootNode2.findFocus(android.view.accessibility.AccessibilityNodeInfo.FOCUS_INPUT)
+                        if (focusedNode != null) {
+                            val success = focusedNode.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_PASTE)
+                            focusedNode.recycle()
+                            
+                            if (success) {
+                                println("✅ [AutoGLM] Fallback: Text pasted using ACTION_PASTE")
+                                // 粘贴后尝试恢复输入法（如果有切换过）
+                                restoreKeyboard(originalIme)
+                                rootNode2.recycle()
+                                return
+                            }
+                        }
+                        rootNode2.recycle()
+                    }
+                } catch (e3: Exception) {
+                    println("❌ [AutoGLM] Paste failed: ${e3.message}")
+                }
+                
                 println("❌ [AutoGLM] All text input methods failed")
             } catch (e2: Exception) {
                 println("❌ [AutoGLM] Fallback also failed: ${e2.message}")
             }
+        } finally {
+            // 3. 无论成功失败，都尝试恢复原输入法
+            restoreKeyboard(originalIme)
         }
     }
     
