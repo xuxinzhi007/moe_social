@@ -62,6 +62,18 @@ class UpdateService {
             );
           }
         }
+      } else if (response.statusCode == 403) {
+        if (showNoUpdateToast && context.mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('检查更新过于频繁，请稍后再试 (GitHub API 403)')),
+          );
+        }
+      } else if (response.statusCode == 404) {
+        if (showNoUpdateToast && context.mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('仓库不存在或为私有仓库，无法检查更新')),
+          );
+        }
       } else {
         if (showNoUpdateToast && context.mounted) {
            ScaffoldMessenger.of(context).showSnackBar(
