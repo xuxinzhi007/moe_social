@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'auth_service.dart';
 import 'services/api_service.dart';
+import 'services/update_service.dart';
 import 'providers/theme_provider.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -13,6 +15,22 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _notificationsEnabled = true;
+  String _version = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _version = info.version;
+      });
+    }
+  }
   
   void _showChangePasswordDialog() {
     final oldPasswordController = TextEditingController();
@@ -193,8 +211,12 @@ class _SettingsPageState extends State<SettingsPage> {
             _SettingsTile(
               icon: Icons.info_rounded,
               title: '软件版本',
+              subtitle: '点击检查更新',
               iconColor: Colors.teal,
-              trailing: const Text('v1.0.0', style: TextStyle(color: Colors.grey)),
+              trailing: Text('v$_version', style: const TextStyle(color: Colors.grey)),
+              onTap: () {
+                UpdateService.checkUpdate(context, showNoUpdateToast: true);
+              },
             ),
             _SettingsTile(
               icon: Icons.description_rounded,

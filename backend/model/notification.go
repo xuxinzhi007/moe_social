@@ -23,3 +23,4 @@ type Notification struct {
 	Sender User `gorm:"foreignKey:SenderID" json:"sender"`
 	Post   Post `gorm:"foreignKey:PostID" json:"post"`
 }
+

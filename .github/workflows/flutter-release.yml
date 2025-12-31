@@ -1,0 +1,54 @@
+name: Build and Release APK
+
+on:
+  push:
+    tags:
+      - 'v*' # 仅当推送 v 开头的 tag 时触发，例如 v1.0.0
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 拉取代码
+      - uses: actions/checkout@v4
+
+      # 2. 配置 Java 环境 (Android 构建需要)
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 3. 配置 Flutter 环境
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.1' # 使用稳定版，建议与您本地保持一致
+          channel: 'stable'
+          cache: true
+
+      # 4. 拉取依赖
+      - name: Get Dependencies
+        run: flutter pub get
+
+      # 5. 构建 APK (Release 模式)
+      # --no-tree-shake-icons 防止某些图标字体裁剪导致的构建问题
+      # --split-per-abi 可以减小体积，但为了通用性先打通用包
+      - name: Build APK
+        run: flutter build apk --release --no-tree-shake-icons
+
+      # 6. 发布到 GitHub Releases
+      - name: Create Release and Upload APK
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "build/app/outputs/flutter-apk/app-release.apk"
+          token: ${{ secrets.GITHUB_TOKEN }} # GitHub 自动生成的 Token，无需您手动配置
+          name: Release ${{ github.ref_name }}
+          body: |
+            自动构建发布版本: ${{ github.ref_name }}
+            
+            更新日志：
+            (请在 GitHub Releases 页面手动编辑此部分)
+          allowUpdates: true
+          replacesArtifacts: true
+

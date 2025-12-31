@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'autoglm/autoglm_page.dart'; // Import AutoGLM Page
+import 'autoglm/autoglm_service.dart'; // Import AutoGLM Service
 import 'auth_service.dart';
 import 'services/api_service.dart';
 import 'models/user.dart';
@@ -199,6 +200,43 @@ class _ProfilePageState extends State<ProfilePage> {
                                     MaterialPageRoute(builder: (context) => const AutoGLMPage()),
                                   );
                                 },
+                                trailing: Transform.scale(
+                                  scale: 0.8,
+                                  child: Switch(
+                                    value: AutoGLMService.enableOverlay,
+                                    activeColor: Colors.indigoAccent,
+                                    onChanged: (value) async {
+                                      setState(() {
+                                        AutoGLMService.enableOverlay = value;
+                                      });
+                                      
+                                      // 调用 Service 控制悬浮窗
+                                      if (value) {
+                                        // 检查权限
+                                        bool hasPerm = await AutoGLMService.checkOverlayPermission();
+                                        if (!hasPerm) {
+                                          await AutoGLMService.requestOverlayPermission();
+                                          // 简单等待一下
+                                          await Future.delayed(const Duration(seconds: 1));
+                                          hasPerm = await AutoGLMService.checkOverlayPermission();
+                                          if (!hasPerm) {
+                                            setState(() => AutoGLMService.enableOverlay = false);
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('需要悬浮窗权限才能显示'))
+                                            );
+                                            return;
+                                          }
+                                        }
+                                        await AutoGLMService.showOverlay();
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('悬浮窗已开启'))
+                                        );
+                                      } else {
+                                        await AutoGLMService.removeOverlay();
+                                      }
+                                    },
+                                  ),
+                                ),
                               ),
                             ]),
                           ),
@@ -504,7 +542,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 subtitle: item.subtitle != null 
                     ? Text(item.subtitle!, style: TextStyle(fontSize: 12, color: Colors.grey[500])) 
                     : null,
-                trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey, size: 20),
+                trailing: item.trailing ?? const Icon(Icons.chevron_right_rounded, color: Colors.grey, size: 20),
                 onTap: item.onTap,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               ),
@@ -686,6 +724,7 @@ class _MenuItem {
   final Color color;
   final VoidCallback onTap;
   final bool isDestructive;
+  final Widget? trailing; // 自定义尾部组件
 
   _MenuItem({
     required this.icon,
@@ -694,5 +733,6 @@ class _MenuItem {
     required this.color,
     required this.onTap,
     this.isDestructive = false,
+    this.trailing,
   });
 }

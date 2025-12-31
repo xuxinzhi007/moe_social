@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 class AutoGLMService {
   // 通道名称必须与 MainActivity.kt 中保持一致
   static const platform = MethodChannel('com.moe_social/autoglm');
+  
+  // 全局控制：是否允许显示悬浮窗（由外部开关控制）
+  static bool enableOverlay = false;
 
   /// 检查无障碍服务是否开启
   static Future<bool> checkServiceStatus() async {

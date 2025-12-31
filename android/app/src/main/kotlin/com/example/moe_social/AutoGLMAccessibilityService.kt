@@ -89,12 +89,12 @@ class AutoGLMAccessibilityService : AccessibilityService() {
         // 圆形背景
         val iconBackground = View(this).apply {
             layoutParams = FrameLayout.LayoutParams(iconSizePx, iconSizePx)
-            setBackgroundColor(Color.parseColor("#FF6B35"))
-            // 设置圆形shape
+            // setBackgroundColor(Color.parseColor("#FF6B35")) // Removed solid color
+            // 设置圆形shape - 半透明黑
             background = android.graphics.drawable.GradientDrawable().apply {
                 shape = android.graphics.drawable.GradientDrawable.OVAL
-                setColor(Color.parseColor("#FF6B35"))
-                setStroke(dpToPx(2), Color.WHITE)
+                setColor(Color.parseColor("#99000000")) // 半透明黑
+                setStroke(dpToPx(1), Color.WHITE) // 细白边
             }
         }
         
@@ -245,21 +245,25 @@ class AutoGLMAccessibilityService : AccessibilityService() {
     private fun createExpandedWindow() {
         val container = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#DD000000"))
+            // HUD 风格：深色半透明背景，圆角
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(Color.parseColor("#99000000")) // 半透明黑
+                cornerRadius = dpToPx(12).toFloat()
+            }
             setPadding(0, 0, 0, 0)
         }
         
         // 标题栏
         val titleBar = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.HORIZONTAL
-            setBackgroundColor(Color.parseColor("#FF6B35"))
-            setPadding(dpToPx(16), dpToPx(12), dpToPx(16), dpToPx(12))
+            setBackgroundColor(Color.TRANSPARENT) // 透明
+            setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8))
             gravity = Gravity.CENTER_VERTICAL
         }
         
         val titleText = TextView(this).apply {
             text = "🤖 AutoGLM"
-            textSize = 14f
+            textSize = 12f
             setTextColor(Color.WHITE)
             layoutParams = android.widget.LinearLayout.LayoutParams(
                 0,
@@ -268,7 +272,7 @@ class AutoGLMAccessibilityService : AccessibilityService() {
             )
         }
         
-        // 缩小按钮
+        // 缩小按钮 (变成一个小横线或V)
         val minimizeButton = TextView(this).apply {
             text = "－"
             textSize = 18f
@@ -279,7 +283,8 @@ class AutoGLMAccessibilityService : AccessibilityService() {
             }
         }
         
-        // 关闭按钮
+        // 移除关闭按钮，防止AI误触
+        /*
         val closeButton = TextView(this).apply {
             text = "✕"
             textSize = 18f
@@ -289,16 +294,17 @@ class AutoGLMAccessibilityService : AccessibilityService() {
                 removeOverlay()
             }
         }
+        */
         
         titleBar.addView(titleText)
         titleBar.addView(minimizeButton)
-        titleBar.addView(closeButton)
+        // titleBar.addView(closeButton) // Removed
         
         // 日志文本区域（使用 ScrollView 包裹）
         val scrollView = android.widget.ScrollView(this).apply {
             layoutParams = android.widget.LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                dpToPx(300) // 固定高度300dp
+                dpToPx(200) // 减小高度，避免遮挡太多
             )
         }
         

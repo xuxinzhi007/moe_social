@@ -126,8 +126,10 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
       }
     });
 
-    // 尝试更新悬浮窗日志
-    AutoGLMService.updateOverlayLog(log);
+    // 尝试更新悬浮窗日志 (仅在开关开启时)
+    if (AutoGLMService.enableOverlay) {
+      AutoGLMService.updateOverlayLog(log);
+    }
   }
 
   bool _isStopping = false;
@@ -150,23 +152,29 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
     String task = _controller.text;
     if (task.isEmpty) return;
 
-    // 检查并请求悬浮窗权限
-    bool hasOverlayPermission = await AutoGLMService.checkOverlayPermission();
-    if (!hasOverlayPermission) {
-      _addLog("⚠️ 需要悬浮窗权限，请授权...");
-      await AutoGLMService.requestOverlayPermission();
-      // 等待用户授权回来
-      await Future.delayed(const Duration(seconds: 2));
-      hasOverlayPermission = await AutoGLMService.checkOverlayPermission();
+    // 仅在开关开启时处理悬浮窗逻辑
+    if (AutoGLMService.enableOverlay) {
+      // 检查并请求悬浮窗权限
+      bool hasOverlayPermission = await AutoGLMService.checkOverlayPermission();
       if (!hasOverlayPermission) {
-         _addLog("❌ 未获得悬浮窗权限，无法显示进度");
-         // 可以选择继续执行但不显示悬浮窗，或者终止
+        _addLog("⚠️ 需要悬浮窗权限，请授权...");
+        await AutoGLMService.requestOverlayPermission();
+        // 等待用户授权回来
+        await Future.delayed(const Duration(seconds: 2));
+        hasOverlayPermission = await AutoGLMService.checkOverlayPermission();
+        if (!hasOverlayPermission) {
+           _addLog("❌ 未获得悬浮窗权限，无法显示进度");
+           // 即使没有悬浮窗权限，如果用户想跑任务，理论上也可以跑，只是看不到悬浮窗
+           // 但为了避免混淆，这里我们保持原逻辑，或者您可以选择继续
+        }
       }
-    }
 
-    // 显示悬浮窗
-    if (hasOverlayPermission) {
-      await AutoGLMService.showOverlay();
+      // 显示悬浮窗
+      if (hasOverlayPermission) {
+        await AutoGLMService.showOverlay();
+      }
+    } else {
+      _addLog("ℹ️ 悬浮窗开关已关闭，仅在应用内显示日志");
     }
 
     setState(() {
@@ -559,53 +567,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
             ),
           ),
 
-          // 悬浮窗控制按钮
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            color: Colors.blue[50],
-            child: Row(
-              children: [
-                Icon(Icons.picture_in_picture_alt, color: Colors.blue[700], size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '悬浮窗日志显示',
-                    style: TextStyle(color: Colors.blue[900], fontSize: 13),
-                  ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    await AutoGLMService.showOverlay();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('悬浮窗已显示，可拖动和折叠'))
-                    );
-                  },
-                  icon: const Icon(Icons.open_in_new, size: 16),
-                  label: const Text('显示'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    minimumSize: Size.zero,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    await AutoGLMService.removeOverlay();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('悬浮窗已隐藏'))
-                    );
-                  },
-                  icon: const Icon(Icons.close, size: 16),
-                  label: const Text('隐藏'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    minimumSize: Size.zero,
-                    backgroundColor: Colors.grey[600],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // 悬浮窗控制按钮已移除，统一由外部开关控制
           
           // 日志区域
           Expanded(
