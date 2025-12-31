@@ -3,6 +3,12 @@ import 'package:flutter/services.dart';
 class AutoGLMService {
   // 通道名称必须与 MainActivity.kt 中保持一致
   static const platform = MethodChannel('com.moe_social/autoglm');
+  static const logChannel = EventChannel('com.moe_social/autoglm_logs');
+
+  /// 原生日志流
+  static Stream<String> get onLogReceived {
+    return logChannel.receiveBroadcastStream().map((event) => event.toString());
+  }
   
   // 全局控制：是否允许显示悬浮窗（由外部开关控制）
   static bool enableOverlay = false;
@@ -175,6 +181,37 @@ class AutoGLMService {
       await platform.invokeMethod('requestOverlayPermission');
     } catch (e) {
       print("Error requesting overlay permission: $e");
+    }
+  }
+
+  /// 显示输入法选择器
+  static Future<void> showInputMethodPicker() async {
+    try {
+      await platform.invokeMethod('showInputMethodPicker');
+    } catch (e) {
+      print("Error showing input method picker: $e");
+    }
+  }
+
+  /// 检查 ADB Keyboard 是否已启用（在设置列表中）
+  static Future<bool> isAdbKeyboardEnabled() async {
+    try {
+      final bool result = await platform.invokeMethod('isAdbKeyboardEnabled');
+      return result;
+    } catch (e) {
+      print("Error checking if ADB keyboard is enabled: $e");
+      return false;
+    }
+  }
+
+  /// 检查 ADB Keyboard 是否当前已选中
+  static Future<bool> isAdbKeyboardSelected() async {
+    try {
+      final bool result = await platform.invokeMethod('isAdbKeyboardSelected');
+      return result;
+    } catch (e) {
+      print("Error checking if ADB keyboard is selected: $e");
+      return false;
     }
   }
 }

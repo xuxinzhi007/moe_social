@@ -27,6 +27,16 @@ class AutoGLMAccessibilityService : AccessibilityService() {
 
     companion object {
         var instance: AutoGLMAccessibilityService? = null
+        var logListener: ((String) -> Unit)? = null
+    }
+    
+    private fun log(msg: String) {
+        System.out.println(msg)
+        try {
+            logListener?.invoke(msg)
+        } catch (e: Exception) {
+            // ignore
+        }
     }
 
     private var windowManager: WindowManager? = null
@@ -56,7 +66,7 @@ class AutoGLMAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
-        println("AutoGLM Accessibility Service Connected!")
+        log("AutoGLM Accessibility Service Connected!")
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
     }
 
@@ -159,7 +169,7 @@ class AutoGLMAccessibilityService : AccessibilityService() {
         try {
             windowManager?.addView(overlayView, overlayParams)
         } catch (e: Exception) {
-            println("❌ Error adding mini icon: $e")
+            log("❌ Error adding mini icon: $e")
         }
     }
     
@@ -420,7 +430,7 @@ class AutoGLMAccessibilityService : AccessibilityService() {
             // 恢复窗口时自动滚动到底部
             scrollToBottom()
         } catch (e: Exception) {
-            println("❌ Error adding overlay view: $e")
+            log("❌ Error adding overlay view: $e")
         }
     }
 
@@ -607,7 +617,7 @@ class AutoGLMAccessibilityService : AccessibilityService() {
         val x = (relX / 1000f) * metrics.widthPixels
         val y = (relY / 1000f) * metrics.heightPixels
         
-        println("🎯 [AutoGLM] Performing click at: ($x, $y) pixels, from relative ($relX, $relY), screen: ${metrics.widthPixels}x${metrics.heightPixels}")
+        log("🎯 [AutoGLM] Performing click at: ($x, $y) pixels, from relative ($relX, $relY), screen: ${metrics.widthPixels}x${metrics.heightPixels}")
 
         val path = Path()
         path.moveTo(x, y)
@@ -617,15 +627,15 @@ class AutoGLMAccessibilityService : AccessibilityService() {
         
         val success = dispatchGesture(builder.build(), object : GestureResultCallback() {
             override fun onCompleted(gestureDescription: GestureDescription?) {
-                println("✅ [AutoGLM] Click gesture completed")
+                log("✅ [AutoGLM] Click gesture completed")
             }
             override fun onCancelled(gestureDescription: GestureDescription?) {
-                println("❌ [AutoGLM] Click gesture cancelled")
+                log("❌ [AutoGLM] Click gesture cancelled")
             }
         }, null)
         
         if (!success) {
-            println("❌ [AutoGLM] Failed to dispatch click gesture")
+            log("❌ [AutoGLM] Failed to dispatch click gesture")
         }
     }
 
@@ -637,7 +647,7 @@ class AutoGLMAccessibilityService : AccessibilityService() {
         val x2 = (relX2 / 1000f) * metrics.widthPixels
         val y2 = (relY2 / 1000f) * metrics.heightPixels
 
-        println("👆 [AutoGLM] Performing swipe from ($x1, $y1) to ($x2, $y2) pixels, duration ${duration}ms")
+        log("👆 [AutoGLM] Performing swipe from ($x1, $y1) to ($x2, $y2) pixels, duration ${duration}ms")
 
         val path = Path()
         path.moveTo(x1, y1)
@@ -647,37 +657,37 @@ class AutoGLMAccessibilityService : AccessibilityService() {
         
         val success = dispatchGesture(builder.build(), object : GestureResultCallback() {
             override fun onCompleted(gestureDescription: GestureDescription?) {
-                println("✅ [AutoGLM] Swipe gesture completed")
+                log("✅ [AutoGLM] Swipe gesture completed")
             }
             override fun onCancelled(gestureDescription: GestureDescription?) {
-                println("❌ [AutoGLM] Swipe gesture cancelled")
+                log("❌ [AutoGLM] Swipe gesture cancelled")
             }
         }, null)
         
         if (!success) {
-            println("❌ [AutoGLM] Failed to dispatch swipe gesture")
+            log("❌ [AutoGLM] Failed to dispatch swipe gesture")
         }
     }
 
     // 执行返回
     fun performBack() {
-        println("⬅️ [AutoGLM] Performing Global Back")
+        log("⬅️ [AutoGLM] Performing Global Back")
         val success = performGlobalAction(GLOBAL_ACTION_BACK)
-        println(if (success) "✅ [AutoGLM] Back action completed" else "❌ [AutoGLM] Back action failed")
+        log(if (success) "✅ [AutoGLM] Back action completed" else "❌ [AutoGLM] Back action failed")
     }
 
     // 执行Home
     fun performHome() {
-        println("🏠 [AutoGLM] Performing Global Home")
+        log("🏠 [AutoGLM] Performing Global Home")
         val success = performGlobalAction(GLOBAL_ACTION_HOME)
-        println(if (success) "✅ [AutoGLM] Home action completed" else "❌ [AutoGLM] Home action failed")
+        log(if (success) "✅ [AutoGLM] Home action completed" else "❌ [AutoGLM] Home action failed")
     }
 
     // 执行文本输入（使用 ADB Keyboard）
     fun performType(text: String) {
         // 关键修复：将耗时操作移至子线程，防止阻塞主线程导致ANR
         Thread {
-            println("⌨️ [AutoGLM] Typing text (Background Thread): $text")
+            log("⌨️ [AutoGLM] Typing text (Background Thread): $text")
             
             // 1. 尝试自动切换到 ADB Keyboard
             val tempOriginalIme = switchToAdbKeyboard()
@@ -689,7 +699,7 @@ class AutoGLMAccessibilityService : AccessibilityService() {
                     android.util.Base64.NO_WRAP
                 )
                 
-                println("📝 [AutoGLM] Encoded text (base64): $encodedText")
+                log("📝 [AutoGLM] Encoded text (base64): $encodedText")
                 
                 // 发送广播到 ADB Keyboard
                 val intent = android.content.Intent().apply {
@@ -698,14 +708,14 @@ class AutoGLMAccessibilityService : AccessibilityService() {
                 }
                 sendBroadcast(intent)
                 
-                println("✅ [AutoGLM] Broadcast sent to ADB Keyboard")
+                log("✅ [AutoGLM] Broadcast sent to ADB Keyboard")
                 
                 // 等待输入完成
                 Thread.sleep(1500) // 在子线程sleep是安全的
                 
             } catch (e: Exception) {
-                println("❌ [AutoGLM] ADB Keyboard input failed: ${e.message}")
-                println("⚠️ [AutoGLM] Trying fallback method...")
+                log("❌ [AutoGLM] ADB Keyboard input failed: ${e.message}")
+                log("⚠️ [AutoGLM] Trying fallback method...")
                 
                 // 方法2：尝试使用 Accessibility Service 直接设置文本（备用）
                 try {
@@ -726,7 +736,7 @@ class AutoGLMAccessibilityService : AccessibilityService() {
                             rootNode.recycle()
                             
                             if (success) {
-                                println("✅ [AutoGLM] Fallback: Text set using ACTION_SET_TEXT")
+                                log("✅ [AutoGLM] Fallback: Text set using ACTION_SET_TEXT")
                                 // 如果不是会话模式，恢复输入法
                                 if (sessionOriginalIme == null) {
                                     restoreKeyboard(tempOriginalIme)
@@ -738,7 +748,7 @@ class AutoGLMAccessibilityService : AccessibilityService() {
                     }
                     
                     // 如果 SET_TEXT 失败，尝试方法3：复制粘贴 (Paste)
-                    println("⚠️ [AutoGLM] ACTION_SET_TEXT failed, trying Clipboard Paste...")
+                    log("⚠️ [AutoGLM] ACTION_SET_TEXT failed, trying Clipboard Paste...")
                     try {
                         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         val clip = ClipData.newPlainText("AutoGLM Input", text)
@@ -752,7 +762,7 @@ class AutoGLMAccessibilityService : AccessibilityService() {
                                 focusedNode.recycle()
                                 
                                 if (success) {
-                                    println("✅ [AutoGLM] Fallback: Text pasted using ACTION_PASTE")
+                                    log("✅ [AutoGLM] Fallback: Text pasted using ACTION_PASTE")
                                     if (sessionOriginalIme == null) {
                                         restoreKeyboard(tempOriginalIme)
                                     }
@@ -763,12 +773,12 @@ class AutoGLMAccessibilityService : AccessibilityService() {
                             rootNode2.recycle()
                         }
                     } catch (e3: Exception) {
-                        println("❌ [AutoGLM] Paste failed: ${e3.message}")
+                        log("❌ [AutoGLM] Paste failed: ${e3.message}")
                     }
                     
-                    println("❌ [AutoGLM] All text input methods failed")
+                    log("❌ [AutoGLM] All text input methods failed")
                 } catch (e2: Exception) {
-                    println("❌ [AutoGLM] Fallback also failed: ${e2.message}")
+                    log("❌ [AutoGLM] Fallback also failed: ${e2.message}")
                 }
             } finally {
                 // 3. 无论成功失败，只有在非会话模式下才恢复原输入法
@@ -781,29 +791,29 @@ class AutoGLMAccessibilityService : AccessibilityService() {
     
     // 清除输入框文本（使用 ADB Keyboard）
     fun clearText() {
-        println("🗑️ [AutoGLM] Clearing text field")
+        log("🗑️ [AutoGLM] Clearing text field")
         try {
             val intent = android.content.Intent().apply {
                 action = "ADB_CLEAR_TEXT"
             }
             sendBroadcast(intent)
-            println("✅ [AutoGLM] Clear text broadcast sent")
+            log("✅ [AutoGLM] Clear text broadcast sent")
             Thread.sleep(200)
         } catch (e: Exception) {
-            println("❌ [AutoGLM] Clear text failed: ${e.message}")
+            log("❌ [AutoGLM] Clear text failed: ${e.message}")
         }
     }
     
     // 切换到 ADB Keyboard
     fun switchToAdbKeyboard(): String? {
-        println("⌨️ [AutoGLM] Switching to ADB Keyboard")
+        log("⌨️ [AutoGLM] Switching to ADB Keyboard")
         try {
             // 获取当前输入法
             val currentIme = android.provider.Settings.Secure.getString(
                 contentResolver,
                 android.provider.Settings.Secure.DEFAULT_INPUT_METHOD
             )
-            println("📱 [AutoGLM] Current IME: $currentIme")
+            log("📱 [AutoGLM] Current IME: $currentIme")
             
             // 如果不是 ADB Keyboard，则切换
             if (currentIme != null && !currentIme.contains("com.android.adbkeyboard/.AdbIME")) {
@@ -811,7 +821,7 @@ class AutoGLMAccessibilityService : AccessibilityService() {
                     arrayOf("settings", "put", "secure", "default_input_method", "com.android.adbkeyboard/.AdbIME")
                 )
                 process.waitFor()
-                println("✅ [AutoGLM] Switched to ADB Keyboard")
+                log("✅ [AutoGLM] Switched to ADB Keyboard")
                 
                 // 预热 ADB Keyboard (移除递归调用，避免死循环)
                 Thread.sleep(500)
@@ -822,7 +832,7 @@ class AutoGLMAccessibilityService : AccessibilityService() {
             
             return currentIme
         } catch (e: Exception) {
-            println("❌ [AutoGLM] Failed to switch keyboard: ${e.message}")
+            log("❌ [AutoGLM] Failed to switch keyboard: ${e.message}")
             return null
         }
     }
@@ -830,42 +840,42 @@ class AutoGLMAccessibilityService : AccessibilityService() {
     // 恢复原输入法
     fun restoreKeyboard(ime: String?) {
         if (ime != null && ime.isNotEmpty()) {
-            println("⌨️ [AutoGLM] Restoring keyboard: $ime")
+            log("⌨️ [AutoGLM] Restoring keyboard: $ime")
             try {
                 val process = Runtime.getRuntime().exec(
                     arrayOf("settings", "put", "secure", "default_input_method", ime)
                 )
                 process.waitFor()
-                println("✅ [AutoGLM] Keyboard restored")
+                log("✅ [AutoGLM] Keyboard restored")
             } catch (e: Exception) {
-                println("❌ [AutoGLM] Failed to restore keyboard: ${e.message}")
+                log("❌ [AutoGLM] Failed to restore keyboard: ${e.message}")
             }
         }
     }
 
     // 开启输入模式（切换到 ADB Keyboard 并保持）
     fun enableInputMode() {
-        println("⌨️ [AutoGLM] Enabling Input Mode (Session Start)")
+        log("⌨️ [AutoGLM] Enabling Input Mode (Session Start)")
         if (sessionOriginalIme == null) {
             // 只有当之前没有开启会话时，才保存当前的 IME
             sessionOriginalIme = switchToAdbKeyboard()
-            println("⌨️ [AutoGLM] Input Mode Enabled. Original IME saved: $sessionOriginalIme")
+            log("⌨️ [AutoGLM] Input Mode Enabled. Original IME saved: $sessionOriginalIme")
         } else {
              // 已经开启了，确保是 ADB Keyboard
              switchToAdbKeyboard()
-             println("⌨️ [AutoGLM] Input Mode already enabled. Re-enforced ADB Keyboard.")
+             log("⌨️ [AutoGLM] Input Mode already enabled. Re-enforced ADB Keyboard.")
         }
     }
 
     // 关闭输入模式（恢复原输入法）
     fun disableInputMode() {
-        println("⌨️ [AutoGLM] Disabling Input Mode (Session End)")
+        log("⌨️ [AutoGLM] Disabling Input Mode (Session End)")
         if (sessionOriginalIme != null) {
             restoreKeyboard(sessionOriginalIme)
             sessionOriginalIme = null
-            println("⌨️ [AutoGLM] Input Mode Disabled. Keyboard restored.")
+            log("⌨️ [AutoGLM] Input Mode Disabled. Keyboard restored.")
         } else {
-            println("⌨️ [AutoGLM] Input Mode not enabled. Nothing to restore.")
+            log("⌨️ [AutoGLM] Input Mode not enabled. Nothing to restore.")
         }
     }
 
@@ -885,16 +895,16 @@ class AutoGLMAccessibilityService : AccessibilityService() {
                 }
             }
             
-            println("📱 [AutoGLM] Found ${installedApps.size} installed apps")
+            log("📱 [AutoGLM] Found ${installedApps.size} installed apps")
         } catch (e: Exception) {
-            println("❌ [AutoGLM] Error getting installed apps: ${e.message}")
+            log("❌ [AutoGLM] Error getting installed apps: ${e.message}")
         }
         return installedApps
     }
 
     // 启动应用（优先使用动态读取的包名，再回退到预定义列表）
     fun launchApp(appName: String): Boolean {
-        println("🚀 [AutoGLM] Attempting to launch app: $appName")
+        log("🚀 [AutoGLM] Attempting to launch app: $appName")
         
         // 先尝试从已安装应用中查找
         val installedApps = getInstalledApps()
@@ -906,25 +916,25 @@ class AutoGLMAccessibilityService : AccessibilityService() {
         }
         
         if (packageName == null) {
-            println("❌ [AutoGLM] App package not found for: $appName")
-            println("💡 [AutoGLM] Installed apps: ${installedApps.keys.take(10)}")
+            log("❌ [AutoGLM] App package not found for: $appName")
+            log("💡 [AutoGLM] Installed apps: ${installedApps.keys.take(10)}")
             return false
         }
 
-        println("📦 [AutoGLM] Package name: $packageName")
+        log("📦 [AutoGLM] Package name: $packageName")
         try {
             val intent = packageManager.getLaunchIntentForPackage(packageName)
             if (intent != null) {
                 intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                 startActivity(intent)
-                println("✅ [AutoGLM] Successfully launched app: $appName ($packageName)")
+                log("✅ [AutoGLM] Successfully launched app: $appName ($packageName)")
                 return true
             } else {
-                println("❌ [AutoGLM] No launch intent found for: $packageName (app might not be installed)")
+                log("❌ [AutoGLM] No launch intent found for: $packageName (app might not be installed)")
                 return false
             }
         } catch (e: Exception) {
-            println("❌ [AutoGLM] Error launching app $appName: ${e.message}")
+            log("❌ [AutoGLM] Error launching app $appName: ${e.message}")
             e.printStackTrace()
             return false
         }
@@ -950,7 +960,7 @@ class AutoGLMAccessibilityService : AccessibilityService() {
             }
 
             override fun onFailure(errorCode: Int) {
-                println("Screenshot failed: $errorCode")
+                log("Screenshot failed: $errorCode")
                 callback(null)
             }
         })

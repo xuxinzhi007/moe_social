@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import 'autoglm_service.dart';
 
 class AutoGLMPage extends StatefulWidget {
@@ -81,6 +83,15 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _checkStatus();
+
+    // 监听原生日志
+    AutoGLMService.onLogReceived.listen((log) {
+      if (!mounted) return;
+      // 添加到日志列表 (加上前缀以区分)
+      _addLog("[Native] $log");
+    }, onError: (e) {
+      print("Log stream error: $e");
+    });
   }
 
   @override
@@ -200,6 +211,104 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
     });
 
     _addLog("🤖 开始任务: $task");
+
+    // --- 输入法检测与引导 ---
+    // 1. 检测是否安装/启用 ADB Keyboard
+    bool isAdbEnabled = await AutoGLMService.isAdbKeyboardEnabled();
+    // 如果未启用，再检查是否安装（通过包名）
+    if (!isAdbEnabled) {
+      Map<String, String> apps = await AutoGLMService.getInstalledApps();
+      bool isInstalled = apps.values.any((pkg) => pkg.contains("adbkeyboard"));
+      
+      if (!isInstalled) {
+        _addLog("⚠️ 未检测到 ADB Keyboard");
+        if (mounted) {
+          bool? download = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text("需要安装专用输入法"),
+              content: const Text("AutoGLM 需要 ADB Keyboard 才能实现自动输入。\n点击下载后，请安装并按照提示启用。"),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("取消")),
+                TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("去下载")),
+              ],
+            ),
+          );
+          if (download == true) {
+            final Uri url = Uri.parse("https://github.com/senzhk/ADBKeyBoard/raw/master/ADBKeyboard.apk");
+            _addLog("🔗 正在打开下载链接...");
+            if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+               _addLog("❌ 无法打开下载链接");
+            }
+          }
+        }
+        setState(() {
+          _isProcessing = false;
+        });
+        return; 
+      } else {
+        _addLog("⚠️ 请在系统设置中启用 ADB Keyboard");
+        if (mounted) {
+          await showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text("请启用专用输入法"),
+              content: const Text("已检测到 ADB Keyboard，但未在系统设置中启用。\n请在“系统设置 -> 语言和输入法”中勾选它。"),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("好的")),
+              ],
+            ),
+          );
+        }
+        setState(() {
+          _isProcessing = false;
+        });
+        return;
+      }
+    }
+
+    // 2. 检测是否选中 ADB Keyboard
+    bool isAdbSelected = await AutoGLMService.isAdbKeyboardSelected();
+    if (!isAdbSelected) {
+       _addLog("⚠️ 需要切换输入法");
+       if (mounted) {
+         bool? switchIme = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text("切换输入法"),
+              content: const Text("为了实现自动输入，请将输入法切换为 'ADB Keyboard'。\n任务结束后会自动切回（或您可以手动切回）。"),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("取消")),
+                TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("去切换")),
+              ],
+            ),
+         );
+         
+         if (switchIme == true) {
+           await AutoGLMService.showInputMethodPicker();
+           // 等待用户切换
+           _addLog("⏳ 等待输入法切换...");
+           int waitCount = 0;
+           while (waitCount < 15) {
+             await Future.delayed(const Duration(seconds: 1));
+             if (await AutoGLMService.isAdbKeyboardSelected()) {
+               _addLog("✅ 输入法已切换");
+               isAdbSelected = true;
+               break;
+             }
+             waitCount++;
+           }
+         }
+       }
+       
+       if (!isAdbSelected) {
+         _addLog("❌ 输入法切换失败或取消，任务无法继续");
+         setState(() {
+           _isProcessing = false;
+         });
+         return;
+       }
+    }
 
     // 开启输入模式 (切换到 ADB Keyboard)
     await AutoGLMService.enableInputMode();
@@ -543,6 +652,25 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
     return Scaffold(
       appBar: AppBar(
         title: const Text('AutoGLM 助手'),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) async {
+              if (value == 'copy') {
+                 final text = _logs.join("\n");
+                 await Clipboard.setData(ClipboardData(text: text));
+                 if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("日志已复制到剪贴板")));
+              } else if (value == 'clear') {
+                 setState(() { _logs.clear(); });
+              }
+            },
+            itemBuilder: (BuildContext context) {
+              return [
+                const PopupMenuItem(value: 'copy', child: Text("复制日志")),
+                const PopupMenuItem(value: 'clear', child: Text("清空日志")),
+              ];
+            }
+          )
+        ],
       ),
       body: Column(
         children: [

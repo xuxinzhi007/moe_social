@@ -3,6 +3,7 @@ package com.example.moe_social
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.EventChannel
 import android.os.Build
 import android.widget.Toast
 
@@ -16,6 +17,24 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, "com.moe_social/autoglm_logs").setStreamHandler(
+            object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                    AutoGLMAccessibilityService.logListener = { log ->
+                        runOnUiThread {
+                            try {
+                                events?.success(log)
+                            } catch (e: Exception) {}
+                        }
+                    }
+                }
+
+                override fun onCancel(arguments: Any?) {
+                    AutoGLMAccessibilityService.logListener = null
+                }
+            }
+        )
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             if (call.method == "openAccessibilitySettings") {
@@ -161,6 +180,22 @@ class MainActivity : FlutterActivity() {
                     } else {
                         result.error("VERSION_TOO_LOW", "截图功能需要 Android 11及以上", null)
                     }
+                }
+                "showInputMethodPicker" -> {
+                    val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                    imm.showInputMethodPicker()
+                    result.success(true)
+                }
+                "isAdbKeyboardEnabled" -> {
+                    val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                    val enabledInputMethods = imm.enabledInputMethodList
+                    val isEnabled = enabledInputMethods.any { it.id.contains("com.android.adbkeyboard/.AdbIME") }
+                    result.success(isEnabled)
+                }
+                "isAdbKeyboardSelected" -> {
+                    val currentId = Settings.Secure.getString(contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
+                    val isSelected = currentId != null && currentId.contains("com.android.adbkeyboard/.AdbIME")
+                    result.success(isSelected)
                 }
                 else -> result.notImplemented()
             }
