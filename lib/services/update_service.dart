@@ -18,7 +18,13 @@ class UpdateService {
       // 2. 获取 GitHub 最新 Release
       // 使用 /releases 接口获取列表，取第一个，这样兼容 Pre-release 和 Latest
       final url = Uri.parse('https://api.github.com/repos/$_owner/$_repo/releases');
-      final response = await http.get(url);
+      final response = await http.get(
+        url,
+        headers: {
+          'User-Agent': 'MoeSocial-App', // GitHub API 要求必须带 User-Agent
+          'Accept': 'application/vnd.github.v3+json',
+        },
+      );
 
       if (response.statusCode == 200) {
         final List releases = jsonDecode(response.body);
