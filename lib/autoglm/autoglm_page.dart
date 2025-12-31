@@ -365,69 +365,81 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
   }
 
   Future<Map<String, dynamic>?> _callApi() async {
-    try {
-      final request = http.Request('POST', Uri.parse(_baseUrl));
-      request.headers.addAll({
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $_apiKey"
-      });
-      request.body = jsonEncode({
-        "model": _model,
-        "messages": _history,
-        "max_tokens": 1024,
-        "temperature": 0.1,
-        "stream": true, // 开启流式响应
-      });
+    const int maxRetries = 3;
+    int retryCount = 0;
 
-      final streamedResponse = await request.send();
+    while (retryCount < maxRetries) {
+      try {
+        final request = http.Request('POST', Uri.parse(_baseUrl));
+        request.headers.addAll({
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $_apiKey"
+        });
+        request.body = jsonEncode({
+          "model": _model,
+          "messages": _history,
+          "max_tokens": 1024,
+          "temperature": 0.1,
+          "stream": true, // 开启流式响应
+        });
 
-      if (streamedResponse.statusCode == 200) {
-        String fullContent = "";
-        String buffer = "";
+        // 设置较长的超时时间
+        final streamedResponse = await request.send().timeout(const Duration(seconds: 30));
 
-        await for (var chunk in streamedResponse.stream.transform(utf8.decoder)) {
-          buffer += chunk;
-          
-          while (true) {
-             // 处理 SSE 格式: data: {...}
-             int newlineIndex = buffer.indexOf('\n');
-             if (newlineIndex == -1) break;
-             
-             String line = buffer.substring(0, newlineIndex).trim();
-             buffer = buffer.substring(newlineIndex + 1);
-             
-             if (line.startsWith("data: ")) {
-               String jsonStr = line.substring(6);
-               if (jsonStr == "[DONE]") break;
+        if (streamedResponse.statusCode == 200) {
+          String fullContent = "";
+          String buffer = "";
+
+          await for (var chunk in streamedResponse.stream.transform(utf8.decoder)) {
+            buffer += chunk;
+            
+            while (true) {
+               // 处理 SSE 格式: data: {...}
+               int newlineIndex = buffer.indexOf('\n');
+               if (newlineIndex == -1) break;
                
-               try {
-                 final data = jsonDecode(jsonStr);
-                 final content = data['choices']?[0]['delta']?['content'];
-                 if (content != null) {
-                   fullContent += content;
-                   // 可以在这里实时更新 UI，例如:
-                   // _updateStreamingLog(fullContent); 
+               String line = buffer.substring(0, newlineIndex).trim();
+               buffer = buffer.substring(newlineIndex + 1);
+               
+               if (line.startsWith("data: ")) {
+                 String jsonStr = line.substring(6);
+                 if (jsonStr == "[DONE]") break;
+                 
+                 try {
+                   final data = jsonDecode(jsonStr);
+                   final content = data['choices']?[0]['delta']?['content'];
+                   if (content != null) {
+                     fullContent += content;
+                   }
+                 } catch (e) {
+                   // 忽略解析错误
                  }
-               } catch (e) {
-                 // 忽略解析错误
                }
-             }
+            }
           }
+          
+          return {
+            "role": "assistant", 
+            "content": fullContent
+          };
+        } else {
+          final body = await streamedResponse.stream.bytesToString();
+          throw Exception("HTTP ${streamedResponse.statusCode}: $body");
+        }
+      } catch (e) {
+        retryCount++;
+        _addLog("⚠️ API请求失败 ($retryCount/$maxRetries): ${e.toString().split('\n').first}"); // 简化日志
+        
+        if (retryCount >= maxRetries) {
+          _addLog("❌ API请求最终失败");
+          return null;
         }
         
-        return {
-          "role": "assistant", 
-          "content": fullContent
-        };
-      } else {
-        final body = await streamedResponse.stream.bytesToString();
-        _addLog("❌ API Error: ${streamedResponse.statusCode} $body");
-        return null;
+        _addLog("⏳ 等待 2秒后重试...");
+        await Future.delayed(const Duration(seconds: 2));
       }
-    } catch (e) {
-      _addLog("❌ API Exception: $e");
-      return null;
     }
+    return null;
   }
 
   Future<bool> _executeAction(String actionStr) async {

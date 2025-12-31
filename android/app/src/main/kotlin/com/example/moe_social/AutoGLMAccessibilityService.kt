@@ -44,6 +44,12 @@ class AutoGLMAccessibilityService : AccessibilityService() {
     private var savedIconX = -1
     private var savedIconY = -1
 
+    // --- 日志气泡 (Tooltip) 相关变量 ---
+    private var tooltipView: View? = null
+    private var tooltipParams: WindowManager.LayoutParams? = null
+    private val tooltipHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val hideTooltipRunnable = Runnable { removeTooltip() }
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
@@ -429,20 +435,121 @@ class AutoGLMAccessibilityService : AccessibilityService() {
                 logBuffer.removeAt(0)
             }
             
-            // 更新显示
-            val displayText = logBuffer.joinToString("\n")
-            logTextView?.text = displayText
-            
-            // 自动滚动到底部
-            logTextView?.post {
-                val layout = logTextView?.layout
-                if (layout != null && logTextView!!.lineCount > 0) {
-                    val scrollAmount = layout.getLineTop(logTextView!!.lineCount) - logTextView!!.height
-                    if (scrollAmount > 0) {
-                        logTextView?.scrollTo(0, scrollAmount)
+            if (isExpanded) {
+                // 如果是展开状态，更新大窗口的文本
+                val displayText = logBuffer.joinToString("\n")
+                logTextView?.text = displayText
+                
+                // 自动滚动到底部
+                logTextView?.post {
+                    val layout = logTextView?.layout
+                    if (layout != null && logTextView!!.lineCount > 0) {
+                        val scrollAmount = layout.getLineTop(logTextView!!.lineCount) - logTextView!!.height
+                        if (scrollAmount > 0) {
+                            logTextView?.scrollTo(0, scrollAmount)
+                        }
                     }
                 }
+            } else {
+                // 如果是最小化状态，显示气泡提示
+                showTooltip(log)
             }
+        }
+    }
+
+    // --- 气泡提示 (Tooltip) 实现 ---
+
+    private fun createTooltipView() {
+        val container = FrameLayout(this).apply {
+            // 深色半透明圆角背景
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(Color.parseColor("#CC000000"))
+                cornerRadius = dpToPx(8).toFloat()
+            }
+            setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8))
+        }
+        
+        val textView = TextView(this).apply {
+            id = android.R.id.text1
+            textSize = 13f
+            setTextColor(Color.WHITE)
+            maxWidth = dpToPx(220) // 限制最大宽度
+        }
+        container.addView(textView)
+        
+        tooltipView = container
+        
+        tooltipParams = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) 
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY 
+            else 
+                WindowManager.LayoutParams.TYPE_PHONE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or 
+            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or // 关键：允许点击穿透！
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+            windowAnimations = android.R.style.Animation_Toast // 淡入淡出动画
+        }
+    }
+
+    private fun updateTooltipPosition() {
+        if (overlayParams == null || tooltipParams == null) return
+        
+        val iconX = overlayParams!!.x
+        val iconY = overlayParams!!.y
+        val iconSizePx = dpToPx(iconSize)
+        val screenH = resources.displayMetrics.heightPixels
+        
+        // 简单智能定位：如果在屏幕下半部分，显示在上方；否则显示在下方
+        if (iconY > screenH / 2) {
+            // 显示在上方 (预估气泡高度 50dp)
+            tooltipParams!!.y = iconY - dpToPx(50)
+        } else {
+            // 显示在下方
+            tooltipParams!!.y = iconY + iconSizePx + dpToPx(8)
+        }
+        
+        // X轴对齐：稍微向左偏移一点，使其看起来居中于图标（如果图标在右侧）
+        // 简单起见，直接对齐图标左侧，因为它是 wrap_content
+        tooltipParams!!.x = iconX - dpToPx(20) 
+    }
+
+    private fun showTooltip(text: String) {
+        // 移除之前的隐藏任务
+        tooltipHandler.removeCallbacks(hideTooltipRunnable)
+        
+        if (tooltipView == null) createTooltipView()
+        
+        // 更新文本
+        tooltipView?.findViewById<TextView>(android.R.id.text1)?.text = text
+        
+        // 更新位置
+        updateTooltipPosition()
+        
+        // 添加到窗口
+        if (tooltipView?.parent == null) {
+            try {
+                windowManager?.addView(tooltipView, tooltipParams)
+            } catch (e: Exception) { e.printStackTrace() }
+        } else {
+            try {
+                windowManager?.updateViewLayout(tooltipView, tooltipParams)
+            } catch (e: Exception) {}
+        }
+        
+        // 3秒后自动隐藏
+        tooltipHandler.postDelayed(hideTooltipRunnable, 3000)
+    }
+
+    private fun removeTooltip() {
+        if (tooltipView != null && tooltipView?.parent != null) {
+            try {
+                windowManager?.removeView(tooltipView)
+            } catch (e: Exception) {}
         }
     }
 
@@ -468,6 +575,7 @@ class AutoGLMAccessibilityService : AccessibilityService() {
     }
 
     fun removeOverlay() {
+        removeTooltip() // 同时移除气泡
         if (overlayView != null) {
             try {
                 windowManager?.removeView(overlayView)
@@ -560,100 +668,102 @@ class AutoGLMAccessibilityService : AccessibilityService() {
 
     // 执行文本输入（使用 ADB Keyboard）
     fun performType(text: String) {
-        println("⌨️ [AutoGLM] Typing text: $text")
-        
-        // 1. 尝试自动切换到 ADB Keyboard
-        val originalIme = switchToAdbKeyboard()
-        
-        try {
-            // 方法1：使用 ADB Keyboard（推荐，支持中文）
-            val encodedText = android.util.Base64.encodeToString(
-                text.toByteArray(Charsets.UTF_8),
-                android.util.Base64.NO_WRAP
-            )
+        // 关键修复：将耗时操作移至子线程，防止阻塞主线程导致ANR
+        Thread {
+            println("⌨️ [AutoGLM] Typing text (Background Thread): $text")
             
-            println("📝 [AutoGLM] Encoded text (base64): $encodedText")
+            // 1. 尝试自动切换到 ADB Keyboard
+            val originalIme = switchToAdbKeyboard()
             
-            // 发送广播到 ADB Keyboard
-            val intent = android.content.Intent().apply {
-                action = "ADB_INPUT_B64"
-                putExtra("msg", encodedText)
-            }
-            sendBroadcast(intent)
-            
-            println("✅ [AutoGLM] Broadcast sent to ADB Keyboard")
-            
-            // 等待输入完成
-            Thread.sleep(1000) //稍微多等一会，给切换输入法和处理广播留时间
-            
-        } catch (e: Exception) {
-            println("❌ [AutoGLM] ADB Keyboard input failed: ${e.message}")
-            println("⚠️ [AutoGLM] Trying fallback method...")
-            
-            // 方法2：尝试使用 Accessibility Service 直接设置文本（备用）
             try {
-                val rootNode = rootInActiveWindow
-                if (rootNode != null) {
-                    val focusedNode = rootNode.findFocus(android.view.accessibility.AccessibilityNodeInfo.FOCUS_INPUT)
-                    if (focusedNode != null) {
-                        val arguments = android.os.Bundle()
-                        arguments.putCharSequence(
-                            android.view.accessibility.AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
-                            text
-                        )
-                        val success = focusedNode.performAction(
-                            android.view.accessibility.AccessibilityNodeInfo.ACTION_SET_TEXT,
-                            arguments
-                        )
-                        focusedNode.recycle()
-                        rootNode.recycle()
-                        
-                        if (success) {
-                            println("✅ [AutoGLM] Fallback: Text set using ACTION_SET_TEXT")
-                            // 即使备用方法成功，也要记得恢复输入法（虽然备用方法不依赖输入法，但前面可能已经切换了）
-                            restoreKeyboard(originalIme)
-                            return
-                        }
-                    }
-                    rootNode.recycle()
-                }
+                // 方法1：使用 ADB Keyboard（推荐，支持中文）
+                val encodedText = android.util.Base64.encodeToString(
+                    text.toByteArray(Charsets.UTF_8),
+                    android.util.Base64.NO_WRAP
+                )
                 
-                // 如果 SET_TEXT 失败，尝试方法3：复制粘贴 (Paste)
-                println("⚠️ [AutoGLM] ACTION_SET_TEXT failed, trying Clipboard Paste...")
+                println("📝 [AutoGLM] Encoded text (base64): $encodedText")
+                
+                // 发送广播到 ADB Keyboard
+                val intent = android.content.Intent().apply {
+                    action = "ADB_INPUT_B64"
+                    putExtra("msg", encodedText)
+                }
+                sendBroadcast(intent)
+                
+                println("✅ [AutoGLM] Broadcast sent to ADB Keyboard")
+                
+                // 等待输入完成
+                Thread.sleep(1500) // 在子线程sleep是安全的
+                
+            } catch (e: Exception) {
+                println("❌ [AutoGLM] ADB Keyboard input failed: ${e.message}")
+                println("⚠️ [AutoGLM] Trying fallback method...")
+                
+                // 方法2：尝试使用 Accessibility Service 直接设置文本（备用）
                 try {
-                    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    val clip = ClipData.newPlainText("AutoGLM Input", text)
-                    clipboard.setPrimaryClip(clip)
-                    
-                    val rootNode2 = rootInActiveWindow
-                    if (rootNode2 != null) {
-                        val focusedNode = rootNode2.findFocus(android.view.accessibility.AccessibilityNodeInfo.FOCUS_INPUT)
+                    val rootNode = rootInActiveWindow
+                    if (rootNode != null) {
+                        val focusedNode = rootNode.findFocus(android.view.accessibility.AccessibilityNodeInfo.FOCUS_INPUT)
                         if (focusedNode != null) {
-                            val success = focusedNode.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_PASTE)
+                            val arguments = android.os.Bundle()
+                            arguments.putCharSequence(
+                                android.view.accessibility.AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
+                                text
+                            )
+                            val success = focusedNode.performAction(
+                                android.view.accessibility.AccessibilityNodeInfo.ACTION_SET_TEXT,
+                                arguments
+                            )
                             focusedNode.recycle()
+                            rootNode.recycle()
                             
                             if (success) {
-                                println("✅ [AutoGLM] Fallback: Text pasted using ACTION_PASTE")
-                                // 粘贴后尝试恢复输入法（如果有切换过）
+                                println("✅ [AutoGLM] Fallback: Text set using ACTION_SET_TEXT")
+                                // 即使备用方法成功，也要记得恢复输入法
                                 restoreKeyboard(originalIme)
-                                rootNode2.recycle()
-                                return
+                                return@Thread
                             }
                         }
-                        rootNode2.recycle()
+                        rootNode.recycle()
                     }
-                } catch (e3: Exception) {
-                    println("❌ [AutoGLM] Paste failed: ${e3.message}")
+                    
+                    // 如果 SET_TEXT 失败，尝试方法3：复制粘贴 (Paste)
+                    println("⚠️ [AutoGLM] ACTION_SET_TEXT failed, trying Clipboard Paste...")
+                    try {
+                        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        val clip = ClipData.newPlainText("AutoGLM Input", text)
+                        clipboard.setPrimaryClip(clip)
+                        
+                        val rootNode2 = rootInActiveWindow
+                        if (rootNode2 != null) {
+                            val focusedNode = rootNode2.findFocus(android.view.accessibility.AccessibilityNodeInfo.FOCUS_INPUT)
+                            if (focusedNode != null) {
+                                val success = focusedNode.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_PASTE)
+                                focusedNode.recycle()
+                                
+                                if (success) {
+                                    println("✅ [AutoGLM] Fallback: Text pasted using ACTION_PASTE")
+                                    restoreKeyboard(originalIme)
+                                    rootNode2.recycle()
+                                    return@Thread
+                                }
+                            }
+                            rootNode2.recycle()
+                        }
+                    } catch (e3: Exception) {
+                        println("❌ [AutoGLM] Paste failed: ${e3.message}")
+                    }
+                    
+                    println("❌ [AutoGLM] All text input methods failed")
+                } catch (e2: Exception) {
+                    println("❌ [AutoGLM] Fallback also failed: ${e2.message}")
                 }
-                
-                println("❌ [AutoGLM] All text input methods failed")
-            } catch (e2: Exception) {
-                println("❌ [AutoGLM] Fallback also failed: ${e2.message}")
+            } finally {
+                // 3. 无论成功失败，都尝试恢复原输入法
+                restoreKeyboard(originalIme)
             }
-        } finally {
-            // 3. 无论成功失败，都尝试恢复原输入法
-            restoreKeyboard(originalIme)
-        }
+        }.start()
     }
     
     // 清除输入框文本（使用 ADB Keyboard）
@@ -690,9 +800,9 @@ class AutoGLMAccessibilityService : AccessibilityService() {
                 process.waitFor()
                 println("✅ [AutoGLM] Switched to ADB Keyboard")
                 
-                // 预热 ADB Keyboard
+                // 预热 ADB Keyboard (移除递归调用，避免死循环)
                 Thread.sleep(500)
-                performType("")
+                // performType("") // REMOVED: Caused infinite loop with async performType
                 
                 return currentIme
             }

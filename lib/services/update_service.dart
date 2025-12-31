@@ -16,11 +16,22 @@ class UpdateService {
       final currentVersion = packageInfo.version; // e.g., "1.0.0"
 
       // 2. 获取 GitHub 最新 Release
-      final url = Uri.parse('https://api.github.com/repos/$_owner/$_repo/releases/latest');
+      // 使用 /releases 接口获取列表，取第一个，这样兼容 Pre-release 和 Latest
+      final url = Uri.parse('https://api.github.com/repos/$_owner/$_repo/releases');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final List releases = jsonDecode(response.body);
+        if (releases.isEmpty) {
+          if (showNoUpdateToast && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('未发现任何发布版本')),
+            );
+          }
+          return;
+        }
+
+        final data = releases.first; // 取最新的一个
         final String tagName = data['tag_name'] ?? ''; // e.g., "v1.0.1"
         final String remoteVersion = tagName.replaceAll('v', ''); // remove 'v' prefix
         final String body = data['body'] ?? '暂无更新日志';

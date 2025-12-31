@@ -115,6 +115,37 @@ App 内置了更新检测功能：
 - **检测原理**: 对比本地版本与 [GitHub API](https://api.github.com/repos/xuxinzhi007/moe_social/releases/latest) 返回的最新 Tag。
 - **操作方式**: 进入 `设置` -> `常规设置` -> 点击 `软件版本` 即可手动检查。
 
+### 4. 进阶：配置 Release 签名（解决覆盖安装问题）
+默认情况下，GitHub Actions 使用临时签名，导致新版本无法覆盖旧版本（需卸载重装）。
+若需实现平滑更新，请按以下步骤配置固定签名：
+
+1.  **生成签名文件** (在终端执行)：
+    ```bash
+    keytool -genkey -v -keystore android/app/release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias key -storepass 123456 -keypass 123456 -dname "CN=MoeSocial, OU=MoeSocial, O=MoeSocial, L=Unknown, S=Unknown, C=CN"
+    ```
+
+2.  **配置 Gradle** (`android/app/build.gradle.kts`)：
+    ```kotlin
+    signingConfigs {
+        create("release") {
+            keyAlias = "key"
+            keyPassword = "123456"
+            storeFile = file("release.jks")
+            storePassword = "123456"
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.getByName("release")
+        }
+    }
+    ```
+
+3.  **允许提交签名文件**：
+    修改 `.gitignore`，找到 `**/*.jks`，在前面加 `#` 注释掉。
+
+4.  **提交代码**：将 `release.jks` 和修改后的 `build.gradle.kts` 推送到仓库。
+
 ## 项目结构
 
 ```
