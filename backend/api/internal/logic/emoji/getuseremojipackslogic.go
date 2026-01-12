@@ -27,10 +27,10 @@ func NewGetUserEmojiPacksLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 func (l *GetUserEmojiPacksLogic) GetUserEmojiPacks(req *types.GetUserEmojiPacksReq) (resp *types.GetUserEmojiPacksResp, err error) {
 	// 模拟获取用户已拥有的表情包包
 	// 实际项目中应该调用RPC服务或数据库查询
-	
+
 	// 如果用户没有表情包包，返回空数组
 	userEmojiPacks := []types.EmojiPack{}
-	
+
 	// 模拟返回一些表情包包数据
 	userEmojiPacks = append(userEmojiPacks, types.EmojiPack{
 		Id:          "1",
