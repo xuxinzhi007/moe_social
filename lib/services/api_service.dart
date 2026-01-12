@@ -131,6 +131,11 @@ class ApiService {
   static Future<Map<String, dynamic>> post(String path, {dynamic body}) async {
     return await _request(path, method: 'POST', body: body);
   }
+  
+  // 公开的 DELETE 请求方法
+  static Future<Map<String, dynamic>> delete(String path) async {
+    return await _request(path, method: 'DELETE');
+  }
 
   // 执行实际的HTTP请求
   static Future<Map<String, dynamic>> _performRequest(
@@ -802,12 +807,53 @@ class ApiService {
     return result;
   }
   
-  // 上传图片（模拟实现，实际项目中需要后端支持）
+  // 上传图片（真实实现，调用后端API）
   static Future<String> uploadImage(File image) async {
-    // 这里是模拟实现，实际项目中需要调用真实的图片上传API
-    // 模拟上传延迟
-    await Future.delayed(const Duration(seconds: 1));
-    // 返回模拟的图片URL
-    return 'https://via.placeholder.com/600/333333';
+    try {
+      final uri = Uri.parse('$baseUrl/api/upload');
+      
+      // 创建multipart请求
+      final request = http.MultipartRequest('POST', uri);
+      
+      // 添加认证令牌
+      final token = _currentToken;
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      
+      // 添加文件字段
+      final fileStream = http.ByteStream(image.openRead());
+      final length = await image.length();
+      
+      final multipartFile = http.MultipartFile(
+        'file',
+        fileStream,
+        length,
+        filename: image.path.split('/').last,
+      );
+      
+      request.files.add(multipartFile);
+      
+      // 发送请求
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      // 解析响应
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body) as Map<String, dynamic>;
+        if (result['success'] == true) {
+          final imageInfo = result['data'] as Map<String, dynamic>;
+          return imageInfo['url'] as String;
+        } else {
+          throw ApiException(result['message'] ?? '上传失败', result['code'] ?? response.statusCode);
+        }
+      } else {
+        throw ApiException('上传失败，状态码：${response.statusCode}', response.statusCode);
+      }
+    } catch (e) {
+      _log('❌ 图片上传失败: $e');
+      if (e is ApiException) rethrow;
+      throw ApiException('图片上传失败: $e', null);
+    }
   }
 }

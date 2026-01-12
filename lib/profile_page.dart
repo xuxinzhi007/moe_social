@@ -159,6 +159,14 @@ class _ProfilePageState extends State<ProfilePage> {
                                 onTap: () {},
                               ),
                               _MenuItem(
+                                icon: Icons.face_rounded,
+                                title: '编辑形象',
+                                color: Colors.blueAccent,
+                                onTap: () {
+                                  Navigator.pushNamed(context, '/avatar-editor');
+                                },
+                              ),
+                              _MenuItem(
                                 icon: Icons.history_rounded,
                                 title: '浏览历史',
                                 color: Colors.orangeAccent,

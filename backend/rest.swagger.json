@@ -1,0 +1,3765 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Super API",
+    "description": "Super WebProject API documentation",
+    "version": "1.0.0"
+  },
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/avatar/outfits": {
+      "get": {
+        "operationId": "getAvatarOutfits",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetAvatarOutfitsResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "style",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": "1"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": "10"
+          }
+        ],
+        "tags": [
+          "avatar"
+        ],
+        "consumes": [
+          "multipart/form-data"
+        ]
+      }
+    },
+    "/api/avatar/outfits/{outfit_id}": {
+      "get": {
+        "operationId": "getAvatarOutfit",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetAvatarOutfitResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "outfit_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "avatar"
+        ]
+      }
+    },
+    "/api/avatar/outfits/{outfit_id}/purchase": {
+      "post": {
+        "operationId": "purchaseAvatarOutfit",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/PurchaseAvatarOutfitResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "outfit_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PurchaseAvatarOutfitReq"
+            }
+          }
+        ],
+        "tags": [
+          "avatar"
+        ]
+      }
+    },
+    "/api/avatar/{user_id}": {
+      "get": {
+        "operationId": "getUserAvatar",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetUserAvatarResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "avatar"
+        ]
+      },
+      "put": {
+        "operationId": "updateUserAvatar",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/UpdateUserAvatarResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpdateUserAvatarReq"
+            }
+          }
+        ],
+        "tags": [
+          "avatar"
+        ]
+      }
+    },
+    "/api/comments": {
+      "post": {
+        "operationId": "createComment",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/CreateCommentResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": " 评论相关请求",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreateCommentReq"
+            }
+          }
+        ],
+        "tags": [
+          "comment"
+        ]
+      }
+    },
+    "/api/comments/{comment_id}/like": {
+      "post": {
+        "operationId": "likeComment",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/LikeCommentResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LikeCommentReq"
+            }
+          }
+        ],
+        "tags": [
+          "comment"
+        ]
+      }
+    },
+    "/api/emoji/packs": {
+      "get": {
+        "operationId": "getEmojiPacks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetEmojiPacksResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": "1"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": "10"
+          }
+        ],
+        "tags": [
+          "emoji"
+        ],
+        "consumes": [
+          "multipart/form-data"
+        ]
+      }
+    },
+    "/api/emoji/packs/{pack_id}": {
+      "get": {
+        "operationId": "getEmojiPack",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetEmojiPackResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pack_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "emoji"
+        ]
+      }
+    },
+    "/api/emoji/packs/{pack_id}/favorite": {
+      "post": {
+        "operationId": "favoriteEmojiPack",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/FavoriteEmojiPackResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pack_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/FavoriteEmojiPackReq"
+            }
+          }
+        ],
+        "tags": [
+          "emoji"
+        ]
+      }
+    },
+    "/api/emoji/packs/{pack_id}/purchase": {
+      "post": {
+        "operationId": "purchaseEmojiPack",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/PurchaseEmojiPackResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pack_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PurchaseEmojiPackReq"
+            }
+          }
+        ],
+        "tags": [
+          "emoji"
+        ]
+      }
+    },
+    "/api/notifications": {
+      "get": {
+        "operationId": "getNotifications",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetNotificationsResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": "1"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": "10"
+          }
+        ],
+        "tags": [
+          "notification"
+        ],
+        "consumes": [
+          "multipart/form-data"
+        ]
+      }
+    },
+    "/api/notifications/read-all": {
+      "post": {
+        "operationId": "readAllNotifications",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/BaseResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ReadAllNotificationsReq"
+            }
+          }
+        ],
+        "tags": [
+          "notification"
+        ]
+      }
+    },
+    "/api/notifications/unread": {
+      "get": {
+        "operationId": "getUnreadCount",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetUnreadCountResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "notification"
+        ],
+        "consumes": [
+          "multipart/form-data"
+        ]
+      }
+    },
+    "/api/notifications/{id}/read": {
+      "post": {
+        "operationId": "readNotification",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/BaseResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ReadNotificationReq"
+            }
+          }
+        ],
+        "tags": [
+          "notification"
+        ]
+      }
+    },
+    "/api/posts": {
+      "get": {
+        "operationId": "getPosts",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetPostsResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": "1"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": "10"
+          }
+        ],
+        "tags": [
+          "post"
+        ],
+        "consumes": [
+          "multipart/form-data"
+        ]
+      },
+      "post": {
+        "operationId": "createPost",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/CreatePostResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreatePostReq"
+            }
+          }
+        ],
+        "tags": [
+          "post"
+        ]
+      }
+    },
+    "/api/posts/{post_id}": {
+      "get": {
+        "operationId": "getPost",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetPostResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "post"
+        ]
+      }
+    },
+    "/api/posts/{post_id}/comments": {
+      "get": {
+        "operationId": "getPostComments",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetPostCommentsResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": "1"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": "10"
+          }
+        ],
+        "tags": [
+          "post"
+        ],
+        "consumes": [
+          "multipart/form-data"
+        ]
+      }
+    },
+    "/api/posts/{post_id}/like": {
+      "post": {
+        "operationId": "likePost",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/LikePostResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LikePostReq"
+            }
+          }
+        ],
+        "tags": [
+          "post"
+        ]
+      }
+    },
+    "/api/transactions/{transaction_id}": {
+      "get": {
+        "operationId": "getTransaction",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetTransactionResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "transaction_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/api/user/check-email": {
+      "post": {
+        "operationId": "checkUserByEmail",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetUserByEmailResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/GetUserByEmailReq"
+            }
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/api/user/login": {
+      "post": {
+        "operationId": "login",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/LoginResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LoginReq"
+            }
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/api/user/register": {
+      "post": {
+        "operationId": "register",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/RegisterResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": " 用户相关请求",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RegisterReq"
+            }
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/api/user/reset-password": {
+      "post": {
+        "operationId": "resetPassword",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ResetPasswordResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ResetPasswordReq"
+            }
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/api/user/{user_id}": {
+      "get": {
+        "operationId": "getUserInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetUserInfoResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      },
+      "delete": {
+        "operationId": "deleteUser",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/DeleteUserResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/DeleteUserReq"
+            }
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      },
+      "put": {
+        "operationId": "updateUserInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/UpdateUserInfoResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpdateUserInfoReq"
+            }
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/api/user/{user_id}/detail": {
+      "get": {
+        "operationId": "getUser",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetUserResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/api/user/{user_id}/emoji/packs": {
+      "get": {
+        "operationId": "getUserEmojiPacks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetUserEmojiPacksResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "emoji"
+        ]
+      }
+    },
+    "/api/user/{user_id}/password": {
+      "put": {
+        "operationId": "updateUserPassword",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/UpdateUserPasswordResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpdateUserPasswordReq"
+            }
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/api/user/{user_id}/transactions": {
+      "get": {
+        "operationId": "getTransactions",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetTransactionsResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": "1"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": "10"
+          }
+        ],
+        "tags": [
+          "user"
+        ],
+        "consumes": [
+          "multipart/form-data"
+        ]
+      }
+    },
+    "/api/user/{user_id}/vip": {
+      "get": {
+        "operationId": "getUserVipStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetUserVipStatusResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      },
+      "post": {
+        "operationId": "updateUserVip",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/UpdateUserVipResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpdateUserVipReq"
+            }
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/api/user/{user_id}/vip/active": {
+      "get": {
+        "operationId": "getUserActiveVipRecord",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetUserActiveVipRecordResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/api/user/{user_id}/vip/auto-renew": {
+      "put": {
+        "operationId": "updateAutoRenew",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/BaseResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpdateAutoRenewReq"
+            }
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/api/user/{user_id}/vip/check": {
+      "get": {
+        "operationId": "checkUserVip",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/CheckUserVipResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/api/user/{user_id}/vip/orders": {
+      "get": {
+        "operationId": "getVipOrders",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetVipOrdersResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": "1"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": "10"
+          }
+        ],
+        "tags": [
+          "user"
+        ],
+        "consumes": [
+          "multipart/form-data"
+        ]
+      },
+      "post": {
+        "operationId": "createVipOrder",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/CreateVipOrderResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreateVipOrderReq"
+            }
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/api/user/{user_id}/vip/records": {
+      "get": {
+        "operationId": "getVipHistory",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetVipHistoryResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": "1"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": "10"
+          }
+        ],
+        "tags": [
+          "user"
+        ],
+        "consumes": [
+          "multipart/form-data"
+        ]
+      }
+    },
+    "/api/user/{user_id}/vip/sync": {
+      "post": {
+        "operationId": "syncUserVipStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/SyncUserVipStatusResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SyncUserVipStatusReq"
+            }
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/api/user/{user_id}/wallet/recharge": {
+      "post": {
+        "operationId": "recharge",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/RechargeResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RechargeReq"
+            }
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/api/users": {
+      "get": {
+        "operationId": "getUsers",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetUsersResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": "1"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": "10"
+          }
+        ],
+        "tags": [
+          "user"
+        ],
+        "consumes": [
+          "multipart/form-data"
+        ]
+      }
+    },
+    "/api/users/count": {
+      "get": {
+        "operationId": "getUserCount",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetUserCountResp"
+            }
+          }
+        },
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/api/vip/plans": {
+      "get": {
+        "operationId": "getVipPlans",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetVipPlansResp"
+            }
+          }
+        },
+        "tags": [
+          "vip"
+        ]
+      },
+      "post": {
+        "operationId": "createVipPlan",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/CreateVipPlanResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreateVipPlanReq"
+            }
+          }
+        ],
+        "tags": [
+          "vip"
+        ]
+      }
+    },
+    "/api/vip/plans/{plan_id}": {
+      "get": {
+        "operationId": "getVipPlan",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetVipPlanResp"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "vip"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "AvatarOutfit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "style": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number",
+          "format": "double"
+        },
+        "is_free": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "image_url": {
+          "type": "string"
+        },
+        "parts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OutfitPart"
+          }
+        },
+        "created_at": {
+          "type": "string"
+        }
+      },
+      "title": "AvatarOutfit",
+      "required": [
+        "id",
+        "name",
+        "description",
+        "category",
+        "style",
+        "price",
+        "is_free",
+        "image_url",
+        "parts",
+        "created_at"
+      ]
+    },
+    "BaseConfig": {
+      "type": "object",
+      "properties": {
+        "face_shape": {
+          "type": "string"
+        },
+        "skin_color": {
+          "type": "string"
+        },
+        "eye_type": {
+          "type": "string"
+        },
+        "hair_style": {
+          "type": "string"
+        },
+        "hair_color": {
+          "type": "string"
+        }
+      },
+      "title": "BaseConfig",
+      "required": [
+        "face_shape",
+        "skin_color",
+        "eye_type",
+        "hair_style",
+        "hair_color"
+      ]
+    },
+    "BaseResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      },
+      "title": "BaseResp",
+      "required": [
+        "code",
+        "message",
+        "success"
+      ]
+    },
+    "CheckUserVipReq": {
+      "type": "object",
+      "title": "CheckUserVipReq"
+    },
+    "CheckUserVipResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      },
+      "title": "CheckUserVipResp",
+      "required": [
+        "data"
+      ]
+    },
+    "Comment": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "post_id": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "user_name": {
+          "type": "string"
+        },
+        "user_avatar": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "likes": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "is_liked": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "created_at": {
+          "type": "string"
+        }
+      },
+      "title": "Comment",
+      "required": [
+        "id",
+        "post_id",
+        "user_id",
+        "user_name",
+        "user_avatar",
+        "content",
+        "likes",
+        "is_liked",
+        "created_at"
+      ]
+    },
+    "CreateCommentReq": {
+      "type": "object",
+      "properties": {
+        "post_id": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        }
+      },
+      "title": "CreateCommentReq",
+      "required": [
+        "post_id",
+        "user_id",
+        "content"
+      ]
+    },
+    "CreateCommentResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/Comment"
+        }
+      },
+      "title": "CreateCommentResp",
+      "required": [
+        "data"
+      ]
+    },
+    "CreatePostReq": {
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "CreatePostReq",
+      "required": [
+        "user_id",
+        "content"
+      ]
+    },
+    "CreatePostResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/Post"
+        }
+      },
+      "title": "CreatePostResp",
+      "required": [
+        "data"
+      ]
+    },
+    "CreateVipOrderReq": {
+      "type": "object",
+      "properties": {
+        "plan_id": {
+          "type": "string"
+        }
+      },
+      "title": "CreateVipOrderReq",
+      "required": [
+        "plan_id"
+      ]
+    },
+    "CreateVipOrderResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/VipOrder"
+        }
+      },
+      "title": "CreateVipOrderResp",
+      "required": [
+        "data"
+      ]
+    },
+    "CreateVipPlanReq": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number",
+          "format": "double"
+        },
+        "duration_days": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "CreateVipPlanReq",
+      "required": [
+        "name",
+        "description",
+        "price",
+        "duration_days"
+      ]
+    },
+    "CreateVipPlanResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/VipPlan"
+        }
+      },
+      "title": "CreateVipPlanResp",
+      "required": [
+        "data"
+      ]
+    },
+    "DeleteUserReq": {
+      "type": "object",
+      "title": "DeleteUserReq"
+    },
+    "DeleteUserResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      },
+      "title": "DeleteUserResp"
+    },
+    "Emoji": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "image_url": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "is_animated": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      },
+      "title": "Emoji",
+      "required": [
+        "id",
+        "image_url",
+        "tags",
+        "is_animated"
+      ]
+    },
+    "EmojiPack": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "author_name": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number",
+          "format": "double"
+        },
+        "is_free": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "cover_image": {
+          "type": "string"
+        },
+        "emojis": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Emoji"
+          }
+        },
+        "download_count": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "EmojiPack",
+      "required": [
+        "id",
+        "name",
+        "description",
+        "author_name",
+        "category",
+        "price",
+        "is_free",
+        "cover_image",
+        "emojis",
+        "download_count"
+      ]
+    },
+    "EmptyReq": {
+      "type": "object",
+      "title": "EmptyReq"
+    },
+    "EmptyResp": {
+      "type": "object",
+      "title": "EmptyResp"
+    },
+    "FavoriteEmojiPackReq": {
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "string"
+        }
+      },
+      "title": "FavoriteEmojiPackReq",
+      "required": [
+        "user_id"
+      ]
+    },
+    "FavoriteEmojiPackResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      },
+      "title": "FavoriteEmojiPackResp"
+    },
+    "GetAvatarOutfitReq": {
+      "type": "object",
+      "title": "GetAvatarOutfitReq"
+    },
+    "GetAvatarOutfitResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/AvatarOutfit"
+        }
+      },
+      "title": "GetAvatarOutfitResp",
+      "required": [
+        "data"
+      ]
+    },
+    "GetAvatarOutfitsReq": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string"
+        },
+        "style": {
+          "type": "string"
+        },
+        "page": {
+          "type": "integer",
+          "format": "int32",
+          "default": "1"
+        },
+        "page_size": {
+          "type": "integer",
+          "format": "int32",
+          "default": "10"
+        }
+      },
+      "title": "GetAvatarOutfitsReq",
+      "required": [
+        "page",
+        "page_size"
+      ]
+    },
+    "GetAvatarOutfitsResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AvatarOutfit"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "GetAvatarOutfitsResp",
+      "required": [
+        "data",
+        "total"
+      ]
+    },
+    "GetEmojiPackReq": {
+      "type": "object",
+      "title": "GetEmojiPackReq"
+    },
+    "GetEmojiPackResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/EmojiPack"
+        }
+      },
+      "title": "GetEmojiPackResp",
+      "required": [
+        "data"
+      ]
+    },
+    "GetEmojiPacksReq": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string"
+        },
+        "page": {
+          "type": "integer",
+          "format": "int32",
+          "default": "1"
+        },
+        "page_size": {
+          "type": "integer",
+          "format": "int32",
+          "default": "10"
+        }
+      },
+      "title": "GetEmojiPacksReq",
+      "required": [
+        "page",
+        "page_size"
+      ]
+    },
+    "GetEmojiPacksResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EmojiPack"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "GetEmojiPacksResp",
+      "required": [
+        "data",
+        "total"
+      ]
+    },
+    "GetNotificationsReq": {
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "string"
+        },
+        "page": {
+          "type": "integer",
+          "format": "int32",
+          "default": "1"
+        },
+        "page_size": {
+          "type": "integer",
+          "format": "int32",
+          "default": "10"
+        }
+      },
+      "title": "GetNotificationsReq",
+      "required": [
+        "user_id",
+        "page",
+        "page_size"
+      ]
+    },
+    "GetNotificationsResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Notification"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "GetNotificationsResp",
+      "required": [
+        "data",
+        "total"
+      ]
+    },
+    "GetPostCommentsReq": {
+      "type": "object",
+      "properties": {
+        "page": {
+          "type": "integer",
+          "format": "int32",
+          "default": "1"
+        },
+        "page_size": {
+          "type": "integer",
+          "format": "int32",
+          "default": "10"
+        }
+      },
+      "title": "GetPostCommentsReq",
+      "required": [
+        "page",
+        "page_size"
+      ]
+    },
+    "GetPostCommentsResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Comment"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "GetPostCommentsResp",
+      "required": [
+        "data",
+        "total"
+      ]
+    },
+    "GetPostReq": {
+      "type": "object",
+      "title": "GetPostReq"
+    },
+    "GetPostResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/Post"
+        }
+      },
+      "title": "GetPostResp",
+      "required": [
+        "data"
+      ]
+    },
+    "GetPostsReq": {
+      "type": "object",
+      "properties": {
+        "page": {
+          "type": "integer",
+          "format": "int32",
+          "default": "1"
+        },
+        "page_size": {
+          "type": "integer",
+          "format": "int32",
+          "default": "10"
+        }
+      },
+      "title": "GetPostsReq",
+      "required": [
+        "page",
+        "page_size"
+      ]
+    },
+    "GetPostsResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Post"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "GetPostsResp",
+      "required": [
+        "data",
+        "total"
+      ]
+    },
+    "GetTransactionReq": {
+      "type": "object",
+      "title": "GetTransactionReq"
+    },
+    "GetTransactionResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/Transaction"
+        }
+      },
+      "title": "GetTransactionResp",
+      "required": [
+        "data"
+      ]
+    },
+    "GetTransactionsReq": {
+      "type": "object",
+      "properties": {
+        "page": {
+          "type": "integer",
+          "format": "int32",
+          "default": "1"
+        },
+        "page_size": {
+          "type": "integer",
+          "format": "int32",
+          "default": "10"
+        }
+      },
+      "title": "GetTransactionsReq",
+      "required": [
+        "page",
+        "page_size"
+      ]
+    },
+    "GetTransactionsResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Transaction"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "GetTransactionsResp",
+      "required": [
+        "data",
+        "total"
+      ]
+    },
+    "GetUnreadCountReq": {
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "string"
+        }
+      },
+      "title": "GetUnreadCountReq",
+      "required": [
+        "user_id"
+      ]
+    },
+    "GetUnreadCountResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "GetUnreadCountResp",
+      "required": [
+        "data"
+      ]
+    },
+    "GetUserActiveVipRecordReq": {
+      "type": "object",
+      "title": "GetUserActiveVipRecordReq"
+    },
+    "GetUserActiveVipRecordResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/VipRecord"
+        }
+      },
+      "title": "GetUserActiveVipRecordResp",
+      "required": [
+        "data"
+      ]
+    },
+    "GetUserAvatarReq": {
+      "type": "object",
+      "title": "GetUserAvatarReq"
+    },
+    "GetUserAvatarResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/UserAvatar"
+        }
+      },
+      "title": "GetUserAvatarResp",
+      "required": [
+        "data"
+      ]
+    },
+    "GetUserByEmailReq": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        }
+      },
+      "title": "GetUserByEmailReq",
+      "required": [
+        "email"
+      ]
+    },
+    "GetUserByEmailResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/User"
+        }
+      },
+      "title": "GetUserByEmailResp",
+      "required": [
+        "data"
+      ]
+    },
+    "GetUserCountResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "GetUserCountResp",
+      "required": [
+        "data"
+      ]
+    },
+    "GetUserEmojiPacksReq": {
+      "type": "object",
+      "title": "GetUserEmojiPacksReq"
+    },
+    "GetUserEmojiPacksResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EmojiPack"
+          }
+        }
+      },
+      "title": "GetUserEmojiPacksResp",
+      "required": [
+        "data"
+      ]
+    },
+    "GetUserInfoReq": {
+      "type": "object",
+      "title": "GetUserInfoReq"
+    },
+    "GetUserInfoResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/User"
+        }
+      },
+      "title": "GetUserInfoResp",
+      "required": [
+        "data"
+      ]
+    },
+    "GetUserReq": {
+      "type": "object",
+      "title": "GetUserReq"
+    },
+    "GetUserResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/User"
+        }
+      },
+      "title": "GetUserResp",
+      "required": [
+        "data"
+      ]
+    },
+    "GetUserVipStatusResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/UserVipStatusData"
+        }
+      },
+      "title": "GetUserVipStatusResp",
+      "required": [
+        "data"
+      ]
+    },
+    "GetUsersReq": {
+      "type": "object",
+      "properties": {
+        "page": {
+          "type": "integer",
+          "format": "int32",
+          "default": "1"
+        },
+        "page_size": {
+          "type": "integer",
+          "format": "int32",
+          "default": "10"
+        }
+      },
+      "title": "GetUsersReq",
+      "required": [
+        "page",
+        "page_size"
+      ]
+    },
+    "GetUsersResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/User"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "GetUsersResp",
+      "required": [
+        "data",
+        "total"
+      ]
+    },
+    "GetVipHistoryReq": {
+      "type": "object",
+      "properties": {
+        "page": {
+          "type": "integer",
+          "format": "int32",
+          "default": "1"
+        },
+        "page_size": {
+          "type": "integer",
+          "format": "int32",
+          "default": "10"
+        }
+      },
+      "title": "GetVipHistoryReq",
+      "required": [
+        "page",
+        "page_size"
+      ]
+    },
+    "GetVipHistoryResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/VipRecord"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "GetVipHistoryResp",
+      "required": [
+        "data",
+        "total"
+      ]
+    },
+    "GetVipOrdersReq": {
+      "type": "object",
+      "properties": {
+        "page": {
+          "type": "integer",
+          "format": "int32",
+          "default": "1"
+        },
+        "page_size": {
+          "type": "integer",
+          "format": "int32",
+          "default": "10"
+        }
+      },
+      "title": "GetVipOrdersReq",
+      "required": [
+        "page",
+        "page_size"
+      ]
+    },
+    "GetVipOrdersResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/VipOrder"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "GetVipOrdersResp",
+      "required": [
+        "data",
+        "total"
+      ]
+    },
+    "GetVipPlanReq": {
+      "type": "object",
+      "title": "GetVipPlanReq"
+    },
+    "GetVipPlanResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/VipPlan"
+        }
+      },
+      "title": "GetVipPlanResp",
+      "required": [
+        "data"
+      ]
+    },
+    "GetVipPlansResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/VipPlan"
+          }
+        }
+      },
+      "title": "GetVipPlansResp",
+      "required": [
+        "data"
+      ]
+    },
+    "LikeCommentReq": {
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "string"
+        }
+      },
+      "title": "LikeCommentReq",
+      "required": [
+        "user_id"
+      ]
+    },
+    "LikeCommentResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/Comment"
+        }
+      },
+      "title": "LikeCommentResp",
+      "required": [
+        "data"
+      ]
+    },
+    "LikePostReq": {
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "string"
+        }
+      },
+      "title": "LikePostReq",
+      "required": [
+        "user_id"
+      ]
+    },
+    "LikePostResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/Post"
+        }
+      },
+      "title": "LikePostResp",
+      "required": [
+        "data"
+      ]
+    },
+    "LoginData": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "$ref": "#/definitions/User"
+        },
+        "token": {
+          "type": "string"
+        }
+      },
+      "title": "LoginData",
+      "required": [
+        "user",
+        "token"
+      ]
+    },
+    "LoginReq": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      },
+      "title": "LoginReq",
+      "required": [
+        "password"
+      ]
+    },
+    "LoginResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/LoginData"
+        }
+      },
+      "title": "LoginResp",
+      "required": [
+        "data"
+      ]
+    },
+    "Notification": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "sender_id": {
+          "type": "string"
+        },
+        "sender_name": {
+          "type": "string"
+        },
+        "sender_avatar": {
+          "type": "string"
+        },
+        "type": {
+          "type": "integer",
+          "format": "int32",
+          "description": " 1:点赞 2:评论 3:关注 4:系统"
+        },
+        "post_id": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "is_read": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "created_at": {
+          "type": "string"
+        }
+      },
+      "title": "Notification",
+      "required": [
+        "id",
+        "user_id",
+        "sender_id",
+        "sender_name",
+        "sender_avatar",
+        "type",
+        "is_read",
+        "created_at"
+      ]
+    },
+    "OutfitConfig": {
+      "type": "object",
+      "properties": {
+        "clothes": {
+          "type": "string"
+        },
+        "accessories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "background": {
+          "type": "string"
+        }
+      },
+      "title": "OutfitConfig",
+      "required": [
+        "clothes",
+        "accessories",
+        "background"
+      ]
+    },
+    "OutfitPart": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "image_url": {
+          "type": "string"
+        }
+      },
+      "title": "OutfitPart",
+      "required": [
+        "id",
+        "type",
+        "image_url"
+      ]
+    },
+    "Post": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "user_name": {
+          "type": "string"
+        },
+        "user_avatar": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "likes": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "comments": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "is_liked": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "created_at": {
+          "type": "string"
+        }
+      },
+      "title": "Post",
+      "required": [
+        "id",
+        "user_id",
+        "user_name",
+        "user_avatar",
+        "content",
+        "images",
+        "likes",
+        "comments",
+        "is_liked",
+        "created_at"
+      ]
+    },
+    "PurchaseAvatarOutfitReq": {
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "string"
+        }
+      },
+      "title": "PurchaseAvatarOutfitReq",
+      "required": [
+        "user_id"
+      ]
+    },
+    "PurchaseAvatarOutfitResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "type": "string",
+          "description": " 返回购买记录ID"
+        }
+      },
+      "title": "PurchaseAvatarOutfitResp",
+      "required": [
+        "data"
+      ]
+    },
+    "PurchaseEmojiPackReq": {
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "string"
+        }
+      },
+      "title": "PurchaseEmojiPackReq",
+      "required": [
+        "user_id"
+      ]
+    },
+    "PurchaseEmojiPackResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "type": "string",
+          "description": " 返回购买记录ID"
+        }
+      },
+      "title": "PurchaseEmojiPackResp",
+      "required": [
+        "data"
+      ]
+    },
+    "ReadAllNotificationsReq": {
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "string"
+        }
+      },
+      "title": "ReadAllNotificationsReq",
+      "required": [
+        "user_id"
+      ]
+    },
+    "ReadNotificationReq": {
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "string"
+        }
+      },
+      "title": "ReadNotificationReq",
+      "required": [
+        "user_id"
+      ]
+    },
+    "RechargeReq": {
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "number",
+          "format": "double"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "title": "RechargeReq",
+      "required": [
+        "amount",
+        "description"
+      ]
+    },
+    "RechargeResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/Transaction"
+        }
+      },
+      "title": "RechargeResp",
+      "required": [
+        "data"
+      ]
+    },
+    "RegisterReq": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        }
+      },
+      "title": "RegisterReq",
+      "required": [
+        "username",
+        "password",
+        "email"
+      ]
+    },
+    "RegisterResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/User"
+        }
+      },
+      "title": "RegisterResp",
+      "required": [
+        "data"
+      ]
+    },
+    "ResetPasswordReq": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "new_password": {
+          "type": "string"
+        }
+      },
+      "title": "ResetPasswordReq",
+      "required": [
+        "email",
+        "new_password"
+      ]
+    },
+    "ResetPasswordResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      },
+      "title": "ResetPasswordResp"
+    },
+    "SyncUserVipStatusData": {
+      "type": "object",
+      "properties": {
+        "is_vip": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "expires_at": {
+          "type": "string"
+        }
+      },
+      "title": "SyncUserVipStatusData",
+      "required": [
+        "is_vip",
+        "expires_at"
+      ]
+    },
+    "SyncUserVipStatusReq": {
+      "type": "object",
+      "title": "SyncUserVipStatusReq"
+    },
+    "SyncUserVipStatusResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/SyncUserVipStatusData"
+        }
+      },
+      "title": "SyncUserVipStatusResp",
+      "required": [
+        "data"
+      ]
+    },
+    "Transaction": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number",
+          "format": "double"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        }
+      },
+      "title": "Transaction",
+      "required": [
+        "id",
+        "user_id",
+        "type",
+        "amount",
+        "description",
+        "status",
+        "created_at"
+      ]
+    },
+    "UpdateAutoRenewReq": {
+      "type": "object",
+      "properties": {
+        "auto_renew": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      },
+      "title": "UpdateAutoRenewReq",
+      "required": [
+        "auto_renew"
+      ]
+    },
+    "UpdateUserAvatarReq": {
+      "type": "object",
+      "properties": {
+        "base_config": {
+          "$ref": "#/definitions/BaseConfig"
+        },
+        "current_outfit": {
+          "$ref": "#/definitions/OutfitConfig"
+        }
+      },
+      "title": "UpdateUserAvatarReq",
+      "required": [
+        "base_config",
+        "current_outfit"
+      ]
+    },
+    "UpdateUserAvatarResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/UserAvatar"
+        }
+      },
+      "title": "UpdateUserAvatarResp",
+      "required": [
+        "data"
+      ]
+    },
+    "UpdateUserInfoReq": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "avatar": {
+          "type": "string"
+        }
+      },
+      "title": "UpdateUserInfoReq",
+      "required": [
+        "username",
+        "email",
+        "avatar"
+      ]
+    },
+    "UpdateUserInfoResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/User"
+        }
+      },
+      "title": "UpdateUserInfoResp",
+      "required": [
+        "data"
+      ]
+    },
+    "UpdateUserPasswordReq": {
+      "type": "object",
+      "properties": {
+        "old_password": {
+          "type": "string"
+        },
+        "new_password": {
+          "type": "string"
+        }
+      },
+      "title": "UpdateUserPasswordReq",
+      "required": [
+        "old_password",
+        "new_password"
+      ]
+    },
+    "UpdateUserPasswordResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      },
+      "title": "UpdateUserPasswordResp"
+    },
+    "UpdateUserVipReq": {
+      "type": "object",
+      "properties": {
+        "is_vip": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "vip_expires": {
+          "type": "string"
+        }
+      },
+      "title": "UpdateUserVipReq",
+      "required": [
+        "is_vip",
+        "vip_expires"
+      ]
+    },
+    "UpdateUserVipResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "data": {
+          "$ref": "#/definitions/User"
+        }
+      },
+      "title": "UpdateUserVipResp",
+      "required": [
+        "data"
+      ]
+    },
+    "User": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "avatar": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "is_vip": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "vip_expires_at": {
+          "type": "string"
+        },
+        "auto_renew": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "balance": {
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "title": "User",
+      "required": [
+        "id",
+        "username",
+        "email",
+        "avatar",
+        "created_at",
+        "updated_at",
+        "is_vip",
+        "vip_expires_at",
+        "auto_renew",
+        "balance"
+      ]
+    },
+    "UserAvatar": {
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "string"
+        },
+        "base_config": {
+          "$ref": "#/definitions/BaseConfig"
+        },
+        "current_outfit": {
+          "$ref": "#/definitions/OutfitConfig"
+        },
+        "owned_outfits": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "UserAvatar",
+      "required": [
+        "user_id",
+        "base_config",
+        "current_outfit",
+        "owned_outfits"
+      ]
+    },
+    "UserVipStatusData": {
+      "type": "object",
+      "properties": {
+        "is_vip": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "expires_at": {
+          "type": "string"
+        },
+        "auto_renew": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      },
+      "title": "UserVipStatusData",
+      "required": [
+        "is_vip",
+        "expires_at",
+        "auto_renew"
+      ]
+    },
+    "VipOrder": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "plan_id": {
+          "type": "string"
+        },
+        "plan_name": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number",
+          "format": "double"
+        },
+        "status": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "paid_at": {
+          "type": "string"
+        }
+      },
+      "title": "VipOrder",
+      "required": [
+        "id",
+        "user_id",
+        "plan_id",
+        "plan_name",
+        "amount",
+        "status",
+        "created_at",
+        "paid_at"
+      ]
+    },
+    "VipPlan": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number",
+          "format": "double"
+        },
+        "duration_days": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "title": "VipPlan",
+      "required": [
+        "id",
+        "name",
+        "description",
+        "price",
+        "duration_days",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "VipRecord": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "plan_id": {
+          "type": "string"
+        },
+        "plan_name": {
+          "type": "string"
+        },
+        "start_at": {
+          "type": "string"
+        },
+        "end_at": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        }
+      },
+      "title": "VipRecord",
+      "required": [
+        "id",
+        "user_id",
+        "plan_id",
+        "plan_name",
+        "start_at",
+        "end_at",
+        "status",
+        "created_at"
+      ]
+    }
+  },
+  "securityDefinitions": {
+    "apiKey": {
+      "type": "apiKey",
+      "description": "Enter JWT Bearer token **_only_**",
+      "name": "Authorization",
+      "in": "header"
+    }
+  }
+}

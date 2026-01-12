@@ -1,0 +1,79 @@
+import 'dart:convert';
+import '../avatars/avatar_data.dart';
+import '../services/api_service.dart';
+
+class AvatarService {
+  // 获取用户虚拟形象
+  Future<UserAvatar?> getUserAvatar(String userId) async {
+    try {
+      final response = await ApiService.get('/api/avatar/$userId');
+      return UserAvatar.fromJson(response['data']);
+    } catch (e) {
+      print('Error getting user avatar: $e');
+      return null;
+    }
+  }
+
+  // 更新用户虚拟形象
+  Future<UserAvatar?> updateUserAvatar(String userId, UserAvatar avatar) async {
+    try {
+      final response = await ApiService.post(
+        '/api/avatar/$userId',
+        body: avatar.toJson(),
+      );
+      return UserAvatar.fromJson(response['data']);
+    } catch (e) {
+      print('Error updating user avatar: $e');
+      return null;
+    }
+  }
+
+  // 获取装扮物品列表
+  Future<List<AvatarOutfit>?> getAvatarOutfits({
+    String? category,
+    String? style,
+    int page = 1,
+    int pageSize = 10,
+  }) async {
+    try {
+      final queryParams = {
+        'page': page.toString(),
+        'page_size': pageSize.toString(),
+        if (category != null) 'category': category,
+        if (style != null) 'style': style,
+      };
+      final queryString = Uri(queryParameters: queryParams).query;
+      final response = await ApiService.get('/api/avatar/outfits?$queryString');
+      final List<dynamic> outfitsJson = response['data'] ?? [];
+      return outfitsJson.map((e) => AvatarOutfit.fromJson(e)).toList();
+    } catch (e) {
+      print('Error getting avatar outfits: $e');
+      return null;
+    }
+  }
+
+  // 获取装扮物品详情
+  Future<AvatarOutfit?> getAvatarOutfit(String outfitId) async {
+    try {
+      final response = await ApiService.get('/api/avatar/outfits/$outfitId');
+      return AvatarOutfit.fromJson(response['data']);
+    } catch (e) {
+      print('Error getting avatar outfit: $e');
+      return null;
+    }
+  }
+
+  // 购买装扮物品
+  Future<String?> purchaseAvatarOutfit(String outfitId, String userId) async {
+    try {
+      final response = await ApiService.post(
+        '/api/avatar/outfits/$outfitId/purchase',
+        body: {'user_id': userId},
+      );
+      return response['data'];
+    } catch (e) {
+      print('Error purchasing avatar outfit: $e');
+      return null;
+    }
+  }
+}
