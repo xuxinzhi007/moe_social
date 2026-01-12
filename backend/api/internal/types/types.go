@@ -3,6 +3,27 @@
 
 package types
 
+type AvatarOutfit struct {
+	Id          string       `json:"id"`
+	Name        string       `json:"name"`
+	Description string       `json:"description"`
+	Category    string       `json:"category"`
+	Style       string       `json:"style"`
+	Price       float64      `json:"price"`
+	IsFree      bool         `json:"is_free"`
+	ImageUrl    string       `json:"image_url"`
+	Parts       []OutfitPart `json:"parts"`
+	CreatedAt   string       `json:"created_at"`
+}
+
+type BaseConfig struct {
+	FaceShape string `json:"face_shape"`
+	SkinColor string `json:"skin_color"`
+	EyeType   string `json:"eye_type"`
+	HairStyle string `json:"hair_style"`
+	HairColor string `json:"hair_color"`
+}
+
 type BaseResp struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
@@ -74,6 +95,14 @@ type CreateVipPlanResp struct {
 	Data VipPlan `json:"data"`
 }
 
+type DeleteImageReq struct {
+	Filename string `path:"filename"`
+}
+
+type DeleteImageResp struct {
+	BaseResp
+}
+
 type DeleteUserReq struct {
 	UserId string `path:"user_id"`
 }
@@ -82,10 +111,93 @@ type DeleteUserResp struct {
 	BaseResp
 }
 
+type Emoji struct {
+	Id         string   `json:"id"`
+	ImageUrl   string   `json:"image_url"`
+	Tags       []string `json:"tags"`
+	IsAnimated bool     `json:"is_animated"`
+}
+
+type EmojiPack struct {
+	Id            string  `json:"id"`
+	Name          string  `json:"name"`
+	Description   string  `json:"description"`
+	AuthorName    string  `json:"author_name"`
+	Category      string  `json:"category"`
+	Price         float64 `json:"price"`
+	IsFree        bool    `json:"is_free"`
+	CoverImage    string  `json:"cover_image"`
+	Emojis        []Emoji `json:"emojis"`
+	DownloadCount int     `json:"download_count"`
+}
+
 type EmptyReq struct {
 }
 
 type EmptyResp struct {
+}
+
+type FavoriteEmojiPackReq struct {
+	PackId string `path:"pack_id"`
+	UserId string `json:"user_id"`
+}
+
+type FavoriteEmojiPackResp struct {
+	BaseResp
+}
+
+type GetAvatarOutfitReq struct {
+	OutfitId string `path:"outfit_id"`
+}
+
+type GetAvatarOutfitResp struct {
+	BaseResp
+	Data AvatarOutfit `json:"data"`
+}
+
+type GetAvatarOutfitsReq struct {
+	Category string `form:"category,optional"`
+	Style    string `form:"style,optional"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type GetAvatarOutfitsResp struct {
+	BaseResp
+	Data  []AvatarOutfit `json:"data"`
+	Total int            `json:"total"`
+}
+
+type GetEmojiPackReq struct {
+	PackId string `path:"pack_id"`
+}
+
+type GetEmojiPackResp struct {
+	BaseResp
+	Data EmojiPack `json:"data"`
+}
+
+type GetEmojiPacksReq struct {
+	Category string `form:"category,optional"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type GetEmojiPacksResp struct {
+	BaseResp
+	Data  []EmojiPack `json:"data"`
+	Total int         `json:"total"`
+}
+
+type GetImageListReq struct {
+	Page     int `form:"page,default=1"`
+	PageSize int `form:"page_size,default=10"`
+}
+
+type GetImageListResp struct {
+	BaseResp
+	Data  []ImageInfo `json:"data"`
+	Total int         `json:"total"`
 }
 
 type GetNotificationsReq struct {
@@ -171,6 +283,15 @@ type GetUserActiveVipRecordResp struct {
 	Data VipRecord `json:"data"`
 }
 
+type GetUserAvatarReq struct {
+	UserId string `path:"user_id"`
+}
+
+type GetUserAvatarResp struct {
+	BaseResp
+	Data UserAvatar `json:"data"`
+}
+
 type GetUserByEmailReq struct {
 	Email string `json:"email"`
 }
@@ -183,6 +304,15 @@ type GetUserByEmailResp struct {
 type GetUserCountResp struct {
 	BaseResp
 	Data int `json:"data"`
+}
+
+type GetUserEmojiPacksReq struct {
+	UserId string `path:"user_id"`
+}
+
+type GetUserEmojiPacksResp struct {
+	BaseResp
+	Data []EmojiPack `json:"data"`
 }
 
 type GetUserInfoReq struct {
@@ -257,6 +387,14 @@ type GetVipPlansResp struct {
 	Data []VipPlan `json:"data"`
 }
 
+type ImageInfo struct {
+	Id        string `json:"id"`
+	Filename  string `json:"filename"`
+	Url       string `json:"url"`
+	Size      int64  `json:"size"`
+	CreatedAt string `json:"created_at"`
+}
+
 type LikeCommentReq struct {
 	CommentId string `path:"comment_id"`
 	UserId    string `json:"user_id"`
@@ -306,6 +444,18 @@ type Notification struct {
 	CreatedAt    string `json:"created_at"`
 }
 
+type OutfitConfig struct {
+	Clothes     string   `json:"clothes"`
+	Accessories []string `json:"accessories"`
+	Background  string   `json:"background"`
+}
+
+type OutfitPart struct {
+	Id       string `json:"id"`
+	Type     string `json:"type"`
+	ImageUrl string `json:"image_url"`
+}
+
 type Post struct {
 	Id         string   `json:"id"`
 	UserId     string   `json:"user_id"`
@@ -317,6 +467,26 @@ type Post struct {
 	Comments   int      `json:"comments"`
 	IsLiked    bool     `json:"is_liked"`
 	CreatedAt  string   `json:"created_at"`
+}
+
+type PurchaseAvatarOutfitReq struct {
+	OutfitId string `path:"outfit_id"`
+	UserId   string `json:"user_id"`
+}
+
+type PurchaseAvatarOutfitResp struct {
+	BaseResp
+	Data string `json:"data"` // 返回购买记录ID
+}
+
+type PurchaseEmojiPackReq struct {
+	PackId string `path:"pack_id"`
+	UserId string `json:"user_id"`
+}
+
+type PurchaseEmojiPackResp struct {
+	BaseResp
+	Data string `json:"data"` // 返回购买记录ID
 }
 
 type ReadAllNotificationsReq struct {
@@ -388,6 +558,17 @@ type UpdateAutoRenewReq struct {
 	AutoRenew bool   `json:"auto_renew"`
 }
 
+type UpdateUserAvatarReq struct {
+	UserId        string       `path:"user_id"`
+	BaseConfig    BaseConfig   `json:"base_config"`
+	CurrentOutfit OutfitConfig `json:"current_outfit"`
+}
+
+type UpdateUserAvatarResp struct {
+	BaseResp
+	Data UserAvatar `json:"data"`
+}
+
 type UpdateUserInfoReq struct {
 	UserId   string `path:"user_id"`
 	Username string `json:"username"`
@@ -421,6 +602,14 @@ type UpdateUserVipResp struct {
 	Data User `json:"data"`
 }
 
+type UploadImageReq struct {
+}
+
+type UploadImageResp struct {
+	BaseResp
+	Data ImageInfo `json:"data"`
+}
+
 type User struct {
 	Id           string  `json:"id"`
 	Username     string  `json:"username"`
@@ -432,6 +621,13 @@ type User struct {
 	VipExpiresAt string  `json:"vip_expires_at"`
 	AutoRenew    bool    `json:"auto_renew"`
 	Balance      float64 `json:"balance"`
+}
+
+type UserAvatar struct {
+	UserId        string       `json:"user_id"`
+	BaseConfig    BaseConfig   `json:"base_config"`
+	CurrentOutfit OutfitConfig `json:"current_outfit"`
+	OwnedOutfits  []string     `json:"owned_outfits"`
 }
 
 type UserVipStatusData struct {

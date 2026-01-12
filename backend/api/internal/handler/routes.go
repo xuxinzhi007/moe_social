@@ -6,7 +6,10 @@ package handler
 import (
 	"net/http"
 
+	avatar "backend/api/internal/handler/avatar"
 	comment "backend/api/internal/handler/comment"
+	emoji "backend/api/internal/handler/emoji"
+	image "backend/api/internal/handler/image"
 	notification "backend/api/internal/handler/notification"
 	post "backend/api/internal/handler/post"
 	user "backend/api/internal/handler/user"
@@ -20,6 +23,36 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		[]rest.Route{
 			{
+				Method:  http.MethodGet,
+				Path:    "/api/avatar/:user_id",
+				Handler: avatar.GetUserAvatarHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/avatar/:user_id",
+				Handler: avatar.UpdateUserAvatarHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/avatar/outfits",
+				Handler: avatar.GetAvatarOutfitsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/avatar/outfits/:outfit_id",
+				Handler: avatar.GetAvatarOutfitHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/avatar/outfits/:outfit_id/purchase",
+				Handler: avatar.PurchaseAvatarOutfitHandler(serverCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
 				Method:  http.MethodPost,
 				Path:    "/api/comments",
 				Handler: comment.CreateCommentHandler(serverCtx),
@@ -28,6 +61,61 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodPost,
 				Path:    "/api/comments/:comment_id/like",
 				Handler: comment.LikeCommentHandler(serverCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/emoji/packs",
+				Handler: emoji.GetEmojiPacksHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/emoji/packs/:pack_id",
+				Handler: emoji.GetEmojiPackHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/emoji/packs/:pack_id/favorite",
+				Handler: emoji.FavoriteEmojiPackHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/emoji/packs/:pack_id/purchase",
+				Handler: emoji.PurchaseEmojiPackHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/user/:user_id/emoji/packs",
+				Handler: emoji.GetUserEmojiPacksHandler(serverCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/images",
+				Handler: image.GetImageListHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/images/:filename",
+				Handler: image.DeleteImageHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/images/:filename",
+				Handler: image.GetImageHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/upload",
+				Handler: image.UploadImageHandler(serverCtx),
 			},
 		},
 	)

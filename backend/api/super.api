@@ -640,3 +640,282 @@ service Super {
 	post /api/notifications/read-all (ReadAllNotificationsReq) returns (BaseResp)
 }
 
+// 虚拟形象相关结构
+type BaseConfig {
+	FaceShape string `json:"face_shape"`
+	SkinColor string `json:"skin_color"`
+	EyeType   string `json:"eye_type"`
+	HairStyle string `json:"hair_style"`
+	HairColor string `json:"hair_color"`
+}
+
+type OutfitConfig {
+	Clothes     string   `json:"clothes"`
+	Accessories []string `json:"accessories"`
+	Background  string   `json:"background"`
+}
+
+type UserAvatar {
+	UserId        string       `json:"user_id"`
+	BaseConfig    BaseConfig   `json:"base_config"`
+	CurrentOutfit OutfitConfig `json:"current_outfit"`
+	OwnedOutfits  []string     `json:"owned_outfits"`
+}
+
+// 装扮物品结构
+type OutfitPart {
+	Id       string `json:"id"`
+	Type     string `json:"type"`
+	ImageUrl string `json:"image_url"`
+}
+
+type AvatarOutfit {
+	Id          string       `json:"id"`
+	Name        string       `json:"name"`
+	Description string       `json:"description"`
+	Category    string       `json:"category"`
+	Style       string       `json:"style"`
+	Price       float64      `json:"price"`
+	IsFree      bool         `json:"is_free"`
+	ImageUrl    string       `json:"image_url"`
+	Parts       []OutfitPart `json:"parts"`
+	CreatedAt   string       `json:"created_at"`
+}
+
+// 虚拟形象相关请求
+type GetUserAvatarReq {
+	UserId string `path:"user_id"`
+}
+
+type UpdateUserAvatarReq {
+	UserId        string       `path:"user_id"`
+	BaseConfig    BaseConfig   `json:"base_config"`
+	CurrentOutfit OutfitConfig `json:"current_outfit"`
+}
+
+type GetAvatarOutfitsReq {
+	Category string `form:"category,optional"`
+	Style    string `form:"style,optional"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type GetAvatarOutfitReq {
+	OutfitId string `path:"outfit_id"`
+}
+
+type PurchaseAvatarOutfitReq {
+	OutfitId string `path:"outfit_id"`
+	UserId   string `json:"user_id"`
+}
+
+// 虚拟形象相关响应
+type GetUserAvatarResp {
+	BaseResp
+	Data UserAvatar `json:"data"`
+}
+
+type UpdateUserAvatarResp {
+	BaseResp
+	Data UserAvatar `json:"data"`
+}
+
+type GetAvatarOutfitsResp {
+	BaseResp
+	Data  []AvatarOutfit `json:"data"`
+	Total int            `json:"total"`
+}
+
+type GetAvatarOutfitResp {
+	BaseResp
+	Data AvatarOutfit `json:"data"`
+}
+
+type PurchaseAvatarOutfitResp {
+	BaseResp
+	Data string `json:"data"` // 返回购买记录ID
+}
+
+// 虚拟形象相关API服务
+@server (
+	group: avatar
+)
+service Super {
+	// 获取用户形象
+	@handler getUserAvatar
+	get /api/avatar/:user_id (GetUserAvatarReq) returns (GetUserAvatarResp)
+
+	// 更新用户形象
+	@handler updateUserAvatar
+	put /api/avatar/:user_id (UpdateUserAvatarReq) returns (UpdateUserAvatarResp)
+
+	// 获取装扮物品列表
+	@handler getAvatarOutfits
+	get /api/avatar/outfits (GetAvatarOutfitsReq) returns (GetAvatarOutfitsResp)
+
+	// 获取装扮物品详情
+	@handler getAvatarOutfit
+	get /api/avatar/outfits/:outfit_id (GetAvatarOutfitReq) returns (GetAvatarOutfitResp)
+
+	// 购买装扮物品
+	@handler purchaseAvatarOutfit
+	post /api/avatar/outfits/:outfit_id/purchase (PurchaseAvatarOutfitReq) returns (PurchaseAvatarOutfitResp)
+}
+
+// 表情包相关结构
+type Emoji {
+	Id         string   `json:"id"`
+	ImageUrl   string   `json:"image_url"`
+	Tags       []string `json:"tags"`
+	IsAnimated bool     `json:"is_animated"`
+}
+
+type EmojiPack {
+	Id            string  `json:"id"`
+	Name          string  `json:"name"`
+	Description   string  `json:"description"`
+	AuthorName    string  `json:"author_name"`
+	Category      string  `json:"category"`
+	Price         float64 `json:"price"`
+	IsFree        bool    `json:"is_free"`
+	CoverImage    string  `json:"cover_image"`
+	Emojis        []Emoji `json:"emojis"`
+	DownloadCount int     `json:"download_count"`
+}
+
+// 表情包相关请求
+type GetEmojiPacksReq {
+	Category string `form:"category,optional"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type GetEmojiPackReq {
+	PackId string `path:"pack_id"`
+}
+
+type PurchaseEmojiPackReq {
+	PackId string `path:"pack_id"`
+	UserId string `json:"user_id"`
+}
+
+type GetUserEmojiPacksReq {
+	UserId string `path:"user_id"`
+}
+
+type FavoriteEmojiPackReq {
+	PackId string `path:"pack_id"`
+	UserId string `json:"user_id"`
+}
+
+// 表情包相关响应
+type GetEmojiPacksResp {
+	BaseResp
+	Data  []EmojiPack `json:"data"`
+	Total int         `json:"total"`
+}
+
+type GetEmojiPackResp {
+	BaseResp
+	Data EmojiPack `json:"data"`
+}
+
+type PurchaseEmojiPackResp {
+	BaseResp
+	Data string `json:"data"` // 返回购买记录ID
+}
+
+type GetUserEmojiPacksResp {
+	BaseResp
+	Data []EmojiPack `json:"data"`
+}
+
+type FavoriteEmojiPackResp {
+	BaseResp
+}
+
+// 表情包相关API服务
+@server (
+	group: emoji
+)
+service Super {
+	// 获取表情包包列表
+	@handler getEmojiPacks
+	get /api/emoji/packs (GetEmojiPacksReq) returns (GetEmojiPacksResp)
+
+	// 获取表情包包详情
+	@handler getEmojiPack
+	get /api/emoji/packs/:pack_id (GetEmojiPackReq) returns (GetEmojiPackResp)
+
+	// 购买表情包包
+	@handler purchaseEmojiPack
+	post /api/emoji/packs/:pack_id/purchase (PurchaseEmojiPackReq) returns (PurchaseEmojiPackResp)
+
+	// 获取用户已拥有的表情包包
+	@handler getUserEmojiPacks
+	get /api/user/:user_id/emoji/packs (GetUserEmojiPacksReq) returns (GetUserEmojiPacksResp)
+
+	// 收藏表情包包
+	@handler favoriteEmojiPack
+	post /api/emoji/packs/:pack_id/favorite (FavoriteEmojiPackReq) returns (FavoriteEmojiPackResp)
+}
+
+// 图片上传相关结构
+type ImageInfo {
+	Id        string `json:"id"`
+	Filename  string `json:"filename"`
+	Url       string `json:"url"`
+	Size      int64  `json:"size"`
+	CreatedAt string `json:"created_at"`
+}
+
+// 图片上传相关请求
+type UploadImageReq {}
+
+type DeleteImageReq {
+	Filename string `path:"filename"`
+}
+
+type GetImageListReq {
+	Page     int `form:"page,default=1"`
+	PageSize int `form:"page_size,default=10"`
+}
+
+// 图片上传相关响应
+type UploadImageResp {
+	BaseResp
+	Data ImageInfo `json:"data"`
+}
+
+type DeleteImageResp {
+	BaseResp
+}
+
+type GetImageListResp {
+	BaseResp
+	Data  []ImageInfo `json:"data"`
+	Total int         `json:"total"`
+}
+
+// 图片上传相关API服务
+@server (
+	group: image
+)
+service Super {
+	// 上传图片
+	@handler uploadImage
+	post /api/upload (UploadImageReq) returns (UploadImageResp)
+
+	// 获取图片列表
+	@handler getImageList
+	get /api/images (GetImageListReq) returns (GetImageListResp)
+
+	// 删除图片
+	@handler deleteImage
+	delete /api/images/:filename (DeleteImageReq) returns (DeleteImageResp)
+
+	// 查看图片（直接返回图片文件）
+	@handler getImage
+	get /api/images/:filename (DeleteImageReq) returns (EmptyResp)
+}
+

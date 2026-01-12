@@ -36,6 +36,9 @@ import 'widgets/topic_tag_selector.dart';
 import 'utils/error_handler.dart';
 import 'providers/theme_provider.dart';
 import 'providers/notification_provider.dart';
+import 'avatars/avatar_editor_page.dart';
+import 'gallery/cloud_gallery_page.dart';
+import 'emoji/emoji_store_page.dart';
 
 void main() async {
   // 使用runZonedGuarded捕获所有未捕获的错误
@@ -215,9 +218,11 @@ class MyApp extends StatelessWidget {
             userId: args['userId'] as String,
             userName: args['userName'] as String?,
             userAvatar: args['userAvatar'] as String?,
-            heroTag: args['heroTag'] as String?,
-          );
+            heroTag: args['heroTag'] as String?,);
         },
+        '/avatar-editor': (context) => const AvatarEditorPage(),
+        '/emoji-store': (context) => const EmojiStorePage(),
+        '/cloud-gallery': (context) => const CloudGalleryPage(),
       },
     );
   }

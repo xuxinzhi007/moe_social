@@ -9,6 +9,7 @@ import '../services/post_service.dart';
 import '../utils/error_handler.dart';
 import '../widgets/avatar_image.dart';
 import '../widgets/compact_topic_selector.dart';
+import '../gallery/cloud_gallery_page.dart';
 
 class CreatePostPage extends StatefulWidget {
   const CreatePostPage({super.key});
@@ -20,6 +21,7 @@ class CreatePostPage extends StatefulWidget {
 class _CreatePostPageState extends State<CreatePostPage> {
   final TextEditingController _contentController = TextEditingController();
   final List<File> _selectedImages = [];
+  final List<String> _selectedImageUrls = []; // 用于存储从云端图库选择的网络图片URL
   bool _isLoading = false;
   bool _isLoadingUser = true;
   final ImagePicker _picker = ImagePicker();
@@ -40,10 +42,33 @@ class _CreatePostPageState extends State<CreatePostPage> {
       });
     }
   }
+  
+  void _openCloudGallery() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CloudGalleryPage(
+          isSelectMode: true,
+          onImageSelected: (imageUrl) {
+            // 将选择的图片URL添加到列表中
+            setState(() {
+              _selectedImageUrls.add(imageUrl);
+            });
+            ErrorHandler.showSuccess(context, '图片已添加');
+          },
+        ),
+      ),
+    );
+  }
 
   void _removeImage(int index) {
     setState(() {
-      _selectedImages.removeAt(index);
+      if (index < _selectedImages.length) {
+        _selectedImages.removeAt(index);
+      } else {
+        final urlIndex = index - _selectedImages.length;
+        _selectedImageUrls.removeAt(urlIndex);
+      }
     });
   }
 
@@ -89,10 +114,15 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
     try {
       final List<String> imageUrls = [];
+      
+      // 上传本地选择的图片
       for (final image in _selectedImages) {
         final imageUrl = await ApiService.uploadImage(image);
         imageUrls.add(imageUrl);
       }
+      
+      // 直接添加从云端图库选择的网络图片URL
+      imageUrls.addAll(_selectedImageUrls);
 
       final userId = AuthService.currentUser;
       if (userId == null) {
@@ -250,15 +280,43 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   ),
                   
                   // 图片预览区域
-                  if (_selectedImages.isNotEmpty)
+                  if (_selectedImages.isNotEmpty || _selectedImageUrls.isNotEmpty)
                     Container(
                       height: 120,
                       margin: const EdgeInsets.only(bottom: 20),
                       child: ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         scrollDirection: Axis.horizontal,
-                        itemCount: _selectedImages.length,
+                        itemCount: _selectedImages.length + _selectedImageUrls.length,
                         itemBuilder: (context, index) {
+                          Widget imageWidget;
+                          
+                          if (index < _selectedImages.length) {
+                            // 显示本地选择的图片
+                            imageWidget = Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                image: DecorationImage(
+                                  image: FileImage(_selectedImages[index]),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            );
+                          } else {
+                            // 显示从云端图库选择的网络图片
+                            final urlIndex = index - _selectedImages.length;
+                            final imageUrl = _selectedImageUrls[urlIndex];
+                            imageWidget = Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                image: DecorationImage(
+                                  image: NetworkImage(imageUrl),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            );
+                          }
+                          
                           return Container(
                              margin: const EdgeInsets.only(right: 12),
                              width: 110, // 明确宽度
@@ -267,15 +325,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                               clipBehavior: Clip.none,
                               children: [
                                 Positioned.fill(
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
-                                      image: DecorationImage(
-                                        image: FileImage(_selectedImages[index]),
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
+                                  child: imageWidget,
                                 ),
                                 Positioned(
                                   top: -5,
@@ -323,30 +373,51 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
             const SizedBox(height: 20),
 
-            // 工具栏
-            Row(
-              children: [
-                _buildToolButton(
-                  icon: Icons.image_rounded,
-                  label: '图片',
-                  color: Colors.green,
-                  onTap: _addImage,
-                ),
-                const SizedBox(width: 12),
-                _buildToolButton(
-                  icon: Icons.alternate_email_rounded,
-                  label: '提到',
-                  color: Colors.orange,
-                  onTap: () {},
-                ),
-                const SizedBox(width: 12),
-                _buildToolButton(
-                  icon: Icons.tag_rounded,
-                  label: '话题',
-                  color: Colors.blue,
-                  onTap: () {},
-                ),
-              ],
+            // 工具栏 - 使用SingleChildScrollView允许横向滚动
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: [
+                  _buildToolButton(
+                    icon: Icons.image_rounded,
+                    label: '图片',
+                    color: Colors.green,
+                    onTap: _addImage,
+                  ),
+                  const SizedBox(width: 12),
+                  _buildToolButton(
+                    icon: Icons.cloud_upload_outlined,
+                    label: '云端图库',
+                    color: Colors.blue,
+                    onTap: _openCloudGallery,
+                  ),
+                  const SizedBox(width: 12),
+                  _buildToolButton(
+                    icon: Icons.emoji_emotions_outlined,
+                    label: '表情',
+                    color: Colors.purple,
+                    onTap: () {
+                      // TODO: 打开表情包选择器
+                      Navigator.pushNamed(context, '/emoji-store');
+                    },
+                  ),
+                  const SizedBox(width: 12),
+                  _buildToolButton(
+                    icon: Icons.alternate_email_rounded,
+                    label: '提到',
+                    color: Colors.orange,
+                    onTap: () {},
+                  ),
+                  const SizedBox(width: 12),
+                  _buildToolButton(
+                    icon: Icons.tag_rounded,
+                    label: '话题',
+                    color: Colors.blue,
+                    onTap: () {},
+                  ),
+                ],
+              ),
             ),
           ],
         ),
