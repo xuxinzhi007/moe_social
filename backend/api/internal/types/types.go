@@ -30,6 +30,16 @@ type BaseResp struct {
 	Success bool   `json:"success"`
 }
 
+type CheckFollowReq struct {
+	FollowerId  string `path:"follower_id"`
+	FollowingId string `path:"following_id"`
+}
+
+type CheckFollowResp struct {
+	BaseResp
+	Data bool `json:"data"`
+}
+
 type CheckUserVipReq struct {
 	UserId string `path:"user_id"`
 }
@@ -147,6 +157,16 @@ type FavoriteEmojiPackResp struct {
 	BaseResp
 }
 
+type FollowUserReq struct {
+	UserId      string `path:"user_id"`
+	FollowingId string `json:"following_id"`
+}
+
+type FollowUserResp struct {
+	BaseResp
+	Data bool `json:"data"`
+}
+
 type GetAvatarOutfitReq struct {
 	OutfitId string `path:"outfit_id"`
 }
@@ -188,6 +208,30 @@ type GetEmojiPacksResp struct {
 	BaseResp
 	Data  []EmojiPack `json:"data"`
 	Total int         `json:"total"`
+}
+
+type GetFollowersReq struct {
+	UserId   string `path:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type GetFollowersResp struct {
+	BaseResp
+	Data  []User `json:"data"`
+	Total int    `json:"total"`
+}
+
+type GetFollowingsReq struct {
+	UserId   string `path:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type GetFollowingsResp struct {
+	BaseResp
+	Data  []User `json:"data"`
+	Total int    `json:"total"`
 }
 
 type GetImageListReq struct {
@@ -559,6 +603,11 @@ type Transaction struct {
 	Description string  `json:"description"`
 	Status      string  `json:"status"`
 	CreatedAt   string  `json:"created_at"`
+}
+
+type UnfollowUserReq struct {
+	UserId      string `path:"user_id"`
+	FollowingId string `json:"following_id"`
 }
 
 type UpdateAutoRenewReq struct {

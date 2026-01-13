@@ -30,6 +30,8 @@ import 'gacha_page.dart';
 import 'models/post.dart';
 import 'services/post_service.dart';
 import 'user_profile_page.dart';
+import 'following_page.dart';
+import 'followers_page.dart';
 import 'widgets/avatar_image.dart';
 import 'widgets/network_image.dart';
 import 'widgets/post_skeleton.dart';

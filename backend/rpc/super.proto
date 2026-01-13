@@ -556,4 +556,57 @@ service Super {
   // 交易记录相关服务
   rpc GetTransactions(GetTransactionsReq) returns (GetTransactionsResp);
   rpc GetTransaction(GetTransactionReq) returns (GetTransactionResp);
+  
+  // 关注相关服务
+  rpc FollowUser(FollowUserReq) returns (FollowUserResp);
+  rpc UnfollowUser(UnfollowUserReq) returns (FollowUserResp);
+  rpc GetFollowings(GetFollowingsReq) returns (GetFollowingsResp);
+  rpc GetFollowers(GetFollowersReq) returns (GetFollowersResp);
+  rpc CheckFollow(CheckFollowReq) returns (CheckFollowResp);
+}
+
+// 关注相关消息
+message FollowUserReq {
+  string user_id = 1;
+  string following_id = 2;
+}
+
+message FollowUserResp {
+  bool success = 1;
+}
+
+message UnfollowUserReq {
+  string user_id = 1;
+  string following_id = 2;
+}
+
+message GetFollowingsReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetFollowingsResp {
+  repeated User users = 1;
+  int32 total = 2;
+}
+
+message GetFollowersReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetFollowersResp {
+  repeated User users = 1;
+  int32 total = 2;
+}
+
+message CheckFollowReq {
+  string follower_id = 1;
+  string following_id = 2;
+}
+
+message CheckFollowResp {
+  bool is_following = 1;
 }

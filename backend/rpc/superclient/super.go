@@ -14,6 +14,8 @@ import (
 )
 
 type (
+	CheckFollowReq             = super.CheckFollowReq
+	CheckFollowResp            = super.CheckFollowResp
 	CheckUserVipReq            = super.CheckUserVipReq
 	CheckUserVipResp           = super.CheckUserVipResp
 	Comment                    = super.Comment
@@ -27,6 +29,12 @@ type (
 	CreateVipPlanResp          = super.CreateVipPlanResp
 	DeleteUserReq              = super.DeleteUserReq
 	DeleteUserResp             = super.DeleteUserResp
+	FollowUserReq              = super.FollowUserReq
+	FollowUserResp             = super.FollowUserResp
+	GetFollowersReq            = super.GetFollowersReq
+	GetFollowersResp           = super.GetFollowersResp
+	GetFollowingsReq           = super.GetFollowingsReq
+	GetFollowingsResp          = super.GetFollowingsResp
 	GetNotificationsReq        = super.GetNotificationsReq
 	GetNotificationsResp       = super.GetNotificationsResp
 	GetPostCommentsReq         = super.GetPostCommentsReq
@@ -85,6 +93,7 @@ type (
 	SyncUserVipStatusResp      = super.SyncUserVipStatusResp
 	TopicTag                   = super.TopicTag
 	Transaction                = super.Transaction
+	UnfollowUserReq            = super.UnfollowUserReq
 	UpdateAutoRenewReq         = super.UpdateAutoRenewReq
 	UpdateAutoRenewResp        = super.UpdateAutoRenewResp
 	UpdateUserInfoReq          = super.UpdateUserInfoReq
@@ -146,6 +155,12 @@ type (
 		// 交易记录相关服务
 		GetTransactions(ctx context.Context, in *GetTransactionsReq, opts ...grpc.CallOption) (*GetTransactionsResp, error)
 		GetTransaction(ctx context.Context, in *GetTransactionReq, opts ...grpc.CallOption) (*GetTransactionResp, error)
+		// 关注相关服务
+		FollowUser(ctx context.Context, in *FollowUserReq, opts ...grpc.CallOption) (*FollowUserResp, error)
+		UnfollowUser(ctx context.Context, in *UnfollowUserReq, opts ...grpc.CallOption) (*FollowUserResp, error)
+		GetFollowings(ctx context.Context, in *GetFollowingsReq, opts ...grpc.CallOption) (*GetFollowingsResp, error)
+		GetFollowers(ctx context.Context, in *GetFollowersReq, opts ...grpc.CallOption) (*GetFollowersResp, error)
+		CheckFollow(ctx context.Context, in *CheckFollowReq, opts ...grpc.CallOption) (*CheckFollowResp, error)
 	}
 
 	defaultSuper struct {
@@ -352,4 +367,30 @@ func (m *defaultSuper) GetTransactions(ctx context.Context, in *GetTransactionsR
 func (m *defaultSuper) GetTransaction(ctx context.Context, in *GetTransactionReq, opts ...grpc.CallOption) (*GetTransactionResp, error) {
 	client := super.NewSuperClient(m.cli.Conn())
 	return client.GetTransaction(ctx, in, opts...)
+}
+
+// 关注相关服务
+func (m *defaultSuper) FollowUser(ctx context.Context, in *FollowUserReq, opts ...grpc.CallOption) (*FollowUserResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.FollowUser(ctx, in, opts...)
+}
+
+func (m *defaultSuper) UnfollowUser(ctx context.Context, in *UnfollowUserReq, opts ...grpc.CallOption) (*FollowUserResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.UnfollowUser(ctx, in, opts...)
+}
+
+func (m *defaultSuper) GetFollowings(ctx context.Context, in *GetFollowingsReq, opts ...grpc.CallOption) (*GetFollowingsResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.GetFollowings(ctx, in, opts...)
+}
+
+func (m *defaultSuper) GetFollowers(ctx context.Context, in *GetFollowersReq, opts ...grpc.CallOption) (*GetFollowersResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.GetFollowers(ctx, in, opts...)
+}
+
+func (m *defaultSuper) CheckFollow(ctx context.Context, in *CheckFollowReq, opts ...grpc.CallOption) (*CheckFollowResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.CheckFollow(ctx, in, opts...)
 }

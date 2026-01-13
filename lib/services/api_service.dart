@@ -179,7 +179,11 @@ class ApiService {
           body: body != null ? json.encode(body) : null,
         );
       } else if (method == 'DELETE') {
-        response = await http.delete(uri, headers: headers);
+        response = await http.delete(
+          uri, 
+          headers: headers,
+          body: body != null ? json.encode(body) : null,
+        );
       } else {
         throw ApiException('不支持的HTTP方法: $method', null);
       }
@@ -862,5 +866,51 @@ class ApiService {
       if (e is ApiException) rethrow;
       throw ApiException('图片上传失败: $e', null);
     }
+  }
+  
+  // ========== 关注相关API ==========
+  
+  // 关注用户
+  static Future<Map<String, dynamic>> followUser(String userId, String followingId) async {
+    return await _request('/api/user/$userId/follow',
+      method: 'POST',
+      body: {'following_id': followingId}
+    );
+  }
+  
+  // 取消关注用户
+  static Future<Map<String, dynamic>> unfollowUser(String userId, String followingId) async {
+    return await _request('/api/user/$userId/follow',
+      method: 'DELETE',
+      body: {'following_id': followingId}
+    );
+  }
+  
+  // 获取关注列表
+  static Future<Map<String, dynamic>> getFollowings(String userId, {int page = 1, int pageSize = 10}) async {
+    final result = await _request('/api/user/$userId/following?page=$page&page_size=$pageSize');
+    final followingsJson = result['data'] as List;
+    final followings = followingsJson.map((json) => User.fromJson(json)).toList();
+    return {
+      'followings': followings,
+      'total': result['total'] as int,
+    };
+  }
+  
+  // 获取粉丝列表
+  static Future<Map<String, dynamic>> getFollowers(String userId, {int page = 1, int pageSize = 10}) async {
+    final result = await _request('/api/user/$userId/followers?page=$page&page_size=$pageSize');
+    final followersJson = result['data'] as List;
+    final followers = followersJson.map((json) => User.fromJson(json)).toList();
+    return {
+      'followers': followers,
+      'total': result['total'] as int,
+    };
+  }
+  
+  // 检查是否关注了某个用户
+  static Future<bool> checkFollow(String followerId, String followingId) async {
+    final result = await _request('/api/user/$followerId/follow/$followingId/check');
+    return result['data'] as bool;
   }
 }

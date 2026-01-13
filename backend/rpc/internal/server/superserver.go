@@ -217,3 +217,29 @@ func (s *SuperServer) GetTransaction(ctx context.Context, in *super.GetTransacti
 	l := logic.NewGetTransactionLogic(ctx, s.svcCtx)
 	return l.GetTransaction(in)
 }
+
+// 关注相关服务
+func (s *SuperServer) FollowUser(ctx context.Context, in *super.FollowUserReq) (*super.FollowUserResp, error) {
+	l := logic.NewFollowUserLogic(ctx, s.svcCtx)
+	return l.FollowUser(in)
+}
+
+func (s *SuperServer) UnfollowUser(ctx context.Context, in *super.UnfollowUserReq) (*super.FollowUserResp, error) {
+	l := logic.NewUnfollowUserLogic(ctx, s.svcCtx)
+	return l.UnfollowUser(in)
+}
+
+func (s *SuperServer) GetFollowings(ctx context.Context, in *super.GetFollowingsReq) (*super.GetFollowingsResp, error) {
+	l := logic.NewGetFollowingsLogic(ctx, s.svcCtx)
+	return l.GetFollowings(in)
+}
+
+func (s *SuperServer) GetFollowers(ctx context.Context, in *super.GetFollowersReq) (*super.GetFollowersResp, error) {
+	l := logic.NewGetFollowersLogic(ctx, s.svcCtx)
+	return l.GetFollowers(in)
+}
+
+func (s *SuperServer) CheckFollow(ctx context.Context, in *super.CheckFollowReq) (*super.CheckFollowResp, error) {
+	l := logic.NewCheckFollowLogic(ctx, s.svcCtx)
+	return l.CheckFollow(in)
+}

@@ -3,6 +3,7 @@ import 'models/user.dart';
 import 'models/post.dart';
 import 'models/achievement_badge.dart';
 import 'models/gift.dart';
+import 'auth_service.dart';
 import 'services/api_service.dart';
 import 'services/achievement_service.dart';
 import 'widgets/avatar_image.dart';
@@ -11,6 +12,8 @@ import 'widgets/fade_in_up.dart';
 import 'widgets/achievement_badge_display.dart';
 import 'widgets/gift_selector.dart';
 import 'widgets/gift_animation.dart';
+import 'following_page.dart';
+import 'followers_page.dart';
 
 class UserProfilePage extends StatefulWidget {
   final String userId;
@@ -48,15 +51,55 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   Future<void> _loadData() async {
     try {
+      // 确保AuthService已经初始化，恢复登录状态
+      await AuthService.init();
+      
+      print('🔍 AuthService.isLoggedIn: ${AuthService.isLoggedIn}');
+      print('🔍 AuthService.currentUser: ${AuthService.currentUser}');
+      
       final user = await ApiService.getUserInfo(widget.userId);
       // 加载用户徽章
       final userBadges = _achievementService.getUserBadges(widget.userId);
+      
+      // 检查关注状态
+      bool isFollowing = false;
+      if (AuthService.isLoggedIn) {
+        final currentUserId = AuthService.currentUser;
+        if (currentUserId != null) {
+          // 确保参数顺序正确：followerId（当前用户）在前，followingId（被关注用户）在后
+          print('🔍 检查关注状态：当前用户ID = $currentUserId，被关注用户ID = ${widget.userId}');
+          try {
+            isFollowing = await ApiService.checkFollow(currentUserId, widget.userId);
+            print('🔍 关注状态检查结果：$isFollowing');
+          } catch (e) {
+            print('❌ 检查关注状态失败: $e');
+            // 尝试通过followUser API的错误信息来判断关注状态
+            try {
+              // 尝试关注，如果返回重复错误则说明已经关注
+              final result = await ApiService.followUser(currentUserId, widget.userId);
+              print('🔍 尝试关注结果: $result');
+              if (result['success']) {
+                isFollowing = true;
+                print('🔍 关注成功，状态更新为true');
+              }
+            } catch (followError) {
+              print('🔍 尝试关注失败: $followError');
+              if (followError.toString().contains('Duplicate entry')) {
+                isFollowing = true;
+                print('🔍 检测到重复关注，状态更新为true');
+              }
+            }
+          }
+        }
+      }
 
       if (mounted) {
         setState(() {
           _user = user;
           _userBadges = userBadges;
+          _isFollowing = isFollowing;
         });
+        print('🔍 最终关注状态: $_isFollowing');
       }
     } catch (e) {
       print('后台加载用户数据失败: $e');
@@ -87,20 +130,103 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
   }
 
-  void _toggleFollow() {
-    setState(() {
-      _isFollowing = !_isFollowing;
-    });
+  Future<void> _toggleFollow() async {
+    if (!AuthService.isLoggedIn) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('请先登录'),
+          duration: const Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      return;
+    }
     
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(_isFollowing ? '已关注' : '已取消关注'),
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+    final currentUserId = AuthService.currentUser;
+    if (currentUserId == null) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('获取用户信息失败'),
+          duration: const Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      return;
+    }
+    
+    // 禁止关注自己
+    if (currentUserId == widget.userId) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('不能关注自己'),
+          duration: const Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      return;
+    }
+    
+    try {
+      final result = _isFollowing
+          ? await ApiService.unfollowUser(currentUserId, widget.userId)
+          : await ApiService.followUser(currentUserId, widget.userId);
+      
+      if (result['success']) {
+        setState(() {
+          _isFollowing = !_isFollowing;
+        });
+        
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_isFollowing ? '已关注' : '已取消关注'),
+            duration: const Duration(seconds: 1),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? '操作失败'),
+            duration: const Duration(seconds: 1),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } catch (e) {
+      print('关注操作失败: $e');
+      
+      // 处理重复关注的情况
+      String errorMessage = _isFollowing ? '取消关注失败' : '关注失败';
+      if (e.toString().contains('Duplicate entry') || e.toString().contains('already exists')) {
+        errorMessage = '您已经关注了该用户';
+        // 更新本地状态为已关注
+        setState(() {
+          _isFollowing = true;
+        });
+      } else if (e.toString().contains('foreign key constraint fails')) {
+        errorMessage = '关注的用户不存在';
+      }
+      
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          duration: const Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
   }
 
   @override
@@ -193,8 +319,22 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _StatItem(label: '动态', value: '${_userPosts.length}'),
-                          const _StatItem(label: '关注', value: '0'),
-                          const _StatItem(label: '粉丝', value: '0'),
+                          _StatItem(label: '关注', value: '0', onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => FollowingPage(userId: widget.userId),
+                              ),
+                            );
+                          }),
+                          _StatItem(label: '粉丝', value: '0', onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => FollowersPage(userId: widget.userId),
+                              ),
+                            );
+                          }),
                         ],
                       ),
 
@@ -250,7 +390,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       const SizedBox(height: 24),
                       Row(
                         children: [
-                          Expanded(
+                          Flexible(
+                            flex: 1,
                             child: ElevatedButton(
                               onPressed: _toggleFollow,
                               style: ElevatedButton.styleFrom(
@@ -261,12 +402,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
                                 ),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
                               ),
-                              child: Text(_isFollowing ? '已关注' : '关注'),
+                              child: Text(_isFollowing ? '已关注' : '关注', style: const TextStyle(fontWeight: FontWeight.w500)),
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Expanded(
+                          Flexible(
+                            flex: 1,
                             child: OutlinedButton(
                               onPressed: () {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -279,16 +422,18 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
                                 ),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
                               ),
-                              child: const Text('私信'),
+                              child: const Text('私信', style: const TextStyle(fontWeight: FontWeight.w500)),
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Expanded(
+                          Flexible(
+                            flex: 1,
                             child: ElevatedButton.icon(
                               onPressed: _showGiftSelector,
                               icon: const Icon(Icons.card_giftcard, size: 16),
-                              label: const Text('送礼'),
+                              label: const Text('送礼', style: const TextStyle(fontWeight: FontWeight.w500)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.pink[400],
                                 foregroundColor: Colors.white,
@@ -297,6 +442,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
                                 ),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
                               ),
                             ),
                           ),
@@ -727,28 +873,32 @@ class _UserProfilePageState extends State<UserProfilePage> {
 class _StatItem extends StatelessWidget {
   final String label;
   final String value;
+  final VoidCallback? onTap;
 
-  const _StatItem({required this.value, required this.label});
+  const _StatItem({required this.value, required this.label, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
           ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[500],
-            fontSize: 12,
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey[500],
+              fontSize: 12,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
