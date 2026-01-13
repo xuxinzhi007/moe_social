@@ -20,22 +20,8 @@ type Post struct {
 
 	// 关联关系
 	User       User        `gorm:"foreignKey:UserID" json:"-"`               // 用户关联
-	PostLikes  []PostLike  `gorm:"foreignKey:PostID" json:"-"`               // 点赞关联
 	PostTopics []PostTopic `gorm:"foreignKey:PostID" json:"-"`               // 帖子标签关联
 	TopicTags  []TopicTag  `gorm:"many2many:post_topics;" json:"topic_tags"` // 多对多关联
-}
-
-// PostLike 帖子点赞关联表
-type PostLike struct {
-	ID        uint           `gorm:"primarykey" json:"id"`
-	PostID    uint           `gorm:"not null;index" json:"post_id"` // 帖子ID
-	UserID    uint           `gorm:"not null;index" json:"user_id"` // 用户ID
-	CreatedAt time.Time      `json:"created_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
-
-	// 关联关系
-	Post Post `gorm:"foreignKey:PostID" json:"-"`
-	User User `gorm:"foreignKey:UserID" json:"-"`
 }
 
 // TopicTag 话题标签模型
