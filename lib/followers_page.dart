@@ -28,7 +28,7 @@ class _FollowersPageState extends State<FollowersPage> {
   }
 
   Future<void> _loadFollowers() async {
-    if (!_hasMore) return;
+    if (!_hasMore || _isLoading) return;
 
     setState(() {
       _isLoading = true;
@@ -36,6 +36,8 @@ class _FollowersPageState extends State<FollowersPage> {
 
     try {
       final result = await ApiService.getFollowers(widget.userId, page: _page, pageSize: 10);
+      
+      // 简化数据处理，直接使用API返回的数据
       final followers = result['followers'] as List<User>;
       final total = result['total'] as int;
 
@@ -52,10 +54,16 @@ class _FollowersPageState extends State<FollowersPage> {
         });
       }
     } catch (e) {
+      print('加载粉丝列表失败: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('加载粉丝列表失败: $e')),
         );
+        // 确保状态正确更新，避免无限加载
+        setState(() {
+          _isLoading = false;
+          _hasMore = false;
+        });
       }
     } finally {
       if (mounted) {
@@ -85,11 +93,17 @@ class _FollowersPageState extends State<FollowersPage> {
                 itemCount: _followers.length + 1,
                 itemBuilder: (context, index) {
                   if (index == _followers.length) {
-                    if (_hasMore) {
-                      // 使用 Future.microtask 延迟加载，避免在构建过程中调用 setState()
+                    if (_hasMore && !_isLoading) {
+                      // 只在还有更多数据且不在加载状态时才加载，避免重复请求
                       Future.microtask(() {
                         _loadFollowers();
                       });
+                      return const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    } else if (_isLoading) {
+                      // 如果正在加载，只显示加载指示器
                       return const Padding(
                         padding: EdgeInsets.all(16),
                         child: Center(child: CircularProgressIndicator()),

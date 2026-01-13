@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 
+	"backend/model"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -24,7 +25,19 @@ func NewCheckFollowLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Check
 }
 
 func (l *CheckFollowLogic) CheckFollow(in *super.CheckFollowReq) (*super.CheckFollowResp, error) {
-	// todo: add your logic here and delete this line
+	l.Debug("检查关注状态请求:", in)
 
-	return &super.CheckFollowResp{}, nil
+	// 解析参数
+	var count int64
+	result := l.svcCtx.DB.Model(&model.Follow{}).Where("follower_id = ? AND following_id = ? AND deleted_at IS NULL", in.FollowerId, in.FollowingId).Count(&count)
+	if result.Error != nil {
+		l.Error("检查关注状态失败:", result.Error)
+		return nil, result.Error
+	}
+
+	l.Debug("检查关注状态成功:", in.FollowerId, "关注了", in.FollowingId, "?", count > 0)
+
+	return &super.CheckFollowResp{
+		IsFollowing: count > 0,
+	}, nil
 }
