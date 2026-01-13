@@ -240,7 +240,8 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
 
   Future<void> _fetchRandomPost() async {
     try {
-      final posts = await PostService.getPosts(page: 1, pageSize: 20);
+      final result = await PostService.getPosts(page: 1, pageSize: 20);
+      final posts = result['posts'] as List<Post>;
       if (posts.isNotEmpty) {
         setState(() {
           _gachaResult = posts[_random.nextInt(posts.length)];

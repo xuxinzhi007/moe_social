@@ -79,7 +79,55 @@ func (l *CreatePostLogic) CreatePost(in *super.CreatePostReq) (*super.CreatePost
 		return nil, errorx.New(500, "创建帖子失败")
 	}
 	
-	// 7. 构建响应
+	// 7. 处理话题标签
+	var topicTags []model.TopicTag
+	if len(in.TopicTags) > 0 {
+		for _, tag := range in.TopicTags {
+			// 查找或创建话题标签
+			var topicTag model.TopicTag
+			err := l.svcCtx.DB.Where("name = ?", tag.Name).FirstOrCreate(&topicTag, model.TopicTag{
+				Name:  tag.Name,
+				Color: tag.Color,
+			}).Error
+			if err != nil {
+				l.Error("处理话题标签失败: ", err)
+				// 继续处理其他标签，不中断
+				continue
+			}
+			topicTags = append(topicTags, topicTag)
+		}
+		
+		// 建立帖子和话题标签的关联关系
+		if len(topicTags) > 0 {
+			// 先删除旧的关联关系
+			l.svcCtx.DB.Where("post_id = ?", post.ID).Delete(&model.PostTopic{})
+			
+			// 添加新的关联关系
+			for _, tag := range topicTags {
+				postTopic := model.PostTopic{
+					PostID:     post.ID,
+					TopicTagID: tag.ID,
+				}
+				err := l.svcCtx.DB.Create(&postTopic).Error
+				if err != nil {
+					l.Error("建立帖子标签关联失败: ", err)
+					continue
+				}
+			}
+		}
+	}
+	
+	// 8. 构建响应
+	// 转换话题标签为响应格式
+	responseTopicTags := make([]*super.TopicTag, 0, len(topicTags))
+	for _, tag := range topicTags {
+		responseTopicTags = append(responseTopicTags, &super.TopicTag{
+			Id:    strconv.FormatUint(uint64(tag.ID), 10),
+			Name:  tag.Name,
+			Color: tag.Color,
+		})
+	}
+	
 	return &super.CreatePostResp{
 		Post: &super.Post{
 			Id:         strconv.FormatUint(uint64(post.ID), 10),
@@ -88,6 +136,7 @@ func (l *CreatePostLogic) CreatePost(in *super.CreatePostReq) (*super.CreatePost
 			UserAvatar: user.Avatar,
 			Content:    post.Content,
 			Images:     in.Images,
+			TopicTags:  responseTopicTags,
 			Likes:      0,
 			Comments:   0,
 			IsLiked:    false,

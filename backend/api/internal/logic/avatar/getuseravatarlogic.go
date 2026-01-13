@@ -27,7 +27,7 @@ func NewGetUserAvatarLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 func (l *GetUserAvatarLogic) GetUserAvatar(req *types.GetUserAvatarReq) (resp *types.GetUserAvatarResp, err error) {
 	// 模拟获取用户虚拟形象数据
 	// 实际项目中应该调用RPC服务或数据库查询
-	
+
 	// 如果用户没有设置形象，返回默认形象数据
 	defaultAvatar := types.UserAvatar{
 		UserId: req.UserId,

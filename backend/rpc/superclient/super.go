@@ -83,6 +83,7 @@ type (
 	ResetPasswordResp          = super.ResetPasswordResp
 	SyncUserVipStatusReq       = super.SyncUserVipStatusReq
 	SyncUserVipStatusResp      = super.SyncUserVipStatusResp
+	TopicTag                   = super.TopicTag
 	Transaction                = super.Transaction
 	UpdateAutoRenewReq         = super.UpdateAutoRenewReq
 	UpdateAutoRenewResp        = super.UpdateAutoRenewResp

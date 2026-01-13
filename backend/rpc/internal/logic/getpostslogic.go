@@ -55,8 +55,9 @@ func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, er
 		return nil, err
 	}
 
-	// 查询帖子
-	if err := l.svcCtx.DB.Order("created_at DESC").Offset(int(offset)).Limit(int(pageSize)).Find(&posts).Error; err != nil {
+	// 查询帖子，预加载话题标签
+	// 先按created_at倒序，再按ID倒序，确保最新的帖子显示在列表顶部
+	if err := l.svcCtx.DB.Preload("TopicTags").Order("created_at DESC, id DESC").Offset(int(offset)).Limit(int(pageSize)).Find(&posts).Error; err != nil {
 		return nil, err
 	}
 
@@ -102,6 +103,16 @@ func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, er
 			}
 		}
 
+		// 转换话题标签为响应格式
+		topicTags := make([]*super.TopicTag, 0, len(post.TopicTags))
+		for _, tag := range post.TopicTags {
+			topicTags = append(topicTags, &super.TopicTag{
+				Id:    strconv.FormatUint(uint64(tag.ID), 10),
+				Name:  tag.Name,
+				Color: tag.Color,
+			})
+		}
+
 		// 构建Post对象
 		rpcPost := &super.Post{
 			Id:         strconv.FormatUint(uint64(post.ID), 10),
@@ -110,6 +121,7 @@ func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, er
 			UserAvatar: avatar,
 			Content:    post.Content,
 			Images:     images,
+			TopicTags:  topicTags,
 			Likes:      int32(post.Likes),
 			Comments:   int32(post.Comments),
 			IsLiked:    false,

@@ -36,6 +36,16 @@ func (l *GetPostLogic) GetPost(req *types.GetPostReq) (resp *types.GetPostResp, 
 		}, nil
 	}
 
+	// 转换topic_tags格式
+	apiTopicTags := make([]types.TopicTag, 0, len(rpcResp.Post.TopicTags))
+	for _, tag := range rpcResp.Post.TopicTags {
+		apiTopicTags = append(apiTopicTags, types.TopicTag{
+			Id:    tag.Id,
+			Name:  tag.Name,
+			Color: tag.Color,
+		})
+	}
+
 	// 转换为API响应格式
 	return &types.GetPostResp{
 		BaseResp: common.HandleRPCError(nil, "获取帖子成功"),
@@ -46,6 +56,7 @@ func (l *GetPostLogic) GetPost(req *types.GetPostReq) (resp *types.GetPostResp, 
 			UserAvatar: rpcResp.Post.UserAvatar,
 			Content:    rpcResp.Post.Content,
 			Images:     rpcResp.Post.Images,
+			TopicTags:  apiTopicTags,
 			Likes:      int(rpcResp.Post.Likes),
 			Comments:   int(rpcResp.Post.Comments),
 			IsLiked:    rpcResp.Post.IsLiked,

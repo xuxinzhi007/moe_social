@@ -4,6 +4,7 @@ import 'autoglm/autoglm_service.dart'; // Import AutoGLM Service
 import 'auth_service.dart';
 import 'services/api_service.dart';
 import 'models/user.dart';
+import 'models/post.dart';
 import 'models/achievement_badge.dart';
 import 'services/achievement_service.dart';
 import 'widgets/avatar_image.dart';
@@ -45,7 +46,8 @@ class _ProfilePageState extends State<ProfilePage> {
       final futures = await Future.wait([
         ApiService.getUserInfo(userId),
         ApiService.getUserVipStatus(userId).catchError((_) => <String, dynamic>{}),
-        ApiService.getPosts(page: 1, pageSize: 100).then((posts) {
+        ApiService.getPosts(page: 1, pageSize: 100).then((result) {
+          final posts = result['posts'] as List<Post>;
           return posts.where((p) => p.userId.toString() == userId.toString()).length;
         }).catchError((_) => 0),
       ]);

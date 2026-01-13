@@ -311,12 +311,65 @@ class _HomePageState extends State<HomePage> {
   bool _isLoadingMore = false;
   int _currentPage = 1;
   bool _hasMore = true;
+  int _totalPosts = 0;
   static const int _pageSize = 10;
+
+  // 添加滚动控制器和加载触发标志
+  final ScrollController _scrollController = ScrollController();
+  bool _isLoadingTriggered = false;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_scrollListener);
     _fetchPosts();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // 滚动监听器
+  void _scrollListener() {
+    // 检查是否有滚动位置信息
+    if (!_scrollController.hasClients) return;
+    
+    // 如果正在加载或没有更多数据，直接返回
+    if (_isLoading || _isLoadingMore || !_hasMore || _isLoadingTriggered) {
+      return;
+    }
+    
+    final position = _scrollController.position;
+    final maxScroll = position.maxScrollExtent;
+    final currentScroll = position.pixels;
+    
+    // 当滚动到距底部300像素时触发加载，或者已经滚动到底部
+    final threshold = maxScroll > 0 ? maxScroll - 300 : 0;
+    final isNearBottom = currentScroll >= threshold || 
+                        (maxScroll > 0 && currentScroll >= maxScroll - 50);
+    
+    if (isNearBottom) {
+      // 当滚动到距底部时触发加载
+      print('🔄 触发加载更多');
+      print('   当前滚动位置: $currentScroll');
+      print('   最大滚动位置: $maxScroll');
+      print('   阈值: $threshold');
+      print('   _hasMore: $_hasMore');
+      print('   _isLoading: $_isLoading');
+      print('   _isLoadingMore: $_isLoadingMore');
+      print('   _isLoadingTriggered: $_isLoadingTriggered');
+      print('   当前页码: $_currentPage');
+      print('   已加载帖子数: ${_posts.length}');
+      
+      // 立即设置标志，防止重复触发
+      _isLoadingTriggered = true;
+      
+      // 异步调用，但不等待完成就返回，避免阻塞滚动
+      _loadMorePosts();
+    }
   }
 
   Future<void> _fetchPosts() async {
@@ -327,11 +380,31 @@ class _HomePageState extends State<HomePage> {
     });
     
     try {
-      final posts = await PostService.getPosts(page: 1, pageSize: _pageSize);
+      final result = await PostService.getPosts(page: 1, pageSize: _pageSize);
+      final posts = result['posts'] as List<Post>;
+      final total = result['total'] as int;
+      
+      // 打印从后端获取的数据
+      print('📥 从后端获取的数据：');
+      print('   总帖子数：$total');
+      print('   第一页帖子数：${posts.length}');
+      print('   帖子ID列表：${posts.map((post) => post.id).toList()}');
+      
       setState(() {
         _posts = posts;
-        _hasMore = posts.length == _pageSize;
+        _totalPosts = total;
+        _currentPage = 1; // 确保页码正确
+        // 修复_hasMore判断逻辑：如果已加载数据小于总数，则还有更多
+        _hasMore = posts.length < total;
       });
+      
+      // 打印设置后的状态
+      print('📝 设置后的状态：');
+      print('   _posts长度：${_posts.length}');
+      print('   _totalPosts：$_totalPosts');
+      print('   _currentPage：$_currentPage');
+      print('   _hasMore：$_hasMore');
+      print('   判断逻辑：${_posts.length} < ${_totalPosts} = ${_hasMore}');
     } catch (e) {
       if (mounted) {
         ErrorHandler.handleException(context, e as Exception);
@@ -345,31 +418,76 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadMorePosts() async {
     // 如果正在刷新、正在加载更多或没有更多数据，则不执行
-    if (_isLoading || _isLoadingMore || !_hasMore) return;
+    if (_isLoading || _isLoadingMore || !_hasMore) {
+      print('⚠️ 阻止重复加载：_isLoading=$_isLoading, _isLoadingMore=$_isLoadingMore, _hasMore=$_hasMore');
+      return;
+    }
     
+    // 立即设置加载状态，防止并发调用
     setState(() {
       _isLoadingMore = true;
     });
     
+    print('📥 开始加载更多帖子');
+    print('   当前页码：$_currentPage');
+    print('   已加载帖子数：${_posts.length}');
+    print('   总帖子数：$_totalPosts');
+    print('   下一页码：${_currentPage + 1}');
+    print('   _hasMore：$_hasMore');
+    
     try {
       final nextPage = _currentPage + 1;
-      final morePosts = await PostService.getPosts(page: nextPage, pageSize: _pageSize);
+      print('📡 请求第 $nextPage 页数据...');
+      
+      final result = await PostService.getPosts(page: nextPage, pageSize: _pageSize);
+      final morePosts = result['posts'] as List<Post>;
+      final total = result['total'] as int;
+      
+      print('📥 加载更多帖子成功：');
+      print('   请求页码：$nextPage');
+      print('   返回的帖子数：${morePosts.length}');
+      print('   帖子ID列表：${morePosts.map((post) => post.id).toList()}');
+      print('   总帖子数：$total');
+      
+      // 如果返回的数据为空，说明没有更多数据了
+      if (morePosts.isEmpty) {
+        print('⚠️ 返回的数据为空，说明没有更多数据了');
+        setState(() {
+          _hasMore = false;
+          _isLoadingMore = false;
+        });
+        return;
+      }
       
       setState(() {
         _posts.addAll(morePosts);
         _currentPage = nextPage;
-        _hasMore = morePosts.length == _pageSize;
+        _totalPosts = total;
+        // 修复_hasMore判断逻辑：如果已加载数据小于总数，则还有更多
+        _hasMore = _posts.length < total;
       });
+      
+      print('📝 设置后的状态：');
+      print('   _posts长度：${_posts.length}');
+      print('   _currentPage：$_currentPage');
+      print('   _totalPosts：$_totalPosts');
+      print('   _hasMore：$_hasMore');
+      print('   判断逻辑：${_posts.length} < ${_totalPosts} = ${_hasMore}');
     } catch (e) {
       if (mounted) {
         ErrorHandler.handleException(context, e as Exception);
         // 请求失败时，停止尝试加载更多，避免无限请求
-        _hasMore = false;
+        setState(() {
+          _hasMore = false;
+        });
       }
+      print('❌ 加载更多帖子失败：$e');
     } finally {
       setState(() {
         _isLoadingMore = false;
       });
+      // 重置触发标志，允许下次触发
+      _isLoadingTriggered = false;
     }
   }
 
@@ -477,9 +595,12 @@ class _HomePageState extends State<HomePage> {
         onRefresh: _fetchPosts,
         color: Theme.of(context).primaryColor,
         child: ListView.builder(
-          itemCount: _isLoading && _posts.isEmpty 
-              ? 6 // 显示骨架屏
-              : _posts.length + 2, // +1 for header, +1 for loading more
+          controller: _scrollController, // 添加滚动控制器
+          itemCount: _isLoading && _posts.isEmpty
+              ? 7 // 显示骨架屏 (header + 6个骨架屏)
+              : _posts.isEmpty
+                  ? 2 // header + 空状态
+                  : _posts.length + 2, // +1 for header, +1 for bottom indicator
           itemBuilder: (context, index) {
             if (index == 0) {
               // Header Section
@@ -634,6 +755,11 @@ class _HomePageState extends State<HomePage> {
                return const PostSkeleton();
             }
             
+            // 如果加载完成但列表为空，显示空状态（只在第一个item显示）
+            if (!_isLoading && _posts.isEmpty && index == 1) {
+              return _buildEmptyState();
+            }
+            
             final postIndex = index - 1;
             if (postIndex < _posts.length) {
               // Post Item
@@ -643,44 +769,161 @@ class _HomePageState extends State<HomePage> {
                 child: _buildPostCard(post, postIndex),
               );
             } else {
-              // Loading More or End of List
-              if (_isLoadingMore) {
-                return const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              } else if (_hasMore) {
-                // Trigger load more when user scrolls to the end
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _loadMorePosts();
-                });
-                return const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              } else {
-                // End of List
-                return Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Center(
-                    child: Column(
-                      children: [
-                        Icon(Icons.check_circle_outline, color: Colors.grey[300], size: 40),
-                        const SizedBox(height: 8),
-                        Text(
-                          '已经到底啦 ~',
-                          style: TextStyle(color: Colors.grey[400]),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
+              // 底部指示器 - 简化逻辑，移除自动触发
+              return _buildBottomIndicator();
             }
           },
         ),
       ),
     );
+  }
+
+  // 构建空状态
+  Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF7F7FD5).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              size: 64,
+              color: Color(0xFF7F7FD5),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            '还没有动态呢 ~',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '发布第一条动态，开启萌系社交之旅吧！',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pushNamed(context, '/create-post');
+            },
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('发布动态'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7F7FD5),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+              elevation: 5,
+              shadowColor: const Color(0xFF7F7FD5).withOpacity(0.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 构建底部加载指示器
+  Widget _buildBottomIndicator() {
+    if (_isLoadingMore) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Center(
+          child: Column(
+            children: [
+              const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7F7FD5)),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '加载中...',
+                style: TextStyle(color: Colors.grey[400], fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else if (!_hasMore && _posts.isNotEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(32),
+        child: Center(
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.check_circle_outline, color: Colors.grey[400], size: 32),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '已经到底啦 ~',
+                style: TextStyle(
+                  color: Colors.grey[500],
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else if (_hasMore) {
+      // 有更多数据但不在加载中，显示可点击的加载提示
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: GestureDetector(
+          onTap: () {
+            if (!_isLoading && !_isLoadingMore && _hasMore) {
+              _loadMorePosts();
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF7F7FD5).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.arrow_downward_rounded,
+                  color: const Color(0xFF7F7FD5),
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '点击加载更多',
+                  style: TextStyle(
+                    color: const Color(0xFF7F7FD5),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 
   Widget _buildQuickAction(IconData icon, String label, Color bgColor, Color iconColor, {required VoidCallback onTap}) {
@@ -712,16 +955,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildPostCard(Post post, int index) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 0, // 去除默认阴影，使用边框或自定义阴影
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: Colors.grey[100]!, width: 1),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+            spreadRadius: 0,
+          ),
+        ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -747,15 +996,31 @@ class _HomePageState extends State<HomePage> {
                     child: Container(
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Theme.of(context).primaryColor.withOpacity(0.2),
-                          width: 2
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF7F7FD5).withOpacity(0.3),
+                            const Color(0xFF86A8E7).withOpacity(0.3),
+                          ],
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF7F7FD5).withOpacity(0.2),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ],
                       ),
-                      child: NetworkAvatarImage(
-                        imageUrl: post.userAvatar,
-                        radius: 22,
-                        placeholderIcon: Icons.person,
+                      padding: const EdgeInsets.all(2),
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                        child: NetworkAvatarImage(
+                          imageUrl: post.userAvatar,
+                          radius: 22,
+                          placeholderIcon: Icons.person,
+                        ),
                       ),
                     ),
                   ),
@@ -792,7 +1057,10 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 12),
 
             // 帖子内容
-            _renderContentWithEmojis(post.content),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: _renderContentWithEmojis(post.content),
+            ),
 
 
             // 话题标签
@@ -815,40 +1083,94 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 12),
 
             // 帖子图片
-            if (post.images.isNotEmpty)
-              SizedBox(
-                height: 200,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: post.images.length,
-                  itemBuilder: (context, imgIndex) {
-                    return Container(
-                      margin: const EdgeInsets.only(right: 10),
-                      width: 200,
-                      child: GestureDetector(
-                        onTap: () {},
-                        child: Hero(
-                          tag: 'post_img_${post.id}_$imgIndex',
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
+            if (post.images.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              post.images.length == 1
+                  ? GestureDetector(
+                      onTap: () {},
+                      child: Hero(
+                        tag: 'post_img_${post.id}_0',
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
                             child: NetworkImageWidget(
-                              imageUrl: post.images[imgIndex],
-                              width: 200,
-                              height: 200,
+                              imageUrl: post.images[0],
+                              width: double.infinity,
+                              height: 300,
                               fit: BoxFit.cover,
                             ),
                           ),
                         ),
                       ),
-                    );
-                  },
+                    )
+                  : SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: post.images.length,
+                        itemBuilder: (context, imgIndex) {
+                          return Container(
+                            margin: EdgeInsets.only(
+                              right: imgIndex < post.images.length - 1 ? 12 : 0,
+                            ),
+                            child: GestureDetector(
+                              onTap: () {},
+                              child: Hero(
+                                tag: 'post_img_${post.id}_$imgIndex',
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.grey.withOpacity(0.1),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: NetworkImageWidget(
+                                      imageUrl: post.images[imgIndex],
+                                      width: 200,
+                                      height: 200,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+            ],
+            
+            const SizedBox(height: 20),
+            Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.transparent,
+                    Colors.grey[200]!,
+                    Colors.transparent,
+                  ],
                 ),
               ),
-            
-            const SizedBox(height: 16),
-            const Divider(height: 1),
-            const SizedBox(height: 8),
+            ),
+            const SizedBox(height: 12),
 
             // 帖子互动
             Row(
@@ -886,24 +1208,34 @@ class _HomePageState extends State<HomePage> {
     String? label,
     required VoidCallback onTap
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.grey[600], size: 22),
-            const SizedBox(width: 6),
-            Text(
-              count?.toString() ?? label ?? '',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: Colors.grey[600], size: 20),
+              if (count != null || label != null) ...[
+                const SizedBox(width: 6),
+                Text(
+                  count?.toString() ?? label ?? '',
+                  style: TextStyle(
+                    color: Colors.grey[700],
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -934,7 +1266,11 @@ class _HomePageState extends State<HomePage> {
       // 如果没有表情占位符，直接返回普通文本
       return Text(
         content,
-        style: const TextStyle(fontSize: 15, height: 1.5),
+        style: const TextStyle(
+          fontSize: 15,
+          height: 1.6,
+          letterSpacing: 0.2,
+        ),
       );
     }
     
@@ -947,7 +1283,11 @@ class _HomePageState extends State<HomePage> {
       if (match.start > lastIndex) {
         spans.add(TextSpan(
           text: content.substring(lastIndex, match.start),
-          style: const TextStyle(fontSize: 15, height: 1.5),
+          style: const TextStyle(
+            fontSize: 15,
+            height: 1.6,
+            letterSpacing: 0.2,
+          ),
         ));
       }
       
@@ -975,7 +1315,11 @@ class _HomePageState extends State<HomePage> {
     if (lastIndex < content.length) {
       spans.add(TextSpan(
         text: content.substring(lastIndex),
-        style: const TextStyle(fontSize: 15, height: 1.5),
+        style: const TextStyle(
+          fontSize: 15,
+          height: 1.6,
+          letterSpacing: 0.2,
+        ),
       ));
     }
     

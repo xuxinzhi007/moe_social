@@ -67,7 +67,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
     try {
       // 临时方案：获取最新帖子并在前端过滤
       // 扩大获取范围到100条，以增加匹配几率
-      final allPosts = await ApiService.getPosts(page: 1, pageSize: 100);
+      final result = await ApiService.getPosts(page: 1, pageSize: 100);
+      final allPosts = result['posts'] as List<Post>;
 
       final myPosts = allPosts.where((p) => p.userId.toString() == widget.userId.toString()).toList();
       

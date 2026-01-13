@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'topic_tag.dart';
 
 class Post {
@@ -24,7 +25,7 @@ class Post {
     this.comments = 0,
     this.isLiked = false,
     required this.createdAt,
-    this.topicTags = const [], // 话题标签参数
+    this.topicTags = const [],
   });
 
   Post copyWith({
@@ -58,6 +59,13 @@ class Post {
   // 从JSON创建Post实例
   factory Post.fromJson(Map<String, dynamic> json) {
     try {
+      // 调试：打印原始JSON的关键字段
+      final contentStr = json['content']?.toString() ?? '';
+      final contentPreview = contentStr.length > 30 ? '${contentStr.substring(0, 30)}...' : contentStr;
+      print('📋 解析帖子 ID: ${json['id']}');
+      print('   内容: $contentPreview');
+      print('   images字段: ${json['images']} (类型: ${json['images']?.runtimeType})');
+      print('   topic_tags字段: ${json['topic_tags']} (类型: ${json['topic_tags']?.runtimeType})');
       // 解析日期，支持多种格式
       DateTime createdAt;
       final createdAtStr = json['created_at'] as String;
@@ -77,10 +85,50 @@ class Post {
       // 解析话题标签
       List<TopicTag> topicTags = [];
       if (json['topic_tags'] != null) {
-        final tagsList = json['topic_tags'] as List<dynamic>;
-        topicTags = tagsList
-            .map((tagJson) => TopicTag.fromJson(tagJson as Map<String, dynamic>))
-            .toList();
+        try {
+          final tagsList = json['topic_tags'];
+          if (tagsList is List) {
+            topicTags = tagsList
+                .where((tag) => tag != null)
+                .map((tagJson) {
+                  if (tagJson is Map<String, dynamic>) {
+                    return TopicTag.fromJson(tagJson);
+                  }
+                  return null;
+                })
+                .whereType<TopicTag>()
+                .toList();
+            print('📌 解析话题标签: ${topicTags.length} 个');
+          }
+        } catch (e) {
+          print('⚠️ 解析话题标签失败: $e');
+        }
+      } else {
+        print('⚠️ topic_tags 字段为 null');
+      }
+      
+      // 处理images为null的情况
+      final imagesData = json['images'];
+      List<String> images = [];
+      if (imagesData != null) {
+        if (imagesData is List) {
+          images = imagesData
+              .where((img) => img != null && img.toString().isNotEmpty)
+              .map((img) => img.toString())
+              .toList();
+          print('🖼️ 解析图片: ${images.length} 张');
+        } else if (imagesData is String && imagesData.isNotEmpty) {
+          // 兼容字符串格式（虽然不应该出现）
+          try {
+            final decoded = jsonDecode(imagesData) as List;
+            images = decoded.map((img) => img.toString()).toList();
+            print('🖼️ 从字符串解析图片: ${images.length} 张');
+          } catch (e) {
+            print('⚠️ 图片字符串解析失败: $e');
+          }
+        }
+      } else {
+        print('⚠️ images 字段为 null');
       }
 
       return Post(
@@ -89,9 +137,7 @@ class Post {
         userName: (json['user_name'] ?? '未知用户').toString(),
         userAvatar: (json['user_avatar'] ?? '').toString(),
         content: (json['content'] ?? '').toString(),
-        images: json['images'] != null
-            ? List<String>.from(json['images'] as List<dynamic>)
-            : <String>[],
+        images: images,
         likes: (json['likes'] as int?) ?? 0,
         comments: (json['comments'] as int?) ?? 0,
         isLiked: (json['is_liked'] as bool?) ?? false,
