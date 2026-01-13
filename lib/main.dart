@@ -13,6 +13,8 @@ import 'profile_page.dart';
 import 'settings_page.dart';
 import 'create_post_page.dart';
 import 'comments_page.dart';
+import 'topic_posts_page.dart';
+import 'models/topic_tag.dart';
 import 'edit_profile_page.dart';
 import 'vip_center_page.dart';
 import 'vip_purchase_page.dart';
@@ -227,6 +229,10 @@ class MyApp extends StatelessWidget {
             '/avatar-editor': (context) => const AvatarEditorPage(),
             '/emoji-store': (context) => const EmojiStorePage(),
             '/cloud-gallery': (context) => const CloudGalleryPage(),
+            '/topic-posts': (context) {
+              final tag = ModalRoute.of(context)!.settings.arguments as TopicTag;
+              return TopicPostsPage(topicTag: tag);
+            },
           },
         );
       },
@@ -384,6 +390,19 @@ class _HomePageState extends State<HomePage> {
       final posts = result['posts'] as List<Post>;
       final total = result['total'] as int;
       
+      // 从本地存储获取点赞状态
+      if (AuthService.isLoggedIn) {
+        final postIds = posts.map((post) => post.id).toList();
+        final likeStatuses = await AuthService.getLikeStatuses(postIds);
+        
+        // 更新帖子的点赞状态
+        for (int i = 0; i < posts.length; i++) {
+          final post = posts[i];
+          final isLiked = likeStatuses[post.id] ?? false;
+          posts[i] = post.copyWith(isLiked: isLiked);
+        }
+      }
+      
       // 打印从后端获取的数据
       print('📥 从后端获取的数据：');
       print('   总帖子数：$total');
@@ -443,6 +462,19 @@ class _HomePageState extends State<HomePage> {
       final morePosts = result['posts'] as List<Post>;
       final total = result['total'] as int;
       
+      // 从本地存储获取点赞状态
+      if (AuthService.isLoggedIn) {
+        final postIds = morePosts.map((post) => post.id).toList();
+        final likeStatuses = await AuthService.getLikeStatuses(postIds);
+        
+        // 更新帖子的点赞状态
+        for (int i = 0; i < morePosts.length; i++) {
+          final post = morePosts[i];
+          final isLiked = likeStatuses[post.id] ?? false;
+          morePosts[i] = post.copyWith(isLiked: isLiked);
+        }
+      }
+      
       print('📥 加载更多帖子成功：');
       print('   请求页码：$nextPage');
       print('   返回的帖子数：${morePosts.length}');
@@ -501,15 +533,25 @@ class _HomePageState extends State<HomePage> {
     }
     
     try {
+      final originalPost = _posts.firstWhere((post) => post.id == postId);
       final updatedPost = await PostService.toggleLike(postId, userId);
+      
+      // 保留原来的话题标签信息，避免点赞后话题标签消失
+      final postWithTags = updatedPost.copyWith(
+        topicTags: originalPost.topicTags,
+      );
+      
       setState(() {
         _posts = _posts.map((post) {
           if (post.id == postId) {
-            return updatedPost;
+            return postWithTags;
           }
           return post;
         }).toList();
       });
+      
+      // 保存点赞状态到本地存储
+      await AuthService.saveLikeStatus(postId, postWithTags.isLiked);
     } catch (e) {
       if (mounted) {
         ErrorHandler.handleException(context, e as Exception);
@@ -1074,7 +1116,12 @@ class _HomePageState extends State<HomePage> {
                   fontSize: 12,
                   showUsageCount: false,
                   onTap: () {
-                    // TODO: 点击标签可以跳转到标签页面或筛选相关帖子
+                    // 跳转到话题动态列表页面
+                    Navigator.pushNamed(
+                      context,
+                      '/topic-posts',
+                      arguments: tag,
+                    );
                   },
                 )).toList(),
               ),

@@ -436,43 +436,52 @@ class TopicTagDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: fontSize * 0.8,
-          vertical: fontSize * 0.4,
-        ),
-        decoration: BoxDecoration(
-          color: tag.color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(fontSize),
-          border: Border.all(
-            color: tag.color.withOpacity(0.6),
-            width: 0.8,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              tag.name,
-              style: TextStyle(
-                color: tag.color,
-                fontSize: fontSize,
-                fontWeight: FontWeight.w500,
-              ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.red,
+              width: 1.5,
             ),
-            if (showUsageCount && tag.usageCount > 0) ...[
-              SizedBox(width: fontSize * 0.3),
-              Text(
-                '${tag.usageCount}',
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '+ ',
                 style: TextStyle(
-                  color: tag.color.withOpacity(0.7),
-                  fontSize: fontSize * 0.8,
+                  color: Colors.red,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                tag.name,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
-          ],
+          ),
         ),
       ),
     );

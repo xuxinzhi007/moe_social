@@ -142,47 +142,85 @@ class TopicTag {
 
   /// 从JSON创建实例
   factory TopicTag.fromJson(Map<String, dynamic> json) {
-    // 解析颜色，支持十六进制字符串和整数
-    Color color;
-    final colorValue = json['color'];
-    if (colorValue is String) {
-      // 处理十六进制颜色字符串
-      try {
-        final hexString = colorValue.replaceAll('#', '');
-        final colorInt = int.parse(hexString, radix: 16);
-        color = Color(colorInt | 0xFF000000); // 添加alpha通道
-      } catch (e) {
-        // 如果解析失败，使用默认颜色
+    try {
+      print('🏷️ 解析话题标签JSON: $json');
+      
+      // 解析颜色，支持十六进制字符串和整数
+      Color color;
+      final colorValue = json['color'];
+      if (colorValue is String) {
+        // 处理十六进制颜色字符串
+        try {
+          final hexString = colorValue.replaceAll('#', '');
+          final colorInt = int.parse(hexString, radix: 16);
+          color = Color(colorInt | 0xFF000000); // 添加alpha通道
+        } catch (e) {
+          print('⚠️ 颜色解析失败: $e，使用默认颜色');
+          // 如果解析失败，使用默认颜色
+          color = const Color(0xFF42A5F5);
+        }
+      } else if (colorValue is int) {
+        // 处理整数颜色值
+        color = Color(colorValue);
+      } else {
+        // 默认为蓝色
         color = const Color(0xFF42A5F5);
       }
-    } else if (colorValue is int) {
-      // 处理整数颜色值
-      color = Color(colorValue);
-    } else {
-      // 默认为蓝色
-      color = const Color(0xFF42A5F5);
+
+      // 处理下划线命名和驼峰命名的兼容，确保即使没有日期字段也能正常解析
+      DateTime createdAt;
+      final createdAtStr = json['created_at'] as String? ?? json['createdAt'] as String?;
+      if (createdAtStr != null && createdAtStr.isNotEmpty) {
+        try {
+          createdAt = DateTime.parse(createdAtStr);
+        } catch (e) {
+          print('⚠️ 日期解析失败: $e，使用当前时间');
+          createdAt = DateTime.now();
+        }
+      } else {
+        // 如果没有日期字段或日期字段为空，使用当前时间
+        print('⚠️ 没有日期字段，使用当前时间');
+        createdAt = DateTime.now();
+      }
+      
+      final usageCount = (json['usage_count'] as int?) ?? (json['usageCount'] as int?) ?? 0;
+      final isOfficial = (json['is_official'] as bool?) ?? (json['isOfficial'] as bool?) ?? false;
+      final createdBy = json['created_by'] as String? ?? json['createdBy'] as String?;
+      final description = json['description'] as String?;
+      final relatedTags = (json['related_tags'] as List<dynamic>?)?.cast<String>() ?? 
+                        (json['relatedTags'] as List<dynamic>?)?.cast<String>() ?? [];
+
+      // 确保id和name字段存在，支持数字和字符串格式
+      final idValue = json['id'];
+      final id = idValue?.toString() ?? '';
+      final name = json['name']?.toString() ?? '';
+      
+      print('🏷️ 解析标签字段: id=$idValue (${idValue.runtimeType}) -> "$id", name="$name"');
+      
+      if (id.isEmpty || name.isEmpty) {
+        throw Exception('话题标签缺少必要字段: id=$id, name=$name');
+      }
+
+      final tag = TopicTag(
+        id: id,
+        name: name,
+        createdBy: createdBy,
+        createdAt: createdAt,
+        usageCount: usageCount,
+        color: color,
+        description: description,
+        isOfficial: isOfficial,
+        relatedTags: relatedTags,
+      );
+      
+      print('✅ 成功解析话题标签: $name (ID: $id)');
+      return tag;
+    } catch (e, stackTrace) {
+      print('❌ TopicTag.fromJson错误: $e');
+      print('❌ JSON数据: $json');
+      print('❌ 堆栈跟踪: $stackTrace');
+      rethrow;
     }
-
-    // 处理下划线命名和驼峰命名的兼容
-    final createdAtStr = json['created_at'] as String? ?? json['createdAt'] as String;
-    final usageCount = (json['usage_count'] as int?) ?? (json['usageCount'] as int?) ?? 0;
-    final isOfficial = (json['is_official'] as bool?) ?? (json['isOfficial'] as bool?) ?? false;
-    final createdBy = json['created_by'] as String? ?? json['createdBy'] as String?;
-    final description = json['description'] as String?;
-    final relatedTags = (json['related_tags'] as List<dynamic>?)?.cast<String>() ?? 
-                      (json['relatedTags'] as List<dynamic>?)?.cast<String>() ?? [];
-
-    return TopicTag(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      createdBy: createdBy,
-      createdAt: DateTime.parse(createdAtStr),
-      usageCount: usageCount,
-      color: color,
-      description: description,
-      isOfficial: isOfficial,
-      relatedTags: relatedTags,
-    );
   }
 
   /// 转换为JSON
