@@ -95,7 +95,7 @@ func (l *GetPostCommentsLogic) GetPostComments(in *super.GetPostCommentsReq) (*s
 	for _, comment := range comments {
 		// 获取用户信息
 		username := "未知用户"
-		avatar := "https://via.placeholder.com/150"
+		avatar := "https://picsum.photos/150"
 		if user, ok := userMap[comment.UserID]; ok {
 			if user.Username != "" {
 				username = user.Username

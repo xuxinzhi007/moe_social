@@ -169,60 +169,66 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     
-    return MaterialApp(
-      title: 'Moe Social',
-      debugShowCheckedModeBanner: false,
-      theme: themeProvider.currentTheme,
-      initialRoute: AuthService.isLoggedIn ? '/home' : '/login',
-      routes: {
-        '/login': (context) => const LoginPage(),
-        '/register': (context) => const RegisterPage(),
-        '/home': (context) => const MainPage(),
-        '/profile': (context) => const ProfilePage(),
-        '/settings': (context) => const SettingsPage(),
-        '/create-post': (context) => const CreatePostPage(),
-        '/comments': (context) => CommentsPage(
-              postId: ModalRoute.of(context)!.settings.arguments as String,
-            ),
-        '/edit-profile': (context) => EditProfilePage(
-              user: ModalRoute.of(context)!.settings.arguments as dynamic,
-            ),
-        '/vip-center': (context) => const VipCenterPage(),
-        '/vip-purchase': (context) => const VipPurchasePage(),
-        '/vip-orders': (context) => const VipOrdersPage(),
-        '/vip-history': (context) => const VipHistoryPage(),
-        '/forgot-password': (context) => const ForgotPasswordPage(),
-        '/verify-code': (context) => VerifyCodePage(
-              email: ModalRoute.of(context)!.settings.arguments as String,
-            ),
-        '/reset-password': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-          return ResetPasswordPage(
-            email: args['email'] as String,
-            code: args['code'] as String,
-          );
-        },
-        '/notifications': (context) => const NotificationCenterPage(),
-        '/wallet': (context) => const WalletPage(),
-        '/recharge': (context) => const RechargePage(),
-        '/gacha': (context) => GachaPage(), // 注册扭蛋页路由
-        '/user-profile': (context) {
-          final args = ModalRoute.of(context)?.settings.arguments;
-          if (args is! Map<String, dynamic>) {
-            // 如果参数丢失（例如Web端刷新），重定向回首页或显示错误页
-            return const Scaffold(
-              body: Center(child: Text('页面参数丢失，请返回首页重新进入')),
-            );
-          }
-          return UserProfilePage(
-            userId: args['userId'] as String,
-            userName: args['userName'] as String?,
-            userAvatar: args['userAvatar'] as String?,
-            heroTag: args['heroTag'] as String?,);
-        },
-        '/avatar-editor': (context) => const AvatarEditorPage(),
-        '/emoji-store': (context) => const EmojiStorePage(),
-        '/cloud-gallery': (context) => const CloudGalleryPage(),
+    return FutureBuilder(
+      future: AuthService.init(), // 每次构建时都尝试恢复登录状态
+      builder: (context, snapshot) {
+        // 构建应用，无论登录状态是否恢复完成
+        return MaterialApp(
+          title: 'Moe Social',
+          debugShowCheckedModeBanner: false,
+          theme: themeProvider.currentTheme,
+          initialRoute: AuthService.isLoggedIn ? '/home' : '/login',
+          routes: {
+            '/login': (context) => const LoginPage(),
+            '/register': (context) => const RegisterPage(),
+            '/home': (context) => const MainPage(),
+            '/profile': (context) => const ProfilePage(),
+            '/settings': (context) => const SettingsPage(),
+            '/create-post': (context) => const CreatePostPage(),
+            '/comments': (context) => CommentsPage(
+                  postId: ModalRoute.of(context)!.settings.arguments as String,
+                ),
+            '/edit-profile': (context) => EditProfilePage(
+                  user: ModalRoute.of(context)!.settings.arguments as dynamic,
+                ),
+            '/vip-center': (context) => const VipCenterPage(),
+            '/vip-purchase': (context) => const VipPurchasePage(),
+            '/vip-orders': (context) => const VipOrdersPage(),
+            '/vip-history': (context) => const VipHistoryPage(),
+            '/forgot-password': (context) => const ForgotPasswordPage(),
+            '/verify-code': (context) => VerifyCodePage(
+                  email: ModalRoute.of(context)!.settings.arguments as String,
+                ),
+            '/reset-password': (context) {
+              final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+              return ResetPasswordPage(
+                email: args['email'] as String,
+                code: args['code'] as String,
+              );
+            },
+            '/notifications': (context) => const NotificationCenterPage(),
+            '/wallet': (context) => const WalletPage(),
+            '/recharge': (context) => const RechargePage(),
+            '/gacha': (context) => GachaPage(), // 注册扭蛋页路由
+            '/user-profile': (context) {
+              final args = ModalRoute.of(context)?.settings.arguments;
+              if (args is! Map<String, dynamic>) {
+                // 如果参数丢失（例如Web端刷新），重定向回首页或显示错误页
+                return const Scaffold(
+                  body: Center(child: Text('页面参数丢失，请返回首页重新进入')),
+                );
+              }
+              return UserProfilePage(
+                userId: args['userId'] as String,
+                userName: args['userName'] as String?,
+                userAvatar: args['userAvatar'] as String?,
+                heroTag: args['heroTag'] as String?,);
+            },
+            '/avatar-editor': (context) => const AvatarEditorPage(),
+            '/emoji-store': (context) => const EmojiStorePage(),
+            '/cloud-gallery': (context) => const CloudGalleryPage(),
+          },
+        );
       },
     );
   }
@@ -786,10 +792,8 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 12),
 
             // 帖子内容
-            Text(
-              post.content,
-              style: const TextStyle(fontSize: 15, height: 1.5),
-            ),
+            _renderContentWithEmojis(post.content),
+
 
             // 话题标签
             if (post.topicTags.isNotEmpty) ...[
@@ -918,6 +922,68 @@ class _HomePageState extends State<HomePage> {
     } else {
       return '${time.month}月${time.day}日';
     }
+  }
+  
+  /// 将文本内容中的表情占位符转换为富文本，显示实际的表情图片
+  Widget _renderContentWithEmojis(String content) {
+    // 表情占位符正则表达式：[emoji:url]格式
+    final emojiRegex = RegExp(r'\[emoji:(.*?)\]');
+    final matches = emojiRegex.allMatches(content);
+    
+    if (matches.isEmpty) {
+      // 如果没有表情占位符，直接返回普通文本
+      return Text(
+        content,
+        style: const TextStyle(fontSize: 15, height: 1.5),
+      );
+    }
+    
+    // 构建富文本
+    final List<InlineSpan> spans = [];
+    int lastIndex = 0;
+    
+    for (final match in matches) {
+      // 添加匹配之前的普通文本
+      if (match.start > lastIndex) {
+        spans.add(TextSpan(
+          text: content.substring(lastIndex, match.start),
+          style: const TextStyle(fontSize: 15, height: 1.5),
+        ));
+      }
+      
+      // 获取表情URL
+      final emojiUrl = match.group(1) ?? '';
+      
+      // 添加表情图片
+      spans.add(WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          child: Image.network(
+            emojiUrl,
+            width: 24,
+            height: 24,
+            fit: BoxFit.cover,
+          ),
+        ),
+      ));
+      
+      lastIndex = match.end;
+    }
+    
+    // 添加剩余的普通文本
+    if (lastIndex < content.length) {
+      spans.add(TextSpan(
+        text: content.substring(lastIndex),
+        style: const TextStyle(fontSize: 15, height: 1.5),
+      ));
+    }
+    
+    return RichText(
+      text: TextSpan(
+        children: spans,
+      ),
+    );
   }
 }
 

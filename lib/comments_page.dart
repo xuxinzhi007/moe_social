@@ -90,7 +90,7 @@ class _CommentsPageState extends State<CommentsPage> {
         postId: widget.postId,
         userId: userId,
         userName: _userName ?? '用户',
-        userAvatar: _userAvatar ?? 'https://via.placeholder.com/150',
+        userAvatar: _userAvatar ?? 'https://picsum.photos/150',
         content: _commentController.text.trim(),
         likes: 0,
         isLiked: false,

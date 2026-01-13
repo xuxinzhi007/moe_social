@@ -3,7 +3,9 @@ import '../services/emoji_service.dart';
 import '../emoji/emoji_data.dart';
 
 class EmojiStorePage extends StatefulWidget {
-  const EmojiStorePage({Key? key}) : super(key: key);
+  const EmojiStorePage({Key? key, this.onEmojiSelected}) : super(key: key);
+
+  final Function(String)? onEmojiSelected;
 
   @override
   State<EmojiStorePage> createState() => _EmojiStorePageState();
@@ -153,8 +155,12 @@ class _EmojiStorePageState extends State<EmojiStorePage> {
                                   child: Center(child: CircularProgressIndicator()),
                                 );
                               } else if (_hasMore) {
-                                // 加载更多
-                                _loadEmojiPacks(isLoadMore: true);
+                                // 延迟加载更多，避免无限循环
+                                Future.microtask(() {
+                                  if (mounted) {
+                                    _loadEmojiPacks(isLoadMore: true);
+                                  }
+                                });
                                 return const Padding(
                                   padding: EdgeInsets.all(16),
                                   child: Center(child: CircularProgressIndicator()),
@@ -302,11 +308,19 @@ class _EmojiStorePageState extends State<EmojiStorePage> {
                                           final emoji = pack.emojis[emojiIndex];
                                           return Padding(
                                             padding: const EdgeInsets.only(right: 8),
-                                            child: Image.network(
-                                              emoji.imageUrl,
-                                              width: 60,
-                                              height: 60,
-                                              fit: BoxFit.cover,
+                                            child: GestureDetector(
+                                              onTap: () {
+                                                if (widget.onEmojiSelected != null) {
+                                                  widget.onEmojiSelected!(emoji.imageUrl);
+                                                  Navigator.pop(context);
+                                                }
+                                              },
+                                              child: Image.network(
+                                                emoji.imageUrl,
+                                                width: 60,
+                                                height: 60,
+                                                fit: BoxFit.cover,
+                                              ),
                                             ),
                                           );
                                         },

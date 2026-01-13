@@ -53,7 +53,7 @@ func (l *RegisterLogic) Register(in *super.RegisterReq) (*super.RegisterResp, er
 		Username: in.Username,
 		Password: in.Password,
 		Email:    in.Email,
-		Avatar:   "https://via.placeholder.com/150", // 设置默认头像
+		Avatar:   "https://picsum.photos/150", // 设置默认头像
 		IsVip:    false,
 	}
 

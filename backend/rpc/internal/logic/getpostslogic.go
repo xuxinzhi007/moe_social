@@ -90,7 +90,7 @@ func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, er
 
 		// 获取用户信息
 		username := "未知用户"
-		avatar := "https://via.placeholder.com/150"
+		avatar := "https://picsum.photos/150"
 		if user, ok := userMap[post.UserID]; ok {
 			if user.Username != "" {
 				username = user.Username

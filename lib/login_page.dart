@@ -178,87 +178,83 @@ class _LoginPageState extends State<LoginPage> {
                       
                       const Spacer(flex: 1),
 
-                      // 表单卡片
-                      FadeInUp(
-                        duration: const Duration(milliseconds: 1000),
-                        delay: const Duration(milliseconds: 200),
-                        child: Container(
-                          padding: const EdgeInsets.all(32),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(30),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.1),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
+                      // 表单卡片 - 移除FadeInUp动画以避免快速输入时的问题
+                      Container(
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              _buildTextField(
+                                controller: _emailController,
+                                label: '邮箱',
+                                icon: Icons.email_outlined,
+                                validator: Validators.email,
                               ),
-                            ],
-                          ),
-                          child: Form(
-                            key: _formKey,
-                            child: Column(
-                              children: [
-                                _buildTextField(
-                                  controller: _emailController,
-                                  label: '邮箱',
-                                  icon: Icons.email_outlined,
-                                  validator: Validators.email,
-                                ),
-                                const SizedBox(height: 20),
-                                _buildTextField(
-                                  controller: _passwordController,
-                                  label: '密码',
-                                  icon: Icons.lock_outline,
-                                  isPassword: true,
-                                  validator: Validators.password,
-                                ),
-                                const SizedBox(height: 12),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: TextButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                const ForgotPasswordPage()),
-                                      );
-                                    },
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Colors.grey[600],
-                                    ),
-                                    child: const Text('忘记密码？'),
+                              const SizedBox(height: 20),
+                              _buildTextField(
+                                controller: _passwordController,
+                                label: '密码',
+                                icon: Icons.lock_outline,
+                                isPassword: true,
+                                validator: Validators.password,
+                              ),
+                              const SizedBox(height: 12),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              const ForgotPasswordPage()),
+                                    );
+                                  },
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.grey[600],
                                   ),
+                                  child: const Text('忘记密码？'),
                                 ),
-                                const SizedBox(height: 20),
-                                _isLoading
-                                    ? CircularProgressIndicator(color: _primaryColor)
-                                    : SizedBox(
-                                        width: double.infinity,
-                                        height: 50,
-                                        child: ElevatedButton(
-                                          onPressed: _login,
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: _primaryColor,
-                                            foregroundColor: Colors.white,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(25),
-                                            ),
-                                            elevation: 5,
-                                            shadowColor: _primaryColor.withOpacity(0.4),
+                              ),
+                              const SizedBox(height: 20),
+                              _isLoading
+                                  ? CircularProgressIndicator(color: _primaryColor)
+                                  : SizedBox(
+                                      width: double.infinity,
+                                      height: 50,
+                                      child: ElevatedButton(
+                                        onPressed: _login,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: _primaryColor,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(25),
                                           ),
-                                          child: const Text(
-                                            '登 录',
-                                            style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                          elevation: 5,
+                                          shadowColor: _primaryColor.withOpacity(0.4),
+                                        ),
+                                        child: const Text(
+                                          '登 录',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                       ),
-                              ],
-                            ),
+                                    ),
+                            ],
                           ),
                         ),
                       ),

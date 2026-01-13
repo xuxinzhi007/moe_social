@@ -73,7 +73,7 @@ class Comment {
         postId: (json['post_id'] ?? '').toString(),
         userId: (json['user_id'] ?? '').toString(),
         userName: (json['user_name'] ?? '未知用户').toString(),
-        userAvatar: (json['user_avatar'] ?? 'https://via.placeholder.com/150').toString(),
+        userAvatar: (json['user_avatar'] ?? 'https://picsum.photos/150').toString(),
         content: (json['content'] ?? '').toString(),
         likes: (json['likes'] as int?) ?? 0,
         isLiked: (json['is_liked'] ?? false) as bool,

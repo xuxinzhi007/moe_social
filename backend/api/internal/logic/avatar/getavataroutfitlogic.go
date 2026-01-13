@@ -36,17 +36,17 @@ func (l *GetAvatarOutfitLogic) GetAvatarOutfit(req *types.GetAvatarOutfitReq) (r
 		Style:       "casual",
 		Price:       0,
 		IsFree:      true,
-		ImageUrl:    "https://via.placeholder.com/200/90EE90/FFFFFF?text=Outfit",
+		ImageUrl:    "https://picsum.photos/200/200?random=4",
 		Parts: []types.OutfitPart{
 			{
 				Id:       "1-1",
 				Type:     "top",
-				ImageUrl: "https://via.placeholder.com/150/4682B4/FFFFFF?text=Top",
+				ImageUrl: "https://picsum.photos/150/150?random=5",
 			},
 			{
 				Id:       "1-2",
 				Type:     "bottom",
-				ImageUrl: "https://via.placeholder.com/150/DA70D6/FFFFFF?text=Bottom",
+				ImageUrl: "https://picsum.photos/150/150?random=6",
 			},
 		},
 		CreatedAt: "2026-01-12",

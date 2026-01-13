@@ -96,7 +96,7 @@ func (l *CreateCommentLogic) CreateComment(in *super.CreateCommentReq) (*super.C
 
 	// 获取用户信息
 	username := "未知用户"
-	avatar := "https://via.placeholder.com/150"
+	avatar := "https://picsum.photos/150"
 	if comment.User.ID > 0 {
 		if comment.User.Username != "" {
 			username = comment.User.Username

@@ -9,6 +9,7 @@ import '../services/post_service.dart';
 import '../utils/error_handler.dart';
 import '../widgets/avatar_image.dart';
 import '../widgets/compact_topic_selector.dart';
+import '../emoji/emoji_store_page.dart';
 import '../gallery/cloud_gallery_page.dart';
 
 class CreatePostPage extends StatefulWidget {
@@ -55,6 +56,34 @@ class _CreatePostPageState extends State<CreatePostPage> {
               _selectedImageUrls.add(imageUrl);
             });
             ErrorHandler.showSuccess(context, '图片已添加');
+          },
+        ),
+      ),
+    );
+  }
+  
+  void _openEmojiStore() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EmojiStorePage(
+          onEmojiSelected: (emojiUrl) {
+            // 将选择的表情URL插入到文本内容中
+            final controller = _contentController;
+            final cursorPosition = controller.selection.baseOffset;
+            final text = controller.text;
+            
+            // 确保cursorPosition在有效范围内
+            final safeCursorPosition = cursorPosition >= 0 && cursorPosition <= text.length ? cursorPosition : text.length;
+            
+            // 在光标位置插入表情URL占位符
+            final newText = text.substring(0, safeCursorPosition) + '[emoji:$emojiUrl]' + text.substring(safeCursorPosition);
+            controller.text = newText;
+            
+            // 将光标移动到插入内容之后
+            controller.selection = TextSelection.collapsed(offset: safeCursorPosition + '[emoji:$emojiUrl]'.length);
+            
+            ErrorHandler.showSuccess(context, '表情已添加');
           },
         ),
       ),
@@ -134,7 +163,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         userId: userId,
         userName: _userName ?? '用户',
-        userAvatar: _userAvatar ?? 'https://via.placeholder.com/150',
+        userAvatar: _userAvatar ?? 'https://picsum.photos/150',
         content: _contentController.text.trim(),
         images: imageUrls,
         likes: 0,
@@ -397,10 +426,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                     icon: Icons.emoji_emotions_outlined,
                     label: '表情',
                     color: Colors.purple,
-                    onTap: () {
-                      // TODO: 打开表情包选择器
-                      Navigator.pushNamed(context, '/emoji-store');
-                    },
+                    onTap: _openEmojiStore,
                   ),
                   const SizedBox(width: 12),
                   _buildToolButton(
