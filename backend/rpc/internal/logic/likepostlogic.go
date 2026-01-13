@@ -116,7 +116,7 @@ func (l *LikePostLogic) LikePost(in *super.LikePostReq) (*super.LikePostResp, er
 
 	// 获取用户信息
 	username := "未知用户"
-	avatar := "https://via.placeholder.com/150"
+	avatar := "https://picsum.photos/150"
 	if post.User.ID > 0 {
 		if post.User.Username != "" {
 			username = post.User.Username

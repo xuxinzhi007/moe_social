@@ -17,7 +17,7 @@ class CloudGalleryPage extends StatefulWidget {
 
 class _CloudGalleryPageState extends State<CloudGalleryPage> {
   List<dynamic> _images = [];
-  bool _isLoading = true;
+  bool _isLoading = false;
   int _currentPage = 1;
   int _pageSize = 10;
   int _total = 0;

@@ -40,17 +40,17 @@ func (l *GetUserEmojiPacksLogic) GetUserEmojiPacks(req *types.GetUserEmojiPacksR
 		Category:    "animals",
 		Price:       0,
 		IsFree:      true,
-		CoverImage:  "https://via.placeholder.com/300x200/7F7FD5/FFFFFF?text=Emoji+Pack",
+		CoverImage:  "https://picsum.photos/300/200?random=1",
 		Emojis: []types.Emoji{
 			{
 				Id:         "1-1",
-				ImageUrl:   "https://via.placeholder.com/100/FFB6C1/FFFFFF?text=😺",
+				ImageUrl:   "https://picsum.photos/100/100?random=2",
 				Tags:       []string{"cat", "cute"},
 				IsAnimated: false,
 			},
 			{
 				Id:         "1-2",
-				ImageUrl:   "https://via.placeholder.com/100/87CEFA/FFFFFF?text=😸",
+				ImageUrl:   "https://picsum.photos/100/100?random=3",
 				Tags:       []string{"cat", "happy"},
 				IsAnimated: false,
 			},
