@@ -890,7 +890,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getFollowings(String userId, {int page = 1, int pageSize = 10}) async {
     final result = await _request('/api/user/$userId/following?page=$page&page_size=$pageSize');
     final followingsJson = result['data'] as List;
-    final followings = followingsJson.map((json) => User.fromJson(json)).toList();
+    final followings = followingsJson.map((json) => User.fromJson(json as Map<String, dynamic>)).toList();
     return {
       'followings': followings,
       'total': result['total'] as int,
@@ -901,7 +901,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getFollowers(String userId, {int page = 1, int pageSize = 10}) async {
     final result = await _request('/api/user/$userId/followers?page=$page&page_size=$pageSize');
     final followersJson = result['data'] as List;
-    final followers = followersJson.map((json) => User.fromJson(json)).toList();
+    final followers = followersJson.map((json) => User.fromJson(json as Map<String, dynamic>)).toList();
     return {
       'followers': followers,
       'total': result['total'] as int,

@@ -28,17 +28,30 @@ class _FollowingPageState extends State<FollowingPage> {
   }
 
   Future<void> _loadFollowings() async {
-    if (!_hasMore) return;
+    // 添加更多调试日志
+    print('🔍 开始加载关注列表: userId=$widget.userId, page=$_page, _hasMore=$_hasMore, _isLoading=$_isLoading');
+    
+    if (!_hasMore || _isLoading) {
+      print('❌ 跳过加载: _hasMore=$_hasMore, _isLoading=$_isLoading');
+      return;
+    }
 
     setState(() {
       _isLoading = true;
     });
 
     try {
+      print('📡 发送API请求: userId=$widget.userId, page=$_page, pageSize=10');
       final result = await ApiService.getFollowings(widget.userId, page: _page, pageSize: 10);
+      
+      print('📥 API响应: $result');
+      
+      // 简化数据处理，直接使用API返回的数据
       final followings = result['followings'] as List<User>;
       final total = result['total'] as int;
 
+      print('📊 解析结果: followings=${followings.length}, total=$total');
+      
       if (mounted) {
         setState(() {
           if (_page == 1) {
@@ -52,10 +65,19 @@ class _FollowingPageState extends State<FollowingPage> {
         });
       }
     } catch (e) {
+      print('❌ 加载关注列表失败: $e');
+      print('❌ 错误类型: ${e.runtimeType}');
+      print('❌ 错误详情: ${e.toString()}');
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('加载关注列表失败: $e')),
         );
+        // 确保状态正确更新，避免无限加载
+        setState(() {
+          _isLoading = false;
+          _hasMore = false;
+        });
       }
     } finally {
       if (mounted) {
@@ -85,11 +107,17 @@ class _FollowingPageState extends State<FollowingPage> {
                 itemCount: _followings.length + 1,
                 itemBuilder: (context, index) {
                   if (index == _followings.length) {
-                    if (_hasMore) {
-                      // 使用 Future.microtask 延迟加载，避免在构建过程中调用 setState()
+                    if (_hasMore && !_isLoading) {
+                      // 只在还有更多数据且不在加载状态时才加载，避免重复请求
                       Future.microtask(() {
                         _loadFollowings();
                       });
+                      return const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    } else if (_isLoading) {
+                      // 如果正在加载，只显示加载指示器
                       return const Padding(
                         padding: EdgeInsets.all(16),
                         child: Center(child: CircularProgressIndicator()),
