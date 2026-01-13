@@ -50,7 +50,7 @@ class ApiService {
   /// - 你提到的 “user_avatar/图片信息刷屏” 就是这里控制的
   static const bool _enableApiLog = true;
   /// 是否输出“超详细”日志（会非常吵；默认关闭）
-  static const bool _verboseApiLog = false;
+  static const bool _verboseApiLog = true;
   
   // 生产环境地址（cpolar隧道）
   static const String _productionUrl = 'http://7928d084.r3.cpolar.top';
@@ -367,30 +367,37 @@ class ApiService {
   }
 
   // 获取帖子列表（支持分页）
-  static Future<List<Post>> getPosts({int page = 1, int pageSize = 10}) async {
+  static Future<Map<String, dynamic>> getPosts({int page = 1, int pageSize = 10}) async {
     final result = await _request('/api/posts?page=$page&page_size=$pageSize');
-    if (_verboseApiLog) {
-      _log('📥 getPosts响应数据: ${_safeJsonForLog(result)}');
-      _log('📥 data类型: ${result['data'].runtimeType}');
-      _log('📥 total: ${result['total']}');
-    }
+    // 始终输出total字段的值和postsJson的长度，不依赖于_verboseApiLog
+    _log('📥 getPosts响应数据: ${_safeJsonForLog(result)}');
+    _log('📥 data类型: ${result['data'].runtimeType}');
+    _log('📥 total: ${result['total']}');
     
     final postsJson = result['data'] as List;
-    if (_verboseApiLog) {
-      _log('📥 postsJson长度: ${postsJson.length}');
-    }
+    _log('📥 postsJson长度: ${postsJson.length}');
+    _log('📥 原始JSON: ${json.encode(result)}'); // 输出原始JSON，不做任何处理
+    _log('📥 解析的帖子ID列表: ${postsJson.map((json) => json['id']).toList()}'); // 输出帖子ID列表
     
     try {
       final posts = postsJson.map((json) {
+        // 始终输出关键字段的调试信息
+        _log('📥 解析帖子:');
+        _log('   ID: ${json['id']}');
+        _log('   images: ${json['images']} (${json['images']?.runtimeType})');
+        _log('   topic_tags: ${json['topic_tags']} (${json['topic_tags']?.runtimeType})');
         if (_verboseApiLog) {
-          _log('📥 解析帖子JSON: ${_safeJsonForLog(json)}');
+          _log('📥 完整JSON: ${_safeJsonForLog(json)}');
         }
         return Post.fromJson(json);
       }).toList();
       if (_verboseApiLog) {
         _log('📥 成功解析${posts.length}条帖子');
       }
-      return posts;
+      return {
+        'posts': posts,
+        'total': result['total'] as int,
+      };
     } catch (e, stackTrace) {
       _log('❌ 解析帖子失败: $e');
       _log('❌ 堆栈跟踪: $stackTrace');

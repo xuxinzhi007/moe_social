@@ -142,16 +142,46 @@ class TopicTag {
 
   /// 从JSON创建实例
   factory TopicTag.fromJson(Map<String, dynamic> json) {
+    // 解析颜色，支持十六进制字符串和整数
+    Color color;
+    final colorValue = json['color'];
+    if (colorValue is String) {
+      // 处理十六进制颜色字符串
+      try {
+        final hexString = colorValue.replaceAll('#', '');
+        final colorInt = int.parse(hexString, radix: 16);
+        color = Color(colorInt | 0xFF000000); // 添加alpha通道
+      } catch (e) {
+        // 如果解析失败，使用默认颜色
+        color = const Color(0xFF42A5F5);
+      }
+    } else if (colorValue is int) {
+      // 处理整数颜色值
+      color = Color(colorValue);
+    } else {
+      // 默认为蓝色
+      color = const Color(0xFF42A5F5);
+    }
+
+    // 处理下划线命名和驼峰命名的兼容
+    final createdAtStr = json['created_at'] as String? ?? json['createdAt'] as String;
+    final usageCount = (json['usage_count'] as int?) ?? (json['usageCount'] as int?) ?? 0;
+    final isOfficial = (json['is_official'] as bool?) ?? (json['isOfficial'] as bool?) ?? false;
+    final createdBy = json['created_by'] as String? ?? json['createdBy'] as String?;
+    final description = json['description'] as String?;
+    final relatedTags = (json['related_tags'] as List<dynamic>?)?.cast<String>() ?? 
+                      (json['relatedTags'] as List<dynamic>?)?.cast<String>() ?? [];
+
     return TopicTag(
       id: json['id'] as String,
       name: json['name'] as String,
-      createdBy: json['createdBy'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      usageCount: json['usageCount'] as int? ?? 0,
-      color: Color(json['color'] as int),
-      description: json['description'] as String?,
-      isOfficial: json['isOfficial'] as bool? ?? false,
-      relatedTags: (json['relatedTags'] as List<dynamic>?)?.cast<String>() ?? [],
+      createdBy: createdBy,
+      createdAt: DateTime.parse(createdAtStr),
+      usageCount: usageCount,
+      color: color,
+      description: description,
+      isOfficial: isOfficial,
+      relatedTags: relatedTags,
     );
   }
 
@@ -163,7 +193,7 @@ class TopicTag {
       'createdBy': createdBy,
       'createdAt': createdAt.toIso8601String(),
       'usageCount': usageCount,
-      'color': color.value,
+      'color': '#${color.value.toRadixString(16).substring(2).padLeft(6, '0')}', // 转换为十六进制颜色字符串
       'description': description,
       'isOfficial': isOfficial,
       'relatedTags': relatedTags,

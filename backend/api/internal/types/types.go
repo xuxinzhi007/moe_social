@@ -63,9 +63,10 @@ type CreateCommentResp struct {
 }
 
 type CreatePostReq struct {
-	UserId  string   `json:"user_id"`
-	Content string   `json:"content"`
-	Images  []string `json:"images,optional"`
+	UserId    string     `json:"user_id"`
+	Content   string     `json:"content"`
+	Images    []string   `json:"images,optional"`
+	TopicTags []TopicTag `json:"topic_tags,optional"`
 }
 
 type CreatePostResp struct {
@@ -457,16 +458,17 @@ type OutfitPart struct {
 }
 
 type Post struct {
-	Id         string   `json:"id"`
-	UserId     string   `json:"user_id"`
-	UserName   string   `json:"user_name"`
-	UserAvatar string   `json:"user_avatar"`
-	Content    string   `json:"content"`
-	Images     []string `json:"images"`
-	Likes      int      `json:"likes"`
-	Comments   int      `json:"comments"`
-	IsLiked    bool     `json:"is_liked"`
-	CreatedAt  string   `json:"created_at"`
+	Id         string     `json:"id"`
+	UserId     string     `json:"user_id"`
+	UserName   string     `json:"user_name"`
+	UserAvatar string     `json:"user_avatar"`
+	Content    string     `json:"content"`
+	Images     []string   `json:"images"`
+	TopicTags  []TopicTag `json:"topic_tags"`
+	Likes      int        `json:"likes"`
+	Comments   int        `json:"comments"`
+	IsLiked    bool       `json:"is_liked"`
+	CreatedAt  string     `json:"created_at"`
 }
 
 type PurchaseAvatarOutfitReq struct {
@@ -541,6 +543,12 @@ type SyncUserVipStatusReq struct {
 type SyncUserVipStatusResp struct {
 	BaseResp
 	Data SyncUserVipStatusData `json:"data"`
+}
+
+type TopicTag struct {
+	Id    string `json:"id,optional"`
+	Name  string `json:"name"`
+	Color string `json:"color"`
 }
 
 type Transaction struct {

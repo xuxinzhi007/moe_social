@@ -77,16 +77,24 @@ type Transaction {
 
 // 帖子相关结构
 type Post {
-	Id         string   `json:"id"`
-	UserId     string   `json:"user_id"`
-	UserName   string   `json:"user_name"`
-	UserAvatar string   `json:"user_avatar"`
-	Content    string   `json:"content"`
-	Images     []string `json:"images"`
-	Likes      int      `json:"likes"`
-	Comments   int      `json:"comments"`
-	IsLiked    bool     `json:"is_liked"`
-	CreatedAt  string   `json:"created_at"`
+	Id         string     `json:"id"`
+	UserId     string     `json:"user_id"`
+	UserName   string     `json:"user_name"`
+	UserAvatar string     `json:"user_avatar"`
+	Content    string     `json:"content"`
+	Images     []string   `json:"images"`
+	TopicTags  []TopicTag `json:"topic_tags"`
+	Likes      int        `json:"likes"`
+	Comments   int        `json:"comments"`
+	IsLiked    bool       `json:"is_liked"`
+	CreatedAt  string     `json:"created_at"`
+}
+
+// 话题标签结构
+type TopicTag {
+	Id    string `json:"id,optional"`
+	Name  string `json:"name"`
+	Color string `json:"color"`
 }
 
 // 评论相关结构
@@ -261,9 +269,10 @@ type GetPostReq {
 }
 
 type CreatePostReq {
-	UserId  string   `json:"user_id"`
-	Content string   `json:"content"`
-	Images  []string `json:"images,optional"`
+	UserId    string     `json:"user_id"`
+	Content   string     `json:"content"`
+	Images    []string   `json:"images,optional"`
+	TopicTags []TopicTag `json:"topic_tags,optional"`
 }
 
 type LikePostReq {

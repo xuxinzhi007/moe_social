@@ -69,7 +69,8 @@ class _ExplorePageState extends State<ExplorePage> with TickerProviderStateMixin
   Future<void> _loadData() async {
     try {
       // 获取最新帖子作为星星
-      final posts = await PostService.getPosts(page: 1, pageSize: 15);
+      final result = await PostService.getPosts(page: 1, pageSize: 15);
+      final posts = result['posts'] as List<Post>;
       
       if (mounted) {
         setState(() {

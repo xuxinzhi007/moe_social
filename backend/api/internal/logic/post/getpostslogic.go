@@ -50,6 +50,17 @@ func (l *GetPostsLogic) GetPosts(req *types.GetPostsReq) (resp *types.GetPostsRe
 			contentPreview = contentPreview[:50] + "..."
 		}
 		l.Debug("转换帖子", i, "ID:", post.Id, "内容:", contentPreview)
+
+		// 转换topic_tags格式
+		apiTopicTags := make([]types.TopicTag, 0, len(post.TopicTags))
+		for _, tag := range post.TopicTags {
+			apiTopicTags = append(apiTopicTags, types.TopicTag{
+				Id:    tag.Id,
+				Name:  tag.Name,
+				Color: tag.Color,
+			})
+		}
+
 		respPosts = append(respPosts, types.Post{
 			Id:         post.Id,
 			UserId:     post.UserId,
@@ -57,6 +68,7 @@ func (l *GetPostsLogic) GetPosts(req *types.GetPostsReq) (resp *types.GetPostsRe
 			UserAvatar: post.UserAvatar,
 			Content:    post.Content,
 			Images:     post.Images,
+			TopicTags:  apiTopicTags,
 			Likes:      int(post.Likes),
 			Comments:   int(post.Comments),
 			IsLiked:    post.IsLiked,

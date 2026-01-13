@@ -5,7 +5,7 @@ import 'api_service.dart';
 
 class PostService {
   // 获取所有帖子（支持分页）
-  static Future<List<Post>> getPosts({int page = 1, int pageSize = 10}) async {
+  static Future<Map<String, dynamic>> getPosts({int page = 1, int pageSize = 10}) async {
     return await ApiService.getPosts(page: page, pageSize: pageSize);
   }
 
