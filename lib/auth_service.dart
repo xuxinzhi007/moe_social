@@ -139,5 +139,35 @@ class AuthService {
     // 更新ApiService的token
     ApiService.setToken(newToken);
   }
+
+  // 保存用户点赞状态到本地存储
+  static Future<void> saveLikeStatus(String postId, bool isLiked) async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = await getUserId();
+    final key = 'like_status_${userId}_$postId';
+    await prefs.setBool(key, isLiked);
+  }
+
+  // 从本地存储获取用户点赞状态
+  static Future<bool> getLikeStatus(String postId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = await getUserId();
+    final key = 'like_status_${userId}_$postId';
+    return prefs.getBool(key) ?? false;
+  }
+
+  // 批量获取用户点赞状态
+  static Future<Map<String, bool>> getLikeStatuses(List<String> postIds) async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = await getUserId();
+    final result = <String, bool>{};
+    
+    for (final postId in postIds) {
+      final key = 'like_status_${userId}_$postId';
+      result[postId] = prefs.getBool(key) ?? false;
+    }
+    
+    return result;
+  }
 }
 

@@ -87,21 +87,35 @@ class Post {
       if (json['topic_tags'] != null) {
         try {
           final tagsList = json['topic_tags'];
+          print('📌 topic_tags字段类型: ${tagsList.runtimeType}');
+          print('📌 topic_tags值: $tagsList');
+          
           if (tagsList is List) {
-            topicTags = tagsList
-                .where((tag) => tag != null)
-                .map((tagJson) {
-                  if (tagJson is Map<String, dynamic>) {
-                    return TopicTag.fromJson(tagJson);
-                  }
-                  return null;
-                })
-                .whereType<TopicTag>()
-                .toList();
-            print('📌 解析话题标签: ${topicTags.length} 个');
+            print('📌 topic_tags是List，长度: ${tagsList.length}');
+            for (var i = 0; i < tagsList.length; i++) {
+              final tagJson = tagsList[i];
+              print('📌 解析第${i + 1}个标签: $tagJson');
+              
+              if (tagJson != null && tagJson is Map<String, dynamic>) {
+                try {
+                  final tag = TopicTag.fromJson(tagJson);
+                  topicTags.add(tag);
+                  print('✅ 成功添加标签: ${tag.name}');
+                } catch (e) {
+                  print('❌ 解析单个标签失败: $e');
+                  print('   标签数据: $tagJson');
+                }
+              } else {
+                print('⚠️ 标签数据格式不正确: ${tagJson.runtimeType}');
+              }
+            }
+            print('📌 最终解析的话题标签数量: ${topicTags.length}');
+          } else {
+            print('⚠️ topic_tags不是List类型: ${tagsList.runtimeType}');
           }
-        } catch (e) {
-          print('⚠️ 解析话题标签失败: $e');
+        } catch (e, stackTrace) {
+          print('❌ 解析话题标签失败: $e');
+          print('❌ 堆栈跟踪: $stackTrace');
         }
       } else {
         print('⚠️ topic_tags 字段为 null');
