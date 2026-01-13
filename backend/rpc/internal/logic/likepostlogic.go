@@ -48,8 +48,8 @@ func (l *LikePostLogic) LikePost(in *super.LikePostReq) (*super.LikePostResp, er
 	}
 
 	// 查询用户是否已经点赞
-	var postLike model.PostLike
-	hasLiked := l.svcCtx.DB.Where("post_id = ? AND user_id = ?", postID, userID).First(&postLike).Error == nil
+	var like model.Like
+	hasLiked := l.svcCtx.DB.Where("target_id = ? AND user_id = ? AND target_type = ?", postID, userID, "post").First(&like).Error == nil
 
 	// 开启事务
 	tx := l.svcCtx.DB.Begin()
@@ -60,8 +60,8 @@ func (l *LikePostLogic) LikePost(in *super.LikePostReq) (*super.LikePostResp, er
 	}()
 
 	if hasLiked {
-		// 取消点赞：软删除PostLike记录
-		if err := tx.Delete(&postLike).Error; err != nil {
+		// 取消点赞：软删除Like记录
+		if err := tx.Delete(&like).Error; err != nil {
 			tx.Rollback()
 			l.Error("取消点赞失败:", err)
 			return nil, err
@@ -74,12 +74,13 @@ func (l *LikePostLogic) LikePost(in *super.LikePostReq) (*super.LikePostResp, er
 		}
 		post.Likes--
 	} else {
-		// 添加点赞：创建PostLike记录
-		newPostLike := model.PostLike{
-			PostID: uint(postID),
-			UserID: uint(userID),
+		// 添加点赞：创建Like记录
+		newLike := model.Like{
+			TargetID:   uint(postID),
+			UserID:     uint(userID),
+			TargetType: "post",
 		}
-		if err := tx.Create(&newPostLike).Error; err != nil {
+		if err := tx.Create(&newLike).Error; err != nil {
 			tx.Rollback()
 			l.Error("添加点赞失败:", err)
 			return nil, err
@@ -128,9 +129,9 @@ func (l *LikePostLogic) LikePost(in *super.LikePostReq) (*super.LikePostResp, er
 		}
 	}
 
-	// 检查当前用户是否点赞（重新查询PostLike）
-	var currentLike model.PostLike
-	isLiked := l.svcCtx.DB.Where("post_id = ? AND user_id = ?", postID, userID).First(&currentLike).Error == nil
+	// 检查当前用户是否点赞（重新查询Like）
+	var currentLike model.Like
+	isLiked := l.svcCtx.DB.Where("target_id = ? AND user_id = ? AND target_type = ?", postID, userID, "post").First(&currentLike).Error == nil
 
 	// 构建响应
 	rpcPost := &super.Post{

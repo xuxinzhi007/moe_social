@@ -15,6 +15,10 @@ type VipOrder struct {
 	Amount     float64        `gorm:"not null" json:"amount"`               // 订单金额
 	Status     string         `gorm:"size:20;not null" json:"status"`        // 订单状态：pending, paid, cancelled
 	PayMethod  string         `gorm:"size:20" json:"pay_method"`            // 支付方式：wechat, alipay, etc.
+	// VIP使用记录字段
+	IsActive   bool           `gorm:"default:false" json:"is_active"`       // 是否激活
+	StartAt    *time.Time     `json:"start_at,omitempty"`                     // VIP开始时间
+	EndAt      *time.Time     `json:"end_at,omitempty"`                       // VIP结束时间
 	CreatedAt  time.Time      `json:"created_at"`
 	UpdatedAt  time.Time      `json:"updated_at"`
 	DeletedAt  gorm.DeletedAt `gorm:"index" json:"-"`

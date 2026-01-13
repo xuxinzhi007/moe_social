@@ -89,15 +89,13 @@ func autoMigrate() error {
 	return DB.AutoMigrate(
 		&model.User{},
 		&model.VipPlan{},
-		&model.VipOrder{},
-		&model.VipRecord{},
+		&model.VipOrder{},      // 合并了VIP记录功能
 		&model.Transaction{},   // 交易记录表
 		&model.Post{},          // 帖子表
-		&model.PostLike{},      // 帖子点赞表
+		&model.Like{},          // 统一点赞表
 		&model.TopicTag{},      // 话题标签表
 		&model.PostTopic{},     // 帖子标签关联表
 		&model.Comment{},       // 评论表
-		&model.CommentLike{},   // 评论点赞表
 		&model.Notification{},  // 通知表
 		&model.UserAvatar{},    // 用户虚拟形象表
 		&model.AvatarOutfit{},  // 虚拟形象装扮物品表

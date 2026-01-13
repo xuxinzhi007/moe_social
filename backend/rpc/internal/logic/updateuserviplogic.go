@@ -38,7 +38,7 @@ func (l *UpdateUserVipLogic) UpdateUserVip(in *super.UpdateUserVipReq) (*super.U
 
 	// 2. 更新用户VIP状态
 	if in.IsVip {
-		// 激活VIP，创建VIP记录
+		// 激活VIP，创建VIP订单（包含VIP记录功能）
 		// 解析VIP过期时间
 		vipExpires, err := time.Parse("2006-01-02 15:04:05", in.VipExpires)
 		if err != nil {
@@ -46,22 +46,29 @@ func (l *UpdateUserVipLogic) UpdateUserVip(in *super.UpdateUserVipReq) (*super.U
 			return nil, errorx.InvalidArgument("VIP过期时间格式不正确")
 		}
 
-		// 将用户所有VIP记录设置为非激活
-		l.svcCtx.DB.Model(&model.VipRecord{}).Where("user_id = ?", user.ID).Update("is_active", false)
+		// 将用户所有VIP订单设置为非激活
+		l.svcCtx.DB.Model(&model.VipOrder{}).Where("user_id = ?", user.ID).Update("is_active", false)
 
-		// 创建新的VIP记录
+		// 创建新的VIP订单（作为VIP记录）
 		vipStart := time.Now()
-		vipRecord := model.VipRecord{
-			UserID:   user.ID,
-			PlanID:   1, // 默认套餐ID，后续可以根据实际情况修改
-			IsActive: true,
-			StartAt:  vipStart,
-			EndAt:    vipExpires,
+		// 生成简单订单号
+		orderNo := "VIP_" + strconv.FormatInt(time.Now().Unix(), 10) + "_" + strconv.Itoa(int(user.ID))
+		
+		vipOrder := model.VipOrder{
+			UserID:    user.ID,
+			PlanID:    1, // 默认套餐ID，后续可以根据实际情况修改
+			OrderNo:   orderNo,
+			Amount:    0, // 免费激活时金额为0
+			Status:    "paid", // 直接设置为已支付状态
+			PayMethod: "system", // 系统自动激活
+			IsActive:  true,
+			StartAt:   &vipStart,
+			EndAt:     &vipExpires,
 		}
 
-		// 保存VIP记录
-		if err := l.svcCtx.DB.Create(&vipRecord).Error; err != nil {
-			l.Error("创建VIP记录失败: ", err)
+		// 保存VIP订单
+		if err := l.svcCtx.DB.Create(&vipOrder).Error; err != nil {
+			l.Error("创建VIP订单失败: ", err)
 			return nil, errorx.Internal("更新VIP状态失败，请稍后重试")
 		}
 
@@ -75,8 +82,8 @@ func (l *UpdateUserVipLogic) UpdateUserVip(in *super.UpdateUserVipReq) (*super.U
 		user.VipStartAt = nil
 		user.VipEndAt = nil
 
-		// 将用户所有VIP记录设置为非激活
-		l.svcCtx.DB.Model(&model.VipRecord{}).Where("user_id = ?", user.ID).Update("is_active", false)
+		// 将用户所有VIP订单设置为非激活
+		l.svcCtx.DB.Model(&model.VipOrder{}).Where("user_id = ?", user.ID).Update("is_active", false)
 	}
 
 	// 3. 保存用户信息
