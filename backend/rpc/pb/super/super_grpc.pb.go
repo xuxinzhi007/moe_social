@@ -56,6 +56,11 @@ const (
 	Super_Recharge_FullMethodName               = "/super.Super/Recharge"
 	Super_GetTransactions_FullMethodName        = "/super.Super/GetTransactions"
 	Super_GetTransaction_FullMethodName         = "/super.Super/GetTransaction"
+	Super_FollowUser_FullMethodName             = "/super.Super/FollowUser"
+	Super_UnfollowUser_FullMethodName           = "/super.Super/UnfollowUser"
+	Super_GetFollowings_FullMethodName          = "/super.Super/GetFollowings"
+	Super_GetFollowers_FullMethodName           = "/super.Super/GetFollowers"
+	Super_CheckFollow_FullMethodName            = "/super.Super/CheckFollow"
 )
 
 // SuperClient is the client API for Super service.
@@ -109,6 +114,12 @@ type SuperClient interface {
 	// 交易记录相关服务
 	GetTransactions(ctx context.Context, in *GetTransactionsReq, opts ...grpc.CallOption) (*GetTransactionsResp, error)
 	GetTransaction(ctx context.Context, in *GetTransactionReq, opts ...grpc.CallOption) (*GetTransactionResp, error)
+	// 关注相关服务
+	FollowUser(ctx context.Context, in *FollowUserReq, opts ...grpc.CallOption) (*FollowUserResp, error)
+	UnfollowUser(ctx context.Context, in *UnfollowUserReq, opts ...grpc.CallOption) (*FollowUserResp, error)
+	GetFollowings(ctx context.Context, in *GetFollowingsReq, opts ...grpc.CallOption) (*GetFollowingsResp, error)
+	GetFollowers(ctx context.Context, in *GetFollowersReq, opts ...grpc.CallOption) (*GetFollowersResp, error)
+	CheckFollow(ctx context.Context, in *CheckFollowReq, opts ...grpc.CallOption) (*CheckFollowResp, error)
 }
 
 type superClient struct {
@@ -452,6 +463,51 @@ func (c *superClient) GetTransaction(ctx context.Context, in *GetTransactionReq,
 	return out, nil
 }
 
+func (c *superClient) FollowUser(ctx context.Context, in *FollowUserReq, opts ...grpc.CallOption) (*FollowUserResp, error) {
+	out := new(FollowUserResp)
+	err := c.cc.Invoke(ctx, Super_FollowUser_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) UnfollowUser(ctx context.Context, in *UnfollowUserReq, opts ...grpc.CallOption) (*FollowUserResp, error) {
+	out := new(FollowUserResp)
+	err := c.cc.Invoke(ctx, Super_UnfollowUser_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) GetFollowings(ctx context.Context, in *GetFollowingsReq, opts ...grpc.CallOption) (*GetFollowingsResp, error) {
+	out := new(GetFollowingsResp)
+	err := c.cc.Invoke(ctx, Super_GetFollowings_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) GetFollowers(ctx context.Context, in *GetFollowersReq, opts ...grpc.CallOption) (*GetFollowersResp, error) {
+	out := new(GetFollowersResp)
+	err := c.cc.Invoke(ctx, Super_GetFollowers_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) CheckFollow(ctx context.Context, in *CheckFollowReq, opts ...grpc.CallOption) (*CheckFollowResp, error) {
+	out := new(CheckFollowResp)
+	err := c.cc.Invoke(ctx, Super_CheckFollow_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SuperServer is the server API for Super service.
 // All implementations must embed UnimplementedSuperServer
 // for forward compatibility
@@ -503,6 +559,12 @@ type SuperServer interface {
 	// 交易记录相关服务
 	GetTransactions(context.Context, *GetTransactionsReq) (*GetTransactionsResp, error)
 	GetTransaction(context.Context, *GetTransactionReq) (*GetTransactionResp, error)
+	// 关注相关服务
+	FollowUser(context.Context, *FollowUserReq) (*FollowUserResp, error)
+	UnfollowUser(context.Context, *UnfollowUserReq) (*FollowUserResp, error)
+	GetFollowings(context.Context, *GetFollowingsReq) (*GetFollowingsResp, error)
+	GetFollowers(context.Context, *GetFollowersReq) (*GetFollowersResp, error)
+	CheckFollow(context.Context, *CheckFollowReq) (*CheckFollowResp, error)
 	mustEmbedUnimplementedSuperServer()
 }
 
@@ -620,6 +682,21 @@ func (UnimplementedSuperServer) GetTransactions(context.Context, *GetTransaction
 }
 func (UnimplementedSuperServer) GetTransaction(context.Context, *GetTransactionReq) (*GetTransactionResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTransaction not implemented")
+}
+func (UnimplementedSuperServer) FollowUser(context.Context, *FollowUserReq) (*FollowUserResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FollowUser not implemented")
+}
+func (UnimplementedSuperServer) UnfollowUser(context.Context, *UnfollowUserReq) (*FollowUserResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnfollowUser not implemented")
+}
+func (UnimplementedSuperServer) GetFollowings(context.Context, *GetFollowingsReq) (*GetFollowingsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetFollowings not implemented")
+}
+func (UnimplementedSuperServer) GetFollowers(context.Context, *GetFollowersReq) (*GetFollowersResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetFollowers not implemented")
+}
+func (UnimplementedSuperServer) CheckFollow(context.Context, *CheckFollowReq) (*CheckFollowResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckFollow not implemented")
 }
 func (UnimplementedSuperServer) mustEmbedUnimplementedSuperServer() {}
 
@@ -1300,6 +1377,96 @@ func _Super_GetTransaction_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Super_FollowUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FollowUserReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).FollowUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_FollowUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).FollowUser(ctx, req.(*FollowUserReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_UnfollowUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnfollowUserReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).UnfollowUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_UnfollowUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).UnfollowUser(ctx, req.(*UnfollowUserReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_GetFollowings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetFollowingsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).GetFollowings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_GetFollowings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).GetFollowings(ctx, req.(*GetFollowingsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_GetFollowers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetFollowersReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).GetFollowers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_GetFollowers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).GetFollowers(ctx, req.(*GetFollowersReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_CheckFollow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckFollowReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).CheckFollow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_CheckFollow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).CheckFollow(ctx, req.(*CheckFollowReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Super_ServiceDesc is the grpc.ServiceDesc for Super service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1454,6 +1621,26 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTransaction",
 			Handler:    _Super_GetTransaction_Handler,
+		},
+		{
+			MethodName: "FollowUser",
+			Handler:    _Super_FollowUser_Handler,
+		},
+		{
+			MethodName: "UnfollowUser",
+			Handler:    _Super_UnfollowUser_Handler,
+		},
+		{
+			MethodName: "GetFollowings",
+			Handler:    _Super_GetFollowings_Handler,
+		},
+		{
+			MethodName: "GetFollowers",
+			Handler:    _Super_GetFollowers_Handler,
+		},
+		{
+			MethodName: "CheckFollow",
+			Handler:    _Super_CheckFollow_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

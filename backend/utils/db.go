@@ -96,6 +96,7 @@ func autoMigrate() error {
 		&model.TopicTag{},      // 话题标签表
 		&model.PostTopic{},     // 帖子标签关联表
 		&model.Comment{},       // 评论表
+		&model.Follow{},        // 关注关系表
 		&model.Notification{},  // 通知表
 		&model.UserAvatar{},    // 用户虚拟形象表
 		&model.AvatarOutfit{},  // 虚拟形象装扮物品表

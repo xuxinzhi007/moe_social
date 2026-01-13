@@ -158,6 +158,56 @@ type ReadAllNotificationsReq {
 // 通用请求
 type EmptyReq {}
 
+// 关注相关结构
+type FollowUserResp {
+	BaseResp
+	Data bool `json:"data"`
+}
+
+type GetFollowingsReq {
+	UserId   string `path:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type GetFollowersReq {
+	UserId   string `path:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type CheckFollowReq {
+	FollowerId  string `path:"follower_id"`
+	FollowingId string `path:"following_id"`
+}
+
+type FollowUserReq {
+	UserId      string `path:"user_id"`
+	FollowingId string `json:"following_id"`
+}
+
+type UnfollowUserReq {
+	UserId      string `path:"user_id"`
+	FollowingId string `json:"following_id"`
+}
+
+type GetFollowingsResp {
+	BaseResp
+	Data  []User `json:"data"`
+	Total int    `json:"total"`
+}
+
+type GetFollowersResp {
+	BaseResp
+	Data  []User `json:"data"`
+	Total int    `json:"total"`
+}
+
+type CheckFollowResp {
+	BaseResp
+	Data bool `json:"data"`
+}
+
 // 用户相关请求
 type RegisterReq {
 	Username string `json:"username"`
@@ -581,6 +631,22 @@ service Super {
 
 	@handler recharge
 	post /api/user/:user_id/wallet/recharge (RechargeReq) returns (RechargeResp)
+
+	// 关注相关API
+	@handler followUser
+	post /api/user/:user_id/follow (FollowUserReq) returns (FollowUserResp)
+
+	@handler unfollowUser
+	delete /api/user/:user_id/follow (UnfollowUserReq) returns (FollowUserResp)
+
+	@handler getFollowings
+	get /api/user/:user_id/following (GetFollowingsReq) returns (GetFollowingsResp)
+
+	@handler getFollowers
+	get /api/user/:user_id/followers (GetFollowersReq) returns (GetFollowersResp)
+
+	@handler checkFollow
+	get /api/user/:follower_id/follow/:following_id/check (CheckFollowReq) returns (CheckFollowResp)
 }
 
 // VIP相关API服务

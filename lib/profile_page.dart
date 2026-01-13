@@ -11,6 +11,8 @@ import 'widgets/avatar_image.dart';
 import 'widgets/achievement_badge_display.dart';
 import 'wallet_page.dart';
 import 'widgets/fade_in_up.dart';
+import 'following_page.dart';
+import 'followers_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -25,6 +27,8 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isLoading = true;
   bool _isVip = false;
   int _postCount = 0;
+  int _followingCount = 0;
+  int _followerCount = 0;
   List<AchievementBadge> _userBadges = [];
   final AchievementService _achievementService = AchievementService();
 
@@ -43,6 +47,10 @@ class _ProfilePageState extends State<ProfilePage> {
     });
 
     try {
+      // 获取关注数和粉丝数
+      final followingCount = await ApiService.getFollowings(userId, page: 1, pageSize: 1).then((result) => result['total'] as int).catchError((_) => 0);
+      final followerCount = await ApiService.getFollowers(userId, page: 1, pageSize: 1).then((result) => result['total'] as int).catchError((_) => 0);
+      
       final futures = await Future.wait([
         ApiService.getUserInfo(userId),
         ApiService.getUserVipStatus(userId).catchError((_) => <String, dynamic>{}),
@@ -67,6 +75,8 @@ class _ProfilePageState extends State<ProfilePage> {
           _vipStatus = vipStatus;
           _isVip = isVip;
           _postCount = postCount;
+          _followingCount = followingCount;
+          _followerCount = followerCount;
           _userBadges = userBadges;
           _isLoading = false;
         });
@@ -365,11 +375,29 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildStatItem('动态', '$_postCount'),
+                    _buildStatItem('动态', '$_postCount', onTap: () {}),
                     Container(height: 20, width: 1, color: Colors.white30, margin: const EdgeInsets.symmetric(horizontal: 16)),
-                    _buildStatItem('关注', '0'),
+                    _buildStatItem('关注', '$_followingCount', onTap: () {
+                      if (_user != null) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => FollowingPage(userId: _user!.id),
+                          ),
+                        );
+                      }
+                    }),
                     Container(height: 20, width: 1, color: Colors.white30, margin: const EdgeInsets.symmetric(horizontal: 16)),
-                    _buildStatItem('粉丝', '0'),
+                    _buildStatItem('粉丝', '$_followerCount', onTap: () {
+                      if (_user != null) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => FollowersPage(userId: _user!.id),
+                          ),
+                        );
+                      }
+                    }),
                   ],
                 ),
               ),
@@ -430,12 +458,15 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildStatItem(String label, String value) {
-    return Column(
-      children: [
-        Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
-      ],
+  Widget _buildStatItem(String label, String value, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
+        ],
+      ),
     );
   }
 

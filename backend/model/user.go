@@ -22,6 +22,10 @@ type User struct {
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+	
+	// 关注相关关联
+	Followings []Follow `gorm:"foreignKey:FollowerID" json:"-"`  // 我关注的人
+	Followers  []Follow `gorm:"foreignKey:FollowingID" json:"-"` // 关注我的人
 }
 
 // BeforeSave 保存前钩子，自动哈希密码

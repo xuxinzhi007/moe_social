@@ -184,6 +184,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
+				Path:    "/api/user/:follower_id/follow/:following_id/check",
+				Handler: user.CheckFollowHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/user/:user_id",
 				Handler: user.GetUserInfoHandler(serverCtx),
 			},
@@ -201,6 +206,26 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/user/:user_id/detail",
 				Handler: user.GetUserHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/user/:user_id/follow",
+				Handler: user.FollowUserHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/user/:user_id/follow",
+				Handler: user.UnfollowUserHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/user/:user_id/followers",
+				Handler: user.GetFollowersHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/user/:user_id/following",
+				Handler: user.GetFollowingsHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodPut,
