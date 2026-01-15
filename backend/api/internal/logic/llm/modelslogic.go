@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"backend/api/internal/common"
@@ -38,13 +39,26 @@ func (l *ModelsLogic) Models(req *types.EmptyReq) (resp *types.LlmModelsResp, er
 		Models []ollamaModel `json:"models"`
 	}
 
-	client := &http.Client{
-		Timeout: 10 * time.Second,
+	timeoutSeconds := l.svcCtx.Config.Ollama.TimeoutSeconds
+	if timeoutSeconds <= 0 {
+		timeoutSeconds = 10
 	}
 
-	url := "http://127.0.0.1:11434/api/tags"
+	baseUrl := strings.TrimRight(l.svcCtx.Config.Ollama.BaseUrl, "/")
+	if baseUrl == "" {
+		baseUrl = "http://127.0.0.1:11434"
+	}
 
-	httpReq, err := http.NewRequestWithContext(l.ctx, http.MethodGet, url, nil)
+	ctx, cancel := context.WithTimeout(l.ctx, time.Duration(timeoutSeconds)*time.Second)
+	defer cancel()
+
+	client := &http.Client{
+		Timeout: time.Duration(timeoutSeconds) * time.Second,
+	}
+
+	url := baseUrl + "/api/tags"
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return &types.LlmModelsResp{
 			BaseResp: common.HandleError(err),
