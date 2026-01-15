@@ -10,6 +10,7 @@ import (
 	comment "backend/api/internal/handler/comment"
 	emoji "backend/api/internal/handler/emoji"
 	image "backend/api/internal/handler/image"
+	llm "backend/api/internal/handler/llm"
 	notification "backend/api/internal/handler/notification"
 	post "backend/api/internal/handler/post"
 	user "backend/api/internal/handler/user"
@@ -116,6 +117,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodPost,
 				Path:    "/api/upload",
 				Handler: image.UploadImageHandler(serverCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/llm/chat",
+				Handler: llm.ChatHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/llm/models",
+				Handler: llm.ModelsHandler(serverCtx),
 			},
 		},
 	)

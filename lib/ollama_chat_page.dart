@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show Platform;
-
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'services/api_service.dart';
 
 class OllamaChatPage extends StatefulWidget {
   const OllamaChatPage({super.key});
@@ -35,16 +33,6 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   List<String> _models = [];
   bool _isLoadingModels = false;
   String? _modelsError;
-
-  String get _baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:11434';
-    }
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:11434';
-    }
-    return 'http://localhost:11434';
-  }
 
   @override
   void initState() {
@@ -83,17 +71,23 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     });
 
     try {
-      final uri = Uri.parse('$_baseUrl/api/tags');
+      final uri = Uri.parse('${ApiService.baseUrl}/api/llm/models');
       final response = await http.get(uri).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final list = (data is Map && data['models'] is List)
-            ? (data['models'] as List)
+        List<String> list = <String>[];
+        if (data is Map && data['models'] is List) {
+          final raw = data['models'] as List;
+          if (raw.whereType<String>().isNotEmpty) {
+            list = raw.whereType<String>().toList();
+          } else {
+            list = raw
                 .whereType<Map>()
                 .map((m) => m['name'])
                 .whereType<String>()
-                .toList()
-            : <String>[];
+                .toList();
+          }
+        }
         if (list.isNotEmpty) {
           setState(() {
             _models = list;
@@ -139,25 +133,23 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     });
     _scrollToBottom();
 
-    String fullContent = '';
-
     try {
-      final uri = Uri.parse('$_baseUrl/api/chat');
-      final request = http.Request('POST', uri);
-      request.headers['Content-Type'] = 'application/json';
-      request.body = jsonEncode({
-        'model': _modelName,
-        'messages': apiMessages,
-        'stream': true,
-      });
+      final uri = Uri.parse('${ApiService.baseUrl}/api/llm/chat');
+      final response = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'model': _modelName,
+              'messages': apiMessages,
+            }),
+          )
+          .timeout(const Duration(seconds: 60));
 
-      final streamedResponse =
-          await request.send().timeout(const Duration(seconds: 60));
-
-      if (streamedResponse.statusCode != 200) {
-        final body = await streamedResponse.stream.bytesToString();
+      if (response.statusCode != 200) {
+        final body = response.body;
         final errorText =
-            '请求失败 (${streamedResponse.statusCode})${body.isNotEmpty ? '\n$body' : ''}';
+            '请求失败 (${response.statusCode})${body.isNotEmpty ? '\n$body' : ''}';
         setState(() {
           _messages[assistantIndex] = _ChatMessage(
             role: 'assistant',
@@ -169,36 +161,16 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
         return;
       }
 
-      String buffer = '';
-
-      await for (final chunk in streamedResponse.stream.transform(utf8.decoder)) {
-        buffer += chunk;
-        while (true) {
-          final newlineIndex = buffer.indexOf('\n');
-          if (newlineIndex == -1) break;
-          final line = buffer.substring(0, newlineIndex).trim();
-          buffer = buffer.substring(newlineIndex + 1);
-          if (line.isEmpty) continue;
-          try {
-            final data = jsonDecode(line);
-            final message = data['message'];
-            if (message is Map && message['content'] is String) {
-              final piece = message['content'] as String;
-              if (piece.isNotEmpty) {
-                fullContent += piece;
-                setState(() {
-                  _messages[assistantIndex] = _ChatMessage(
-                    role: 'assistant',
-                    content: fullContent,
-                    time: DateTime.now(),
-                  );
-                });
-                _scrollToBottom();
-              }
-            }
-          } catch (_) {}
-        }
-      }
+      final data = jsonDecode(response.body);
+      final content = data is Map && data['content'] is String ? data['content'] as String : '';
+      setState(() {
+        _messages[assistantIndex] = _ChatMessage(
+          role: 'assistant',
+          content: content,
+          time: DateTime.now(),
+        );
+      });
+      _scrollToBottom();
     } on TimeoutException {
       setState(() {
         _messages[assistantIndex] = _ChatMessage(

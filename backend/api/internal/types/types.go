@@ -460,6 +460,26 @@ type LikePostResp struct {
 	Data Post `json:"data"`
 }
 
+type LlmChatReq struct {
+	Model    string       `json:"model"`
+	Messages []LlmMessage `json:"messages"`
+}
+
+type LlmChatResp struct {
+	BaseResp
+	Content string `json:"content"`
+}
+
+type LlmMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type LlmModelsResp struct {
+	BaseResp
+	Models []string `json:"models"`
+}
+
 type LoginData struct {
 	User  User   `json:"user"`
 	Token string `json:"token"`
