@@ -55,10 +55,12 @@ func (l *FollowUserLogic) FollowUser(in *super.FollowUserReq) (*super.FollowUser
 			}, nil
 		} else {
 			// 记录被软删除，恢复关注
-			if err := l.svcCtx.DB.Model(&existingFollow).Update("deleted_at", nil).Error; err != nil {
+			// 使用 Unscoped() + Updates(map) 强制将 deleted_at 设为 NULL
+			if err := l.svcCtx.DB.Unscoped().Model(&existingFollow).Updates(map[string]interface{}{"deleted_at": nil}).Error; err != nil {
 				l.Error("恢复关注关系失败:", err)
 				return nil, err
 			}
+			l.Debug("恢复软删除的关注关系成功:", followerID, "->", followingID)
 		}
 	} else {
 		// 创建新关注关系
