@@ -941,6 +941,41 @@ service Super {
 	post /api/emoji/packs/:pack_id/favorite (FavoriteEmojiPackReq) returns (FavoriteEmojiPackResp)
 }
 
+// LLM 聊天相关结构
+type LlmMessage {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type LlmChatReq {
+	Model    string       `json:"model"`
+	Messages []LlmMessage `json:"messages"`
+}
+
+type LlmChatResp {
+	BaseResp
+	Content string `json:"content"`
+}
+
+type LlmModelsResp {
+	BaseResp
+	Models []string `json:"models"`
+}
+
+// LLM 聊天相关API服务
+@server (
+	group: llm
+)
+service Super {
+	// 获取可用模型列表
+	@handler models
+	get /api/llm/models (EmptyReq) returns (LlmModelsResp)
+
+	// 发送聊天消息
+	@handler chat
+	post /api/llm/chat (LlmChatReq) returns (LlmChatResp)
+}
+
 // 图片上传相关结构
 type ImageInfo {
 	Id        string `json:"id"`
@@ -999,3 +1034,4 @@ service Super {
 	@handler getImage
 	get /api/images/:filename (DeleteImageReq) returns (EmptyResp)
 }
+
