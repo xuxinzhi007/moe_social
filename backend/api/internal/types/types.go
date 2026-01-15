@@ -627,10 +627,13 @@ type UpdateUserAvatarResp struct {
 }
 
 type UpdateUserInfoReq struct {
-	UserId   string `path:"user_id"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Avatar   string `json:"avatar"`
+	UserId    string `path:"user_id"`
+	Username  string `json:"username,optional"`
+	Email     string `json:"email,optional"`
+	Avatar    string `json:"avatar,optional"`
+	Signature string `json:"signature,optional"`
+	Gender    string `json:"gender,optional"`
+	Birthday  string `json:"birthday,optional"`
 }
 
 type UpdateUserInfoResp struct {
@@ -672,6 +675,9 @@ type User struct {
 	Username     string  `json:"username"`
 	Email        string  `json:"email"`
 	Avatar       string  `json:"avatar"`
+	Signature    string  `json:"signature"`
+	Gender       string  `json:"gender"`
+	Birthday     string  `json:"birthday,omitempty"`
 	CreatedAt    string  `json:"created_at"`
 	UpdatedAt    string  `json:"updated_at"`
 	IsVip        bool    `json:"is_vip"`

@@ -41,12 +41,18 @@ class _UserProfilePageState extends State<UserProfilePage> {
   List<AchievementBadge> _userBadges = [];
   final AchievementService _achievementService = AchievementService();
 
+  // 关注统计数据
+  int _followingCount = 0;
+  int _followersCount = 0;
+  bool _isLoadingStats = true;
+
   @override
   void initState() {
     super.initState();
     // 异步加载最新数据
     _loadData();
     _loadUserPosts();
+    _loadFollowStats();
   }
 
   Future<void> _loadData() async {
@@ -114,7 +120,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       final allPosts = result['posts'] as List<Post>;
 
       final myPosts = allPosts.where((p) => p.userId.toString() == widget.userId.toString()).toList();
-      
+
       if (mounted) {
         setState(() {
           _userPosts = myPosts;
@@ -125,6 +131,29 @@ class _UserProfilePageState extends State<UserProfilePage> {
       if (mounted) {
         setState(() {
           _isLoadingPosts = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadFollowStats() async {
+    try {
+      // 获取关注数量和粉丝数量
+      final followingResult = await ApiService.getFollowings(widget.userId, page: 1, pageSize: 1);
+      final followersResult = await ApiService.getFollowers(widget.userId, page: 1, pageSize: 1);
+
+      if (mounted) {
+        setState(() {
+          _followingCount = followingResult['total'] as int;
+          _followersCount = followersResult['total'] as int;
+          _isLoadingStats = false;
+        });
+      }
+    } catch (e) {
+      print('加载关注统计数据失败: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingStats = false;
         });
       }
     }
@@ -181,7 +210,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
         setState(() {
           _isFollowing = !_isFollowing;
         });
-        
+
+        // 刷新关注统计数据
+        _loadFollowStats();
+
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -213,6 +245,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
         setState(() {
           _isFollowing = true;
         });
+        // 刷新关注统计数据
+        _loadFollowStats();
       } else if (e.toString().contains('foreign key constraint fails')) {
         errorMessage = '关注的用户不存在';
       }
@@ -319,22 +353,30 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _StatItem(label: '动态', value: '${_userPosts.length}'),
-                          _StatItem(label: '关注', value: '0', onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => FollowingPage(userId: widget.userId),
-                              ),
-                            );
-                          }),
-                          _StatItem(label: '粉丝', value: '0', onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => FollowersPage(userId: widget.userId),
-                              ),
-                            );
-                          }),
+                          _StatItem(
+                            label: '关注',
+                            value: _isLoadingStats ? '...' : '$_followingCount',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => FollowingPage(userId: widget.userId),
+                                ),
+                              );
+                            },
+                          ),
+                          _StatItem(
+                            label: '粉丝',
+                            value: _isLoadingStats ? '...' : '$_followersCount',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => FollowersPage(userId: widget.userId),
+                                ),
+                              );
+                            },
+                          ),
                         ],
                       ),
 
