@@ -131,7 +131,12 @@ class ApiService {
   static Future<Map<String, dynamic>> post(String path, {dynamic body}) async {
     return await _request(path, method: 'POST', body: body);
   }
-  
+
+  // 公开的 PUT 请求方法
+  static Future<Map<String, dynamic>> put(String path, {dynamic body}) async {
+    return await _request(path, method: 'PUT', body: body);
+  }
+
   // 公开的 DELETE 请求方法
   static Future<Map<String, dynamic>> delete(String path) async {
     return await _request(path, method: 'DELETE');

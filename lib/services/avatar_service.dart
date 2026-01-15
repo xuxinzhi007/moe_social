@@ -17,9 +17,15 @@ class AvatarService {
   // 更新用户虚拟形象
   Future<UserAvatar?> updateUserAvatar(String userId, UserAvatar avatar) async {
     try {
-      final response = await ApiService.post(
+      // 按照后端期望的格式发送请求
+      final requestBody = {
+        'base_config': avatar.baseConfig.toJson(),
+        'current_outfit': avatar.currentOutfit.toJson(),
+      };
+
+      final response = await ApiService.put(
         '/api/avatar/$userId',
-        body: avatar.toJson(),
+        body: requestBody,
       );
       return UserAvatar.fromJson(response['data']);
     } catch (e) {

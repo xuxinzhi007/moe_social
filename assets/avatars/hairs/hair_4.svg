@@ -1,0 +1,19 @@
+<!-- 马尾辫 -->
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 头发基础 -->
+  <ellipse cx="100" cy="70" rx="75" ry="45" fill="#8B4513"/>
+
+  <!-- 马尾辫 -->
+  <ellipse cx="100" cy="50" rx="15" ry="8" fill="#654321"/>
+  <ellipse cx="100" cy="30" rx="12" ry="25" fill="#8B4513"/>
+
+  <!-- 马尾束带 -->
+  <rect x="88" y="45" width="24" height="8" rx="4" fill="#654321"/>
+
+  <!-- 刘海 -->
+  <path d="M 40 70 Q 70 55 100 60 Q 130 55 160 70 Q 130 50 100 45 Q 70 50 40 70" fill="#8B4513"/>
+
+  <!-- 侧面头发 -->
+  <ellipse cx="45" cy="85" rx="20" ry="25" fill="#8B4513"/>
+  <ellipse cx="155" cy="85" rx="20" ry="25" fill="#8B4513"/>
+</svg>

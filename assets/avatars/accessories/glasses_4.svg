@@ -1,0 +1,13 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 左爱心镜片 -->
+  <path d="M60 85 C60 70, 75 70,75 85 C75 70,90 70,90 85" fill="none" stroke="#e91e63" stroke-width="3" stroke-linecap="round"/>
+  <path d="M62 85 C62 72, 75 72,75 85 C75 72,88 72,88 85" fill="rgba(255,179,186,0.25)"/>
+  <!-- 右爱心镜片 -->
+  <path d="M110 85 C110 70, 125 70,125 85 C125 70,140 70,140 85" fill="none" stroke="#e91e63" stroke-width="3" stroke-linecap="round"/>
+  <path d="M112 85 C112 72, 125 72,125 85 C125 72,138 72,138 85" fill="rgba(255,179,186,0.25)"/>
+  <!-- 鼻梁 -->
+  <line x1="90" y1="85" x2="110" y2="85" stroke="#e91e63" stroke-width="3" stroke-linecap="round"/>
+  <!-- 镜腿 -->
+  <line x1="60" y1="85" x2="40" y2="78" stroke="#e91e63" stroke-width="3" stroke-linecap="round"/>
+  <line x1="140" y1="85" x2="160" y2="78" stroke="#e91e63" stroke-width="3" stroke-linecap="round"/>
+</svg>

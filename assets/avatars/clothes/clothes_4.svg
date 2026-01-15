@@ -1,0 +1,20 @@
+<!-- 外套 -->
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.svg">
+  <!-- 外套主体 -->
+  <rect x="40" y="140" width="120" height="60" fill="#2E8B57" stroke="#1F5F3F" stroke-width="2"/>
+
+  <!-- 外套领子 -->
+  <path d="M 70 140 L 100 125 L 130 140 L 130 155 L 100 150 L 70 155 Z" fill="#2E8B57" stroke="#1F5F3F" stroke-width="2"/>
+
+  <!-- 拉链 -->
+  <rect x="99" y="140" width="2" height="60" fill="#C0C0C0"/>
+  <circle cx="100" cy="145" r="2" fill="#C0C0C0"/>
+
+  <!-- 袖子 -->
+  <ellipse cx="25" cy="150" rx="20" ry="30" fill="#2E8B57" stroke="#1F5F3F" stroke-width="2"/>
+  <ellipse cx="175" cy="150" rx="20" ry="30" fill="#2E8B57" stroke="#1F5F3F" stroke-width="2"/>
+
+  <!-- 口袋 -->
+  <rect x="55" y="170" width="20" height="15" fill="#2E8B57" stroke="#1F5F3F" stroke-width="1"/>
+  <rect x="125" y="170" width="20" height="15" fill="#2E8B57" stroke="#1F5F3F" stroke-width="1"/>
+</svg>

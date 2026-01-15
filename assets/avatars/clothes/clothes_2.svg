@@ -1,0 +1,20 @@
+<!-- 衬衫 -->
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 衬衫主体 -->
+  <rect x="45" y="140" width="110" height="60" fill="#4A90E2" stroke="#3A7BC8" stroke-width="2"/>
+
+  <!-- 衬衫领子 -->
+  <path d="M 75 140 L 100 130 L 125 140 L 125 150 L 100 145 L 75 150 Z" fill="white" stroke="#3A7BC8" stroke-width="1"/>
+
+  <!-- 纽扣 -->
+  <circle cx="100" cy="155" r="3" fill="white" stroke="#3A7BC8" stroke-width="1"/>
+  <circle cx="100" cy="170" r="3" fill="white" stroke="#3A7BC8" stroke-width="1"/>
+  <circle cx="100" cy="185" r="3" fill="white" stroke="#3A7BC8" stroke-width="1"/>
+
+  <!-- 袖子 -->
+  <ellipse cx="30" cy="150" rx="18" ry="25" fill="#4A90E2" stroke="#3A7BC8" stroke-width="2"/>
+  <ellipse cx="170" cy="150" rx="18" ry="25" fill="#4A90E2" stroke="#3A7BC8" stroke-width="2"/>
+
+  <!-- 衬衫口袋 -->
+  <rect x="110" y="150" width="15" height="12" fill="#4A90E2" stroke="white" stroke-width="1"/>
+</svg>

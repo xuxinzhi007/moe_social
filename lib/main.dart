@@ -40,7 +40,7 @@ import 'widgets/topic_tag_selector.dart';
 import 'utils/error_handler.dart';
 import 'providers/theme_provider.dart';
 import 'providers/notification_provider.dart';
-import 'avatars/avatar_editor_page.dart';
+import 'avatar_editor_page.dart';
 import 'gallery/cloud_gallery_page.dart';
 import 'emoji/emoji_store_page.dart';
 

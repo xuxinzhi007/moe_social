@@ -999,4 +999,3 @@ service Super {
 	@handler getImage
 	get /api/images/:filename (DeleteImageReq) returns (EmptyResp)
 }
-

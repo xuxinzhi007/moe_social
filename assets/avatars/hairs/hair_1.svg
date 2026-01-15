@@ -1,0 +1,11 @@
+<!-- 短发 -->
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 短发造型 -->
+  <ellipse cx="100" cy="70" rx="75" ry="45" fill="#8B4513"/>
+
+  <!-- 刘海 -->
+  <path d="M 35 70 Q 70 50 100 55 Q 130 50 165 70 Q 135 45 100 40 Q 65 45 35 70" fill="#8B4513"/>
+
+  <!-- 头发层次 -->
+  <ellipse cx="100" cy="65" rx="70" ry="40" fill="#8B4513" opacity="0.8"/>
+</svg>

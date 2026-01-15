@@ -1,0 +1,7 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 圆形脸蛋 柔和肉色 -->
+  <circle cx="100" cy="100" r="70" fill="#fcdcd4"/>
+  <!-- 腮红 淡粉色 透明渐变 -->
+  <circle cx="60" cy="100" r="15" fill="#ffcdd2" opacity="0.5"/>
+  <circle cx="140" cy="100" r="15" fill="#ffcdd2" opacity="0.5"/>
+</svg>

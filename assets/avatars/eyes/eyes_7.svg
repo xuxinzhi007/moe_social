@@ -1,0 +1,6 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 左眼月牙闭眼 -->
+  <path d="M63 80 Q75 70 87 80" stroke="#333333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- 右眼月牙闭眼 -->
+  <path d="M113 80 Q125 70 137 80" stroke="#333333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+</svg>

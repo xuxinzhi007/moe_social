@@ -1,0 +1,15 @@
+<!-- T恤 -->
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- T恤主体 -->
+  <rect x="45" y="140" width="110" height="60" fill="#FF6B6B" stroke="#E55555" stroke-width="2"/>
+
+  <!-- 衣领 -->
+  <ellipse cx="100" cy="140" rx="25" ry="12" fill="white" stroke="#E55555" stroke-width="1"/>
+
+  <!-- 袖子 -->
+  <ellipse cx="30" cy="150" rx="18" ry="25" fill="#FF6B6B" stroke="#E55555" stroke-width="2"/>
+  <ellipse cx="170" cy="150" rx="18" ry="25" fill="#FF6B6B" stroke="#E55555" stroke-width="2"/>
+
+  <!-- 装饰图案 -->
+  <circle cx="100" cy="170" r="8" fill="white" opacity="0.8"/>
+</svg>

@@ -1,0 +1,7 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 圆角方形脸 -->
+  <rect x="30" y="30" width="140" height="150" rx="40" ry="45" fill="#ffe0e9"/>
+  <!-- 橘粉色腮红 -->
+  <circle cx="62" cy="105" r="13" fill="#ffab91" opacity="0.5"/>
+  <circle cx="138" cy="105" r="13" fill="#ffab91" opacity="0.5"/>
+</svg>
