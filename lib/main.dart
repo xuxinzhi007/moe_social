@@ -43,6 +43,7 @@ import 'providers/notification_provider.dart';
 import 'avatar_editor_page.dart';
 import 'gallery/cloud_gallery_page.dart';
 import 'emoji/emoji_store_page.dart';
+import 'ollama_chat_page.dart';
 
 void main() async {
   // 使用runZonedGuarded捕获所有未捕获的错误
@@ -254,7 +255,8 @@ class _MainPageState extends State<MainPage> {
 
   final List<Widget> _pages = [
     HomePage(),
-    GachaPage(), // 扭蛋机回归
+    OllamaChatPage(),
+    GachaPage(),
     ProfilePage(),
   ];
 
@@ -287,6 +289,11 @@ class _MainPageState extends State<MainPage> {
               icon: Icon(Icons.home_outlined),
               selectedIcon: Icon(Icons.home_rounded),
               label: '首页',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.chat_bubble_outline),
+              selectedIcon: Icon(Icons.chat_bubble_rounded),
+              label: '聊天',
             ),
             NavigationDestination(
               icon: Icon(Icons.casino_outlined),
