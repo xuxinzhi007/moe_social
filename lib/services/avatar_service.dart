@@ -6,10 +6,22 @@ class AvatarService {
   // 获取用户虚拟形象
   Future<UserAvatar?> getUserAvatar(String userId) async {
     try {
+      print('🌐 正在调用API获取虚拟形象: GET /api/avatar/$userId');
       final response = await ApiService.get('/api/avatar/$userId');
-      return UserAvatar.fromJson(response['data']);
+      print('✅ API调用成功，响应数据: $response');
+
+      if (response['data'] != null) {
+        print('📦 解析虚拟形象数据: ${response['data']}');
+        final userAvatar = UserAvatar.fromJson(response['data']);
+        print('🎯 解析完成，虚拟形象: $userAvatar');
+        return userAvatar;
+      } else {
+        print('⚠️ 响应data字段为空');
+        return null;
+      }
     } catch (e) {
-      print('Error getting user avatar: $e');
+      print('❌ 获取用户虚拟形象失败: $e');
+      print('📍 错误类型: ${e.runtimeType}');
       return null;
     }
   }

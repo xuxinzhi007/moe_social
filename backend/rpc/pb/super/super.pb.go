@@ -5367,6 +5367,428 @@ func (x *CheckFollowResp) GetIsFollowing() bool {
 	return false
 }
 
+// Avatar相关消息
+type AvatarBaseConfig struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	FaceShape string `protobuf:"bytes,1,opt,name=face_shape,json=faceShape,proto3" json:"face_shape,omitempty"`
+	SkinColor string `protobuf:"bytes,2,opt,name=skin_color,json=skinColor,proto3" json:"skin_color,omitempty"`
+	EyeType   string `protobuf:"bytes,3,opt,name=eye_type,json=eyeType,proto3" json:"eye_type,omitempty"`
+	HairStyle string `protobuf:"bytes,4,opt,name=hair_style,json=hairStyle,proto3" json:"hair_style,omitempty"`
+	HairColor string `protobuf:"bytes,5,opt,name=hair_color,json=hairColor,proto3" json:"hair_color,omitempty"`
+}
+
+func (x *AvatarBaseConfig) Reset() {
+	*x = AvatarBaseConfig{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_super_proto_msgTypes[92]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AvatarBaseConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AvatarBaseConfig) ProtoMessage() {}
+
+func (x *AvatarBaseConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[92]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AvatarBaseConfig.ProtoReflect.Descriptor instead.
+func (*AvatarBaseConfig) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{92}
+}
+
+func (x *AvatarBaseConfig) GetFaceShape() string {
+	if x != nil {
+		return x.FaceShape
+	}
+	return ""
+}
+
+func (x *AvatarBaseConfig) GetSkinColor() string {
+	if x != nil {
+		return x.SkinColor
+	}
+	return ""
+}
+
+func (x *AvatarBaseConfig) GetEyeType() string {
+	if x != nil {
+		return x.EyeType
+	}
+	return ""
+}
+
+func (x *AvatarBaseConfig) GetHairStyle() string {
+	if x != nil {
+		return x.HairStyle
+	}
+	return ""
+}
+
+func (x *AvatarBaseConfig) GetHairColor() string {
+	if x != nil {
+		return x.HairColor
+	}
+	return ""
+}
+
+type AvatarOutfitConfig struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Clothes     string   `protobuf:"bytes,1,opt,name=clothes,proto3" json:"clothes,omitempty"`
+	Accessories []string `protobuf:"bytes,2,rep,name=accessories,proto3" json:"accessories,omitempty"`
+	Background  string   `protobuf:"bytes,3,opt,name=background,proto3" json:"background,omitempty"`
+}
+
+func (x *AvatarOutfitConfig) Reset() {
+	*x = AvatarOutfitConfig{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_super_proto_msgTypes[93]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AvatarOutfitConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AvatarOutfitConfig) ProtoMessage() {}
+
+func (x *AvatarOutfitConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[93]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AvatarOutfitConfig.ProtoReflect.Descriptor instead.
+func (*AvatarOutfitConfig) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{93}
+}
+
+func (x *AvatarOutfitConfig) GetClothes() string {
+	if x != nil {
+		return x.Clothes
+	}
+	return ""
+}
+
+func (x *AvatarOutfitConfig) GetAccessories() []string {
+	if x != nil {
+		return x.Accessories
+	}
+	return nil
+}
+
+func (x *AvatarOutfitConfig) GetBackground() string {
+	if x != nil {
+		return x.Background
+	}
+	return ""
+}
+
+type UserAvatarData struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	UserId        string              `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	BaseConfig    *AvatarBaseConfig   `protobuf:"bytes,2,opt,name=base_config,json=baseConfig,proto3" json:"base_config,omitempty"`
+	CurrentOutfit *AvatarOutfitConfig `protobuf:"bytes,3,opt,name=current_outfit,json=currentOutfit,proto3" json:"current_outfit,omitempty"`
+	OwnedOutfits  []string            `protobuf:"bytes,4,rep,name=owned_outfits,json=ownedOutfits,proto3" json:"owned_outfits,omitempty"`
+}
+
+func (x *UserAvatarData) Reset() {
+	*x = UserAvatarData{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_super_proto_msgTypes[94]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *UserAvatarData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserAvatarData) ProtoMessage() {}
+
+func (x *UserAvatarData) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[94]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserAvatarData.ProtoReflect.Descriptor instead.
+func (*UserAvatarData) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{94}
+}
+
+func (x *UserAvatarData) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *UserAvatarData) GetBaseConfig() *AvatarBaseConfig {
+	if x != nil {
+		return x.BaseConfig
+	}
+	return nil
+}
+
+func (x *UserAvatarData) GetCurrentOutfit() *AvatarOutfitConfig {
+	if x != nil {
+		return x.CurrentOutfit
+	}
+	return nil
+}
+
+func (x *UserAvatarData) GetOwnedOutfits() []string {
+	if x != nil {
+		return x.OwnedOutfits
+	}
+	return nil
+}
+
+// 获取用户虚拟形象请求
+type GetUserAvatarReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+}
+
+func (x *GetUserAvatarReq) Reset() {
+	*x = GetUserAvatarReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_super_proto_msgTypes[95]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetUserAvatarReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserAvatarReq) ProtoMessage() {}
+
+func (x *GetUserAvatarReq) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[95]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserAvatarReq.ProtoReflect.Descriptor instead.
+func (*GetUserAvatarReq) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{95}
+}
+
+func (x *GetUserAvatarReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+// 获取用户虚拟形象响应
+type GetUserAvatarResp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Avatar *UserAvatarData `protobuf:"bytes,1,opt,name=avatar,proto3" json:"avatar,omitempty"`
+}
+
+func (x *GetUserAvatarResp) Reset() {
+	*x = GetUserAvatarResp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_super_proto_msgTypes[96]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetUserAvatarResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserAvatarResp) ProtoMessage() {}
+
+func (x *GetUserAvatarResp) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[96]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserAvatarResp.ProtoReflect.Descriptor instead.
+func (*GetUserAvatarResp) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{96}
+}
+
+func (x *GetUserAvatarResp) GetAvatar() *UserAvatarData {
+	if x != nil {
+		return x.Avatar
+	}
+	return nil
+}
+
+// 更新用户虚拟形象请求
+type UpdateUserAvatarReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	UserId        string              `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	BaseConfig    *AvatarBaseConfig   `protobuf:"bytes,2,opt,name=base_config,json=baseConfig,proto3" json:"base_config,omitempty"`
+	CurrentOutfit *AvatarOutfitConfig `protobuf:"bytes,3,opt,name=current_outfit,json=currentOutfit,proto3" json:"current_outfit,omitempty"`
+}
+
+func (x *UpdateUserAvatarReq) Reset() {
+	*x = UpdateUserAvatarReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_super_proto_msgTypes[97]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *UpdateUserAvatarReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateUserAvatarReq) ProtoMessage() {}
+
+func (x *UpdateUserAvatarReq) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[97]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateUserAvatarReq.ProtoReflect.Descriptor instead.
+func (*UpdateUserAvatarReq) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{97}
+}
+
+func (x *UpdateUserAvatarReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *UpdateUserAvatarReq) GetBaseConfig() *AvatarBaseConfig {
+	if x != nil {
+		return x.BaseConfig
+	}
+	return nil
+}
+
+func (x *UpdateUserAvatarReq) GetCurrentOutfit() *AvatarOutfitConfig {
+	if x != nil {
+		return x.CurrentOutfit
+	}
+	return nil
+}
+
+// 更新用户虚拟形象响应
+type UpdateUserAvatarResp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Avatar *UserAvatarData `protobuf:"bytes,1,opt,name=avatar,proto3" json:"avatar,omitempty"`
+}
+
+func (x *UpdateUserAvatarResp) Reset() {
+	*x = UpdateUserAvatarResp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_super_proto_msgTypes[98]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *UpdateUserAvatarResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateUserAvatarResp) ProtoMessage() {}
+
+func (x *UpdateUserAvatarResp) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[98]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateUserAvatarResp.ProtoReflect.Descriptor instead.
+func (*UpdateUserAvatarResp) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{98}
+}
+
+func (x *UpdateUserAvatarResp) GetAvatar() *UserAvatarData {
+	if x != nil {
+		return x.Avatar
+	}
+	return nil
+}
+
 var File_super_proto protoreflect.FileDescriptor
 
 var file_super_proto_rawDesc = []byte{
@@ -5851,7 +6273,60 @@ var file_super_proto_rawDesc = []byte{
 	0x68, 0x65, 0x63, 0x6b, 0x46, 0x6f, 0x6c, 0x6c, 0x6f, 0x77, 0x52, 0x65, 0x73, 0x70, 0x12, 0x21,
 	0x0a, 0x0c, 0x69, 0x73, 0x5f, 0x66, 0x6f, 0x6c, 0x6c, 0x6f, 0x77, 0x69, 0x6e, 0x67, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x08, 0x52, 0x0b, 0x69, 0x73, 0x46, 0x6f, 0x6c, 0x6c, 0x6f, 0x77, 0x69, 0x6e,
-	0x67, 0x32, 0xe2, 0x15, 0x0a, 0x05, 0x53, 0x75, 0x70, 0x65, 0x72, 0x12, 0x33, 0x0a, 0x08, 0x52,
+	0x67, 0x22, 0xa9, 0x01, 0x0a, 0x10, 0x41, 0x76, 0x61, 0x74, 0x61, 0x72, 0x42, 0x61, 0x73, 0x65,
+	0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x1d, 0x0a, 0x0a, 0x66, 0x61, 0x63, 0x65, 0x5f, 0x73,
+	0x68, 0x61, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x66, 0x61, 0x63, 0x65,
+	0x53, 0x68, 0x61, 0x70, 0x65, 0x12, 0x1d, 0x0a, 0x0a, 0x73, 0x6b, 0x69, 0x6e, 0x5f, 0x63, 0x6f,
+	0x6c, 0x6f, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x73, 0x6b, 0x69, 0x6e, 0x43,
+	0x6f, 0x6c, 0x6f, 0x72, 0x12, 0x19, 0x0a, 0x08, 0x65, 0x79, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65,
+	0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x65, 0x79, 0x65, 0x54, 0x79, 0x70, 0x65, 0x12,
+	0x1d, 0x0a, 0x0a, 0x68, 0x61, 0x69, 0x72, 0x5f, 0x73, 0x74, 0x79, 0x6c, 0x65, 0x18, 0x04, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x09, 0x68, 0x61, 0x69, 0x72, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x12, 0x1d,
+	0x0a, 0x0a, 0x68, 0x61, 0x69, 0x72, 0x5f, 0x63, 0x6f, 0x6c, 0x6f, 0x72, 0x18, 0x05, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x09, 0x68, 0x61, 0x69, 0x72, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x22, 0x70, 0x0a,
+	0x12, 0x41, 0x76, 0x61, 0x74, 0x61, 0x72, 0x4f, 0x75, 0x74, 0x66, 0x69, 0x74, 0x43, 0x6f, 0x6e,
+	0x66, 0x69, 0x67, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6c, 0x6f, 0x74, 0x68, 0x65, 0x73, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6c, 0x6f, 0x74, 0x68, 0x65, 0x73, 0x12, 0x20, 0x0a,
+	0x0b, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x6f, 0x72, 0x69, 0x65, 0x73, 0x18, 0x02, 0x20, 0x03,
+	0x28, 0x09, 0x52, 0x0b, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x6f, 0x72, 0x69, 0x65, 0x73, 0x12,
+	0x1e, 0x0a, 0x0a, 0x62, 0x61, 0x63, 0x6b, 0x67, 0x72, 0x6f, 0x75, 0x6e, 0x64, 0x18, 0x03, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x0a, 0x62, 0x61, 0x63, 0x6b, 0x67, 0x72, 0x6f, 0x75, 0x6e, 0x64, 0x22,
+	0xca, 0x01, 0x0a, 0x0e, 0x55, 0x73, 0x65, 0x72, 0x41, 0x76, 0x61, 0x74, 0x61, 0x72, 0x44, 0x61,
+	0x74, 0x61, 0x12, 0x17, 0x0a, 0x07, 0x75, 0x73, 0x65, 0x72, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x06, 0x75, 0x73, 0x65, 0x72, 0x49, 0x64, 0x12, 0x38, 0x0a, 0x0b, 0x62,
+	0x61, 0x73, 0x65, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x17, 0x2e, 0x73, 0x75, 0x70, 0x65, 0x72, 0x2e, 0x41, 0x76, 0x61, 0x74, 0x61, 0x72, 0x42,
+	0x61, 0x73, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x0a, 0x62, 0x61, 0x73, 0x65, 0x43,
+	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x40, 0x0a, 0x0e, 0x63, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74,
+	0x5f, 0x6f, 0x75, 0x74, 0x66, 0x69, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e,
+	0x73, 0x75, 0x70, 0x65, 0x72, 0x2e, 0x41, 0x76, 0x61, 0x74, 0x61, 0x72, 0x4f, 0x75, 0x74, 0x66,
+	0x69, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x0d, 0x63, 0x75, 0x72, 0x72, 0x65, 0x6e,
+	0x74, 0x4f, 0x75, 0x74, 0x66, 0x69, 0x74, 0x12, 0x23, 0x0a, 0x0d, 0x6f, 0x77, 0x6e, 0x65, 0x64,
+	0x5f, 0x6f, 0x75, 0x74, 0x66, 0x69, 0x74, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0c,
+	0x6f, 0x77, 0x6e, 0x65, 0x64, 0x4f, 0x75, 0x74, 0x66, 0x69, 0x74, 0x73, 0x22, 0x2b, 0x0a, 0x10,
+	0x47, 0x65, 0x74, 0x55, 0x73, 0x65, 0x72, 0x41, 0x76, 0x61, 0x74, 0x61, 0x72, 0x52, 0x65, 0x71,
+	0x12, 0x17, 0x0a, 0x07, 0x75, 0x73, 0x65, 0x72, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x06, 0x75, 0x73, 0x65, 0x72, 0x49, 0x64, 0x22, 0x42, 0x0a, 0x11, 0x47, 0x65, 0x74,
+	0x55, 0x73, 0x65, 0x72, 0x41, 0x76, 0x61, 0x74, 0x61, 0x72, 0x52, 0x65, 0x73, 0x70, 0x12, 0x2d,
+	0x0a, 0x06, 0x61, 0x76, 0x61, 0x74, 0x61, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x15,
+	0x2e, 0x73, 0x75, 0x70, 0x65, 0x72, 0x2e, 0x55, 0x73, 0x65, 0x72, 0x41, 0x76, 0x61, 0x74, 0x61,
+	0x72, 0x44, 0x61, 0x74, 0x61, 0x52, 0x06, 0x61, 0x76, 0x61, 0x74, 0x61, 0x72, 0x22, 0xaa, 0x01,
+	0x0a, 0x13, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x55, 0x73, 0x65, 0x72, 0x41, 0x76, 0x61, 0x74,
+	0x61, 0x72, 0x52, 0x65, 0x71, 0x12, 0x17, 0x0a, 0x07, 0x75, 0x73, 0x65, 0x72, 0x5f, 0x69, 0x64,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x75, 0x73, 0x65, 0x72, 0x49, 0x64, 0x12, 0x38,
+	0x0a, 0x0b, 0x62, 0x61, 0x73, 0x65, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x73, 0x75, 0x70, 0x65, 0x72, 0x2e, 0x41, 0x76, 0x61, 0x74,
+	0x61, 0x72, 0x42, 0x61, 0x73, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x0a, 0x62, 0x61,
+	0x73, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x40, 0x0a, 0x0e, 0x63, 0x75, 0x72, 0x72,
+	0x65, 0x6e, 0x74, 0x5f, 0x6f, 0x75, 0x74, 0x66, 0x69, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x19, 0x2e, 0x73, 0x75, 0x70, 0x65, 0x72, 0x2e, 0x41, 0x76, 0x61, 0x74, 0x61, 0x72, 0x4f,
+	0x75, 0x74, 0x66, 0x69, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x0d, 0x63, 0x75, 0x72,
+	0x72, 0x65, 0x6e, 0x74, 0x4f, 0x75, 0x74, 0x66, 0x69, 0x74, 0x22, 0x45, 0x0a, 0x14, 0x55, 0x70,
+	0x64, 0x61, 0x74, 0x65, 0x55, 0x73, 0x65, 0x72, 0x41, 0x76, 0x61, 0x74, 0x61, 0x72, 0x52, 0x65,
+	0x73, 0x70, 0x12, 0x2d, 0x0a, 0x06, 0x61, 0x76, 0x61, 0x74, 0x61, 0x72, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x15, 0x2e, 0x73, 0x75, 0x70, 0x65, 0x72, 0x2e, 0x55, 0x73, 0x65, 0x72, 0x41,
+	0x76, 0x61, 0x74, 0x61, 0x72, 0x44, 0x61, 0x74, 0x61, 0x52, 0x06, 0x61, 0x76, 0x61, 0x74, 0x61,
+	0x72, 0x32, 0xf3, 0x16, 0x0a, 0x05, 0x53, 0x75, 0x70, 0x65, 0x72, 0x12, 0x33, 0x0a, 0x08, 0x52,
 	0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x12, 0x12, 0x2e, 0x73, 0x75, 0x70, 0x65, 0x72, 0x2e,
 	0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x52, 0x65, 0x71, 0x1a, 0x13, 0x2e, 0x73, 0x75,
 	0x70, 0x65, 0x72, 0x2e, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70,
@@ -6025,8 +6500,17 @@ var file_super_proto_rawDesc = []byte{
 	0x6b, 0x46, 0x6f, 0x6c, 0x6c, 0x6f, 0x77, 0x12, 0x15, 0x2e, 0x73, 0x75, 0x70, 0x65, 0x72, 0x2e,
 	0x43, 0x68, 0x65, 0x63, 0x6b, 0x46, 0x6f, 0x6c, 0x6c, 0x6f, 0x77, 0x52, 0x65, 0x71, 0x1a, 0x16,
 	0x2e, 0x73, 0x75, 0x70, 0x65, 0x72, 0x2e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x46, 0x6f, 0x6c, 0x6c,
-	0x6f, 0x77, 0x52, 0x65, 0x73, 0x70, 0x42, 0x09, 0x5a, 0x07, 0x2e, 0x2f, 0x73, 0x75, 0x70, 0x65,
-	0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6f, 0x77, 0x52, 0x65, 0x73, 0x70, 0x12, 0x42, 0x0a, 0x0d, 0x47, 0x65, 0x74, 0x55, 0x73, 0x65,
+	0x72, 0x41, 0x76, 0x61, 0x74, 0x61, 0x72, 0x12, 0x17, 0x2e, 0x73, 0x75, 0x70, 0x65, 0x72, 0x2e,
+	0x47, 0x65, 0x74, 0x55, 0x73, 0x65, 0x72, 0x41, 0x76, 0x61, 0x74, 0x61, 0x72, 0x52, 0x65, 0x71,
+	0x1a, 0x18, 0x2e, 0x73, 0x75, 0x70, 0x65, 0x72, 0x2e, 0x47, 0x65, 0x74, 0x55, 0x73, 0x65, 0x72,
+	0x41, 0x76, 0x61, 0x74, 0x61, 0x72, 0x52, 0x65, 0x73, 0x70, 0x12, 0x4b, 0x0a, 0x10, 0x55, 0x70,
+	0x64, 0x61, 0x74, 0x65, 0x55, 0x73, 0x65, 0x72, 0x41, 0x76, 0x61, 0x74, 0x61, 0x72, 0x12, 0x1a,
+	0x2e, 0x73, 0x75, 0x70, 0x65, 0x72, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x55, 0x73, 0x65,
+	0x72, 0x41, 0x76, 0x61, 0x74, 0x61, 0x72, 0x52, 0x65, 0x71, 0x1a, 0x1b, 0x2e, 0x73, 0x75, 0x70,
+	0x65, 0x72, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x55, 0x73, 0x65, 0x72, 0x41, 0x76, 0x61,
+	0x74, 0x61, 0x72, 0x52, 0x65, 0x73, 0x70, 0x42, 0x09, 0x5a, 0x07, 0x2e, 0x2f, 0x73, 0x75, 0x70,
+	0x65, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -6041,7 +6525,7 @@ func file_super_proto_rawDescGZIP() []byte {
 	return file_super_proto_rawDescData
 }
 
-var file_super_proto_msgTypes = make([]protoimpl.MessageInfo, 92)
+var file_super_proto_msgTypes = make([]protoimpl.MessageInfo, 99)
 var file_super_proto_goTypes = []interface{}{
 	(*User)(nil),                       // 0: super.User
 	(*RegisterReq)(nil),                // 1: super.RegisterReq
@@ -6135,6 +6619,13 @@ var file_super_proto_goTypes = []interface{}{
 	(*GetFollowersResp)(nil),           // 89: super.GetFollowersResp
 	(*CheckFollowReq)(nil),             // 90: super.CheckFollowReq
 	(*CheckFollowResp)(nil),            // 91: super.CheckFollowResp
+	(*AvatarBaseConfig)(nil),           // 92: super.AvatarBaseConfig
+	(*AvatarOutfitConfig)(nil),         // 93: super.AvatarOutfitConfig
+	(*UserAvatarData)(nil),             // 94: super.UserAvatarData
+	(*GetUserAvatarReq)(nil),           // 95: super.GetUserAvatarReq
+	(*GetUserAvatarResp)(nil),          // 96: super.GetUserAvatarResp
+	(*UpdateUserAvatarReq)(nil),        // 97: super.UpdateUserAvatarReq
+	(*UpdateUserAvatarResp)(nil),       // 98: super.UpdateUserAvatarResp
 }
 var file_super_proto_depIdxs = []int32{
 	0,  // 0: super.RegisterResp.user:type_name -> super.User
@@ -6166,95 +6657,105 @@ var file_super_proto_depIdxs = []int32{
 	74, // 26: super.GetNotificationsResp.notifications:type_name -> super.Notification
 	0,  // 27: super.GetFollowingsResp.users:type_name -> super.User
 	0,  // 28: super.GetFollowersResp.users:type_name -> super.User
-	1,  // 29: super.Super.Register:input_type -> super.RegisterReq
-	3,  // 30: super.Super.Login:input_type -> super.LoginReq
-	5,  // 31: super.Super.GetUserInfo:input_type -> super.GetUserInfoReq
-	7,  // 32: super.Super.GetUser:input_type -> super.GetUserReq
-	9,  // 33: super.Super.GetUserByEmail:input_type -> super.GetUserByEmailReq
-	11, // 34: super.Super.UpdateUserInfo:input_type -> super.UpdateUserInfoReq
-	13, // 35: super.Super.UpdateUserPassword:input_type -> super.UpdateUserPasswordReq
-	15, // 36: super.Super.ResetPassword:input_type -> super.ResetPasswordReq
-	17, // 37: super.Super.DeleteUser:input_type -> super.DeleteUserReq
-	19, // 38: super.Super.UpdateUserVip:input_type -> super.UpdateUserVipReq
-	21, // 39: super.Super.GetUsers:input_type -> super.GetUsersReq
-	23, // 40: super.Super.GetUserCount:input_type -> super.GetUserCountReq
-	30, // 41: super.Super.GetVipPlans:input_type -> super.GetVipPlansReq
-	26, // 42: super.Super.GetVipPlan:input_type -> super.GetVipPlanReq
-	28, // 43: super.Super.CreateVipPlan:input_type -> super.CreateVipPlanReq
-	33, // 44: super.Super.CreateVipOrder:input_type -> super.CreateVipOrderReq
-	35, // 45: super.Super.GetVipOrders:input_type -> super.GetVipOrdersReq
-	38, // 46: super.Super.GetVipRecords:input_type -> super.GetVipRecordsReq
-	40, // 47: super.Super.GetUserActiveVipRecord:input_type -> super.GetUserActiveVipRecordReq
-	42, // 48: super.Super.GetUserVipStatus:input_type -> super.GetUserVipStatusReq
-	44, // 49: super.Super.CheckUserVip:input_type -> super.CheckUserVipReq
-	46, // 50: super.Super.UpdateAutoRenew:input_type -> super.UpdateAutoRenewReq
-	48, // 51: super.Super.SyncUserVipStatus:input_type -> super.SyncUserVipStatusReq
-	59, // 52: super.Super.GetPosts:input_type -> super.GetPostsReq
-	61, // 53: super.Super.GetPost:input_type -> super.GetPostReq
-	63, // 54: super.Super.CreatePost:input_type -> super.CreatePostReq
-	65, // 55: super.Super.LikePost:input_type -> super.LikePostReq
-	67, // 56: super.Super.GetPostComments:input_type -> super.GetPostCommentsReq
-	70, // 57: super.Super.CreateComment:input_type -> super.CreateCommentReq
-	72, // 58: super.Super.LikeComment:input_type -> super.LikeCommentReq
-	75, // 59: super.Super.GetNotifications:input_type -> super.GetNotificationsReq
-	77, // 60: super.Super.GetUnreadCount:input_type -> super.GetUnreadCountReq
-	79, // 61: super.Super.ReadNotification:input_type -> super.ReadNotificationReq
-	81, // 62: super.Super.ReadAllNotifications:input_type -> super.ReadAllNotificationsReq
-	50, // 63: super.Super.Recharge:input_type -> super.RechargeReq
-	52, // 64: super.Super.GetTransactions:input_type -> super.GetTransactionsReq
-	55, // 65: super.Super.GetTransaction:input_type -> super.GetTransactionReq
-	83, // 66: super.Super.FollowUser:input_type -> super.FollowUserReq
-	85, // 67: super.Super.UnfollowUser:input_type -> super.UnfollowUserReq
-	86, // 68: super.Super.GetFollowings:input_type -> super.GetFollowingsReq
-	88, // 69: super.Super.GetFollowers:input_type -> super.GetFollowersReq
-	90, // 70: super.Super.CheckFollow:input_type -> super.CheckFollowReq
-	2,  // 71: super.Super.Register:output_type -> super.RegisterResp
-	4,  // 72: super.Super.Login:output_type -> super.LoginResp
-	6,  // 73: super.Super.GetUserInfo:output_type -> super.GetUserInfoResp
-	8,  // 74: super.Super.GetUser:output_type -> super.GetUserResp
-	10, // 75: super.Super.GetUserByEmail:output_type -> super.GetUserByEmailResp
-	12, // 76: super.Super.UpdateUserInfo:output_type -> super.UpdateUserInfoResp
-	14, // 77: super.Super.UpdateUserPassword:output_type -> super.UpdateUserPasswordResp
-	16, // 78: super.Super.ResetPassword:output_type -> super.ResetPasswordResp
-	18, // 79: super.Super.DeleteUser:output_type -> super.DeleteUserResp
-	20, // 80: super.Super.UpdateUserVip:output_type -> super.UpdateUserVipResp
-	22, // 81: super.Super.GetUsers:output_type -> super.GetUsersResp
-	24, // 82: super.Super.GetUserCount:output_type -> super.GetUserCountResp
-	31, // 83: super.Super.GetVipPlans:output_type -> super.GetVipPlansResp
-	27, // 84: super.Super.GetVipPlan:output_type -> super.GetVipPlanResp
-	29, // 85: super.Super.CreateVipPlan:output_type -> super.CreateVipPlanResp
-	34, // 86: super.Super.CreateVipOrder:output_type -> super.CreateVipOrderResp
-	36, // 87: super.Super.GetVipOrders:output_type -> super.GetVipOrdersResp
-	39, // 88: super.Super.GetVipRecords:output_type -> super.GetVipRecordsResp
-	41, // 89: super.Super.GetUserActiveVipRecord:output_type -> super.GetUserActiveVipRecordResp
-	43, // 90: super.Super.GetUserVipStatus:output_type -> super.GetUserVipStatusResp
-	45, // 91: super.Super.CheckUserVip:output_type -> super.CheckUserVipResp
-	47, // 92: super.Super.UpdateAutoRenew:output_type -> super.UpdateAutoRenewResp
-	49, // 93: super.Super.SyncUserVipStatus:output_type -> super.SyncUserVipStatusResp
-	60, // 94: super.Super.GetPosts:output_type -> super.GetPostsResp
-	62, // 95: super.Super.GetPost:output_type -> super.GetPostResp
-	64, // 96: super.Super.CreatePost:output_type -> super.CreatePostResp
-	66, // 97: super.Super.LikePost:output_type -> super.LikePostResp
-	68, // 98: super.Super.GetPostComments:output_type -> super.GetPostCommentsResp
-	71, // 99: super.Super.CreateComment:output_type -> super.CreateCommentResp
-	73, // 100: super.Super.LikeComment:output_type -> super.LikeCommentResp
-	76, // 101: super.Super.GetNotifications:output_type -> super.GetNotificationsResp
-	78, // 102: super.Super.GetUnreadCount:output_type -> super.GetUnreadCountResp
-	80, // 103: super.Super.ReadNotification:output_type -> super.ReadNotificationResp
-	82, // 104: super.Super.ReadAllNotifications:output_type -> super.ReadAllNotificationsResp
-	51, // 105: super.Super.Recharge:output_type -> super.RechargeResp
-	54, // 106: super.Super.GetTransactions:output_type -> super.GetTransactionsResp
-	56, // 107: super.Super.GetTransaction:output_type -> super.GetTransactionResp
-	84, // 108: super.Super.FollowUser:output_type -> super.FollowUserResp
-	84, // 109: super.Super.UnfollowUser:output_type -> super.FollowUserResp
-	87, // 110: super.Super.GetFollowings:output_type -> super.GetFollowingsResp
-	89, // 111: super.Super.GetFollowers:output_type -> super.GetFollowersResp
-	91, // 112: super.Super.CheckFollow:output_type -> super.CheckFollowResp
-	71, // [71:113] is the sub-list for method output_type
-	29, // [29:71] is the sub-list for method input_type
-	29, // [29:29] is the sub-list for extension type_name
-	29, // [29:29] is the sub-list for extension extendee
-	0,  // [0:29] is the sub-list for field type_name
+	92, // 29: super.UserAvatarData.base_config:type_name -> super.AvatarBaseConfig
+	93, // 30: super.UserAvatarData.current_outfit:type_name -> super.AvatarOutfitConfig
+	94, // 31: super.GetUserAvatarResp.avatar:type_name -> super.UserAvatarData
+	92, // 32: super.UpdateUserAvatarReq.base_config:type_name -> super.AvatarBaseConfig
+	93, // 33: super.UpdateUserAvatarReq.current_outfit:type_name -> super.AvatarOutfitConfig
+	94, // 34: super.UpdateUserAvatarResp.avatar:type_name -> super.UserAvatarData
+	1,  // 35: super.Super.Register:input_type -> super.RegisterReq
+	3,  // 36: super.Super.Login:input_type -> super.LoginReq
+	5,  // 37: super.Super.GetUserInfo:input_type -> super.GetUserInfoReq
+	7,  // 38: super.Super.GetUser:input_type -> super.GetUserReq
+	9,  // 39: super.Super.GetUserByEmail:input_type -> super.GetUserByEmailReq
+	11, // 40: super.Super.UpdateUserInfo:input_type -> super.UpdateUserInfoReq
+	13, // 41: super.Super.UpdateUserPassword:input_type -> super.UpdateUserPasswordReq
+	15, // 42: super.Super.ResetPassword:input_type -> super.ResetPasswordReq
+	17, // 43: super.Super.DeleteUser:input_type -> super.DeleteUserReq
+	19, // 44: super.Super.UpdateUserVip:input_type -> super.UpdateUserVipReq
+	21, // 45: super.Super.GetUsers:input_type -> super.GetUsersReq
+	23, // 46: super.Super.GetUserCount:input_type -> super.GetUserCountReq
+	30, // 47: super.Super.GetVipPlans:input_type -> super.GetVipPlansReq
+	26, // 48: super.Super.GetVipPlan:input_type -> super.GetVipPlanReq
+	28, // 49: super.Super.CreateVipPlan:input_type -> super.CreateVipPlanReq
+	33, // 50: super.Super.CreateVipOrder:input_type -> super.CreateVipOrderReq
+	35, // 51: super.Super.GetVipOrders:input_type -> super.GetVipOrdersReq
+	38, // 52: super.Super.GetVipRecords:input_type -> super.GetVipRecordsReq
+	40, // 53: super.Super.GetUserActiveVipRecord:input_type -> super.GetUserActiveVipRecordReq
+	42, // 54: super.Super.GetUserVipStatus:input_type -> super.GetUserVipStatusReq
+	44, // 55: super.Super.CheckUserVip:input_type -> super.CheckUserVipReq
+	46, // 56: super.Super.UpdateAutoRenew:input_type -> super.UpdateAutoRenewReq
+	48, // 57: super.Super.SyncUserVipStatus:input_type -> super.SyncUserVipStatusReq
+	59, // 58: super.Super.GetPosts:input_type -> super.GetPostsReq
+	61, // 59: super.Super.GetPost:input_type -> super.GetPostReq
+	63, // 60: super.Super.CreatePost:input_type -> super.CreatePostReq
+	65, // 61: super.Super.LikePost:input_type -> super.LikePostReq
+	67, // 62: super.Super.GetPostComments:input_type -> super.GetPostCommentsReq
+	70, // 63: super.Super.CreateComment:input_type -> super.CreateCommentReq
+	72, // 64: super.Super.LikeComment:input_type -> super.LikeCommentReq
+	75, // 65: super.Super.GetNotifications:input_type -> super.GetNotificationsReq
+	77, // 66: super.Super.GetUnreadCount:input_type -> super.GetUnreadCountReq
+	79, // 67: super.Super.ReadNotification:input_type -> super.ReadNotificationReq
+	81, // 68: super.Super.ReadAllNotifications:input_type -> super.ReadAllNotificationsReq
+	50, // 69: super.Super.Recharge:input_type -> super.RechargeReq
+	52, // 70: super.Super.GetTransactions:input_type -> super.GetTransactionsReq
+	55, // 71: super.Super.GetTransaction:input_type -> super.GetTransactionReq
+	83, // 72: super.Super.FollowUser:input_type -> super.FollowUserReq
+	85, // 73: super.Super.UnfollowUser:input_type -> super.UnfollowUserReq
+	86, // 74: super.Super.GetFollowings:input_type -> super.GetFollowingsReq
+	88, // 75: super.Super.GetFollowers:input_type -> super.GetFollowersReq
+	90, // 76: super.Super.CheckFollow:input_type -> super.CheckFollowReq
+	95, // 77: super.Super.GetUserAvatar:input_type -> super.GetUserAvatarReq
+	97, // 78: super.Super.UpdateUserAvatar:input_type -> super.UpdateUserAvatarReq
+	2,  // 79: super.Super.Register:output_type -> super.RegisterResp
+	4,  // 80: super.Super.Login:output_type -> super.LoginResp
+	6,  // 81: super.Super.GetUserInfo:output_type -> super.GetUserInfoResp
+	8,  // 82: super.Super.GetUser:output_type -> super.GetUserResp
+	10, // 83: super.Super.GetUserByEmail:output_type -> super.GetUserByEmailResp
+	12, // 84: super.Super.UpdateUserInfo:output_type -> super.UpdateUserInfoResp
+	14, // 85: super.Super.UpdateUserPassword:output_type -> super.UpdateUserPasswordResp
+	16, // 86: super.Super.ResetPassword:output_type -> super.ResetPasswordResp
+	18, // 87: super.Super.DeleteUser:output_type -> super.DeleteUserResp
+	20, // 88: super.Super.UpdateUserVip:output_type -> super.UpdateUserVipResp
+	22, // 89: super.Super.GetUsers:output_type -> super.GetUsersResp
+	24, // 90: super.Super.GetUserCount:output_type -> super.GetUserCountResp
+	31, // 91: super.Super.GetVipPlans:output_type -> super.GetVipPlansResp
+	27, // 92: super.Super.GetVipPlan:output_type -> super.GetVipPlanResp
+	29, // 93: super.Super.CreateVipPlan:output_type -> super.CreateVipPlanResp
+	34, // 94: super.Super.CreateVipOrder:output_type -> super.CreateVipOrderResp
+	36, // 95: super.Super.GetVipOrders:output_type -> super.GetVipOrdersResp
+	39, // 96: super.Super.GetVipRecords:output_type -> super.GetVipRecordsResp
+	41, // 97: super.Super.GetUserActiveVipRecord:output_type -> super.GetUserActiveVipRecordResp
+	43, // 98: super.Super.GetUserVipStatus:output_type -> super.GetUserVipStatusResp
+	45, // 99: super.Super.CheckUserVip:output_type -> super.CheckUserVipResp
+	47, // 100: super.Super.UpdateAutoRenew:output_type -> super.UpdateAutoRenewResp
+	49, // 101: super.Super.SyncUserVipStatus:output_type -> super.SyncUserVipStatusResp
+	60, // 102: super.Super.GetPosts:output_type -> super.GetPostsResp
+	62, // 103: super.Super.GetPost:output_type -> super.GetPostResp
+	64, // 104: super.Super.CreatePost:output_type -> super.CreatePostResp
+	66, // 105: super.Super.LikePost:output_type -> super.LikePostResp
+	68, // 106: super.Super.GetPostComments:output_type -> super.GetPostCommentsResp
+	71, // 107: super.Super.CreateComment:output_type -> super.CreateCommentResp
+	73, // 108: super.Super.LikeComment:output_type -> super.LikeCommentResp
+	76, // 109: super.Super.GetNotifications:output_type -> super.GetNotificationsResp
+	78, // 110: super.Super.GetUnreadCount:output_type -> super.GetUnreadCountResp
+	80, // 111: super.Super.ReadNotification:output_type -> super.ReadNotificationResp
+	82, // 112: super.Super.ReadAllNotifications:output_type -> super.ReadAllNotificationsResp
+	51, // 113: super.Super.Recharge:output_type -> super.RechargeResp
+	54, // 114: super.Super.GetTransactions:output_type -> super.GetTransactionsResp
+	56, // 115: super.Super.GetTransaction:output_type -> super.GetTransactionResp
+	84, // 116: super.Super.FollowUser:output_type -> super.FollowUserResp
+	84, // 117: super.Super.UnfollowUser:output_type -> super.FollowUserResp
+	87, // 118: super.Super.GetFollowings:output_type -> super.GetFollowingsResp
+	89, // 119: super.Super.GetFollowers:output_type -> super.GetFollowersResp
+	91, // 120: super.Super.CheckFollow:output_type -> super.CheckFollowResp
+	96, // 121: super.Super.GetUserAvatar:output_type -> super.GetUserAvatarResp
+	98, // 122: super.Super.UpdateUserAvatar:output_type -> super.UpdateUserAvatarResp
+	79, // [79:123] is the sub-list for method output_type
+	35, // [35:79] is the sub-list for method input_type
+	35, // [35:35] is the sub-list for extension type_name
+	35, // [35:35] is the sub-list for extension extendee
+	0,  // [0:35] is the sub-list for field type_name
 }
 
 func init() { file_super_proto_init() }
@@ -7367,6 +7868,90 @@ func file_super_proto_init() {
 				return nil
 			}
 		}
+		file_super_proto_msgTypes[92].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AvatarBaseConfig); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_super_proto_msgTypes[93].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AvatarOutfitConfig); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_super_proto_msgTypes[94].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*UserAvatarData); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_super_proto_msgTypes[95].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetUserAvatarReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_super_proto_msgTypes[96].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetUserAvatarResp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_super_proto_msgTypes[97].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*UpdateUserAvatarReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_super_proto_msgTypes[98].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*UpdateUserAvatarResp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -7374,7 +7959,7 @@ func file_super_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_super_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   92,
+			NumMessages:   99,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

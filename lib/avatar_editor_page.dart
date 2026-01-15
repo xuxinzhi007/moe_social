@@ -99,18 +99,33 @@ class _AvatarEditorPageState extends State<AvatarEditorPage> {
   Future<void> _loadExistingAvatar() async {
     try {
       final userId = await AuthService.getUserId();
+      print('🔍 正在加载用户虚拟形象，用户ID: $userId');
+
       final avatarService = AvatarService();
       final userAvatar = await avatarService.getUserAvatar(userId);
 
+      print('📥 API返回的用户虚拟形象: $userAvatar');
+
       if (userAvatar != null && mounted) {
+        print('✅ 虚拟形象数据不为空，正在转换配置');
+        print('🎨 baseConfig: ${userAvatar.baseConfig.toJson()}');
+        print('👔 currentOutfit: ${userAvatar.currentOutfit.toJson()}');
+
+        final convertedConfig = _convertFromUserAvatar(userAvatar);
+        print('🔄 转换后的配置: faceType=${convertedConfig.faceType}, hairStyle=${convertedConfig.hairStyle}, clothesStyle=${convertedConfig.clothesStyle}');
+
         setState(() {
-          _currentConfig = _convertFromUserAvatar(userAvatar);
+          _currentConfig = convertedConfig;
           _hasChanges = false;
         });
+        print('✅ 虚拟形象加载完成');
+      } else {
+        print('⚠️ 虚拟形象数据为空，使用默认配置');
       }
     } catch (e) {
       // 如果加载失败，使用默认配置，不显示错误（用户可能是第一次使用）
-      print('加载虚拟形象配置失败: $e');
+      print('❌ 加载虚拟形象配置失败: $e');
+      print('📍 错误堆栈: ${StackTrace.current}');
     }
   }
 

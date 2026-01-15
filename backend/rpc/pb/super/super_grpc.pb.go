@@ -61,6 +61,8 @@ const (
 	Super_GetFollowings_FullMethodName          = "/super.Super/GetFollowings"
 	Super_GetFollowers_FullMethodName           = "/super.Super/GetFollowers"
 	Super_CheckFollow_FullMethodName            = "/super.Super/CheckFollow"
+	Super_GetUserAvatar_FullMethodName          = "/super.Super/GetUserAvatar"
+	Super_UpdateUserAvatar_FullMethodName       = "/super.Super/UpdateUserAvatar"
 )
 
 // SuperClient is the client API for Super service.
@@ -120,6 +122,9 @@ type SuperClient interface {
 	GetFollowings(ctx context.Context, in *GetFollowingsReq, opts ...grpc.CallOption) (*GetFollowingsResp, error)
 	GetFollowers(ctx context.Context, in *GetFollowersReq, opts ...grpc.CallOption) (*GetFollowersResp, error)
 	CheckFollow(ctx context.Context, in *CheckFollowReq, opts ...grpc.CallOption) (*CheckFollowResp, error)
+	// 虚拟形象相关服务
+	GetUserAvatar(ctx context.Context, in *GetUserAvatarReq, opts ...grpc.CallOption) (*GetUserAvatarResp, error)
+	UpdateUserAvatar(ctx context.Context, in *UpdateUserAvatarReq, opts ...grpc.CallOption) (*UpdateUserAvatarResp, error)
 }
 
 type superClient struct {
@@ -508,6 +513,24 @@ func (c *superClient) CheckFollow(ctx context.Context, in *CheckFollowReq, opts 
 	return out, nil
 }
 
+func (c *superClient) GetUserAvatar(ctx context.Context, in *GetUserAvatarReq, opts ...grpc.CallOption) (*GetUserAvatarResp, error) {
+	out := new(GetUserAvatarResp)
+	err := c.cc.Invoke(ctx, Super_GetUserAvatar_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) UpdateUserAvatar(ctx context.Context, in *UpdateUserAvatarReq, opts ...grpc.CallOption) (*UpdateUserAvatarResp, error) {
+	out := new(UpdateUserAvatarResp)
+	err := c.cc.Invoke(ctx, Super_UpdateUserAvatar_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SuperServer is the server API for Super service.
 // All implementations must embed UnimplementedSuperServer
 // for forward compatibility
@@ -565,6 +588,9 @@ type SuperServer interface {
 	GetFollowings(context.Context, *GetFollowingsReq) (*GetFollowingsResp, error)
 	GetFollowers(context.Context, *GetFollowersReq) (*GetFollowersResp, error)
 	CheckFollow(context.Context, *CheckFollowReq) (*CheckFollowResp, error)
+	// 虚拟形象相关服务
+	GetUserAvatar(context.Context, *GetUserAvatarReq) (*GetUserAvatarResp, error)
+	UpdateUserAvatar(context.Context, *UpdateUserAvatarReq) (*UpdateUserAvatarResp, error)
 	mustEmbedUnimplementedSuperServer()
 }
 
@@ -697,6 +723,12 @@ func (UnimplementedSuperServer) GetFollowers(context.Context, *GetFollowersReq) 
 }
 func (UnimplementedSuperServer) CheckFollow(context.Context, *CheckFollowReq) (*CheckFollowResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckFollow not implemented")
+}
+func (UnimplementedSuperServer) GetUserAvatar(context.Context, *GetUserAvatarReq) (*GetUserAvatarResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserAvatar not implemented")
+}
+func (UnimplementedSuperServer) UpdateUserAvatar(context.Context, *UpdateUserAvatarReq) (*UpdateUserAvatarResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateUserAvatar not implemented")
 }
 func (UnimplementedSuperServer) mustEmbedUnimplementedSuperServer() {}
 
@@ -1467,6 +1499,42 @@ func _Super_CheckFollow_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Super_GetUserAvatar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserAvatarReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).GetUserAvatar(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_GetUserAvatar_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).GetUserAvatar(ctx, req.(*GetUserAvatarReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_UpdateUserAvatar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserAvatarReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).UpdateUserAvatar(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_UpdateUserAvatar_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).UpdateUserAvatar(ctx, req.(*UpdateUserAvatarReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Super_ServiceDesc is the grpc.ServiceDesc for Super service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1641,6 +1709,14 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CheckFollow",
 			Handler:    _Super_CheckFollow_Handler,
+		},
+		{
+			MethodName: "GetUserAvatar",
+			Handler:    _Super_GetUserAvatar_Handler,
+		},
+		{
+			MethodName: "UpdateUserAvatar",
+			Handler:    _Super_UpdateUserAvatar_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

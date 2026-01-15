@@ -6,6 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,16 +26,53 @@ func NewUpdateUserAvatarLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *UpdateUserAvatarLogic) UpdateUserAvatar(req *types.UpdateUserAvatarReq) (resp *types.UpdateUserAvatarResp, err error) {
-	// 模拟更新用户虚拟形象
-	// 实际项目中应该调用RPC服务或数据库更新
-	
-	// 返回更新后的虚拟形象数据
-	updatedAvatar := types.UserAvatar{
-		UserId:        req.UserId,
-		BaseConfig:    req.BaseConfig,
-		CurrentOutfit: req.CurrentOutfit,
-		OwnedOutfits:  []string{}, // 实际项目中应该从数据库获取
+	logx.Infof("API: 更新用户虚拟形象: UserID=%s", req.UserId)
+
+	// 调用RPC服务更新用户虚拟形象
+	rpcResp, err := l.svcCtx.SuperRpcClient.UpdateUserAvatar(l.ctx, &super.UpdateUserAvatarReq{
+		UserId: req.UserId,
+		BaseConfig: &super.AvatarBaseConfig{
+			FaceShape: req.BaseConfig.FaceShape,
+			SkinColor: req.BaseConfig.SkinColor,
+			EyeType:   req.BaseConfig.EyeType,
+			HairStyle: req.BaseConfig.HairStyle,
+			HairColor: req.BaseConfig.HairColor,
+		},
+		CurrentOutfit: &super.AvatarOutfitConfig{
+			Clothes:     req.CurrentOutfit.Clothes,
+			Accessories: req.CurrentOutfit.Accessories,
+			Background:  req.CurrentOutfit.Background,
+		},
+	})
+	if err != nil {
+		logx.Errorf("RPC调用失败: %v", err)
+		return nil, err
 	}
+
+	if rpcResp.Avatar == nil {
+		logx.Errorf("RPC返回空数据")
+		return nil, err
+	}
+
+	// 转换RPC响应为API响应格式
+	updatedAvatar := types.UserAvatar{
+		UserId: rpcResp.Avatar.UserId,
+		BaseConfig: types.BaseConfig{
+			FaceShape: rpcResp.Avatar.BaseConfig.FaceShape,
+			SkinColor: rpcResp.Avatar.BaseConfig.SkinColor,
+			EyeType:   rpcResp.Avatar.BaseConfig.EyeType,
+			HairStyle: rpcResp.Avatar.BaseConfig.HairStyle,
+			HairColor: rpcResp.Avatar.BaseConfig.HairColor,
+		},
+		CurrentOutfit: types.OutfitConfig{
+			Clothes:     rpcResp.Avatar.CurrentOutfit.Clothes,
+			Accessories: rpcResp.Avatar.CurrentOutfit.Accessories,
+			Background:  rpcResp.Avatar.CurrentOutfit.Background,
+		},
+		OwnedOutfits: rpcResp.Avatar.OwnedOutfits,
+	}
+
+	logx.Infof("虚拟形象更新成功: %+v", updatedAvatar)
 
 	return &types.UpdateUserAvatarResp{
 		BaseResp: common.HandleError(nil),
