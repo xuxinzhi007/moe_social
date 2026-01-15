@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"backend/api/internal/common"
@@ -69,13 +70,27 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		}, nil
 	}
 
-	client := &http.Client{
-		Timeout: 60 * time.Second,
+	timeoutSeconds := l.svcCtx.Config.Ollama.TimeoutSeconds
+	if timeoutSeconds <= 0 {
+		timeoutSeconds = 60
 	}
 
-	url := "http://127.0.0.1:11434/api/chat"
+	baseUrl := strings.TrimRight(l.svcCtx.Config.Ollama.BaseUrl, "/")
+	if baseUrl == "" {
+		baseUrl = "http://127.0.0.1:11434"
+	}
 
-	httpReq, err := http.NewRequestWithContext(l.ctx, http.MethodPost, url, bytes.NewReader(body))
+	// 单独为调用 Ollama 增加超时控制，避免 handler ctx 没有 deadline 时无限等待
+	ctx, cancel := context.WithTimeout(l.ctx, time.Duration(timeoutSeconds)*time.Second)
+	defer cancel()
+
+	client := &http.Client{
+		Timeout: time.Duration(timeoutSeconds) * time.Second,
+	}
+
+	url := baseUrl + "/api/chat"
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return &types.LlmChatResp{
 			BaseResp: common.HandleError(err),

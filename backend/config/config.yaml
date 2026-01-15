@@ -2,6 +2,20 @@ server:
   port: 8080
   host: "0.0.0.0"
 
+# ===== Moe Social 统一配置（可选）=====
+# 说明：
+# - backend/api（go-zero）默认读 backend/api/etc/super*.yaml
+# - 现在 backend/api 会额外尝试读取本文件，用于覆盖部分参数（找不到会自动跳过）
+api:
+  # go-zero REST 超时（毫秒）。LLM 首次加载模型可能较慢，建议 >= 180000
+  timeout_ms: 600000
+
+ollama:
+  # 后端能访问到的 Ollama 地址（注意：不是前端能访问，是后端进程所在机器能访问）
+  base_url: "http://127.0.0.1:11434"
+  # 后端请求 Ollama 的超时（秒）
+  timeout_seconds: 300
+
 database:
   host: "127.0.0.1"
   port: 3306

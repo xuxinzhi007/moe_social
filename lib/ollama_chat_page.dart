@@ -38,6 +38,13 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   String? _modelsError;
   bool _memoryEnabled = true;
 
+  bool _isLocalErrorAssistantMessage(_ChatMessage m) {
+    if (m.role != 'assistant') return false;
+    final c = m.content.trim();
+    if (c.isEmpty) return false;
+    return c.startsWith('请求失败') || c.startsWith('请求超时') || c.startsWith('请求出错');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -152,6 +159,8 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     }
 
     final apiMessages = sourceMessages
+        // 过滤掉本地生成的“错误气泡”，避免把错误文本当作对话上下文发给模型
+        .where((m) => !_isLocalErrorAssistantMessage(m))
         .map((m) => {'role': m.role, 'content': m.content})
         .toList();
 
@@ -173,7 +182,8 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
               'messages': apiMessages,
             }),
           )
-          .timeout(const Duration(seconds: 60));
+          // LLM 生成首包可能较慢（尤其是首次加载模型时），这里给更宽裕的超时
+          .timeout(const Duration(seconds: 180));
 
       if (response.statusCode != 200) {
         final body = response.body;

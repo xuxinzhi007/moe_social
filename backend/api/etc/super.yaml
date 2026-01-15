@@ -1,6 +1,13 @@
 Name: Super
 Host: 0.0.0.0
 Port: 8888
+# go-zero REST 超时（毫秒）。不设置时常见默认约 3s，会导致 LLM 首次加载模型直接被 cancel。
+Timeout: 600000
+
+# Ollama 配置（后端需要能访问到该地址）
+Ollama:
+  BaseUrl: http://127.0.0.1:11434
+  TimeoutSeconds: 300
 
 # RPC服务配置
 SuperRpc:
