@@ -43,20 +43,9 @@ class _FollowingPageState extends State<FollowingPage> {
 
       print('📥 API响应: $result');
 
-      // 安全的数据处理
-      if (result != null && result.containsKey('followings') && result['followings'] != null) {
-        final followingsData = result['followings'] as List;
-        final followings = <User>[];
-
-        for (var item in followingsData) {
-          try {
-            if (item != null) {
-              followings.add(User.fromJson(item as Map<String, dynamic>));
-            }
-          } catch (e) {
-            print('⚠️ 跳过无效的用户数据: $e');
-          }
-        }
+      // ApiService.getFollowings 已经返回了 User 对象列表，直接使用即可
+      if (result.containsKey('followings') && result['followings'] != null) {
+        final followings = result['followings'] as List<User>;
 
         print('📊 解析结果: followings=${followings.length}');
 
