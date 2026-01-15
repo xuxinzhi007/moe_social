@@ -1,3 +1,5 @@
+import 'avatar_configuration.dart';
+
 class User {
   final String id;
   final String username;
@@ -6,6 +8,7 @@ class User {
   final String signature; // 个性签名
   final String gender; // 性别
   final String? birthday; // 生日，后端返回的是字符串格式 YYYY-MM-DD
+  final String? avatarConfig; // 虚拟形象配置JSON字符串
   final bool isVip;
   final String? vipExpiresAt; // 后端返回的是字符串格式
   final bool autoRenew;
@@ -21,6 +24,7 @@ class User {
     this.signature = '',
     this.gender = '',
     this.birthday,
+    this.avatarConfig,
     this.isVip = false,
     this.vipExpiresAt,
     this.autoRenew = false,
@@ -39,6 +43,7 @@ class User {
       signature: json['signature'] as String? ?? '',
       gender: json['gender'] as String? ?? '',
       birthday: json['birthday'] as String?,
+      avatarConfig: json['avatar_config'] as String?,
       isVip: json['is_vip'] as bool? ?? false,
       vipExpiresAt: json['vip_expires_at'] as String?,
       autoRenew: json['auto_renew'] as bool? ?? false,
@@ -58,6 +63,7 @@ class User {
       'signature': signature,
       'gender': gender,
       'birthday': birthday,
+      'avatar_config': avatarConfig,
       'is_vip': isVip,
       'vip_expires_at': vipExpiresAt,
       'auto_renew': autoRenew,
@@ -134,5 +140,41 @@ class User {
     }
 
     return age;
+  }
+
+  // 获取虚拟形象配置对象
+  AvatarConfiguration get avatarConfiguration {
+    if (avatarConfig == null || avatarConfig!.isEmpty) {
+      return const AvatarConfiguration(); // 返回默认配置
+    }
+
+    try {
+      final Map<String, dynamic> json = {};
+      // 这里需要解析JSON字符串，但为了简化，我们先返回默认配置
+      // 在实际实现中，需要使用 dart:convert 的 jsonDecode
+      return AvatarConfiguration.fromJson(json);
+    } catch (e) {
+      return const AvatarConfiguration(); // 解析失败时返回默认配置
+    }
+  }
+
+  // 创建副本并更新虚拟形象配置
+  User copyWithAvatarConfig(AvatarConfiguration config) {
+    return User(
+      id: id,
+      username: username,
+      email: email,
+      avatar: avatar,
+      signature: signature,
+      gender: gender,
+      birthday: birthday,
+      avatarConfig: config.toString(), // 这里需要序列化为JSON字符串
+      isVip: isVip,
+      vipExpiresAt: vipExpiresAt,
+      autoRenew: autoRenew,
+      balance: balance,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
   }
 }

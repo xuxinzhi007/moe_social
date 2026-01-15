@@ -1,0 +1,10 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 左眼 -->
+  <ellipse cx="75" cy="80" rx="12" ry="16" fill="#ffffff" stroke="#333333" stroke-width="2"/>
+  <circle cx="75" cy="80" r="6" fill="#5d4037"/>
+  <circle cx="79" cy="76" r="2" fill="#ffffff"/>
+  <!-- 右眼 -->
+  <ellipse cx="125" cy="80" rx="12" ry="16" fill="#ffffff" stroke="#333333" stroke-width="2"/>
+  <circle cx="125" cy="80" r="6" fill="#5d4037"/>
+  <circle cx="121" cy="76" r="2" fill="#ffffff"/>
+</svg>

@@ -1,0 +1,17 @@
+<!-- 圆框眼镜 -->
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 左镜片 -->
+  <circle cx="75" cy="85" r="18" fill="none" stroke="#333" stroke-width="3"/>
+  <circle cx="75" cy="85" r="16" fill="rgba(135,206,250,0.2)"/>
+
+  <!-- 右镜片 -->
+  <circle cx="125" cy="85" r="18" fill="none" stroke="#333" stroke-width="3"/>
+  <circle cx="125" cy="85" r="16" fill="rgba(135,206,250,0.2)"/>
+
+  <!-- 鼻梁 -->
+  <line x1="93" y1="85" x2="107" y2="85" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- 镜腿 -->
+  <line x1="57" y1="85" x2="45" y2="80" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+  <line x1="143" y1="85" x2="155" y2="80" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,18 @@
+<!-- 大眼睛 -->
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 左眼 -->
+  <ellipse cx="75" cy="85" rx="12" ry="15" fill="white" stroke="#333" stroke-width="1"/>
+  <circle cx="75" cy="85" r="8" fill="#4A90E2"/>
+  <circle cx="75" cy="85" r="4" fill="#000"/>
+  <circle cx="77" cy="82" r="2" fill="white"/>
+
+  <!-- 右眼 -->
+  <ellipse cx="125" cy="85" rx="12" ry="15" fill="white" stroke="#333" stroke-width="1"/>
+  <circle cx="125" cy="85" r="8" fill="#4A90E2"/>
+  <circle cx="125" cy="85" r="4" fill="#000"/>
+  <circle cx="127" cy="82" r="2" fill="white"/>
+
+  <!-- 眉毛 -->
+  <path d="M 65 72 Q 75 68 85 72" stroke="#8B4513" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M 115 72 Q 125 68 135 72" stroke="#8B4513" stroke-width="3" fill="none" stroke-linecap="round"/>
+</svg>

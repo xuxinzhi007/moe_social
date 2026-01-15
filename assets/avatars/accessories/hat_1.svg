@@ -1,0 +1,14 @@
+<!-- 帽子 -->
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 帽子主体 -->
+  <ellipse cx="100" cy="55" rx="70" ry="30" fill="#FF4757" stroke="#E84046" stroke-width="2"/>
+
+  <!-- 帽檐 -->
+  <ellipse cx="100" cy="75" rx="80" ry="15" fill="#FF4757" stroke="#E84046" stroke-width="2"/>
+
+  <!-- 帽子装饰 -->
+  <rect x="85" y="45" width="30" height="8" fill="#FFF" stroke="#E84046" stroke-width="1"/>
+
+  <!-- 帽子顶部高光 -->
+  <ellipse cx="85" cy="45" rx="15" ry="8" fill="#FF6B7A" opacity="0.6"/>
+</svg>

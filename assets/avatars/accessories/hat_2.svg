@@ -1,0 +1,8 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 加深腮红 -->
+  <circle cx="60" cy="105" r="12" fill="#ff80ab" opacity="0.6"/>
+  <circle cx="140" cy="105" r="12" fill="#ff80ab" opacity="0.6"/>
+  <!-- 脸颊小爱心 -->
+  <path d="M50 110 Q55 105 60 110 Q55 115 50 110" fill="#e91e63" opacity="0.7"/>
+  <path d="M140 110 Q145 105 150 110 Q145 115 140 110" fill="#e91e63" opacity="0.7"/>
+</svg>

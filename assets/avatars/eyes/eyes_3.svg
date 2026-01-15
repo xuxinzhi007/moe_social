@@ -1,0 +1,16 @@
+<!-- 眯眯眼 -->
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 左眼 (眯着的) -->
+  <path d="M 65 85 Q 75 82 85 85 Q 75 88 65 85" fill="#333" stroke="#333" stroke-width="1"/>
+
+  <!-- 右眼 (眯着的) -->
+  <path d="M 115 85 Q 125 82 135 85 Q 125 88 115 85" fill="#333" stroke="#333" stroke-width="1"/>
+
+  <!-- 眉毛 -->
+  <path d="M 65 72 Q 75 68 85 72" stroke="#8B4513" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M 115 72 Q 125 68 135 72" stroke="#8B4513" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- 可爱的脸红 -->
+  <circle cx="55" cy="95" r="6" fill="#FF6B9D" opacity="0.3"/>
+  <circle cx="145" cy="95" r="6" fill="#FF6B9D" opacity="0.3"/>
+</svg>
