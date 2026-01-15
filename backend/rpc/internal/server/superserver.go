@@ -243,3 +243,14 @@ func (s *SuperServer) CheckFollow(ctx context.Context, in *super.CheckFollowReq)
 	l := logic.NewCheckFollowLogic(ctx, s.svcCtx)
 	return l.CheckFollow(in)
 }
+
+// 虚拟形象相关服务
+func (s *SuperServer) GetUserAvatar(ctx context.Context, in *super.GetUserAvatarReq) (*super.GetUserAvatarResp, error) {
+	l := logic.NewGetUserAvatarLogic(ctx, s.svcCtx)
+	return l.GetUserAvatar(in)
+}
+
+func (s *SuperServer) UpdateUserAvatar(ctx context.Context, in *super.UpdateUserAvatarReq) (*super.UpdateUserAvatarResp, error) {
+	l := logic.NewUpdateUserAvatarLogic(ctx, s.svcCtx)
+	return l.UpdateUserAvatar(in)
+}

@@ -14,6 +14,8 @@ import (
 )
 
 type (
+	AvatarBaseConfig           = super.AvatarBaseConfig
+	AvatarOutfitConfig         = super.AvatarOutfitConfig
 	CheckFollowReq             = super.CheckFollowReq
 	CheckFollowResp            = super.CheckFollowResp
 	CheckUserVipReq            = super.CheckUserVipReq
@@ -51,6 +53,8 @@ type (
 	GetUnreadCountResp         = super.GetUnreadCountResp
 	GetUserActiveVipRecordReq  = super.GetUserActiveVipRecordReq
 	GetUserActiveVipRecordResp = super.GetUserActiveVipRecordResp
+	GetUserAvatarReq           = super.GetUserAvatarReq
+	GetUserAvatarResp          = super.GetUserAvatarResp
 	GetUserByEmailReq          = super.GetUserByEmailReq
 	GetUserByEmailResp         = super.GetUserByEmailResp
 	GetUserCountReq            = super.GetUserCountReq
@@ -96,6 +100,8 @@ type (
 	UnfollowUserReq            = super.UnfollowUserReq
 	UpdateAutoRenewReq         = super.UpdateAutoRenewReq
 	UpdateAutoRenewResp        = super.UpdateAutoRenewResp
+	UpdateUserAvatarReq        = super.UpdateUserAvatarReq
+	UpdateUserAvatarResp       = super.UpdateUserAvatarResp
 	UpdateUserInfoReq          = super.UpdateUserInfoReq
 	UpdateUserInfoResp         = super.UpdateUserInfoResp
 	UpdateUserPasswordReq      = super.UpdateUserPasswordReq
@@ -103,6 +109,7 @@ type (
 	UpdateUserVipReq           = super.UpdateUserVipReq
 	UpdateUserVipResp          = super.UpdateUserVipResp
 	User                       = super.User
+	UserAvatarData             = super.UserAvatarData
 	VipOrder                   = super.VipOrder
 	VipPlan                    = super.VipPlan
 	VipRecord                  = super.VipRecord
@@ -161,6 +168,9 @@ type (
 		GetFollowings(ctx context.Context, in *GetFollowingsReq, opts ...grpc.CallOption) (*GetFollowingsResp, error)
 		GetFollowers(ctx context.Context, in *GetFollowersReq, opts ...grpc.CallOption) (*GetFollowersResp, error)
 		CheckFollow(ctx context.Context, in *CheckFollowReq, opts ...grpc.CallOption) (*CheckFollowResp, error)
+		// 虚拟形象相关服务
+		GetUserAvatar(ctx context.Context, in *GetUserAvatarReq, opts ...grpc.CallOption) (*GetUserAvatarResp, error)
+		UpdateUserAvatar(ctx context.Context, in *UpdateUserAvatarReq, opts ...grpc.CallOption) (*UpdateUserAvatarResp, error)
 	}
 
 	defaultSuper struct {
@@ -393,4 +403,15 @@ func (m *defaultSuper) GetFollowers(ctx context.Context, in *GetFollowersReq, op
 func (m *defaultSuper) CheckFollow(ctx context.Context, in *CheckFollowReq, opts ...grpc.CallOption) (*CheckFollowResp, error) {
 	client := super.NewSuperClient(m.cli.Conn())
 	return client.CheckFollow(ctx, in, opts...)
+}
+
+// 虚拟形象相关服务
+func (m *defaultSuper) GetUserAvatar(ctx context.Context, in *GetUserAvatarReq, opts ...grpc.CallOption) (*GetUserAvatarResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.GetUserAvatar(ctx, in, opts...)
+}
+
+func (m *defaultSuper) UpdateUserAvatar(ctx context.Context, in *UpdateUserAvatarReq, opts ...grpc.CallOption) (*UpdateUserAvatarResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.UpdateUserAvatar(ctx, in, opts...)
 }

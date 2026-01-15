@@ -569,6 +569,10 @@ service Super {
   rpc GetFollowings(GetFollowingsReq) returns (GetFollowingsResp);
   rpc GetFollowers(GetFollowersReq) returns (GetFollowersResp);
   rpc CheckFollow(CheckFollowReq) returns (CheckFollowResp);
+
+  // 虚拟形象相关服务
+  rpc GetUserAvatar(GetUserAvatarReq) returns (GetUserAvatarResp);
+  rpc UpdateUserAvatar(UpdateUserAvatarReq) returns (UpdateUserAvatarResp);
 }
 
 // 关注相关消息
@@ -615,4 +619,48 @@ message CheckFollowReq {
 
 message CheckFollowResp {
   bool is_following = 1;
+}
+
+// Avatar相关消息
+message AvatarBaseConfig {
+  string face_shape = 1;
+  string skin_color = 2;
+  string eye_type = 3;
+  string hair_style = 4;
+  string hair_color = 5;
+}
+
+message AvatarOutfitConfig {
+  string clothes = 1;
+  repeated string accessories = 2;
+  string background = 3;
+}
+
+message UserAvatarData {
+  string user_id = 1;
+  AvatarBaseConfig base_config = 2;
+  AvatarOutfitConfig current_outfit = 3;
+  repeated string owned_outfits = 4;
+}
+
+// 获取用户虚拟形象请求
+message GetUserAvatarReq {
+  string user_id = 1;
+}
+
+// 获取用户虚拟形象响应
+message GetUserAvatarResp {
+  UserAvatarData avatar = 1;
+}
+
+// 更新用户虚拟形象请求
+message UpdateUserAvatarReq {
+  string user_id = 1;
+  AvatarBaseConfig base_config = 2;
+  AvatarOutfitConfig current_outfit = 3;
+}
+
+// 更新用户虚拟形象响应
+message UpdateUserAvatarResp {
+  UserAvatarData avatar = 1;
 }

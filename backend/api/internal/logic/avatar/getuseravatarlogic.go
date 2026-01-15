@@ -6,6 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,29 +26,62 @@ func NewGetUserAvatarLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 }
 
 func (l *GetUserAvatarLogic) GetUserAvatar(req *types.GetUserAvatarReq) (resp *types.GetUserAvatarResp, err error) {
-	// 模拟获取用户虚拟形象数据
-	// 实际项目中应该调用RPC服务或数据库查询
+	logx.Infof("API: 获取用户虚拟形象: UserID=%s", req.UserId)
 
-	// 如果用户没有设置形象，返回默认形象数据
-	defaultAvatar := types.UserAvatar{
+	// 调用RPC服务获取用户虚拟形象
+	rpcResp, err := l.svcCtx.SuperRpcClient.GetUserAvatar(l.ctx, &super.GetUserAvatarReq{
 		UserId: req.UserId,
+	})
+	if err != nil {
+		logx.Errorf("RPC调用失败: %v", err)
+		return nil, err
+	}
+
+	if rpcResp.Avatar == nil {
+		logx.Errorf("RPC返回空数据")
+		return &types.GetUserAvatarResp{
+			BaseResp: common.HandleError(nil),
+			Data: types.UserAvatar{
+				UserId: req.UserId,
+				BaseConfig: types.BaseConfig{
+					FaceShape: "face_1",
+					SkinColor: "#FDBCB4",
+					EyeType:   "eyes_1",
+					HairStyle: "hair_1",
+					HairColor: "#8B4513",
+				},
+				CurrentOutfit: types.OutfitConfig{
+					Clothes:     "clothes_1",
+					Accessories: []string{},
+					Background:  "default",
+				},
+				OwnedOutfits: []string{},
+			},
+		}, nil
+	}
+
+	// 转换RPC响应为API响应格式
+	avatar := types.UserAvatar{
+		UserId: rpcResp.Avatar.UserId,
 		BaseConfig: types.BaseConfig{
-			FaceShape: "round",
-			SkinColor: "light",
-			EyeType:   "big",
-			HairStyle: "short",
-			HairColor: "black",
+			FaceShape: rpcResp.Avatar.BaseConfig.FaceShape,
+			SkinColor: rpcResp.Avatar.BaseConfig.SkinColor,
+			EyeType:   rpcResp.Avatar.BaseConfig.EyeType,
+			HairStyle: rpcResp.Avatar.BaseConfig.HairStyle,
+			HairColor: rpcResp.Avatar.BaseConfig.HairColor,
 		},
 		CurrentOutfit: types.OutfitConfig{
-			Clothes:     "casual",
-			Accessories: []string{},
-			Background:  "default",
+			Clothes:     rpcResp.Avatar.CurrentOutfit.Clothes,
+			Accessories: rpcResp.Avatar.CurrentOutfit.Accessories,
+			Background:  rpcResp.Avatar.CurrentOutfit.Background,
 		},
-		OwnedOutfits: []string{},
+		OwnedOutfits: rpcResp.Avatar.OwnedOutfits,
 	}
+
+	logx.Infof("成功获取用户虚拟形象: %+v", avatar)
 
 	return &types.GetUserAvatarResp{
 		BaseResp: common.HandleError(nil),
-		Data:     defaultAvatar,
+		Data:     avatar,
 	}, nil
 }
