@@ -634,12 +634,19 @@ class ApiService {
     String? username,
     String? email,
     String? avatar,
+    String? signature,
+    String? gender,
+    String? birthday,
   }) async {
     final body = <String, dynamic>{};
+
     if (username != null) body['username'] = username;
     if (email != null) body['email'] = email;
     if (avatar != null) body['avatar'] = avatar;
-    
+    if (signature != null) body['signature'] = signature;
+    if (gender != null) body['gender'] = gender;
+    if (birthday != null) body['birthday'] = birthday;
+
     final result = await _request('/api/user/$userId',
       method: 'PUT',
       body: body

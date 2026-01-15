@@ -11,12 +11,15 @@ message User {
   string username = 2;
   string email = 3;
   string avatar = 4;
-  string created_at = 5;
-  string updated_at = 6;
-  bool is_vip = 7;
-  string vip_expires_at = 8;
-  bool auto_renew = 9;
-  float balance = 10; // 钱包余额
+  string signature = 5;   // 个性签名
+  string gender = 6;      // 性别
+  string birthday = 7;    // 生日
+  string created_at = 8;
+  string updated_at = 9;
+  bool is_vip = 10;
+  string vip_expires_at = 11;
+  bool auto_renew = 12;
+  float balance = 13; // 钱包余额
 }
 
 // 用户注册请求
@@ -78,6 +81,9 @@ message UpdateUserInfoReq {
   string username = 2;
   string email = 3;
   string avatar = 4;
+  string signature = 5;   // 个性签名
+  string gender = 6;      // 性别
+  string birthday = 7;    // 生日
 }
 
 // 更新用户信息响应

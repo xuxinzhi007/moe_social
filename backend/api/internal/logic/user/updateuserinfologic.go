@@ -28,10 +28,13 @@ func NewUpdateUserInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Up
 func (l *UpdateUserInfoLogic) UpdateUserInfo(req *types.UpdateUserInfoReq) (resp *types.UpdateUserInfoResp, err error) {
 	// 调用RPC服务
 	rpcResp, err := l.svcCtx.SuperRpcClient.UpdateUserInfo(l.ctx, &super.UpdateUserInfoReq{
-		UserId:   req.UserId,
-		Username: req.Username,
-		Email:    req.Email,
-		Avatar:   req.Avatar,
+		UserId:    req.UserId,
+		Username:  req.Username,
+		Email:     req.Email,
+		Avatar:    req.Avatar,
+		Signature: req.Signature,
+		Gender:    req.Gender,
+		Birthday:  req.Birthday,
 	})
 	if err != nil {
 		return &types.UpdateUserInfoResp{
@@ -47,11 +50,15 @@ func (l *UpdateUserInfoLogic) UpdateUserInfo(req *types.UpdateUserInfoReq) (resp
 			Username:     rpcResp.User.Username,
 			Email:        rpcResp.User.Email,
 			Avatar:       rpcResp.User.Avatar,
+			Signature:    rpcResp.User.Signature,
+			Gender:       rpcResp.User.Gender,
+			Birthday:     rpcResp.User.Birthday,
 			CreatedAt:    rpcResp.User.CreatedAt,
 			UpdatedAt:    rpcResp.User.UpdatedAt,
 			IsVip:        rpcResp.User.IsVip,
 			VipExpiresAt: rpcResp.User.VipExpiresAt,
 			AutoRenew:    rpcResp.User.AutoRenew,
+			Balance:      float64(rpcResp.User.Balance),
 		},
 	}, nil
 }

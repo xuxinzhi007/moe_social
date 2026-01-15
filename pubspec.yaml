@@ -37,8 +37,9 @@ dependencies:
   image_picker: ^1.1.2
   provider: ^6.1.2
   shimmer: ^3.0.0
-  package_info_plus: 
+  package_info_plus:
   url_launcher:
+  intl: ^0.19.0
 
 dev_dependencies:
   flutter_test:
