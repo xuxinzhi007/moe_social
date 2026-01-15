@@ -43,20 +43,9 @@ class _FollowersPageState extends State<FollowersPage> {
 
       print('📥 API响应: $result');
 
-      // 安全的数据处理
-      if (result != null && result.containsKey('followers') && result['followers'] != null) {
-        final followersData = result['followers'] as List;
-        final followers = <User>[];
-
-        for (var item in followersData) {
-          try {
-            if (item != null) {
-              followers.add(User.fromJson(item as Map<String, dynamic>));
-            }
-          } catch (e) {
-            print('⚠️ 跳过无效的用户数据: $e');
-          }
-        }
+      // ApiService.getFollowers 已经返回了 User 对象列表，直接使用即可
+      if (result.containsKey('followers') && result['followers'] != null) {
+        final followers = result['followers'] as List<User>;
 
         print('📊 解析结果: followers=${followers.length}');
 
