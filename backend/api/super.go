@@ -71,13 +71,18 @@ func main() {
 	ctx := svc.NewServiceContext(c)
 	handler.RegisterHandlers(server, ctx)
 
-	// 手动追加“流式聊天”接口（SSE）。不写入 super.api，避免 goctl 生成覆盖/不适配流式响应。
+	// 手动追加"流式聊天"接口（SSE 和 WebSocket）。不写入 super.api，避免 goctl 生成覆盖/不适配流式响应。
 	server.AddRoutes(
 		[]rest.Route{
 			{
 				Method:  http.MethodPost,
 				Path:    "/api/llm/chat/stream",
 				Handler: llmhandler.ChatStreamHandler(ctx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/llm/chat/ws",
+				Handler: llmhandler.ChatWebSocketHandler(ctx),
 			},
 		},
 	)

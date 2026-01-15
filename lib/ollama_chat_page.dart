@@ -26,9 +26,6 @@ class _ChatMessage {
 class _OllamaChatPageState extends State<OllamaChatPage> {
   static List<_ChatMessage> _savedMessages = [];
   static bool _savedMemoryEnabled = true;
-  static bool _savedStreamEnabled = true;
-  static bool _savedDirectOllama = true; // 流式输出默认开启直连
-  static String _savedOllamaDirectUrl = 'http://127.0.0.1:11434';
 
   final List<_ChatMessage> _messages = [];
   final TextEditingController _controller = TextEditingController();
@@ -40,11 +37,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   bool _isLoadingModels = false;
   String? _modelsError;
   bool _memoryEnabled = true;
-  bool _streamEnabled = true;
-  bool _directOllama = true; // 流式输出默认开启直连（更稳定）
-  String _ollamaDirectUrl = 'http://127.0.0.1:11434'; // Ollama 直连地址（可配置）
-  bool _ollamaOnline = false; // Ollama 在线状态
-  Timer? _statusCheckTimer; // 状态检测定时器
+  bool _ollamaOnline = false; // Ollama 在线状态（通过模型列表判断）
 
   bool _isLocalErrorAssistantMessage(_ChatMessage m) {
     if (m.role != 'assistant') return false;
@@ -59,70 +52,25 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     _modelController.text = _modelName;
     _messages.addAll(_savedMessages);
     _memoryEnabled = _savedMemoryEnabled;
-    _streamEnabled = _savedStreamEnabled;
-    _directOllama = _savedDirectOllama;
-    _ollamaDirectUrl = _savedOllamaDirectUrl;
     if (_messages.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToBottom();
       });
     }
     _loadModels();
-    _startOllamaStatusCheck();
   }
   
   @override
   void dispose() {
-    _statusCheckTimer?.cancel();
     _controller.dispose();
     _modelController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
-  
-  // 检查 Ollama 在线状态（通过获取模型列表）
-  Future<void> _checkOllamaStatus() async {
-    try {
-      String url;
-      if (_directOllama) {
-        // 直连模式：直接访问 Ollama 的 /api/tags 接口
-        final baseUrl = _ollamaDirectUrl.endsWith('/') 
-            ? _ollamaDirectUrl.substring(0, _ollamaDirectUrl.length - 1)
-            : _ollamaDirectUrl;
-        url = '$baseUrl/api/tags';
-      } else {
-        // 后端模式：通过后端接口获取模型列表
-        url = '${ApiService.baseUrl}/api/llm/models';
-      }
-      
-      final uri = Uri.parse(url);
-      final response = await http.get(uri).timeout(const Duration(seconds: 3));
-      
-      setState(() {
-        _ollamaOnline = response.statusCode == 200;
-      });
-    } catch (e) {
-      setState(() {
-        _ollamaOnline = false;
-      });
-    }
-  }
-  
-  // 启动状态检测定时器（每5秒检测一次）
-  void _startOllamaStatusCheck() {
-    _checkOllamaStatus(); // 立即检测一次
-    _statusCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      _checkOllamaStatus();
-    });
-  }
-
 
   void _saveState() {
     _savedMessages = List<_ChatMessage>.from(_messages);
     _savedMemoryEnabled = _memoryEnabled;
-    _savedStreamEnabled = _streamEnabled;
-    _savedDirectOllama = _directOllama;
-    _savedOllamaDirectUrl = _ollamaDirectUrl;
   }
 
   Future<void> _sendMessage() async {
@@ -138,17 +86,8 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     _saveState();
     _scrollToBottom();
 
-    // 流式输出默认使用直连（更稳定），非流式使用后端接口
-    if (_streamEnabled) {
-      // 流式输出优先使用直连，如果直连关闭则尝试后端流式接口
-      if (_directOllama) {
-        await _callOllamaDirect();
-      } else {
-        await _callOllamaStream();
-      }
-    } else {
-      await _callOllama();
-    }
+    // 调用后端 API
+    await _callOllama();
   }
 
   Future<void> _loadModels() async {
@@ -178,378 +117,32 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
         if (list.isNotEmpty) {
           setState(() {
             _models = list;
+            _ollamaOnline = true; // 成功获取模型列表，Ollama 在线
             if (!_models.contains(_modelName)) {
               _modelName = _models.first;
               _modelController.text = _modelName;
             }
-            // 成功获取模型列表，更新在线状态
-            _ollamaOnline = true;
           });
         }
       } else {
         setState(() {
           _modelsError = '获取模型列表失败 (${response.statusCode})';
+          _ollamaOnline = false;
         });
       }
     } on TimeoutException {
       setState(() {
         _modelsError = '获取模型列表超时';
+        _ollamaOnline = false;
       });
     } catch (e) {
       setState(() {
         _modelsError = '获取模型列表出错: $e';
+        _ollamaOnline = false;
       });
     } finally {
       setState(() {
         _isLoadingModels = false;
-      });
-    }
-  }
-
-  Future<void> _callOllamaStream() async {
-    if (_messages.isEmpty) return;
-    setState(() {
-      _isSending = true;
-    });
-
-    List<_ChatMessage> sourceMessages;
-    if (_memoryEnabled) {
-      sourceMessages = List<_ChatMessage>.from(_messages);
-    } else {
-      final lastUser = _messages.lastWhere(
-        (m) => m.role == 'user',
-        orElse: () => _messages.last,
-      );
-      sourceMessages = [lastUser];
-    }
-
-    final apiMessages = sourceMessages
-        .where((m) => !_isLocalErrorAssistantMessage(m))
-        .map((m) => {'role': m.role, 'content': m.content})
-        .toList();
-
-    final assistantIndex = _messages.length;
-    setState(() {
-      _messages.add(_ChatMessage(role: 'assistant', content: '', time: DateTime.now()));
-    });
-    _saveState();
-    _scrollToBottom();
-
-    try {
-      final uri = Uri.parse('${ApiService.baseUrl}/api/llm/chat/stream');
-      final request = http.Request('POST', uri);
-      request.headers['Content-Type'] = 'application/json';
-      request.body = jsonEncode({
-        'model': _modelName,
-        'messages': apiMessages,
-      });
-
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 300));
-      
-      if (streamedResponse.statusCode != 200) {
-        final body = await streamedResponse.stream.bytesToString();
-        final errorText = '请求失败 (${streamedResponse.statusCode})${body.isNotEmpty ? '\n$body' : ''}';
-        setState(() {
-          _messages[assistantIndex] = _ChatMessage(
-            role: 'assistant',
-            content: errorText,
-            time: DateTime.now(),
-          );
-        });
-        _saveState();
-        _scrollToBottom();
-        return;
-      }
-
-      String accumulatedContent = '';
-      String buffer = '';
-      Timer? updateTimer;
-      String pendingContent = '';
-      
-      // 使用定时器批量更新，避免频繁 setState
-      void scheduleUpdate() {
-        if (updateTimer?.isActive ?? false) return;
-        updateTimer = Timer(const Duration(milliseconds: 50), () {
-          if (pendingContent.isNotEmpty) {
-            setState(() {
-              _messages[assistantIndex] = _ChatMessage(
-                role: 'assistant',
-                content: accumulatedContent,
-                time: DateTime.now(),
-              );
-            });
-            _scrollToBottom();
-            pendingContent = '';
-          }
-        });
-      }
-      
-      await for (final chunk in streamedResponse.stream.transform(utf8.decoder)) {
-        buffer += chunk;
-        final lines = buffer.split('\n');
-        buffer = lines.removeLast();
-        
-        for (final line in lines) {
-          final trimmed = line.trim();
-          if (trimmed.isEmpty) continue;
-          
-          if (trimmed.startsWith('data: ')) {
-            final jsonStr = trimmed.substring(6).trim();
-            if (jsonStr.isEmpty || jsonStr == '[DONE]') continue;
-            
-            try {
-              final data = jsonDecode(jsonStr);
-              if (data is Map) {
-                // 后端返回格式: {"delta": "文本内容", "done": false}
-                if (data['delta'] is String) {
-                  final delta = data['delta'] as String;
-                  if (delta.isNotEmpty) {
-                    accumulatedContent += delta;
-                    pendingContent += delta;
-                    scheduleUpdate(); // 触发定时更新
-                  }
-                }
-                // 如果 done=true，流式结束
-                if (data['done'] == true) {
-                  updateTimer?.cancel();
-                  // 立即更新最终内容
-                  setState(() {
-                    _messages[assistantIndex] = _ChatMessage(
-                      role: 'assistant',
-                      content: accumulatedContent,
-                      time: DateTime.now(),
-                    );
-                  });
-                  _scrollToBottom();
-                  break;
-                }
-              }
-            } catch (e) {
-              // 忽略解析错误，继续处理下一行
-            }
-          }
-        }
-      }
-      
-      updateTimer?.cancel();
-      // 确保最终内容被更新
-      if (accumulatedContent.isNotEmpty) {
-        setState(() {
-          _messages[assistantIndex] = _ChatMessage(
-            role: 'assistant',
-            content: accumulatedContent,
-            time: DateTime.now(),
-          );
-        });
-        _scrollToBottom();
-      }
-
-      setState(() {
-        _messages[assistantIndex] = _ChatMessage(
-          role: 'assistant',
-          content: accumulatedContent.isEmpty ? '无响应内容' : accumulatedContent,
-          time: DateTime.now(),
-        );
-      });
-      _saveState();
-      _scrollToBottom();
-    } on TimeoutException {
-      setState(() {
-        _messages[assistantIndex] = _ChatMessage(
-          role: 'assistant',
-          content: '请求超时，请检查 Ollama 服务是否运行',
-          time: DateTime.now(),
-        );
-      });
-      _saveState();
-      _scrollToBottom();
-    } catch (e) {
-      // 后端流式失败，尝试回退到直连流式
-      print('后端流式接口失败: $e，尝试直连');
-      setState(() {
-        _messages.removeAt(assistantIndex);
-      });
-      // 如果直连未开启，尝试直连
-      if (!_directOllama) {
-        _directOllama = true;
-        await _callOllamaDirect();
-      } else {
-        // 如果直连也失败，回退到非流式
-        await _callOllama();
-      }
-      return;
-    } finally {
-      setState(() {
-        _isSending = false;
-      });
-    }
-  }
-
-  // 前端直接连接 Ollama（需要 Ollama 配置 CORS 或使用代理）
-  Future<void> _callOllamaDirect() async {
-    if (_messages.isEmpty) return;
-    setState(() {
-      _isSending = true;
-    });
-
-    List<_ChatMessage> sourceMessages;
-    if (_memoryEnabled) {
-      sourceMessages = List<_ChatMessage>.from(_messages);
-    } else {
-      final lastUser = _messages.lastWhere(
-        (m) => m.role == 'user',
-        orElse: () => _messages.last,
-      );
-      sourceMessages = [lastUser];
-    }
-
-    final apiMessages = sourceMessages
-        .where((m) => !_isLocalErrorAssistantMessage(m))
-        .map((m) => {'role': m.role, 'content': m.content})
-        .toList();
-
-    final assistantIndex = _messages.length;
-    setState(() {
-      _messages.add(_ChatMessage(role: 'assistant', content: '', time: DateTime.now()));
-    });
-    _saveState();
-    _scrollToBottom();
-
-    try {
-      // 直接连接 Ollama（地址可配置，支持本地和远程）
-      // 注意：远程使用时需要 Ollama 配置 CORS 或使用代理
-      final ollamaBaseUrl = _ollamaDirectUrl.endsWith('/') 
-          ? _ollamaDirectUrl.substring(0, _ollamaDirectUrl.length - 1)
-          : _ollamaDirectUrl;
-      final ollamaUrl = '$ollamaBaseUrl/api/chat';
-      final request = http.Request('POST', Uri.parse(ollamaUrl));
-      request.headers['Content-Type'] = 'application/json';
-      request.body = jsonEncode({
-        'model': _modelName,
-        'messages': apiMessages,
-        'stream': true,
-      });
-
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 300));
-      
-      if (streamedResponse.statusCode != 200) {
-        final body = await streamedResponse.stream.bytesToString();
-        final errorText = '请求失败 (${streamedResponse.statusCode})${body.isNotEmpty ? '\n$body' : ''}';
-        setState(() {
-          _messages[assistantIndex] = _ChatMessage(
-            role: 'assistant',
-            content: errorText,
-            time: DateTime.now(),
-          );
-        });
-        _saveState();
-        _scrollToBottom();
-        return;
-      }
-
-      String accumulatedContent = '';
-      String buffer = '';
-      Timer? updateTimer;
-      String pendingContent = '';
-      
-      // 使用定时器批量更新，避免频繁 setState
-      void scheduleUpdate() {
-        if (updateTimer?.isActive ?? false) return;
-        updateTimer = Timer(const Duration(milliseconds: 50), () {
-          if (pendingContent.isNotEmpty) {
-            setState(() {
-              _messages[assistantIndex] = _ChatMessage(
-                role: 'assistant',
-                content: accumulatedContent,
-                time: DateTime.now(),
-              );
-            });
-            _scrollToBottom();
-            pendingContent = '';
-          }
-        });
-      }
-      
-      await for (final chunk in streamedResponse.stream.transform(utf8.decoder)) {
-        buffer += chunk;
-        final lines = buffer.split('\n');
-        buffer = lines.removeLast();
-        
-        for (final line in lines) {
-          final trimmed = line.trim();
-          if (trimmed.isEmpty) continue;
-          
-          try {
-            final data = jsonDecode(trimmed);
-            if (data is Map) {
-              // Ollama 流式格式: {"message": {"role": "assistant", "content": "..."}, "done": false}
-              if (data['message'] is Map) {
-                final message = data['message'] as Map;
-                if (message['content'] is String) {
-                  final content = message['content'] as String;
-                  if (content.isNotEmpty) {
-                    accumulatedContent += content;
-                    pendingContent += content;
-                    scheduleUpdate(); // 触发定时更新
-                  }
-                }
-              }
-              if (data['done'] == true) {
-                updateTimer?.cancel();
-                // 立即更新最终内容
-                setState(() {
-                  _messages[assistantIndex] = _ChatMessage(
-                    role: 'assistant',
-                    content: accumulatedContent,
-                    time: DateTime.now(),
-                  );
-                });
-                _scrollToBottom();
-                break;
-              }
-            }
-          } catch (e) {
-            // 忽略解析错误
-          }
-        }
-      }
-      
-      updateTimer?.cancel();
-      // 确保最终内容被更新
-      if (accumulatedContent.isNotEmpty) {
-        setState(() {
-          _messages[assistantIndex] = _ChatMessage(
-            role: 'assistant',
-            content: accumulatedContent,
-            time: DateTime.now(),
-          );
-        });
-        _scrollToBottom();
-      }
-
-      setState(() {
-        _messages[assistantIndex] = _ChatMessage(
-          role: 'assistant',
-          content: accumulatedContent.isEmpty ? '无响应内容' : accumulatedContent,
-          time: DateTime.now(),
-        );
-      });
-      _saveState();
-      _scrollToBottom();
-    } catch (e) {
-      // 直连失败，回退到后端接口
-      setState(() {
-        _messages.removeAt(assistantIndex);
-      });
-      if (_streamEnabled) {
-        await _callOllamaStream();
-      } else {
-        await _callOllama();
-      }
-      return;
-    } finally {
-      setState(() {
-        _isSending = false;
       });
     }
   }
@@ -663,58 +256,6 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     });
   }
 
-  void _showOllamaUrlDialog(BuildContext context) {
-    final controller = TextEditingController(text: _ollamaDirectUrl);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('配置 Ollama 直连地址'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('请输入 Ollama 服务器地址：'),
-            const SizedBox(height: 8),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                hintText: 'http://127.0.0.1:11434',
-                labelText: 'Ollama 地址',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '示例：\n• 本地: http://127.0.0.1:11434\n• 远程: http://192.168.1.100:11434\n• 域名: http://ollama.example.com:11434',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () {
-              final url = controller.text.trim();
-              if (url.isNotEmpty) {
-                setState(() {
-                  _ollamaDirectUrl = url;
-                  _saveState();
-                });
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Ollama 地址已更新: $url')),
-                );
-              }
-            },
-            child: const Text('确定'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _openSettings() {
     showModalBottomSheet(
       context: context,
@@ -748,54 +289,6 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                       },
                     ),
                   ),
-              ListTile(
-                leading: const Icon(Icons.auto_awesome),
-                title: const Text('流式输出'),
-                subtitle: const Text('开启后可以看到模型逐字生成回复（默认使用直连）'),
-                trailing: Switch(
-                  value: _streamEnabled,
-                  onChanged: (value) {
-                    setModalState(() {
-                      setState(() {
-                        _streamEnabled = value;
-                        // 开启流式输出时，默认开启直连（更稳定）
-                        if (value && !_directOllama) {
-                          _directOllama = true;
-                        }
-                        _saveState();
-                      });
-                    });
-                  },
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.link),
-                title: const Text('直接连接 Ollama'),
-                subtitle: Text('流式输出时推荐开启\n当前地址: $_ollamaDirectUrl'),
-                trailing: Switch(
-                  value: _directOllama,
-                  onChanged: (value) {
-                    setModalState(() {
-                      setState(() {
-                        _directOllama = value;
-                        _saveState();
-                        // 切换模式后立即检测状态
-                        _checkOllamaStatus();
-                      });
-                    });
-                  },
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.settings),
-                title: const Text('Ollama 直连地址'),
-                subtitle: const Text('点击修改 Ollama 服务器地址'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _showOllamaUrlDialog(context);
-                },
-              ),
                   ListTile(
                     leading: const Icon(Icons.delete_outline_rounded),
                     title: const Text('清空当前聊天记录'),
@@ -875,7 +368,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: 8),
-            // Ollama 在线状态指示器（绿点）
+            // Ollama 在线状态指示器
             Container(
               width: 8,
               height: 8,
