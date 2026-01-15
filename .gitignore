@@ -13,6 +13,8 @@
 migrate_working_dir/
 backend/api/super
 backend/rpc/super
+ollama_web_副本
+
 
 # IntelliJ related
 *.iml
