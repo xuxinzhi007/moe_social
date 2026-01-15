@@ -24,6 +24,9 @@ class _ChatMessage {
 }
 
 class _OllamaChatPageState extends State<OllamaChatPage> {
+  static List<_ChatMessage> _savedMessages = [];
+  static bool _savedMemoryEnabled = true;
+
   final List<_ChatMessage> _messages = [];
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _modelController = TextEditingController();
@@ -33,11 +36,19 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   List<String> _models = [];
   bool _isLoadingModels = false;
   String? _modelsError;
+  bool _memoryEnabled = true;
 
   @override
   void initState() {
     super.initState();
     _modelController.text = _modelName;
+    _messages.addAll(_savedMessages);
+    _memoryEnabled = _savedMemoryEnabled;
+    if (_messages.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
+    }
     _loadModels();
   }
 
@@ -47,6 +58,11 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     _modelController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _saveState() {
+    _savedMessages = List<_ChatMessage>.from(_messages);
+    _savedMemoryEnabled = _memoryEnabled;
   }
 
   Future<void> _sendMessage() async {
@@ -59,6 +75,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
       _messages.add(_ChatMessage(role: 'user', content: text, time: now));
       _controller.clear();
     });
+    _saveState();
     _scrollToBottom();
 
     await _callOllama();
@@ -123,7 +140,18 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
       _isSending = true;
     });
 
-    final apiMessages = _messages
+    List<_ChatMessage> sourceMessages;
+    if (_memoryEnabled) {
+      sourceMessages = List<_ChatMessage>.from(_messages);
+    } else {
+      final lastUser = _messages.lastWhere(
+        (m) => m.role == 'user',
+        orElse: () => _messages.last,
+      );
+      sourceMessages = [lastUser];
+    }
+
+    final apiMessages = sourceMessages
         .map((m) => {'role': m.role, 'content': m.content})
         .toList();
 
@@ -131,6 +159,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     setState(() {
       _messages.add(_ChatMessage(role: 'assistant', content: '', time: DateTime.now()));
     });
+    _saveState();
     _scrollToBottom();
 
     try {
@@ -157,6 +186,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
             time: DateTime.now(),
           );
         });
+        _saveState();
         _scrollToBottom();
         return;
       }
@@ -170,6 +200,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
           time: DateTime.now(),
         );
       });
+      _saveState();
       _scrollToBottom();
     } on TimeoutException {
       setState(() {
@@ -179,6 +210,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
           time: DateTime.now(),
         );
       });
+      _saveState();
       _scrollToBottom();
     } catch (e) {
       setState(() {
@@ -188,6 +220,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
           time: DateTime.now(),
         );
       });
+      _saveState();
       _scrollToBottom();
     } finally {
       setState(() {
@@ -200,11 +233,55 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent + 80,
+        _scrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
     });
+  }
+
+  void _openSettings() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.memory_rounded),
+                title: const Text('记忆功能'),
+                subtitle: const Text('开启后会携带历史对话作为上下文'),
+                trailing: Switch(
+                  value: _memoryEnabled,
+                  onChanged: (value) {
+                    setState(() {
+                      _memoryEnabled = value;
+                      _saveState();
+                    });
+                  },
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline_rounded),
+                title: const Text('清空当前聊天记录'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  setState(() {
+                    _messages.clear();
+                    _saveState();
+                  });
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildMessageBubble(_ChatMessage message) {
@@ -264,6 +341,12 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.tune_rounded),
+            onPressed: _openSettings,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -389,11 +472,11 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                       ),
                       child: TextField(
                         controller: _controller,
-                        maxLines: null,
-                        textInputAction: TextInputAction.newline,
-                        onSubmitted: (_) {},
+                        maxLines: 1,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _sendMessage(),
                         decoration: InputDecoration(
-                          hintText: '输入消息，按右侧按钮发送',
+                          hintText: '输入消息，按回车或右侧按钮发送',
                           filled: true,
                           fillColor: const Color(0xFFF5F7FA),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
