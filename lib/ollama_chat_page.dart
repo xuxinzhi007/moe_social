@@ -23,14 +23,31 @@ class _ChatMessage {
   });
 }
 
+class _ChatSession {
+  final String id;
+  String title;
+  final List<_ChatMessage> messages;
+  DateTime updatedAt;
+
+  _ChatSession({
+    required this.id,
+    required this.title,
+    required this.messages,
+    required this.updatedAt,
+  });
+}
+
 class _OllamaChatPageState extends State<OllamaChatPage> {
-  static List<_ChatMessage> _savedMessages = [];
+  static List<_ChatSession> _savedSessions = [];
+  static String? _savedActiveSessionId;
   static bool _savedMemoryEnabled = true;
 
-  final List<_ChatMessage> _messages = [];
+  final http.Client _httpClient = http.Client();
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _modelController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final List<_ChatSession> _sessions = [];
+  String? _activeSessionId;
   bool _isSending = false;
   String _modelName = 'qwen2.5:0.5b-instruct';
   List<String> _models = [];
@@ -38,6 +55,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   String? _modelsError;
   bool _memoryEnabled = true;
   bool _ollamaOnline = false; // Ollama 在线状态（通过模型列表判断）
+  bool _wasManuallyStopped = false;
 
   bool _isLocalErrorAssistantMessage(_ChatMessage m) {
     if (m.role != 'assistant') return false;
@@ -50,9 +68,22 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   void initState() {
     super.initState();
     _modelController.text = _modelName;
-    _messages.addAll(_savedMessages);
+    if (_savedSessions.isEmpty) {
+      final now = DateTime.now();
+      _savedSessions = [
+        _ChatSession(
+          id: now.millisecondsSinceEpoch.toString(),
+          title: '',
+          messages: [],
+          updatedAt: now,
+        ),
+      ];
+      _savedActiveSessionId = _savedSessions.first.id;
+    }
+    _sessions.addAll(_savedSessions);
+    _activeSessionId = _savedActiveSessionId ?? _sessions.first.id;
     _memoryEnabled = _savedMemoryEnabled;
-    if (_messages.isNotEmpty) {
+    if (_currentSession.messages.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToBottom();
       });
@@ -62,15 +93,88 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   
   @override
   void dispose() {
+    _httpClient.close();
     _controller.dispose();
     _modelController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
+  _ChatSession get _currentSession {
+    final id = _activeSessionId;
+    if (id != null) {
+      final index = _sessions.indexWhere((s) => s.id == id);
+      if (index != -1) {
+        return _sessions[index];
+      }
+    }
+    return _sessions.first;
+  }
+
   void _saveState() {
-    _savedMessages = List<_ChatMessage>.from(_messages);
+    _savedSessions = List<_ChatSession>.from(_sessions);
+    _savedActiveSessionId = _activeSessionId;
     _savedMemoryEnabled = _memoryEnabled;
+  }
+
+  void _createNewSession() {
+    if (_sessions.isNotEmpty && _currentSession.messages.isEmpty) {
+      return;
+    }
+    final now = DateTime.now();
+    final session = _ChatSession(
+      id: now.millisecondsSinceEpoch.toString(),
+      title: '',
+      messages: [],
+      updatedAt: now,
+    );
+    setState(() {
+      _sessions.insert(0, session);
+      _activeSessionId = session.id;
+    });
+    _saveState();
+  }
+
+  String _sessionTitle(_ChatSession session, int index) {
+    var title = session.title.trim();
+    final userMessages = session.messages.where((m) => m.role == 'user');
+    if (userMessages.isNotEmpty) {
+      if (title.isEmpty || title == '新的对话' || title.startsWith('会话 ')) {
+        var t = userMessages.first.content.trim();
+        if (t.length > 12) {
+          t = '${t.substring(0, 12)}...';
+        }
+        session.title = t;
+        return t;
+      }
+      return title;
+    }
+    if (title.isEmpty || title == '新的对话') {
+      return '会话 ${index + 1}';
+    }
+    return title;
+  }
+
+  void _switchSession(String id) {
+    if (_activeSessionId == id) return;
+    setState(() {
+      _activeSessionId = id;
+    });
+    _saveState();
+    _scrollToBottom();
+  }
+
+  void _deleteSession(String id) {
+    if (_sessions.length <= 1) return;
+    final index = _sessions.indexWhere((s) => s.id == id);
+    if (index == -1) return;
+    setState(() {
+      _sessions.removeAt(index);
+      if (_activeSessionId == id) {
+        _activeSessionId = _sessions.first.id;
+      }
+    });
+    _saveState();
   }
 
   Future<void> _sendMessage() async {
@@ -80,7 +184,16 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
 
     final now = DateTime.now();
     setState(() {
-      _messages.add(_ChatMessage(role: 'user', content: text, time: now));
+      _currentSession.messages.add(_ChatMessage(role: 'user', content: text, time: now));
+      _currentSession.updatedAt = now;
+      final currentTitle = _currentSession.title.trim();
+      if (currentTitle.isEmpty || currentTitle == '新的对话' || currentTitle.startsWith('会话 ')) {
+        var title = text;
+        if (title.length > 12) {
+          title = '${title.substring(0, 12)}...';
+        }
+        _currentSession.title = title;
+      }
       _controller.clear();
     });
     _saveState();
@@ -148,18 +261,19 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   }
 
   Future<void> _callOllama() async {
-    if (_messages.isEmpty) return;
+    if (_currentSession.messages.isEmpty) return;
     setState(() {
       _isSending = true;
     });
+    _wasManuallyStopped = false;
 
     List<_ChatMessage> sourceMessages;
     if (_memoryEnabled) {
-      sourceMessages = List<_ChatMessage>.from(_messages);
+      sourceMessages = List<_ChatMessage>.from(_currentSession.messages);
     } else {
-      final lastUser = _messages.lastWhere(
+      final lastUser = _currentSession.messages.lastWhere(
         (m) => m.role == 'user',
-        orElse: () => _messages.last,
+        orElse: () => _currentSession.messages.last,
       );
       sourceMessages = [lastUser];
     }
@@ -170,19 +284,25 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
         .map((m) => {'role': m.role, 'content': m.content})
         .toList();
 
-    final assistantIndex = _messages.length;
+    final assistantIndex = _currentSession.messages.length;
     setState(() {
-      _messages.add(_ChatMessage(role: 'assistant', content: '', time: DateTime.now()));
+      _currentSession.messages.add(_ChatMessage(role: 'assistant', content: '', time: DateTime.now()));
+      _currentSession.updatedAt = DateTime.now();
     });
     _saveState();
     _scrollToBottom();
 
     try {
       final uri = Uri.parse('${ApiService.baseUrl}/api/llm/chat');
-      final response = await http
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      final token = ApiService.token;
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+      final response = await _httpClient
           .post(
             uri,
-            headers: {'Content-Type': 'application/json'},
+            headers: headers,
             body: jsonEncode({
               'model': _modelName,
               'messages': apiMessages,
@@ -192,15 +312,19 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
           .timeout(const Duration(seconds: 180));
 
       if (response.statusCode != 200) {
+        if (_wasManuallyStopped) {
+          return;
+        }
         final body = response.body;
         final errorText =
             '请求失败 (${response.statusCode})${body.isNotEmpty ? '\n$body' : ''}';
         setState(() {
-          _messages[assistantIndex] = _ChatMessage(
+          _currentSession.messages[assistantIndex] = _ChatMessage(
             role: 'assistant',
             content: errorText,
             time: DateTime.now(),
           );
+          _currentSession.updatedAt = DateTime.now();
         });
         _saveState();
         _scrollToBottom();
@@ -210,31 +334,40 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
       final data = jsonDecode(response.body);
       final content = data is Map && data['content'] is String ? data['content'] as String : '';
       setState(() {
-        _messages[assistantIndex] = _ChatMessage(
+        _currentSession.messages[assistantIndex] = _ChatMessage(
           role: 'assistant',
           content: content,
           time: DateTime.now(),
         );
+        _currentSession.updatedAt = DateTime.now();
       });
       _saveState();
       _scrollToBottom();
     } on TimeoutException {
+      if (_wasManuallyStopped) {
+        return;
+      }
       setState(() {
-        _messages[assistantIndex] = _ChatMessage(
+        _currentSession.messages[assistantIndex] = _ChatMessage(
           role: 'assistant',
           content: '请求超时，请检查 Ollama 服务是否运行',
           time: DateTime.now(),
         );
+        _currentSession.updatedAt = DateTime.now();
       });
       _saveState();
       _scrollToBottom();
     } catch (e) {
+      if (_wasManuallyStopped) {
+        return;
+      }
       setState(() {
-        _messages[assistantIndex] = _ChatMessage(
+        _currentSession.messages[assistantIndex] = _ChatMessage(
           role: 'assistant',
           content: '请求出错: $e',
           time: DateTime.now(),
         );
+        _currentSession.updatedAt = DateTime.now();
       });
       _saveState();
       _scrollToBottom();
@@ -243,6 +376,25 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
         _isSending = false;
       });
     }
+  }
+
+  void _stopGeneration() {
+    if (!_isSending) return;
+    _wasManuallyStopped = true;
+    _httpClient.close();
+    final now = DateTime.now();
+    setState(() {
+      if (_currentSession.messages.isNotEmpty) {
+        final last = _currentSession.messages.last;
+        if (last.role == 'assistant' && last.content.isEmpty) {
+          _currentSession.messages[_currentSession.messages.length - 1] =
+              _ChatMessage(role: 'assistant', content: '已手动停止生成', time: now);
+        }
+      }
+      _currentSession.updatedAt = now;
+      _isSending = false;
+    });
+    _saveState();
   }
 
   void _scrollToBottom() {
@@ -295,7 +447,8 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                     onTap: () {
                       Navigator.of(context).pop();
                       setState(() {
-                        _messages.clear();
+                        _currentSession.messages.clear();
+                        _currentSession.updatedAt = DateTime.now();
                         _saveState();
                       });
                     },
@@ -392,6 +545,51 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
       body: Column(
         children: [
           Container(
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            color: Colors.white,
+            child: Row(
+              children: [
+                Expanded(
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _sessions.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final session = _sessions[index];
+                      final isActive = session.id == _activeSessionId;
+                      final title = _sessionTitle(session, index);
+                      return GestureDetector(
+                        onTap: () => _switchSession(session.id),
+                        onLongPress: () => _deleteSession(session.id),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isActive ? const Color(0xFF7F7FD5) : const Color(0xFFF5F7FA),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            title,
+                            style: TextStyle(
+                              color: isActive ? Colors.white : Colors.black87,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.add_comment_rounded, size: 20),
+                  color: const Color(0xFF7F7FD5),
+                  onPressed: _createNewSession,
+                ),
+              ],
+            ),
+          ),
+          Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             color: Colors.white,
             child: Row(
@@ -478,9 +676,9 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
             child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              itemCount: _messages.length,
+              itemCount: _currentSession.messages.length,
               itemBuilder: (context, index) {
-                final message = _messages[index];
+                final message = _currentSession.messages[index];
                 return _buildMessageBubble(message);
               },
             ),
@@ -534,18 +732,12 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                     width: 44,
                     height: 44,
                     child: ElevatedButton(
-                      onPressed: _isSending ? null : _sendMessage,
+                      onPressed: _isSending ? _stopGeneration : _sendMessage,
                       style: ElevatedButton.styleFrom(
                         shape: const CircleBorder(),
                         padding: EdgeInsets.zero,
                       ),
-                      child: _isSending
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.send_rounded),
+                      child: Icon(_isSending ? Icons.stop_rounded : Icons.send_rounded),
                     ),
                   ),
                 ],
