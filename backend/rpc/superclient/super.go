@@ -29,6 +29,8 @@ type (
 	CreateVipOrderResp         = super.CreateVipOrderResp
 	CreateVipPlanReq           = super.CreateVipPlanReq
 	CreateVipPlanResp          = super.CreateVipPlanResp
+	DeleteUserMemoryReq        = super.DeleteUserMemoryReq
+	DeleteUserMemoryResp       = super.DeleteUserMemoryResp
 	DeleteUserReq              = super.DeleteUserReq
 	DeleteUserResp             = super.DeleteUserResp
 	FollowUserReq              = super.FollowUserReq
@@ -61,6 +63,8 @@ type (
 	GetUserCountResp           = super.GetUserCountResp
 	GetUserInfoReq             = super.GetUserInfoReq
 	GetUserInfoResp            = super.GetUserInfoResp
+	GetUserMemoriesReq         = super.GetUserMemoriesReq
+	GetUserMemoriesResp        = super.GetUserMemoriesResp
 	GetUserReq                 = super.GetUserReq
 	GetUserResp                = super.GetUserResp
 	GetUserVipStatusReq        = super.GetUserVipStatusReq
@@ -108,8 +112,11 @@ type (
 	UpdateUserPasswordResp     = super.UpdateUserPasswordResp
 	UpdateUserVipReq           = super.UpdateUserVipReq
 	UpdateUserVipResp          = super.UpdateUserVipResp
+	UpsertUserMemoryReq        = super.UpsertUserMemoryReq
+	UpsertUserMemoryResp       = super.UpsertUserMemoryResp
 	User                       = super.User
 	UserAvatarData             = super.UserAvatarData
+	UserMemory                 = super.UserMemory
 	VipOrder                   = super.VipOrder
 	VipPlan                    = super.VipPlan
 	VipRecord                  = super.VipRecord
@@ -128,6 +135,9 @@ type (
 		UpdateUserVip(ctx context.Context, in *UpdateUserVipReq, opts ...grpc.CallOption) (*UpdateUserVipResp, error)
 		GetUsers(ctx context.Context, in *GetUsersReq, opts ...grpc.CallOption) (*GetUsersResp, error)
 		GetUserCount(ctx context.Context, in *GetUserCountReq, opts ...grpc.CallOption) (*GetUserCountResp, error)
+		UpsertUserMemory(ctx context.Context, in *UpsertUserMemoryReq, opts ...grpc.CallOption) (*UpsertUserMemoryResp, error)
+		GetUserMemories(ctx context.Context, in *GetUserMemoriesReq, opts ...grpc.CallOption) (*GetUserMemoriesResp, error)
+		DeleteUserMemory(ctx context.Context, in *DeleteUserMemoryReq, opts ...grpc.CallOption) (*DeleteUserMemoryResp, error)
 		// VIP套餐相关服务
 		GetVipPlans(ctx context.Context, in *GetVipPlansReq, opts ...grpc.CallOption) (*GetVipPlansResp, error)
 		GetVipPlan(ctx context.Context, in *GetVipPlanReq, opts ...grpc.CallOption) (*GetVipPlanResp, error)
@@ -243,6 +253,21 @@ func (m *defaultSuper) GetUsers(ctx context.Context, in *GetUsersReq, opts ...gr
 func (m *defaultSuper) GetUserCount(ctx context.Context, in *GetUserCountReq, opts ...grpc.CallOption) (*GetUserCountResp, error) {
 	client := super.NewSuperClient(m.cli.Conn())
 	return client.GetUserCount(ctx, in, opts...)
+}
+
+func (m *defaultSuper) UpsertUserMemory(ctx context.Context, in *UpsertUserMemoryReq, opts ...grpc.CallOption) (*UpsertUserMemoryResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.UpsertUserMemory(ctx, in, opts...)
+}
+
+func (m *defaultSuper) GetUserMemories(ctx context.Context, in *GetUserMemoriesReq, opts ...grpc.CallOption) (*GetUserMemoriesResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.GetUserMemories(ctx, in, opts...)
+}
+
+func (m *defaultSuper) DeleteUserMemory(ctx context.Context, in *DeleteUserMemoryReq, opts ...grpc.CallOption) (*DeleteUserMemoryResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.DeleteUserMemory(ctx, in, opts...)
 }
 
 // VIP套餐相关服务

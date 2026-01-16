@@ -504,6 +504,41 @@ message ReadAllNotificationsReq {
 message ReadAllNotificationsResp {
 }
 
+message UserMemory {
+  string id = 1;
+  string user_id = 2;
+  string key = 3;
+  string value = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+
+message UpsertUserMemoryReq {
+  string user_id = 1;
+  string key = 2;
+  string value = 3;
+}
+
+message UpsertUserMemoryResp {
+  UserMemory memory = 1;
+}
+
+message GetUserMemoriesReq {
+  string user_id = 1;
+}
+
+message GetUserMemoriesResp {
+  repeated UserMemory memories = 1;
+}
+
+message DeleteUserMemoryReq {
+  string user_id = 1;
+  string key = 2;
+}
+
+message DeleteUserMemoryResp {
+}
+
 // 服务定义
 service Super {
   // 用户相关服务
@@ -519,6 +554,9 @@ service Super {
   rpc UpdateUserVip(UpdateUserVipReq) returns (UpdateUserVipResp);
   rpc GetUsers(GetUsersReq) returns (GetUsersResp);
   rpc GetUserCount(GetUserCountReq) returns (GetUserCountResp);
+  rpc UpsertUserMemory(UpsertUserMemoryReq) returns (UpsertUserMemoryResp);
+  rpc GetUserMemories(GetUserMemoriesReq) returns (GetUserMemoriesResp);
+  rpc DeleteUserMemory(DeleteUserMemoryReq) returns (DeleteUserMemoryResp);
   
   // VIP套餐相关服务
   rpc GetVipPlans(GetVipPlansReq) returns (GetVipPlansResp);

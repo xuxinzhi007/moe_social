@@ -114,6 +114,15 @@ type DeleteImageResp struct {
 	BaseResp
 }
 
+type DeleteUserMemoryReq struct {
+	UserId string `path:"user_id"`
+	Key    string `form:"key"`
+}
+
+type DeleteUserMemoryResp struct {
+	BaseResp
+}
+
 type DeleteUserReq struct {
 	UserId string `path:"user_id"`
 }
@@ -367,6 +376,15 @@ type GetUserInfoReq struct {
 type GetUserInfoResp struct {
 	BaseResp
 	Data User `json:"data"`
+}
+
+type GetUserMemoriesReq struct {
+	UserId string `path:"user_id"`
+}
+
+type GetUserMemoriesResp struct {
+	BaseResp
+	Data []UserMemory `json:"data"`
 }
 
 type GetUserReq struct {
@@ -690,6 +708,17 @@ type UploadImageResp struct {
 	Data ImageInfo `json:"data"`
 }
 
+type UpsertUserMemoryReq struct {
+	UserId string `path:"user_id"`
+	Key    string `json:"key"`
+	Value  string `json:"value"`
+}
+
+type UpsertUserMemoryResp struct {
+	BaseResp
+	Data UserMemory `json:"data"`
+}
+
 type User struct {
 	Id           string  `json:"id"`
 	Username     string  `json:"username"`
@@ -711,6 +740,15 @@ type UserAvatar struct {
 	BaseConfig    BaseConfig   `json:"base_config"`
 	CurrentOutfit OutfitConfig `json:"current_outfit"`
 	OwnedOutfits  []string     `json:"owned_outfits"`
+}
+
+type UserMemory struct {
+	Id        string `json:"id"`
+	UserId    string `json:"user_id"`
+	Key       string `json:"key"`
+	Value     string `json:"value"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 type UserVipStatusData struct {
