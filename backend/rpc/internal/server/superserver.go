@@ -84,6 +84,21 @@ func (s *SuperServer) GetUserCount(ctx context.Context, in *super.GetUserCountRe
 	return l.GetUserCount(in)
 }
 
+func (s *SuperServer) UpsertUserMemory(ctx context.Context, in *super.UpsertUserMemoryReq) (*super.UpsertUserMemoryResp, error) {
+	l := logic.NewUpsertUserMemoryLogic(ctx, s.svcCtx)
+	return l.UpsertUserMemory(in)
+}
+
+func (s *SuperServer) GetUserMemories(ctx context.Context, in *super.GetUserMemoriesReq) (*super.GetUserMemoriesResp, error) {
+	l := logic.NewGetUserMemoriesLogic(ctx, s.svcCtx)
+	return l.GetUserMemories(in)
+}
+
+func (s *SuperServer) DeleteUserMemory(ctx context.Context, in *super.DeleteUserMemoryReq) (*super.DeleteUserMemoryResp, error) {
+	l := logic.NewDeleteUserMemoryLogic(ctx, s.svcCtx)
+	return l.DeleteUserMemory(in)
+}
+
 // VIP套餐相关服务
 func (s *SuperServer) GetVipPlans(ctx context.Context, in *super.GetVipPlansReq) (*super.GetVipPlansResp, error) {
 	l := logic.NewGetVipPlansLogic(ctx, s.svcCtx)

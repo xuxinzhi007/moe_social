@@ -67,6 +67,16 @@ type VipRecord {
 	CreatedAt string `json:"created_at"`
 }
 
+// 用户记忆相关结构
+type UserMemory {
+	Id        string `json:"id"`
+	UserId    string `json:"user_id"`
+	Key       string `json:"key"`
+	Value     string `json:"value"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
 // 交易记录相关结构
 type Transaction {
 	Id          string  `json:"id"`
@@ -314,6 +324,22 @@ type GetUserActiveVipRecordReq {
 	UserId string `path:"user_id"`
 }
 
+// 用户记忆相关请求
+type UpsertUserMemoryReq {
+	UserId string `path:"user_id"`
+	Key    string `json:"key"`
+	Value  string `json:"value"`
+}
+
+type GetUserMemoriesReq {
+	UserId string `path:"user_id"`
+}
+
+type DeleteUserMemoryReq {
+	UserId string `path:"user_id"`
+	Key    string `form:"key"`
+}
+
 // 帖子相关请求
 type GetPostsReq {
 	Page     int `form:"page,default=1"`
@@ -495,6 +521,21 @@ type RechargeResp {
 	Data Transaction `json:"data"`
 }
 
+// 用户记忆相关响应
+type UpsertUserMemoryResp {
+	BaseResp
+	Data UserMemory `json:"data"`
+}
+
+type GetUserMemoriesResp {
+	BaseResp
+	Data []UserMemory `json:"data"`
+}
+
+type DeleteUserMemoryResp {
+	BaseResp
+}
+
 // 嵌套类型定义
 type UserVipStatusData {
 	IsVip     bool   `json:"is_vip"`
@@ -637,6 +678,16 @@ service Super {
 
 	@handler recharge
 	post /api/user/:user_id/wallet/recharge (RechargeReq) returns (RechargeResp)
+
+	// 用户记忆相关API（需登录，从JWT中获取真实用户ID）
+	@handler upsertUserMemory
+	post /api/user/:user_id/memories (UpsertUserMemoryReq) returns (UpsertUserMemoryResp)
+
+	@handler getUserMemories
+	get /api/user/:user_id/memories (GetUserMemoriesReq) returns (GetUserMemoriesResp)
+
+	@handler deleteUserMemory
+	delete /api/user/:user_id/memories (DeleteUserMemoryReq) returns (DeleteUserMemoryResp)
 
 	// 关注相关API
 	@handler followUser

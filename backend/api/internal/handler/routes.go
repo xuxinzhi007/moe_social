@@ -244,6 +244,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: user.GetFollowingsHandler(serverCtx),
 			},
 			{
+				Method:  http.MethodPost,
+				Path:    "/api/user/:user_id/memories",
+				Handler: user.UpsertUserMemoryHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/user/:user_id/memories",
+				Handler: user.GetUserMemoriesHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/user/:user_id/memories",
+				Handler: user.DeleteUserMemoryHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodPut,
 				Path:    "/api/user/:user_id/password",
 				Handler: user.UpdateUserPasswordHandler(serverCtx),

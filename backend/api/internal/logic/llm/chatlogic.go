@@ -13,6 +13,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -50,12 +51,50 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		} `json:"message"`
 	}
 
-	messages := make([]ollamaMessage, 0, len(req.Messages))
+	var memoryLines []string
+	var userIDForLog string
+	if v := l.ctx.Value("user_id"); v != nil {
+		if userID, ok := v.(string); ok && userID != "" {
+			userIDForLog = userID
+			rpcResp, err := l.svcCtx.SuperRpcClient.GetUserMemories(l.ctx, &super.GetUserMemoriesReq{
+				UserId: userID,
+			})
+			if err != nil {
+				l.Errorf("GetUserMemories failed: %v", err)
+			} else {
+				for _, m := range rpcResp.Memories {
+					if m.Key != "" && m.Value != "" {
+						memoryLines = append(memoryLines, fmt.Sprintf("%s: %s", m.Key, m.Value))
+					}
+				}
+				l.Infof("loaded %d memories for user_id=%s", len(rpcResp.Memories), userID)
+			}
+		}
+	}
+
+	systemContent := "你是一个社交应用中的 AI 助手，需要结合用户与助手的历史对话内容进行连续、多轮的中文交流。当用户提到“刚才”“之前”“上面说的”等表达时，需要基于完整的聊天记录理解含义并回答。"
+	if len(memoryLines) > 0 {
+		systemContent = systemContent + "\n\n用户的长期背景与偏好信息如下，请在回答时适当参考：\n- " + strings.Join(memoryLines, "\n- ")
+	}
+
+	messages := make([]ollamaMessage, 0, len(req.Messages)+1)
+
+	messages = append(messages, ollamaMessage{
+		Role:    "system",
+		Content: systemContent,
+	})
+
 	for _, m := range req.Messages {
 		messages = append(messages, ollamaMessage{
 			Role:    m.Role,
 			Content: m.Content,
 		})
+	}
+
+	if userIDForLog != "" {
+		l.Infof("llm chat with memory, user_id=%s, model=%s, messages=%d, memory_lines=%d", userIDForLog, req.Model, len(req.Messages), len(memoryLines))
+	} else {
+		l.Infof("llm chat without memory, model=%s, messages=%d", req.Model, len(req.Messages))
 	}
 
 	body, err := json.Marshal(ollamaRequest{
@@ -80,7 +119,6 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		baseUrl = "http://127.0.0.1:11434"
 	}
 
-	// 单独为调用 Ollama 增加超时控制，避免 handler ctx 没有 deadline 时无限等待
 	ctx, cancel := context.WithTimeout(l.ctx, time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 

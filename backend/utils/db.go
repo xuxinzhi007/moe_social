@@ -90,6 +90,7 @@ func autoMigrate() error {
 		&model.User{},
 		&model.VipPlan{},
 		&model.VipOrder{},      // 合并了VIP记录功能
+		&model.VipRecord{},
 		&model.Transaction{},   // 交易记录表
 		&model.Post{},          // 帖子表
 		&model.Like{},          // 统一点赞表
@@ -103,6 +104,7 @@ func autoMigrate() error {
 		&model.Emoji{},         // 单个表情包表
 		&model.EmojiPack{},     // 表情包套餐表
 		&model.UserEmojiPack{}, // 用户拥有的表情包关联表
+		&model.UserMemory{},
 	)
 }
 
