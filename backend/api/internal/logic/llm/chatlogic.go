@@ -125,6 +125,11 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		Timeout: time.Duration(timeoutSeconds) * time.Second,
 	}
 
+	memoryModel := strings.TrimSpace(l.svcCtx.Config.Ollama.MemoryModel)
+	if memoryModel == "" {
+		memoryModel = req.Model
+	}
+
 	usedTokens := 0
 	for _, m := range messages {
 		usedTokens += estimateTokens(m.Content)
@@ -158,7 +163,7 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 
 	if needsSummary {
 		history := messages[1:]
-		summary, sumErr := l.summarizeMessages(req.Model, baseUrl, timeoutSeconds, client, history)
+		summary, sumErr := l.summarizeMessages(memoryModel, baseUrl, timeoutSeconds, client, history)
 		if sumErr == nil && strings.TrimSpace(summary) != "" {
 			if userIDForLog != "" {
 				fullMessages := make([]ollamaMessage, len(messages)+1)
@@ -171,7 +176,7 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 				go func(uid, model, baseUrl string, timeout int, msgs []ollamaMessage) {
 					bgCtx := context.Background()
 					l.extractAndSaveMemories(bgCtx, uid, model, baseUrl, timeout, msgs)
-				}(userIDForLog, req.Model, baseUrl, timeoutSeconds, fullMessages)
+				}(userIDForLog, memoryModel, baseUrl, timeoutSeconds, fullMessages)
 			}
 
 			usedTokens = 0
@@ -219,7 +224,7 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		oldMessages := make([]ollamaMessage, oldEnd-1)
 		copy(oldMessages, messages[1:oldEnd])
 
-		summary, sumErr := l.summarizeMessages(req.Model, baseUrl, timeoutSeconds, client, oldMessages)
+		summary, sumErr := l.summarizeMessages(memoryModel, baseUrl, timeoutSeconds, client, oldMessages)
 		if sumErr != nil {
 			l.Errorf("summarizeMessages failed: %v", sumErr)
 		} else if strings.TrimSpace(summary) != "" {
@@ -359,7 +364,10 @@ func (l *ChatLogic) summarizeMessages(model, baseUrl string, timeoutSeconds int,
 		sb.WriteString("\n")
 	}
 
-	systemPrompt := "你是对话总结助手，需要用简短的中文总结下面的多轮对话，提炼出对后续对话有用的关键信息和记忆点，尽量控制在三到六条以内。"
+	systemPrompt := strings.TrimSpace(l.svcCtx.Config.Ollama.MemorySummaryPrompt)
+	if systemPrompt == "" {
+		systemPrompt = "你是对话总结助手，需要用简短的中文总结下面的多轮对话，提炼出对后续对话有用的关键信息和记忆点，尽量控制在三到六条以内。"
+	}
 
 	reqBody, err := json.Marshal(ollamaRequest{
 		Model: model,
@@ -438,7 +446,9 @@ func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, b
 	}
 
 	// 针对中文小模型优化的 Prompt
-	prompt := `请分析上述对话，提取关于“用户”（user）的新的、永久性的个人信息（如姓名、昵称、年龄、职业、爱好、位置、重要关系等）。
+	prompt := strings.TrimSpace(l.svcCtx.Config.Ollama.MemoryExtractPrompt)
+	if prompt == "" {
+		prompt = `请分析上述对话，提取关于“用户”（user）的新的、永久性的个人信息（如姓名、昵称、年龄、职业、爱好、位置、重要关系等）。
 忽略：
 1. [系统信息] 中已有的内容。
 2. 临时的状态（如“我饿了”、“我在睡觉”）。
@@ -453,6 +463,7 @@ func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, b
 [{"key": "user_name", "value": "小萌"}, {"key": "hobby", "value": "画画"}]
 
 请直接返回 JSON 字符串，不要包含 Markdown 格式（如 code block），不要包含其他解释文字。`
+	}
 
 	reqBody, err := json.Marshal(ollamaRequest{
 		Model: model,
