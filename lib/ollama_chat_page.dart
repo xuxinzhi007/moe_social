@@ -30,6 +30,7 @@ class _ChatSession {
   final List<_ChatMessage> messages;
   DateTime updatedAt;
   double remainingRatio;
+  String customPrompt;
 
   _ChatSession({
     required this.id,
@@ -37,6 +38,7 @@ class _ChatSession {
     required this.messages,
     required this.updatedAt,
     this.remainingRatio = 1.0,
+    this.customPrompt = '',
   });
 }
 
@@ -44,12 +46,12 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   static List<_ChatSession> _savedSessions = [];
   static String? _savedActiveSessionId;
   // memoryEnabled logic removed - always enable context
-  
   final http.Client _httpClient = http.Client();
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _modelController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
+  final TextEditingController _promptController = TextEditingController();
   final List<_ChatSession> _sessions = [];
   String? _activeSessionId;
   bool _isSending = false;
@@ -87,6 +89,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     }
     _sessions.addAll(_savedSessions);
     _activeSessionId = _savedActiveSessionId ?? _sessions.first.id;
+    _promptController.text = _currentSession.customPrompt;
     // _memoryEnabled = _savedMemoryEnabled;
     if (_currentSession.messages.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -102,6 +105,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     _modelController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
+    _promptController.dispose();
     super.dispose();
   }
 
@@ -133,6 +137,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
       messages: [],
       updatedAt: now,
       remainingRatio: 1.0,
+      customPrompt: '',
     );
     setState(() {
       _sessions.insert(0, session);
@@ -165,6 +170,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     if (_activeSessionId == id) return;
     setState(() {
       _activeSessionId = id;
+      _promptController.text = _currentSession.customPrompt;
     });
     _saveState();
     _scrollToBottom();
@@ -275,14 +281,20 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     });
     _wasManuallyStopped = false;
 
-    // Always send full context
     List<_ChatMessage> sourceMessages = List<_ChatMessage>.from(_currentSession.messages);
 
-    final apiMessages = sourceMessages
-        // 过滤掉本地生成的“错误气泡”，避免把错误文本当作对话上下文发给模型
-        .where((m) => !_isLocalErrorAssistantMessage(m) && m.role != 'system')
-        .map((m) => {'role': m.role, 'content': m.content})
-        .toList();
+    final List<Map<String, String>> apiMessages = [];
+
+    final customPrompt = _currentSession.customPrompt.trim();
+    if (customPrompt.isNotEmpty) {
+      apiMessages.add({'role': 'system', 'content': customPrompt});
+    }
+
+    apiMessages.addAll(
+      sourceMessages
+          .where((m) => !_isLocalErrorAssistantMessage(m) && m.role != 'system')
+          .map((m) => {'role': m.role, 'content': m.content}),
+    );
 
     final assistantIndex = _currentSession.messages.length;
     setState(() {
@@ -505,6 +517,47 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                          Navigator.pop(context);
                       },
                     ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '自定义提示词',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF5F7FA),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                          ),
+                          child: TextField(
+                            controller: _promptController,
+                            maxLines: 5,
+                            minLines: 2,
+                            onChanged: (value) {
+                              setModalState(() {});
+                              setState(() {
+                                _currentSession.customPrompt = value;
+                                _saveState();
+                              });
+                            },
+                            decoration: const InputDecoration(
+                              hintText: '例如：你是一位擅长写代码和解释技术细节的中文助手，回答要简洁、有条理。',
+                              hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              border: InputBorder.none,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   ListTile(
                     leading: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
                     title: const Text('清空当前聊天记录', style: TextStyle(color: Colors.redAccent)),
