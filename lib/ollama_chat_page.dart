@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'services/api_service.dart';
 
@@ -28,12 +29,14 @@ class _ChatSession {
   String title;
   final List<_ChatMessage> messages;
   DateTime updatedAt;
+  double remainingRatio;
 
   _ChatSession({
     required this.id,
     required this.title,
     required this.messages,
     required this.updatedAt,
+    this.remainingRatio = 1.0,
   });
 }
 
@@ -76,6 +79,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
           title: '',
           messages: [],
           updatedAt: now,
+          remainingRatio: 1.0,
         ),
       ];
       _savedActiveSessionId = _savedSessions.first.id;
@@ -127,6 +131,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
       title: '',
       messages: [],
       updatedAt: now,
+      remainingRatio: 1.0,
     );
     setState(() {
       _sessions.insert(0, session);
@@ -280,7 +285,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
 
     final apiMessages = sourceMessages
         // 过滤掉本地生成的“错误气泡”，避免把错误文本当作对话上下文发给模型
-        .where((m) => !_isLocalErrorAssistantMessage(m))
+        .where((m) => !_isLocalErrorAssistantMessage(m) && m.role != 'system')
         .map((m) => {'role': m.role, 'content': m.content})
         .toList();
 
@@ -333,6 +338,10 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
 
       final data = jsonDecode(response.body);
       final content = data is Map && data['content'] is String ? data['content'] as String : '';
+      final remainingRatio = data is Map && data['remaining_ratio'] is num
+          ? (data['remaining_ratio'] as num).toDouble()
+          : 1.0;
+      final summarized = data is Map && data['summarized'] == true;
       setState(() {
         _currentSession.messages[assistantIndex] = _ChatMessage(
           role: 'assistant',
@@ -340,6 +349,17 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
           time: DateTime.now(),
         );
         _currentSession.updatedAt = DateTime.now();
+        _currentSession.remainingRatio = remainingRatio.clamp(0.0, 1.0);
+        if (summarized) {
+          _currentSession.messages.insert(
+            assistantIndex,
+            _ChatMessage(
+              role: 'assistant',
+              content: '我已经整理了部分较早的聊天内容，并记住了其中的重要信息。',
+              time: DateTime.now(),
+            ),
+          );
+        }
       });
       _saveState();
       _scrollToBottom();
@@ -449,6 +469,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                       setState(() {
                         _currentSession.messages.clear();
                         _currentSession.updatedAt = DateTime.now();
+                        _currentSession.remainingRatio = 1.0;
                         _saveState();
                       });
                     },
@@ -463,7 +484,75 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     );
   }
 
+  String _formatTime(DateTime time) {
+    final now = DateTime.now();
+    final isToday = now.year == time.year && now.month == time.month && now.day == time.day;
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    if (isToday) {
+      return '$hour:$minute';
+    } else {
+      final month = time.month.toString().padLeft(2, '0');
+      final day = time.day.toString().padLeft(2, '0');
+      return '$month-$day $hour:$minute';
+    }
+  }
+
+  Widget _buildTimeDivider(DateTime time) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      alignment: Alignment.center,
+      child: Text(
+        _formatTime(time),
+        style: const TextStyle(
+          color: Colors.grey,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+
+  void _showModelChanged(String name) {
+    if (name.isEmpty) return;
+    setState(() {
+      _currentSession.messages.add(_ChatMessage(
+        role: 'system',
+        content: '已切换到模型 $name',
+        time: DateTime.now(),
+      ));
+      _currentSession.updatedAt = DateTime.now();
+    });
+    _saveState();
+    _scrollToBottom();
+  }
+
+  void _copyMessage(String text) {
+    if (text.isEmpty) return;
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('已复制到剪贴板'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+  }
+
   Widget _buildMessageBubble(_ChatMessage message) {
+    if (message.role == 'system') {
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        alignment: Alignment.center,
+        child: SelectableText(
+          message.content,
+          style: const TextStyle(
+            color: Colors.grey,
+            fontSize: 12,
+          ),
+        ),
+      );
+    }
+
     final isUser = message.role == 'user';
     final alignment = isUser ? Alignment.centerRight : Alignment.centerLeft;
     final color = isUser ? const Color(0xFF7F7FD5) : Colors.white;
@@ -481,26 +570,47 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: borderRadius,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 6,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Text(
-            message.content.isEmpty ? '...' : message.content,
-            style: TextStyle(
-              color: textColor,
-              fontSize: 15,
-              height: 1.4,
+        child: GestureDetector(
+          onLongPress: () => _copyMessage(message.content),
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: borderRadius,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: SelectableText(
+                    message.content.isEmpty ? '...' : message.content,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 15,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.copy_rounded,
+                    size: 16,
+                    color: isUser ? Colors.white70 : Colors.black38,
+                  ),
+                  padding: const EdgeInsets.only(left: 4),
+                  constraints: const BoxConstraints(),
+                  onPressed: () => _copyMessage(message.content),
+                ),
+              ],
             ),
           ),
         ),
@@ -622,6 +732,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                                 _modelName = value;
                                 _modelController.text = value;
                               });
+                              _showModelChanged(value);
                             },
                           ),
                         )
@@ -640,6 +751,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                                 _modelName = name;
                                 _modelController.text = name;
                               });
+                              _showModelChanged(name);
                             }
                           },
                         ),
@@ -654,6 +766,37 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                             ),
                           ),
                         ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: _currentSession.remainingRatio.clamp(0.0, 1.0),
+                                minHeight: 6,
+                                backgroundColor: const Color(0xFFE0E0E0),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  _currentSession.remainingRatio > 0.5
+                                      ? const Color(0xFF4CAF50)
+                                      : _currentSession.remainingRatio > 0.2
+                                          ? const Color(0xFFFFC107)
+                                          : const Color(0xFFF44336),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '上下文剩余 ${(100 * _currentSession.remainingRatio).clamp(0, 100).toInt()}%',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -679,7 +822,23 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
               itemCount: _currentSession.messages.length,
               itemBuilder: (context, index) {
                 final message = _currentSession.messages[index];
-                return _buildMessageBubble(message);
+                bool showTime = false;
+                if (index == 0) {
+                  showTime = true;
+                } else {
+                  final prevMessage = _currentSession.messages[index - 1];
+                  final diff = message.time.difference(prevMessage.time).inMinutes.abs();
+                  if (diff > 5) {
+                    showTime = true;
+                  }
+                }
+
+                return Column(
+                  children: [
+                    if (showTime) _buildTimeDivider(message.time),
+                    _buildMessageBubble(message),
+                  ],
+                );
               },
             ),
           ),
