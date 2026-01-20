@@ -43,8 +43,8 @@ class _ChatSession {
 class _OllamaChatPageState extends State<OllamaChatPage> {
   static List<_ChatSession> _savedSessions = [];
   static String? _savedActiveSessionId;
-  static bool _savedMemoryEnabled = true;
-
+  // memoryEnabled logic removed - always enable context
+  
   final http.Client _httpClient = http.Client();
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _modelController = TextEditingController();
@@ -56,7 +56,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   List<String> _models = [];
   bool _isLoadingModels = false;
   String? _modelsError;
-  bool _memoryEnabled = true;
+  // bool _memoryEnabled = true; // Always true now
   bool _ollamaOnline = false; // Ollama 在线状态（通过模型列表判断）
   bool _wasManuallyStopped = false;
 
@@ -86,7 +86,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     }
     _sessions.addAll(_savedSessions);
     _activeSessionId = _savedActiveSessionId ?? _sessions.first.id;
-    _memoryEnabled = _savedMemoryEnabled;
+    // _memoryEnabled = _savedMemoryEnabled;
     if (_currentSession.messages.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToBottom();
@@ -97,7 +97,6 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   
   @override
   void dispose() {
-    _httpClient.close();
     _controller.dispose();
     _modelController.dispose();
     _scrollController.dispose();
@@ -118,7 +117,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   void _saveState() {
     _savedSessions = List<_ChatSession>.from(_sessions);
     _savedActiveSessionId = _activeSessionId;
-    _savedMemoryEnabled = _memoryEnabled;
+    // _savedMemoryEnabled = _memoryEnabled;
   }
 
   void _createNewSession() {
@@ -272,16 +271,8 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     });
     _wasManuallyStopped = false;
 
-    List<_ChatMessage> sourceMessages;
-    if (_memoryEnabled) {
-      sourceMessages = List<_ChatMessage>.from(_currentSession.messages);
-    } else {
-      final lastUser = _currentSession.messages.lastWhere(
-        (m) => m.role == 'user',
-        orElse: () => _currentSession.messages.last,
-      );
-      sourceMessages = [lastUser];
-    }
+    // Always send full context
+    List<_ChatMessage> sourceMessages = List<_ChatMessage>.from(_currentSession.messages);
 
     final apiMessages = sourceMessages
         // 过滤掉本地生成的“错误气泡”，避免把错误文本当作对话上下文发给模型
@@ -401,7 +392,6 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   void _stopGeneration() {
     if (!_isSending) return;
     _wasManuallyStopped = true;
-    _httpClient.close();
     final now = DateTime.now();
     setState(() {
       if (_currentSession.messages.isNotEmpty) {
@@ -445,6 +435,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  /*
                   ListTile(
                     leading: const Icon(Icons.memory_rounded),
                     title: const Text('记忆功能'),
@@ -461,6 +452,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                       },
                     ),
                   ),
+                  */
                   ListTile(
                     leading: const Icon(Icons.delete_outline_rounded),
                     title: const Text('清空当前聊天记录'),

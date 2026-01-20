@@ -42,6 +42,8 @@ type ollamaResponse struct {
 		Role    string `json:"role"`
 		Content string `json:"content"`
 	} `json:"message"`
+	PromptEvalCount int `json:"prompt_eval_count"`
+	EvalCount       int `json:"eval_count"`
 }
 
 func estimateTokens(s string) int {
@@ -133,9 +135,83 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		usableTokens = maxCtxTokens
 	}
 
+	needsSummary := false
+	if len(req.Messages) > 0 {
+		last := req.Messages[len(req.Messages)-1]
+		content := strings.TrimSpace(last.Content)
+		if content != "" {
+			if len([]rune(content)) <= 30 {
+				if content == "总结" || content == "概括" || content == "梳理" {
+					needsSummary = true
+				} else {
+					keywords := []string{"总结一下", "帮我总结", "整理一下", "帮我整理", "概括一下", "帮我概括", "梳理一下", "帮我梳理"}
+					for _, kw := range keywords {
+						if strings.Contains(content, kw) {
+							needsSummary = true
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if needsSummary {
+		history := messages[1:]
+		summary, sumErr := l.summarizeMessages(req.Model, baseUrl, timeoutSeconds, client, history)
+		if sumErr == nil && strings.TrimSpace(summary) != "" {
+			if userIDForLog != "" {
+				fullMessages := make([]ollamaMessage, len(messages)+1)
+				copy(fullMessages, messages)
+				fullMessages[len(messages)] = ollamaMessage{
+					Role:    "assistant",
+					Content: summary,
+				}
+
+				go func(uid, model, baseUrl string, timeout int, msgs []ollamaMessage) {
+					bgCtx := context.Background()
+					l.extractAndSaveMemories(bgCtx, uid, model, baseUrl, timeout, msgs)
+				}(userIDForLog, req.Model, baseUrl, timeoutSeconds, fullMessages)
+			}
+
+			usedTokens = 0
+			for _, m := range history {
+				usedTokens += estimateTokens(m.Content)
+			}
+			usedTokens += estimateTokens(summary)
+
+			remainingRatio := 1.0
+			if usableTokens > 0 {
+				remaining := usableTokens - usedTokens
+				if remaining < 0 {
+					remaining = 0
+				}
+				if remaining > usableTokens {
+					remaining = usableTokens
+				}
+				remainingRatio = float64(remaining) / float64(usableTokens)
+			}
+
+			return &types.LlmChatResp{
+				BaseResp:       common.HandleError(nil),
+				Content:        summary,
+				RemainingRatio: remainingRatio,
+				Summarized:     true,
+			}, nil
+		}
+	}
+
 	summarized := false
 
-	if len(req.Messages) > maxHistoryMessages && len(messages) > 1+keepRecentMessages {
+	needAutoSummary := false
+	if len(req.Messages) > maxHistoryMessages {
+		needAutoSummary = true
+	}
+	if !needAutoSummary && usableTokens > 0 && usedTokens > usableTokens && len(messages) > 1+keepRecentMessages {
+		needAutoSummary = true
+	}
+
+	if needAutoSummary && len(messages) > 1+keepRecentMessages {
 		oldEnd := len(messages) - keepRecentMessages
 		if oldEnd <= 1 {
 			oldEnd = 1
@@ -220,9 +296,30 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		}, nil
 	}
 
+	// Async memory extraction
+	if userIDForLog != "" {
+		// Include the assistant's latest response in the history to be analyzed
+		fullMessages := make([]ollamaMessage, len(messages)+1)
+		copy(fullMessages, messages)
+		fullMessages[len(messages)] = ollamaMessage{
+			Role:    "assistant",
+			Content: oResp.Message.Content,
+		}
+
+		go func(uid, model, baseUrl string, timeout int, msgs []ollamaMessage) {
+			bgCtx := context.Background()
+			// Create a new detached logger/logic context if needed, but simple function call is enough
+			l.extractAndSaveMemories(bgCtx, uid, model, baseUrl, timeout, msgs)
+		}(userIDForLog, req.Model, baseUrl, timeoutSeconds, fullMessages)
+	}
+
 	usedTokens = 0
-	for _, m := range messages {
-		usedTokens += estimateTokens(m.Content)
+	if oResp.PromptEvalCount > 0 {
+		usedTokens = oResp.PromptEvalCount
+	} else {
+		for _, m := range messages {
+			usedTokens += estimateTokens(m.Content)
+		}
 	}
 
 	remainingRatio := 1.0
@@ -310,4 +407,133 @@ func (l *ChatLogic) summarizeMessages(model, baseUrl string, timeoutSeconds int,
 	}
 
 	return oResp.Message.Content, nil
+}
+
+type memoryItem struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, baseUrl string, timeoutSeconds int, history []ollamaMessage) {
+	// Only analyze if history is significant enough
+	// 降低门槛，只要有对话就尝试（system + user + assistant >= 3）
+	if len(history) < 2 {
+		return
+	}
+
+	// 使用独立的 Logger，避免 context cancel 导致日志丢失或 trace 混乱
+	logger := logx.WithContext(ctx)
+
+	var sb strings.Builder
+	for _, m := range history {
+		role := m.Role
+		if role == "system" {
+			sb.WriteString("[系统信息]: ")
+		} else {
+			sb.WriteString(role)
+			sb.WriteString(": ")
+		}
+		sb.WriteString(m.Content)
+		sb.WriteString("\n")
+	}
+
+	// 针对中文小模型优化的 Prompt
+	prompt := `请分析上述对话，提取关于“用户”（user）的新的、永久性的个人信息（如姓名、昵称、年龄、职业、爱好、位置、重要关系等）。
+忽略：
+1. [系统信息] 中已有的内容。
+2. 临时的状态（如“我饿了”、“我在睡觉”）。
+3. 无意义的闲聊。
+
+请严格仅返回一个 JSON 列表，列表项为包含 "key" 和 "value" 的对象。
+- key: 使用英文蛇形命名（如 user_name, hobby, profession）。
+- value: 用户原本的语言（通常是中文）。
+如果没有新信息，请返回空列表 []。
+
+示例输出：
+[{"key": "user_name", "value": "小萌"}, {"key": "hobby", "value": "画画"}]
+
+请直接返回 JSON 字符串，不要包含 Markdown 格式（如 code block），不要包含其他解释文字。`
+
+	reqBody, err := json.Marshal(ollamaRequest{
+		Model: model,
+		Messages: []ollamaMessage{
+			{
+				Role:    "user",
+				Content: sb.String() + "\n\n" + prompt,
+			},
+		},
+		Stream: false,
+	})
+	if err != nil {
+		logger.Errorf("marshal extract memory req failed: %v", err)
+		return
+	}
+
+	reqCtx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
+	defer cancel()
+
+	url := strings.TrimRight(baseUrl, "/") + "/api/chat"
+	httpReq, err := http.NewRequestWithContext(reqCtx, http.MethodPost, url, bytes.NewReader(reqBody))
+	if err != nil {
+		logger.Errorf("create extract memory req failed: %v", err)
+		return
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: time.Duration(timeoutSeconds) * time.Second}
+	httpResp, err := client.Do(httpReq)
+	if err != nil {
+		logger.Errorf("extract memory http request failed: %v", err)
+		return
+	}
+	defer httpResp.Body.Close()
+
+	if httpResp.StatusCode != http.StatusOK {
+		logger.Errorf("extract memory api failed: %d", httpResp.StatusCode)
+		return
+	}
+
+	var oResp ollamaResponse
+	if err := json.NewDecoder(httpResp.Body).Decode(&oResp); err != nil {
+		logger.Errorf("decode extract memory resp failed: %v", err)
+		return
+	}
+
+	content := strings.TrimSpace(oResp.Message.Content)
+	logger.Infof("memory extraction raw response: %s", content) // 增加调试日志
+
+	// Clean up potential markdown code blocks
+	content = strings.TrimPrefix(content, "```json")
+	content = strings.TrimPrefix(content, "```")
+	content = strings.TrimSuffix(content, "```")
+	content = strings.TrimSpace(content)
+
+	if content == "[]" || content == "" {
+		return
+	}
+
+	var items []memoryItem
+	if err := json.Unmarshal([]byte(content), &items); err != nil {
+		// 尝试容错：如果不是标准 JSON，尝试提取类似 JSON 的部分
+		// 这里简单处理，如果解析失败记录日志
+		logger.Errorf("unmarshal memory items failed: %v, content: %s", err, content)
+		return
+	}
+
+	if len(items) > 0 {
+		logger.Infof("extracted %d new memories for user %s: %v", len(items), userID, items)
+		for _, item := range items {
+			if item.Key == "" || item.Value == "" {
+				continue
+			}
+			_, err := l.svcCtx.SuperRpcClient.UpsertUserMemory(ctx, &super.UpsertUserMemoryReq{
+				UserId: userID,
+				Key:    item.Key,
+				Value:  item.Value,
+			})
+			if err != nil {
+				logger.Errorf("upsert memory %s failed: %v", item.Key, err)
+			}
+		}
+	}
 }
