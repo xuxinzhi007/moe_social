@@ -485,7 +485,9 @@ type LlmChatReq struct {
 
 type LlmChatResp struct {
 	BaseResp
-	Content string `json:"content"`
+	Content        string  `json:"content"`
+	RemainingRatio float64 `json:"remaining_ratio"`
+	Summarized     bool    `json:"summarized"`
 }
 
 type LlmMessage struct {
