@@ -49,6 +49,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _modelController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _focusNode = FocusNode();
   final List<_ChatSession> _sessions = [];
   String? _activeSessionId;
   bool _isSending = false;
@@ -100,6 +101,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     _controller.dispose();
     _modelController.dispose();
     _scrollController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -202,6 +204,8 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     });
     _saveState();
     _scrollToBottom();
+    // 保持输入框焦点
+    _focusNode.requestFocus();
 
     // 调用后端 API
     await _callOllama();
@@ -435,27 +439,75 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  /*
-                  ListTile(
-                    leading: const Icon(Icons.memory_rounded),
-                    title: const Text('记忆功能'),
-                    subtitle: const Text('开启后会携带历史对话作为上下文'),
-                    trailing: Switch(
-                      value: _memoryEnabled,
-                      onChanged: (value) {
-                        setModalState(() {
-                          setState(() {
-                            _memoryEnabled = value;
-                            _saveState();
-                          });
-                        });
-                      },
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  */
+                  if (_models.isNotEmpty)
+                    ListTile(
+                      leading: const Icon(Icons.psychology_rounded),
+                      title: const Text('选择模型'),
+                      subtitle: Text(_modelName),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () async {
+                        final result = await showDialog<String>(
+                          context: context,
+                          builder: (context) {
+                            return SimpleDialog(
+                              title: const Text('选择模型'),
+                              children: _models.map((m) {
+                                return SimpleDialogOption(
+                                  onPressed: () {
+                                    Navigator.pop(context, m);
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 4),
+                                    child: Text(
+                                      m,
+                                      style: TextStyle(
+                                        color: m == _modelName
+                                            ? const Color(0xFF7F7FD5)
+                                            : Colors.black87,
+                                        fontWeight: m == _modelName
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            );
+                          },
+                        );
+                        if (result != null) {
+                          setModalState(() {
+                            setState(() {
+                              _modelName = result;
+                              _modelController.text = result;
+                            });
+                            _showModelChanged(result);
+                          });
+                        }
+                      },
+                    )
+                  else
+                    ListTile(
+                      leading: const Icon(Icons.refresh_rounded),
+                      title: const Text('刷新模型列表'),
+                      subtitle: Text(_modelsError ?? '暂无模型'),
+                      onTap: () {
+                         _loadModels();
+                         Navigator.pop(context);
+                      },
+                    ),
                   ListTile(
-                    leading: const Icon(Icons.delete_outline_rounded),
-                    title: const Text('清空当前聊天记录'),
+                    leading: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                    title: const Text('清空当前聊天记录', style: TextStyle(color: Colors.redAccent)),
                     onTap: () {
                       Navigator.of(context).pop();
                       setState(() {
@@ -466,7 +518,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                       });
                     },
                   ),
-                  SizedBox(height: MediaQuery.of(context).padding.bottom),
+                  SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
                 ],
               ),
             );
@@ -546,7 +598,6 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     }
 
     final isUser = message.role == 'user';
-    final alignment = isUser ? Alignment.centerRight : Alignment.centerLeft;
     final color = isUser ? const Color(0xFF7F7FD5) : Colors.white;
     final textColor = isUser ? Colors.white : Colors.black87;
     final borderRadius = BorderRadius.only(
@@ -556,56 +607,134 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
       bottomRight: Radius.circular(isUser ? 4 : 18),
     );
 
-    return Align(
-      alignment: alignment,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
-        ),
-        child: GestureDetector(
-          onLongPress: () => _copyMessage(message.content),
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: borderRadius,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 6,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isUser) ...[
+            const CircleAvatar(
+              radius: 16,
+              backgroundColor: Color(0xFFE0E0E0),
+              child: Icon(Icons.smart_toy_rounded, size: 18, color: Colors.black54),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
+            const SizedBox(width: 8),
+          ],
+          Flexible(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.75,
+              ),
+              child: GestureDetector(
+                onLongPress: () => _copyMessage(message.content),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: borderRadius,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 5,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
                   child: SelectableText(
                     message.content.isEmpty ? '...' : message.content,
                     style: TextStyle(
                       color: textColor,
                       fontSize: 15,
-                      height: 1.4,
+                      height: 1.5,
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: Icon(
-                    Icons.copy_rounded,
-                    size: 16,
-                    color: isUser ? Colors.white70 : Colors.black38,
-                  ),
-                  padding: const EdgeInsets.only(left: 4),
-                  constraints: const BoxConstraints(),
-                  onPressed: () => _copyMessage(message.content),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
+          if (isUser) ...[
+            const SizedBox(width: 8),
+            const CircleAvatar(
+              radius: 16,
+              backgroundColor: Color(0xFF7F7FD5),
+              child: Icon(Icons.person_rounded, size: 18, color: Colors.white),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputArea() {
+    return Container(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 12,
+        bottom: MediaQuery.of(context).padding.bottom + 12,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F7FA),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.grey.withOpacity(0.2)),
+              ),
+              child: TextField(
+                controller: _controller,
+                focusNode: _focusNode,
+                maxLines: 5,
+                minLines: 1,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => _sendMessage(),
+                decoration: const InputDecoration(
+                  hintText: '输入消息...',
+                  hintStyle: TextStyle(color: Colors.grey),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          GestureDetector(
+             onTap: _isSending ? _stopGeneration : _sendMessage,
+             child: Container(
+               width: 48,
+               height: 48,
+               decoration: BoxDecoration(
+                 color: _isSending ? Colors.redAccent : const Color(0xFF7F7FD5),
+                 shape: BoxShape.circle,
+                 boxShadow: [
+                   BoxShadow(
+                     color: (_isSending ? Colors.redAccent : const Color(0xFF7F7FD5)).withOpacity(0.4),
+                     blurRadius: 8,
+                     offset: const Offset(0, 4),
+                   ),
+                 ],
+               ),
+               child: Icon(
+                 _isSending ? Icons.stop_rounded : Icons.send_rounded,
+                 color: Colors.white,
+                 size: 24,
+               ),
+             ),
+          ),
+        ],
       ),
     );
   }
@@ -615,202 +744,116 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Ollama 聊天',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(width: 8),
-            // Ollama 在线状态指示器
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: _ollamaOnline ? Colors.green : Colors.grey,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
         centerTitle: true,
+        title: GestureDetector(
+          onTap: _models.isNotEmpty ? _openSettings : null,
+          child: Column(
+            children: [
+              const Text(
+                'Ollama 聊天',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              if (_models.isNotEmpty)
+                Text(
+                  _modelName,
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+            ],
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.tune_rounded),
             onPressed: _openSettings,
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(4),
+          child: LinearProgressIndicator(
+            value: _currentSession.remainingRatio.clamp(0.0, 1.0),
+            backgroundColor: Colors.transparent,
+            valueColor: AlwaysStoppedAnimation<Color>(
+              _currentSession.remainingRatio > 0.5
+                  ? const Color(0xFF4CAF50)
+                  : _currentSession.remainingRatio > 0.2
+                      ? const Color(0xFFFFC107)
+                      : const Color(0xFFF44336),
+            ),
+            minHeight: 2,
+          ),
+        ),
+      ),
+      drawer: Drawer(
+        child: Column(
+          children: [
+            UserAccountsDrawerHeader(
+              decoration: const BoxDecoration(color: Color(0xFF7F7FD5)),
+              accountName: const Text('Ollama AI'),
+              accountEmail: Text(_ollamaOnline ? '服务在线' : '服务离线'),
+              currentAccountPicture: const CircleAvatar(
+                backgroundColor: Colors.white,
+                child: Icon(Icons.smart_toy_rounded, size: 36, color: Color(0xFF7F7FD5)),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.add_comment_rounded),
+              title: const Text('新对话'),
+              onTap: () {
+                Navigator.pop(context);
+                _createNewSession();
+              },
+            ),
+            const Divider(),
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                itemCount: _sessions.length,
+                itemBuilder: (context, index) {
+                  final session = _sessions[index];
+                  final isActive = session.id == _activeSessionId;
+                  return ListTile(
+                    leading: const Icon(Icons.chat_bubble_outline_rounded, size: 20),
+                    title: Text(
+                      _sessionTitle(session, index),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                        color: isActive ? const Color(0xFF7F7FD5) : null,
+                      ),
+                    ),
+                    selected: isActive,
+                    selectedTileColor: const Color(0xFF7F7FD5).withOpacity(0.1),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _switchSession(session.id);
+                    },
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 18),
+                      onPressed: () => _deleteSession(session.id),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.settings_outlined),
+              title: const Text('模型设置'),
+              onTap: () {
+                Navigator.pop(context);
+                _openSettings();
+              },
+            ),
+          ],
+        ),
       ),
       body: Column(
         children: [
-          Container(
-            height: 44,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            color: Colors.white,
-            child: Row(
-              children: [
-                Expanded(
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _sessions.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (context, index) {
-                      final session = _sessions[index];
-                      final isActive = session.id == _activeSessionId;
-                      final title = _sessionTitle(session, index);
-                      return GestureDetector(
-                        onTap: () => _switchSession(session.id),
-                        onLongPress: () => _deleteSession(session.id),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: isActive ? const Color(0xFF7F7FD5) : const Color(0xFFF5F7FA),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            title,
-                            style: TextStyle(
-                              color: isActive ? Colors.white : Colors.black87,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.add_comment_rounded, size: 20),
-                  color: const Color(0xFF7F7FD5),
-                  onPressed: _createNewSession,
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: Colors.white,
-            child: Row(
-              children: [
-                const Icon(Icons.memory_rounded, size: 20, color: Color(0xFF7F7FD5)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (_models.isNotEmpty)
-                        DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _modelName,
-                            isExpanded: true,
-                            items: _models
-                                .map(
-                                  (name) => DropdownMenuItem<String>(
-                                    value: name,
-                                    child: Text(
-                                      name,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) {
-                              if (value == null) return;
-                              setState(() {
-                                _modelName = value;
-                                _modelController.text = value;
-                              });
-                              _showModelChanged(value);
-                            },
-                          ),
-                        )
-                      else
-                        TextField(
-                          decoration: const InputDecoration(
-                            isDense: true,
-                            border: InputBorder.none,
-                            labelText: '模型名称',
-                          ),
-                          controller: _modelController,
-                          onSubmitted: (value) {
-                            final name = value.trim();
-                            if (name.isNotEmpty) {
-                              setState(() {
-                                _modelName = name;
-                                _modelController.text = name;
-                              });
-                              _showModelChanged(name);
-                            }
-                          },
-                        ),
-                      if (_modelsError != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text(
-                            _modelsError!,
-                            style: const TextStyle(
-                              color: Colors.redAccent,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: _currentSession.remainingRatio.clamp(0.0, 1.0),
-                                minHeight: 6,
-                                backgroundColor: const Color(0xFFE0E0E0),
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  _currentSession.remainingRatio > 0.5
-                                      ? const Color(0xFF4CAF50)
-                                      : _currentSession.remainingRatio > 0.2
-                                          ? const Color(0xFFFFC107)
-                                          : const Color(0xFFF44336),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '上下文剩余 ${(100 * _currentSession.remainingRatio).clamp(0, 100).toInt()}%',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: _isLoadingModels
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.refresh_rounded, size: 20),
-                  color: const Color(0xFF7F7FD5),
-                  onPressed: _isLoadingModels ? null : _loadModels,
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               itemCount: _currentSession.messages.length,
               itemBuilder: (context, index) {
                 final message = _currentSession.messages[index];
@@ -834,67 +877,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
               },
             ),
           ),
-          Container(
-            padding: EdgeInsets.only(
-              left: 12,
-              right: 12,
-              top: 8,
-              bottom: MediaQuery.of(context).padding.bottom + 8,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              top: false,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxHeight: 120,
-                      ),
-                      child: TextField(
-                        controller: _controller,
-                        maxLines: 1,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _sendMessage(),
-                        decoration: InputDecoration(
-                          hintText: '输入消息，按回车或右侧按钮发送',
-                          filled: true,
-                          fillColor: const Color(0xFFF5F7FA),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: ElevatedButton(
-                      onPressed: _isSending ? _stopGeneration : _sendMessage,
-                      style: ElevatedButton.styleFrom(
-                        shape: const CircleBorder(),
-                        padding: EdgeInsets.zero,
-                      ),
-                      child: Icon(_isSending ? Icons.stop_rounded : Icons.send_rounded),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          _buildInputArea(),
         ],
       ),
     );
