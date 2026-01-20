@@ -3,7 +3,9 @@ module backend
 go 1.25.5
 
 require (
+	github.com/AgoraIO-Community/go-tokenbuilder v1.3.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
+	github.com/google/uuid v1.6.0
 	github.com/spf13/viper v1.21.0
 	github.com/zeromicro/go-zero v1.9.3
 	golang.org/x/crypto v0.46.0
@@ -38,8 +40,6 @@ require (
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
-	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/grafana/pyroscope-go v1.2.7 // indirect
 	github.com/grafana/pyroscope-go/godeltaprof v0.1.9 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0 // indirect

@@ -4,6 +4,14 @@ Port: 8888
 # go-zero REST 超时（毫秒）。不设置时常见默认约 3s，会导致 LLM 首次加载模型直接被 cancel。
 Timeout: 600000
 
+Auth:
+  AccessSecret: "u8K9x2L1n4Q7v5Z0m3P6r9Y2b5X8j1W4"
+  AccessExpire: 86400
+
+Agora:
+  AppId: "YOUR_AGORA_APP_ID"
+  AppCertificate: "YOUR_AGORA_APP_CERTIFICATE"
+
 # Ollama 配置（后端需要能访问到该地址）
 Ollama:
   BaseUrl: http://127.0.0.1:11434

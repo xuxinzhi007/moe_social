@@ -458,6 +458,18 @@ type ImageInfo struct {
 	CreatedAt string `json:"created_at"`
 }
 
+type GetRtcTokenReq struct {
+	ChannelName string `form:"channel_name"`
+	Role        uint8  `form:"role,optional,default=1"`
+	UserAccount string `form:"user_account,optional"`
+}
+
+type GetRtcTokenResp struct {
+	BaseResp
+	Token string `json:"token"`
+	AppId string `json:"app_id"`
+}
+
 type LikeCommentReq struct {
 	CommentId string `path:"comment_id"`
 	UserId    string `json:"user_id"`
