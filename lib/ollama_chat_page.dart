@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:flutter_tts/flutter_tts.dart';
 import 'services/api_service.dart';
 
 class OllamaChatPage extends StatefulWidget {
@@ -62,6 +64,12 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   // bool _memoryEnabled = true; // Always true now
   bool _ollamaOnline = false; // Ollama 在线状态（通过模型列表判断）
   bool _wasManuallyStopped = false;
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _speechAvailable = false;
+  bool _isListening = false;
+  final FlutterTts _tts = FlutterTts();
+   bool _isSpeaking = false;
+   int? _speakingIndex;
 
   bool _isLocalErrorAssistantMessage(_ChatMessage m) {
     if (m.role != 'assistant') return false;
@@ -97,6 +105,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
       });
     }
     _loadModels();
+    _initVoice();
   }
   
   @override
@@ -106,6 +115,10 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     _scrollController.dispose();
     _focusNode.dispose();
     _promptController.dispose();
+    if (_isListening) {
+      _speech.stop();
+    }
+    _tts.stop();
     super.dispose();
   }
 
@@ -118,6 +131,39 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
       }
     }
     return _sessions.first;
+  }
+
+  Future<void> _initVoice() async {
+    try {
+      final available = await _speech.initialize(
+        onStatus: (status) {},
+        onError: (error) {},
+      );
+      if (mounted) {
+        setState(() {
+          _speechAvailable = available;
+        });
+      }
+    } catch (_) {}
+    try {
+      await _tts.setLanguage('zh-CN');
+      await _tts.setSpeechRate(0.4);
+      await _tts.setPitch(1.0);
+      _tts.setCompletionHandler(() {
+        if (!mounted) return;
+        setState(() {
+          _isSpeaking = false;
+          _speakingIndex = null;
+        });
+      });
+      _tts.setErrorHandler((msg) {
+        if (!mounted) return;
+        setState(() {
+          _isSpeaking = false;
+          _speakingIndex = null;
+        });
+      });
+    } catch (_) {}
   }
 
   void _saveState() {
@@ -215,6 +261,75 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
 
     // 调用后端 API
     await _callOllama();
+  }
+
+  Future<void> _toggleListening() async {
+    if (_isListening) {
+      await _speech.stop();
+      if (mounted) {
+        setState(() {
+          _isListening = false;
+        });
+      }
+      return;
+    }
+
+    if (!_speechAvailable) {
+      bool available = false;
+      try {
+        available = await _speech.initialize(
+          onStatus: (status) {},
+          onError: (error) {},
+        );
+      } catch (_) {
+        available = false;
+      }
+      if (!available) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('当前设备不支持语音识别'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+      if (mounted) {
+        setState(() {
+          _speechAvailable = true;
+        });
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _isListening = true;
+      });
+    }
+
+    await _speech.listen(
+      onResult: (result) {
+        final text = result.recognizedWords;
+        if (!mounted) return;
+        if (text.isEmpty) return;
+        setState(() {
+          _controller.text = text;
+          _controller.selection = TextSelection.fromPosition(
+            TextPosition(offset: _controller.text.length),
+          );
+        });
+        if (result.finalResult) {
+          _speech.stop();
+          setState(() {
+            _isListening = false;
+          });
+          _sendMessage();
+        }
+      },
+      localeId: 'zh_CN',
+      listenMode: stt.ListenMode.dictation,
+    );
   }
 
   Future<void> _loadModels() async {
@@ -401,6 +516,40 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     } finally {
       setState(() {
         _isSending = false;
+      });
+    }
+  }
+
+  Future<void> _playMessageTts(String text, int index) async {
+    final t = text.trim();
+    if (t.isEmpty) return;
+    if (_isSpeaking && _speakingIndex == index) {
+      try {
+        await _tts.stop();
+      } catch (_) {}
+      if (mounted) {
+        setState(() {
+          _isSpeaking = false;
+          _speakingIndex = null;
+        });
+      }
+      return;
+    }
+    try {
+      await _tts.stop();
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() {
+      _isSpeaking = true;
+      _speakingIndex = index;
+    });
+    try {
+      await _tts.speak(t);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isSpeaking = false;
+        _speakingIndex = null;
       });
     }
   }
@@ -635,7 +784,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     );
   }
 
-  Widget _buildMessageBubble(_ChatMessage message) {
+  Widget _buildMessageBubble(_ChatMessage message, int index) {
     if (message.role == 'system') {
       return Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
@@ -681,28 +830,53 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
               ),
               child: GestureDetector(
                 onLongPress: () => _copyMessage(message.content),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: borderRadius,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 5,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: SelectableText(
-                    message.content.isEmpty ? '...' : message.content,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 15,
-                      height: 1.5,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: borderRadius,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 5,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SelectableText(
+                          message.content.isEmpty ? '...' : message.content,
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: 15,
+                            height: 1.5,
+                          ),
+                        ),
+                        if (!isUser && message.content.trim().isNotEmpty)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: IconButton(
+                              iconSize: 18,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 32,
+                                minHeight: 32,
+                              ),
+                              icon: Icon(
+                                _isSpeaking && _speakingIndex == index
+                                    ? Icons.volume_off_rounded
+                                    : Icons.volume_up_rounded,
+                                color: textColor.withOpacity(0.8),
+                              ),
+                              onPressed: () => _playMessageTts(message.content, index),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                ),
               ),
             ),
           ),
@@ -740,6 +914,30 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          GestureDetector(
+            onTap: _toggleListening,
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: _isListening ? Colors.redAccent : const Color(0xFF7F7FD5),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: (_isListening ? Colors.redAccent : const Color(0xFF7F7FD5)).withOpacity(0.4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(
+                _isListening ? Icons.mic_off_rounded : Icons.mic_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -924,7 +1122,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                 return Column(
                   children: [
                     if (showTime) _buildTimeDivider(message.time),
-                    _buildMessageBubble(message),
+                    _buildMessageBubble(message, index),
                   ],
                 );
               },

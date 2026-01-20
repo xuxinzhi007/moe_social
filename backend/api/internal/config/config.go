@@ -7,11 +7,21 @@ import (
 
 type Config struct {
 	rest.RestConf
+
+	// JWT 认证配置
+	Auth struct {
+		AccessSecret string
+		AccessExpire int64
+	} `json:"Auth" yaml:"Auth"`
+
 	// RPC服务配置
 	SuperRpc zrpc.RpcClientConf `json:"SuperRpc" yaml:"SuperRpc"`
 
 	// Ollama 配置（用于 /api/llm/*）
 	Ollama OllamaConf `json:"Ollama" yaml:"Ollama"`
+
+	// Agora 配置
+	Agora AgoraConf `json:"Agora" yaml:"Agora"`
 }
 
 type OllamaConf struct {
@@ -25,4 +35,9 @@ type OllamaConf struct {
 	MemorySummaryPrompt string `json:"MemorySummaryPrompt" yaml:"MemorySummaryPrompt"`
 	// MemoryExtractPrompt 记忆提取时使用的系统提示词
 	MemoryExtractPrompt string `json:"MemoryExtractPrompt" yaml:"MemoryExtractPrompt"`
+}
+
+type AgoraConf struct {
+	AppId          string `json:"AppId" yaml:"AppId"`
+	AppCertificate string `json:"AppCertificate" yaml:"AppCertificate"`
 }

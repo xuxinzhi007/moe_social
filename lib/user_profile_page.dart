@@ -14,6 +14,7 @@ import 'widgets/gift_selector.dart';
 import 'widgets/gift_animation.dart';
 import 'following_page.dart';
 import 'followers_page.dart';
+import 'voice_call_page.dart';
 
 class UserProfilePage extends StatefulWidget {
   final String userId;
@@ -447,6 +448,51 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                               ),
                               child: Text(_isFollowing ? '已关注' : '关注', style: const TextStyle(fontWeight: FontWeight.w500)),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            flex: 1,
+                            child: OutlinedButton(
+                              onPressed: () {
+                                if (_user == null) return;
+                                
+                                // 生成一个唯一的频道名称，例如按照 userIds 排序拼接
+                                // 这里简化处理，直接使用对方的 userId 作为频道名，或者双方 id 组合
+                                final currentUserId = AuthService.currentUser;
+                                if (currentUserId == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('请先登录')),
+                                  );
+                                  return;
+                                }
+                                
+                                // 简单的频道名生成策略：
+                                 // 使用双方ID排序拼接，确保两人进入同一频道
+                                 final ids = [currentUserId, widget.userId];
+                                 ids.sort();
+                                 final channelName = 'voice_call_${ids.join('_')}';
+                                 
+                                 Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => VoiceCallPage(
+                                      channelName: channelName,
+                                      userName: widget.userName ?? 'User',
+                                      userAvatar: widget.userAvatar ?? '',
+                                    ),
+                                  ),
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF7F7FD5),
+                                side: const BorderSide(color: Color(0xFF7F7FD5)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: const Icon(Icons.phone, size: 20),
                             ),
                           ),
                           const SizedBox(width: 8),

@@ -42,6 +42,16 @@ class ApiService {
 
   // 获取当前 token
   static String? get token => _currentToken;
+
+  // 语音通话 Token
+  static Future<Map<String, dynamic>> getRtcToken(String channelName, {int role = 1}) async {
+    final response = await _request(
+      '/api/voice/token?channel_name=$channelName&role=$role',
+      method: 'GET',
+    );
+    return response;
+  }
+
   // 环境配置
   // 设置为 true 使用生产环境，false 使用开发环境
   static const bool _isProduction = false; // 修改这里切换环境

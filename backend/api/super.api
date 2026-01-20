@@ -1088,3 +1088,26 @@ service Super {
 	get /api/images/:filename (DeleteImageReq) returns (EmptyResp)
 }
 
+// 语音通话相关请求
+type GetRtcTokenReq {
+	ChannelName string `form:"channel_name"`
+	Role        uint8  `form:"role,optional,default=1"`
+	UserAccount string `form:"user_account,optional"`
+}
+
+type GetRtcTokenResp {
+	BaseResp
+	Token string `json:"token"`
+	AppId string `json:"app_id"`
+}
+
+// 语音通话相关API服务
+@server (
+	group: voice
+	jwt: Auth
+)
+service Super {
+	@handler getRtcToken
+	get /api/voice/token (GetRtcTokenReq) returns (GetRtcTokenResp)
+}
+
