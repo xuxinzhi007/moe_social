@@ -8,10 +8,15 @@ Timeout: 600000
 Ollama:
   BaseUrl: http://127.0.0.1:11434
   TimeoutSeconds: 300
+  # 可选：用于总结和记忆提取的模型，不填则默认使用聊天时指定的模型
+  MemoryModel: ""
+  # 可选：用于「对话总结」的系统提示词，不填则使用内置中文总结提示
+  MemorySummaryPrompt: ""
+  # 可选：用于「记忆抽取」的系统提示词，不填则使用内置中文抽取提示
+  MemoryExtractPrompt: ""
 
 # RPC服务配置 - 直接连接方式（不使用etcd）
 SuperRpc:
   Endpoints:
   - 127.0.0.1:8080
   NonBlock: true
-
