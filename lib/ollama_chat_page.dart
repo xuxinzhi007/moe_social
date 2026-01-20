@@ -68,8 +68,10 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   bool _speechAvailable = false;
   bool _isListening = false;
   final FlutterTts _tts = FlutterTts();
-   bool _isSpeaking = false;
-   int? _speakingIndex;
+  bool _isSpeaking = false;
+  int? _speakingIndex;
+  double _ttsRate = 0.4;
+  double _ttsPitch = 1.0;
 
   bool _isLocalErrorAssistantMessage(_ChatMessage m) {
     if (m.role != 'assistant') return false;
@@ -147,8 +149,8 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     } catch (_) {}
     try {
       await _tts.setLanguage('zh-CN');
-      await _tts.setSpeechRate(0.4);
-      await _tts.setPitch(1.0);
+      await _tts.setSpeechRate(_ttsRate);
+      await _tts.setPitch(_ttsPitch);
       _tts.setCompletionHandler(() {
         if (!mounted) return;
         setState(() {
@@ -544,6 +546,8 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
       _speakingIndex = index;
     });
     try {
+      await _tts.setSpeechRate(_ttsRate);
+      await _tts.setPitch(_ttsPitch);
       await _tts.speak(t);
     } catch (_) {
       if (!mounted) return;
@@ -671,6 +675,61 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        const Text(
+                          '语音设置',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Text(
+                              '语速',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            Expanded(
+                              child: Slider(
+                                value: _ttsRate,
+                                min: 0.2,
+                                max: 1.0,
+                                divisions: 8,
+                                label: _ttsRate.toStringAsFixed(2),
+                                onChanged: (v) {
+                                  setModalState(() {
+                                    _ttsRate = v;
+                                  });
+                                  setState(() {});
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            const Text(
+                              '音调',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            Expanded(
+                              child: Slider(
+                                value: _ttsPitch,
+                                min: 0.5,
+                                max: 1.8,
+                                divisions: 13,
+                                label: _ttsPitch.toStringAsFixed(2),
+                                onChanged: (v) {
+                                  setModalState(() {
+                                    _ttsPitch = v;
+                                  });
+                                  setState(() {});
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
                         const Text(
                           '自定义提示词',
                           style: TextStyle(
