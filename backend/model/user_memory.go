@@ -8,7 +8,7 @@ import (
 
 type UserMemory struct {
 	ID        uint           `gorm:"primarykey" json:"id"`
-	UserID    uint           `gorm:"not null;index" json:"user_id"`
+	UserID    uint           `gorm:"not null;index:idx_user_key,unique" json:"user_id"`
 	Key       string         `gorm:"size:100;index:idx_user_key,unique" json:"key"`
 	Value     string         `gorm:"type:text" json:"value"`
 	CreatedAt time.Time      `json:"created_at"`

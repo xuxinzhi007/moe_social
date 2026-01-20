@@ -5,6 +5,7 @@ import 'auth_service.dart';
 import 'services/api_service.dart';
 import 'services/update_service.dart';
 import 'providers/theme_provider.dart';
+import 'memory_timeline_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -165,6 +166,23 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ]),
           
+          const SizedBox(height: 24),
+          _buildSectionTitle('AI 模型'),
+          _buildSettingsCard([
+            _SettingsTile(
+              icon: Icons.psychology_rounded,
+              title: '模型记忆线',
+              subtitle: '查看模型记录的所有记忆',
+              iconColor: Colors.deepPurple,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MemoryTimelinePage()),
+                );
+              },
+            ),
+          ]),
+
           const SizedBox(height: 24),
           _buildSectionTitle('外观'),
           _buildSettingsCard([
