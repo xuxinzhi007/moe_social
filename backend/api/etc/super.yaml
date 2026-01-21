@@ -9,8 +9,8 @@ Auth:
   AccessExpire: 86400
 
 Agora:
-  AppId: "YOUR_AGORA_APP_ID"
-  AppCertificate: "YOUR_AGORA_APP_CERTIFICATE"
+  AppId: "40f005107bf94a8fb09a17aabdcdf329"
+  AppCertificate: "c5282c8b440342b78e767a7e86b99107"
 
 # Ollama 配置（后端需要能访问到该地址）
 Ollama:

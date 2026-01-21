@@ -7,10 +7,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// JWT密钥，实际项目中应该从配置文件或环境变量中获取
-var jwtSecret = []byte("your-secret-key")
+var jwtSecret = []byte("u8K9x2L1n4Q7v5Z0m3P6r9Y2b5X8j1W4")
 
-// JWT过期时间，设置为24小时
 var jwtExpireTime = 24 * time.Hour
 
 // CustomClaims 自定义JWT声明结构体
