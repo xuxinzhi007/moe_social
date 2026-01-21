@@ -49,21 +49,45 @@ func (l *GetFollowingsLogic) GetFollowings(in *super.GetFollowingsReq) (*super.G
 	// 查询关注的用户列表
 	var follows []model.Follow
 	var total int64
-	
+
 	// 获取总数
 	l.svcCtx.DB.Model(&model.Follow{}).Where("follower_id = ? AND deleted_at IS NULL", userID).Count(&total)
-	
-	// 分页查询，预加载被关注者信息
-	result := l.svcCtx.DB.Preload("Following").Where("follower_id = ? AND deleted_at IS NULL", userID).Offset(int(offset)).Limit(int(pageSize)).Order("created_at DESC").Find(&follows)
+
+	// 分页查询关注记录
+	result := l.svcCtx.DB.Where("follower_id = ? AND deleted_at IS NULL", userID).Offset(int(offset)).Limit(int(pageSize)).Order("created_at DESC").Find(&follows)
 	if result.Error != nil {
 		l.Error("获取关注列表失败:", result.Error)
 		return &super.GetFollowingsResp{}, result.Error
 	}
-	
+
+	// 提取following_id列表
+	followingIDs := make([]uint, len(follows))
+	for i, follow := range follows {
+		followingIDs[i] = follow.FollowingID
+	}
+
+	// 查询用户信息
+	var users []model.User
+	if len(followingIDs) > 0 {
+		if err := l.svcCtx.DB.Where("id IN ?", followingIDs).Find(&users).Error; err != nil {
+			l.Error("查询关注用户信息失败:", err)
+			return &super.GetFollowingsResp{}, err
+		}
+	}
+
+	// 创建用户ID到用户信息的映射
+	userMap := make(map[uint]model.User)
+	for _, user := range users {
+		userMap[user.ID] = user
+	}
+
 	// 转换为RPC响应格式
 	respUsers := make([]*super.User, 0, len(follows))
 	for _, follow := range follows {
-		user := follow.Following
+		user, exists := userMap[follow.FollowingID]
+		if !exists {
+			continue // 如果用户不存在，跳过
+		}
 		// 处理可能为 nil 的时间字段
 		var vipExpiresAt string
 		if user.VipEndAt != nil {
