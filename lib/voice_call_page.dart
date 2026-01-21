@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../auth_service.dart';
 import '../services/api_service.dart';
 
 class VoiceCallPage extends StatefulWidget {
@@ -22,7 +23,7 @@ class VoiceCallPage extends StatefulWidget {
 class _VoiceCallPageState extends State<VoiceCallPage> {
   String? _appId;
   String? _token;
-  late RtcEngine _engine;
+  RtcEngine? _engine;
   bool _isJoined = false;
   bool _isMuted = false;
   bool _isSpeaker = true;
@@ -35,6 +36,17 @@ class _VoiceCallPageState extends State<VoiceCallPage> {
   }
 
   Future<void> _initAgora() async {
+    final userAccount = AuthService.currentUser;
+    if (userAccount == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('请先登录')),
+        );
+        Navigator.pop(context);
+      }
+      return;
+    }
+
     // 1. 请求权限
     await [Permission.microphone].request();
 
@@ -65,13 +77,13 @@ class _VoiceCallPageState extends State<VoiceCallPage> {
 
     // 3. 创建引擎
     _engine = createAgoraRtcEngine();
-    await _engine.initialize(RtcEngineContext(
+    await _engine!.initialize(RtcEngineContext(
       appId: _appId!,
       channelProfile: ChannelProfileType.channelProfileCommunication,
     ));
 
     // 4. 注册事件回调
-    _engine.registerEventHandler(
+    _engine!.registerEventHandler(
       RtcEngineEventHandler(
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
           debugPrint("local user ${connection.localUid} joined");
@@ -98,20 +110,34 @@ class _VoiceCallPageState extends State<VoiceCallPage> {
           }
         },
         onError: (ErrorCodeType err, String msg) {
-            debugPrint("Agora Error: $err, $msg");
+          debugPrint("Agora Error: $err, $msg");
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('通话出错: $msg')),
+          );
+          Navigator.pop(context);
         },
       ),
     );
 
     // 5. 加入频道
-    await _engine.joinChannel(
-      token: _token!,
-      channelId: widget.channelName,
-      uid: 0, // 0 表示让 Agora 自动分配 UID
-      options: const ChannelMediaOptions(
-        clientRoleType: ClientRoleType.clientRoleBroadcaster,
-      ),
-    );
+    try {
+      await _engine!.joinChannelWithUserAccount(
+        token: _token!,
+        channelId: widget.channelName,
+        userAccount: userAccount,
+        options: const ChannelMediaOptions(
+          clientRoleType: ClientRoleType.clientRoleBroadcaster,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('加入通话失败: $e')),
+        );
+        Navigator.pop(context);
+      }
+    }
   }
 
   @override
@@ -121,22 +147,24 @@ class _VoiceCallPageState extends State<VoiceCallPage> {
   }
 
   Future<void> _dispose() async {
-    await _engine.leaveChannel();
-    await _engine.release();
+    if (_engine != null) {
+      await _engine!.leaveChannel();
+      await _engine!.release();
+    }
   }
 
   void _onToggleMute() {
     setState(() {
       _isMuted = !_isMuted;
     });
-    _engine.muteLocalAudioStream(_isMuted);
+    _engine?.muteLocalAudioStream(_isMuted);
   }
 
   void _onToggleSpeaker() {
     setState(() {
       _isSpeaker = !_isSpeaker;
     });
-    _engine.setEnableSpeakerphone(_isSpeaker);
+    _engine?.setEnableSpeakerphone(_isSpeaker);
   }
 
   void _onCallEnd() {

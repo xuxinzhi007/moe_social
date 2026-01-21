@@ -16,6 +16,7 @@ backend/rpc/super
 ollama_web_副本
 backend/api/api.exe
 backend/rpc/rpc.exe
+*.exe
 
 
 # IntelliJ related
