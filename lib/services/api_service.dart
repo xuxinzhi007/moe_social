@@ -316,13 +316,19 @@ class ApiService {
       
       if (response.statusCode == 200) {
         final result = json.decode(response.body) as Map<String, dynamic>;
+        final success = result['success'] as bool? ?? true;
+        if (!success) {
+          final code = result['code'];
+          final message = result['message'];
+          _log('❌ Token刷新失败: $message (code: $code)');
+          return null;
+        }
+
         final newToken = result['data']['token'] as String;
-        
-        // 更新token
         _currentToken = newToken;
         _onTokenUpdateCallback?.call(newToken);
         _log('✅ Token刷新成功');
-        
+
         return newToken;
       } else {
         _log('❌ Token刷新失败: ${response.statusCode}');

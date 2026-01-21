@@ -528,6 +528,18 @@ type LoginResp struct {
 	Data LoginData `json:"data"`
 }
 
+type RefreshTokenReq struct {
+}
+
+type RefreshTokenResp struct {
+	BaseResp
+	Data RefreshTokenData `json:"data"`
+}
+
+type RefreshTokenData struct {
+	Token string `json:"token"`
+}
+
 type Notification struct {
 	Id           string `json:"id"`
 	UserId       string `json:"user_id"`
