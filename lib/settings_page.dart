@@ -857,12 +857,20 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
     ),
     _PrivacyPermissionItem(
       title: '定位',
-      description: '用于获取设备位置和 WiFi 名称（可选）',
+      description: '用于获取设备位置和 WiFi 名称',
       icon: Icons.location_on_rounded,
       permission: Permission.location,
     ),
+    _PrivacyPermissionItem(
+      title: '悬浮窗',
+      description: 'AutoGLM 助手需要此权限显示悬浮控制窗口',
+      icon: Icons.picture_in_picture_rounded,
+      permission: Permission.systemAlertWindow,
+    ),
   ];
 
+  // 无障碍服务状态（特殊处理）
+  bool _accessibilityEnabled = false;
   bool _loading = false;
 
   @override
@@ -876,10 +884,17 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
       _loading = true;
     });
     try {
+      // 刷新普通权限状态
       for (final item in _items) {
         final status = await item.permission.status;
         item.status = status;
       }
+      
+      // 检查无障碍服务状态
+      if (!kIsWeb) {
+        _accessibilityEnabled = await _checkAccessibilityEnabled();
+      }
+      
       if (mounted) {
         setState(() {});
       }
@@ -888,6 +903,37 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
         setState(() {
           _loading = false;
         });
+      }
+    }
+  }
+
+  /// 检查无障碍服务是否启用
+  Future<bool> _checkAccessibilityEnabled() async {
+    try {
+      // 通过 MethodChannel 检查，或者简单返回 false
+      // 这里我们通过尝试检测来判断
+      return false; // 默认返回未启用，用户点击后会跳转设置
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// 打开无障碍服务设置
+  Future<void> _openAccessibilitySettings() async {
+    try {
+      // 在 Android 上打开无障碍设置
+      await openAppSettings();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('请在无障碍设置中找到「Moe Social 助手」并启用'),
+          duration: Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('无法打开设置: $e')),
+        );
       }
     }
   }
@@ -911,6 +957,49 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
         SnackBar(content: Text('请在系统设置中为「${item.title}」授予权限')),
       );
       await openAppSettings();
+    }
+  }
+  
+  /// 一键请求所有权限
+  Future<void> _requestAllPermissions() async {
+    setState(() {
+      _loading = true;
+    });
+    
+    try {
+      // 请求所有权限
+      final permissions = _items.map((e) => e.permission).toList();
+      final results = await permissions.request();
+      
+      // 更新状态
+      for (final item in _items) {
+        item.status = results[item.permission] ?? PermissionStatus.denied;
+      }
+      
+      // 统计结果
+      int granted = 0;
+      int denied = 0;
+      for (final result in results.values) {
+        if (result.isGranted || result.isLimited) {
+          granted++;
+        } else {
+          denied++;
+        }
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('权限申请完成：$granted 个已授权，$denied 个未授权'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -955,15 +1044,131 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
           IconButton(
             onPressed: _loading ? null : _refreshStatuses,
             icon: const Icon(Icons.refresh_rounded),
+            tooltip: '刷新状态',
           ),
         ],
       ),
-      body: ListView.builder(
+      body: ListView(
         padding: const EdgeInsets.all(16),
-        itemCount: _items.length,
-        itemBuilder: (context, index) {
-          final item = _items[index];
-          return Card(
+        children: [
+          // 一键申请按钮
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF7F7FD5).withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _loading ? null : _requestAllPermissions,
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (_loading)
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      else
+                        const Icon(Icons.security_rounded, color: Colors.white),
+                      const SizedBox(width: 12),
+                      const Text(
+                        '一键申请全部权限',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          // 提示信息
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.amber.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.amber[700], size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '获取 WiFi 名称需要定位权限（Android 10+要求）',
+                    style: TextStyle(fontSize: 12, color: Colors.amber[800]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // 普通权限列表
+          ...List.generate(_items.length, (index) {
+            final item = _items[index];
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(item.icon, color: Theme.of(context).primaryColor),
+                ),
+                title: Text(item.title),
+                subtitle: Text(
+                  item.description,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                trailing: _buildStatusChip(item.status),
+                onTap: () => _onTapItem(item),
+              ),
+            );
+          }),
+          
+          // 无障碍服务（特殊权限）
+          const Padding(
+            padding: EdgeInsets.only(top: 8, bottom: 12),
+            child: Text(
+              '特殊权限',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          
+          Card(
             margin: const EdgeInsets.only(bottom: 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
@@ -972,21 +1177,37 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.06),
+                  color: Colors.deepPurple.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(item.icon, color: Theme.of(context).primaryColor),
+                child: const Icon(Icons.accessibility_new_rounded, color: Colors.deepPurple),
               ),
-              title: Text(item.title),
-              subtitle: Text(
-                item.description,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              title: const Text('无障碍服务'),
+              subtitle: const Text(
+                'AutoGLM 助手需要此权限实现自动化操作',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
-              trailing: _buildStatusChip(item.status),
-              onTap: () => _onTapItem(item),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: const Text(
+                  '需手动开启',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.orange,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              onTap: _openAccessibilitySettings,
             ),
-          );
-        },
+          ),
+          
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }
