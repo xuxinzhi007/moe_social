@@ -1,8 +1,62 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 import '../models/notification.dart';
 import '../auth_service.dart';
 import 'api_service.dart';
 
 class NotificationService {
+  static final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  static bool _localInitialized = false;
+
+  static Future<void> initLocalNotifications() async {
+    if (kIsWeb || _localInitialized) {
+      return;
+    }
+
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosSettings = DarwinInitializationSettings();
+    const initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
+
+    await _localNotifications.initialize(initSettings);
+    _localInitialized = true;
+  }
+
+  static Future<void> showPrivateMessageNotification({
+    required String senderName,
+    required String messagePreview,
+    required int unreadCount,
+  }) async {
+    if (kIsWeb) {
+      return;
+    }
+
+    if (!_localInitialized) {
+      await initLocalNotifications();
+    }
+
+    const androidDetails = AndroidNotificationDetails(
+      'direct_message_channel',
+      '私信消息',
+      channelDescription: '私信消息通知',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+    );
+    const iosDetails = DarwinNotificationDetails();
+    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    final title = '$senderName 给你发来了私信';
+    final body = unreadCount > 1 ? '你有 $unreadCount 条未读私信' : messagePreview;
+
+    await _localNotifications.show(
+      0,
+      title,
+      body,
+      details,
+    );
+  }
+
   // 获取通知列表
   static Future<List<NotificationModel>> getNotifications({int page = 1, int pageSize = 20}) async {
     final userId = AuthService.currentUser;

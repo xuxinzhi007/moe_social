@@ -216,6 +216,11 @@ func (s *SuperServer) ReadAllNotifications(ctx context.Context, in *super.ReadAl
 	return l.ReadAllNotifications(in)
 }
 
+func (s *SuperServer) CreateNotification(ctx context.Context, in *super.CreateNotificationReq) (*super.CreateNotificationResp, error) {
+	l := logic.NewCreateNotificationLogic(ctx, s.svcCtx)
+	return l.CreateNotification(in)
+}
+
 // 钱包相关服务
 func (s *SuperServer) Recharge(ctx context.Context, in *super.RechargeReq) (*super.RechargeResp, error) {
 	l := logic.NewRechargeLogic(ctx, s.svcCtx)

@@ -46,6 +46,7 @@ dependencies:
   speech_to_text: ^6.6.0
   flutter_tts: ^3.8.5
   web_socket_channel: ^2.4.0
+  flutter_local_notifications: ^17.2.1
 
 dev_dependencies:
   flutter_test:
