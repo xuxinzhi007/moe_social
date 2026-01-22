@@ -220,7 +220,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (context) => const WalletPage()),
-                            );
+                            ).then((value) {
+                              _loadUserInfo();
+                            });
                           },
                         ),
                         _MenuItem(
