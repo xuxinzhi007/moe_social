@@ -4,8 +4,10 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   agora_rtc_engine
+  battery_plus
   file_selector_windows
   flutter_tts
+  geolocator_windows
   iris_method_channel
   permission_handler_windows
   url_launcher_windows

@@ -240,7 +240,7 @@ class _TopicTagSelectorState extends State<TopicTagSelector> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: tag.color.withOpacity(0.15),
+        color: tag.color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: tag.color, width: 1.5),
       ),
@@ -378,10 +378,10 @@ class _TopicTagSelectorState extends State<TopicTagSelector> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: tag.color.withOpacity(0.1),
+            color: tag.color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: tag.color.withOpacity(0.5),
+              color: tag.color.withValues(alpha: 0.5),
             ),
           ),
           child: Row(
@@ -407,7 +407,7 @@ class _TopicTagSelectorState extends State<TopicTagSelector> {
               Text(
                 '${tag.usageCount}',
                 style: TextStyle(
-                  color: tag.color.withOpacity(0.7),
+                  color: tag.color.withValues(alpha: 0.7),
                   fontSize: 12,
                 ),
               ),
@@ -455,7 +455,7 @@ class TopicTagDisplay extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),

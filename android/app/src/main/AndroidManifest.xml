@@ -1,11 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- 网络权限 -->
     <uses-permission android:name="android.permission.INTERNET"/>
-    <!-- 语音通话权限 -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- 语音通话与音频权限 -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <!-- 摄像头与定位权限（用于远程监控与网络状态/定位信息） -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <!-- 无障碍服务权限 -->
     <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
     <!-- 悬浮窗权限 -->

@@ -63,7 +63,7 @@ class _SignatureInputState extends State<SignatureInput> {
             ),
             color: widget.enabled
                 ? theme.cardColor
-                : theme.disabledColor.withOpacity(0.1),
+                : theme.disabledColor.withValues(alpha: 0.1),
           ),
           child: Column(
             children: [
@@ -76,7 +76,7 @@ class _SignatureInputState extends State<SignatureInput> {
                 decoration: InputDecoration(
                   hintText: '写下你的个性签名...',
                   hintStyle: TextStyle(
-                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                    color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                     fontSize: 14,
                   ),
                   border: InputBorder.none,
@@ -114,7 +114,7 @@ class _SignatureInputState extends State<SignatureInput> {
                         fontSize: 12,
                         color: _controller.text.length >= _maxLength
                             ? theme.colorScheme.error
-                            : theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                            : theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -148,7 +148,7 @@ class _SignatureInputState extends State<SignatureInput> {
               '个性签名将在你的个人资料中展示',
               style: TextStyle(
                 fontSize: 12,
-                color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
               ),
             ),
           ),

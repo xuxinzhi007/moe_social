@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:provider/provider.dart';
 import 'dart:ui';
 import 'dart:async';
@@ -41,6 +41,7 @@ import 'utils/error_handler.dart';
 import 'providers/theme_provider.dart';
 import 'providers/notification_provider.dart';
 import 'services/notification_service.dart';
+import 'services/remote_control_service.dart';
 import 'avatar_editor_page.dart';
 import 'gallery/cloud_gallery_page.dart';
 import 'emoji/emoji_store_page.dart';
@@ -65,17 +66,18 @@ void main() async {
     final notificationProvider = NotificationProvider();
     notificationProvider.init(); // 启动轮询
     await NotificationService.initLocalNotifications();
+    await RemoteControlService.init();
     
     // 捕获Flutter框架错误
     FlutterError.onError = (FlutterErrorDetails details) {
       FlutterError.presentError(details);
       // 输出详细错误信息
-      print('═══════════════════════════════════════');
-      print('Flutter Error:');
-      print('Exception: ${details.exception}');
-      print('Stack: ${details.stack}');
-      print('Library: ${details.library}');
-      print('═══════════════════════════════════════');
+      debugPrint('═══════════════════════════════════════');
+      debugPrint('Flutter Error:');
+      debugPrint('Exception: ${details.exception}');
+      debugPrint('Stack: ${details.stack}');
+      debugPrint('Library: ${details.library}');
+      debugPrint('═══════════════════════════════════════');
     };
 
     // 避免“白屏”：当 widget build/layout 抛错时，用一个可见的错误卡片替代
@@ -135,23 +137,23 @@ void main() async {
     
     // 捕获异步错误
     PlatformDispatcher.instance.onError = (error, stack) {
-      print('═══════════════════════════════════════');
-      print('Platform Error:');
-      print('Error: $error');
-      print('Stack: $stack');
-      print('═══════════════════════════════════════');
+      debugPrint('═══════════════════════════════════════');
+      debugPrint('Platform Error:');
+      debugPrint('Error: $error');
+      debugPrint('Stack: $stack');
+      debugPrint('═══════════════════════════════════════');
       return true;
     };
     
-    print('🚀 App starting...');
+    debugPrint('🚀 App starting...');
     // Web平台不支持Platform.operatingSystem，使用kIsWeb判断
     if (kIsWeb) {
-      print('📱 Platform: web');
+      debugPrint('📱 Platform: web');
     } else {
-      print('📱 Platform: ${Platform.operatingSystem}');
+      debugPrint('📱 Platform: ${Platform.operatingSystem}');
     }
-    print('🌐 API Base URL: ${ApiService.baseUrl}');
-    print('🔐 User logged in: ${AuthService.isLoggedIn}');
+    debugPrint('🌐 API Base URL: ${ApiService.baseUrl}');
+    debugPrint('🔐 User logged in: ${AuthService.isLoggedIn}');
     
     runApp(
       MultiProvider(
@@ -163,11 +165,11 @@ void main() async {
       ),
     );
   }, (error, stack) {
-    print('═══════════════════════════════════════');
-    print('Uncaught Error:');
-    print('Error: $error');
-    print('Stack: $stack');
-    print('═══════════════════════════════════════');
+    debugPrint('═══════════════════════════════════════');
+    debugPrint('Uncaught Error:');
+    debugPrint('Error: $error');
+    debugPrint('Stack: $stack');
+    debugPrint('═══════════════════════════════════════');
   });
 }
 
@@ -414,17 +416,16 @@ class _HomePageState extends State<HomePage> {
                         (maxScroll > 0 && currentScroll >= maxScroll - 50);
     
     if (isNearBottom) {
-      // 当滚动到距底部时触发加载
-      print('🔄 触发加载更多');
-      print('   当前滚动位置: $currentScroll');
-      print('   最大滚动位置: $maxScroll');
-      print('   阈值: $threshold');
-      print('   _hasMore: $_hasMore');
-      print('   _isLoading: $_isLoading');
-      print('   _isLoadingMore: $_isLoadingMore');
-      print('   _isLoadingTriggered: $_isLoadingTriggered');
-      print('   当前页码: $_currentPage');
-      print('   已加载帖子数: ${_posts.length}');
+      debugPrint('🔄 触发加载更多');
+      debugPrint('   当前滚动位置: $currentScroll');
+      debugPrint('   最大滚动位置: $maxScroll');
+      debugPrint('   阈值: $threshold');
+      debugPrint('   _hasMore: $_hasMore');
+      debugPrint('   _isLoading: $_isLoading');
+      debugPrint('   _isLoadingMore: $_isLoadingMore');
+      debugPrint('   _isLoadingTriggered: $_isLoadingTriggered');
+      debugPrint('   当前页码: $_currentPage');
+      debugPrint('   已加载帖子数: ${_posts.length}');
       
       // 立即设置标志，防止重复触发
       _isLoadingTriggered = true;
@@ -459,11 +460,10 @@ class _HomePageState extends State<HomePage> {
         }
       }
       
-      // 打印从后端获取的数据
-      print('📥 从后端获取的数据：');
-      print('   总帖子数：$total');
-      print('   第一页帖子数：${posts.length}');
-      print('   帖子ID列表：${posts.map((post) => post.id).toList()}');
+      debugPrint('📥 从后端获取的数据：');
+      debugPrint('   总帖子数：$total');
+      debugPrint('   第一页帖子数：${posts.length}');
+      debugPrint('   帖子ID列表：${posts.map((post) => post.id).toList()}');
       
       setState(() {
         _posts = posts;
@@ -473,13 +473,12 @@ class _HomePageState extends State<HomePage> {
         _hasMore = posts.length < total;
       });
       
-      // 打印设置后的状态
-      print('📝 设置后的状态：');
-      print('   _posts长度：${_posts.length}');
-      print('   _totalPosts：$_totalPosts');
-      print('   _currentPage：$_currentPage');
-      print('   _hasMore：$_hasMore');
-      print('   判断逻辑：${_posts.length} < ${_totalPosts} = ${_hasMore}');
+      debugPrint('📝 设置后的状态：');
+      debugPrint('   _posts长度：${_posts.length}');
+      debugPrint('   _totalPosts：$_totalPosts');
+      debugPrint('   _currentPage：$_currentPage');
+      debugPrint('   _hasMore：$_hasMore');
+      debugPrint('   判断逻辑：${_posts.length} < ${_totalPosts} = ${_hasMore}');
     } catch (e) {
       if (mounted) {
         ErrorHandler.handleException(context, e as Exception);
@@ -494,7 +493,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadMorePosts() async {
     // 如果正在刷新、正在加载更多或没有更多数据，则不执行
     if (_isLoading || _isLoadingMore || !_hasMore) {
-      print('⚠️ 阻止重复加载：_isLoading=$_isLoading, _isLoadingMore=$_isLoadingMore, _hasMore=$_hasMore');
+      debugPrint('⚠️ 阻止重复加载：_isLoading=$_isLoading, _isLoadingMore=$_isLoadingMore, _hasMore=$_hasMore');
       return;
     }
     
@@ -503,16 +502,16 @@ class _HomePageState extends State<HomePage> {
       _isLoadingMore = true;
     });
     
-    print('📥 开始加载更多帖子');
-    print('   当前页码：$_currentPage');
-    print('   已加载帖子数：${_posts.length}');
-    print('   总帖子数：$_totalPosts');
-    print('   下一页码：${_currentPage + 1}');
-    print('   _hasMore：$_hasMore');
+    debugPrint('📥 开始加载更多帖子');
+    debugPrint('   当前页码：$_currentPage');
+    debugPrint('   已加载帖子数：${_posts.length}');
+    debugPrint('   总帖子数：$_totalPosts');
+    debugPrint('   下一页码：${_currentPage + 1}');
+    debugPrint('   _hasMore：$_hasMore');
     
     try {
       final nextPage = _currentPage + 1;
-      print('📡 请求第 $nextPage 页数据...');
+      debugPrint('📡 请求第 $nextPage 页数据...');
       
       final result = await PostService.getPosts(page: nextPage, pageSize: _pageSize);
       final morePosts = result['posts'] as List<Post>;
@@ -531,15 +530,15 @@ class _HomePageState extends State<HomePage> {
         }
       }
       
-      print('📥 加载更多帖子成功：');
-      print('   请求页码：$nextPage');
-      print('   返回的帖子数：${morePosts.length}');
-      print('   帖子ID列表：${morePosts.map((post) => post.id).toList()}');
-      print('   总帖子数：$total');
+      debugPrint('📥 加载更多帖子成功：');
+      debugPrint('   请求页码：$nextPage');
+      debugPrint('   返回的帖子数：${morePosts.length}');
+      debugPrint('   帖子ID列表：${morePosts.map((post) => post.id).toList()}');
+      debugPrint('   总帖子数：$total');
       
       // 如果返回的数据为空，说明没有更多数据了
       if (morePosts.isEmpty) {
-        print('⚠️ 返回的数据为空，说明没有更多数据了');
+        debugPrint('⚠️ 返回的数据为空，说明没有更多数据了');
         setState(() {
           _hasMore = false;
           _isLoadingMore = false;
@@ -555,12 +554,12 @@ class _HomePageState extends State<HomePage> {
         _hasMore = _posts.length < total;
       });
       
-      print('📝 设置后的状态：');
-      print('   _posts长度：${_posts.length}');
-      print('   _currentPage：$_currentPage');
-      print('   _totalPosts：$_totalPosts');
-      print('   _hasMore：$_hasMore');
-      print('   判断逻辑：${_posts.length} < ${_totalPosts} = ${_hasMore}');
+      debugPrint('📝 设置后的状态：');
+      debugPrint('   _posts长度：${_posts.length}');
+      debugPrint('   _currentPage：$_currentPage');
+      debugPrint('   _totalPosts：$_totalPosts');
+      debugPrint('   _hasMore：$_hasMore');
+      debugPrint('   判断逻辑：${_posts.length} < ${_totalPosts} = ${_hasMore}');
     } catch (e) {
       if (mounted) {
         ErrorHandler.handleException(context, e as Exception);
@@ -569,7 +568,7 @@ class _HomePageState extends State<HomePage> {
           _hasMore = false;
         });
       }
-      print('❌ 加载更多帖子失败：$e');
+      debugPrint('❌ 加载更多帖子失败：$e');
     } finally {
       setState(() {
         _isLoadingMore = false;

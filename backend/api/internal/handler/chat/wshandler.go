@@ -31,6 +31,19 @@ func newHub() *hub {
 
 var chatHub = newHub()
 
+type remoteHub struct {
+	mu    sync.RWMutex
+	conns map[string][]*websocket.Conn
+}
+
+func newRemoteHub() *remoteHub {
+	return &remoteHub{
+		conns: make(map[string][]*websocket.Conn),
+	}
+}
+
+var remoteWsHub = newRemoteHub()
+
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
@@ -98,6 +111,49 @@ func (h *hub) isOnline(userID string) bool {
 	defer h.mu.RUnlock()
 	conn, ok := h.conns[userID]
 	return ok && conn != nil
+}
+
+func (h *remoteHub) addConn(userID string, conn *websocket.Conn) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	list := h.conns[userID]
+	h.conns[userID] = append(list, conn)
+}
+
+func (h *remoteHub) removeConn(userID string, conn *websocket.Conn) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	list, ok := h.conns[userID]
+	if !ok {
+		return
+	}
+	n := 0
+	for _, c := range list {
+		if c == nil || c == conn {
+			continue
+		}
+		list[n] = c
+		n++
+	}
+	if n == 0 {
+		delete(h.conns, userID)
+		return
+	}
+	h.conns[userID] = list[:n]
+}
+
+func (h *remoteHub) broadcast(userID string, data []byte) {
+	h.mu.RLock()
+	list := h.conns[userID]
+	h.mu.RUnlock()
+	for _, c := range list {
+		if c == nil {
+			continue
+		}
+		if err := c.WriteMessage(websocket.TextMessage, data); err != nil {
+			logx.Errorf("write remote websocket message error: %v", err)
+		}
+	}
 }
 
 func ChatWsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -176,6 +232,58 @@ func ChatWsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 				if err != nil {
 					logx.Errorf("create direct message notification error: %v", err)
 				}
+			}
+		}(userID, conn)
+	}
+}
+
+func RemoteWsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		token := ""
+
+		queryToken := r.URL.Query().Get("token")
+		if queryToken != "" {
+			token = queryToken
+		} else {
+			authHeader := r.Header.Get("Authorization")
+			if strings.HasPrefix(authHeader, "Bearer ") {
+				token = strings.TrimPrefix(authHeader, "Bearer ")
+			}
+		}
+
+		if token == "" {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		userIDUint, err := utils.GetUserIDFromToken(token)
+		if err != nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		userID := strconv.Itoa(int(userIDUint))
+
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			logx.Errorf("upgrade remote websocket error: %v", err)
+			return
+		}
+
+		remoteWsHub.addConn(userID, conn)
+
+		go func(uid string, c *websocket.Conn) {
+			defer func() {
+				remoteWsHub.removeConn(uid, c)
+				c.Close()
+			}()
+
+			for {
+				_, data, err := c.ReadMessage()
+				if err != nil {
+					break
+				}
+				remoteWsHub.broadcast(uid, data)
 			}
 		}(userID, conn)
 	}
