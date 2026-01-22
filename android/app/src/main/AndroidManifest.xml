@@ -13,6 +13,10 @@
     <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
     <!-- 悬浮窗权限 -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <!-- App 内更新所需权限 -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
     
     <application
         android:label="Moe Social"
@@ -46,6 +50,17 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        
+        <!-- FileProvider for App Update -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
         
         <!-- AutoGLM 无障碍服务 -->
         <service
