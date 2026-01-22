@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,6 +31,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
   bool _isSending = false;
   String? _currentUserId;
   WebSocketChannel? _channel;
+  bool _peerOnline = false;
+  Timer? _onlineTimer;
 
   @override
   void initState() {
@@ -46,6 +49,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
       });
       await _loadMessages(userId);
       await _connectWebSocket();
+      _startOnlinePolling();
     } catch (_) {}
   }
 
@@ -107,6 +111,24 @@ class _DirectChatPageState extends State<DirectChatPage> {
         );
       }
     });
+  }
+
+  void _startOnlinePolling() {
+    _checkPeerOnline();
+    _onlineTimer?.cancel();
+    _onlineTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _checkPeerOnline();
+    });
+  }
+
+  Future<void> _checkPeerOnline() async {
+    try {
+      final online = await ApiService.getChatOnline(widget.userId);
+      if (!mounted) return;
+      setState(() {
+        _peerOnline = online;
+      });
+    } catch (_) {}
   }
 
   Uri _buildWebSocketUri() {
@@ -222,6 +244,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
     _controller.dispose();
     _scrollController.dispose();
     _inputFocusNode.dispose();
+    _onlineTimer?.cancel();
     _channel?.sink.close();
     super.dispose();
   }
@@ -239,7 +262,30 @@ class _DirectChatPageState extends State<DirectChatPage> {
               placeholderIcon: Icons.person,
             ),
             const SizedBox(width: 8),
-            Text(widget.username),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.username),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _peerOnline ? Colors.green : Colors.grey,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _peerOnline ? '在线' : '离线',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ],
         ),
       ),

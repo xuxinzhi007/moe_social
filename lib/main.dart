@@ -272,7 +272,7 @@ class _MainPageState extends State<MainPage> {
 
   final List<Widget> _pages = [
     HomePage(),
-    OllamaChatPage(),
+    ChatTabPage(),
     GachaPage(),
     ProfilePage(),
   ];
@@ -322,6 +322,34 @@ class _MainPageState extends State<MainPage> {
               selectedIcon: Icon(Icons.person_rounded),
               label: '我的',
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ChatTabPage extends StatelessWidget {
+  const ChatTabPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('聊天'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: '好友'),
+              Tab(text: 'AI聊天'),
+            ],
+          ),
+        ),
+        body: const TabBarView(
+          children: [
+            FriendsPage(),
+            OllamaChatPage(),
           ],
         ),
       ),

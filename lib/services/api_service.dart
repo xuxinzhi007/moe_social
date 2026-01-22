@@ -710,6 +710,18 @@ class ApiService {
     return result['data'] as int;
   }
 
+  static Future<bool> getChatOnline(String userId) async {
+    final result = await get('/api/chat/online?user_id=$userId');
+    final value = result['online'];
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final v = value.toLowerCase();
+      return v == 'true' || v == '1';
+    }
+    return false;
+  }
+
   // ========== VIP相关API ==========
 
   // 获取用户VIP状态

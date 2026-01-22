@@ -396,6 +396,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/ws/chat",
 				Handler: chat.ChatWsHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/chat/online",
+				Handler: chat.ChatOnlineHandler(serverCtx),
+			},
 		},
 	)
 }

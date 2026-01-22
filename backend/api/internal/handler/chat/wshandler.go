@@ -13,6 +13,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 type hub struct {
@@ -90,6 +91,13 @@ func (h *hub) forwardMessage(fromID, toID, content string) {
 	}
 }
 
+func (h *hub) isOnline(userID string) bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	conn, ok := h.conns[userID]
+	return ok && conn != nil
+}
+
 func ChatWsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	_ = svcCtx
 
@@ -157,3 +165,19 @@ func ChatWsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	}
 }
 
+func ChatOnlineHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	_ = svcCtx
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := r.URL.Query().Get("user_id")
+		if userID == "" {
+			http.Error(w, "user_id required", http.StatusBadRequest)
+			return
+		}
+
+		online := chatHub.isOnline(userID)
+		httpx.OkJsonCtx(r.Context(), w, map[string]bool{
+			"online": online,
+		})
+	}
+}
