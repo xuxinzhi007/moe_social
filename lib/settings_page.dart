@@ -3,12 +3,8 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:network_info_plus/network_info_plus.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:battery_plus/battery_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
@@ -17,6 +13,7 @@ import 'services/memory_service.dart';
 import 'services/update_service.dart';
 import 'services/remote_control_service.dart';
 import 'providers/theme_provider.dart';
+import 'providers/device_info_provider.dart';
 import 'memory_timeline_page.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -28,155 +25,108 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _notificationsEnabled = true;
-  String _version = '';
-  String _deviceId = '';
-  String _deviceType = '';
-  String _osVersion = '';
-  String _networkType = '';
-  String _wifiName = '';
-  double? _latitude;
-  double? _longitude;
-  String _locationText = '';
-  int? _batteryLevel;
-  Timer? _deviceInfoTimer;
 
   @override
   void initState() {
     super.initState();
-    _initDeviceInfo();
-    _initializeSettingsData();
-    _deviceInfoTimer?.cancel();
-    _deviceInfoTimer = Timer.periodic(const Duration(minutes: 5), (_) {
-      _syncDeviceInfoToServer();
+    // 确保设备信息已初始化
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<DeviceInfoProvider>(context, listen: false).init();
     });
-  }
-
-  void _initDeviceInfo() {
-    String type = '未知';
-    String osVersion = '';
-    if (kIsWeb) {
-      type = 'Web';
-    } else {
-      try {
-        if (Theme.of(context).platform == TargetPlatform.android) {
-          type = 'Android';
-        } else if (Theme.of(context).platform == TargetPlatform.iOS) {
-          type = 'iOS';
-        } else if (Theme.of(context).platform == TargetPlatform.macOS) {
-          type = 'macOS';
-        } else if (Theme.of(context).platform == TargetPlatform.windows) {
-          type = 'Windows';
-        } else if (Theme.of(context).platform == TargetPlatform.linux) {
-          type = 'Linux';
-        }
-      } catch (_) {}
-    }
-    _deviceType = type;
-    _osVersion = osVersion;
-  }
-
-  Future<void> _initializeSettingsData() async {
-    await _loadVersion();
-    await _ensureDeviceId();
-    await _syncDeviceInfoToServer();
   }
 
   @override
   void dispose() {
-    _deviceInfoTimer?.cancel();
     super.dispose();
   }
 
-  Future<void> _loadVersion() async {
-    final info = await PackageInfo.fromPlatform();
-    if (mounted) {
-      setState(() {
-        _version = info.version;
-      });
-    }
-  }
-
   void _showDeviceInfoSheet() {
+    final deviceInfo = Provider.of<DeviceInfoProvider>(context, listen: false);
+    
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        final size = MediaQuery.of(context).size;
-        final items = <MapEntry<String, String>>[
-          MapEntry('设备ID', _deviceId.isEmpty ? '未生成' : _deviceId),
-          MapEntry('设备类型', _deviceType.isEmpty ? '未知' : _deviceType),
-          MapEntry('系统版本', _osVersion.isEmpty ? '未知' : _osVersion),
-          MapEntry('应用版本', _version.isEmpty ? '未知' : 'v$_version'),
-          MapEntry(
-            '屏幕分辨率',
-            '${size.width.toStringAsFixed(0)} x ${size.height.toStringAsFixed(0)}',
-          ),
-          MapEntry('网络状态', _networkType.isEmpty ? '未知' : _networkType),
-          MapEntry('WiFi 名称', _wifiName.isEmpty ? '未知' : _wifiName),
-          MapEntry(
-            '电量',
-            _batteryLevel != null ? '${_batteryLevel}%' : '未知',
-          ),
-          MapEntry(
-            '定位',
-            () {
-              if (_latitude != null && _longitude != null) {
-                final coord =
-                    '${_latitude!.toStringAsFixed(5)}, ${_longitude!.toStringAsFixed(5)}';
-                if (_locationText.isNotEmpty) {
-                  return '$_locationText ($coord)';
-                }
-                return coord;
-              }
-              return '未上报';
-            }(),
-          ),
-        ];
+        return Consumer<DeviceInfoProvider>(
+          builder: (context, provider, child) {
+            final size = MediaQuery.of(context).size;
+            final items = <MapEntry<String, String>>[
+              MapEntry('设备ID', provider.deviceId.isEmpty ? '未生成' : provider.deviceId),
+              MapEntry('设备类型', provider.deviceType.isEmpty ? '未知' : provider.deviceType),
+              MapEntry('系统版本', provider.osVersion.isEmpty ? '未知' : provider.osVersion),
+              MapEntry('应用版本', provider.version.isEmpty ? '未知' : 'v${provider.version}'),
+              MapEntry(
+                '屏幕分辨率',
+                '${size.width.toStringAsFixed(0)} x ${size.height.toStringAsFixed(0)}',
+              ),
+              MapEntry('网络状态', provider.networkType.isEmpty ? '未知' : provider.networkType),
+              MapEntry('WiFi 名称', provider.wifiName.isEmpty ? '未知' : provider.wifiName),
+              MapEntry(
+                '电量',
+                provider.batteryLevel != null ? '${provider.batteryLevel}%' : '未知',
+              ),
+              MapEntry(
+                '定位',
+                () {
+                  if (provider.latitude != null && provider.longitude != null) {
+                    final coord =
+                        '${provider.latitude!.toStringAsFixed(5)}, ${provider.longitude!.toStringAsFixed(5)}';
+                    if (provider.locationText.isNotEmpty) {
+                      return '${provider.locationText} ($coord)';
+                    }
+                    return coord;
+                  }
+                  return '未上报';
+                }(),
+              ),
+            ];
 
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '本机设备信息',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                ...items.map(
-                  (e) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 90,
-                          child: Text(
-                            e.key,
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            e.value,
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ),
-                      ],
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '本机设备信息',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                  ),
+                    const SizedBox(height: 16),
+                    ...items.map(
+                      (e) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 90,
+                              child: Text(
+                                e.key,
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                e.value,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -186,7 +136,8 @@ class _SettingsPageState extends State<SettingsPage> {
     final userId = await AuthService.getUserId();
     final memories = await MemoryService.getUserMemories(userId);
     final List<_RemoteDeviceInfo> devices = [];
-    final currentId = _deviceId;
+    final deviceInfo = Provider.of<DeviceInfoProvider>(context, listen: false);
+    final currentId = deviceInfo.deviceId;
 
     for (final memory in memories) {
       if (!memory.key.startsWith('device_info:')) {
@@ -446,147 +397,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Future<void> _ensureDeviceId() async {
-    final prefs = await SharedPreferences.getInstance();
-    String id = prefs.getString('device_id') ?? '';
-    if (id.isEmpty) {
-      id = _generateDeviceId();
-      await prefs.setString('device_id', id);
-    }
-    if (mounted) {
-      setState(() {
-        _deviceId = id;
-      });
-    } else {
-      _deviceId = id;
-    }
-  }
 
-  String _generateDeviceId() {
-    final random = Random();
-    final buffer = StringBuffer();
-    buffer.write(DateTime.now().millisecondsSinceEpoch.toRadixString(16));
-    for (int i = 0; i < 6; i++) {
-      buffer.write(random.nextInt(16).toRadixString(16));
-    }
-    return buffer.toString();
-  }
-
-  Future<void> _syncDeviceInfoToServer({bool requestLocationPermission = false}) async {
-    try {
-      final userId = await AuthService.getUserId();
-      String networkType = '';
-      String wifiName = '';
-      double? latitude;
-      double? longitude;
-      String locationText = '';
-      int? batteryLevel;
-
-      if (!kIsWeb) {
-        try {
-          final info = NetworkInfo();
-          final currentWifiName = await info.getWifiName();
-          if (currentWifiName != null && currentWifiName.isNotEmpty) {
-            wifiName = currentWifiName;
-            networkType = 'WiFi';
-          } else {
-            networkType = '未知';
-          }
-        } catch (_) {}
-
-        try {
-          LocationPermission permission = await Geolocator.checkPermission();
-          if (permission == LocationPermission.denied ||
-              permission == LocationPermission.deniedForever) {
-            if (requestLocationPermission) {
-              permission = await Geolocator.requestPermission();
-            }
-          }
-          if (permission == LocationPermission.whileInUse ||
-              permission == LocationPermission.always) {
-            final position = await Geolocator.getCurrentPosition(
-              desiredAccuracy: LocationAccuracy.low,
-            );
-            latitude = position.latitude;
-            longitude = position.longitude;
-            try {
-              final placemarks = await geocoding.placemarkFromCoordinates(
-                latitude,
-                longitude,
-                localeIdentifier: 'zh_CN',
-              );
-              if (placemarks.isNotEmpty) {
-                final p = placemarks.first;
-                final parts = <String>[];
-                if (p.administrativeArea != null && p.administrativeArea!.isNotEmpty) {
-                  parts.add(p.administrativeArea!);
-                }
-                if (p.subAdministrativeArea != null &&
-                    p.subAdministrativeArea!.isNotEmpty) {
-                  parts.add(p.subAdministrativeArea!);
-                }
-                if (p.locality != null && p.locality!.isNotEmpty) {
-                  parts.add(p.locality!);
-                }
-                if (p.subLocality != null && p.subLocality!.isNotEmpty) {
-                  parts.add(p.subLocality!);
-                }
-                if (p.thoroughfare != null && p.thoroughfare!.isNotEmpty) {
-                  parts.add(p.thoroughfare!);
-                }
-                locationText = parts.isEmpty ? '' : parts.join(' ');
-              }
-            } catch (_) {}
-          }
-        } catch (_) {}
-
-        try {
-          final battery = Battery();
-          batteryLevel = await battery.batteryLevel;
-        } catch (_) {}
-      }
-
-      if (mounted) {
-        setState(() {
-          _networkType = networkType;
-          _wifiName = wifiName;
-          _latitude = latitude;
-          _longitude = longitude;
-          _locationText = locationText;
-          _batteryLevel = batteryLevel;
-        });
-      } else {
-        _networkType = networkType;
-        _wifiName = wifiName;
-        _latitude = latitude;
-        _longitude = longitude;
-        _locationText = locationText;
-        _batteryLevel = batteryLevel;
-      }
-
-      final info = {
-        'device_id': _deviceId,
-        'platform': _deviceType,
-        'os_version': _osVersion,
-        'app_version': _version,
-        'device_name': _buildDeviceName(_deviceType, _deviceId),
-        'last_seen': DateTime.now().toUtc().toIso8601String(),
-        'network_type': networkType,
-        'wifi_ssid': wifiName,
-        'location_lat': latitude,
-        'location_lng': longitude,
-        'location_text': locationText,
-        'battery_level': batteryLevel,
-      };
-      await ApiService.post(
-        '/api/user/$userId/memories',
-        body: {
-          'key': 'device_info:$_deviceId',
-          'value': json.encode(info),
-        },
-      );
-    } catch (_) {}
-  }
   
   void _showChangePasswordDialog() {
     final oldPasswordController = TextEditingController();
@@ -689,6 +500,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final deviceInfo = Provider.of<DeviceInfoProvider>(context);
     final primaryColor = Theme.of(context).primaryColor;
     
     return Scaffold(
@@ -738,21 +550,7 @@ class _SettingsPageState extends State<SettingsPage> {
               iconColor: Colors.cyan,
               onTap: _showRemoteDevicesSheet,
             ),
-            _SettingsTile(
-              icon: Icons.refresh_rounded,
-              title: '更新本机设备信息',
-              subtitle: '重新上报网络状态和定位信息',
-              iconColor: Colors.indigo,
-              onTap: () async {
-                await _syncDeviceInfoToServer(requestLocationPermission: true);
-                if (!mounted) {
-                  return;
-                }
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('设备信息已更新')),
-                );
-              },
-            ),
+
           ]),
           
           const SizedBox(height: 24),
@@ -827,7 +625,7 @@ class _SettingsPageState extends State<SettingsPage> {
               title: '软件版本',
               subtitle: '点击检查更新',
               iconColor: Colors.teal,
-              trailing: Text('v$_version', style: const TextStyle(color: Colors.grey)),
+              trailing: Text('v${deviceInfo.version}', style: const TextStyle(color: Colors.grey)),
               onTap: () {
                 UpdateService.checkUpdate(context, showNoUpdateToast: true);
               },

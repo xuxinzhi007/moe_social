@@ -1,3 +1,5 @@
+import 'package:provider/provider.dart';
+import 'providers/device_info_provider.dart';
 import 'package:flutter/material.dart';
 import 'autoglm/autoglm_page.dart'; // Import AutoGLM Page
 import 'autoglm/autoglm_service.dart'; // Import AutoGLM Service
@@ -95,214 +97,221 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
-      extendBodyBehindAppBar: true, // AppBar背景透明，内容延伸到顶部
-      appBar: AppBar(
-        title: const Text('个人中心', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined, color: Colors.white),
-            onPressed: () {
-              Navigator.pushNamed(context, '/settings').then((_) {
-                _loadUserInfo();
-              });
-            },
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadUserInfo,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
+      body: RefreshIndicator(
+        onRefresh: _loadUserInfo,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverAppBar(
+                expandedHeight: 460.0,
+                pinned: true,
+                stretch: true,
+              backgroundColor: const Color(0xFF7F7FD5),
+              elevation: 0,
+              title: const Text('个人中心', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              centerTitle: true,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.settings_outlined, color: Colors.white),
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/settings').then((_) {
+                      _loadUserInfo();
+                    });
+                  },
+                ),
+              ],
+              flexibleSpace: FlexibleSpaceBar(
+                background: _buildHeader(),
+                stretchModes: const [
+                  StretchMode.zoomBackground,
+                  StretchMode.blurBackground,
+                ],
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   children: [
-                    // 头部区域
-                    _buildHeader(),
-                    
                     const SizedBox(height: 20),
+                    if (_isVip)
+                      FadeInUp(
+                        delay: const Duration(milliseconds: 100),
+                        child: _buildVipCard(),
+                      ),
+                    const SizedBox(height: 16),
                     
-                    // 菜单区域
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        children: [
-                          if (_isVip)
-                            FadeInUp(
-                              delay: const Duration(milliseconds: 100),
-                              child: _buildVipCard(),
-                            ),
-                          const SizedBox(height: 16),
-                          
-                          FadeInUp(
-                            delay: const Duration(milliseconds: 200),
-                            child: _buildMenuCard([
-                              _MenuItem(
-                                icon: Icons.edit_outlined,
-                                title: '编辑资料',
-                                color: Colors.blueAccent,
-                                onTap: () async {
-                                  if (_user != null) {
-                                    final result = await Navigator.pushNamed(
-                                      context,
-                                      '/edit-profile',
-                                      arguments: _user,
-                                    );
-                                    if (result == true) {
-                                      _loadUserInfo();
+                    FadeInUp(
+                      delay: const Duration(milliseconds: 200),
+                      child: _buildMenuCard([
+                        _MenuItem(
+                          icon: Icons.edit_outlined,
+                          title: '编辑资料',
+                          color: Colors.blueAccent,
+                          onTap: () async {
+                            if (_user != null) {
+                              final result = await Navigator.pushNamed(
+                                context,
+                                '/edit-profile',
+                                arguments: _user,
+                              );
+                              if (result == true) {
+                                _loadUserInfo();
+                              }
+                            }
+                          },
+                        ),
+                        _MenuItem(
+                          icon: Icons.military_tech_outlined,
+                          title: '成就徽章',
+                          subtitle: '已解锁 ${_userBadges.where((b) => b.isUnlocked).length} 个',
+                          color: Colors.amber,
+                          onTap: _showAllBadges,
+                        ),
+                        _MenuItem(
+                          icon: Icons.favorite_border_rounded,
+                          title: '我的收藏',
+                          color: Colors.pinkAccent,
+                          onTap: () {},
+                        ),
+                        _MenuItem(
+                          icon: Icons.face_rounded,
+                          title: '编辑形象',
+                          color: Colors.blueAccent,
+                          onTap: () {
+                            Navigator.pushNamed(context, '/avatar-editor');
+                          },
+                        ),
+                        _MenuItem(
+                          icon: Icons.people_alt_outlined,
+                          title: '好友管理',
+                          color: Colors.teal,
+                          onTap: () {
+                            Navigator.pushNamed(context, '/friends');
+                          },
+                        ),
+                        _MenuItem(
+                          icon: Icons.history_rounded,
+                          title: '浏览历史',
+                          color: Colors.orangeAccent,
+                          onTap: () {},
+                        ),
+                      ]),
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    FadeInUp(
+                      delay: const Duration(milliseconds: 300),
+                      child: _buildMenuCard([
+                        _MenuItem(
+                          icon: Icons.account_balance_wallet_outlined, 
+                          title: '我的钱包',
+                          subtitle: '余额: ¥${_user?.balance.toStringAsFixed(2) ?? '0.00'}',
+                          color: Colors.green,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const WalletPage()),
+                            );
+                          },
+                        ),
+                        _MenuItem(
+                          icon: Icons.help_outline_rounded, 
+                          title: '帮助与反馈',
+                          color: Colors.purpleAccent,
+                          onTap: () {},
+                        ),
+                        _MenuItem(
+                          icon: Icons.smart_toy_outlined, 
+                          title: 'AutoGLM 助手 (实验性)',
+                          color: Colors.indigoAccent,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const AutoGLMPage()),
+                            );
+                          },
+                          trailing: Transform.scale(
+                            scale: 0.8,
+                            child: Switch(
+                              value: AutoGLMService.enableOverlay,
+                              activeColor: Colors.indigoAccent,
+                              onChanged: (value) async {
+                                setState(() {
+                                  AutoGLMService.enableOverlay = value;
+                                });
+                                
+                                // 调用 Service 控制悬浮窗
+                                if (value) {
+                                  // 检查权限
+                                  bool hasPerm = await AutoGLMService.checkOverlayPermission();
+                                  if (!hasPerm) {
+                                    await AutoGLMService.requestOverlayPermission();
+                                    // 简单等待一下
+                                    await Future.delayed(const Duration(seconds: 1));
+                                    hasPerm = await AutoGLMService.checkOverlayPermission();
+                                    if (!hasPerm) {
+                                      setState(() => AutoGLMService.enableOverlay = false);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('需要悬浮窗权限才能显示'))
+                                      );
+                                      return;
                                     }
                                   }
-                                },
-                              ),
-                              _MenuItem(
-                                icon: Icons.military_tech_outlined,
-                                title: '成就徽章',
-                                subtitle: '已解锁 ${_userBadges.where((b) => b.isUnlocked).length} 个',
-                                color: Colors.amber,
-                                onTap: _showAllBadges,
-                              ),
-                              _MenuItem(
-                                icon: Icons.favorite_border_rounded,
-                                title: '我的收藏',
-                                color: Colors.pinkAccent,
-                                onTap: () {},
-                              ),
-                              _MenuItem(
-                                icon: Icons.face_rounded,
-                                title: '编辑形象',
-                                color: Colors.blueAccent,
-                                onTap: () {
-                                  Navigator.pushNamed(context, '/avatar-editor');
-                                },
-                              ),
-                              _MenuItem(
-                                icon: Icons.people_alt_outlined,
-                                title: '好友管理',
-                                color: Colors.teal,
-                                onTap: () {
-                                  Navigator.pushNamed(context, '/friends');
-                                },
-                              ),
-                              _MenuItem(
-                                icon: Icons.history_rounded,
-                                title: '浏览历史',
-                                color: Colors.orangeAccent,
-                                onTap: () {},
-                              ),
-                            ]),
-                          ),
-                          
-                          const SizedBox(height: 16),
-                          
-                          FadeInUp(
-                            delay: const Duration(milliseconds: 300),
-                            child: _buildMenuCard([
-                              _MenuItem(
-                                icon: Icons.account_balance_wallet_outlined, 
-                                title: '我的钱包',
-                                subtitle: '余额: ¥${_user?.balance.toStringAsFixed(2) ?? '0.00'}',
-                                color: Colors.green,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => const WalletPage()),
+                                  await AutoGLMService.showOverlay();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('悬浮窗已开启'))
                                   );
-                                },
-                              ),
-                              _MenuItem(
-                                icon: Icons.help_outline_rounded, 
-                                title: '帮助与反馈',
-                                color: Colors.purpleAccent,
-                                onTap: () {},
-                              ),
-                              _MenuItem(
-                                icon: Icons.smart_toy_outlined, 
-                                title: 'AutoGLM 助手 (实验性)',
-                                color: Colors.indigoAccent,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => const AutoGLMPage()),
-                                  );
-                                },
-                                trailing: Transform.scale(
-                                  scale: 0.8,
-                                  child: Switch(
-                                    value: AutoGLMService.enableOverlay,
-                                    activeColor: Colors.indigoAccent,
-                                    onChanged: (value) async {
-                                      setState(() {
-                                        AutoGLMService.enableOverlay = value;
-                                      });
-                                      
-                                      // 调用 Service 控制悬浮窗
-                                      if (value) {
-                                        // 检查权限
-                                        bool hasPerm = await AutoGLMService.checkOverlayPermission();
-                                        if (!hasPerm) {
-                                          await AutoGLMService.requestOverlayPermission();
-                                          // 简单等待一下
-                                          await Future.delayed(const Duration(seconds: 1));
-                                          hasPerm = await AutoGLMService.checkOverlayPermission();
-                                          if (!hasPerm) {
-                                            setState(() => AutoGLMService.enableOverlay = false);
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('需要悬浮窗权限才能显示'))
-                                            );
-                                            return;
-                                          }
-                                        }
-                                        await AutoGLMService.showOverlay();
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('悬浮窗已开启'))
-                                        );
-                                      } else {
-                                        await AutoGLMService.removeOverlay();
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ]),
+                                } else {
+                                  await AutoGLMService.removeOverlay();
+                                }
+                              },
+                            ),
                           ),
-
-                          const SizedBox(height: 16),
-
-                          FadeInUp(
-                            delay: const Duration(milliseconds: 400),
-                            child: _buildMenuCard([
-                              _MenuItem(
-                                icon: Icons.logout_rounded, 
-                                title: '退出登录',
-                                color: Colors.redAccent,
-                                isDestructive: true,
-                                onTap: () => _showLogoutDialog(context),
-                              ),
-                            ]),
-                          ),
-                          
-                          const SizedBox(height: 40),
-                        ],
-                      ),
+                        ),
+                      ]),
                     ),
+
+                    const SizedBox(height: 16),
+
+                    FadeInUp(
+                      delay: const Duration(milliseconds: 400),
+                      child: _buildMenuCard([
+                        _MenuItem(
+                          icon: Icons.logout_rounded, 
+                          title: '退出登录',
+                          color: Colors.redAccent,
+                          isDestructive: true,
+                          onTap: () => _showLogoutDialog(context),
+                        ),
+                      ]),
+                    ),
+                    
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),
             ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildHeader() {
     return Stack(
       alignment: Alignment.center,
-      clipBehavior: Clip.none,
       children: [
-        // 背景图
+        // 背景图 - 充满整个 FlexibleSpaceBar
         Container(
-          height: 280,
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -334,136 +343,233 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         
         // 用户信息内容
-        Positioned(
-          bottom: 20,
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: NetworkAvatarImage(
-                  imageUrl: _user?.avatar,
-                  radius: 46,
-                  placeholderIcon: Icons.person,
-                  placeholderColor: Colors.grey[200]!,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                _user?.username ?? '未知用户',
-                style: const TextStyle(
-                  fontSize: 24, 
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _user?.email ?? '',
-                style: TextStyle(color: Colors.white.withOpacity(0.9)),
-              ),
-              const SizedBox(height: 16),
-              // 统计数据
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildStatItem('动态', '$_postCount', onTap: () {}),
-                    Container(height: 20, width: 1, color: Colors.white30, margin: const EdgeInsets.symmetric(horizontal: 16)),
-                    _buildStatItem('关注', '$_followingCount', onTap: () {
-                      if (_user != null) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => FollowingPage(userId: _user!.id),
-                          ),
-                        );
-                      }
-                    }),
-                    Container(height: 20, width: 1, color: Colors.white30, margin: const EdgeInsets.symmetric(horizontal: 16)),
-                    _buildStatItem('粉丝', '$_followerCount', onTap: () {
-                      if (_user != null) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => FollowersPage(userId: _user!.id),
-                          ),
-                        );
-                      }
-                    }),
-                  ],
-                ),
-              ),
-
-              // 徽章展示区域
-              if (_userBadges.where((badge) => badge.isUnlocked).isNotEmpty) ...[
-                const SizedBox(height: 16),
+        // 使用 SafeArea 确保内容不被顶部遮挡，并居中显示
+        SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 20), // 额外顶部间距
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.military_tech, color: Colors.white, size: 16),
-                          const SizedBox(width: 6),
-                          const Text(
-                            '成就徽章',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: _userBadges
-                              .where((badge) => badge.isUnlocked)
-                              .take(6) // 最多显示6个徽章
-                              .map((badge) => Container(
-                                    margin: const EdgeInsets.only(right: 8),
-                                    child: BadgeCard(
-                                      badge: badge,
-                                      size: 28,
-                                      showProgress: false,
-                                      onTap: () => _showBadgeDetails(badge),
-                                    ),
-                                  ))
-                              .toList(),
-                        ),
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
                       ),
                     ],
                   ),
+                  child: NetworkAvatarImage(
+                    imageUrl: _user?.avatar,
+                    radius: 46,
+                    placeholderIcon: Icons.person,
+                    placeholderColor: Colors.grey[200]!,
+                  ),
                 ),
+                const SizedBox(height: 12),
+                Text(
+                  _user?.username ?? '未知用户',
+                  style: const TextStyle(
+                    fontSize: 24, 
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _user?.email ?? '',
+                  style: TextStyle(color: Colors.white.withOpacity(0.9)),
+                ),
+                
+                const SizedBox(height: 16),
+                // 设备信息
+                Consumer<DeviceInfoProvider>(
+                  builder: (context, provider, child) {
+                    return _buildDeviceInfo(provider);
+                  },
+                ),
+
+                const SizedBox(height: 8),
+                // 统计数据
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildStatItem('动态', '$_postCount', onTap: () {}),
+                      Container(height: 20, width: 1, color: Colors.white30, margin: const EdgeInsets.symmetric(horizontal: 16)),
+                      _buildStatItem('关注', '$_followingCount', onTap: () {
+                        if (_user != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => FollowingPage(userId: _user!.id),
+                            ),
+                          );
+                        }
+                      }),
+                      Container(height: 20, width: 1, color: Colors.white30, margin: const EdgeInsets.symmetric(horizontal: 16)),
+                      _buildStatItem('粉丝', '$_followerCount', onTap: () {
+                        if (_user != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => FollowersPage(userId: _user!.id),
+                            ),
+                          );
+                        }
+                      }),
+                    ],
+                  ),
+                ),
+
+                // 徽章展示区域
+                if (_userBadges.where((badge) => badge.isUnlocked).isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 32), // 增加边距防止太宽
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.military_tech, color: Colors.white, size: 16),
+                            const SizedBox(width: 6),
+                            const Text(
+                              '成就徽章',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: _userBadges
+                                .where((badge) => badge.isUnlocked)
+                                .take(6) // 最多显示6个徽章
+                                .map((badge) => Container(
+                                      margin: const EdgeInsets.only(right: 8),
+                                      child: BadgeCard(
+                                        badge: badge,
+                                        size: 28,
+                                        showProgress: false,
+                                        onTap: () => _showBadgeDetails(badge),
+                                      ),
+                                    ))
+                                .toList(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ],
     );
+  }
+
+  Widget _buildDeviceInfo(DeviceInfoProvider provider) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                _getDeviceIcon(provider.deviceType),
+                color: Colors.white,
+                size: 16
+              ),
+              const SizedBox(width: 6),
+              Text(
+                provider.deviceType.isNotEmpty ? provider.deviceType : '未知设备',
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+              ),
+              const SizedBox(width: 16),
+              Icon(
+                provider.batteryLevel != null && provider.batteryLevel! < 20 
+                  ? Icons.battery_alert 
+                  : Icons.battery_std,
+                color: Colors.white,
+                size: 16
+              ),
+              const SizedBox(width: 6),
+              Text(
+                provider.batteryLevel != null ? '${provider.batteryLevel}%' : '未知',
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.wifi, color: Colors.white, size: 16),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  provider.wifiName.isNotEmpty ? provider.wifiName : '未连接',
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Icon(Icons.location_on_outlined, color: Colors.white, size: 16),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  provider.locationText.isNotEmpty 
+                      ? provider.locationText 
+                      : (provider.latitude != null ? '${provider.latitude!.toStringAsFixed(2)}, ${provider.longitude!.toStringAsFixed(2)}' : '未知'),
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getDeviceIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'android': return Icons.android;
+      case 'ios': return Icons.phone_iphone;
+      case 'macos': return Icons.desktop_mac;
+      case 'windows': return Icons.window;
+      case 'linux': return Icons.computer;
+      case 'web': return Icons.web;
+      default: return Icons.smartphone;
+    }
   }
 
   Widget _buildStatItem(String label, String value, {VoidCallback? onTap}) {

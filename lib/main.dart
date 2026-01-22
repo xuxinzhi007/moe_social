@@ -40,6 +40,7 @@ import 'widgets/topic_tag_selector.dart';
 import 'utils/error_handler.dart';
 import 'providers/theme_provider.dart';
 import 'providers/notification_provider.dart';
+import 'providers/device_info_provider.dart';
 import 'services/notification_service.dart';
 import 'services/remote_control_service.dart';
 import 'avatar_editor_page.dart';
@@ -65,6 +66,11 @@ void main() async {
     // 创建通知提供者
     final notificationProvider = NotificationProvider();
     notificationProvider.init(); // 启动轮询
+
+    // 创建设备信息提供者
+    final deviceInfoProvider = DeviceInfoProvider();
+    deviceInfoProvider.init(); // 启动设备信息同步
+
     await NotificationService.initLocalNotifications();
     await RemoteControlService.init();
     
@@ -160,6 +166,7 @@ void main() async {
         providers: [
           ChangeNotifierProvider.value(value: themeProvider),
           ChangeNotifierProvider.value(value: notificationProvider),
+          ChangeNotifierProvider.value(value: deviceInfoProvider),
         ],
         child: const MyApp(),
       ),
