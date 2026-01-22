@@ -34,7 +34,8 @@ class _RechargePageState extends State<RechargePage> {
 
   Future<void> _loadUserInfo() async {
     try {
-      final userInfo = await AuthService.getUserInfo();
+      final userId = await AuthService.getUserId();
+      final userInfo = await ApiService.getUserInfo(userId);
       setState(() {
         _currentBalance = userInfo.balance;
       });
@@ -61,15 +62,15 @@ class _RechargePageState extends State<RechargePage> {
 
     try {
       final userId = await AuthService.getUserId();
-      final result = await ApiService.recharge(
+      await ApiService.recharge(
         userId,
         amount,
         _descriptionController.text,
       );
 
-      // 更新当前余额
+      final userInfo = await ApiService.getUserInfo(userId);
       setState(() {
-        _currentBalance = (result['new_balance'] as num?)?.toDouble() ?? (_currentBalance + amount);
+        _currentBalance = userInfo.balance;
       });
 
       _showSuccess('充值成功！\n当前余额: ${_currentBalance.toStringAsFixed(2)} 元');
