@@ -117,7 +117,29 @@ class DeviceInfoProvider with ChangeNotifier {
     return buffer.toString();
   }
 
-  Future<void> syncDeviceInfoToServer({bool requestLocationPermission = false}) async {
+  /// 请求所有必要权限（WiFi + 定位）
+  Future<bool> requestAllPermissions() async {
+    if (kIsWeb) return true;
+    
+    try {
+      // 请求定位权限（Android 10+ 获取 WiFi SSID 也需要定位权限）
+      final locationStatus = await Permission.location.request();
+      debugPrint('📍 定位权限状态: $locationStatus');
+      
+      // 检查定位服务是否开启
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('⚠️ 定位服务未开启');
+      }
+      
+      return locationStatus.isGranted;
+    } catch (e) {
+      debugPrint('❌ 请求权限出错: $e');
+      return false;
+    }
+  }
+
+  Future<void> syncDeviceInfoToServer({bool requestLocationPermission = true}) async {
     if (!AuthService.isLoggedIn) return;
 
     try {
@@ -133,67 +155,114 @@ class DeviceInfoProvider with ChangeNotifier {
       try {
         final battery = Battery();
         batteryLevel = await battery.batteryLevel;
-      } catch (_) {}
+        debugPrint('🔋 电量: $batteryLevel%');
+      } catch (e) {
+        debugPrint('❌ 获取电量失败: $e');
+      }
 
       if (!kIsWeb) {
-        // Network Info
+        // 先请求权限
+        if (requestLocationPermission) {
+          await requestAllPermissions();
+        }
+        
+        // Network Info - 需要定位权限才能获取 WiFi SSID (Android 10+)
         try {
           final info = NetworkInfo();
           final currentWifiName = await info.getWifiName();
-          if (currentWifiName != null && currentWifiName.isNotEmpty) {
-            wifiName = currentWifiName;
+          final wifiBSSID = await info.getWifiBSSID();
+          final wifiIP = await info.getWifiIP();
+          
+          debugPrint('📶 WiFi 名称: $currentWifiName');
+          debugPrint('📶 WiFi BSSID: $wifiBSSID');
+          debugPrint('📶 WiFi IP: $wifiIP');
+          
+          if (currentWifiName != null && currentWifiName.isNotEmpty && currentWifiName != '<unknown ssid>') {
+            // 移除可能的引号
+            wifiName = currentWifiName.replaceAll('"', '');
             networkType = 'WiFi';
+          } else if (wifiIP != null && wifiIP.isNotEmpty) {
+            // 有 IP 但没有 SSID，可能是权限问题
+            networkType = 'WiFi';
+            wifiName = '已连接 (需要定位权限获取名称)';
           } else {
-            networkType = '未知';
+            networkType = '移动数据/未连接';
           }
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('❌ 获取网络信息失败: $e');
+          networkType = '获取失败';
+        }
 
         // Location Info
         try {
-          LocationPermission permission = await Geolocator.checkPermission();
-          if (permission == LocationPermission.denied ||
-              permission == LocationPermission.deniedForever) {
-            if (requestLocationPermission) {
-              permission = await Geolocator.requestPermission();
+          // 检查定位服务
+          bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+          if (!serviceEnabled) {
+            debugPrint('⚠️ 定位服务未开启');
+            locationText = '定位服务未开启';
+          } else {
+            LocationPermission permission = await Geolocator.checkPermission();
+            debugPrint('📍 当前定位权限: $permission');
+            
+            if (permission == LocationPermission.denied) {
+              if (requestLocationPermission) {
+                permission = await Geolocator.requestPermission();
+                debugPrint('📍 请求后定位权限: $permission');
+              }
+            }
+            
+            if (permission == LocationPermission.deniedForever) {
+              locationText = '定位权限被永久拒绝';
+            } else if (permission == LocationPermission.whileInUse ||
+                permission == LocationPermission.always) {
+              final position = await Geolocator.getCurrentPosition(
+                desiredAccuracy: LocationAccuracy.low,
+              ).timeout(const Duration(seconds: 10));
+              
+              latitude = position.latitude;
+              longitude = position.longitude;
+              debugPrint('📍 坐标: $latitude, $longitude');
+              
+              try {
+                final placemarks = await geocoding.placemarkFromCoordinates(
+                  latitude,
+                  longitude,
+                  localeIdentifier: 'zh_CN',
+                );
+                if (placemarks.isNotEmpty) {
+                  final p = placemarks.first;
+                  final parts = <String>[];
+                  if (p.administrativeArea != null && p.administrativeArea!.isNotEmpty) {
+                    parts.add(p.administrativeArea!);
+                  }
+                  if (p.subAdministrativeArea != null &&
+                      p.subAdministrativeArea!.isNotEmpty) {
+                    parts.add(p.subAdministrativeArea!);
+                  }
+                  if (p.locality != null && p.locality!.isNotEmpty) {
+                    parts.add(p.locality!);
+                  }
+                  if (p.subLocality != null && p.subLocality!.isNotEmpty) {
+                    parts.add(p.subLocality!);
+                  }
+                  if (p.thoroughfare != null && p.thoroughfare!.isNotEmpty) {
+                    parts.add(p.thoroughfare!);
+                  }
+                  locationText = parts.isEmpty ? '未知位置' : parts.join(' ');
+                  debugPrint('📍 地址: $locationText');
+                }
+              } catch (e) {
+                debugPrint('❌ 地理编码失败: $e');
+                locationText = '坐标: ${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}';
+              }
+            } else {
+              locationText = '需要定位权限';
             }
           }
-          if (permission == LocationPermission.whileInUse ||
-              permission == LocationPermission.always) {
-            final position = await Geolocator.getCurrentPosition(
-              desiredAccuracy: LocationAccuracy.low,
-            );
-            latitude = position.latitude;
-            longitude = position.longitude;
-            try {
-              final placemarks = await geocoding.placemarkFromCoordinates(
-                latitude,
-                longitude,
-                localeIdentifier: 'zh_CN',
-              );
-              if (placemarks.isNotEmpty) {
-                final p = placemarks.first;
-                final parts = <String>[];
-                if (p.administrativeArea != null && p.administrativeArea!.isNotEmpty) {
-                  parts.add(p.administrativeArea!);
-                }
-                if (p.subAdministrativeArea != null &&
-                    p.subAdministrativeArea!.isNotEmpty) {
-                  parts.add(p.subAdministrativeArea!);
-                }
-                if (p.locality != null && p.locality!.isNotEmpty) {
-                  parts.add(p.locality!);
-                }
-                if (p.subLocality != null && p.subLocality!.isNotEmpty) {
-                  parts.add(p.subLocality!);
-                }
-                if (p.thoroughfare != null && p.thoroughfare!.isNotEmpty) {
-                  parts.add(p.thoroughfare!);
-                }
-                locationText = parts.isEmpty ? '' : parts.join(' ');
-              }
-            } catch (_) {}
-          }
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('❌ 获取定位失败: $e');
+          locationText = '获取失败';
+        }
       }
 
       _networkType = networkType;
