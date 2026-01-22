@@ -121,36 +121,58 @@ App 内置了更新检测功能：
 - **检测原理**: 对比本地版本与 [GitHub API](https://api.github.com/repos/xuxinzhi007/moe_social/releases/latest) 返回的最新 Tag。
 - **操作方式**: 进入 `设置` -> `常规设置` -> 点击 `软件版本` 即可手动检查。
 
-### 4. 进阶：配置 Release 签名（解决覆盖安装问题）
-默认情况下，GitHub Actions 使用临时签名，导致新版本无法覆盖旧版本（需卸载重装）。
-若需实现平滑更新，请按以下步骤配置固定签名：
+### 4. 配置 Release 签名（实现覆盖安装）
 
-1.  **生成签名文件** (在终端执行)：
-    ```bash
-    keytool -genkey -v -keystore android/app/release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias key -storepass 123456 -keypass 123456 -dname "CN=MoeSocial, OU=MoeSocial, O=MoeSocial, L=Unknown, S=Unknown, C=CN"
-    ```
+默认情况下，每次构建使用临时签名，导致新版本无法覆盖旧版本（需卸载重装）。
+配置固定签名后即可实现平滑更新。
 
-2.  **配置 Gradle** (`android/app/build.gradle.kts`)：
-    ```kotlin
-    signingConfigs {
-        create("release") {
-            keyAlias = "key"
-            keyPassword = "123456"
-            storeFile = file("release.jks")
-            storePassword = "123456"
-        }
-    }
-    buildTypes {
-        release {
-            signingConfig = signingConfigs.getByName("release")
-        }
-    }
-    ```
+#### 🔐 当前项目签名信息
 
-3.  **允许提交签名文件**：
-    修改 `.gitignore`，找到 `**/*.jks`，在前面加 `#` 注释掉。
+| 项目 | 值 |
+|------|-----|
+| 签名文件 | `android/app/release.jks` |
+| 密钥别名 (Key Alias) | `key` |
+| 密钥库密码 (Store Password) | `moe123456` |
+| 密钥密码 (Key Password) | `moe123456` |
 
-4.  **提交代码**：将 `release.jks` 和修改后的 `build.gradle.kts` 推送到仓库。
+#### 📋 GitHub Secrets 配置
+
+在 GitHub 仓库 **Settings → Secrets and variables → Actions** 中添加以下 Secrets：
+
+| Secret Name | 说明 |
+|-------------|------|
+| `KEYSTORE_BASE64` | 签名文件的 Base64 编码 |
+| `KEYSTORE_PASSWORD` | `moe123456` |
+| `KEY_PASSWORD` | `moe123456` |
+
+**生成 KEYSTORE_BASE64 的方法**（PowerShell）：
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("android/app/release.jks"))
+```
+
+#### 🔄 在新电脑上配置
+
+1. 将 `release.jks` 文件复制到新电脑的 `android/app/` 目录
+2. 或者从 GitHub Secrets 解码还原：
+   ```bash
+   # Linux/macOS
+   echo "KEYSTORE_BASE64内容" | base64 -d > android/app/release.jks
+   ```
+
+#### 📝 重新生成签名（如果需要）
+
+```bash
+keytool -genkey -v -keystore android/app/release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias key -storepass moe123456 -keypass moe123456 -dname "CN=MoeSocial, OU=MoeSocial, O=MoeSocial, L=Shanghai, S=Shanghai, C=CN"
+```
+
+> ⚠️ **注意**：重新生成签名后，用户需要卸载旧版本才能安装新版本。建议保管好签名文件，不要轻易重新生成。
+
+### 5. App 内更新功能
+
+App 支持应用内下载更新，特性包括：
+- ✅ **国内加速下载**：自动使用 ghproxy、ddlc 等镜像加速
+- ✅ **下载进度显示**：实时显示下载速度和进度
+- ✅ **覆盖安装**：配置签名后无需卸载旧版本
 
 ## 项目结构
 
