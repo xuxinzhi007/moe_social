@@ -34,10 +34,16 @@ jobs:
       - name: Get Dependencies
         run: flutter pub get
 
-      # 5. 构建 APK (Release 模式)
-      # --no-tree-shake-icons 防止某些图标字体裁剪导致的构建问题
-      # --split-per-abi 可以减小体积，但为了通用性先打通用包
+      # 5. 解码签名密钥
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/release.jks
+
+      # 6. 构建 APK (Release 模式)
       - name: Build APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: flutter build apk --release --no-tree-shake-icons
 
       # 6. 发布到 GitHub Releases
