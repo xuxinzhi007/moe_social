@@ -12,6 +12,9 @@ class AutoGLMService {
   
   // 全局控制：是否允许显示悬浮窗（由外部开关控制）
   static bool enableOverlay = false;
+  
+  // 停止任务回调（由悬浮窗触发）
+  static Function? onStopRequested;
 
   /// 保存当前输入法（用于后续恢复）
   static Future<void> saveCurrentIme() async {
@@ -172,6 +175,35 @@ class AutoGLMService {
       print("Error removing overlay: $e");
     }
   }
+  
+  /// 更新悬浮窗状态显示
+  static Future<void> updateOverlayStatus(String status, bool isRunning) async {
+    try {
+      await platform.invokeMethod('updateOverlayStatus', {
+        'status': status,
+        'isRunning': isRunning,
+      });
+    } catch (e) {
+      print("Error updating overlay status: $e");
+    }
+  }
+  
+  /// 更新悬浮窗进度显示
+  static Future<void> updateOverlayProgress(int step, int total) async {
+    try {
+      await platform.invokeMethod('updateOverlayProgress', {
+        'step': step,
+        'total': total,
+      });
+    } catch (e) {
+      print("Error updating overlay progress: $e");
+    }
+  }
+  
+  /// 设置停止任务回调
+  static void setStopCallback(Function? callback) {
+    onStopRequested = callback;
+  }
 
   /// 检查悬浮窗权限
   static Future<bool> checkOverlayPermission() async {
@@ -193,10 +225,13 @@ class AutoGLMService {
     }
   }
 
-  /// 显示输入法选择器
-  static Future<void> showInputMethodPicker() async {
+  /// 显示输入法选择器（带模式）
+  ///
+  /// - mode = "to_adb": 等待用户切换到 ADB Keyboard（开始任务用）
+  /// - mode = "to_non_adb": 等待用户切换离开 ADB Keyboard（结束任务用）
+  static Future<void> showInputMethodPicker({String mode = "to_non_adb"}) async {
     try {
-      await platform.invokeMethod('showInputMethodPicker');
+      await platform.invokeMethod('showInputMethodPicker', {"mode": mode});
     } catch (e) {
       print("Error showing input method picker: $e");
     }

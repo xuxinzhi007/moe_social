@@ -14,6 +14,8 @@ import android.net.Uri
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.moe_social/autoglm"
+    private var lastImeIdLogged: String? = null
+    private var lastIsAdbLogged: Boolean? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -62,6 +64,54 @@ class MainActivity : FlutterActivity() {
                 return@setMethodCallHandler
             }
 
+            // 这些方法不需要 AccessibilityService，提前处理
+            if (call.method == "showInputMethodPicker") {
+                val mode = call.argument<String>("mode") ?: "to_non_adb"
+                println("📱 [IME] 通过 ImePickerActivity 弹出输入法选择器, mode=$mode")
+                try {
+                    val intent = Intent(this, ImePickerActivity::class.java)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    intent.putExtra("mode", mode)
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    // 兜底：如果 Activity 拉起失败，再尝试直接弹
+                    try {
+                        val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                        imm.showInputMethodPicker()
+                    } catch (_: Exception) {}
+                }
+                result.success(true)
+                return@setMethodCallHandler
+            }
+            
+            if (call.method == "isAdbKeyboardEnabled") {
+                val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                val enabledInputMethods = imm.enabledInputMethodList
+                val isEnabled = enabledInputMethods.any { 
+                    it.id.contains("adbkeyboard", ignoreCase = true) ||
+                    it.id.contains("AdbIME", ignoreCase = true)
+                }
+                println("📱 [IME] ADB Keyboard 已启用: $isEnabled")
+                result.success(isEnabled)
+                return@setMethodCallHandler
+            }
+            
+            if (call.method == "isAdbKeyboardSelected") {
+                val currentId = Settings.Secure.getString(contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
+                val isSelected = currentId != null && (
+                    currentId.contains("adbkeyboard", ignoreCase = true) ||
+                    currentId.contains("AdbIME", ignoreCase = true)
+                )
+                // 只在变化时输出，避免频繁轮询导致卡顿/刷屏
+                if (currentId != lastImeIdLogged || isSelected != lastIsAdbLogged) {
+                    println("📱 [IME] 当前输入法: $currentId, 是ADB: $isSelected")
+                    lastImeIdLogged = currentId
+                    lastIsAdbLogged = isSelected
+                }
+                result.success(isSelected)
+                return@setMethodCallHandler
+            }
+
             val service = AutoGLMAccessibilityService.instance
 
             if (service == null) {
@@ -85,24 +135,14 @@ class MainActivity : FlutterActivity() {
                 }
                 "launchApp" -> {
                     val appName = call.argument<String>("appName") ?: ""
-                    val packageName = AppPackages.getPackageName(appName)
                     
-                    if (packageName == null) {
+                    // 使用 AccessibilityService 的增强版 launchApp（支持模糊匹配）
+                    val success = service.launchApp(appName)
+                    
+                    if (success) {
+                        result.success(true)
+                    } else {
                         result.error("APP_NOT_FOUND", "未找到应用: $appName", null)
-                        return@setMethodCallHandler
-                    }
-                    
-                    try {
-                        val intent = packageManager.getLaunchIntentForPackage(packageName)
-                        if (intent != null) {
-                            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                            startActivity(intent)
-                            result.success(true)
-                        } else {
-                            result.error("NO_LAUNCHER", "应用无启动Activity: $appName", null)
-                        }
-                    } catch (e: Exception) {
-                        result.error("LAUNCH_FAILED", "启动失败: ${e.message}", null)
                     }
                 }
                 "performType" -> {
@@ -164,6 +204,18 @@ class MainActivity : FlutterActivity() {
                     service.updateOverlayLog(log)
                     result.success(true)
                 }
+                "updateOverlayStatus" -> {
+                    val status = call.argument<String>("status") ?: ""
+                    val isRunning = call.argument<Boolean>("isRunning") ?: false
+                    service.updateStatus(status, isRunning)
+                    result.success(true)
+                }
+                "updateOverlayProgress" -> {
+                    val step = call.argument<Int>("step") ?: 0
+                    val total = call.argument<Int>("total") ?: 20
+                    service.updateProgress(step, total)
+                    result.success(true)
+                }
                 "removeOverlay" -> {
                     service.removeOverlay()
                     result.success(true)
@@ -181,25 +233,9 @@ class MainActivity : FlutterActivity() {
                         result.error("VERSION_TOO_LOW", "截图功能需要 Android 11及以上", null)
                     }
                 }
-                "showInputMethodPicker" -> {
-                    val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
-                    imm.showInputMethodPicker()
-                    result.success(true)
-                }
                 "saveCurrentIme" -> {
                     service.saveCurrentIme()
                     result.success(true)
-                }
-                "isAdbKeyboardEnabled" -> {
-                    val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
-                    val enabledInputMethods = imm.enabledInputMethodList
-                    val isEnabled = enabledInputMethods.any { it.id.contains("com.android.adbkeyboard/.AdbIME") }
-                    result.success(isEnabled)
-                }
-                "isAdbKeyboardSelected" -> {
-                    val currentId = Settings.Secure.getString(contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
-                    val isSelected = currentId != null && currentId.contains("com.android.adbkeyboard/.AdbIME")
-                    result.success(isSelected)
                 }
                 else -> result.notImplemented()
             }

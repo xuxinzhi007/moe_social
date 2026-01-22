@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:url_launcher/url_launcher.dart';
 import 'autoglm_service.dart';
 
 class AutoGLMPage extends StatefulWidget {
@@ -75,27 +74,17 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
 9. **重要**：当你感到迷失、不确定当前位置、或连续失败时，**不要犹豫，立即使用 Home 返回桌面重新开始**。
 10. **本设备上已安装的应用（只能启动这些应用）**：$appList
 11. 坐标系统使用相对坐标：从(0,0)到(999,999)，其中(0,0)是屏幕左上角，(999,999)是屏幕右下角。
+
+**【极其重要 - 必须忽略系统UI元素】**：
+12. 屏幕顶部可能会显示一个**深灰色的系统状态条**，上面有齿轮图标⚙、"步骤 X/Y"或"系统自动化服务"等文字。**这是系统服务组件，不是广告弹窗！绝对不要点击它、不要尝试关闭它、不要与它交互。**完全忽略它的存在，直接操作它下方的实际应用界面。
+13. 如果看到带有"运行中"、"空闲"、"停止任务"等文字的深色面板，这也是**系统服务面板**，不是广告。请忽略它，专注于执行用户的任务。
+14. 任何深灰色、带有⚙图标、显示"AutoGLM"或"系统自动化"字样的浮层都是**系统工具**，不需要处理。
 """;
   }
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _checkStatus();
-
-    // 监听原生日志
-    AutoGLMService.onLogReceived.listen((log) {
-      if (!mounted) return;
-      // 添加到日志列表 (加上前缀以区分)
-      _addLog("[Native] $log");
-    }, onError: (e) {
-      print("Log stream error: $e");
-    });
-  }
-
-  @override
   void dispose() {
+    AutoGLMService.setStopCallback(null); // 清除回调
     WidgetsBinding.instance.removeObserver(this);
     _controller.dispose();
     _scrollController.dispose();
@@ -150,6 +139,34 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
       _isStopping = true;
     });
     _addLog("🛑 正在停止任务...");
+    
+    // 更新悬浮窗状态
+    if (AutoGLMService.enableOverlay) {
+      AutoGLMService.updateOverlayStatus("正在停止...", false);
+    }
+  }
+  
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkStatus();
+
+    // 监听原生日志
+    AutoGLMService.onLogReceived.listen((log) {
+      if (!mounted) return;
+      // 添加到日志列表 (加上前缀以区分)
+      _addLog("[Native] $log");
+    }, onError: (e) {
+      print("Log stream error: $e");
+    });
+    
+    // 设置悬浮窗停止回调
+    AutoGLMService.setStopCallback(() {
+      if (_isProcessing && !_isStopping) {
+        _stopTask();
+      }
+    });
   }
 
   // 核心逻辑：执行任务
@@ -215,117 +232,71 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
 
     _addLog("🤖 开始任务: $task");
 
-    // --- 输入法检测与引导 ---
-    // 1. 检测是否安装/启用 ADB Keyboard
+    // --- 输入法检测（手动切换模式）---
+    bool useAdbKeyboard = false;
     bool isAdbEnabled = await AutoGLMService.isAdbKeyboardEnabled();
-    // 如果未启用，再检查是否安装（通过包名）
-    if (!isAdbEnabled) {
-      Map<String, String> apps = await AutoGLMService.getInstalledApps();
-      bool isInstalled = apps.values.any((pkg) => pkg.contains("adbkeyboard"));
-      
-      if (!isInstalled) {
-        _addLog("⚠️ 未检测到 ADB Keyboard");
-        if (mounted) {
-          bool? download = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text("需要安装专用输入法"),
-              content: const Text("AutoGLM 需要 ADB Keyboard 才能实现自动输入。\n点击下载后，请安装并按照提示启用。"),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("取消")),
-                TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("去下载")),
-              ],
-            ),
-          );
-          if (download == true) {
-            final Uri url = Uri.parse("https://github.com/senzhk/ADBKeyBoard/raw/master/ADBKeyboard.apk");
-            _addLog("🔗 正在打开下载链接...");
-            if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-               _addLog("❌ 无法打开下载链接");
-            }
-          }
-        }
-        setState(() {
-          _isProcessing = false;
-        });
-        return; 
-      } else {
-        _addLog("⚠️ 请在系统设置中启用 ADB Keyboard");
-        if (mounted) {
-          await showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text("请启用专用输入法"),
-              content: const Text("已检测到 ADB Keyboard，但未在系统设置中启用。\n请在“系统设置 -> 语言和输入法”中勾选它。"),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("好的")),
-              ],
-            ),
-          );
-        }
-        setState(() {
-          _isProcessing = false;
-        });
-        return;
-      }
-    }
-
-    // 2. 检测是否选中 ADB Keyboard
     bool isAdbSelected = await AutoGLMService.isAdbKeyboardSelected();
-    if (!isAdbSelected) {
-       _addLog("⚠️ 需要切换输入法");
-       if (mounted) {
-         bool? switchIme = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text("切换输入法"),
-              content: const Text("为了实现自动输入，请将输入法切换为 'ADB Keyboard'。\n任务结束后会自动切回（或您可以手动切回）。"),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("取消")),
-                TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("去切换")),
-              ],
-            ),
-         );
-         
-         if (switchIme == true) {
-           await AutoGLMService.showInputMethodPicker();
-           // 等待用户切换
-           _addLog("⏳ 等待输入法切换...");
-           int waitCount = 0;
-           while (waitCount < 15) {
-             await Future.delayed(const Duration(seconds: 1));
-             if (await AutoGLMService.isAdbKeyboardSelected()) {
-               _addLog("✅ 输入法已切换");
-               isAdbSelected = true;
-               break;
-             }
-             waitCount++;
-           }
-         }
-       }
-       
-       if (!isAdbSelected) {
-         _addLog("❌ 输入法切换失败或取消，任务无法继续");
-         setState(() {
-           _isProcessing = false;
-         });
-         return;
-       }
+    
+    // 注意：saveCurrentIme 已经在前面调用过了，这里不再重复调用
+    
+    if (isAdbSelected) {
+      _addLog("✅ ADB Keyboard 已就绪");
+      useAdbKeyboard = true;
+    } else if (isAdbEnabled) {
+      // ADB Keyboard 已安装但未选中，弹出选择器让用户手动切换
+      _addLog("⚠️ ADB Keyboard 未选中");
+      _addLog("🔄 请在弹出的选择器中选择 ADB Keyboard");
+      
+      // 弹出输入法选择器：开始任务要切到 ADB Keyboard
+      await AutoGLMService.showInputMethodPicker(mode: "to_adb");
+      
+      // 等待用户手动切换（最多等待 20 秒）
+      _addLog("⏳ 等待切换输入法...");
+      for (int i = 0; i < 20; i++) {
+        await Future.delayed(const Duration(seconds: 1));
+        if (await AutoGLMService.isAdbKeyboardSelected()) {
+          _addLog("✅ 已切换到 ADB Keyboard");
+          useAdbKeyboard = true;
+          break;
+        }
+        if (i == 10) {
+          _addLog("⏳ 继续等待...(还剩 ${20 - i} 秒)");
+        }
+      }
+      
+      if (!useAdbKeyboard) {
+        _addLog("ℹ️ 未切换到 ADB Keyboard");
+        _addLog("💡 将使用备用输入方式（直接设置文本/剪贴板粘贴）");
+      }
+    } else {
+      _addLog("ℹ️ 未安装 ADB Keyboard");
+      _addLog("💡 使用备用输入方式");
+      _addLog("📥 建议安装 ADB Keyboard 获得更好体验");
     }
 
-    // 开启输入模式 (切换到 ADB Keyboard)
-    await AutoGLMService.enableInputMode();
+    // 更新悬浮窗状态为运行中
+    if (AutoGLMService.enableOverlay) {
+      AutoGLMService.updateOverlayStatus("任务执行中", true);
+    }
 
     try {
       bool finished = false;
       while (!finished && _stepCount < _maxSteps) {
         if (_isStopping) {
           _addLog("🛑 任务已手动停止");
+          if (AutoGLMService.enableOverlay) {
+            AutoGLMService.updateOverlayStatus("已停止", false);
+          }
           break;
         }
 
         _stepCount++;
         _addLog("🔄 步骤 $_stepCount 执行中...");
+        
+        // 更新悬浮窗进度
+        if (AutoGLMService.enableOverlay) {
+          AutoGLMService.updateOverlayProgress(_stepCount, _maxSteps);
+        }
 
         // 1. 获取截图
         // _addLog("📸 正在截图...");
@@ -402,22 +373,61 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
            actionStr = parts[1].replaceAll("</answer>", "").trim();
         } else {
            // 增强的解析逻辑：尝试从混杂文本中提取 do(...) 或 finish(...)
-           // 正则匹配 do(action=...) 或 finish(message=...)
-           // 优先匹配 finish，因为它是终止信号
-           final finishMatch = RegExp(r'finish\(message=".*?"\)').firstMatch(content);
-           if (finishMatch != null) {
-             actionStr = finishMatch.group(0)!;
-           } else {
-             // 匹配 do(...)，注意可能跨行或包含嵌套引号，这里简化匹配
-             // 假设指令在一行内或者格式比较标准
-             final doMatch = RegExp(r'do\(action=".*?".*?\)').firstMatch(content);
-             if (doMatch != null) {
-               actionStr = doMatch.group(0)!;
-             } else {
-               // 最后的兜底：如果整个内容看起来像指令
-               if (content.trim().startsWith("do") || content.trim().startsWith("finish")) {
-                 actionStr = content.trim();
+           
+           // 1. 优先匹配 finish（支持多种格式）
+           final finishPatterns = [
+             RegExp(r'finish\s*\(\s*message\s*=\s*"([^"]*)"\s*\)'),
+             RegExp(r"finish\s*\(\s*message\s*=\s*'([^']*)'\s*\)"),
+             RegExp(r'finish\s*\([^)]*\)'),
+           ];
+           
+           for (var pattern in finishPatterns) {
+             final match = pattern.firstMatch(content);
+             if (match != null) {
+               actionStr = match.group(0)!;
+               break;
+             }
+           }
+           
+           // 2. 匹配 do(...)
+           if (actionStr.isEmpty) {
+             final doPatterns = [
+               RegExp(r'do\s*\(\s*action\s*=\s*"([^"]*)"[^)]*\)'),
+               RegExp(r'do\s*\([^)]+\)'),
+             ];
+             
+             for (var pattern in doPatterns) {
+               final match = pattern.firstMatch(content);
+               if (match != null) {
+                 actionStr = match.group(0)!;
+                 break;
                }
+             }
+           }
+           
+           // 3. 兜底：检查是否包含关键动作词
+           if (actionStr.isEmpty) {
+             // 检查是否是任务完成的信号
+             final lowerContent = content.toLowerCase();
+             if (lowerContent.contains("finish") || 
+                 content.contains("完成") || 
+                 content.contains("已完成") ||
+                 content.contains("任务完成") ||
+                 lowerContent.contains("task completed") ||
+                 lowerContent.contains("done")) {
+               // AI 可能用自然语言表达完成
+               actionStr = 'finish(message="任务完成")';
+               _addLog("💡 检测到任务完成信号，自动生成 finish 指令");
+             } else if (content.trim().startsWith("do") || content.trim().startsWith("finish")) {
+               actionStr = content.trim();
+             }
+           }
+           
+           // 4. Wait 命令特殊处理
+           if (actionStr.isEmpty && content.contains('Wait') && content.contains('second')) {
+             final waitMatch = RegExp(r'Wait.*?(\d+)\s*second').firstMatch(content);
+             if (waitMatch != null) {
+               actionStr = 'do(action="Wait", duration="${waitMatch.group(1)} seconds")';
              }
            }
            
@@ -425,16 +435,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
            if (actionStr.isNotEmpty) {
              think = content.replaceFirst(actionStr, "").trim();
            } else {
-             // 如果没提取到，可能只是一段对话
              think = content;
-             // 尝试看看有没有可能是 Wait 命令被拆分了
-             if (content.contains('Wait') && content.contains('seconds')) {
-                // 简单的启发式修复
-                final waitMatch = RegExp(r'Wait.*?(\d+)\s*seconds').firstMatch(content);
-                if (waitMatch != null) {
-                   actionStr = 'do(action="Wait", duration="${waitMatch.group(1)} seconds")';
-                }
-             }
            }
         }
         
@@ -443,10 +444,9 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
         }
         
         if (actionStr.isEmpty) {
-           _addLog("❌ 无法解析动作: $content");
-           // 不直接 break，而是再给一次机会或者提示用户
-           // break; 
-           // 暂时跳过本次执行
+           _addLog("❌ 无法解析动作");
+           _addLog("📄 原始内容: ${content.length > 200 ? content.substring(0, 200) + '...' : content}");
+           // 跳过本次，继续下一步
            continue; 
         }
 
@@ -457,18 +457,31 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
         if (shouldFinish) {
           finished = true;
           _addLog("✅ 任务完成");
+          if (AutoGLMService.enableOverlay) {
+            AutoGLMService.updateOverlayStatus("✓ 完成", false);
+          }
         }
       }
       
       if (_stepCount >= _maxSteps) {
         _addLog("⚠️ 达到最大步骤数，停止执行");
+        if (AutoGLMService.enableOverlay) {
+          AutoGLMService.updateOverlayStatus("达到上限", false);
+        }
       }
 
     } catch (e) {
       _addLog("❌ 发生异常: $e");
+      if (AutoGLMService.enableOverlay) {
+        AutoGLMService.updateOverlayStatus("错误", false);
+      }
     } finally {
-      // 关闭输入模式 (恢复原输入法)
-      await AutoGLMService.disableInputMode();
+      // ===== 任务结束处理（无论何种原因结束都会执行）=====
+      _addLog("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      _addLog("⌨️ 【任务结束】正在检查输入法...");
+      
+      // 强制恢复输入法 - 和开始时一样的逻辑
+      await _restoreInputMethod();
 
       if (mounted) {
         setState(() {
@@ -476,9 +489,44 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
           _isStopping = false;
         });
       }
-      // 任务结束，稍后隐藏悬浮窗 (可选，这里先不隐藏以便用户查看最终状态)
-      // await Future.delayed(Duration(seconds: 5));
-      // AutoGLMService.removeOverlay();
+      
+      // 更新悬浮窗最终状态
+      if (AutoGLMService.enableOverlay) {
+        await Future.delayed(const Duration(seconds: 3));
+        if (mounted && !_isProcessing) {
+          AutoGLMService.updateOverlayStatus("就绪", false);
+        }
+      }
+    }
+  }
+  
+  /// 恢复输入法（任务结束时调用）
+  Future<void> _restoreInputMethod() async {
+    try {
+      // 检测当前是否是 ADB Keyboard
+      bool isAdb = await AutoGLMService.isAdbKeyboardSelected();
+      _addLog("📱 当前是否ADB输入法: $isAdb");
+      
+      if (isAdb) {
+        // 是 ADB Keyboard，弹出选择器让用户切换
+        _addLog("🔄 请切换回您的常用输入法！");
+        // 结束任务要从 ADB Keyboard 切回去
+        await AutoGLMService.showInputMethodPicker(mode: "to_non_adb");
+        _addLog("✅ 输入法选择器已弹出");
+      } else {
+        _addLog("✅ 输入法正常（非ADB输入法）");
+      }
+    } catch (e) {
+      _addLog("⚠️ 输入法检测出错: $e");
+      // 出错时也弹出选择器，让用户自己处理
+      _addLog("🔄 尝试弹出选择器...");
+      try {
+        // 结束任务要从 ADB Keyboard 切回去
+        await AutoGLMService.showInputMethodPicker(mode: "to_non_adb");
+        _addLog("✅ 选择器已弹出");
+      } catch (e2) {
+        _addLog("❌ 弹出选择器失败: $e2");
+      }
     }
   }
 

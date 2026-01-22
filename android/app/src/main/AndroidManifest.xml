@@ -19,6 +19,8 @@
     <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
     <!-- 悬浮窗权限 -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <!-- 输入法切换权限（需要通过 ADB 授权：adb shell pm grant com.example.moe_social android.permission.WRITE_SECURE_SETTINGS） -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"/>
     <!-- App 内更新所需权限 -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
@@ -29,6 +31,14 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
+        <!-- 透明 Activity：用于在任意前台/后台场景弹出输入法选择器，并等待用户切换完成 -->
+        <activity
+            android:name=".ImePickerActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:taskAffinity="com.example.moe_social.imepicker"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -100,6 +110,7 @@
         <package android:name="com.tencent.mm"/> <!-- 微信 -->
         <package android:name="com.tencent.mobileqq"/> <!-- QQ -->
         <package android:name="com.ss.android.ugc.aweme"/> <!-- 抖音 -->
+        <package android:name="com.ss.android.ugc.aweme.lite"/> <!-- 抖音极速版 -->
         <package android:name="com.xingin.xhs"/> <!-- 小红书 -->
         <package android:name="com.taobao.taobao"/> <!-- 淘宝 -->
         <package android:name="com.jingdong.app.mall"/> <!-- 京东 -->
@@ -110,5 +121,17 @@
         <package android:name="com.sina.weibo"/> <!-- 微博 -->
         <package android:name="com.android.settings"/> <!-- 设置 -->
         <package android:name="com.android.chrome"/> <!-- Chrome -->
+        <package android:name="com.smile.gifmaker"/> <!-- 快手 -->
+        <package android:name="com.kuaishou.nebula"/> <!-- 快手极速版 -->
+        <package android:name="com.eg.android.AlipayGphone"/> <!-- 支付宝 -->
+        <package android:name="com.xunmeng.pinduoduo"/> <!-- 拼多多 -->
+        <package android:name="com.taobao.idlefish"/> <!-- 闲鱼 -->
+        <package android:name="com.netease.cloudmusic"/> <!-- 网易云音乐 -->
+        <package android:name="com.tencent.qqmusic"/> <!-- QQ音乐 -->
+        <package android:name="com.kugou.android"/> <!-- 酷狗音乐 -->
+        <package android:name="com.autonavi.minimap"/> <!-- 高德地图 -->
+        <package android:name="com.baidu.BaiduMap"/> <!-- 百度地图 -->
+        <package android:name="com.ss.android.article.news"/> <!-- 今日头条 -->
+        <package android:name="com.android.adbkeyboard"/> <!-- ADB Keyboard -->
     </queries>
 </manifest>
