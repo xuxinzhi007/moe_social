@@ -9,6 +9,7 @@ import android.widget.Toast
 
 import android.content.Intent
 import android.provider.Settings
+import android.content.Context
 
 import android.net.Uri
 
@@ -72,6 +73,14 @@ class MainActivity : FlutterActivity() {
                     val intent = Intent(this, ImePickerActivity::class.java)
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                     intent.putExtra("mode", mode)
+                    // 结束任务：把“原输入法”作为目标，避免切到任意非ADB后就关闭
+                    if (mode == "to_non_adb") {
+                        val prefs = getSharedPreferences("autoglm_prefs", Context.MODE_PRIVATE)
+                        val targetIme = prefs.getString("original_ime", null)
+                        if (targetIme != null) {
+                            intent.putExtra("targetIme", targetIme)
+                        }
+                    }
                     startActivity(intent)
                 } catch (e: Exception) {
                     // 兜底：如果 Activity 拉起失败，再尝试直接弹
