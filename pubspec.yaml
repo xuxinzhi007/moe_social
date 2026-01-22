@@ -47,6 +47,11 @@ dependencies:
   flutter_tts: ^3.8.5
   web_socket_channel: ^2.4.0
   flutter_local_notifications: ^17.2.1
+  path_provider: ^2.1.2
+  network_info_plus: ^6.1.4
+  geolocator: ^10.0.0
+  geocoding: ^2.1.1
+  battery_plus: ^6.2.0
 
 dev_dependencies:
   flutter_test:

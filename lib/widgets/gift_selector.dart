@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import '../models/gift.dart';
-import '../models/user.dart';
 import '../auth_service.dart';
 import '../services/api_service.dart';
 import '../utils/error_handler.dart';
@@ -27,7 +27,6 @@ class GiftSelector extends StatefulWidget {
 class _GiftSelectorState extends State<GiftSelector>
     with TickerProviderStateMixin {
   late TabController _tabController;
-  List<Gift> _gifts = [];
   bool _isLoading = false;
   double _userBalance = 0.0;
   Gift? _selectedGift;
@@ -36,7 +35,6 @@ class _GiftSelectorState extends State<GiftSelector>
   void initState() {
     super.initState();
     _tabController = TabController(length: GiftCategory.values.length + 1, vsync: this);
-    _loadGifts();
     _loadUserBalance();
   }
 
@@ -44,12 +42,6 @@ class _GiftSelectorState extends State<GiftSelector>
   void dispose() {
     _tabController.dispose();
     super.dispose();
-  }
-
-  void _loadGifts() {
-    setState(() {
-      _gifts = Gift.defaultGifts;
-    });
   }
 
   Future<void> _loadUserBalance() async {
@@ -62,7 +54,7 @@ class _GiftSelectorState extends State<GiftSelector>
         _userBalance = user.balance;
       });
     } catch (e) {
-      print('加载用户余额失败: $e');
+      debugPrint('加载用户余额失败: $e');
     }
   }
 
@@ -257,7 +249,7 @@ class _GiftSelectorState extends State<GiftSelector>
             duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
               color: isSelected
-                  ? gift.color.withOpacity(0.2)
+                  ? gift.color.withValues(alpha: 0.2)
                   : (canAfford ? Colors.white : Colors.grey[100]),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
@@ -269,14 +261,14 @@ class _GiftSelectorState extends State<GiftSelector>
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: gift.color.withOpacity(0.3),
+                        color: gift.color.withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
                     ]
                   : [
                       BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Colors.grey.withValues(alpha: 0.1),
                         blurRadius: 4,
                         offset: const Offset(0, 1),
                       ),
@@ -325,7 +317,7 @@ class _GiftSelectorState extends State<GiftSelector>
                         ),
                         decoration: BoxDecoration(
                           color: canAfford
-                              ? gift.color.withOpacity(0.1)
+                              ? gift.color.withValues(alpha: 0.1)
                               : Colors.grey[200],
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -347,7 +339,7 @@ class _GiftSelectorState extends State<GiftSelector>
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Center(
@@ -365,7 +357,7 @@ class _GiftSelectorState extends State<GiftSelector>
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.3),
+                        color: Colors.grey.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Center(

@@ -148,7 +148,7 @@ class _GiftSendAnimationState extends State<GiftSendAnimation>
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: widget.gift.color.withOpacity(0.2),
+                        color: widget.gift.color.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: widget.gift.color,
@@ -156,7 +156,7 @@ class _GiftSendAnimationState extends State<GiftSendAnimation>
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: widget.gift.color.withOpacity(0.5),
+                            color: widget.gift.color.withValues(alpha: 0.5),
                             blurRadius: 20,
                             spreadRadius: 5,
                           ),
@@ -255,7 +255,7 @@ class ParticlePainter extends CustomPainter {
         particle.update(0.016); // 假设60fps
 
         final paint = Paint()
-          ..color = particle.color.withOpacity(particle.alpha * 0.8)
+          ..color = particle.color.withValues(alpha: particle.alpha * 0.8)
           ..style = PaintingStyle.fill;
 
         canvas.drawCircle(
@@ -389,7 +389,7 @@ class GiftRainPainter extends CustomPainter {
 
       // 绘制礼物背景圆圈
       final backgroundPaint = Paint()
-        ..color = fallingGift.gift.color.withOpacity(0.3)
+        ..color = fallingGift.gift.color.withValues(alpha: 0.3)
         ..style = PaintingStyle.fill;
 
       canvas.drawCircle(Offset.zero, 20, backgroundPaint);
@@ -512,7 +512,7 @@ class _BadgeUnlockAnimationState extends State<BadgeUnlockAnimation>
                   width: 120,
                   height: 120,
                   decoration: BoxDecoration(
-                    color: widget.badgeColor.withOpacity(0.2),
+                    color: widget.badgeColor.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: widget.badgeColor,
@@ -520,7 +520,7 @@ class _BadgeUnlockAnimationState extends State<BadgeUnlockAnimation>
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: widget.badgeColor.withOpacity(_glowAnimation.value * 0.6),
+                        color: widget.badgeColor.withValues(alpha: _glowAnimation.value * 0.6),
                         blurRadius: 30 * _glowAnimation.value,
                         spreadRadius: 10 * _glowAnimation.value,
                       ),
