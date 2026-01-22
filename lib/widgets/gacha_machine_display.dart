@@ -44,6 +44,7 @@ class _GachaMachineDisplayState extends State<GachaMachineDisplay> with SingleTi
   late Ticker _ticker;
   final Random _random = Random();
   double _lastTime = 0;
+  double _gearAngle = 0;
 
   @override
   void initState() {
@@ -67,6 +68,11 @@ class _GachaMachineDisplayState extends State<GachaMachineDisplay> with SingleTi
     // 简单的 dt 计算，理想情况下是 16.6ms
     // 这里我们简化处理，依然按固定步长更新，但通过 Ticker 驱动
     _updatePhysics();
+    if (widget.isPlaying) {
+      _gearAngle += 0.08;
+    } else {
+      _gearAngle *= 0.96;
+    }
     
     // 触发重绘
     setState(() {});
@@ -144,7 +150,11 @@ class _GachaMachineDisplayState extends State<GachaMachineDisplay> with SingleTi
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: GachaBallsPainter(balls: widget.balls),
+      painter: GachaBallsPainter(
+        balls: widget.balls,
+        gearAngle: _gearAngle,
+        isPlaying: widget.isPlaying,
+      ),
       child: Container(),
     );
   }
@@ -152,11 +162,65 @@ class _GachaMachineDisplayState extends State<GachaMachineDisplay> with SingleTi
 
 class GachaBallsPainter extends CustomPainter {
   final List<GachaBall> balls;
+  final double gearAngle;
+  final bool isPlaying;
 
-  GachaBallsPainter({required this.balls});
+  GachaBallsPainter({
+    required this.balls,
+    required this.gearAngle,
+    required this.isPlaying,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width * 0.5, size.height * 0.85);
+    final double gearRadius = size.width * 0.22;
+    final Paint gearPaint = Paint()
+      ..color = Colors.white.withOpacity(0.9)
+      ..style = PaintingStyle.fill;
+    final Paint gearBorderPaint = Paint()
+      ..color = Colors.pink.withOpacity(0.25)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(gearAngle);
+    canvas.translate(-center.dx, -center.dy);
+
+    const int teethCount = 10;
+    final double toothWidth = gearRadius * 0.35;
+    final double toothHeight = gearRadius * 0.35;
+    for (int i = 0; i < teethCount; i++) {
+      final double angle = 2 * pi * i / teethCount;
+      canvas.save();
+      canvas.translate(center.dx, center.dy);
+      canvas.rotate(angle);
+      canvas.translate(-center.dx, -center.dy);
+      final Rect toothRect = Rect.fromCenter(
+        center: Offset(center.dx, center.dy - gearRadius),
+        width: toothWidth,
+        height: toothHeight,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(toothRect, Radius.circular(toothWidth * 0.3)),
+        gearPaint,
+      );
+      canvas.restore();
+    }
+
+    canvas.drawCircle(center, gearRadius * 0.8, gearPaint);
+    canvas.drawCircle(center, gearRadius * 0.8, gearBorderPaint);
+    canvas.drawCircle(
+      center,
+      gearRadius * 0.25,
+      Paint()
+        ..color = Colors.pinkAccent.withOpacity(isPlaying ? 0.9 : 0.6)
+        ..style = PaintingStyle.fill,
+    );
+
+    canvas.restore();
+
     for (var ball in balls) {
       final paint = Paint()
         ..color = ball.color
@@ -183,9 +247,9 @@ class GachaBallsPainter extends CustomPainter {
       canvas.translate(-(x + radius), -(y + radius));
 
       // 绘制球体
-      final center = Offset(x + radius, y + radius);
-      canvas.drawCircle(center, radius, paint);
-      canvas.drawCircle(center, radius, borderPaint);
+      final Offset ballCenter = Offset(x + radius, y + radius);
+      canvas.drawCircle(ballCenter, radius, paint);
+      canvas.drawCircle(ballCenter, radius, borderPaint);
 
       // 绘制高光 (模拟 Positioned 里的内部 Container)
       final highlightPaint = Paint()
@@ -193,7 +257,7 @@ class GachaBallsPainter extends CustomPainter {
         ..style = PaintingStyle.fill;
       
       // 高光稍微偏一点
-      canvas.drawCircle(center, radius * 0.6, highlightPaint);
+      canvas.drawCircle(ballCenter, radius * 0.6, highlightPaint);
       
       // 恢复画布状态
       canvas.restore();

@@ -314,6 +314,148 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
     );
   }
 
+  void _showProbabilityDialog() {
+    final pool = VirtualItem.mockItems;
+    final Map<ItemRarity, List<VirtualItem>> groups = {
+      ItemRarity.ssr: [],
+      ItemRarity.sr: [],
+      ItemRarity.r: [],
+      ItemRarity.n: [],
+    };
+    for (final item in pool) {
+      groups[item.rarity]?.add(item);
+    }
+
+    String joinNames(List<VirtualItem> items) {
+      if (items.isEmpty) return '暂无';
+      return items.map((e) => e.name).join('、');
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('概率说明'),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  '当前概率（单抽）：',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'SSR：2%  (${joinNames(groups[ItemRarity.ssr] ?? [])})',
+                  style: const TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'SR：10% (${joinNames(groups[ItemRarity.sr] ?? [])})',
+                  style: const TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'R：30% (${joinNames(groups[ItemRarity.r] ?? [])})',
+                  style: const TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'N：58% (${joinNames(groups[ItemRarity.n] ?? [])})',
+                  style: const TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  '十连第10发保底 SR 及以上。',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('知道了'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showGachaPoolDialog() {
+    final pool = VirtualItem.mockItems;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      '奖池预览',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.error_outline,
+                        size: 20,
+                        color: Colors.grey,
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _showProbabilityDialog();
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 420),
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      childAspectRatio: 0.75,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: pool.length,
+                    itemBuilder: (context, index) {
+                      final item = pool[index];
+                      return _buildPoolItemCard(item);
+                    },
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('关闭'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildSingleResult(VirtualItem item) {
     return Column(
       children: [
@@ -365,40 +507,124 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
-        return Container(
-          decoration: BoxDecoration(
-            color: Color(item.rarityColor).withOpacity(0.05),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Color(item.rarityColor).withOpacity(0.3)),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-               Expanded(
-                 child: Center(
-                   child: item.type == ItemType.avatarFrame
-                    ? SizedBox(width: 40, height: 40, child: DynamicAvatar(avatarUrl: _currentUser?.avatar ?? '', size: 40, frameId: item.id))
-                    : Icon(Icons.card_giftcard, size: 30, color: Color(item.rarityColor)),
-                 ),
-               ),
-               Padding(
-                 padding: const EdgeInsets.all(4.0),
-                 child: Text(
-                   item.name,
-                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                   maxLines: 1,
-                   overflow: TextOverflow.ellipsis,
-                 ),
-               ),
-               Text(
-                 item.rarityLabel,
-                 style: TextStyle(fontSize: 10, color: Color(item.rarityColor), fontWeight: FontWeight.bold),
-               ),
-               const SizedBox(height: 4),
-            ],
-          ),
-        );
+        return _buildResultCard(item);
       },
+    );
+  }
+
+  Widget _buildResultCard(VirtualItem item) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Color(item.rarityColor).withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Color(item.rarityColor).withOpacity(0.3)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Center(
+              child: item.type == ItemType.avatarFrame
+                  ? SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: DynamicAvatar(
+                        avatarUrl: _currentUser?.avatar ?? '',
+                        size: 40,
+                        frameId: item.id,
+                      ),
+                    )
+                  : Icon(
+                      Icons.card_giftcard,
+                      size: 30,
+                      color: Color(item.rarityColor),
+                    ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: Text(
+              item.name,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Text(
+            item.rarityLabel,
+            style: TextStyle(
+              fontSize: 10,
+              color: Color(item.rarityColor),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPoolItemCard(VirtualItem item) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(
+          color: Color(item.rarityColor).withOpacity(0.4),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Center(
+              child: item.type == ItemType.avatarFrame
+                  ? SizedBox(
+                      width: 46,
+                      height: 46,
+                      child: DynamicAvatar(
+                        avatarUrl: _currentUser?.avatar ?? '',
+                        size: 46,
+                        frameId: item.id,
+                      ),
+                    )
+                  : Icon(
+                      Icons.card_giftcard,
+                      size: 32,
+                      color: Color(item.rarityColor),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            item.name,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            item.rarityLabel,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Color(item.rarityColor),
+            ),
+          ),
+          const SizedBox(height: 6),
+        ],
+      ),
     );
   }
 
@@ -496,8 +722,9 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
             ),
           ),
           
-          // 机器主体 (居中)
-          Center(
+          // 机器主体 (略微上移)
+          Align(
+            alignment: const Alignment(0, -0.05),
             child: Container(
               width: 280,
               height: 400,
@@ -579,33 +806,78 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
               ),
             ),
           ),
-          
-          // 底部控制区 (双按钮)
+
+          // 顶部奖品池按钮
           Positioned(
-            bottom: 40,
-            left: 20,
-            right: 20,
-            child: Row(
-              children: [
-                // 单抽按钮
-                Expanded(
-                  child: _buildGachaButton(
-                    label: '单抽',
-                    price: '¥5.0',
-                    color: const Color(0xFF7F7FD5),
-                    onTap: () => _startGacha(1),
+            top: kToolbarHeight + 16,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: _showGachaPoolDialog,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.card_giftcard, size: 16, color: Color(0xFF7F7FD5)),
+                      SizedBox(width: 6),
+                      Text(
+                        '当前奖品池',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF333333),
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Color(0xFF999999)),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 16),
-                // 十连按钮
-                Expanded(
-                  child: _buildGachaButton(
-                    label: '十连',
-                    price: '¥45.0',
-                    subLabel: '必出SR',
-                    color: const Color(0xFFFF9A9E),
-                    onTap: () => _startGacha(10),
-                  ),
+              ),
+            ),
+          ),
+          
+          Positioned(
+            bottom: 32,
+            left: 20,
+            right: 20,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildGachaButton(
+                        label: '单抽',
+                        price: '¥5.0',
+                        color: const Color(0xFF7F7FD5),
+                        onTap: () => _startGacha(1),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildGachaButton(
+                        label: '十连',
+                        price: '¥45.0',
+                        subLabel: '必出SR',
+                        color: const Color(0xFFFF9A9E),
+                        onTap: () => _startGacha(10),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -623,7 +895,7 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
     required VoidCallback onTap,
   }) {
     return SizedBox(
-      height: 70,
+      height: 64,
       child: ElevatedButton(
         onPressed: _isPlaying ? null : onTap,
         style: ElevatedButton.styleFrom(
