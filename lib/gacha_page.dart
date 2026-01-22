@@ -223,6 +223,7 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
         await ApiService.updateUserInfo(
           _currentUser!.id,
           inventory: newInventory,
+          avatar: _currentUser!.avatar.isEmpty ? null : _currentUser!.avatar,
         );
       } catch (e) {
         print('Failed to save inventory: $e');

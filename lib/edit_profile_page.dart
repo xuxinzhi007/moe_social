@@ -146,11 +146,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
     });
 
     try {
+      final avatarText = _avatarController.text.trim();
       await ApiService.updateUserInfo(
         userId,
         username: _usernameController.text.trim(),
         email: _emailController.text.trim(),
-        avatar: _avatarController.text.trim(),
+        avatar: avatarText.isEmpty ? null : avatarText,
         signature: _signature.trim(),
         gender: _gender,
         birthday: _birthday != null ? _birthday!.toIso8601String().substring(0, 10) : null,
@@ -465,4 +466,3 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 }
-

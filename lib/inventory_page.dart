@@ -59,14 +59,15 @@ class _InventoryPageState extends State<InventoryPage> {
 
   Future<void> _equipItem(String itemId) async {
     try {
-      final updatedUser = await ApiService.updateUserInfo(
+      await ApiService.updateUserInfo(
         _currentUser.id,
         equippedFrameId: itemId,
+        avatar: _currentUser.avatar.isEmpty ? null : _currentUser.avatar,
       );
       
       if (mounted) {
         setState(() {
-          _currentUser = updatedUser;
+          _currentUser = _currentUser.copyWith(equippedFrameId: itemId);
         });
         
         widget.onUserUpdate(_currentUser);
@@ -86,14 +87,15 @@ class _InventoryPageState extends State<InventoryPage> {
 
   Future<void> _unequipItem() async {
     try {
-      final updatedUser = await ApiService.updateUserInfo(
+      await ApiService.updateUserInfo(
         _currentUser.id, 
-        clearEquippedFrame: true
+        clearEquippedFrame: true,
+        avatar: _currentUser.avatar.isEmpty ? null : _currentUser.avatar,
       );
       
       if (mounted) {
         setState(() {
-          _currentUser = updatedUser;
+          _currentUser = _currentUser.copyWith(clearEquippedFrame: true);
         });
         widget.onUserUpdate(_currentUser);
         ScaffoldMessenger.of(context).showSnackBar(

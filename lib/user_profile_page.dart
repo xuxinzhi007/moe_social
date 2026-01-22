@@ -268,7 +268,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
   @override
   Widget build(BuildContext context) {
     final name = _user?.username ?? widget.userName ?? '用户 ${widget.userId}';
-    final avatar = _user?.avatar ?? widget.userAvatar;
+    String? avatar = _user?.avatar;
+    if (avatar == null || avatar.isEmpty) {
+      avatar = widget.userAvatar;
+    }
     final email = _user?.email ?? '';
 
     return Scaffold(
@@ -565,7 +568,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       ),
                       child: _user != null
                           ? DynamicAvatar(
-                              avatarUrl: _user!.avatar,
+                              avatarUrl: avatar ?? '',
                               size: 88,
                               frameId: _user!.equippedFrameId,
                             )

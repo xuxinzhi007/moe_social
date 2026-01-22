@@ -216,8 +216,9 @@ class ApiService {
       }
       
       // 检查是否是HTML响应（通常是404页面或服务器错误页面）
-      if (response.body.trim().startsWith('<!DOCTYPE html>') || 
-          response.body.trim().startsWith('<html>')) {
+      final trimmedBody = response.body.trim();
+      if (trimmedBody.startsWith('<!DOCTYPE html>') || 
+          trimmedBody.startsWith('<html>')) {
         String errorMessage = '无法连接到服务器';
         if (response.statusCode == 404) {
           if (baseUrl.contains('cpolar.top')) {
@@ -232,6 +233,18 @@ class ApiService {
         }
         _log('❌ 收到HTML响应，可能是服务器错误或404页面');
         _log('❌ 当前API地址: $baseUrl');
+        throw ApiException(errorMessage, response.statusCode);
+      }
+      
+      // 对于错误状态码且看起来不是JSON的纯文本响应（例如 "404 page not found"），
+      // 直接抛出友好的错误提示，避免后续JSON解析报错
+      if ((response.statusCode < 200 || response.statusCode >= 300) &&
+          !(trimmedBody.startsWith('{') || trimmedBody.startsWith('['))) {
+        _log('❌ 收到非JSON错误响应: ${_safeTextForLog(trimmedBody, maxLen: 200)}');
+        String errorMessage = '请求失败 (状态码: ${response.statusCode})';
+        if (response.statusCode == 404) {
+          errorMessage = 'API端点不存在，请检查后端是否实现 /api/chat/online 等接口';
+        }
         throw ApiException(errorMessage, response.statusCode);
       }
       
