@@ -43,8 +43,10 @@ func (l *UpdateUserInfoLogic) UpdateUserInfo(in *super.UpdateUserInfoReq) (*supe
 	if in.Email != "" {
 		user.Email = in.Email
 	}
-	// 更新头像（即使为空字符串也要更新，允许清空头像）
-	user.Avatar = in.Avatar
+	// 更新头像：仅当传入非空字符串时才更新，避免意外清空
+	if in.Avatar != "" {
+		user.Avatar = in.Avatar
+	}
 
 	// 更新个性签名
 	if in.Signature != "" {
