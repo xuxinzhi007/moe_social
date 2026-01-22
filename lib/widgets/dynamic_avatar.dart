@@ -9,12 +9,14 @@ class DynamicAvatar extends StatefulWidget {
   final String avatarUrl;
   final double size;
   final String? frameId; // 传入头像框ID，如果为null则不显示框
+  final bool enableAnimation;
 
   const DynamicAvatar({
     super.key, 
     required this.avatarUrl, 
     this.size = 60,
     this.frameId,
+    this.enableAnimation = true,
   });
 
   @override
@@ -27,11 +29,26 @@ class _DynamicAvatarState extends State<DynamicAvatar> with SingleTickerProvider
   @override
   void initState() {
     super.initState();
-    // 定义一个无限循环的动画控制器，用于驱动特效
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
-    )..repeat();
+    );
+    if (widget.enableAnimation) {
+      _controller.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant DynamicAvatar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.enableAnimation != widget.enableAnimation) {
+      if (widget.enableAnimation) {
+        _controller.repeat();
+      } else {
+        _controller.stop();
+        _controller.value = 0.0;
+      }
+    }
   }
 
   @override
@@ -69,10 +86,11 @@ class _DynamicAvatarState extends State<DynamicAvatar> with SingleTickerProvider
     // 优先处理 Lottie 动画 (约定以 frame_lottie_ 开头，或者特定 ID)
     if (frameId == 'frame_lottie_test' || frameId == 'frame_lottie_01') {
       return Transform.scale(
-        scale: 1.4, // Lottie 动画通常需要比头像大一圈，根据实际素材调整
+        scale: 1.4,
         child: Lottie.asset(
           'assets/frames/Avatar Frame.json',
           fit: BoxFit.contain,
+          animate: widget.enableAnimation,
         ),
       );
     }
