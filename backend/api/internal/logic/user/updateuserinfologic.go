@@ -33,8 +33,11 @@ func (l *UpdateUserInfoLogic) UpdateUserInfo(req *types.UpdateUserInfoReq) (resp
 		Email:     req.Email,
 		Avatar:    req.Avatar,
 		Signature: req.Signature,
-		Gender:    req.Gender,
-		Birthday:  req.Birthday,
+		Gender:          req.Gender,
+		Birthday:        req.Birthday,
+		Inventory:       req.Inventory,
+		EquippedFrameId: req.EquippedFrameId,
+		ClearEquippedFrame: req.ClearEquippedFrame,
 	})
 	if err != nil {
 		return &types.UpdateUserInfoResp{
@@ -59,6 +62,8 @@ func (l *UpdateUserInfoLogic) UpdateUserInfo(req *types.UpdateUserInfoReq) (resp
 			VipExpiresAt: rpcResp.User.VipExpiresAt,
 			AutoRenew:    rpcResp.User.AutoRenew,
 			Balance:      float64(rpcResp.User.Balance),
+			Inventory:    rpcResp.User.Inventory,
+			EquippedFrameId: rpcResp.User.EquippedFrameId,
 		},
 	}, nil
 }

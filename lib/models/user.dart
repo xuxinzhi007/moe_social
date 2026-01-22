@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'avatar_configuration.dart';
 
 class User {
@@ -13,6 +14,8 @@ class User {
   final String? vipExpiresAt; // 后端返回的是字符串格式
   final bool autoRenew;
   final double balance; // 钱包余额
+  final List<String> inventory; // 背包物品ID列表
+  final String? equippedFrameId; // 当前佩戴的头像框ID
   final String createdAt; // 后端返回的是字符串格式
   final String updatedAt; // 后端返回的是字符串格式
 
@@ -29,6 +32,8 @@ class User {
     this.vipExpiresAt,
     this.autoRenew = false,
     this.balance = 0.0,
+    this.inventory = const [],
+    this.equippedFrameId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -48,6 +53,8 @@ class User {
       vipExpiresAt: json['vip_expires_at'] as String?,
       autoRenew: json['auto_renew'] as bool? ?? false,
       balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
+      inventory: _parseInventory(json['inventory']),
+      equippedFrameId: json['equipped_frame_id'] as String?,
       createdAt: json['created_at'] as String,
       updatedAt: json['updated_at'] as String,
     );
@@ -68,9 +75,70 @@ class User {
       'vip_expires_at': vipExpiresAt,
       'auto_renew': autoRenew,
       'balance': balance,
+      'inventory': inventory,
+      'equipped_frame_id': equippedFrameId,
       'created_at': createdAt,
       'updated_at': updatedAt,
     };
+  }
+
+  static List<String> _parseInventory(dynamic inventoryJson) {
+    if (inventoryJson == null) return [];
+    if (inventoryJson is List) {
+      return inventoryJson.map((e) => e.toString()).toList();
+    }
+    if (inventoryJson is String) {
+      if (inventoryJson.isEmpty) return [];
+      try {
+        final decoded = jsonDecode(inventoryJson);
+        if (decoded is List) {
+          return decoded.map((e) => e.toString()).toList();
+        }
+      } catch (e) {
+        // print('Error parsing inventory JSON: $e');
+        return [];
+      }
+    }
+    return [];
+  }
+
+  User copyWith({
+    String? id,
+    String? username,
+    String? email,
+    String? avatar,
+    String? signature,
+    String? gender,
+    String? birthday,
+    String? avatarConfig,
+    bool? isVip,
+    String? vipExpiresAt,
+    bool? autoRenew,
+    double? balance,
+    List<String>? inventory,
+    String? equippedFrameId,
+    bool clearEquippedFrame = false, // 新增参数用于清除佩戴
+    String? createdAt,
+    String? updatedAt,
+  }) {
+    return User(
+      id: id ?? this.id,
+      username: username ?? this.username,
+      email: email ?? this.email,
+      avatar: avatar ?? this.avatar,
+      signature: signature ?? this.signature,
+      gender: gender ?? this.gender,
+      birthday: birthday ?? this.birthday,
+      avatarConfig: avatarConfig ?? this.avatarConfig,
+      isVip: isVip ?? this.isVip,
+      vipExpiresAt: vipExpiresAt ?? this.vipExpiresAt,
+      autoRenew: autoRenew ?? this.autoRenew,
+      balance: balance ?? this.balance,
+      inventory: inventory ?? this.inventory,
+      equippedFrameId: clearEquippedFrame ? null : (equippedFrameId ?? this.equippedFrameId),
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
   }
 
   // 获取创建时间的DateTime对象（用于显示）

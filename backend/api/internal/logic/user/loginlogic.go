@@ -57,6 +57,9 @@ func (l *LoginLogic) Login(req *types.LoginReq) (resp *types.LoginResp, err erro
 				IsVip:        rpcResp.User.IsVip,
 				VipExpiresAt: rpcResp.User.VipExpiresAt,
 				AutoRenew:    rpcResp.User.AutoRenew,
+				Balance:      float64(rpcResp.User.Balance),
+				Inventory:    rpcResp.User.Inventory,
+				EquippedFrameId: rpcResp.User.EquippedFrameId,
 			},
 			Token: rpcResp.Token,
 		}

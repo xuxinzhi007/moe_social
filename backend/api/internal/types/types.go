@@ -30,6 +30,18 @@ type BaseResp struct {
 	Success bool   `json:"success"`
 }
 
+type RefreshTokenReq struct {
+}
+
+type RefreshTokenData struct {
+	Token string `json:"token"`
+}
+
+type RefreshTokenResp struct {
+	BaseResp
+	Data RefreshTokenData `json:"data"`
+}
+
 type CheckFollowReq struct {
 	FollowerId  string `path:"follower_id"`
 	FollowingId string `path:"following_id"`
@@ -298,6 +310,18 @@ type GetPostsResp struct {
 	Total int    `json:"total"`
 }
 
+type GetRtcTokenReq struct {
+	ChannelName string `form:"channel_name"`
+	Role        uint8  `form:"role,optional,default=1"`
+	UserAccount string `form:"user_account,optional"`
+}
+
+type GetRtcTokenResp struct {
+	BaseResp
+	Token string `json:"token"`
+	AppId string `json:"app_id"`
+}
+
 type GetTransactionReq struct {
 	TransactionId string `path:"transaction_id"`
 }
@@ -458,18 +482,6 @@ type ImageInfo struct {
 	CreatedAt string `json:"created_at"`
 }
 
-type GetRtcTokenReq struct {
-	ChannelName string `form:"channel_name"`
-	Role        uint8  `form:"role,optional,default=1"`
-	UserAccount string `form:"user_account,optional"`
-}
-
-type GetRtcTokenResp struct {
-	BaseResp
-	Token string `json:"token"`
-	AppId string `json:"app_id"`
-}
-
 type LikeCommentReq struct {
 	CommentId string `path:"comment_id"`
 	UserId    string `json:"user_id"`
@@ -526,18 +538,6 @@ type LoginReq struct {
 type LoginResp struct {
 	BaseResp
 	Data LoginData `json:"data"`
-}
-
-type RefreshTokenReq struct {
-}
-
-type RefreshTokenResp struct {
-	BaseResp
-	Data RefreshTokenData `json:"data"`
-}
-
-type RefreshTokenData struct {
-	Token string `json:"token"`
 }
 
 type Notification struct {
@@ -691,13 +691,16 @@ type UpdateUserAvatarResp struct {
 }
 
 type UpdateUserInfoReq struct {
-	UserId    string `path:"user_id"`
-	Username  string `json:"username,optional"`
-	Email     string `json:"email,optional"`
-	Avatar    string `json:"avatar,optional"`
-	Signature string `json:"signature,optional"`
-	Gender    string `json:"gender,optional"`
-	Birthday  string `json:"birthday,optional"`
+	UserId             string `path:"user_id"`
+	Username           string `json:"username,optional"`
+	Email              string `json:"email,optional"`
+	Avatar             string `json:"avatar,optional"`
+	Signature          string `json:"signature,optional"`
+	Gender             string `json:"gender,optional"`
+	Birthday           string `json:"birthday,optional"`
+	Inventory          string `json:"inventory,optional"`
+	EquippedFrameId    string `json:"equipped_frame_id,optional"`
+	ClearEquippedFrame bool   `json:"clear_equipped_frame,optional"`
 }
 
 type UpdateUserInfoResp struct {
@@ -746,19 +749,21 @@ type UpsertUserMemoryResp struct {
 }
 
 type User struct {
-	Id           string  `json:"id"`
-	Username     string  `json:"username"`
-	Email        string  `json:"email"`
-	Avatar       string  `json:"avatar"`
-	Signature    string  `json:"signature"`
-	Gender       string  `json:"gender"`
-	Birthday     string  `json:"birthday,omitempty"`
-	CreatedAt    string  `json:"created_at"`
-	UpdatedAt    string  `json:"updated_at"`
-	IsVip        bool    `json:"is_vip"`
-	VipExpiresAt string  `json:"vip_expires_at"`
-	AutoRenew    bool    `json:"auto_renew"`
-	Balance      float64 `json:"balance"`
+	Id              string  `json:"id"`
+	Username        string  `json:"username"`
+	Email           string  `json:"email"`
+	Avatar          string  `json:"avatar"`
+	Signature       string  `json:"signature"`
+	Gender          string  `json:"gender"`
+	Birthday        string  `json:"birthday,omitempty"`
+	CreatedAt       string  `json:"created_at"`
+	UpdatedAt       string  `json:"updated_at"`
+	IsVip           bool    `json:"is_vip"`
+	VipExpiresAt    string  `json:"vip_expires_at"`
+	AutoRenew       bool    `json:"auto_renew"`
+	Balance         float64 `json:"balance"`
+	Inventory       string  `json:"inventory"`
+	EquippedFrameId string  `json:"equipped_frame_id"`
 }
 
 type UserAvatar struct {

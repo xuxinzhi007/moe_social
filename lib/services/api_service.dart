@@ -658,6 +658,9 @@ class ApiService {
     String? signature,
     String? gender,
     String? birthday,
+    List<String>? inventory,
+    String? equippedFrameId,
+    bool clearEquippedFrame = false,
   }) async {
     final body = <String, dynamic>{};
 
@@ -667,6 +670,13 @@ class ApiService {
     if (signature != null) body['signature'] = signature;
     if (gender != null) body['gender'] = gender;
     if (birthday != null) body['birthday'] = birthday;
+    if (inventory != null) body['inventory'] = jsonEncode(inventory);
+    
+    if (clearEquippedFrame) {
+      body['clear_equipped_frame'] = true;
+    } else if (equippedFrameId != null) {
+      body['equipped_frame_id'] = equippedFrameId;
+    }
 
     final result = await _request('/api/user/$userId',
       method: 'PUT',

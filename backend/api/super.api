@@ -17,19 +17,21 @@ type BaseResp {
 
 // 用户相关结构
 type User {
-	Id           string  `json:"id"`
-	Username     string  `json:"username"`
-	Email        string  `json:"email"`
-	Avatar       string  `json:"avatar"`
-	Signature    string  `json:"signature"`
-	Gender       string  `json:"gender"`
-	Birthday     string  `json:"birthday,omitempty"`
-	CreatedAt    string  `json:"created_at"`
-	UpdatedAt    string  `json:"updated_at"`
-	IsVip        bool    `json:"is_vip"`
-	VipExpiresAt string  `json:"vip_expires_at"`
-	AutoRenew    bool    `json:"auto_renew"`
-	Balance      float64 `json:"balance"`
+	Id              string  `json:"id"`
+	Username        string  `json:"username"`
+	Email           string  `json:"email"`
+	Avatar          string  `json:"avatar"`
+	Signature       string  `json:"signature"`
+	Gender          string  `json:"gender"`
+	Birthday        string  `json:"birthday,omitempty"`
+	CreatedAt       string  `json:"created_at"`
+	UpdatedAt       string  `json:"updated_at"`
+	IsVip           bool    `json:"is_vip"`
+	VipExpiresAt    string  `json:"vip_expires_at"`
+	AutoRenew       bool    `json:"auto_renew"`
+	Balance         float64 `json:"balance"`
+	Inventory       string  `json:"inventory"`
+	EquippedFrameId string  `json:"equipped_frame_id"`
 }
 
 // VIP套餐相关结构
@@ -243,13 +245,16 @@ type GetUserReq {
 }
 
 type UpdateUserInfoReq {
-	UserId    string `path:"user_id"`
-	Username  string `json:"username,optional"`
-	Email     string `json:"email,optional"`
-	Avatar    string `json:"avatar,optional"`
-	Signature string `json:"signature,optional"`
-	Gender    string `json:"gender,optional"`
-	Birthday  string `json:"birthday,optional"`
+	UserId             string `path:"user_id"`
+	Username           string `json:"username,optional"`
+	Email              string `json:"email,optional"`
+	Avatar             string `json:"avatar,optional"`
+	Signature          string `json:"signature,optional"`
+	Gender             string `json:"gender,optional"`
+	Birthday           string `json:"birthday,optional"`
+	Inventory          string `json:"inventory,optional"`
+	EquippedFrameId    string `json:"equipped_frame_id,optional"`
+	ClearEquippedFrame bool   `json:"clear_equipped_frame,optional"`
 }
 
 type UpdateUserPasswordReq {
@@ -1104,7 +1109,7 @@ type GetRtcTokenResp {
 // 语音通话相关API服务
 @server (
 	group: voice
-	jwt: Auth
+	jwt:   Auth
 )
 service Super {
 	@handler getRtcToken

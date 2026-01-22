@@ -20,6 +20,8 @@ message User {
   string vip_expires_at = 11;
   bool auto_renew = 12;
   float balance = 13; // 钱包余额
+  string inventory = 14;
+  string equipped_frame_id = 15;
 }
 
 // 用户注册请求
@@ -84,6 +86,9 @@ message UpdateUserInfoReq {
   string signature = 5;   // 个性签名
   string gender = 6;      // 性别
   string birthday = 7;    // 生日
+  string inventory = 8;
+  string equipped_frame_id = 9;
+  bool clear_equipped_frame = 10;
 }
 
 // 更新用户信息响应

@@ -10,6 +10,7 @@ import 'models/post.dart';
 import 'models/achievement_badge.dart';
 import 'services/achievement_service.dart';
 import 'widgets/avatar_image.dart';
+import 'widgets/dynamic_avatar.dart';
 import 'widgets/achievement_badge_display.dart';
 import 'wallet_page.dart';
 import 'widgets/fade_in_up.dart';
@@ -365,11 +366,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ],
                   ),
-                  child: NetworkAvatarImage(
-                    imageUrl: _user?.avatar,
-                    radius: 46,
-                    placeholderIcon: Icons.person,
-                    placeholderColor: Colors.grey[200]!,
+                  child: DynamicAvatar(
+                    avatarUrl: _user?.avatar ?? '',
+                    size: 92, // 46 * 2
+                    frameId: _user?.equippedFrameId,
                   ),
                 ),
                 const SizedBox(height: 12),

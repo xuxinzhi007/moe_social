@@ -49,6 +49,8 @@ func (l *GetUserInfoLogic) GetUserInfo(req *types.GetUserInfoReq) (resp *types.G
 			VipExpiresAt: rpcResp.User.VipExpiresAt,
 			AutoRenew:    rpcResp.User.AutoRenew,
 			Balance:      float64(rpcResp.User.Balance),
+			Inventory:    rpcResp.User.Inventory,
+			EquippedFrameId: rpcResp.User.EquippedFrameId,
 		},
 	}, nil
 }
