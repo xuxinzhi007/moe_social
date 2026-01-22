@@ -7,6 +7,7 @@ import 'auth_service.dart';
 import 'services/api_service.dart';
 import 'services/achievement_service.dart';
 import 'widgets/avatar_image.dart';
+import 'widgets/dynamic_avatar.dart';
 import 'widgets/network_image.dart';
 import 'widgets/fade_in_up.dart';
 import 'widgets/achievement_badge_display.dart';
@@ -562,11 +563,17 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           ),
                         ],
                       ),
-                      child: NetworkAvatarImage(
-                        imageUrl: avatar,
-                        radius: 44,
-                        placeholderIcon: Icons.person,
-                      ),
+                      child: _user != null
+                          ? DynamicAvatar(
+                              avatarUrl: _user!.avatar,
+                              size: 88,
+                              frameId: _user!.equippedFrameId,
+                            )
+                          : NetworkAvatarImage(
+                              imageUrl: avatar,
+                              radius: 44,
+                              placeholderIcon: Icons.person,
+                            ),
                     ),
                   ),
                 ),
