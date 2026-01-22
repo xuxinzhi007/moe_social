@@ -500,8 +500,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             flex: 1,
                             child: OutlinedButton(
                               onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('私信功能开发中')),
+                                if (_user == null) return;
+                                final target = _user!;
+                                Navigator.pushNamed(
+                                  context,
+                                  '/direct-chat',
+                                  arguments: {
+                                    'userId': target.id,
+                                    'username': target.username,
+                                    'avatar': target.avatar,
+                                  },
                                 );
                               },
                               style: OutlinedButton.styleFrom(
