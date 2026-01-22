@@ -27,6 +27,7 @@ class ImePickerActivity : Activity() {
     private var lastIme: String? = null
     private var mode: String = "to_non_adb"
     private var inferredMode: Boolean = false
+    private var targetIme: String? = null
 
     private fun isAdbIme(id: String?): Boolean {
         if (id.isNullOrBlank()) return false
@@ -66,7 +67,11 @@ class ImePickerActivity : Activity() {
                 // 开始任务：等到切到 ADB Keyboard 才算完成
                 "to_adb" -> isAdbIme(current)
                 // 结束任务：等到离开 ADB Keyboard 才算完成
-                "to_non_adb" -> !isAdbIme(current)
+                // 如果提供了 targetIme，则以“切回 targetIme”为准；否则退化为“只要不是ADB就行”
+                "to_non_adb" -> {
+                    val t = targetIme
+                    if (!t.isNullOrBlank()) current == t else !isAdbIme(current)
+                }
                 else -> !isAdbIme(current)
             }
 
@@ -94,6 +99,7 @@ class ImePickerActivity : Activity() {
         
         // mode 可能因为某些 ROM/调用链问题拿不到；拿不到时做“自推断”，避免再出现一闪即消失
         val extraMode = intent?.getStringExtra("mode")
+        targetIme = intent?.getStringExtra("targetIme")
         if (extraMode == "to_adb" || extraMode == "to_non_adb") {
             mode = extraMode
             inferredMode = false
@@ -105,7 +111,7 @@ class ImePickerActivity : Activity() {
 
         Log.i(
             "AutoGLM",
-            "📱 [IME Picker] onCreate, mode=$mode, inferred=$inferredMode, current IME=$lastIme"
+            "📱 [IME Picker] onCreate, mode=$mode, inferred=$inferredMode, targetIme=$targetIme, current IME=$lastIme"
         )
 
         // 确保能在锁屏/后台切到前台（尽量提高弹窗成功率）
@@ -137,7 +143,11 @@ class ImePickerActivity : Activity() {
         val desc = TextView(this).apply {
             text = when (mode) {
                 "to_adb" -> "请选择 ADB Keyboard 作为当前输入法。\n切换成功后，此页面会自动关闭。\n\n如果选择器一闪而过，可点“重新弹出选择器”。"
-                "to_non_adb" -> "请选择您常用的输入法（离开 ADB Keyboard）。\n切换成功后，此页面会自动关闭。\n\n如果选择器一闪而过，可点“重新弹出选择器”。"
+                "to_non_adb" -> if (!targetIme.isNullOrBlank()) {
+                    "请选择切换回原输入法（目标：$targetIme）。\n切换成功后，此页面会自动关闭。\n\n如果选择器一闪而过，可点“重新弹出选择器”。"
+                } else {
+                    "请选择您常用的输入法（离开 ADB Keyboard）。\n切换成功后，此页面会自动关闭。\n\n如果选择器一闪而过，可点“重新弹出选择器”。"
+                }
                 else -> "请选择要使用的输入法。\n切换成功后，此页面会自动关闭。\n\n如果选择器一闪而过，可点“重新弹出选择器”。"
             }
             textSize = 14f

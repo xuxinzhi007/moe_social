@@ -23,6 +23,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.util.DisplayMetrics
 import android.util.Log
+import android.content.SharedPreferences
 
 class AutoGLMAccessibilityService : AccessibilityService() {
 
@@ -68,6 +69,9 @@ class AutoGLMAccessibilityService : AccessibilityService() {
     
     // 输入法会话管理
     private var sessionOriginalIme: String? = null
+    private fun prefs(): SharedPreferences {
+        return getSharedPreferences("autoglm_prefs", Context.MODE_PRIVATE)
+    }
 
     // --- 日志气泡 (Tooltip) 相关变量 ---
     private var tooltipView: View? = null
@@ -1143,6 +1147,8 @@ class AutoGLMAccessibilityService : AccessibilityService() {
             if (sessionOriginalIme == null && currentIme != null) {
                 sessionOriginalIme = currentIme
                 log("💾 已保存原输入法: $currentIme")
+                // 同步写入持久化存储，供 ImePickerActivity / 主进程读取
+                prefs().edit().putString("original_ime", currentIme).apply()
             }
         } catch (e: Exception) {
             log("❌ 保存输入法失败: $e")

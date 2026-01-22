@@ -177,9 +177,6 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
       return;
     }
     
-    // 尽早保存当前输入法 (在弹出任何切换窗口之前)
-    await AutoGLMService.saveCurrentIme();
-    
     String task = _controller.text;
     if (task.isEmpty) return;
 
@@ -232,46 +229,14 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
 
     _addLog("🤖 开始任务: $task");
 
-    // --- 输入法检测（手动切换模式）---
-    bool useAdbKeyboard = false;
-    bool isAdbEnabled = await AutoGLMService.isAdbKeyboardEnabled();
-    bool isAdbSelected = await AutoGLMService.isAdbKeyboardSelected();
-    
-    // 注意：saveCurrentIme 已经在前面调用过了，这里不再重复调用
-    
-    if (isAdbSelected) {
-      _addLog("✅ ADB Keyboard 已就绪");
-      useAdbKeyboard = true;
-    } else if (isAdbEnabled) {
-      // ADB Keyboard 已安装但未选中，弹出选择器让用户手动切换
-      _addLog("⚠️ ADB Keyboard 未选中");
-      _addLog("🔄 请在弹出的选择器中选择 ADB Keyboard");
-      
-      // 弹出输入法选择器：开始任务要切到 ADB Keyboard
-      await AutoGLMService.showInputMethodPicker(mode: "to_adb");
-      
-      // 等待用户手动切换（最多等待 20 秒）
-      _addLog("⏳ 等待切换输入法...");
-      for (int i = 0; i < 20; i++) {
-        await Future.delayed(const Duration(seconds: 1));
-        if (await AutoGLMService.isAdbKeyboardSelected()) {
-          _addLog("✅ 已切换到 ADB Keyboard");
-          useAdbKeyboard = true;
-          break;
-        }
-        if (i == 10) {
-          _addLog("⏳ 继续等待...(还剩 ${20 - i} 秒)");
-        }
-      }
-      
-      if (!useAdbKeyboard) {
-        _addLog("ℹ️ 未切换到 ADB Keyboard");
-        _addLog("💡 将使用备用输入方式（直接设置文本/剪贴板粘贴）");
-      }
+    // --- 输入策略：默认使用“备用输入方式”（最稳定）---
+    // 仅当用户当前已经在用 ADB Keyboard 时，才会自动走 ADB 广播输入。
+    // 这样可以彻底避免“输入法切换/恢复”在不同 ROM 上的不稳定问题。
+    final bool useAdbKeyboard = await AutoGLMService.isAdbKeyboardSelected();
+    if (useAdbKeyboard) {
+      _addLog("⌨️ 当前为 ADB Keyboard，将使用 ADB 输入");
     } else {
-      _addLog("ℹ️ 未安装 ADB Keyboard");
-      _addLog("💡 使用备用输入方式");
-      _addLog("📥 建议安装 ADB Keyboard 获得更好体验");
+      _addLog("⌨️ 当前不是 ADB Keyboard，将使用备用输入方式（推荐）");
     }
 
     // 更新悬浮窗状态为运行中
@@ -478,10 +443,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
     } finally {
       // ===== 任务结束处理（无论何种原因结束都会执行）=====
       _addLog("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      _addLog("⌨️ 【任务结束】正在检查输入法...");
-      
-      // 强制恢复输入法 - 和开始时一样的逻辑
-      await _restoreInputMethod();
+      _addLog("⌨️ 【任务结束】完成（无需切换/恢复输入法）");
 
       if (mounted) {
         setState(() {
@@ -496,36 +458,6 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
         if (mounted && !_isProcessing) {
           AutoGLMService.updateOverlayStatus("就绪", false);
         }
-      }
-    }
-  }
-  
-  /// 恢复输入法（任务结束时调用）
-  Future<void> _restoreInputMethod() async {
-    try {
-      // 检测当前是否是 ADB Keyboard
-      bool isAdb = await AutoGLMService.isAdbKeyboardSelected();
-      _addLog("📱 当前是否ADB输入法: $isAdb");
-      
-      if (isAdb) {
-        // 是 ADB Keyboard，弹出选择器让用户切换
-        _addLog("🔄 请切换回您的常用输入法！");
-        // 结束任务要从 ADB Keyboard 切回去
-        await AutoGLMService.showInputMethodPicker(mode: "to_non_adb");
-        _addLog("✅ 输入法选择器已弹出");
-      } else {
-        _addLog("✅ 输入法正常（非ADB输入法）");
-      }
-    } catch (e) {
-      _addLog("⚠️ 输入法检测出错: $e");
-      // 出错时也弹出选择器，让用户自己处理
-      _addLog("🔄 尝试弹出选择器...");
-      try {
-        // 结束任务要从 ADB Keyboard 切回去
-        await AutoGLMService.showInputMethodPicker(mode: "to_non_adb");
-        _addLog("✅ 选择器已弹出");
-      } catch (e2) {
-        _addLog("❌ 弹出选择器失败: $e2");
       }
     }
   }
