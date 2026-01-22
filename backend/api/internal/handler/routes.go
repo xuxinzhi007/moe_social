@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	avatar "backend/api/internal/handler/avatar"
+	chat "backend/api/internal/handler/chat"
 	comment "backend/api/internal/handler/comment"
 	emoji "backend/api/internal/handler/emoji"
 	image "backend/api/internal/handler/image"
@@ -386,5 +387,15 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/ws/chat",
+				Handler: chat.ChatWsHandler(serverCtx),
+			},
+		},
 	)
 }

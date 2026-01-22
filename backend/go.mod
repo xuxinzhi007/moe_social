@@ -6,6 +6,7 @@ require (
 	github.com/AgoraIO-Community/go-tokenbuilder v1.3.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/websocket v1.5.0
 	github.com/spf13/viper v1.21.0
 	github.com/zeromicro/go-zero v1.9.3
 	golang.org/x/crypto v0.46.0

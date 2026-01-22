@@ -179,6 +179,14 @@ class _ProfilePageState extends State<ProfilePage> {
                                 },
                               ),
                               _MenuItem(
+                                icon: Icons.people_alt_outlined,
+                                title: '好友管理',
+                                color: Colors.teal,
+                                onTap: () {
+                                  Navigator.pushNamed(context, '/friends');
+                                },
+                              ),
+                              _MenuItem(
                                 icon: Icons.history_rounded,
                                 title: '浏览历史',
                                 color: Colors.orangeAccent,

@@ -44,6 +44,8 @@ import 'avatar_editor_page.dart';
 import 'gallery/cloud_gallery_page.dart';
 import 'emoji/emoji_store_page.dart';
 import 'ollama_chat_page.dart';
+import 'friends_page.dart';
+import 'direct_chat_page.dart';
 
 void main() async {
   // 使用runZonedGuarded捕获所有未捕获的错误
@@ -227,7 +229,8 @@ class MyApp extends StatelessWidget {
                 userId: args['userId'] as String,
                 userName: args['userName'] as String?,
                 userAvatar: args['userAvatar'] as String?,
-                heroTag: args['heroTag'] as String?,);
+                heroTag: args['heroTag'] as String?,
+              );
             },
             '/avatar-editor': (context) => const AvatarEditorPage(),
             '/emoji-store': (context) => const EmojiStorePage(),
@@ -235,6 +238,20 @@ class MyApp extends StatelessWidget {
             '/topic-posts': (context) {
               final tag = ModalRoute.of(context)!.settings.arguments as TopicTag;
               return TopicPostsPage(topicTag: tag);
+            },
+            '/friends': (context) => const FriendsPage(),
+            '/direct-chat': (context) {
+              final args = ModalRoute.of(context)?.settings.arguments;
+              if (args is! Map<String, dynamic>) {
+                return const Scaffold(
+                  body: Center(child: Text('页面参数丢失，请返回重试')),
+                );
+              }
+              return DirectChatPage(
+                userId: args['userId'] as String,
+                username: args['username'] as String,
+                avatar: args['avatar'] as String,
+              );
             },
           },
         );
