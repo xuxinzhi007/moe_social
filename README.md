@@ -104,6 +104,12 @@ flutter doctor
 git tag v1.0.3
 git push origin v1.0.3
 ```
+**删除已推送的版本**, 
+```bash
+git tag -d v1.0.3
+git push origin :v1.0.3
+```
+
 
 ### 2. 产物下载
 构建完成后，APK 文件会出现在 Releases 页面：
