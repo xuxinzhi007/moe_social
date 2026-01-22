@@ -53,6 +53,8 @@ func (l *GetUserInfoLogic) GetUserInfo(in *super.GetUserInfoReq) (*super.GetUser
 			VipExpiresAt: vipEndAt,
 			AutoRenew:    user.AutoRenew,
 			Balance:      float32(user.Balance),
+			Inventory:    user.Inventory,
+			EquippedFrameId: user.EquippedFrameId,
 		},
 	}, nil
 }

@@ -84,6 +84,18 @@ func (l *UpdateUserInfoLogic) UpdateUserInfo(in *super.UpdateUserInfoReq) (*supe
 		user.Birthday = &birthday
 	}
 
+	// 更新背包
+	if in.Inventory != "" {
+		user.Inventory = in.Inventory
+	}
+
+	// 更新佩戴头像框
+	if in.ClearEquippedFrame {
+		user.EquippedFrameId = ""
+	} else if in.EquippedFrameId != "" {
+		user.EquippedFrameId = in.EquippedFrameId
+	}
+
 	// 3. 保存更新
 	err := l.svcCtx.DB.Save(&user).Error
 	if err != nil {
@@ -117,6 +129,8 @@ func (l *UpdateUserInfoLogic) UpdateUserInfo(in *super.UpdateUserInfoReq) (*supe
 			VipExpiresAt: vipEndAt,
 			AutoRenew:    user.AutoRenew,
 			Balance:      float32(user.Balance),
+			Inventory:    user.Inventory,
+			EquippedFrameId: user.EquippedFrameId,
 		},
 	}, nil
 }

@@ -32,8 +32,8 @@ func (l *RechargeLogic) Recharge(in *super.RechargeReq) (*super.RechargeResp, er
 	if in.UserId == "" {
 		return nil, errorx.New(400, "用户ID不能为空")
 	}
-	if in.Amount <= 0 {
-		return nil, errorx.New(400, "充值金额必须大于0")
+	if in.Amount == 0 {
+		return nil, errorx.New(400, "金额不能为0")
 	}
 
 	// 2. 转换用户ID
@@ -57,6 +57,11 @@ func (l *RechargeLogic) Recharge(in *super.RechargeReq) (*super.RechargeResp, er
 		// 4. 更新用户余额
 		amount := float64(in.Amount)
 		newBalance = user.Balance + amount
+        
+        // 检查余额是否足够扣除
+        if newBalance < 0 {
+            return errorx.New(400, "余额不足")
+        }
 
 		// UpdateColumn 直接更新数据库字段，避免 GORM 默认 update 行为可能导致的问题
 		if err := tx.Model(&user).UpdateColumn("balance", newBalance).Error; err != nil {

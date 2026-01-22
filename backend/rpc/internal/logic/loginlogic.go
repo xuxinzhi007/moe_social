@@ -87,6 +87,9 @@ func (l *LoginLogic) Login(in *super.LoginReq) (*super.LoginResp, error) {
 			IsVip:        user.IsVip,
 			VipExpiresAt: vipEndAt,
 			AutoRenew:    user.AutoRenew,
+			Balance:      float32(user.Balance),
+			Inventory:    user.Inventory,
+			EquippedFrameId: user.EquippedFrameId,
 		},
 		Token: token,
 	}, nil

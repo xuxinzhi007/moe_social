@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'dart:math';
 import 'dart:async';
-import 'widgets/avatar_image.dart';
-import 'models/post.dart';
-import 'services/post_service.dart';
+import 'widgets/dynamic_avatar.dart';
+import 'widgets/gacha_machine_display.dart';
+import 'models/user.dart';
+import 'models/virtual_item.dart';
+import 'auth_service.dart';
+import 'services/api_service.dart';
+import 'inventory_page.dart';
+import 'recharge_page.dart';
 
 class GachaPage extends StatefulWidget {
   const GachaPage({super.key});
@@ -13,57 +17,59 @@ class GachaPage extends StatefulWidget {
   State<GachaPage> createState() => _GachaPageState();
 }
 
-class _GachaBall {
-  double x; // 0.0 - 1.0 (相对位置)
-  double y; // 0.0 - 1.0
-  double vx; // 速度 X
-  double vy; // 速度 Y
-  Color color;
-  double rotation;
-  double rotateSpeed;
-  double size;
-  
-  _GachaBall({
-    required this.x,
-    required this.y,
-    this.vx = 0,
-    this.vy = 0,
-    required this.color,
-    this.rotation = 0,
-    this.rotateSpeed = 0,
-    this.size = 36, // 稍微调小一点，避免太拥挤
-  });
-}
-
-class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
+class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMixin {
   late AnimationController _ballDropController;
-  late Animation<double> _ballDropAnimation;
 
-  Timer? _physicsTimer;
   final Random _random = Random();
-  bool _isUpdating = false; // 防止重复更新
-
   bool _isPlaying = false;
-  bool _showResult = false;
-  Post? _gachaResult;
+  
+  // 抽奖结果相关
+  List<VirtualItem> _gachaResults = [];
   Color _currentBallColor = Colors.blueAccent;
 
-  final List<_GachaBall> _balls = [];
+  final List<GachaBall> _balls = [];
   final List<Color> _ballColors = [
-    const Color(0xFFFF9A9E),
-    const Color(0xFFFECFEF),
-    const Color(0xFFA18CD1),
-    const Color(0xFF84FAB0),
-    const Color(0xFF8FD3F4),
+    const Color(0xFFFF9A9E), // Pink - SSR
+    const Color(0xFFA18CD1), // Purple - SR
+    const Color(0xFF8FD3F4), // Blue - R
+    const Color(0xFFE2E2E2), // Grey - N
   ];
+
+  // 用户数据
+  User? _currentUser;
 
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
+    _initBalls();
     
+    _ballDropController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+  }
+
+  Future<void> _loadUserInfo() async {
+    final userId = AuthService.currentUser;
+    if (userId != null) {
+      try {
+        final user = await ApiService.getUserInfo(userId);
+        if (mounted) {
+          setState(() {
+            _currentUser = user;
+          });
+        }
+      } catch (e) {
+        print('Failed to load user info: $e');
+      }
+    }
+  }
+
+  void _initBalls() {
     // 初始化小球 (位置在底部堆叠)
     for (int i = 0; i < 12; i++) {
-      _balls.add(_GachaBall(
+      _balls.add(GachaBall(
         x: 0.2 + _random.nextDouble() * 0.6,
         y: 0.8 + _random.nextDouble() * 0.1,
         vx: (_random.nextDouble() - 0.5) * 0.01,
@@ -73,188 +79,171 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
         rotateSpeed: (_random.nextDouble() - 0.5) * 0.1,
       ));
     }
-
-    _ballDropController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _ballDropAnimation = CurvedAnimation(
-      parent: _ballDropController,
-      curve: Curves.bounceOut,
-    );
   }
 
   @override
   void dispose() {
-    _physicsTimer?.cancel();
     _ballDropController.dispose();
     super.dispose();
   }
 
-  // 当页面变为不可见时停止物理循环
-  @override
-  void deactivate() {
-    super.deactivate();
-    _physicsTimer?.cancel();
-    _isUpdating = false;
-  }
+  // 开始抽奖逻辑
+  void _startGacha(int count) async {
+    if (_isPlaying || _currentUser == null) return;
 
-    // 物理引擎核心循环
-  void _startPhysicsLoop() {
-    _physicsTimer?.cancel();
-    // 60FPS 左右
-    _physicsTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      
-      // 更新物理状态（不触发 setState）
-      // 使用变量副本或同步锁逻辑来避免并发修改问题（虽然Dart是单线程，但逻辑上要清晰）
-      // 这里没有直接修改 _balls 列表长度，只是修改元素属性，是安全的
-
-      for (var ball in _balls) {
-        if (_isPlaying) {
-          // --- 搅动模式 (强风乱飞) ---
-          
-          // 1. 施加力
-          // 向上浮力 (抗重力)
-          ball.vy -= 0.002; 
-          // 随机扰动 (模拟气流湍流)
-          ball.vx += (_random.nextDouble() - 0.5) * 0.005;
-          ball.vy += (_random.nextDouble() - 0.5) * 0.005;
-
-          // 限制最大速度 (防止穿墙)
-          ball.vx = ball.vx.clamp(-0.03, 0.03);
-          ball.vy = ball.vy.clamp(-0.03, 0.03);
-
-          // 2. 更新位置
-          ball.x += ball.vx;
-          ball.y += ball.vy;
-          ball.rotation += ball.vx * 10; // 旋转随速度变化
-
-          // 3. 边界反弹 (Box Collision)
-          // 考虑球体大小，假设容器大概 200x200，球36，占比约 0.18
-          double ballRatio = 0.18; 
-          
-          // 左右墙壁
-          if (ball.x < 0) {
-            ball.x = 0;
-            ball.vx = -ball.vx * 0.8; // 反弹并损耗能量
-          } else if (ball.x > 1.0 - ballRatio) {
-            ball.x = 1.0 - ballRatio;
-            ball.vx = -ball.vx * 0.8;
-          }
-
-          // 上下墙壁
-          if (ball.y < 0) {
-            ball.y = 0;
-            ball.vy = -ball.vy * 0.8;
-          } else if (ball.y > 1.0 - ballRatio) {
-            ball.y = 1.0 - ballRatio;
-            ball.vy = -ball.vy * 0.8;
-          }
-
-        } else {
-          // --- 沉降模式 (重力恢复) ---
-          
-          // 1. 施加重力
-          ball.vy += 0.002;
-          // 空气阻力
-          ball.vx *= 0.98;
-          
-          // 2. 更新位置
-          ball.x += ball.vx;
-          ball.y += ball.vy;
-          ball.rotation += ball.vx * 5;
-
-          double ballRatio = 0.18; 
-          
-          // 底部碰撞
-          if (ball.y > 1.0 - ballRatio) {
-            ball.y = 1.0 - ballRatio;
-            // 落地反弹 (能量损失大，甚至不反弹直接停)
-            ball.vy = -ball.vy * 0.5; 
-            // 地面摩擦力
-            ball.vx *= 0.9;
-          }
-          
-          // 左右墙壁限制
-          if (ball.x < 0) { ball.x = 0; ball.vx = -ball.vx * 0.5; }
-          if (ball.x > 1.0 - ballRatio) { ball.x = 1.0 - ballRatio; ball.vx = -ball.vx * 0.5; }
-        }
-      }
-      
-      // 使用 SchedulerBinding 确保在帧结束后更新，避免布局冲突
-      if (!_isUpdating) {
-        _isUpdating = true;
-        SchedulerBinding.instance.addPostFrameCallback((_) {
-          _isUpdating = false;
-          if (mounted) {
-            setState(() {
-              // setState 触发重建，但物理状态已经在上面更新了
-            });
-          }
-        });
-      }
-    });
-  }
-
-  void _startGacha() async {
-    if (_isPlaying) return;
+    // 1. 检查余额
+    double cost = count == 10 ? 45.0 : 5.0 * count;
+    if (_currentUser!.balance < cost) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('余额不足，请充值'),
+          action: SnackBarAction(
+            label: '充值',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const RechargePage()),
+              ).then((_) {
+                _loadUserInfo(); // 充值返回后刷新余额
+              });
+            },
+          ),
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _isPlaying = true;
-      _showResult = false;
-      _currentBallColor = _balls[_random.nextInt(_balls.length)].color;
+      _gachaResults.clear();
+      // 随机选一个球色作为主色调 (其实应该根据结果定，这里先随机)
+      _currentBallColor = _ballColors[_random.nextInt(_ballColors.length)];
     });
 
-    // 1. 启动物理循环
-    _startPhysicsLoop();
+    // 2. 扣费 (调用后端 API)
+    try {
+      await ApiService.recharge(
+        _currentUser!.id, 
+        -cost, 
+        '扭蛋消费'
+      );
+      
+      // 更新本地余额显示
+      setState(() {
+        _currentUser = _currentUser!.copyWith(
+          balance: _currentUser!.balance - cost
+        );
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('扣费失败: $e')),
+      );
+      return;
+    }
 
-    // 2. 模拟请求
-    await _fetchRandomPost();
+    // 3. 启动物理循环 (通过 isPlaying 状态自动触发)
 
-    // 持续搅动 2.5秒
-    await Future.delayed(const Duration(milliseconds: 2500));
+    // 4. 生成结果 (模拟后端算法)
+    await _generateGachaResults(count);
 
-    // 3. 停止搅动，球自然落下
+    // 持续搅动 2.0秒
+    await Future.delayed(const Duration(milliseconds: 2000));
+
+    // 5. 停止搅动
     setState(() {
       _isPlaying = false;
     });
     
-    // 4. 出货动画
+    // 6. 出货动画
     await _ballDropController.forward();
 
-    // 5. 显示结果
+    // 7. 显示结果
     await Future.delayed(const Duration(milliseconds: 300));
     if (mounted) {
-      setState(() {
-        _showResult = true;
-      });
       _showResultDialog();
     }
 
     _ballDropController.reset();
   }
 
-  Future<void> _fetchRandomPost() async {
-    try {
-      final result = await PostService.getPosts(page: 1, pageSize: 20);
-      final posts = result['posts'] as List<Post>;
-      if (posts.isNotEmpty) {
-        setState(() {
-          _gachaResult = posts[_random.nextInt(posts.length)];
-        });
+  Future<void> _generateGachaResults(int count) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    List<VirtualItem> results = [];
+    final mockPool = VirtualItem.mockItems;
+    
+    // 辅助函数：从列表中随机获取一个
+    VirtualItem getRandomItem(List<VirtualItem> items) {
+      if (items.isEmpty) return mockPool[0];
+      return items[_random.nextInt(items.length)];
+    }
+
+    for (int i = 0; i < count; i++) {
+      int roll = _random.nextInt(100);
+      // 保底机制：十连抽的第10发必出SR或以上 (如果前9发没出)
+      if (count == 10 && i == 9 && roll > 12) {
+        roll = _random.nextInt(12); // 强制落在 0-11 区间 (SSR or SR)
       }
-    } catch (e) {
-      print('Gacha Error: $e');
+      
+      VirtualItem item;
+      if (roll < 2) { // 2% SSR
+        final ssrItems = mockPool.where((e) => e.rarity == ItemRarity.ssr).toList();
+        item = getRandomItem(ssrItems);
+      } else if (roll < 12) { // 10% SR
+        final srItems = mockPool.where((e) => e.rarity == ItemRarity.sr).toList();
+        item = getRandomItem(srItems);
+      } else if (roll < 42) { // 30% R
+        final rItems = mockPool.where((e) => e.rarity == ItemRarity.r).toList();
+        item = getRandomItem(rItems);
+      } else { // 58% N
+        final nItems = mockPool.where((e) => e.rarity == ItemRarity.n).toList();
+        item = getRandomItem(nItems);
+      }
+      results.add(item);
+    }
+    
+    if (_currentUser != null) {
+      // 抽奖前先刷新用户信息，确保 inventory 是最新的，避免覆盖旧数据
+      try {
+        final latestUser = await ApiService.getUserInfo(_currentUser!.id);
+        if (mounted) {
+           _currentUser = latestUser;
+        }
+      } catch (e) {
+        print('Failed to refresh user info before saving: $e');
+        // 如果刷新失败，继续使用本地状态，但有覆盖风险
+      }
+
+      final newInventory = List<String>.from(_currentUser!.inventory);
+      for (var item in results) {
+        newInventory.add(item.id);
+      }
+      
+      // 调用后端 API 保存背包数据
+      try {
+        await ApiService.updateUserInfo(
+          _currentUser!.id,
+          inventory: newInventory,
+        );
+      } catch (e) {
+        print('Failed to save inventory: $e');
+        // 即使保存失败，本地也先显示结果，用户可能重试或者下次加载时丢失（这是风险）
+      }
+
+      setState(() {
+        _currentUser = _currentUser!.copyWith(inventory: newInventory);
+        _gachaResults = results;
+        
+        // 根据最高稀有度改变球的颜色
+        var maxRarity = results.map((e) => e.rarity.index).reduce(max);
+        if (maxRarity == ItemRarity.ssr.index) _currentBallColor = _ballColors[0];
+        else if (maxRarity == ItemRarity.sr.index) _currentBallColor = _ballColors[1];
+        else if (maxRarity == ItemRarity.r.index) _currentBallColor = _ballColors[2];
+        else _currentBallColor = _ballColors[3];
+      });
     }
   }
 
   void _showResultDialog() {
-    if (_gachaResult == null) return;
-
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -267,7 +256,7 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
             child: ScaleTransition(
               scale: CurvedAnimation(parent: animation, curve: Curves.elasticOut),
               child: Container(
-                width: MediaQuery.of(context).size.width * 0.85,
+                width: MediaQuery.of(context).size.width * 0.9,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -283,112 +272,130 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: _currentBallColor.withOpacity(0.2),
-                        shape: BoxShape.circle,
+                    Text(
+                      _gachaResults.length > 1 ? '十连大满足!' : '获得物品',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: _currentBallColor,
                       ),
-                      child: Icon(Icons.auto_awesome_rounded, color: _currentBallColor, size: 30),
                     ),
                     const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        NetworkAvatarImage(
-                          imageUrl: _gachaResult!.userAvatar,
-                          radius: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _gachaResult!.userName,
-                                style: const TextStyle(
-                                  fontSize: 16, 
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const Text(
-                                '来自于远方的扭蛋',
-                                style: TextStyle(
-                                  fontSize: 12, 
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
+                    
+                    // 结果列表
                     Container(
-                      constraints: const BoxConstraints(maxHeight: 200),
-                      child: SingleChildScrollView(
-                        child: Text(
-                          _gachaResult!.content,
-                          style: const TextStyle(fontSize: 16, height: 1.5),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
+                      constraints: const BoxConstraints(maxHeight: 400),
+                      child: _gachaResults.length == 1 
+                        ? _buildSingleResult(_gachaResults.first)
+                        : _buildMultiResult(_gachaResults),
                     ),
-                    if (_gachaResult!.images.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 16),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.network(
-                            _gachaResult!.images.first,
-                            height: 150,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              height: 150,
-                              color: Colors.grey[200],
-                              child: const Icon(Icons.broken_image, color: Colors.grey),
-                            ),
-                          ),
-                        ),
-                      ),
+                    
                     const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                              side: BorderSide(color: Colors.grey[300]!),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            child: const Text('收下', style: TextStyle(color: Colors.grey)),
-                          ),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _currentBallColor,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              Navigator.pushNamed(context, '/comments', arguments: _gachaResult!.id);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _currentBallColor,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            child: const Text('回复Ta'),
-                          ),
-                        ),
-                      ],
+                        child: const Text('收入背包'),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSingleResult(VirtualItem item) {
+    return Column(
+      children: [
+        Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            color: Color(item.rarityColor).withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: item.type == ItemType.avatarFrame
+                ? DynamicAvatar(avatarUrl: _currentUser?.avatar ?? '', size: 80, frameId: item.id)
+                : Icon(Icons.card_giftcard, size: 50, color: Color(item.rarityColor)),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          item.name,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        Text(
+          item.rarityLabel,
+          style: TextStyle(
+            fontSize: 16, 
+            fontWeight: FontWeight.bold,
+            color: Color(item.rarityColor),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          item.description,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.grey),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMultiResult(List<VirtualItem> items) {
+    return GridView.builder(
+      shrinkWrap: true,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 0.75,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return Container(
+          decoration: BoxDecoration(
+            color: Color(item.rarityColor).withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Color(item.rarityColor).withOpacity(0.3)),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+               Expanded(
+                 child: Center(
+                   child: item.type == ItemType.avatarFrame
+                    ? SizedBox(width: 40, height: 40, child: DynamicAvatar(avatarUrl: _currentUser?.avatar ?? '', size: 40, frameId: item.id))
+                    : Icon(Icons.card_giftcard, size: 30, color: Color(item.rarityColor)),
+                 ),
+               ),
+               Padding(
+                 padding: const EdgeInsets.all(4.0),
+                 child: Text(
+                   item.name,
+                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                   maxLines: 1,
+                   overflow: TextOverflow.ellipsis,
+                 ),
+               ),
+               Text(
+                 item.rarityLabel,
+                 style: TextStyle(fontSize: 10, color: Color(item.rarityColor), fontWeight: FontWeight.bold),
+               ),
+               const SizedBox(height: 4),
+            ],
           ),
         );
       },
@@ -404,9 +411,76 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        actions: [
+          // 背包按钮
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.backpack_outlined, color: Colors.blueAccent),
+              onPressed: () {
+                if (_currentUser != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => InventoryPage(
+                        user: _currentUser!,
+                        onUserUpdate: (updatedUser) {
+                          setState(() {
+                            _currentUser = updatedUser;
+                          });
+                        },
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+          // 余额显示
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.grey[200]!),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.account_balance_wallet, size: 16, color: Colors.orangeAccent),
+                const SizedBox(width: 4),
+                Text(
+                  _currentUser?.balance.toStringAsFixed(2) ?? '0.00',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold, 
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
       body: Stack(
-        fit: StackFit.expand, // 填满屏幕
+        fit: StackFit.expand, 
         children: [
           // 装饰背景
           Positioned(
@@ -424,240 +498,178 @@ class _GachaPageState extends State<GachaPage> with TickerProviderStateMixin {
           
           // 机器主体 (居中)
           Center(
-            child: GestureDetector(
-              onTap: _isPlaying ? null : _startGacha,
-              child: Container(
-                width: 280,
-                height: 400,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFFB7C5), Color(0xFFFFA5B5)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(40),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.pink.withOpacity(0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                  border: Border.all(color: Colors.white, width: 4),
+            child: Container(
+              width: 280,
+              height: 400,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFFB7C5), Color(0xFFFFA5B5)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                child: Column(
-                  children: [
-                    // 玻璃罩
-                    Container(
-                      margin: const EdgeInsets.all(20),
-                      height: 200,
-                      width: 200,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(100),
-                        border: Border.all(color: Colors.white.withOpacity(0.8), width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.2),
-                            blurRadius: 10,
-                            offset: const Offset(-5, -5),
+                borderRadius: BorderRadius.circular(40),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.pink.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+                border: Border.all(color: Colors.white, width: 4),
+              ),
+              child: Column(
+                children: [
+                  // 玻璃罩
+                  Container(
+                    margin: const EdgeInsets.all(20),
+                    height: 200,
+                    width: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(100),
+                      border: Border.all(color: Colors.white.withOpacity(0.8), width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.white.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(-5, -5),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(100),
+                      child: GachaMachineDisplay(
+                        isPlaying: _isPlaying,
+                        balls: _balls,
+                        onPhysicsUpdate: (balls) {
+                          // 如果需要处理物理回调
+                        },
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  // 状态文字
+                  _isPlaying 
+                    ? const Text(
+                        '正在扭蛋中...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
+                      )
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.stars_rounded, color: Colors.white.withOpacity(0.6), size: 32),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Moe Gacha',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.8),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              fontFamily: 'Courier', 
+                            ),
                           ),
                         ],
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(100),
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            if (constraints.maxWidth == 0 || constraints.maxHeight == 0) {
-                              return const SizedBox.shrink();
-                            }
-                            return Stack(
-                              children: [
-                                // 动态小球
-                                for (var ball in _balls)
-                                  Positioned(
-                                    left: ball.x * constraints.maxWidth, 
-                                    top: ball.y * constraints.maxHeight,
-                                    child: Transform.rotate(
-                                      angle: ball.rotation,
-                                      child: Container(
-                                        width: ball.size,
-                                        height: ball.size,
-                                        decoration: BoxDecoration(
-                                          color: ball.color,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(0.1),
-                                              blurRadius: 2,
-                                              offset: const Offset(1, 1),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Container(
-                                          margin: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(0.3),
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                            // 装饰性机械结构 (仅在运行时旋转)
-                            Container(
-                              height: 120,
-                              alignment: Alignment.center,
-                              child: _isPlaying 
-                                  ? TweenAnimationBuilder<double>(
-                                      tween: Tween(begin: 0, end: 8 * pi),
-                                      duration: const Duration(seconds: 2),
-                                      builder: (context, value, child) {
-                                        return Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Transform.rotate(
-                                              angle: value,
-                                              child: Icon(Icons.settings_rounded, color: Colors.white.withOpacity(0.9), size: 48),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            const Text(
-                                              'Gachaing...',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                letterSpacing: 1,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    )
-                                  : Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.stars_rounded, color: Colors.white.withOpacity(0.6), size: 32),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Moe Social',
-                                          style: TextStyle(
-                                            color: Colors.white.withOpacity(0.8),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                            fontFamily: 'Courier', // 机械感字体
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                            ),
-                    const SizedBox(height: 20),
-                  ],
-                ),
+                  const SizedBox(height: 20),
+                ],
               ),
             ),
           ),
           
-          // 投币按钮 (固定在底部)
+          // 底部控制区 (双按钮)
           Positioned(
-            bottom: 60,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: SizedBox(
-                width: 220,
-                height: 64,
-                child: ElevatedButton(
-                  onPressed: _isPlaying ? null : _startGacha,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7F7FD5),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(32),
-                    ),
-                    elevation: 8,
-                    shadowColor: const Color(0xFF7F7FD5).withOpacity(0.5),
+            bottom: 40,
+            left: 20,
+            right: 20,
+            child: Row(
+              children: [
+                // 单抽按钮
+                Expanded(
+                  child: _buildGachaButton(
+                    label: '单抽',
+                    price: '¥5.0',
+                    color: const Color(0xFF7F7FD5),
+                    onTap: () => _startGacha(1),
                   ),
-                  child: _isPlaying
-                      ? const Text('扭蛋中...', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
-                      : const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.monetization_on_rounded, size: 28, color: Colors.amberAccent),
-                            SizedBox(width: 12),
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('投入硬币', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                Text('今日剩余: 3次', style: TextStyle(fontSize: 10, color: Colors.white70)),
-                              ],
-                            ),
-                          ],
-                        ),
                 ),
-              ),
-            ),
-          ),
-
-          // 出货口动画球 (放在最顶层，绝对定位)
-          // 目标：停在齿轮位置 (机器下半部分)
-          Align(
-            alignment: Alignment.center,
-            child: AnimatedBuilder(
-              animation: _ballDropAnimation,
-              builder: (context, child) {
-                // 初始位置：玻璃罩底部 (50) -> 结束位置：齿轮区域 (130)
-                // 使用非线性插值模拟弹跳
-                double value = _ballDropAnimation.value;
-                double yOffset = 50 + (80 * value); 
-                double scale = 0.5 + (1.0 * value); // 从小变大
-                
-                // 旋转动画 (滚出来)
-                double rotation = value * 2 * pi;
-
-                if (value == 0) return const SizedBox.shrink();
-
-                return Transform.translate(
-                  offset: Offset(0, yOffset),
-                  child: Transform.rotate(
-                    angle: rotation,
-                    child: Transform.scale(
-                      scale: scale,
-                      child: Container(
-                        width: 80, // 变大一点，更有满足感
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: _currentBallColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 4),
-                          boxShadow: [
-                            BoxShadow(
-                              color: _currentBallColor.withOpacity(0.6),
-                              blurRadius: 20,
-                              spreadRadius: 5,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        // 加个问号或者礼物图标
-                        child: Icon(Icons.question_mark_rounded, color: Colors.white.withOpacity(0.8), size: 40),
-                      ),
-                    ),
+                const SizedBox(width: 16),
+                // 十连按钮
+                Expanded(
+                  child: _buildGachaButton(
+                    label: '十连',
+                    price: '¥45.0',
+                    subLabel: '必出SR',
+                    color: const Color(0xFFFF9A9E),
+                    onTap: () => _startGacha(10),
                   ),
-                );
-              },
+                ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGachaButton({
+    required String label,
+    required String price,
+    String? subLabel,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return SizedBox(
+      height: 70,
+      child: ElevatedButton(
+        onPressed: _isPlaying ? null : onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          elevation: 8,
+          shadowColor: color.withOpacity(0.5),
+          padding: EdgeInsets.zero,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label, 
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+            ),
+            const SizedBox(height: 2),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.monetization_on, size: 14, color: Colors.amberAccent),
+                const SizedBox(width: 2),
+                Text(
+                  price,
+                  style: const TextStyle(fontSize: 12, color: Colors.white70),
+                ),
+              ],
+            ),
+            if (subLabel != null)
+              Container(
+                margin: const EdgeInsets.only(top: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  subLabel,
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

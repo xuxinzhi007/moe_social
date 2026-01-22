@@ -22,6 +22,8 @@ type User struct {
 	VipEndAt    *time.Time     `json:"vip_end_at,omitempty"`
 	AutoRenew   bool           `gorm:"default:false" json:"auto_renew"` // 自动续费
 	Balance     float64        `gorm:"default:0" json:"balance"`        // 钱包余额
+	Inventory   string         `gorm:"type:text" json:"inventory"`      // JSON: ["item1", "item2"]
+	EquippedFrameId string     `gorm:"size:100" json:"equipped_frame_id"` // 佩戴的头像框ID
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
