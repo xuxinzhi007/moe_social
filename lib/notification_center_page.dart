@@ -160,6 +160,10 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
         icon = Icons.notifications_rounded;
         color = Colors.orange;
         break;
+      case NotificationModel.directMessage:
+        icon = Icons.mark_chat_unread_rounded;
+        color = Colors.deepPurple;
+        break;
       default:
         icon = Icons.notifications_rounded;
         color = Colors.grey;

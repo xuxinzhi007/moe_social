@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"backend/api/internal/svc"
+	"backend/rpc/pb/super"
 	"backend/utils"
 
 	"github.com/gorilla/websocket"
@@ -99,8 +101,6 @@ func (h *hub) isOnline(userID string) bool {
 }
 
 func ChatWsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
-	_ = svcCtx
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		token := ""
 
@@ -160,6 +160,22 @@ func ChatWsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 				}
 
 				chatHub.forwardMessage(uid, msg.To, msg.Content)
+
+				content := msg.Content
+				if len(content) > 100 {
+					content = content[:100]
+				}
+
+				_, err = svcCtx.SuperRpcClient.CreateNotification(context.Background(), &super.CreateNotificationReq{
+					UserId:   msg.To,
+					SenderId: uid,
+					Type:     6,
+					PostId:   "",
+					Content:  content,
+				})
+				if err != nil {
+					logx.Errorf("create direct message notification error: %v", err)
+				}
 			}
 		}(userID, conn)
 	}

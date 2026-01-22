@@ -56,6 +56,7 @@ const (
 	Super_GetUnreadCount_FullMethodName         = "/super.Super/GetUnreadCount"
 	Super_ReadNotification_FullMethodName       = "/super.Super/ReadNotification"
 	Super_ReadAllNotifications_FullMethodName   = "/super.Super/ReadAllNotifications"
+	Super_CreateNotification_FullMethodName     = "/super.Super/CreateNotification"
 	Super_Recharge_FullMethodName               = "/super.Super/Recharge"
 	Super_GetTransactions_FullMethodName        = "/super.Super/GetTransactions"
 	Super_GetTransaction_FullMethodName         = "/super.Super/GetTransaction"
@@ -117,6 +118,7 @@ type SuperClient interface {
 	GetUnreadCount(ctx context.Context, in *GetUnreadCountReq, opts ...grpc.CallOption) (*GetUnreadCountResp, error)
 	ReadNotification(ctx context.Context, in *ReadNotificationReq, opts ...grpc.CallOption) (*ReadNotificationResp, error)
 	ReadAllNotifications(ctx context.Context, in *ReadAllNotificationsReq, opts ...grpc.CallOption) (*ReadAllNotificationsResp, error)
+	CreateNotification(ctx context.Context, in *CreateNotificationReq, opts ...grpc.CallOption) (*CreateNotificationResp, error)
 	// 钱包相关服务
 	Recharge(ctx context.Context, in *RechargeReq, opts ...grpc.CallOption) (*RechargeResp, error)
 	// 交易记录相关服务
@@ -474,6 +476,15 @@ func (c *superClient) ReadAllNotifications(ctx context.Context, in *ReadAllNotif
 	return out, nil
 }
 
+func (c *superClient) CreateNotification(ctx context.Context, in *CreateNotificationReq, opts ...grpc.CallOption) (*CreateNotificationResp, error) {
+	out := new(CreateNotificationResp)
+	err := c.cc.Invoke(ctx, Super_CreateNotification_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *superClient) Recharge(ctx context.Context, in *RechargeReq, opts ...grpc.CallOption) (*RechargeResp, error) {
 	out := new(RechargeResp)
 	err := c.cc.Invoke(ctx, Super_Recharge_FullMethodName, in, out, opts...)
@@ -613,6 +624,7 @@ type SuperServer interface {
 	GetUnreadCount(context.Context, *GetUnreadCountReq) (*GetUnreadCountResp, error)
 	ReadNotification(context.Context, *ReadNotificationReq) (*ReadNotificationResp, error)
 	ReadAllNotifications(context.Context, *ReadAllNotificationsReq) (*ReadAllNotificationsResp, error)
+	CreateNotification(context.Context, *CreateNotificationReq) (*CreateNotificationResp, error)
 	// 钱包相关服务
 	Recharge(context.Context, *RechargeReq) (*RechargeResp, error)
 	// 交易记录相关服务
@@ -744,6 +756,9 @@ func (UnimplementedSuperServer) ReadNotification(context.Context, *ReadNotificat
 }
 func (UnimplementedSuperServer) ReadAllNotifications(context.Context, *ReadAllNotificationsReq) (*ReadAllNotificationsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReadAllNotifications not implemented")
+}
+func (UnimplementedSuperServer) CreateNotification(context.Context, *CreateNotificationReq) (*CreateNotificationResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateNotification not implemented")
 }
 func (UnimplementedSuperServer) Recharge(context.Context, *RechargeReq) (*RechargeResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Recharge not implemented")
@@ -1454,6 +1469,24 @@ func _Super_ReadAllNotifications_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Super_CreateNotification_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateNotificationReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).CreateNotification(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_CreateNotification_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).CreateNotification(ctx, req.(*CreateNotificationReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Super_Recharge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RechargeReq)
 	if err := dec(in); err != nil {
@@ -1788,6 +1821,10 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ReadAllNotifications",
 			Handler:    _Super_ReadAllNotifications_Handler,
+		},
+		{
+			MethodName: "CreateNotification",
+			Handler:    _Super_CreateNotification_Handler,
 		},
 		{
 			MethodName: "Recharge",

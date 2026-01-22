@@ -39,8 +39,24 @@ class NotificationProvider extends ChangeNotifier {
     try {
       final count = await NotificationService.getUnreadCount();
       if (_unreadCount != count) {
+        final previous = _unreadCount;
         _unreadCount = count;
         notifyListeners();
+
+        if (count > previous) {
+          final list = await NotificationService.getNotifications(page: 1);
+          final directMessages = list.where(
+            (n) => n.type == NotificationModel.directMessage && !n.isRead,
+          );
+          final latest = directMessages.isNotEmpty ? directMessages.first : null;
+          if (latest != null) {
+            await NotificationService.showPrivateMessageNotification(
+              senderName: latest.senderName ?? '好友',
+              messagePreview: latest.content,
+              unreadCount: count,
+            );
+          }
+        }
       }
     } catch (e) {
       print('Failed to fetch unread count: $e');
@@ -84,5 +100,4 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 }
-
 

@@ -504,6 +504,18 @@ message ReadAllNotificationsReq {
 message ReadAllNotificationsResp {
 }
 
+message CreateNotificationReq {
+  string user_id = 1;
+  string sender_id = 2;
+  int32 type = 3;
+  string post_id = 4;
+  string content = 5;
+}
+
+message CreateNotificationResp {
+  Notification notification = 1;
+}
+
 message UserMemory {
   string id = 1;
   string user_id = 2;
@@ -593,6 +605,7 @@ service Super {
   rpc GetUnreadCount(GetUnreadCountReq) returns (GetUnreadCountResp);
   rpc ReadNotification(ReadNotificationReq) returns (ReadNotificationResp);
   rpc ReadAllNotifications(ReadAllNotificationsReq) returns (ReadAllNotificationsResp);
+  rpc CreateNotification(CreateNotificationReq) returns (CreateNotificationResp);
   
   // 钱包相关服务
   rpc Recharge(RechargeReq) returns (RechargeResp);

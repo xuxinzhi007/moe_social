@@ -23,6 +23,8 @@ type (
 	Comment                    = super.Comment
 	CreateCommentReq           = super.CreateCommentReq
 	CreateCommentResp          = super.CreateCommentResp
+	CreateNotificationReq      = super.CreateNotificationReq
+	CreateNotificationResp     = super.CreateNotificationResp
 	CreatePostReq              = super.CreatePostReq
 	CreatePostResp             = super.CreatePostResp
 	CreateVipOrderReq          = super.CreateVipOrderReq
@@ -167,6 +169,7 @@ type (
 		GetUnreadCount(ctx context.Context, in *GetUnreadCountReq, opts ...grpc.CallOption) (*GetUnreadCountResp, error)
 		ReadNotification(ctx context.Context, in *ReadNotificationReq, opts ...grpc.CallOption) (*ReadNotificationResp, error)
 		ReadAllNotifications(ctx context.Context, in *ReadAllNotificationsReq, opts ...grpc.CallOption) (*ReadAllNotificationsResp, error)
+		CreateNotification(ctx context.Context, in *CreateNotificationReq, opts ...grpc.CallOption) (*CreateNotificationResp, error)
 		// 钱包相关服务
 		Recharge(ctx context.Context, in *RechargeReq, opts ...grpc.CallOption) (*RechargeResp, error)
 		// 交易记录相关服务
@@ -385,6 +388,11 @@ func (m *defaultSuper) ReadNotification(ctx context.Context, in *ReadNotificatio
 func (m *defaultSuper) ReadAllNotifications(ctx context.Context, in *ReadAllNotificationsReq, opts ...grpc.CallOption) (*ReadAllNotificationsResp, error) {
 	client := super.NewSuperClient(m.cli.Conn())
 	return client.ReadAllNotifications(ctx, in, opts...)
+}
+
+func (m *defaultSuper) CreateNotification(ctx context.Context, in *CreateNotificationReq, opts ...grpc.CallOption) (*CreateNotificationResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.CreateNotification(ctx, in, opts...)
 }
 
 // 钱包相关服务

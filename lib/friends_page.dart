@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'models/user.dart';
@@ -17,11 +18,19 @@ class _FriendsPageState extends State<FriendsPage> {
   bool _hasError = false;
   String _errorMessage = '';
   String _searchKeyword = '';
+   Map<String, bool> _onlineStatus = {};
+   Timer? _onlineTimer;
 
   @override
   void initState() {
     super.initState();
     _loadFriends();
+  }
+
+  @override
+  void dispose() {
+    _onlineTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadFriends() async {
@@ -57,6 +66,7 @@ class _FriendsPageState extends State<FriendsPage> {
         _isLoading = false;
         _hasError = false;
       });
+      _startOnlinePolling();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -65,6 +75,32 @@ class _FriendsPageState extends State<FriendsPage> {
         _errorMessage = e.toString();
       });
     }
+  }
+
+  void _startOnlinePolling() {
+    _updateOnlineStatus();
+    _onlineTimer?.cancel();
+    _onlineTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _updateOnlineStatus();
+    });
+  }
+
+  Future<void> _updateOnlineStatus() async {
+    if (!mounted || _friends.isEmpty) {
+      return;
+    }
+    final friends = List<User>.from(_friends);
+    final Map<String, bool> status = {};
+    for (final user in friends) {
+      try {
+        final online = await ApiService.getChatOnline(user.id);
+        status[user.id] = online;
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    setState(() {
+      _onlineStatus = status;
+    });
   }
 
   void _showAddFriendDialog() {
@@ -283,6 +319,7 @@ class _FriendsPageState extends State<FriendsPage> {
   }
 
   Widget _buildFriendItem(User user) {
+    final isOnline = _onlineStatus[user.id] ?? false;
     return ListTile(
       leading: NetworkAvatarImage(
         imageUrl: user.avatar,
@@ -297,6 +334,25 @@ class _FriendsPageState extends State<FriendsPage> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: isOnline ? Colors.green : Colors.grey,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                isOnline ? '在线' : '离线',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFF7F7FD5)),
             onPressed: () {
