@@ -63,7 +63,7 @@ class ApiService {
   static const bool _verboseApiLog = true;
   
   // 生产环境地址（cpolar隧道）
-  static const String _productionUrl = 'http://6c754dda.r3.cpolar.top';
+  static const String _productionUrl = 'http://491d1261.r3.cpolar.top';
   
   // 开发环境地址
   static const String _developmentUrl = 'http://localhost:8888';
@@ -82,10 +82,10 @@ class ApiService {
     } else if (Platform.isAndroid) {
       // Android真机需要使用电脑IP或生产环境地址
       // 如果本地连接有问题，可以临时使用生产环境地址
-      // return 'http://6c754dda.r3.cpolar.top'; // 使用生产环境
+      // return 'http://491d1261.r3.cpolar.top'; // 使用生产环境
       // 或者使用电脑IP（需要根据实际情况修改）
       // return 'http://192.168.1.16:8888'; // 替换为你的电脑IP
-      return 'http://6c754dda.r3.cpolar.top'; // Android模拟器使用这个
+      return 'http://491d1261.r3.cpolar.top'; // Android模拟器使用这个
     } else if (Platform.isIOS) {
       // iOS模拟器使用localhost，真机需要使用电脑IP
       return _developmentUrl; // iOS模拟器
