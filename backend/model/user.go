@@ -36,13 +36,6 @@ type User struct {
 
 // BeforeSave 保存前钩子，自动哈希密码
 func (u *User) BeforeSave(tx *gorm.DB) error {
-	// Only hash when Password field is actually changed.
-	// This avoids re-hashing the already-hashed password during unrelated updates.
-	if tx != nil && tx.Statement != nil && !tx.Statement.Changed("Password") {
-		return nil
-	}
-
-	// Extra guard: avoid re-hashing an already-hashed bcrypt password.
 	if u.Password != "" && !looksLikeBcryptHash(u.Password) {
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 		if err != nil {
