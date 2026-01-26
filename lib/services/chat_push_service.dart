@@ -23,6 +23,7 @@ class ChatPushService {
   static WebSocketChannel? _channel;
   static StreamSubscription? _subscription;
   static Timer? _reconnectTimer;
+  static Timer? _heartbeatTimer;
   static bool _connecting = false;
 
   static bool get isConnected => _channel != null;
@@ -36,6 +37,8 @@ class ChatPushService {
   static void stop() {
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
     _subscription?.cancel();
     _subscription = null;
     _channel?.sink.close();
@@ -76,6 +79,11 @@ class ChatPushService {
 
     final token = ApiService.token;
     if (token == null || token.isEmpty) {
+      // Token might not be ready yet; keep retrying until auth is available.
+      _reconnectTimer?.cancel();
+      _reconnectTimer = Timer(const Duration(seconds: 3), () {
+        _connect();
+      });
       return;
     }
 
@@ -86,6 +94,10 @@ class ChatPushService {
       final wsUri = _buildWebSocketUri();
       final ch = WebSocketChannel.connect(wsUri);
       _channel = ch;
+      _heartbeatTimer?.cancel();
+      _heartbeatTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+        ping();
+      });
       _subscription = ch.stream.listen(
         _handleMessage,
         onDone: _handleDisconnected,
@@ -103,6 +115,8 @@ class ChatPushService {
     _subscription?.cancel();
     _subscription = null;
     _channel = null;
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
 
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(const Duration(seconds: 3), () {
