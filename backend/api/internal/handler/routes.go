@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	avatar "backend/api/internal/handler/avatar"
+	chat "backend/api/internal/handler/chat"
 	comment "backend/api/internal/handler/comment"
 	emoji "backend/api/internal/handler/emoji"
 	image "backend/api/internal/handler/image"
@@ -48,6 +49,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodPost,
 				Path:    "/api/avatar/outfits/:outfit_id/purchase",
 				Handler: avatar.PurchaseAvatarOutfitHandler(serverCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/chat/online",
+				Handler: chat.ChatOnlineHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/chat/online/batch",
+				Handler: chat.ChatOnlineBatchHandler(serverCtx),
 			},
 		},
 	)

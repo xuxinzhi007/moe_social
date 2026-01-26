@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'models/user.dart';
 import 'services/api_service.dart';
+import 'services/presence_service.dart';
 import 'widgets/avatar_image.dart';
 
 class FriendsPage extends StatefulWidget {
@@ -18,8 +19,18 @@ class _FriendsPageState extends State<FriendsPage> {
   bool _hasError = false;
   String _errorMessage = '';
   String _searchKeyword = '';
-   Map<String, bool> _onlineStatus = {};
-   Timer? _onlineTimer;
+  Map<String, bool> _onlineStatus = {};
+  Timer? _onlineTimer;
+  bool _presenceListening = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_presenceListening) return;
+    _presenceListening = true;
+    PresenceService.start();
+    PresenceService.online.addListener(_onPresenceUpdate);
+  }
 
   @override
   void initState() {
@@ -30,7 +41,23 @@ class _FriendsPageState extends State<FriendsPage> {
   @override
   void dispose() {
     _onlineTimer?.cancel();
+    if (_presenceListening) {
+      PresenceService.online.removeListener(_onPresenceUpdate);
+    }
     super.dispose();
+  }
+
+  void _onPresenceUpdate() {
+    if (!mounted) return;
+    if (_friends.isEmpty) return;
+    final current = PresenceService.online.value;
+    final next = <String, bool>{};
+    for (final f in _friends) {
+      next[f.id] = current[f.id] ?? false;
+    }
+    setState(() {
+      _onlineStatus = next;
+    });
   }
 
   Future<void> _loadFriends() async {
@@ -53,12 +80,15 @@ class _FriendsPageState extends State<FriendsPage> {
     }
 
     try {
-      final followingResult = await ApiService.getFollowings(currentUserId, page: 1, pageSize: 1000);
-      final followerResult = await ApiService.getFollowers(currentUserId, page: 1, pageSize: 1000);
+      final followingResult = await ApiService.getFollowings(currentUserId,
+          page: 1, pageSize: 1000);
+      final followerResult =
+          await ApiService.getFollowers(currentUserId, page: 1, pageSize: 1000);
       final followings = followingResult['followings'] as List<User>;
       final followers = followerResult['followers'] as List<User>;
       final followerIds = followers.map((u) => u.id).toSet();
-      final friends = followings.where((u) => followerIds.contains(u.id)).toList();
+      final friends =
+          followings.where((u) => followerIds.contains(u.id)).toList();
       friends.sort((a, b) => a.username.compareTo(b.username));
       if (!mounted) return;
       setState(() {
@@ -89,18 +119,30 @@ class _FriendsPageState extends State<FriendsPage> {
     if (!mounted || _friends.isEmpty) {
       return;
     }
-    final friends = List<User>.from(_friends);
-    final Map<String, bool> status = {};
-    for (final user in friends) {
-      try {
-        final online = await ApiService.getChatOnline(user.id);
-        status[user.id] = online;
-      } catch (_) {}
+
+    // If presence websocket is active and has data, prefer it.
+    final presenceMap = PresenceService.online.value;
+    if (PresenceService.isConnected && presenceMap.isNotEmpty) {
+      final next = <String, bool>{};
+      for (final f in _friends) {
+        next[f.id] = presenceMap[f.id] ?? false;
+      }
+      setState(() {
+        _onlineStatus = next;
+      });
+      return;
     }
-    if (!mounted) return;
-    setState(() {
-      _onlineStatus = status;
-    });
+
+    final ids = List<String>.from(_friends.map((u) => u.id));
+    try {
+      final status = await ApiService.getChatOnlineBatch(ids);
+      if (!mounted) return;
+      setState(() {
+        _onlineStatus = status;
+      });
+    } catch (_) {
+      // Keep last known status on error.
+    }
   }
 
   void _showAddFriendDialog() {
@@ -114,7 +156,8 @@ class _FriendsPageState extends State<FriendsPage> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
               title: const Text('通过邮箱添加好友'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -169,7 +212,8 @@ class _FriendsPageState extends State<FriendsPage> {
                             error = null;
                           });
                           try {
-                            final targetUser = await ApiService.checkUserByEmail(email);
+                            final targetUser =
+                                await ApiService.checkUserByEmail(email);
                             if (targetUser.id == currentUserId) {
                               setState(() {
                                 isLoading = false;
@@ -177,11 +221,14 @@ class _FriendsPageState extends State<FriendsPage> {
                               });
                               return;
                             }
-                            await ApiService.followUser(currentUserId, targetUser.id);
+                            await ApiService.followUser(
+                                currentUserId, targetUser.id);
                             if (rootContext.mounted) {
                               Navigator.of(dialogContext).pop();
                               ScaffoldMessenger.of(rootContext).showSnackBar(
-                                SnackBar(content: Text('已关注 ${targetUser.username}')),
+                                SnackBar(
+                                    content:
+                                        Text('已关注 ${targetUser.username}')),
                               );
                               _loadFriends();
                             }
@@ -354,7 +401,8 @@ class _FriendsPageState extends State<FriendsPage> {
           ),
           const SizedBox(width: 8),
           IconButton(
-            icon: const Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFF7F7FD5)),
+            icon: const Icon(Icons.chat_bubble_outline_rounded,
+                color: Color(0xFF7F7FD5)),
             onPressed: () {
               Navigator.pushNamed(
                 context,
@@ -418,7 +466,8 @@ class _FriendsPageState extends State<FriendsPage> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.person_remove_alt_1_rounded, color: Colors.red),
+                leading: const Icon(Icons.person_remove_alt_1_rounded,
+                    color: Colors.red),
                 title: const Text('删除好友', style: TextStyle(color: Colors.red)),
                 onTap: () async {
                   Navigator.pop(context);

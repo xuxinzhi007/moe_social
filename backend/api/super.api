@@ -1116,3 +1116,36 @@ service Super {
 	get /api/voice/token (GetRtcTokenReq) returns (GetRtcTokenResp)
 }
 
+// 聊天在线状态相关结构
+type ChatOnlineReq {
+	UserId string `form:"user_id"`
+}
+
+type ChatOnlineResp {
+	BaseResp
+	Online bool `json:"online"`
+}
+
+type ChatOnlineBatchReq {
+	UserIds string `form:"user_ids"` // 逗号分隔的用户ID列表
+}
+
+type ChatOnlineBatchResp {
+	BaseResp
+	Online map[string]bool `json:"online"`
+}
+
+// 聊天在线状态相关API服务
+@server (
+	group: chat
+)
+service Super {
+	// 查询单个用户在线状态
+	@handler chatOnline
+	get /api/chat/online (ChatOnlineReq) returns (ChatOnlineResp)
+
+	// 批量查询用户在线状态
+	@handler chatOnlineBatch
+	get /api/chat/online/batch (ChatOnlineBatchReq) returns (ChatOnlineBatchResp)
+}
+

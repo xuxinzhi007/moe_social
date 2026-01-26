@@ -17,12 +17,13 @@ class GachaPage extends StatefulWidget {
   State<GachaPage> createState() => _GachaPageState();
 }
 
-class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMixin {
+class _GachaPageState extends State<GachaPage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _ballDropController;
 
   final Random _random = Random();
   bool _isPlaying = false;
-  
+
   // 抽奖结果相关
   List<VirtualItem> _gachaResults = [];
   Color _currentBallColor = Colors.blueAccent;
@@ -43,7 +44,7 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
     super.initState();
     _loadUserInfo();
     _initBalls();
-    
+
     _ballDropController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -122,19 +123,16 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
 
     // 2. 扣费 (调用后端 API)
     try {
-      await ApiService.recharge(
-        _currentUser!.id, 
-        -cost, 
-        '扭蛋消费'
-      );
-      
-      // 更新本地余额显示
-      setState(() {
-        _currentUser = _currentUser!.copyWith(
-          balance: _currentUser!.balance - cost
-        );
-      });
+      await ApiService.recharge(_currentUser!.id, -cost, '扭蛋消费');
+
+      // Refresh from server (balance is server-truth)
+      await _loadUserInfo();
     } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+        });
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('扣费失败: $e')),
       );
@@ -153,7 +151,7 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
     setState(() {
       _isPlaying = false;
     });
-    
+
     // 6. 出货动画
     await _ballDropController.forward();
 
@@ -170,7 +168,7 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
     await Future.delayed(const Duration(milliseconds: 500));
     List<VirtualItem> results = [];
     final mockPool = VirtualItem.mockItems;
-    
+
     // 辅助函数：从列表中随机获取一个
     VirtualItem getRandomItem(List<VirtualItem> items) {
       if (items.isEmpty) return mockPool[0];
@@ -183,30 +181,36 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
       if (count == 10 && i == 9 && roll > 12) {
         roll = _random.nextInt(12); // 强制落在 0-11 区间 (SSR or SR)
       }
-      
+
       VirtualItem item;
-      if (roll < 2) { // 2% SSR
-        final ssrItems = mockPool.where((e) => e.rarity == ItemRarity.ssr).toList();
+      if (roll < 2) {
+        // 2% SSR
+        final ssrItems =
+            mockPool.where((e) => e.rarity == ItemRarity.ssr).toList();
         item = getRandomItem(ssrItems);
-      } else if (roll < 12) { // 10% SR
-        final srItems = mockPool.where((e) => e.rarity == ItemRarity.sr).toList();
+      } else if (roll < 12) {
+        // 10% SR
+        final srItems =
+            mockPool.where((e) => e.rarity == ItemRarity.sr).toList();
         item = getRandomItem(srItems);
-      } else if (roll < 42) { // 30% R
+      } else if (roll < 42) {
+        // 30% R
         final rItems = mockPool.where((e) => e.rarity == ItemRarity.r).toList();
         item = getRandomItem(rItems);
-      } else { // 58% N
+      } else {
+        // 58% N
         final nItems = mockPool.where((e) => e.rarity == ItemRarity.n).toList();
         item = getRandomItem(nItems);
       }
       results.add(item);
     }
-    
+
     if (_currentUser != null) {
       // 抽奖前先刷新用户信息，确保 inventory 是最新的，避免覆盖旧数据
       try {
         final latestUser = await ApiService.getUserInfo(_currentUser!.id);
         if (mounted) {
-           _currentUser = latestUser;
+          _currentUser = latestUser;
         }
       } catch (e) {
         print('Failed to refresh user info before saving: $e');
@@ -217,7 +221,7 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
       for (var item in results) {
         newInventory.add(item.id);
       }
-      
+
       // 调用后端 API 保存背包数据
       try {
         await ApiService.updateUserInfo(
@@ -225,6 +229,12 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
           inventory: newInventory,
           avatar: _currentUser!.avatar.isEmpty ? null : _currentUser!.avatar,
         );
+
+        // Refresh from server (inventory/equip are server-truth)
+        final refreshed = await ApiService.getUserInfo(_currentUser!.id);
+        if (mounted) {
+          _currentUser = refreshed;
+        }
       } catch (e) {
         print('Failed to save inventory: $e');
         // 即使保存失败，本地也先显示结果，用户可能重试或者下次加载时丢失（这是风险）
@@ -233,13 +243,17 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
       setState(() {
         _currentUser = _currentUser!.copyWith(inventory: newInventory);
         _gachaResults = results;
-        
+
         // 根据最高稀有度改变球的颜色
         var maxRarity = results.map((e) => e.rarity.index).reduce(max);
-        if (maxRarity == ItemRarity.ssr.index) _currentBallColor = _ballColors[0];
-        else if (maxRarity == ItemRarity.sr.index) _currentBallColor = _ballColors[1];
-        else if (maxRarity == ItemRarity.r.index) _currentBallColor = _ballColors[2];
-        else _currentBallColor = _ballColors[3];
+        if (maxRarity == ItemRarity.ssr.index)
+          _currentBallColor = _ballColors[0];
+        else if (maxRarity == ItemRarity.sr.index)
+          _currentBallColor = _ballColors[1];
+        else if (maxRarity == ItemRarity.r.index)
+          _currentBallColor = _ballColors[2];
+        else
+          _currentBallColor = _ballColors[3];
       });
     }
   }
@@ -255,7 +269,8 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
           child: Material(
             color: Colors.transparent,
             child: ScaleTransition(
-              scale: CurvedAnimation(parent: animation, curve: Curves.elasticOut),
+              scale:
+                  CurvedAnimation(parent: animation, curve: Curves.elasticOut),
               child: Container(
                 width: MediaQuery.of(context).size.width * 0.9,
                 padding: const EdgeInsets.all(24),
@@ -282,15 +297,15 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
                       ),
                     ),
                     const SizedBox(height: 20),
-                    
+
                     // 结果列表
                     Container(
                       constraints: const BoxConstraints(maxHeight: 400),
-                      child: _gachaResults.length == 1 
-                        ? _buildSingleResult(_gachaResults.first)
-                        : _buildMultiResult(_gachaResults),
+                      child: _gachaResults.length == 1
+                          ? _buildSingleResult(_gachaResults.first)
+                          : _buildMultiResult(_gachaResults),
                     ),
-                    
+
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
@@ -299,7 +314,8 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _currentBallColor,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20)),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         child: const Text('收入背包'),
@@ -429,7 +445,8 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
                   constraints: const BoxConstraints(maxHeight: 420),
                   child: GridView.builder(
                     shrinkWrap: true,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
                       childAspectRatio: 0.75,
                       crossAxisSpacing: 12,
@@ -469,8 +486,12 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
           ),
           child: Center(
             child: item.type == ItemType.avatarFrame
-                ? DynamicAvatar(avatarUrl: _currentUser?.avatar ?? '', size: 80, frameId: item.id)
-                : Icon(Icons.card_giftcard, size: 50, color: Color(item.rarityColor)),
+                ? DynamicAvatar(
+                    avatarUrl: _currentUser?.avatar ?? '',
+                    size: 80,
+                    frameId: item.id)
+                : Icon(Icons.card_giftcard,
+                    size: 50, color: Color(item.rarityColor)),
           ),
         ),
         const SizedBox(height: 16),
@@ -481,7 +502,7 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
         Text(
           item.rarityLabel,
           style: TextStyle(
-            fontSize: 16, 
+            fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Color(item.rarityColor),
           ),
@@ -634,7 +655,8 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
     return Scaffold(
       backgroundColor: const Color(0xFFFDFBF7),
       appBar: AppBar(
-        title: const Text('心情扭蛋机', style: TextStyle(fontWeight: FontWeight.bold)),
+        title:
+            const Text('心情扭蛋机', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
@@ -654,7 +676,8 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
               ],
             ),
             child: IconButton(
-              icon: const Icon(Icons.backpack_outlined, color: Colors.blueAccent),
+              icon:
+                  const Icon(Icons.backpack_outlined, color: Colors.blueAccent),
               onPressed: () {
                 if (_currentUser != null) {
                   Navigator.push(
@@ -692,12 +715,13 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
             ),
             child: Row(
               children: [
-                const Icon(Icons.account_balance_wallet, size: 16, color: Colors.orangeAccent),
+                const Icon(Icons.account_balance_wallet,
+                    size: 16, color: Colors.orangeAccent),
                 const SizedBox(width: 4),
                 Text(
                   _currentUser?.balance.toStringAsFixed(2) ?? '0.00',
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold, 
+                    fontWeight: FontWeight.bold,
                     color: Colors.black87,
                   ),
                 ),
@@ -707,7 +731,7 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
         ],
       ),
       body: Stack(
-        fit: StackFit.expand, 
+        fit: StackFit.expand,
         children: [
           // 装饰背景
           Positioned(
@@ -722,7 +746,7 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
               ),
             ),
           ),
-          
+
           // 机器主体 (略微上移)
           Align(
             alignment: const Alignment(0, -0.05),
@@ -755,7 +779,8 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(100),
-                      border: Border.all(color: Colors.white.withOpacity(0.8), width: 2),
+                      border: Border.all(
+                          color: Colors.white.withOpacity(0.8), width: 2),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.white.withOpacity(0.2),
@@ -777,31 +802,32 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
                   ),
                   const Spacer(),
                   // 状态文字
-                  _isPlaying 
-                    ? const Text(
-                        '正在扭蛋中...',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                        ),
-                      )
-                    : Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.stars_rounded, color: Colors.white.withOpacity(0.6), size: 32),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Moe Gacha',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              fontFamily: 'Courier', 
-                            ),
+                  _isPlaying
+                      ? const Text(
+                          '正在扭蛋中...',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
                           ),
-                        ],
-                      ),
+                        )
+                      : Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.stars_rounded,
+                                color: Colors.white.withOpacity(0.6), size: 32),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Moe Gacha',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                fontFamily: 'Courier',
+                              ),
+                            ),
+                          ],
+                        ),
                   const SizedBox(height: 20),
                 ],
               ),
@@ -817,7 +843,8 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
               child: GestureDetector(
                 onTap: _showGachaPoolDialog,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(22),
@@ -832,7 +859,8 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
-                      Icon(Icons.card_giftcard, size: 16, color: Color(0xFF7F7FD5)),
+                      Icon(Icons.card_giftcard,
+                          size: 16, color: Color(0xFF7F7FD5)),
                       SizedBox(width: 6),
                       Text(
                         '当前奖品池',
@@ -843,14 +871,15 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
                         ),
                       ),
                       SizedBox(width: 4),
-                      Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Color(0xFF999999)),
+                      Icon(Icons.keyboard_arrow_down_rounded,
+                          size: 16, color: Color(0xFF999999)),
                     ],
                   ),
                 ),
               ),
             ),
           ),
-          
+
           Positioned(
             bottom: 32,
             left: 20,
@@ -912,15 +941,15 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              label, 
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
-            ),
+            Text(label,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 2),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.monetization_on, size: 14, color: Colors.amberAccent),
+                const Icon(Icons.monetization_on,
+                    size: 14, color: Colors.amberAccent),
                 const SizedBox(width: 2),
                 Text(
                   price,
@@ -938,7 +967,8 @@ class _GachaPageState extends State<GachaPage> with SingleTickerProviderStateMix
                 ),
                 child: Text(
                   subLabel,
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 10, fontWeight: FontWeight.bold),
                 ),
               ),
           ],

@@ -30,16 +30,22 @@ type BaseResp struct {
 	Success bool   `json:"success"`
 }
 
-type RefreshTokenReq struct {
+type ChatOnlineBatchReq struct {
+	UserIds string `form:"user_ids"` // 逗号分隔的用户ID列表
 }
 
-type RefreshTokenData struct {
-	Token string `json:"token"`
-}
-
-type RefreshTokenResp struct {
+type ChatOnlineBatchResp struct {
 	BaseResp
-	Data RefreshTokenData `json:"data"`
+	Online map[string]bool `json:"online"`
+}
+
+type ChatOnlineReq struct {
+	UserId string `form:"user_id"`
+}
+
+type ChatOnlineResp struct {
+	BaseResp
+	Online bool `json:"online"`
 }
 
 type CheckFollowReq struct {

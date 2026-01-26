@@ -55,14 +55,14 @@ void main() async {
   runZonedGuarded(() async {
     // 确保Flutter绑定已初始化（必须在zone内部）
     WidgetsFlutterBinding.ensureInitialized();
-    
+
     // 初始化认证服务，从持久化存储加载登录状态
     await AuthService.init();
-    
+
     // 创建主题提供者
     final themeProvider = ThemeProvider();
     await themeProvider.init();
-    
+
     // 创建通知提供者
     final notificationProvider = NotificationProvider();
     notificationProvider.init(); // 启动轮询
@@ -73,7 +73,7 @@ void main() async {
 
     await NotificationService.initLocalNotifications();
     await RemoteControlService.init();
-    
+
     // 捕获Flutter框架错误
     FlutterError.onError = (FlutterErrorDetails details) {
       FlutterError.presentError(details);
@@ -109,7 +109,8 @@ void main() async {
                     offset: const Offset(0, 10),
                   ),
                 ],
-                border: Border.all(color: const Color(0xFF7F7FD5).withOpacity(0.25)),
+                border: Border.all(
+                    color: const Color(0xFF7F7FD5).withOpacity(0.25)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -131,7 +132,8 @@ void main() async {
                   const SizedBox(height: 10),
                   Text(
                     '提示：这通常不是接口数据问题，而是布局约束导致的 RenderBox 未完成 layout。\n请把控制台里最早出现的那条异常（不是后面一堆 hasSize 重复）截图发我。',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12, height: 1.35),
+                    style: TextStyle(
+                        color: Colors.grey[600], fontSize: 12, height: 1.35),
                   ),
                 ],
               ),
@@ -140,7 +142,7 @@ void main() async {
         ),
       );
     };
-    
+
     // 捕获异步错误
     PlatformDispatcher.instance.onError = (error, stack) {
       debugPrint('═══════════════════════════════════════');
@@ -150,7 +152,7 @@ void main() async {
       debugPrint('═══════════════════════════════════════');
       return true;
     };
-    
+
     debugPrint('🚀 App starting...');
     // Web平台不支持Platform.operatingSystem，使用kIsWeb判断
     if (kIsWeb) {
@@ -160,7 +162,7 @@ void main() async {
     }
     debugPrint('🌐 API Base URL: ${ApiService.baseUrl}');
     debugPrint('🔐 User logged in: ${AuthService.isLoggedIn}');
-    
+
     runApp(
       MultiProvider(
         providers: [
@@ -186,7 +188,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    
+
     return FutureBuilder(
       future: AuthService.init(), // 每次构建时都尝试恢复登录状态
       builder: (context, snapshot) {
@@ -218,7 +220,8 @@ class MyApp extends StatelessWidget {
                   email: ModalRoute.of(context)!.settings.arguments as String,
                 ),
             '/reset-password': (context) {
-              final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+              final args = ModalRoute.of(context)!.settings.arguments
+                  as Map<String, dynamic>;
               return ResetPasswordPage(
                 email: args['email'] as String,
                 code: args['code'] as String,
@@ -247,7 +250,8 @@ class MyApp extends StatelessWidget {
             '/emoji-store': (context) => const EmojiStorePage(),
             '/cloud-gallery': (context) => const CloudGalleryPage(),
             '/topic-posts': (context) {
-              final tag = ModalRoute.of(context)!.settings.arguments as TopicTag;
+              final tag =
+                  ModalRoute.of(context)!.settings.arguments as TopicTag;
               return TopicPostsPage(topicTag: tag);
             },
             '/friends': (context) => const FriendsPage(),
@@ -407,21 +411,21 @@ class _HomePageState extends State<HomePage> {
   void _scrollListener() {
     // 检查是否有滚动位置信息
     if (!_scrollController.hasClients) return;
-    
+
     // 如果正在加载或没有更多数据，直接返回
     if (_isLoading || _isLoadingMore || !_hasMore || _isLoadingTriggered) {
       return;
     }
-    
+
     final position = _scrollController.position;
     final maxScroll = position.maxScrollExtent;
     final currentScroll = position.pixels;
-    
+
     // 当滚动到距底部300像素时触发加载，或者已经滚动到底部
     final threshold = maxScroll > 0 ? maxScroll - 300 : 0;
-    final isNearBottom = currentScroll >= threshold || 
-                        (maxScroll > 0 && currentScroll >= maxScroll - 50);
-    
+    final isNearBottom = currentScroll >= threshold ||
+        (maxScroll > 0 && currentScroll >= maxScroll - 50);
+
     if (isNearBottom) {
       debugPrint('🔄 触发加载更多');
       debugPrint('   当前滚动位置: $currentScroll');
@@ -433,10 +437,10 @@ class _HomePageState extends State<HomePage> {
       debugPrint('   _isLoadingTriggered: $_isLoadingTriggered');
       debugPrint('   当前页码: $_currentPage');
       debugPrint('   已加载帖子数: ${_posts.length}');
-      
+
       // 立即设置标志，防止重复触发
       _isLoadingTriggered = true;
-      
+
       // 异步调用，但不等待完成就返回，避免阻塞滚动
       _loadMorePosts();
     }
@@ -448,30 +452,19 @@ class _HomePageState extends State<HomePage> {
       _currentPage = 1;
       _hasMore = true;
     });
-    
+
     try {
       final result = await PostService.getPosts(page: 1, pageSize: _pageSize);
       final posts = result['posts'] as List<Post>;
       final total = result['total'] as int;
-      
-      // 从本地存储获取点赞状态
-      if (AuthService.isLoggedIn) {
-        final postIds = posts.map((post) => post.id).toList();
-        final likeStatuses = await AuthService.getLikeStatuses(postIds);
-        
-        // 更新帖子的点赞状态
-        for (int i = 0; i < posts.length; i++) {
-          final post = posts[i];
-          final isLiked = likeStatuses[post.id] ?? false;
-          posts[i] = post.copyWith(isLiked: isLiked);
-        }
-      }
-      
+
+      // Use server as source of truth for like status.
+
       debugPrint('📥 从后端获取的数据：');
       debugPrint('   总帖子数：$total');
       debugPrint('   第一页帖子数：${posts.length}');
       debugPrint('   帖子ID列表：${posts.map((post) => post.id).toList()}');
-      
+
       setState(() {
         _posts = posts;
         _totalPosts = total;
@@ -479,7 +472,7 @@ class _HomePageState extends State<HomePage> {
         // 修复_hasMore判断逻辑：如果已加载数据小于总数，则还有更多
         _hasMore = posts.length < total;
       });
-      
+
       debugPrint('📝 设置后的状态：');
       debugPrint('   _posts长度：${_posts.length}');
       debugPrint('   _totalPosts：$_totalPosts');
@@ -500,49 +493,40 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadMorePosts() async {
     // 如果正在刷新、正在加载更多或没有更多数据，则不执行
     if (_isLoading || _isLoadingMore || !_hasMore) {
-      debugPrint('⚠️ 阻止重复加载：_isLoading=$_isLoading, _isLoadingMore=$_isLoadingMore, _hasMore=$_hasMore');
+      debugPrint(
+          '⚠️ 阻止重复加载：_isLoading=$_isLoading, _isLoadingMore=$_isLoadingMore, _hasMore=$_hasMore');
       return;
     }
-    
+
     // 立即设置加载状态，防止并发调用
     setState(() {
       _isLoadingMore = true;
     });
-    
+
     debugPrint('📥 开始加载更多帖子');
     debugPrint('   当前页码：$_currentPage');
     debugPrint('   已加载帖子数：${_posts.length}');
     debugPrint('   总帖子数：$_totalPosts');
     debugPrint('   下一页码：${_currentPage + 1}');
     debugPrint('   _hasMore：$_hasMore');
-    
+
     try {
       final nextPage = _currentPage + 1;
       debugPrint('📡 请求第 $nextPage 页数据...');
-      
-      final result = await PostService.getPosts(page: nextPage, pageSize: _pageSize);
+
+      final result =
+          await PostService.getPosts(page: nextPage, pageSize: _pageSize);
       final morePosts = result['posts'] as List<Post>;
       final total = result['total'] as int;
-      
-      // 从本地存储获取点赞状态
-      if (AuthService.isLoggedIn) {
-        final postIds = morePosts.map((post) => post.id).toList();
-        final likeStatuses = await AuthService.getLikeStatuses(postIds);
-        
-        // 更新帖子的点赞状态
-        for (int i = 0; i < morePosts.length; i++) {
-          final post = morePosts[i];
-          final isLiked = likeStatuses[post.id] ?? false;
-          morePosts[i] = post.copyWith(isLiked: isLiked);
-        }
-      }
-      
+
+      // Use server as source of truth for like status.
+
       debugPrint('📥 加载更多帖子成功：');
       debugPrint('   请求页码：$nextPage');
       debugPrint('   返回的帖子数：${morePosts.length}');
       debugPrint('   帖子ID列表：${morePosts.map((post) => post.id).toList()}');
       debugPrint('   总帖子数：$total');
-      
+
       // 如果返回的数据为空，说明没有更多数据了
       if (morePosts.isEmpty) {
         debugPrint('⚠️ 返回的数据为空，说明没有更多数据了');
@@ -552,7 +536,7 @@ class _HomePageState extends State<HomePage> {
         });
         return;
       }
-      
+
       setState(() {
         _posts.addAll(morePosts);
         _currentPage = nextPage;
@@ -560,7 +544,7 @@ class _HomePageState extends State<HomePage> {
         // 修复_hasMore判断逻辑：如果已加载数据小于总数，则还有更多
         _hasMore = _posts.length < total;
       });
-      
+
       debugPrint('📝 设置后的状态：');
       debugPrint('   _posts长度：${_posts.length}');
       debugPrint('   _currentPage：$_currentPage');
@@ -593,16 +577,16 @@ class _HomePageState extends State<HomePage> {
       }
       return;
     }
-    
+
     try {
       final originalPost = _posts.firstWhere((post) => post.id == postId);
       final updatedPost = await PostService.toggleLike(postId, userId);
-      
+
       // 保留原来的话题标签信息，避免点赞后话题标签消失
       final postWithTags = updatedPost.copyWith(
         topicTags: originalPost.topicTags,
       );
-      
+
       setState(() {
         _posts = _posts.map((post) {
           if (post.id == postId) {
@@ -611,9 +595,8 @@ class _HomePageState extends State<HomePage> {
           return post;
         }).toList();
       });
-      
-      // 保存点赞状态到本地存储
-      await AuthService.saveLikeStatus(postId, postWithTags.isLiked);
+
+      // Don't persist like state locally; server is the source of truth.
     } catch (e) {
       if (mounted) {
         ErrorHandler.handleException(context, e as Exception);
@@ -672,8 +655,10 @@ class _HomePageState extends State<HomePage> {
                         minWidth: 8,
                         minHeight: 8,
                       ),
-                      child: provider.unreadCount > 99 
-                          ? const Text('99+', style: TextStyle(color: Colors.white, fontSize: 8))
+                      child: provider.unreadCount > 99
+                          ? const Text('99+',
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 8))
                           : null,
                     ),
                   );
@@ -772,7 +757,8 @@ class _HomePageState extends State<HomePage> {
                                   color: Colors.white.withOpacity(0.2),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(Icons.explore_rounded, size: 40, color: Colors.white),
+                                child: const Icon(Icons.explore_rounded,
+                                    size: 40, color: Colors.white),
                               ),
                               const SizedBox(height: 12),
                               const Text(
@@ -797,30 +783,30 @@ class _HomePageState extends State<HomePage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _buildQuickAction(
-                          Icons.category_rounded, 
-                          '分区', 
-                          Colors.pink[50]!, 
+                          Icons.category_rounded,
+                          '分区',
+                          Colors.pink[50]!,
                           Colors.pinkAccent,
                           onTap: () {},
                         ),
                         _buildQuickAction(
-                          Icons.whatshot_rounded, 
-                          '热门', 
-                          Colors.orange[50]!, 
+                          Icons.whatshot_rounded,
+                          '热门',
+                          Colors.orange[50]!,
                           Colors.orange,
                           onTap: () {},
                         ),
                         _buildQuickAction(
-                          Icons.new_releases_rounded, 
-                          '最新', 
-                          Colors.blue[50]!, 
+                          Icons.new_releases_rounded,
+                          '最新',
+                          Colors.blue[50]!,
                           Colors.blueAccent,
                           onTap: () {},
                         ),
                         _buildQuickAction(
-                          Icons.star_rounded, 
-                          '关注', 
-                          Colors.purple[50]!, 
+                          Icons.star_rounded,
+                          '关注',
+                          Colors.purple[50]!,
                           Colors.purpleAccent,
                           onTap: () {},
                         ),
@@ -844,7 +830,8 @@ class _HomePageState extends State<HomePage> {
                         const SizedBox(width: 8),
                         const Text(
                           '热门动态',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -853,17 +840,17 @@ class _HomePageState extends State<HomePage> {
                 ],
               );
             }
-            
+
             // 如果正在加载且没有数据，显示骨架屏
             if (_isLoading && _posts.isEmpty) {
-               return const PostSkeleton();
+              return const PostSkeleton();
             }
-            
+
             // 如果加载完成但列表为空，显示空状态（只在第一个item显示）
             if (!_isLoading && _posts.isEmpty && index == 1) {
               return _buildEmptyState();
             }
-            
+
             final postIndex = index - 1;
             if (postIndex < _posts.length) {
               // Post Item
@@ -974,7 +961,8 @@ class _HomePageState extends State<HomePage> {
                   color: Colors.grey[100],
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.check_circle_outline, color: Colors.grey[400], size: 32),
+                child: Icon(Icons.check_circle_outline,
+                    color: Colors.grey[400], size: 32),
               ),
               const SizedBox(height: 12),
               Text(
@@ -1030,7 +1018,9 @@ class _HomePageState extends State<HomePage> {
     return const SizedBox.shrink();
   }
 
-  Widget _buildQuickAction(IconData icon, String label, Color bgColor, Color iconColor, {required VoidCallback onTap}) {
+  Widget _buildQuickAction(
+      IconData icon, String label, Color bgColor, Color iconColor,
+      {required VoidCallback onTap}) {
     return Column(
       children: [
         InkWell(
@@ -1046,14 +1036,11 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          label, 
-          style: const TextStyle(
-            fontSize: 13, 
-            fontWeight: FontWeight.w500,
-            color: Colors.black87
-          )
-        ),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87)),
       ],
     );
   }
@@ -1084,16 +1071,12 @@ class _HomePageState extends State<HomePage> {
                 GestureDetector(
                   onTap: () {
                     final heroTag = 'avatar_${post.id}';
-                    Navigator.pushNamed(
-                      context, 
-                      '/user-profile', 
-                      arguments: {
-                        'userId': post.userId,
-                        'userName': post.userName,
-                        'userAvatar': post.userAvatar,
-                        'heroTag': heroTag,
-                      }
-                    );
+                    Navigator.pushNamed(context, '/user-profile', arguments: {
+                      'userId': post.userId,
+                      'userName': post.userName,
+                      'userAvatar': post.userAvatar,
+                      'heroTag': heroTag,
+                    });
                   },
                   child: Hero(
                     tag: 'avatar_${post.id}',
@@ -1166,26 +1149,27 @@ class _HomePageState extends State<HomePage> {
               child: _renderContentWithEmojis(post.content),
             ),
 
-
             // 话题标签
             if (post.topicTags.isNotEmpty) ...[
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
                 runSpacing: 6,
-                children: post.topicTags.map((tag) => TopicTagDisplay(
-                  tag: tag,
-                  fontSize: 12,
-                  showUsageCount: false,
-                  onTap: () {
-                    // 跳转到话题动态列表页面
-                    Navigator.pushNamed(
-                      context,
-                      '/topic-posts',
-                      arguments: tag,
-                    );
-                  },
-                )).toList(),
+                children: post.topicTags
+                    .map((tag) => TopicTagDisplay(
+                          tag: tag,
+                          fontSize: 12,
+                          showUsageCount: false,
+                          onTap: () {
+                            // 跳转到话题动态列表页面
+                            Navigator.pushNamed(
+                              context,
+                              '/topic-posts',
+                              arguments: tag,
+                            );
+                          },
+                        ))
+                    .toList(),
               ),
             ],
 
@@ -1265,7 +1249,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
             ],
-            
+
             const SizedBox(height: 20),
             Container(
               height: 1,
@@ -1291,18 +1275,15 @@ class _HomePageState extends State<HomePage> {
                   onTap: () => _toggleLike(post.id),
                 ),
                 _buildActionButton(
-                  icon: Icons.chat_bubble_outline_rounded,
-                  count: post.comments,
-                  onTap: () async {
-                    await Navigator.pushNamed(context, '/comments', arguments: post.id);
-                    _fetchPosts();
-                  }
-                ),
+                    icon: Icons.chat_bubble_outline_rounded,
+                    count: post.comments,
+                    onTap: () async {
+                      await Navigator.pushNamed(context, '/comments',
+                          arguments: post.id);
+                      _fetchPosts();
+                    }),
                 _buildActionButton(
-                  icon: Icons.share_rounded,
-                  label: '分享',
-                  onTap: () {}
-                ),
+                    icon: Icons.share_rounded, label: '分享', onTap: () {}),
               ],
             ),
           ],
@@ -1311,12 +1292,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon, 
-    int? count, 
-    String? label,
-    required VoidCallback onTap
-  }) {
+  Widget _buildActionButton(
+      {required IconData icon,
+      int? count,
+      String? label,
+      required VoidCallback onTap}) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1353,7 +1333,7 @@ class _HomePageState extends State<HomePage> {
   String _formatTime(DateTime time) {
     final now = DateTime.now();
     final difference = now.difference(time);
-    
+
     if (difference.inMinutes < 60) {
       return '${difference.inMinutes}分钟前';
     } else if (difference.inHours < 24) {
@@ -1364,13 +1344,13 @@ class _HomePageState extends State<HomePage> {
       return '${time.month}月${time.day}日';
     }
   }
-  
+
   /// 将文本内容中的表情占位符转换为富文本，显示实际的表情图片
   Widget _renderContentWithEmojis(String content) {
     // 表情占位符正则表达式：[emoji:url]格式
     final emojiRegex = RegExp(r'\[emoji:(.*?)\]');
     final matches = emojiRegex.allMatches(content);
-    
+
     if (matches.isEmpty) {
       // 如果没有表情占位符，直接返回普通文本
       return Text(
@@ -1382,11 +1362,11 @@ class _HomePageState extends State<HomePage> {
         ),
       );
     }
-    
+
     // 构建富文本
     final List<InlineSpan> spans = [];
     int lastIndex = 0;
-    
+
     for (final match in matches) {
       // 添加匹配之前的普通文本
       if (match.start > lastIndex) {
@@ -1399,10 +1379,10 @@ class _HomePageState extends State<HomePage> {
           ),
         ));
       }
-      
+
       // 获取表情URL
       final emojiUrl = match.group(1) ?? '';
-      
+
       // 添加表情图片
       spans.add(WidgetSpan(
         alignment: PlaceholderAlignment.middle,
@@ -1416,10 +1396,10 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ));
-      
+
       lastIndex = match.end;
     }
-    
+
     // 添加剩余的普通文本
     if (lastIndex < content.length) {
       spans.add(TextSpan(
@@ -1431,7 +1411,7 @@ class _HomePageState extends State<HomePage> {
         ),
       ));
     }
-    
+
     return RichText(
       text: TextSpan(
         children: spans,
@@ -1457,7 +1437,8 @@ class LikeButton extends StatefulWidget {
   State<LikeButton> createState() => _LikeButtonState();
 }
 
-class _LikeButtonState extends State<LikeButton> with SingleTickerProviderStateMixin {
+class _LikeButtonState extends State<LikeButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   bool _isLiked = false;
@@ -1470,7 +1451,7 @@ class _LikeButtonState extends State<LikeButton> with SingleTickerProviderStateM
       vsync: this,
       duration: const Duration(milliseconds: 200),
     );
-    
+
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 50), // 放大
       TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0), weight: 50), // 恢复
@@ -1511,7 +1492,9 @@ class _LikeButtonState extends State<LikeButton> with SingleTickerProviderStateM
             ScaleTransition(
               scale: _scaleAnimation,
               child: Icon(
-                widget.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                widget.isLiked
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
                 color: widget.isLiked ? Colors.pinkAccent : Colors.grey[600],
                 size: 22,
               ),

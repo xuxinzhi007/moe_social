@@ -1,27 +1,24 @@
-package user
+package chat
 
 import (
 	"net/http"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/logic/chat"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-func RefreshTokenHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func ChatOnlineBatchHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.RefreshTokenReq
+		var req types.ChatOnlineBatchReq
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
 
-		authHeader := r.Header.Get("Authorization")
-
-		l := user.NewRefreshTokenLogic(r.Context(), svcCtx)
-		resp, err := l.RefreshToken(&req, authHeader)
+		l := chat.NewChatOnlineBatchLogic(r.Context(), svcCtx)
+		resp, err := l.ChatOnlineBatch(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {
@@ -29,4 +26,3 @@ func RefreshTokenHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 	}
 }
-
