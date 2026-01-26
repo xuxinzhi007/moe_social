@@ -1,12 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
 import 'services/api_service.dart';
 import 'services/memory_service.dart';
@@ -41,10 +38,9 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showDeviceInfoSheet() {
-    final deviceInfo = Provider.of<DeviceInfoProvider>(context, listen: false);
-    
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -84,45 +80,54 @@ class _SettingsPageState extends State<SettingsPage> {
             ];
 
             return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '本机设备信息',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 16),
-                    ...items.map(
-                      (e) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(
-                              width: 90,
-                              child: Text(
-                                e.key,
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 14,
-                                ),
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.75,
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '本机设备信息',
+                        style:
+                            TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: items.length,
+                          itemBuilder: (context, index) {
+                            final e = items[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    width: 90,
+                                    child: Text(
+                                      e.key,
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      e.value,
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                e.value,
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            ),
-                          ],
+                            );
+                          },
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -212,184 +217,188 @@ class _SettingsPageState extends State<SettingsPage> {
   void _showRemoteDevicesSheet() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '远程设备列表',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                FutureBuilder<List<_RemoteDeviceInfo>>(
-                  future: _loadRemoteDevices(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
-                        child: Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    }
-
-                    if (snapshot.hasError) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20),
-                        child: Text(
-                          '加载失败: ${snapshot.error}',
-                          style: TextStyle(
-                            color: Colors.red[400],
-                            fontSize: 14,
-                          ),
-                        ),
-                      );
-                    }
-
-                    final devices = snapshot.data ?? [];
-                    if (devices.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
-                        child: Text(
-                          '暂未上报任何设备',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      );
-                    }
-
-                    return ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: devices.length,
-                      separatorBuilder: (_, __) => const Divider(height: 16),
-                      itemBuilder: (context, index) {
-                        final device = devices[index];
-                        final subtitle = StringBuffer();
-                        subtitle.write(device.platform);
-                        if (device.osVersion.isNotEmpty) {
-                          subtitle.write(' ${device.osVersion}');
-                        }
-                        if (device.appVersion.isNotEmpty) {
-                          subtitle.write(' · v${device.appVersion}');
-                        }
-                        if (device.batteryLevel != null) {
-                          subtitle.write(' · 电量 ${device.batteryLevel}%');
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.75,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '远程设备列表',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: FutureBuilder<List<_RemoteDeviceInfo>>(
+                      future: _loadRemoteDevices(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
                         }
 
-                        final statusText = device.isOnline ? '在线' : '离线';
-                        final statusColor =
-                            device.isOnline ? Colors.green : Colors.grey;
+                        if (snapshot.hasError) {
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              child: Text(
+                                '加载失败: ${snapshot.error}',
+                                style: TextStyle(
+                                  color: Colors.red[400],
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
 
-                        return ListTile(
-                          leading: Icon(
-                            device.platformIcon,
-                            color: Theme.of(context).primaryColor,
-                          ),
-                          title: Row(
-                            children: [
-                              Expanded(child: Text(device.name)),
-                              if (device.isCurrentDevice)
-                                Container(
-                                  margin: const EdgeInsets.only(left: 8),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .primaryColor
-                                        .withOpacity(0.08),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    '本机',
+                        final devices = snapshot.data ?? [];
+                        if (devices.isEmpty) {
+                          return const Center(
+                            child: Text(
+                              '暂未上报任何设备',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          );
+                        }
+
+                        return ListView.separated(
+                          itemCount: devices.length,
+                          separatorBuilder: (_, __) =>
+                              const Divider(height: 16),
+                          itemBuilder: (context, index) {
+                            final device = devices[index];
+                            final subtitle = StringBuffer();
+                            subtitle.write(device.platform);
+                            if (device.osVersion.isNotEmpty) {
+                              subtitle.write(' ${device.osVersion}');
+                            }
+                            if (device.appVersion.isNotEmpty) {
+                              subtitle.write(' · v${device.appVersion}');
+                            }
+                            if (device.batteryLevel != null) {
+                              subtitle.write(' · 电量 ${device.batteryLevel}%');
+                            }
+
+                            final statusText = device.isOnline ? '在线' : '离线';
+                            final statusColor =
+                                device.isOnline ? Colors.green : Colors.grey;
+
+                            return ListTile(
+                              leading: Icon(
+                                device.platformIcon,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                              title: Row(
+                                children: [
+                                  Expanded(child: Text(device.name)),
+                                  if (device.isCurrentDevice)
+                                    Container(
+                                      margin: const EdgeInsets.only(left: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context)
+                                            .primaryColor
+                                            .withOpacity(0.08),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        '本机',
+                                        style: TextStyle(
+                                          color: Theme.of(context).primaryColor,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    subtitle.toString(),
                                     style: TextStyle(
-                                      color: Theme.of(context).primaryColor,
-                                      fontSize: 11,
+                                      color: Colors.grey[600],
+                                      fontSize: 12,
                                     ),
                                   ),
-                                ),
-                            ],
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                subtitle.toString(),
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '最近在线: ${device.lastSeenDisplay}',
-                                style: TextStyle(
-                                  color: Colors.grey[500],
-                                  fontSize: 11,
-                                ),
-                              ),
-                              if (device.locationText.isNotEmpty ||
-                                  (device.latitude != null && device.longitude != null))
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    () {
-                                      if (device.locationText.isNotEmpty) {
-                                        if (device.latitude != null &&
-                                            device.longitude != null) {
-                                          final coord =
-                                              '${device.latitude!.toStringAsFixed(5)}, ${device.longitude!.toStringAsFixed(5)}';
-                                          return '定位: ${device.locationText} ($coord)';
-                                        }
-                                        return '定位: ${device.locationText}';
-                                      }
-                                      final coord =
-                                          '${device.latitude!.toStringAsFixed(5)}, ${device.longitude!.toStringAsFixed(5)}';
-                                      return '定位: $coord';
-                                    }(),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '最近在线: ${device.lastSeenDisplay}',
                                     style: TextStyle(
                                       color: Colors.grey[500],
                                       fontSize: 11,
                                     ),
                                   ),
-                                ),
-                            ],
-                          ),
-                          trailing: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: statusColor,
-                                  shape: BoxShape.circle,
-                                ),
+                                  if (device.locationText.isNotEmpty ||
+                                      (device.latitude != null &&
+                                          device.longitude != null))
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Text(
+                                        () {
+                                          if (device.locationText.isNotEmpty) {
+                                            if (device.latitude != null &&
+                                                device.longitude != null) {
+                                              final coord =
+                                                  '${device.latitude!.toStringAsFixed(5)}, ${device.longitude!.toStringAsFixed(5)}';
+                                              return '定位: ${device.locationText} ($coord)';
+                                            }
+                                            return '定位: ${device.locationText}';
+                                          }
+                                          final coord =
+                                              '${device.latitude!.toStringAsFixed(5)}, ${device.longitude!.toStringAsFixed(5)}';
+                                          return '定位: $coord';
+                                        }(),
+                                        style: TextStyle(
+                                          color: Colors.grey[500],
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                statusText,
-                                style: TextStyle(
-                                  color: statusColor,
-                                  fontSize: 11,
-                                ),
+                              trailing: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: statusColor,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    statusText,
+                                    style: TextStyle(
+                                      color: statusColor,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            );
+                          },
                         );
                       },
-                    );
-                  },
-                ),
-              ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -1190,14 +1199,15 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
               trailing: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
+                  color: (_accessibilityEnabled ? Colors.green : Colors.orange)
+                      .withOpacity(0.1),
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: const Text(
-                  '需手动开启',
+                child: Text(
+                  _accessibilityEnabled ? '已开启' : '需手动开启',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.orange,
+                    color: _accessibilityEnabled ? Colors.green : Colors.orange,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
