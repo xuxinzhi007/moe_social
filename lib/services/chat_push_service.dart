@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show ValueNotifier, kIsWeb;
+import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'api_service.dart';
@@ -41,6 +41,15 @@ class ChatPushService {
     _connecting = false;
   }
 
+  // Ensure the current user is considered online even if they never open a DM.
+  // We keep the websocket connected, but also send a lightweight ping message
+  // so the server-side handler has a read loop activity.
+  static void ping() {
+    try {
+      _channel?.sink.add(json.encode({'type': 'ping'}));
+    } catch (_) {}
+  }
+
   static Uri _buildWebSocketUri() {
     final base = ApiService.baseUrl;
     final uri = Uri.parse(base);
@@ -68,10 +77,7 @@ class ChatPushService {
       return;
     }
 
-    if (kIsWeb) {
-      // Web may work, but keep it off by default to avoid origin/CORS surprises.
-      return;
-    }
+    // Web is supported by web_socket_channel; no special handling needed.
 
     _connecting = true;
     try {

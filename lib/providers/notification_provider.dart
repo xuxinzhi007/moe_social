@@ -4,6 +4,7 @@ import '../services/notification_service.dart';
 import '../models/notification.dart';
 import '../auth_service.dart';
 import '../services/chat_push_service.dart';
+import '../services/presence_service.dart';
 
 class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
   List<NotificationItem> _notifications = [];
@@ -31,8 +32,12 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (!_pushListening) {
       _pushListening = true;
       ChatPushService.start();
+      ChatPushService.ping();
       ChatPushService.unreadBySender.addListener(_onPushUnreadUpdated);
     }
+
+    // Presence websocket keeps our online status when app is open.
+    PresenceService.start();
 
     if (!_lifecycleListening) {
       _lifecycleListening = true;
@@ -67,6 +72,7 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
       }
       _lastResumeSyncAt = now;
       ChatPushService.start();
+      PresenceService.start();
       _refreshUnreadState();
       return;
     }
@@ -74,6 +80,7 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
         state == AppLifecycleState.inactive) {
       // Save battery and avoid noisy reconnect loops in background.
       ChatPushService.stop();
+      PresenceService.stop();
     }
   }
 

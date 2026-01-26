@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"backend/api/internal/chathub"
+	"backend/api/internal/presence"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 
@@ -44,7 +44,7 @@ func (l *ChatOnlineBatchLogic) ChatOnlineBatch(req *types.ChatOnlineBatchReq) (r
 		if id == "" {
 			continue
 		}
-		online[id] = chathub.DefaultHub.IsOnline(id)
+		online[id] = presence.DefaultState.IsOnline(id)
 	}
 
 	return &types.ChatOnlineBatchResp{

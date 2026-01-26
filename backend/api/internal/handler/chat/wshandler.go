@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"backend/api/internal/chathub"
+	"backend/api/internal/presence"
 	"backend/api/internal/svc"
 	"backend/rpc/pb/super"
 	"backend/utils"
@@ -26,12 +27,10 @@ type hubWrapper struct{}
 
 func (w *hubWrapper) addConn(userID string, conn *websocket.Conn) {
 	chathub.DefaultHub.AddConn(userID, conn)
-	broadcastPresence(userID, true)
 }
 
 func (w *hubWrapper) removeConn(userID string, conn *websocket.Conn) {
 	chathub.DefaultHub.RemoveConn(userID, conn)
-	broadcastPresence(userID, false)
 }
 
 func (w *hubWrapper) forwardMessage(fromID, toID, content string) {
@@ -275,6 +274,9 @@ func ChatWsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 					continue
 				}
 
+				if msg.Type == "ping" {
+					continue
+				}
 				if msg.Type != "message" {
 					continue
 				}
@@ -396,16 +398,25 @@ func PresenceWsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		// send snapshot
 		snapshot := presenceSnapshot{
 			Type:          "presence_snapshot",
-			OnlineUserIDs: chatHub.onlineUserIDs(),
+			OnlineUserIDs: presence.DefaultState.OnlineUserIDs(),
 			Timestamp:     time.Now().UnixMilli(),
 		}
 		if data, err := json.Marshal(snapshot); err == nil {
 			_ = conn.WriteMessage(websocket.TextMessage, data)
 		}
 
+		becameOnline := presence.DefaultState.Add(userID)
+		if becameOnline {
+			broadcastPresence(userID, true)
+		}
+
 		go func(uid string, c *websocket.Conn) {
 			defer func() {
 				presenceWsHub.removeConn(uid, c)
+				becameOffline := presence.DefaultState.Remove(uid)
+				if becameOffline {
+					broadcastPresence(uid, false)
+				}
 				c.Close()
 			}()
 
