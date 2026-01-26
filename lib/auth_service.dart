@@ -8,8 +8,10 @@ import 'services/api_service.dart';
 class AuthResult {
   final bool success;
   final String? errorMessage;
-  
-  AuthResult.success() : success = true, errorMessage = null;
+
+  AuthResult.success()
+      : success = true,
+        errorMessage = null;
   AuthResult.failure(this.errorMessage) : success = false;
 }
 
@@ -17,12 +19,13 @@ class AuthService {
   // 存储键名
   static const String _tokenKey = 'auth_token';
   static const String _userIdKey = 'user_id';
-  
+
   // 内存中的登录状态
   static String? _currentUser;
   static String? _token;
 
-  static bool get isLoggedIn => _currentUser != null;
+  static bool get isLoggedIn =>
+      _currentUser != null && _token != null && _token!.isNotEmpty;
   static String? get currentUser => _currentUser;
   static String? get token => _token;
 
@@ -32,6 +35,14 @@ class AuthService {
     _token = prefs.getString(_tokenKey);
     _currentUser = prefs.getString(_userIdKey);
 
+    // If token is missing, treat as logged out to avoid half-authenticated state
+    if (_token == null || _token!.isEmpty) {
+      _token = null;
+      _currentUser = null;
+      await prefs.remove(_tokenKey);
+      await prefs.remove(_userIdKey);
+    }
+
     // 设置ApiService回调
     ApiService.setAuthCallbacks(
       onLogout: logout,
@@ -39,7 +50,7 @@ class AuthService {
     );
 
     // 如果有token，设置到ApiService
-    if (_token != null) {
+    if (_token != null && _token!.isNotEmpty) {
       ApiService.setToken(_token);
     }
   }
@@ -51,7 +62,7 @@ class AuthService {
       final userData = result['data']['user'] as Map<String, dynamic>;
       _currentUser = userData['id'] as String;
       _token = result['data']['token'] as String;
-      
+
       // 持久化存储登录状态
       await _saveAuthData();
 
@@ -66,7 +77,8 @@ class AuthService {
     }
   }
 
-  static Future<AuthResult> register(String username, String email, String password) async {
+  static Future<AuthResult> register(
+      String username, String email, String password) async {
     try {
       await ApiService.register(username, email, password);
       // Register doesn't return token directly, need to login after registration
@@ -86,21 +98,21 @@ class AuthService {
     // 清除ApiService的token
     ApiService.setToken(null);
   }
-  
+
   // 持久化存储认证数据
   static Future<void> _saveAuthData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, _token!);
     await prefs.setString(_userIdKey, _currentUser!);
   }
-  
+
   // 清除认证数据
   static Future<void> _clearAuthData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_userIdKey);
   }
-  
+
   // 获取当前用户ID
   static Future<String> getUserId() async {
     if (_currentUser != null) {
@@ -130,7 +142,7 @@ class AuthService {
     await prefs.setString('user_info', json.encode(userInfo.toJson()));
     return userInfo;
   }
-  
+
   // 更新token
   static Future<void> updateToken(String newToken) async {
     _token = newToken;
@@ -161,13 +173,12 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     final userId = await getUserId();
     final result = <String, bool>{};
-    
+
     for (final postId in postIds) {
       final key = 'like_status_${userId}_$postId';
       result[postId] = prefs.getBool(key) ?? false;
     }
-    
+
     return result;
   }
 }
-

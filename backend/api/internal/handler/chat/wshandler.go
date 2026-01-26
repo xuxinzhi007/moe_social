@@ -44,13 +44,17 @@ func (w *hubWrapper) forwardMessage(fromID, toID, content string) {
 		return
 	}
 
-	toConn := chathub.DefaultHub.GetConn(toID)
-	if toConn == nil {
+	toConns := chathub.DefaultHub.GetConns(toID)
+	if len(toConns) == 0 {
 		return
 	}
-
-	if err := toConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		logx.Errorf("write websocket message error: %v", err)
+	for _, toConn := range toConns {
+		if toConn == nil {
+			continue
+		}
+		if err := toConn.WriteMessage(websocket.TextMessage, data); err != nil {
+			logx.Errorf("write websocket message error: %v", err)
+		}
 	}
 }
 
@@ -257,9 +261,19 @@ func ChatWsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		chatHub.addConn(userID, conn)
 
+		// Update presence state based on chat websocket too (presence + chat are both "online")
+		becameOnline := presence.DefaultState.Add(userID)
+		if becameOnline {
+			broadcastPresence(userID, true)
+		}
+
 		go func(uid string, c *websocket.Conn) {
 			defer func() {
 				chatHub.removeConn(uid, c)
+				becameOffline := presence.DefaultState.Remove(uid)
+				if becameOffline {
+					broadcastPresence(uid, false)
+				}
 				c.Close()
 			}()
 

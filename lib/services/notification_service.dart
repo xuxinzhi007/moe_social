@@ -75,16 +75,7 @@ class NotificationService {
         if (data is List) {
           return data.map((e) => NotificationModel.fromJson(e)).toList();
         }
-        if (data is Map) {
-          final inner = data['data'];
-          if (inner is List) {
-            return inner.map((e) => NotificationModel.fromJson(e)).toList();
-          }
-        }
-        final fallback = response['data']['data'];
-        if (fallback is List) {
-          return fallback.map((e) => NotificationModel.fromJson(e)).toList();
-        }
+        // API returns data as a list in this project; keep defensive fallback.
         return [];
       }
       return [];

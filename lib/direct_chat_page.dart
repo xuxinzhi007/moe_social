@@ -10,6 +10,8 @@ import 'package:provider/provider.dart';
 import 'providers/notification_provider.dart';
 import 'services/chat_push_service.dart';
 import 'services/presence_service.dart';
+import 'services/notification_service.dart';
+import 'models/notification.dart';
 
 class DirectChatPage extends StatefulWidget {
   final String userId;
@@ -77,19 +79,77 @@ class _DirectChatPageState extends State<DirectChatPage> {
         _currentUserId = userId;
       });
 
-      // Entering chat: mark DM notifications from this peer as read
+      await _loadMessages(userId);
+      await _syncOfflineMessages();
+
+      // Now that we merged offline messages, mark them as read.
       try {
         await context
             .read<NotificationProvider>()
             .markDirectMessagesAsRead(widget.userId);
       } catch (_) {}
-
-      // Clear push-based unread badge for this peer
       ChatPushService.markSenderRead(widget.userId);
 
-      await _loadMessages(userId);
       await _connectWebSocket();
       await _ensurePeerOnline();
+    } catch (_) {}
+  }
+
+  Future<void> _syncOfflineMessages() async {
+    // Pull unread direct-message notifications from backend and merge into local chat history.
+    try {
+      final list =
+          await NotificationService.getNotifications(page: 1, pageSize: 100);
+      final dms = list.where((n) {
+        return n.type == NotificationModel.directMessage &&
+            !n.isRead &&
+            (n.senderId ?? '') == widget.userId;
+      }).toList();
+
+      if (dms.isEmpty) return;
+
+      // Oldest first
+      dms.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+      var changed = false;
+      final existingKeys = <String>{};
+      for (final m in _messages) {
+        existingKeys
+            .add('${m.senderId}|${m.time.toIso8601String()}|${m.content}');
+      }
+
+      for (final n in dms) {
+        final time = n.createdAt;
+        final key = '${widget.userId}|${time.toIso8601String()}|${n.content}';
+        if (existingKeys.contains(key)) {
+          continue;
+        }
+        existingKeys.add(key);
+        _messages.add(
+          _DirectMessage(
+            senderId: widget.userId,
+            content: n.content,
+            time: time,
+          ),
+        );
+        changed = true;
+      }
+
+      if (changed && mounted) {
+        setState(() {
+          _messages.sort((a, b) => a.time.compareTo(b.time));
+        });
+        await _saveMessages();
+        _scrollToBottom();
+      }
+
+      // Mark as read so they won't be pulled again.
+      try {
+        await context
+            .read<NotificationProvider>()
+            .markDirectMessagesAsRead(widget.userId);
+      } catch (_) {}
+      ChatPushService.markSenderRead(widget.userId);
     } catch (_) {}
   }
 
@@ -207,8 +267,10 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
   Future<void> _connectWebSocket() async {
     try {
-      final uri = _buildWebSocketUri();
-      final channel = WebSocketChannel.connect(uri);
+      // Reuse the shared chat websocket so we don't create competing connections.
+      ChatPushService.start();
+      final channel = ChatPushService.channel;
+      if (channel == null) return;
       _channel = channel;
       channel.stream.listen(
         (data) {
