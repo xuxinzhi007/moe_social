@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
 /// 虚拟形象资源管理服务
 /// 动态读取assets文件夹中的SVG文件，无需手动维护文件列表
 class AvatarAssetService {
   static AvatarAssetService? _instance;
-  static AvatarAssetService get instance => _instance ??= AvatarAssetService._();
+  static AvatarAssetService get instance =>
+      _instance ??= AvatarAssetService._();
   AvatarAssetService._();
 
   // 缓存的资源列表
@@ -35,7 +37,8 @@ class AvatarAssetService {
         if (key.startsWith('assets/avatars/') && key.endsWith('.svg')) {
           final parts = key.split('/');
           if (parts.length >= 4) {
-            final category = parts[2]; // faces, hairs, eyes, clothes, accessories
+            final category =
+                parts[2]; // faces, hairs, eyes, clothes, accessories
             final fileName = parts[3].replaceAll('.svg', ''); // 去掉扩展名
 
             if (options.containsKey(category)) {
@@ -61,7 +64,9 @@ class AvatarAssetService {
       _cachedAssets = options;
       return options;
     } catch (e) {
-      print('读取avatar资源失败: $e');
+      if (kDebugMode) {
+        debugPrint('读取avatar资源失败: $e');
+      }
       // 返回默认选项作为后备
       return _getDefaultOptions();
     }
@@ -108,13 +113,14 @@ class AvatarAssetService {
   /// 打印所有检测到的SVG文件（调试用）
   Future<void> printAllAssets() async {
     final options = await getAvailableOptions();
-    print('🎨 检测到的虚拟形象资源:');
+    if (!kDebugMode) return;
+    debugPrint('🎨 检测到的虚拟形象资源:');
     for (final category in options.keys) {
       final files = options[category]!;
-      print('  $category (${files.length}个): ${files.join(', ')}');
+      debugPrint('  $category (${files.length}个)');
     }
     final stats = await getAssetStats();
     final total = stats.values.fold(0, (a, b) => a + b);
-    print('📊 总计: $total 个选项');
+    debugPrint('📊 总计: $total 个选项');
   }
 }
