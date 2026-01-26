@@ -3,7 +3,7 @@ package chat
 import (
 	"context"
 
-	"backend/api/internal/chathub"
+	"backend/api/internal/presence"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 
@@ -25,7 +25,7 @@ func NewChatOnlineLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ChatOn
 }
 
 func (l *ChatOnlineLogic) ChatOnline(req *types.ChatOnlineReq) (resp *types.ChatOnlineResp, err error) {
-	online := chathub.DefaultHub.IsOnline(req.UserId)
+	online := presence.DefaultState.IsOnline(req.UserId)
 	return &types.ChatOnlineResp{
 		BaseResp: types.BaseResp{
 			Code:    200,

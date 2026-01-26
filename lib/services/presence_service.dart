@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show ValueNotifier, kIsWeb;
+import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'api_service.dart';
@@ -61,11 +61,7 @@ class PresenceService {
       return;
     }
 
-    if (kIsWeb) {
-      // Web builds may work too, but avoid unexpected CORS/origin issues by default.
-      // If you want web presence, remove this guard.
-      return;
-    }
+    // Web is supported by web_socket_channel; no special handling needed.
 
     _connecting = true;
     try {
