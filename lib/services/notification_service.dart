@@ -6,7 +6,8 @@ import '../auth_service.dart';
 import 'api_service.dart';
 
 class NotificationService {
-  static final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  static final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
   static bool _localInitialized = false;
 
   static Future<void> initLocalNotifications() async {
@@ -14,9 +15,11 @@ class NotificationService {
       return;
     }
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings();
-    const initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
+    const initSettings =
+        InitializationSettings(android: androidSettings, iOS: iosSettings);
 
     await _localNotifications.initialize(initSettings);
     _localInitialized = true;
@@ -44,7 +47,8 @@ class NotificationService {
       playSound: true,
     );
     const iosDetails = DarwinNotificationDetails();
-    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    const details =
+        NotificationDetails(android: androidDetails, iOS: iosDetails);
 
     final title = '$senderName 给你发来了私信';
     final body = unreadCount > 1 ? '你有 $unreadCount 条未读私信' : messagePreview;
@@ -58,15 +62,30 @@ class NotificationService {
   }
 
   // 获取通知列表
-  static Future<List<NotificationModel>> getNotifications({int page = 1, int pageSize = 20}) async {
+  static Future<List<NotificationModel>> getNotifications(
+      {int page = 1, int pageSize = 20}) async {
     final userId = AuthService.currentUser;
     if (userId == null) return [];
 
     try {
-      final response = await ApiService.get('/api/notifications?user_id=$userId&page=$page&page_size=$pageSize');
+      final response = await ApiService.get(
+          '/api/notifications?user_id=$userId&page=$page&page_size=$pageSize');
       if (response['code'] == 200) {
-        final List<dynamic> list = response['data']['data'] ?? [];
-        return list.map((e) => NotificationModel.fromJson(e)).toList();
+        final data = response['data'];
+        if (data is List) {
+          return data.map((e) => NotificationModel.fromJson(e)).toList();
+        }
+        if (data is Map) {
+          final inner = data['data'];
+          if (inner is List) {
+            return inner.map((e) => NotificationModel.fromJson(e)).toList();
+          }
+        }
+        final fallback = response['data']['data'];
+        if (fallback is List) {
+          return fallback.map((e) => NotificationModel.fromJson(e)).toList();
+        }
+        return [];
       }
       return [];
     } catch (e) {
@@ -82,7 +101,8 @@ class NotificationService {
     if (userId == null) return 0;
 
     try {
-      final response = await ApiService.get('/api/notifications/unread?user_id=$userId');
+      final response =
+          await ApiService.get('/api/notifications/unread?user_id=$userId');
       if (response['code'] == 200) {
         return response['data'] as int;
       }
@@ -98,7 +118,8 @@ class NotificationService {
     if (userId == null) return false;
 
     try {
-      await ApiService.post('/api/notifications/read-all', body: {'user_id': userId});
+      await ApiService.post('/api/notifications/read-all',
+          body: {'user_id': userId});
       return true;
     } catch (e) {
       return false;
@@ -111,7 +132,8 @@ class NotificationService {
     if (userId == null) return false;
 
     try {
-      await ApiService.post('/api/notifications/$id/read', body: {'user_id': userId});
+      await ApiService.post('/api/notifications/$id/read',
+          body: {'user_id': userId});
       return true;
     } catch (e) {
       return false;
@@ -124,7 +146,8 @@ class NotificationService {
     if (userId == null) return false;
 
     try {
-      await ApiService.post('/api/notifications/clear-all', body: {'user_id': userId});
+      await ApiService.post('/api/notifications/clear-all',
+          body: {'user_id': userId});
       return true;
     } catch (e) {
       return false;
@@ -144,7 +167,7 @@ class NotificationService {
         senderAvatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Moe',
         postId: 'post_1',
       ),
-       NotificationModel(
+      NotificationModel(
         id: '2',
         type: 4, // System
         content: '欢迎来到 Moe Social！',
