@@ -16,6 +16,7 @@ class PresenceService {
   static StreamSubscription? _subscription;
   static bool _connecting = false;
   static Timer? _reconnectTimer;
+  static Timer? _heartbeatTimer;
   static DateTime? _lastMessageAt;
 
   static bool get isConnected => _channel != null;
@@ -27,6 +28,8 @@ class PresenceService {
   static void stop() {
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
     _subscription?.cancel();
     _subscription = null;
     _channel?.sink.close();
@@ -58,6 +61,9 @@ class PresenceService {
 
     final token = ApiService.token;
     if (token == null || token.isEmpty) {
+      // Token may not be ready yet (app just launched / just refreshed).
+      // Keep retrying so presence can recover as soon as auth is available.
+      _scheduleReconnect();
       return;
     }
 
@@ -69,6 +75,13 @@ class PresenceService {
       final channel = WebSocketChannel.connect(uri);
       _channel = channel;
       _lastMessageAt = DateTime.now();
+      _heartbeatTimer?.cancel();
+      _heartbeatTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+        // 发送一个轻量消息，让连接保持活跃（避免浏览器/代理关闭空闲 WS）
+        try {
+          _channel?.sink.add(json.encode({'type': 'ping'}));
+        } catch (_) {}
+      });
       _subscription = channel.stream.listen(
         _handleMessage,
         onError: (_) {
@@ -88,6 +101,8 @@ class PresenceService {
     _subscription?.cancel();
     _subscription = null;
     _channel = null;
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
 
     _scheduleReconnect();
   }

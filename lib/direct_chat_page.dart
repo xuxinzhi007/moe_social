@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 import 'auth_service.dart';
 import 'services/api_service.dart';
 import 'widgets/avatar_image.dart';
@@ -36,7 +35,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
   final FocusNode _inputFocusNode = FocusNode();
   bool _isSending = false;
   String? _currentUserId;
-  WebSocketChannel? _channel;
+  StreamSubscription<Map<String, dynamic>>? _incomingSub;
   bool _peerOnline = false;
   Timer? _onlineTimer;
   bool _presenceListening = false;
@@ -247,46 +246,24 @@ class _DirectChatPageState extends State<DirectChatPage> {
     } catch (_) {}
   }
 
-  Uri _buildWebSocketUri() {
-    final base = ApiService.baseUrl;
-    final uri = Uri.parse(base);
-    final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
-    final token = ApiService.token;
-    final query = <String, String>{};
-    if (token != null && token.isNotEmpty) {
-      query['token'] = token;
-    }
-    return Uri(
-      scheme: scheme,
-      host: uri.host,
-      port: uri.hasPort ? uri.port : null,
-      path: '/ws/chat',
-      queryParameters: query.isEmpty ? null : query,
-    );
-  }
-
   Future<void> _connectWebSocket() async {
     try {
       // Reuse the shared chat websocket so we don't create competing connections.
       ChatPushService.start();
-      final channel = ChatPushService.channel;
-      if (channel == null) return;
-      _channel = channel;
-      channel.stream.listen(
-        (data) {
-          _handleWebSocketMessage(data);
-        },
-        onError: (_) {},
-        onDone: () {},
-      );
+      // IMPORTANT: Do NOT listen to ChatPushService.channel.stream here.
+      // The underlying websocket stream is typically single-subscription and is
+      // already listened by ChatPushService internally. We subscribe to the
+      // broadcast stream exposed by ChatPushService instead.
+      _incomingSub?.cancel();
+      _incomingSub = ChatPushService.incomingMessages.listen((map) {
+        _handleIncomingMap(map);
+      });
     } catch (_) {}
   }
 
-  void _handleWebSocketMessage(dynamic data) {
+  void _handleIncomingMap(Map<String, dynamic> map) {
     if (!mounted) return;
     try {
-      if (data is! String) return;
-      final map = json.decode(data) as Map<String, dynamic>;
       final from = map['from'] as String?;
       final content = map['content'] as String?;
       final timestamp = map['timestamp'];
@@ -342,7 +319,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
     });
     await _saveMessages();
     _scrollToBottom();
-    final channel = _channel;
+    final channel = ChatPushService.channel;
     if (channel != null) {
       final payload = json.encode({
         'type': 'message',
@@ -352,6 +329,9 @@ class _DirectChatPageState extends State<DirectChatPage> {
       try {
         channel.sink.add(payload);
       } catch (_) {}
+    } else {
+      // If websocket isn't ready yet, try to reconnect (message already shown locally).
+      ChatPushService.start();
     }
     if (!mounted) return;
     setState(() {
@@ -366,10 +346,11 @@ class _DirectChatPageState extends State<DirectChatPage> {
     _scrollController.dispose();
     _inputFocusNode.dispose();
     _onlineTimer?.cancel();
+    _incomingSub?.cancel();
+    _incomingSub = null;
     if (_presenceListening) {
       PresenceService.online.removeListener(_onPresenceUpdate);
     }
-    _channel?.sink.close();
     super.dispose();
   }
 

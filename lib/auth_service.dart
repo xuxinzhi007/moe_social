@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/user.dart';
 import 'services/api_service.dart';
+import 'services/chat_push_service.dart';
+import 'services/presence_service.dart';
 
 // 认证结果类，包含成功状态和错误信息
 class AuthResult {
@@ -52,6 +54,9 @@ class AuthService {
     // 如果有token，设置到ApiService
     if (_token != null && _token!.isNotEmpty) {
       ApiService.setToken(_token);
+      // Start websocket-based services as early as possible.
+      PresenceService.start();
+      ChatPushService.start();
     }
   }
 
@@ -68,6 +73,9 @@ class AuthService {
 
       // 设置ApiService的token
       ApiService.setToken(_token);
+      // Start websocket-based services after login.
+      PresenceService.start();
+      ChatPushService.start();
 
       return AuthResult.success();
     } on ApiException catch (e) {
@@ -97,6 +105,9 @@ class AuthService {
     _clearAuthData();
     // 清除ApiService的token
     ApiService.setToken(null);
+    // Stop websocket-based services to avoid reconnect loops.
+    PresenceService.stop();
+    ChatPushService.stop();
   }
 
   // 持久化存储认证数据
@@ -150,6 +161,9 @@ class AuthService {
     await prefs.setString(_tokenKey, newToken);
     // 更新ApiService的token
     ApiService.setToken(newToken);
+    // Ensure websocket services can recover after token refresh.
+    PresenceService.start();
+    ChatPushService.start();
   }
 
   // 保存用户点赞状态到本地存储

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../services/notification_service.dart';
 import '../models/notification.dart';
 import '../auth_service.dart';
@@ -78,7 +79,10 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      // Save battery and avoid noisy reconnect loops in background.
+      // Web 端很容易在切换路由/弹窗/页面可见性变化时触发 inactive，
+      // 如果在这里 stop 会导致“切个页面就离线/掉消息”。
+      // 移动端如需省电，可在后续按平台/配置再做更细分策略。
+      if (kIsWeb) return;
       ChatPushService.stop();
       PresenceService.stop();
     }

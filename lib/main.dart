@@ -30,8 +30,6 @@ import 'gacha_page.dart';
 import 'models/post.dart';
 import 'services/post_service.dart';
 import 'user_profile_page.dart';
-import 'following_page.dart';
-import 'followers_page.dart';
 import 'widgets/avatar_image.dart';
 import 'widgets/network_image.dart';
 import 'widgets/post_skeleton.dart';
@@ -43,6 +41,8 @@ import 'providers/notification_provider.dart';
 import 'providers/device_info_provider.dart';
 import 'services/notification_service.dart';
 import 'services/remote_control_service.dart';
+import 'services/presence_service.dart';
+import 'services/chat_push_service.dart';
 import 'avatar_editor_page.dart';
 import 'gallery/cloud_gallery_page.dart';
 import 'emoji/emoji_store_page.dart';
@@ -58,6 +58,11 @@ void main() async {
 
     // 初始化认证服务，从持久化存储加载登录状态
     await AuthService.init();
+    // 登录态已恢复后，立即启动 WebSocket（在线/私信）
+    if (AuthService.isLoggedIn) {
+      PresenceService.start();
+      ChatPushService.start();
+    }
 
     // 创建主题提供者
     final themeProvider = ThemeProvider();
@@ -189,87 +194,80 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    return FutureBuilder(
-      future: AuthService.init(), // 每次构建时都尝试恢复登录状态
-      builder: (context, snapshot) {
-        // 构建应用，无论登录状态是否恢复完成
-        return MaterialApp(
-          title: 'Moe Social',
-          debugShowCheckedModeBanner: false,
-          theme: themeProvider.currentTheme,
-          initialRoute: AuthService.isLoggedIn ? '/home' : '/login',
-          routes: {
-            '/login': (context) => const LoginPage(),
-            '/register': (context) => const RegisterPage(),
-            '/home': (context) => const MainPage(),
-            '/profile': (context) => const ProfilePage(),
-            '/settings': (context) => const SettingsPage(),
-            '/create-post': (context) => const CreatePostPage(),
-            '/comments': (context) => CommentsPage(
-                  postId: ModalRoute.of(context)!.settings.arguments as String,
-                ),
-            '/edit-profile': (context) => EditProfilePage(
-                  user: ModalRoute.of(context)!.settings.arguments as dynamic,
-                ),
-            '/vip-center': (context) => const VipCenterPage(),
-            '/vip-purchase': (context) => const VipPurchasePage(),
-            '/vip-orders': (context) => const VipOrdersPage(),
-            '/vip-history': (context) => const VipHistoryPage(),
-            '/forgot-password': (context) => const ForgotPasswordPage(),
-            '/verify-code': (context) => VerifyCodePage(
-                  email: ModalRoute.of(context)!.settings.arguments as String,
-                ),
-            '/reset-password': (context) {
-              final args = ModalRoute.of(context)!.settings.arguments
-                  as Map<String, dynamic>;
-              return ResetPasswordPage(
-                email: args['email'] as String,
-                code: args['code'] as String,
-              );
-            },
-            '/notifications': (context) => const NotificationCenterPage(),
-            '/wallet': (context) => const WalletPage(),
-            '/recharge': (context) => const RechargePage(),
-            '/gacha': (context) => GachaPage(), // 注册扭蛋页路由
-            '/user-profile': (context) {
-              final args = ModalRoute.of(context)?.settings.arguments;
-              if (args is! Map<String, dynamic>) {
-                // 如果参数丢失（例如Web端刷新），重定向回首页或显示错误页
-                return const Scaffold(
-                  body: Center(child: Text('页面参数丢失，请返回首页重新进入')),
-                );
-              }
-              return UserProfilePage(
-                userId: args['userId'] as String,
-                userName: args['userName'] as String?,
-                userAvatar: args['userAvatar'] as String?,
-                heroTag: args['heroTag'] as String?,
-              );
-            },
-            '/avatar-editor': (context) => const AvatarEditorPage(),
-            '/emoji-store': (context) => const EmojiStorePage(),
-            '/cloud-gallery': (context) => const CloudGalleryPage(),
-            '/topic-posts': (context) {
-              final tag =
-                  ModalRoute.of(context)!.settings.arguments as TopicTag;
-              return TopicPostsPage(topicTag: tag);
-            },
-            '/friends': (context) => const FriendsPage(),
-            '/direct-chat': (context) {
-              final args = ModalRoute.of(context)?.settings.arguments;
-              if (args is! Map<String, dynamic>) {
-                return const Scaffold(
-                  body: Center(child: Text('页面参数丢失，请返回重试')),
-                );
-              }
-              return DirectChatPage(
-                userId: args['userId'] as String,
-                username: args['username'] as String,
-                avatar: args['avatar'] as String,
-              );
-            },
-          },
-        );
+    return MaterialApp(
+      title: 'Moe Social',
+      debugShowCheckedModeBanner: false,
+      theme: themeProvider.currentTheme,
+      initialRoute: AuthService.isLoggedIn ? '/home' : '/login',
+      routes: {
+        '/login': (context) => const LoginPage(),
+        '/register': (context) => const RegisterPage(),
+        '/home': (context) => const MainPage(),
+        '/profile': (context) => const ProfilePage(),
+        '/settings': (context) => const SettingsPage(),
+        '/create-post': (context) => const CreatePostPage(),
+        '/comments': (context) => CommentsPage(
+              postId: ModalRoute.of(context)!.settings.arguments as String,
+            ),
+        '/edit-profile': (context) => EditProfilePage(
+              user: ModalRoute.of(context)!.settings.arguments as dynamic,
+            ),
+        '/vip-center': (context) => const VipCenterPage(),
+        '/vip-purchase': (context) => const VipPurchasePage(),
+        '/vip-orders': (context) => const VipOrdersPage(),
+        '/vip-history': (context) => const VipHistoryPage(),
+        '/forgot-password': (context) => const ForgotPasswordPage(),
+        '/verify-code': (context) => VerifyCodePage(
+              email: ModalRoute.of(context)!.settings.arguments as String,
+            ),
+        '/reset-password': (context) {
+          final args =
+              ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+          return ResetPasswordPage(
+            email: args['email'] as String,
+            code: args['code'] as String,
+          );
+        },
+        '/notifications': (context) => const NotificationCenterPage(),
+        '/wallet': (context) => const WalletPage(),
+        '/recharge': (context) => const RechargePage(),
+        '/gacha': (context) => GachaPage(), // 注册扭蛋页路由
+        '/user-profile': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args is! Map<String, dynamic>) {
+            // 如果参数丢失（例如Web端刷新），重定向回首页或显示错误页
+            return const Scaffold(
+              body: Center(child: Text('页面参数丢失，请返回首页重新进入')),
+            );
+          }
+          return UserProfilePage(
+            userId: args['userId'] as String,
+            userName: args['userName'] as String?,
+            userAvatar: args['userAvatar'] as String?,
+            heroTag: args['heroTag'] as String?,
+          );
+        },
+        '/avatar-editor': (context) => const AvatarEditorPage(),
+        '/emoji-store': (context) => const EmojiStorePage(),
+        '/cloud-gallery': (context) => const CloudGalleryPage(),
+        '/topic-posts': (context) {
+          final tag = ModalRoute.of(context)!.settings.arguments as TopicTag;
+          return TopicPostsPage(topicTag: tag);
+        },
+        '/friends': (context) => const FriendsPage(),
+        '/direct-chat': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args is! Map<String, dynamic>) {
+            return const Scaffold(
+              body: Center(child: Text('页面参数丢失，请返回重试')),
+            );
+          }
+          return DirectChatPage(
+            userId: args['userId'] as String,
+            username: args['username'] as String,
+            avatar: args['avatar'] as String,
+          );
+        },
       },
     );
   }
