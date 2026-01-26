@@ -27,6 +27,8 @@ class ChatPushService {
 
   static bool get isConnected => _channel != null;
 
+  static WebSocketChannel? get channel => _channel;
+
   static void start() {
     _connect();
   }

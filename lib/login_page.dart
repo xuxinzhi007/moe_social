@@ -4,6 +4,8 @@ import 'utils/validators.dart';
 import 'utils/error_handler.dart';
 import 'forgot_password_page.dart';
 import 'widgets/fade_in_up.dart'; // 引入动画组件
+import 'package:provider/provider.dart';
+import 'providers/notification_provider.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -43,6 +45,10 @@ class _LoginPageState extends State<LoginPage> {
         });
 
         if (result.success) {
+          // Start push services after login (provider was created before login).
+          try {
+            context.read<NotificationProvider>().init();
+          } catch (_) {}
           ErrorHandler.showSuccess(context, '欢迎回来！(｡♥‿♥｡)');
           Navigator.pushReplacementNamed(context, '/home');
         } else {
@@ -61,7 +67,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -122,7 +128,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: Column(
                     children: [
                       const Spacer(flex: 2), // 顶部留白
-                      
+
                       // Logo / 标题区域
                       FadeInUp(
                         duration: const Duration(milliseconds: 800),
@@ -175,7 +181,7 @@ class _LoginPageState extends State<LoginPage> {
                           ],
                         ),
                       ),
-                      
+
                       const Spacer(flex: 1),
 
                       // 表单卡片 - 移除FadeInUp动画以避免快速输入时的问题
@@ -230,7 +236,8 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               const SizedBox(height: 20),
                               _isLoading
-                                  ? CircularProgressIndicator(color: _primaryColor)
+                                  ? CircularProgressIndicator(
+                                      color: _primaryColor)
                                   : SizedBox(
                                       width: double.infinity,
                                       height: 50,
@@ -240,10 +247,12 @@ class _LoginPageState extends State<LoginPage> {
                                           backgroundColor: _primaryColor,
                                           foregroundColor: Colors.white,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(25),
+                                            borderRadius:
+                                                BorderRadius.circular(25),
                                           ),
                                           elevation: 5,
-                                          shadowColor: _primaryColor.withOpacity(0.4),
+                                          shadowColor:
+                                              _primaryColor.withOpacity(0.4),
                                         ),
                                         child: const Text(
                                           '登 录',
@@ -258,9 +267,9 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 30),
-                      
+
                       // 底部注册引导
                       FadeInUp(
                         duration: const Duration(milliseconds: 1200),
@@ -286,7 +295,7 @@ class _LoginPageState extends State<LoginPage> {
                           ],
                         ),
                       ),
-                      
+
                       const Spacer(flex: 2),
                     ],
                   ),
@@ -343,7 +352,8 @@ class _LoginPageState extends State<LoginPage> {
         ),
         filled: true,
         fillColor: Colors.grey[50],
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
     );
   }

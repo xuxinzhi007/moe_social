@@ -8,12 +8,12 @@ import (
 
 type Hub struct {
 	mu    sync.RWMutex
-	conns map[string]*websocket.Conn
+	conns map[string]map[*websocket.Conn]struct{}
 }
 
 func NewHub() *Hub {
 	return &Hub{
-		conns: make(map[string]*websocket.Conn),
+		conns: make(map[string]map[*websocket.Conn]struct{}),
 	}
 }
 
@@ -22,20 +22,23 @@ var DefaultHub = NewHub()
 func (h *Hub) AddConn(userID string, conn *websocket.Conn) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	if old, ok := h.conns[userID]; ok && old != conn {
-		old.Close()
+	set, ok := h.conns[userID]
+	if !ok {
+		set = make(map[*websocket.Conn]struct{})
+		h.conns[userID] = set
 	}
-	h.conns[userID] = conn
+	set[conn] = struct{}{}
 }
 
 func (h *Hub) RemoveConn(userID string, conn *websocket.Conn) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	current, ok := h.conns[userID]
+	set, ok := h.conns[userID]
 	if !ok {
 		return
 	}
-	if current == conn {
+	delete(set, conn)
+	if len(set) == 0 {
 		delete(h.conns, userID)
 	}
 }
@@ -43,16 +46,16 @@ func (h *Hub) RemoveConn(userID string, conn *websocket.Conn) {
 func (h *Hub) IsOnline(userID string) bool {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	conn, ok := h.conns[userID]
-	return ok && conn != nil
+	set, ok := h.conns[userID]
+	return ok && len(set) > 0
 }
 
 func (h *Hub) OnlineUserIDs() []string {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	ids := make([]string, 0, len(h.conns))
-	for id, c := range h.conns {
-		if c == nil {
+	for id, set := range h.conns {
+		if len(set) == 0 {
 			continue
 		}
 		ids = append(ids, id)
@@ -63,5 +66,28 @@ func (h *Hub) OnlineUserIDs() []string {
 func (h *Hub) GetConn(userID string) *websocket.Conn {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	return h.conns[userID]
+	set := h.conns[userID]
+	for c := range set {
+		if c != nil {
+			return c
+		}
+	}
+	return nil
+}
+
+func (h *Hub) GetConns(userID string) []*websocket.Conn {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	set := h.conns[userID]
+	if len(set) == 0 {
+		return nil
+	}
+	out := make([]*websocket.Conn, 0, len(set))
+	for c := range set {
+		if c == nil {
+			continue
+		}
+		out = append(out, c)
+	}
+	return out
 }
