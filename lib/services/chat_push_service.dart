@@ -59,7 +59,11 @@ class ChatPushService {
     final base = ApiService.baseUrl;
     final uri = Uri.parse(base);
     final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
-    final token = ApiService.token;
+    final defaultPort = uri.scheme == 'https' ? 443 : 80;
+    var token = ApiService.token?.trim();
+    if (token != null && token.startsWith('Bearer ')) {
+      token = token.substring('Bearer '.length).trim();
+    }
     final query = <String, String>{};
     if (token != null && token.isNotEmpty) {
       query['token'] = token;
@@ -67,7 +71,8 @@ class ChatPushService {
     return Uri(
       scheme: scheme,
       host: uri.host,
-      port: uri.hasPort ? uri.port : null,
+      // 避免没有显式端口时出现 ":0"
+      port: uri.hasPort ? uri.port : defaultPort,
       path: '/ws/chat',
       queryParameters: query.isEmpty ? null : query,
     );
