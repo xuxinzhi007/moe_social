@@ -123,7 +123,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
   Future<void> _checkPeerOnline() async {
     try {
-      final online = await ApiService.getChatOnline(widget.userId);
+      final map = await ApiService.getChatOnlineBatch([widget.userId]);
+      final online = map[widget.userId] ?? false;
       if (!mounted) return;
       setState(() {
         _peerOnline = online;
@@ -298,7 +299,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
-                final isMe = currentUserId != null && message.senderId == currentUserId;
+                final isMe =
+                    currentUserId != null && message.senderId == currentUserId;
                 return _buildMessageBubble(message, isMe);
               },
             ),
@@ -376,7 +378,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
                   ),
                   filled: true,
                   fillColor: Color(0xFFF5F7FA),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 ),
               ),
             ),

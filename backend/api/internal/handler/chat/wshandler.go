@@ -9,27 +9,61 @@ import (
 	"sync"
 	"time"
 
+	"backend/api/internal/chathub"
 	"backend/api/internal/svc"
 	"backend/rpc/pb/super"
 	"backend/utils"
 
 	"github.com/gorilla/websocket"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-type hub struct {
-	mu    sync.RWMutex
-	conns map[string]*websocket.Conn
+// Old hub struct removed - now using chathub.DefaultHub via hubWrapper
+
+// Use the shared chathub.DefaultHub instead of local instance
+// Bridge local hub interface to shared DefaultHub
+type hubWrapper struct{}
+
+func (w *hubWrapper) addConn(userID string, conn *websocket.Conn) {
+	chathub.DefaultHub.AddConn(userID, conn)
+	broadcastPresence(userID, true)
 }
 
-func newHub() *hub {
-	return &hub{
-		conns: make(map[string]*websocket.Conn),
+func (w *hubWrapper) removeConn(userID string, conn *websocket.Conn) {
+	chathub.DefaultHub.RemoveConn(userID, conn)
+	broadcastPresence(userID, false)
+}
+
+func (w *hubWrapper) forwardMessage(fromID, toID, content string) {
+	msg := serverMessage{
+		From:      fromID,
+		Content:   content,
+		Timestamp: time.Now().UnixMilli(),
+	}
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return
+	}
+
+	toConn := chathub.DefaultHub.GetConn(toID)
+	if toConn == nil {
+		return
+	}
+
+	if err := toConn.WriteMessage(websocket.TextMessage, data); err != nil {
+		logx.Errorf("write websocket message error: %v", err)
 	}
 }
 
-var chatHub = newHub()
+func (w *hubWrapper) isOnline(userID string) bool {
+	return chathub.DefaultHub.IsOnline(userID)
+}
+
+func (w *hubWrapper) onlineUserIDs() []string {
+	return chathub.DefaultHub.OnlineUserIDs()
+}
+
+var chatHub = &hubWrapper{}
 
 type remoteHub struct {
 	mu    sync.RWMutex
@@ -62,55 +96,88 @@ type serverMessage struct {
 	Timestamp int64  `json:"timestamp"`
 }
 
-func (h *hub) addConn(userID string, conn *websocket.Conn) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	if old, ok := h.conns[userID]; ok && old != conn {
-		old.Close()
-	}
-	h.conns[userID] = conn
+type presenceEvent struct {
+	Type      string `json:"type"`
+	UserID    string `json:"user_id"`
+	Online    bool   `json:"online"`
+	Timestamp int64  `json:"timestamp"`
 }
 
-func (h *hub) removeConn(userID string, conn *websocket.Conn) {
+type presenceSnapshot struct {
+	Type          string   `json:"type"`
+	OnlineUserIDs []string `json:"online_user_ids"`
+	Timestamp     int64    `json:"timestamp"`
+}
+
+// Old hub methods removed - functionality now in hubWrapper above
+
+// presence hub: broadcast presence events to all connected clients
+type presenceHub struct {
+	mu    sync.RWMutex
+	conns map[string][]*websocket.Conn
+}
+
+func newPresenceHub() *presenceHub {
+	return &presenceHub{conns: make(map[string][]*websocket.Conn)}
+}
+
+var presenceWsHub = newPresenceHub()
+
+func (h *presenceHub) addConn(userID string, conn *websocket.Conn) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	current, ok := h.conns[userID]
+	h.conns[userID] = append(h.conns[userID], conn)
+}
+
+func (h *presenceHub) removeConn(userID string, conn *websocket.Conn) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	list, ok := h.conns[userID]
 	if !ok {
 		return
 	}
-	if current == conn {
+	n := 0
+	for _, c := range list {
+		if c == nil || c == conn {
+			continue
+		}
+		list[n] = c
+		n++
+	}
+	if n == 0 {
 		delete(h.conns, userID)
+		return
+	}
+	h.conns[userID] = list[:n]
+}
+
+func (h *presenceHub) broadcastAll(data []byte) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	for _, list := range h.conns {
+		for _, c := range list {
+			if c == nil {
+				continue
+			}
+			if err := c.WriteMessage(websocket.TextMessage, data); err != nil {
+				logx.Errorf("write presence websocket message error: %v", err)
+			}
+		}
 	}
 }
 
-func (h *hub) forwardMessage(fromID, toID, content string) {
-	msg := serverMessage{
-		From:      fromID,
-		Content:   content,
+func broadcastPresence(userID string, online bool) {
+	evt := presenceEvent{
+		Type:      "presence",
+		UserID:    userID,
+		Online:    online,
 		Timestamp: time.Now().UnixMilli(),
 	}
-	data, err := json.Marshal(msg)
+	data, err := json.Marshal(evt)
 	if err != nil {
 		return
 	}
-
-	h.mu.RLock()
-	toConn, ok := h.conns[toID]
-	h.mu.RUnlock()
-	if !ok || toConn == nil {
-		return
-	}
-
-	if err := toConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		logx.Errorf("write websocket message error: %v", err)
-	}
-}
-
-func (h *hub) isOnline(userID string) bool {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-	conn, ok := h.conns[userID]
-	return ok && conn != nil
+	presenceWsHub.broadcastAll(data)
 }
 
 func (h *remoteHub) addConn(userID string, conn *websocket.Conn) {
@@ -289,19 +356,82 @@ func RemoteWsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	}
 }
 
-func ChatOnlineHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+// PresenceWsHandler provides push-based online status updates.
+// Client connects with token (query or Authorization header).
+// Server sends a snapshot first, then broadcasts presence events.
+func PresenceWsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	_ = svcCtx
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := r.URL.Query().Get("user_id")
-		if userID == "" {
-			http.Error(w, "user_id required", http.StatusBadRequest)
+		token := ""
+		queryToken := r.URL.Query().Get("token")
+		if queryToken != "" {
+			token = queryToken
+		} else {
+			authHeader := r.Header.Get("Authorization")
+			if strings.HasPrefix(authHeader, "Bearer ") {
+				token = strings.TrimPrefix(authHeader, "Bearer ")
+			}
+		}
+		if token == "" {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		online := chatHub.isOnline(userID)
-		httpx.OkJsonCtx(r.Context(), w, map[string]bool{
-			"online": online,
-		})
+		userIDUint, err := utils.GetUserIDFromToken(token)
+		if err != nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		userID := strconv.Itoa(int(userIDUint))
+
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			logx.Errorf("upgrade presence websocket error: %v", err)
+			return
+		}
+
+		presenceWsHub.addConn(userID, conn)
+
+		// send snapshot
+		snapshot := presenceSnapshot{
+			Type:          "presence_snapshot",
+			OnlineUserIDs: chatHub.onlineUserIDs(),
+			Timestamp:     time.Now().UnixMilli(),
+		}
+		if data, err := json.Marshal(snapshot); err == nil {
+			_ = conn.WriteMessage(websocket.TextMessage, data)
+		}
+
+		go func(uid string, c *websocket.Conn) {
+			defer func() {
+				presenceWsHub.removeConn(uid, c)
+				c.Close()
+			}()
+
+			for {
+				// keep connection alive; server does not require client messages
+				if _, _, err := c.ReadMessage(); err != nil {
+					break
+				}
+			}
+		}(userID, conn)
 	}
+}
+
+// GetChatOnlineStatus 供 logic 层调用，查询单个用户在线状态
+func GetChatOnlineStatus(userID string) bool {
+	return chatHub.isOnline(userID)
+}
+
+// GetChatOnlineBatch 供 logic 层调用，批量查询用户在线状态
+func GetChatOnlineBatch(userIDs []string) map[string]bool {
+	online := make(map[string]bool, len(userIDs))
+	for _, id := range userIDs {
+		if id == "" {
+			continue
+		}
+		online[id] = chatHub.isOnline(id)
+	}
+	return online
 }

@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'dart:io' show File, Platform, SocketException;
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart' show debugPrint, kDebugMode, kIsWeb, VoidCallback;
+import 'package:flutter/foundation.dart'
+    show debugPrint, kDebugMode, kIsWeb, VoidCallback;
 import '../models/post.dart';
 import '../models/comment.dart';
 import '../models/user.dart';
@@ -13,9 +14,9 @@ import '../models/vip_record.dart';
 class ApiException implements Exception {
   final String message;
   final int? code;
-  
+
   ApiException(this.message, [this.code]);
-  
+
   @override
   String toString() => message;
 }
@@ -44,7 +45,8 @@ class ApiService {
   static String? get token => _currentToken;
 
   // 语音通话 Token
-  static Future<Map<String, dynamic>> getRtcToken(String channelName, {int role = 1}) async {
+  static Future<Map<String, dynamic>> getRtcToken(String channelName,
+      {int role = 1}) async {
     final response = await _request(
       '/api/voice/token?channel_name=$channelName&role=$role',
       method: 'GET',
@@ -59,22 +61,23 @@ class ApiService {
   /// API 调试日志开关（只在 Debug 模式生效）
   /// - 你提到的 “user_avatar/图片信息刷屏” 就是这里控制的
   static const bool _enableApiLog = true;
+
   /// 是否输出“超详细”日志（会非常吵；默认关闭）
   static const bool _verboseApiLog = true;
-  
+
   // 生产环境地址（cpolar隧道）
   static const String _productionUrl = 'http://491d1261.r3.cpolar.top';
-  
+
   // 开发环境地址
   static const String _developmentUrl = 'http://localhost:8888';
-  
+
   // 根据环境和平台自动选择API地址
   static String get baseUrl {
     // 如果设置为生产环境，直接返回生产地址
     if (_isProduction) {
       return _productionUrl;
     }
-    
+
     // 开发环境根据平台选择
     if (kIsWeb) {
       // Web平台使用localhost
@@ -95,15 +98,14 @@ class ApiService {
 
   // 刷新token的端点
   static const String _refreshTokenEndpoint = '/api/user/refresh-token';
-  
+
   // 防止并发刷新token
   static bool _isRefreshing = false;
   // 等待刷新token的请求队列（当前实现未使用，先移除避免日志/分析噪音）
 
   // 通用请求方法（私有）
-  static Future<Map<String, dynamic>> _request(
-    String path,
-    {String method = 'GET', dynamic body}) async {
+  static Future<Map<String, dynamic>> _request(String path,
+      {String method = 'GET', dynamic body}) async {
     try {
       final result = await _performRequest(path, method, body);
       return result;
@@ -112,9 +114,11 @@ class ApiService {
       if (path == '/api/user/login') {
         rethrow;
       }
-      
+
       // 检查是否是token过期错误（根据后端返回的错误码判断）
-      if (e.code == 401 || e.message.contains('token') || e.message.contains('Token')) {
+      if (e.code == 401 ||
+          e.message.contains('token') ||
+          e.message.contains('Token')) {
         // Token过期，尝试刷新token
         final newToken = await _refreshToken();
         if (newToken != null) {
@@ -154,29 +158,27 @@ class ApiService {
 
   // 执行实际的HTTP请求
   static Future<Map<String, dynamic>> _performRequest(
-    String path,
-    String method,
-    dynamic body) async {
+      String path, String method, dynamic body) async {
     try {
       final uri = Uri.parse('$baseUrl$path');
-      
+
       // 调试日志
       _log('📡 API Request: $method $uri');
       if (body != null) {
         _log('📤 Request Body: ${_safeJsonForLog(body)}');
       }
-      
+
       // 构建请求头
       final headers = <String, String>{
         'Content-Type': 'application/json',
       };
-      
+
       // 添加认证令牌
       final token = _currentToken;
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
       }
-      
+
       // 发送请求
       http.Response response;
       if (method == 'GET') {
@@ -195,29 +197,29 @@ class ApiService {
         );
       } else if (method == 'DELETE') {
         response = await http.delete(
-          uri, 
+          uri,
           headers: headers,
           body: body != null ? json.encode(body) : null,
         );
       } else {
         throw ApiException('不支持的HTTP方法: $method', null);
       }
-      
+
       // 调试日志
       _log('📥 API Response: ${response.statusCode}');
       // 不再全量输出 response.body（会把 avatar/user_avatar/images 等字段刷屏）
       if (_verboseApiLog) {
         _log('📥 Response Body: ${_safeTextForLog(response.body)}');
       }
-      
+
       // 检查响应体是否为空
       if (response.body.isEmpty) {
         throw ApiException('服务器返回空响应', response.statusCode);
       }
-      
+
       // 检查是否是HTML响应（通常是404页面或服务器错误页面）
       final trimmedBody = response.body.trim();
-      if (trimmedBody.startsWith('<!DOCTYPE html>') || 
+      if (trimmedBody.startsWith('<!DOCTYPE html>') ||
           trimmedBody.startsWith('<html>')) {
         String errorMessage = '无法连接到服务器';
         if (response.statusCode == 404) {
@@ -226,8 +228,10 @@ class ApiService {
           } else {
             errorMessage = 'API端点不存在，请检查后端服务是否正常运行';
           }
-        } else if (response.statusCode == 502 || response.statusCode == 503 || response.statusCode == 504) {
-            errorMessage = '服务器暂时不可用或正在维护中';
+        } else if (response.statusCode == 502 ||
+            response.statusCode == 503 ||
+            response.statusCode == 504) {
+          errorMessage = '服务器暂时不可用或正在维护中';
         } else {
           errorMessage = '服务器返回错误页面 (状态码: ${response.statusCode})';
         }
@@ -235,7 +239,7 @@ class ApiService {
         _log('❌ 当前API地址: $baseUrl');
         throw ApiException(errorMessage, response.statusCode);
       }
-      
+
       // 对于错误状态码且看起来不是JSON的纯文本响应（例如 "404 page not found"），
       // 直接抛出友好的错误提示，避免后续JSON解析报错
       if ((response.statusCode < 200 || response.statusCode >= 300) &&
@@ -247,7 +251,7 @@ class ApiService {
         }
         throw ApiException(errorMessage, response.statusCode);
       }
-      
+
       // 解析响应
       Map<String, dynamic> result;
       try {
@@ -255,22 +259,23 @@ class ApiService {
       } catch (e) {
         _log('❌ JSON解析失败: $e');
         _log('❌ 响应内容(截断): ${_safeTextForLog(response.body, maxLen: 200)}');
-        
+
         // 如果响应看起来像HTML，给出更友好的错误提示
-        if (response.body.contains('<html>') || response.body.contains('<!DOCTYPE')) {
+        if (response.body.contains('<html>') ||
+            response.body.contains('<!DOCTYPE')) {
           String errorMessage = '服务器返回了HTML页面而不是JSON数据';
           if (response.statusCode == 404 && baseUrl.contains('cpolar.top')) {
             errorMessage = 'cpolar隧道可能已断开，请检查隧道状态或切换到本地开发环境';
           }
           throw ApiException(errorMessage, response.statusCode);
         }
-        
+
         throw ApiException('服务器响应格式错误，无法解析JSON', response.statusCode);
       }
 
       // 默认只输出“净化过的摘要”，避免图片信息刷屏
       _log('📥 Response JSON: ${_safeJsonForLog(result)}');
-      
+
       // 检查响应体中的success字段（go-zero框架的错误响应）
       if (result.containsKey('success') && result['success'] == false) {
         final errorMessage = result['message'] ?? '请求失败';
@@ -278,14 +283,14 @@ class ApiService {
         _log('❌ API错误: $errorMessage (code: $errorCode)');
         throw ApiException(errorMessage, errorCode);
       }
-      
+
       // 检查HTTP状态码
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final errorMessage = result['message'] ?? '请求失败';
         _log('❌ HTTP错误: $errorMessage (status: ${response.statusCode})');
         throw ApiException(errorMessage, response.statusCode);
       }
-      
+
       return result;
     } on SocketException catch (e) {
       _log('❌ 网络连接错误: $e');
@@ -312,21 +317,21 @@ class ApiService {
     try {
       _isRefreshing = true;
       _log('🔄 正在刷新token...');
-      
+
       // 调用刷新token的API
       final uri = Uri.parse('$baseUrl$_refreshTokenEndpoint');
       final headers = <String, String>{
         'Content-Type': 'application/json',
       };
-      
+
       // 使用当前token请求刷新
       final currentToken = _currentToken;
       if (currentToken != null) {
         headers['Authorization'] = 'Bearer $currentToken';
       }
-      
+
       final response = await http.post(uri, headers: headers);
-      
+
       if (response.statusCode == 200) {
         final result = json.decode(response.body) as Map<String, dynamic>;
         final success = result['success'] as bool? ?? true;
@@ -356,74 +361,71 @@ class ApiService {
   }
 
   // 登录
-  static Future<Map<String, dynamic>> login(String email, String password) async {
-    return await _request('/api/user/login', 
-      method: 'POST',
-      body: {'email': email, 'password': password}
-    );
+  static Future<Map<String, dynamic>> login(
+      String email, String password) async {
+    return await _request('/api/user/login',
+        method: 'POST', body: {'email': email, 'password': password});
   }
 
   // 注册
-  static Future<Map<String, dynamic>> register(String username, String email, String password) async {
+  static Future<Map<String, dynamic>> register(
+      String username, String email, String password) async {
     return await _request('/api/user/register',
-      method: 'POST',
-      body: {'username': username, 'email': email, 'password': password}
-    );
+        method: 'POST',
+        body: {'username': username, 'email': email, 'password': password});
   }
-  
+
   // 发送重置密码验证码
-  static Future<Map<String, dynamic>> sendResetPasswordCode(String email) async {
+  static Future<Map<String, dynamic>> sendResetPasswordCode(
+      String email) async {
     return await _request('/api/user/send-reset-code',
-      method: 'POST',
-      body: {'email': email}
-    );
+        method: 'POST', body: {'email': email});
   }
-  
+
   // 验证重置密码验证码
-  static Future<Map<String, dynamic>> verifyResetCode(String email, String code) async {
+  static Future<Map<String, dynamic>> verifyResetCode(
+      String email, String code) async {
     return await _request('/api/user/verify-reset-code',
-      method: 'POST',
-      body: {'email': email, 'code': code}
-    );
+        method: 'POST', body: {'email': email, 'code': code});
   }
-  
+
   // 检查邮箱是否存在
   static Future<User> checkUserByEmail(String email) async {
     final result = await _request('/api/user/check-email',
-      method: 'POST',
-      body: {'email': email}
-    );
+        method: 'POST', body: {'email': email});
     return User.fromJson(result['data']);
   }
 
   // 重置密码
-  static Future<Map<String, dynamic>> resetPassword(String email, String code, String newPassword) async {
+  static Future<Map<String, dynamic>> resetPassword(
+      String email, String code, String newPassword) async {
     return await _request('/api/user/reset-password',
-      method: 'POST',
-      body: {'email': email, 'new_password': newPassword}
-    );
+        method: 'POST', body: {'email': email, 'new_password': newPassword});
   }
 
   // 获取帖子列表（支持分页）
-  static Future<Map<String, dynamic>> getPosts({int page = 1, int pageSize = 10}) async {
+  static Future<Map<String, dynamic>> getPosts(
+      {int page = 1, int pageSize = 10}) async {
     final result = await _request('/api/posts?page=$page&page_size=$pageSize');
     // 始终输出total字段的值和postsJson的长度，不依赖于_verboseApiLog
     _log('📥 getPosts响应数据: ${_safeJsonForLog(result)}');
     _log('📥 data类型: ${result['data'].runtimeType}');
     _log('📥 total: ${result['total']}');
-    
+
     final postsJson = result['data'] as List;
     _log('📥 postsJson长度: ${postsJson.length}');
     _log('📥 原始JSON: ${json.encode(result)}'); // 输出原始JSON，不做任何处理
-    _log('📥 解析的帖子ID列表: ${postsJson.map((json) => json['id']).toList()}'); // 输出帖子ID列表
-    
+    _log(
+        '📥 解析的帖子ID列表: ${postsJson.map((json) => json['id']).toList()}'); // 输出帖子ID列表
+
     try {
       final posts = postsJson.map((json) {
         // 始终输出关键字段的调试信息
         _log('📥 解析帖子:');
         _log('   ID: ${json['id']}');
         _log('   images: ${json['images']} (${json['images']?.runtimeType})');
-        _log('   topic_tags: ${json['topic_tags']} (${json['topic_tags']?.runtimeType})');
+        _log(
+            '   topic_tags: ${json['topic_tags']} (${json['topic_tags']?.runtimeType})');
         if (_verboseApiLog) {
           _log('📥 完整JSON: ${_safeJsonForLog(json)}');
         }
@@ -581,7 +583,10 @@ class ApiService {
         final k = key.toString();
         final lower = k.toLowerCase();
         // 这些字段往往很长/含图片链接或 base64，直接省略
-        if (lower.contains('avatar') || lower.contains('image') || lower == 'images' || lower.contains('password')) {
+        if (lower.contains('avatar') ||
+            lower.contains('image') ||
+            lower == 'images' ||
+            lower.contains('password')) {
           out[k] = '<omitted>';
           return;
         }
@@ -613,10 +618,7 @@ class ApiService {
 
   // 创建帖子
   static Future<Post> createPost(Post post) async {
-    await _request('/api/posts',
-      method: 'POST',
-      body: post.toJson()
-    );
+    await _request('/api/posts', method: 'POST', body: post.toJson());
     // 这里不需要转换为Post对象，因为我们只需要知道创建成功即可
     return post;
   }
@@ -624,9 +626,7 @@ class ApiService {
   // 点赞/取消点赞帖子
   static Future<Post> toggleLike(String postId, String userId) async {
     final result = await _request('/api/posts/$postId/like',
-      method: 'POST',
-      body: {'user_id': userId}
-    );
+        method: 'POST', body: {'user_id': userId});
     return Post.fromJson(result['data']);
   }
 
@@ -639,19 +639,16 @@ class ApiService {
 
   // 添加评论
   static Future<Comment> addComment(Comment comment) async {
-    final result = await _request('/api/comments',
-      method: 'POST',
-      body: comment.toJson()
-    );
+    final result =
+        await _request('/api/comments', method: 'POST', body: comment.toJson());
     return Comment.fromJson(result['data']);
   }
 
   // 点赞/取消点赞评论
-  static Future<Comment> toggleCommentLike(String commentId, String userId) async {
+  static Future<Comment> toggleCommentLike(
+      String commentId, String userId) async {
     final result = await _request('/api/comments/$commentId/like',
-      method: 'POST',
-      body: {'user_id': userId}
-    );
+        method: 'POST', body: {'user_id': userId});
     return Comment.fromJson(result['data']);
   }
 
@@ -664,7 +661,8 @@ class ApiService {
   }
 
   // 更新用户信息
-  static Future<User> updateUserInfo(String userId, {
+  static Future<User> updateUserInfo(
+    String userId, {
     String? username,
     String? email,
     String? avatar,
@@ -684,40 +682,35 @@ class ApiService {
     if (gender != null) body['gender'] = gender;
     if (birthday != null) body['birthday'] = birthday;
     if (inventory != null) body['inventory'] = jsonEncode(inventory);
-    
+
     if (clearEquippedFrame) {
       body['clear_equipped_frame'] = true;
     } else if (equippedFrameId != null) {
       body['equipped_frame_id'] = equippedFrameId;
     }
 
-    final result = await _request('/api/user/$userId',
-      method: 'PUT',
-      body: body
-    );
+    final result =
+        await _request('/api/user/$userId', method: 'PUT', body: body);
     return User.fromJson(result['data']);
   }
 
   // 更新用户密码
-  static Future<void> updateUserPassword(String userId, String oldPassword, String newPassword) async {
-    await _request('/api/user/$userId/password',
-      method: 'PUT',
-      body: {
-        'old_password': oldPassword,
-        'new_password': newPassword,
-      }
-    );
+  static Future<void> updateUserPassword(
+      String userId, String oldPassword, String newPassword) async {
+    await _request('/api/user/$userId/password', method: 'PUT', body: {
+      'old_password': oldPassword,
+      'new_password': newPassword,
+    });
   }
 
   // 删除用户
   static Future<void> deleteUser(String userId) async {
-    await _request('/api/user/$userId',
-      method: 'DELETE'
-    );
+    await _request('/api/user/$userId', method: 'DELETE');
   }
 
   // 获取用户列表
-  static Future<Map<String, dynamic>> getUsers({int page = 1, int pageSize = 10}) async {
+  static Future<Map<String, dynamic>> getUsers(
+      {int page = 1, int pageSize = 10}) async {
     final result = await _request('/api/users?page=$page&page_size=$pageSize');
     final usersJson = result['data'] as List;
     final users = usersJson.map((json) => User.fromJson(json)).toList();
@@ -745,6 +738,28 @@ class ApiService {
     return false;
   }
 
+  static Future<Map<String, bool>> getChatOnlineBatch(
+      List<String> userIds) async {
+    if (userIds.isEmpty) return {};
+    final encoded = Uri.encodeQueryComponent(userIds.join(','));
+    final result = await get('/api/chat/online/batch?user_ids=$encoded');
+    final online = result['online'];
+    if (online is! Map) return {};
+    final out = <String, bool>{};
+    online.forEach((key, value) {
+      final id = key.toString();
+      if (value is bool) {
+        out[id] = value;
+      } else if (value is num) {
+        out[id] = value != 0;
+      } else if (value is String) {
+        final v = value.toLowerCase();
+        out[id] = v == 'true' || v == '1';
+      }
+    });
+    return out;
+  }
+
   // ========== VIP相关API ==========
 
   // 获取用户VIP状态
@@ -762,15 +777,15 @@ class ApiService {
   // 创建VIP订单
   static Future<VipOrder> createVipOrder(String userId, String planId) async {
     final result = await _request('/api/user/$userId/vip/orders',
-      method: 'POST',
-      body: {'plan_id': planId}
-    );
+        method: 'POST', body: {'plan_id': planId});
     return VipOrder.fromJson(result['data']);
   }
 
   // 获取VIP订单列表
-  static Future<Map<String, dynamic>> getVipOrders(String userId, {int page = 1, int pageSize = 10}) async {
-    final result = await _request('/api/user/$userId/vip/orders?page=$page&page_size=$pageSize');
+  static Future<Map<String, dynamic>> getVipOrders(String userId,
+      {int page = 1, int pageSize = 10}) async {
+    final result = await _request(
+        '/api/user/$userId/vip/orders?page=$page&page_size=$pageSize');
     final ordersJson = result['data'] as List;
     final orders = ordersJson.map((json) => VipOrder.fromJson(json)).toList();
     return {
@@ -780,10 +795,13 @@ class ApiService {
   }
 
   // 获取VIP历史记录
-  static Future<Map<String, dynamic>> getVipHistory(String userId, {int page = 1, int pageSize = 10}) async {
-    final result = await _request('/api/user/$userId/vip/records?page=$page&page_size=$pageSize');
+  static Future<Map<String, dynamic>> getVipHistory(String userId,
+      {int page = 1, int pageSize = 10}) async {
+    final result = await _request(
+        '/api/user/$userId/vip/records?page=$page&page_size=$pageSize');
     final recordsJson = result['data'] as List;
-    final records = recordsJson.map((json) => VipRecord.fromJson(json)).toList();
+    final records =
+        recordsJson.map((json) => VipRecord.fromJson(json)).toList();
     return {
       'records': records,
       'total': result['total'] as int,
@@ -799,16 +817,12 @@ class ApiService {
   // 更新自动续费
   static Future<void> updateAutoRenew(String userId, bool autoRenew) async {
     await _request('/api/user/$userId/vip/auto-renew',
-      method: 'PUT',
-      body: {'auto_renew': autoRenew}
-    );
+        method: 'PUT', body: {'auto_renew': autoRenew});
   }
 
   // 同步VIP状态
   static Future<Map<String, dynamic>> syncUserVipStatus(String userId) async {
-    final result = await _request('/api/user/$userId/vip/sync',
-      method: 'POST'
-    );
+    final result = await _request('/api/user/$userId/vip/sync', method: 'POST');
     return result['data'] as Map<String, dynamic>;
   }
 
@@ -834,36 +848,35 @@ class ApiService {
     required double price,
     required int durationDays,
   }) async {
-    final result = await _request('/api/vip/plans',
-      method: 'POST',
-      body: {
-        'name': name,
-        'description': description,
-        'price': price,
-        'duration_days': durationDays,
-      }
-    );
+    final result = await _request('/api/vip/plans', method: 'POST', body: {
+      'name': name,
+      'description': description,
+      'price': price,
+      'duration_days': durationDays,
+    });
     return VipPlan.fromJson(result['data']);
   }
-  
+
   // ========== 钱包相关API ==========
 
   // 充值
-  static Future<Map<String, dynamic>> recharge(String userId, double amount, String description) async {
+  static Future<Map<String, dynamic>> recharge(
+      String userId, double amount, String description) async {
     final result = await _request('/api/user/$userId/wallet/recharge',
-      method: 'POST',
-      body: {
-        'amount': amount,
-        'description': description,
-      }
-    );
+        method: 'POST',
+        body: {
+          'amount': amount,
+          'description': description,
+        });
     return result;
   }
 
   // 获取交易记录
-  static Future<Map<String, dynamic>> getTransactions(String userId, {int page = 1, int pageSize = 10}) async {
-    final result = await _request('/api/user/$userId/transactions?page=$page&page_size=$pageSize');
-    
+  static Future<Map<String, dynamic>> getTransactions(String userId,
+      {int page = 1, int pageSize = 10}) async {
+    final result = await _request(
+        '/api/user/$userId/transactions?page=$page&page_size=$pageSize');
+
     // 如果 result['data'] 为 null，返回空列表
     if (result['data'] == null) {
       return {
@@ -871,47 +884,48 @@ class ApiService {
         'total': result['total'] ?? 0,
       };
     }
-    
+
     return result;
   }
 
   // 获取单个交易记录
-  static Future<Map<String, dynamic>> getTransaction(String transactionId) async {
+  static Future<Map<String, dynamic>> getTransaction(
+      String transactionId) async {
     final result = await _request('/api/transactions/$transactionId');
     return result;
   }
-  
+
   // 上传图片（真实实现，调用后端API）
   static Future<String> uploadImage(File image) async {
     try {
       final uri = Uri.parse('$baseUrl/api/upload');
-      
+
       // 创建multipart请求
       final request = http.MultipartRequest('POST', uri);
-      
+
       // 添加认证令牌
       final token = _currentToken;
       if (token != null) {
         request.headers['Authorization'] = 'Bearer $token';
       }
-      
+
       // 添加文件字段
       final fileStream = http.ByteStream(image.openRead());
       final length = await image.length();
-      
+
       final multipartFile = http.MultipartFile(
         'file',
         fileStream,
         length,
         filename: image.path.split('/').last,
       );
-      
+
       request.files.add(multipartFile);
-      
+
       // 发送请求
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
-      
+
       // 解析响应
       if (response.statusCode == 200) {
         final result = json.decode(response.body) as Map<String, dynamic>;
@@ -919,10 +933,12 @@ class ApiService {
           final imageInfo = result['data'] as Map<String, dynamic>;
           return imageInfo['url'] as String;
         } else {
-          throw ApiException(result['message'] ?? '上传失败', result['code'] ?? response.statusCode);
+          throw ApiException(result['message'] ?? '上传失败',
+              result['code'] ?? response.statusCode);
         }
       } else {
-        throw ApiException('上传失败，状态码：${response.statusCode}', response.statusCode);
+        throw ApiException(
+            '上传失败，状态码：${response.statusCode}', response.statusCode);
       }
     } catch (e) {
       _log('❌ 图片上传失败: $e');
@@ -930,50 +946,57 @@ class ApiService {
       throw ApiException('图片上传失败: $e', null);
     }
   }
-  
+
   // ========== 关注相关API ==========
-  
+
   // 关注用户
-  static Future<Map<String, dynamic>> followUser(String userId, String followingId) async {
+  static Future<Map<String, dynamic>> followUser(
+      String userId, String followingId) async {
     return await _request('/api/user/$userId/follow',
-      method: 'POST',
-      body: {'following_id': followingId}
-    );
+        method: 'POST', body: {'following_id': followingId});
   }
-  
+
   // 取消关注用户
-  static Future<Map<String, dynamic>> unfollowUser(String userId, String followingId) async {
+  static Future<Map<String, dynamic>> unfollowUser(
+      String userId, String followingId) async {
     return await _request('/api/user/$userId/follow',
-      method: 'DELETE',
-      body: {'following_id': followingId}
-    );
+        method: 'DELETE', body: {'following_id': followingId});
   }
-  
+
   // 获取关注列表
-  static Future<Map<String, dynamic>> getFollowings(String userId, {int page = 1, int pageSize = 10}) async {
-    final result = await _request('/api/user/$userId/following?page=$page&page_size=$pageSize');
+  static Future<Map<String, dynamic>> getFollowings(String userId,
+      {int page = 1, int pageSize = 10}) async {
+    final result = await _request(
+        '/api/user/$userId/following?page=$page&page_size=$pageSize');
     final followingsJson = result['data'] as List;
-    final followings = followingsJson.map((json) => User.fromJson(json as Map<String, dynamic>)).toList();
+    final followings = followingsJson
+        .map((json) => User.fromJson(json as Map<String, dynamic>))
+        .toList();
     return {
       'followings': followings,
       'total': result['total'] as int,
     };
   }
-  
+
   // 获取粉丝列表
-  static Future<Map<String, dynamic>> getFollowers(String userId, {int page = 1, int pageSize = 10}) async {
-    final result = await _request('/api/user/$userId/followers?page=$page&page_size=$pageSize');
+  static Future<Map<String, dynamic>> getFollowers(String userId,
+      {int page = 1, int pageSize = 10}) async {
+    final result = await _request(
+        '/api/user/$userId/followers?page=$page&page_size=$pageSize');
     final followersJson = result['data'] as List;
-    final followers = followersJson.map((json) => User.fromJson(json as Map<String, dynamic>)).toList();
+    final followers = followersJson
+        .map((json) => User.fromJson(json as Map<String, dynamic>))
+        .toList();
     return {
       'followers': followers,
       'total': result['total'] as int,
     };
   }
-  
+
   // 检查是否关注了某个用户
   static Future<bool> checkFollow(String followerId, String followingId) async {
-    final result = await _request('/api/user/$followerId/follow/$followingId/check');
+    final result =
+        await _request('/api/user/$followerId/follow/$followingId/check');
     return result['data'] as bool;
   }
 }
