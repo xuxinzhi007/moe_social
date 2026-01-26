@@ -6,6 +6,10 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'auth_service.dart';
 import 'services/api_service.dart';
 import 'widgets/avatar_image.dart';
+import 'package:provider/provider.dart';
+import 'providers/notification_provider.dart';
+import 'services/chat_push_service.dart';
+import 'services/presence_service.dart';
 
 class DirectChatPage extends StatefulWidget {
   final String userId;
@@ -33,11 +37,36 @@ class _DirectChatPageState extends State<DirectChatPage> {
   WebSocketChannel? _channel;
   bool _peerOnline = false;
   Timer? _onlineTimer;
+  bool _presenceListening = false;
 
   @override
   void initState() {
     super.initState();
     _initChat();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_presenceListening) return;
+    _presenceListening = true;
+    PresenceService.start();
+    PresenceService.online.addListener(_onPresenceUpdate);
+  }
+
+  void _onPresenceUpdate() {
+    if (!mounted) return;
+    final map = PresenceService.online.value;
+    final online = map[widget.userId] ?? false;
+    if (_peerOnline != online) {
+      setState(() {
+        _peerOnline = online;
+      });
+    }
+    if (PresenceService.isConnected && map.isNotEmpty) {
+      _onlineTimer?.cancel();
+      _onlineTimer = null;
+    }
   }
 
   Future<void> _initChat() async {
@@ -47,10 +76,36 @@ class _DirectChatPageState extends State<DirectChatPage> {
       setState(() {
         _currentUserId = userId;
       });
+
+      // Entering chat: mark DM notifications from this peer as read
+      try {
+        await context
+            .read<NotificationProvider>()
+            .markDirectMessagesAsRead(widget.userId);
+      } catch (_) {}
+
+      // Clear push-based unread badge for this peer
+      ChatPushService.markSenderRead(widget.userId);
+
       await _loadMessages(userId);
       await _connectWebSocket();
-      _startOnlinePolling();
+      await _ensurePeerOnline();
     } catch (_) {}
+  }
+
+  Future<void> _ensurePeerOnline() async {
+    // Prefer push presence if available.
+    final map = PresenceService.online.value;
+    if (PresenceService.isConnected && map.isNotEmpty) {
+      final online = map[widget.userId] ?? false;
+      if (mounted) {
+        setState(() {
+          _peerOnline = online;
+        });
+      }
+      return;
+    }
+    _startOnlinePolling();
   }
 
   String _storageKey(String currentUserId) {
@@ -116,7 +171,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
   void _startOnlinePolling() {
     _checkPeerOnline();
     _onlineTimer?.cancel();
-    _onlineTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _onlineTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       _checkPeerOnline();
     });
   }
@@ -200,6 +255,9 @@ class _DirectChatPageState extends State<DirectChatPage> {
       });
       _saveMessages();
       _scrollToBottom();
+
+      // When chat is open, don't count messages from this peer as unread.
+      ChatPushService.markSenderRead(widget.userId);
     } catch (_) {}
   }
 
@@ -246,6 +304,9 @@ class _DirectChatPageState extends State<DirectChatPage> {
     _scrollController.dispose();
     _inputFocusNode.dispose();
     _onlineTimer?.cancel();
+    if (_presenceListening) {
+      PresenceService.online.removeListener(_onPresenceUpdate);
+    }
     _channel?.sink.close();
     super.dispose();
   }
