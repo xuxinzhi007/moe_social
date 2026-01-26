@@ -99,7 +99,69 @@ func (l *UpdateUserInfoLogic) UpdateUserInfo(in *super.UpdateUserInfoReq) (*supe
 	}
 
 	// 3. 保存更新
-	err := l.svcCtx.DB.Save(&user).Error
+	// Use Updates to avoid touching unrelated fields (especially Password).
+	updates := map[string]interface{}{}
+	if in.Username != "" {
+		updates["username"] = user.Username
+	}
+	if in.Email != "" {
+		updates["email"] = user.Email
+	}
+	if in.Avatar != "" {
+		updates["avatar"] = user.Avatar
+	}
+	if in.Signature != "" {
+		updates["signature"] = user.Signature
+	}
+	if in.Gender != "" {
+		updates["gender"] = user.Gender
+	}
+	if in.Birthday != "" {
+		updates["birthday"] = user.Birthday
+	}
+	if in.Inventory != "" {
+		updates["inventory"] = user.Inventory
+	}
+	if in.ClearEquippedFrame {
+		updates["equipped_frame_id"] = ""
+	} else if in.EquippedFrameId != "" {
+		updates["equipped_frame_id"] = user.EquippedFrameId
+	}
+
+	if len(updates) == 0 {
+		// Nothing to update
+		return &super.UpdateUserInfoResp{
+			User: &super.User{
+				Id:        strconv.Itoa(int(user.ID)),
+				Username:  user.Username,
+				Email:     user.Email,
+				Avatar:    user.Avatar,
+				Signature: user.Signature,
+				Gender:    user.Gender,
+				Birthday: func() string {
+					if user.Birthday != nil {
+						return user.Birthday.Format("2006-01-02")
+					}
+					return ""
+				}(),
+				CreatedAt: user.CreatedAt.Format("2006-01-02 15:04:05"),
+				UpdatedAt: user.UpdatedAt.Format("2006-01-02 15:04:05"),
+				IsVip:     user.IsVip,
+				VipExpiresAt: func() string {
+					if user.VipEndAt != nil {
+						return user.VipEndAt.Format("2006-01-02 15:04:05")
+					}
+					return ""
+				}(),
+				AutoRenew:       user.AutoRenew,
+				Balance:         float32(user.Balance),
+				Inventory:       user.Inventory,
+				EquippedFrameId: user.EquippedFrameId,
+			},
+		}, nil
+	}
+
+	err := l.svcCtx.DB.Model(&user).Updates(updates).Error
 	if err != nil {
 		l.Error("更新用户信息失败: ", err)
 		return nil, errorx.Internal("更新用户信息失败，请稍后重试")
@@ -118,20 +180,20 @@ func (l *UpdateUserInfoLogic) UpdateUserInfo(in *super.UpdateUserInfoReq) (*supe
 
 	return &super.UpdateUserInfoResp{
 		User: &super.User{
-			Id:           strconv.Itoa(int(user.ID)),
-			Username:     user.Username,
-			Email:        user.Email,
-			Avatar:       user.Avatar,
-			Signature:    user.Signature,
-			Gender:       user.Gender,
-			Birthday:     birthday,
-			CreatedAt:    user.CreatedAt.Format("2006-01-02 15:04:05"),
-			UpdatedAt:    user.UpdatedAt.Format("2006-01-02 15:04:05"),
-			IsVip:        user.IsVip,
-			VipExpiresAt: vipEndAt,
-			AutoRenew:    user.AutoRenew,
-			Balance:      float32(user.Balance),
-			Inventory:    user.Inventory,
+			Id:              strconv.Itoa(int(user.ID)),
+			Username:        user.Username,
+			Email:           user.Email,
+			Avatar:          user.Avatar,
+			Signature:       user.Signature,
+			Gender:          user.Gender,
+			Birthday:        birthday,
+			CreatedAt:       user.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:       user.UpdatedAt.Format("2006-01-02 15:04:05"),
+			IsVip:           user.IsVip,
+			VipExpiresAt:    vipEndAt,
+			AutoRenew:       user.AutoRenew,
+			Balance:         float32(user.Balance),
+			Inventory:       user.Inventory,
 			EquippedFrameId: user.EquippedFrameId,
 		},
 	}, nil

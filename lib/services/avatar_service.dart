@@ -1,27 +1,26 @@
-import 'dart:convert';
 import '../avatars/avatar_data.dart';
 import '../services/api_service.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
 class AvatarService {
   // 获取用户虚拟形象
   Future<UserAvatar?> getUserAvatar(String userId) async {
     try {
-      print('🌐 正在调用API获取虚拟形象: GET /api/avatar/$userId');
       final response = await ApiService.get('/api/avatar/$userId');
-      print('✅ API调用成功，响应数据: $response');
 
       if (response['data'] != null) {
-        print('📦 解析虚拟形象数据: ${response['data']}');
         final userAvatar = UserAvatar.fromJson(response['data']);
-        print('🎯 解析完成，虚拟形象: $userAvatar');
         return userAvatar;
       } else {
-        print('⚠️ 响应data字段为空');
+        if (kDebugMode) {
+          debugPrint('⚠️ 响应data字段为空');
+        }
         return null;
       }
     } catch (e) {
-      print('❌ 获取用户虚拟形象失败: $e');
-      print('📍 错误类型: ${e.runtimeType}');
+      if (kDebugMode) {
+        debugPrint('获取用户虚拟形象失败: $e');
+      }
       return null;
     }
   }
@@ -41,7 +40,9 @@ class AvatarService {
       );
       return UserAvatar.fromJson(response['data']);
     } catch (e) {
-      print('Error updating user avatar: $e');
+      if (kDebugMode) {
+        debugPrint('Error updating user avatar: $e');
+      }
       return null;
     }
   }
@@ -65,7 +66,9 @@ class AvatarService {
       final List<dynamic> outfitsJson = response['data'] ?? [];
       return outfitsJson.map((e) => AvatarOutfit.fromJson(e)).toList();
     } catch (e) {
-      print('Error getting avatar outfits: $e');
+      if (kDebugMode) {
+        debugPrint('Error getting avatar outfits: $e');
+      }
       return null;
     }
   }
@@ -76,7 +79,9 @@ class AvatarService {
       final response = await ApiService.get('/api/avatar/outfits/$outfitId');
       return AvatarOutfit.fromJson(response['data']);
     } catch (e) {
-      print('Error getting avatar outfit: $e');
+      if (kDebugMode) {
+        debugPrint('Error getting avatar outfit: $e');
+      }
       return null;
     }
   }
@@ -90,7 +95,9 @@ class AvatarService {
       );
       return response['data'];
     } catch (e) {
-      print('Error purchasing avatar outfit: $e');
+      if (kDebugMode) {
+        debugPrint('Error purchasing avatar outfit: $e');
+      }
       return null;
     }
   }

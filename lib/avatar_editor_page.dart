@@ -7,6 +7,7 @@ import 'services/avatar_service.dart';
 import 'services/avatar_asset_service.dart';
 import 'avatars/avatar_data.dart';
 import 'auth_service.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
 class AvatarEditorPage extends StatefulWidget {
   final AvatarConfiguration? initialConfig;
@@ -57,8 +58,12 @@ class _AvatarEditorPageState extends State<AvatarEditorPage> {
     try {
       final options = await AvatarAssetService.instance.getAvailableOptions();
 
-      // 调试：打印检测到的资源
-      await AvatarAssetService.instance.printAllAssets();
+      // Debug only: printing the full asset list is noisy and can slow down startup.
+      if (kDebugMode) {
+        final stats = await AvatarAssetService.instance.getAssetStats();
+        final total = stats.values.fold(0, (a, b) => a + b);
+        debugPrint('🎨 Avatar assets loaded: $stats (total: $total)');
+      }
 
       if (mounted) {
         setState(() {
@@ -66,7 +71,7 @@ class _AvatarEditorPageState extends State<AvatarEditorPage> {
         });
       }
     } catch (e) {
-      print('加载虚拟形象选项失败: $e');
+      debugPrint('加载虚拟形象选项失败: $e');
       // 使用默认选项作为后备
       setState(() {
         _availableOptions = {
@@ -99,33 +104,33 @@ class _AvatarEditorPageState extends State<AvatarEditorPage> {
   Future<void> _loadExistingAvatar() async {
     try {
       final userId = await AuthService.getUserId();
-      print('🔍 正在加载用户虚拟形象，用户ID: $userId');
+
+      if (kDebugMode) {
+        debugPrint('加载用户虚拟形象，用户ID: $userId');
+      }
 
       final avatarService = AvatarService();
       final userAvatar = await avatarService.getUserAvatar(userId);
 
-      print('📥 API返回的用户虚拟形象: $userAvatar');
+      if (kDebugMode) {
+        debugPrint('用户虚拟形象加载结果: ${userAvatar != null ? "ok" : "empty"}');
+      }
 
       if (userAvatar != null && mounted) {
-        print('✅ 虚拟形象数据不为空，正在转换配置');
-        print('🎨 baseConfig: ${userAvatar.baseConfig.toJson()}');
-        print('👔 currentOutfit: ${userAvatar.currentOutfit.toJson()}');
-
         final convertedConfig = _convertFromUserAvatar(userAvatar);
-        print('🔄 转换后的配置: faceType=${convertedConfig.faceType}, hairStyle=${convertedConfig.hairStyle}, clothesStyle=${convertedConfig.clothesStyle}');
 
         setState(() {
           _currentConfig = convertedConfig;
           _hasChanges = false;
         });
-        print('✅ 虚拟形象加载完成');
       } else {
-        print('⚠️ 虚拟形象数据为空，使用默认配置');
+        if (kDebugMode) {
+          debugPrint('虚拟形象数据为空，使用默认配置');
+        }
       }
     } catch (e) {
       // 如果加载失败，使用默认配置，不显示错误（用户可能是第一次使用）
-      print('❌ 加载虚拟形象配置失败: $e');
-      print('📍 错误堆栈: ${StackTrace.current}');
+      debugPrint('加载虚拟形象配置失败: $e');
     }
   }
 
@@ -148,8 +153,10 @@ class _AvatarEditorPageState extends State<AvatarEditorPage> {
         hairColor: config.hairColor,
       ),
       currentOutfit: OutfitConfig(
-        clothes: config.clothesStyle.isEmpty ? 'clothes_1' : config.clothesStyle,
-        accessories: config.accessoryStyle.isEmpty ? [] : [config.accessoryStyle],
+        clothes:
+            config.clothesStyle.isEmpty ? 'clothes_1' : config.clothesStyle,
+        accessories:
+            config.accessoryStyle.isEmpty ? [] : [config.accessoryStyle],
         background: 'default',
       ),
       ownedOutfits: [], // 用户拥有的装扮物品，默认为空
@@ -269,7 +276,8 @@ class _AvatarEditorPageState extends State<AvatarEditorPage> {
               : TextButton(
                   onPressed: _hasChanges && !_isLoading ? _saveAvatar : null,
                   style: TextButton.styleFrom(
-                    foregroundColor: _hasChanges && !_isLoading ? Colors.blue : Colors.grey,
+                    foregroundColor:
+                        _hasChanges && !_isLoading ? Colors.blue : Colors.grey,
                   ),
                   child: const Text(
                     '保存',
@@ -313,7 +321,8 @@ class _AvatarEditorPageState extends State<AvatarEditorPage> {
                             SizedBox(height: 12),
                             Text(
                               '加载虚拟形象中...',
-                              style: TextStyle(color: Colors.grey, fontSize: 14),
+                              style:
+                                  TextStyle(color: Colors.grey, fontSize: 14),
                             ),
                           ],
                         ),
@@ -345,155 +354,192 @@ class _AvatarEditorPageState extends State<AvatarEditorPage> {
                           child: Center(child: CircularProgressIndicator()),
                         )
                       : DefaultTabController(
-                length: 6,
-                child: Column(
-                  children: [
-                    // Tab选项卡
-                    Container(
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(color: Colors.grey, width: 0.2),
-                        ),
-                      ),
-                      child: TabBar(
-                        isScrollable: true,
-                        labelColor: Colors.blue,
-                        unselectedLabelColor: Colors.grey,
-                        indicatorColor: Colors.blue,
-                        tabs: const [
-                          Tab(icon: Icon(Icons.face, size: 20), text: '脸型'),
-                          Tab(icon: Icon(Icons.content_cut, size: 20), text: '发型'),
-                          Tab(icon: Icon(Icons.visibility, size: 20), text: '眼睛'),
-                          Tab(icon: Icon(Icons.checkroom, size: 20), text: '服装'),
-                          Tab(icon: Icon(Icons.face_retouching_natural, size: 20), text: '配饰'),
-                          Tab(icon: Icon(Icons.palette, size: 20), text: '颜色'),
-                        ],
-                      ),
-                    ),
-
-                    // Tab内容区域 - 使用Flexible避免溢出
-                    Flexible(
-                      child: TabBarView(
-                        children: [
-                          // 脸型选择
-                          ComponentSelector(
-                            title: '选择脸型',
-                            currentValue: _currentConfig.faceType,
-                            options: _availableOptions['faces'] ?? ['face_1'],
-                            assetBasePath: 'assets/avatars/faces/',
-                            onChanged: (value) {
-                              _updateConfig(_currentConfig.copyWith(faceType: value));
-                            },
-                          ),
-
-                          // 发型选择
-                          ComponentSelector(
-                            title: '选择发型',
-                            currentValue: _currentConfig.hairStyle,
-                            options: _availableOptions['hairs'] ?? ['hair_1'],
-                            assetBasePath: 'assets/avatars/hairs/',
-                            onChanged: (value) {
-                              _updateConfig(_currentConfig.copyWith(hairStyle: value));
-                            },
-                          ),
-
-                          // 眼睛选择
-                          ComponentSelector(
-                            title: '选择眼型',
-                            currentValue: _currentConfig.eyeStyle,
-                            options: _availableOptions['eyes'] ?? ['eyes_1'],
-                            assetBasePath: 'assets/avatars/eyes/',
-                            onChanged: (value) {
-                              _updateConfig(_currentConfig.copyWith(eyeStyle: value));
-                            },
-                          ),
-
-                          // 服装选择
-                          ComponentSelector(
-                            title: '选择服装',
-                            currentValue: _currentConfig.clothesStyle,
-                            options: _availableOptions['clothes'] ?? ['clothes_1'],
-                            assetBasePath: 'assets/avatars/clothes/',
-                            onChanged: (value) {
-                              _updateConfig(_currentConfig.copyWith(clothesStyle: value));
-                            },
-                          ),
-
-                          // 配饰选择
-                          ComponentSelector(
-                            title: '选择配饰',
-                            currentValue: _currentConfig.accessoryStyle,
-                            options: _availableOptions['accessories'] ?? ['none'],
-                            assetBasePath: 'assets/avatars/accessories/',
-                            onChanged: (value) {
-                              _updateConfig(_currentConfig.copyWith(accessoryStyle: value));
-                            },
-                          ),
-
-                          // 颜色选择
-                          SingleChildScrollView(
-                            child: Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // 肤色选择
-                                  const Text(
-                                    '肤色',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                          length: 6,
+                          child: Column(
+                            children: [
+                              // Tab选项卡
+                              Container(
+                                decoration: const BoxDecoration(
+                                  border: Border(
+                                    bottom: BorderSide(
+                                        color: Colors.grey, width: 0.2),
                                   ),
-                                  const SizedBox(height: 12),
-                                  ColorSelector(
-                                    colors: AvatarConfiguration.skinColors,
-                                    currentColor: _currentConfig.skinColor,
-                                    onChanged: (color) {
-                                      _updateConfig(_currentConfig.copyWith(skinColor: color));
-                                    },
-                                  ),
-
-                                  const SizedBox(height: 24),
-
-                                  // 发色选择
-                                  const Text(
-                                    '发色',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  ColorSelector(
-                                    colors: AvatarConfiguration.hairColors,
-                                    currentColor: _currentConfig.hairColor,
-                                    onChanged: (color) {
-                                      _updateConfig(_currentConfig.copyWith(hairColor: color));
-                                    },
-                                  ),
-
-                                  // 添加一些底部间距，避免内容被截断
-                                  const SizedBox(height: 40),
-                                ],
+                                ),
+                                child: TabBar(
+                                  isScrollable: true,
+                                  labelColor: Colors.blue,
+                                  unselectedLabelColor: Colors.grey,
+                                  indicatorColor: Colors.blue,
+                                  tabs: const [
+                                    Tab(
+                                        icon: Icon(Icons.face, size: 20),
+                                        text: '脸型'),
+                                    Tab(
+                                        icon: Icon(Icons.content_cut, size: 20),
+                                        text: '发型'),
+                                    Tab(
+                                        icon: Icon(Icons.visibility, size: 20),
+                                        text: '眼睛'),
+                                    Tab(
+                                        icon: Icon(Icons.checkroom, size: 20),
+                                        text: '服装'),
+                                    Tab(
+                                        icon: Icon(
+                                            Icons.face_retouching_natural,
+                                            size: 20),
+                                        text: '配饰'),
+                                    Tab(
+                                        icon: Icon(Icons.palette, size: 20),
+                                        text: '颜色'),
+                                  ],
+                                ),
                               ),
-                            ),
+
+                              // Tab内容区域 - 使用Flexible避免溢出
+                              Flexible(
+                                child: TabBarView(
+                                  children: [
+                                    // 脸型选择
+                                    ComponentSelector(
+                                      title: '选择脸型',
+                                      currentValue: _currentConfig.faceType,
+                                      options: _availableOptions['faces'] ??
+                                          ['face_1'],
+                                      assetBasePath: 'assets/avatars/faces/',
+                                      onChanged: (value) {
+                                        _updateConfig(_currentConfig.copyWith(
+                                            faceType: value));
+                                      },
+                                    ),
+
+                                    // 发型选择
+                                    ComponentSelector(
+                                      title: '选择发型',
+                                      currentValue: _currentConfig.hairStyle,
+                                      options: _availableOptions['hairs'] ??
+                                          ['hair_1'],
+                                      assetBasePath: 'assets/avatars/hairs/',
+                                      onChanged: (value) {
+                                        _updateConfig(_currentConfig.copyWith(
+                                            hairStyle: value));
+                                      },
+                                    ),
+
+                                    // 眼睛选择
+                                    ComponentSelector(
+                                      title: '选择眼型',
+                                      currentValue: _currentConfig.eyeStyle,
+                                      options: _availableOptions['eyes'] ??
+                                          ['eyes_1'],
+                                      assetBasePath: 'assets/avatars/eyes/',
+                                      onChanged: (value) {
+                                        _updateConfig(_currentConfig.copyWith(
+                                            eyeStyle: value));
+                                      },
+                                    ),
+
+                                    // 服装选择
+                                    ComponentSelector(
+                                      title: '选择服装',
+                                      currentValue: _currentConfig.clothesStyle,
+                                      options: _availableOptions['clothes'] ??
+                                          ['clothes_1'],
+                                      assetBasePath: 'assets/avatars/clothes/',
+                                      onChanged: (value) {
+                                        _updateConfig(_currentConfig.copyWith(
+                                            clothesStyle: value));
+                                      },
+                                    ),
+
+                                    // 配饰选择
+                                    ComponentSelector(
+                                      title: '选择配饰',
+                                      currentValue:
+                                          _currentConfig.accessoryStyle,
+                                      options:
+                                          _availableOptions['accessories'] ??
+                                              ['none'],
+                                      assetBasePath:
+                                          'assets/avatars/accessories/',
+                                      onChanged: (value) {
+                                        _updateConfig(_currentConfig.copyWith(
+                                            accessoryStyle: value));
+                                      },
+                                    ),
+
+                                    // 颜色选择
+                                    SingleChildScrollView(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(20),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            // 肤色选择
+                                            const Text(
+                                              '肤色',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 12),
+                                            ColorSelector(
+                                              colors: AvatarConfiguration
+                                                  .skinColors,
+                                              currentColor:
+                                                  _currentConfig.skinColor,
+                                              onChanged: (color) {
+                                                _updateConfig(
+                                                    _currentConfig.copyWith(
+                                                        skinColor: color));
+                                              },
+                                            ),
+
+                                            const SizedBox(height: 24),
+
+                                            // 发色选择
+                                            const Text(
+                                              '发色',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 12),
+                                            ColorSelector(
+                                              colors: AvatarConfiguration
+                                                  .hairColors,
+                                              currentColor:
+                                                  _currentConfig.hairColor,
+                                              onChanged: (color) {
+                                                _updateConfig(
+                                                    _currentConfig.copyWith(
+                                                        hairColor: color));
+                                              },
+                                            ),
+
+                                            // 添加一些底部间距，避免内容被截断
+                                            const SizedBox(height: 40),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
+                        ),
                 ),
               ),
-            ),
-          ),
 
-          // 底部安全区域 - 给TabBarView留出空间
-          const SizedBox(height: 16),
-        ],
-      );
-    },
-  ),
+              // 底部安全区域 - 给TabBarView留出空间
+              const SizedBox(height: 16),
+            ],
+          );
+        },
+      ),
       // 底部保存按钮 - 使用bottomNavigationBar避免溢出
       bottomNavigationBar: _isLoading
           ? null
@@ -519,9 +565,13 @@ class _AvatarEditorPageState extends State<AvatarEditorPage> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: _hasChanges && !_isSaving && !_isLoading ? _saveAvatar : null,
+                    onPressed: _hasChanges && !_isSaving && !_isLoading
+                        ? _saveAvatar
+                        : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _hasChanges && !_isLoading ? Colors.blue : Colors.grey,
+                      backgroundColor: _hasChanges && !_isLoading
+                          ? Colors.blue
+                          : Colors.grey,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
@@ -533,7 +583,8 @@ class _AvatarEditorPageState extends State<AvatarEditorPage> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : Text(
