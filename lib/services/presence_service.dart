@@ -41,7 +41,11 @@ class PresenceService {
     final base = ApiService.baseUrl;
     final uri = Uri.parse(base);
     final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
-    final token = ApiService.token;
+    final defaultPort = uri.scheme == 'https' ? 443 : 80;
+    var token = ApiService.token?.trim();
+    if (token != null && token.startsWith('Bearer ')) {
+      token = token.substring('Bearer '.length).trim();
+    }
     final query = <String, String>{};
     if (token != null && token.isNotEmpty) {
       query['token'] = token;
@@ -49,7 +53,9 @@ class PresenceService {
     return Uri(
       scheme: scheme,
       host: uri.host,
-      port: uri.hasPort ? uri.port : null,
+      // Dart 的 Uri 在没有显式端口时 port==0，WebSocket.connect 里可能会带出 ":0"。
+      // 这里显式补全默认端口，避免出现连接到 port 0 的问题。
+      port: uri.hasPort ? uri.port : defaultPort,
       path: '/ws/presence',
       queryParameters: query.isEmpty ? null : query,
     );
