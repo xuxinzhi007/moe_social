@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'auth_service.dart';
 import 'models/user.dart';
 import 'services/api_service.dart';
 import 'services/presence_service.dart';
 import 'widgets/avatar_image.dart';
+import 'providers/notification_provider.dart';
 
 class FriendsPage extends StatefulWidget {
   const FriendsPage({super.key});
@@ -51,6 +53,11 @@ class _FriendsPageState extends State<FriendsPage> {
     if (!mounted) return;
     if (_friends.isEmpty) return;
     final current = PresenceService.online.value;
+    if (PresenceService.isConnected && current.isNotEmpty) {
+      // Presence is active; stop fallback polling.
+      _onlineTimer?.cancel();
+      _onlineTimer = null;
+    }
     final next = <String, bool>{};
     for (final f in _friends) {
       next[f.id] = current[f.id] ?? false;
@@ -96,7 +103,8 @@ class _FriendsPageState extends State<FriendsPage> {
         _isLoading = false;
         _hasError = false;
       });
-      _startOnlinePolling();
+
+      await _ensureOnlineStatus();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -107,10 +115,30 @@ class _FriendsPageState extends State<FriendsPage> {
     }
   }
 
+  Future<void> _ensureOnlineStatus() async {
+    if (!mounted || _friends.isEmpty) return;
+
+    // Prefer push-based presence if available.
+    final presenceMap = PresenceService.online.value;
+    if (PresenceService.isConnected && presenceMap.isNotEmpty) {
+      final next = <String, bool>{};
+      for (final f in _friends) {
+        next[f.id] = presenceMap[f.id] ?? false;
+      }
+      setState(() {
+        _onlineStatus = next;
+      });
+      return;
+    }
+
+    // Fallback: batch polling at a lower frequency.
+    _startOnlinePolling();
+  }
+
   void _startOnlinePolling() {
     _updateOnlineStatus();
     _onlineTimer?.cancel();
-    _onlineTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _onlineTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       _updateOnlineStatus();
     });
   }
@@ -367,6 +395,8 @@ class _FriendsPageState extends State<FriendsPage> {
 
   Widget _buildFriendItem(User user) {
     final isOnline = _onlineStatus[user.id] ?? false;
+    final dmUnread =
+        context.watch<NotificationProvider>().unreadDmBySender[user.id] ?? 0;
     return ListTile(
       leading: NetworkAvatarImage(
         imageUrl: user.avatar,
@@ -400,6 +430,20 @@ class _FriendsPageState extends State<FriendsPage> {
             ],
           ),
           const SizedBox(width: 8),
+          if (dmUnread > 0)
+            Container(
+              margin: const EdgeInsets.only(right: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.redAccent,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                dmUnread > 99 ? '99+' : dmUnread.toString(),
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 11, height: 1.1),
+              ),
+            ),
           IconButton(
             icon: const Icon(Icons.chat_bubble_outline_rounded,
                 color: Color(0xFF7F7FD5)),

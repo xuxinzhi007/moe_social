@@ -3,60 +3,107 @@ import 'package:flutter/material.dart';
 import '../services/notification_service.dart';
 import '../models/notification.dart';
 import '../auth_service.dart';
+import '../services/chat_push_service.dart';
 
-class NotificationProvider extends ChangeNotifier {
+class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
   List<NotificationItem> _notifications = [];
   int _unreadCount = 0;
+  Map<String, int> _unreadDmBySender = {};
   bool _isLoading = false;
   Timer? _pollingTimer;
+  bool _pushListening = false;
+  bool _lifecycleListening = false;
+  DateTime? _lastResumeSyncAt;
 
   List<NotificationItem> get notifications => _notifications;
   int get unreadCount => _unreadCount;
+  Map<String, int> get unreadDmBySender => _unreadDmBySender;
   bool get isLoading => _isLoading;
 
   // 初始化：启动轮询
   void init() {
     if (!AuthService.isLoggedIn) return;
-    
-    _fetchUnreadCount();
-    // 每 30 秒轮询一次未读数
-    _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (AuthService.isLoggedIn) {
-        _fetchUnreadCount();
-      }
-    });
+
+    // One-time sync at startup
+    _refreshUnreadState();
+
+    // Prefer push-based unread updates via /ws/chat
+    if (!_pushListening) {
+      _pushListening = true;
+      ChatPushService.start();
+      ChatPushService.unreadBySender.addListener(_onPushUnreadUpdated);
+    }
+
+    if (!_lifecycleListening) {
+      _lifecycleListening = true;
+      WidgetsBinding.instance.addObserver(this);
+    }
   }
 
   @override
   void dispose() {
     _pollingTimer?.cancel();
+    if (_pushListening) {
+      ChatPushService.unreadBySender.removeListener(_onPushUnreadUpdated);
+    }
+    if (_lifecycleListening) {
+      WidgetsBinding.instance.removeObserver(this);
+    }
     super.dispose();
   }
 
-  // 获取未读数
-  Future<void> _fetchUnreadCount() async {
-    try {
-      final count = await NotificationService.getUnreadCount();
-      if (_unreadCount != count) {
-        final previous = _unreadCount;
-        _unreadCount = count;
-        notifyListeners();
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!AuthService.isLoggedIn) {
+      return;
+    }
+    if (state == AppLifecycleState.resumed) {
+      // When resuming, websocket may have been disconnected and messages could have arrived.
+      // Do a lightweight one-time sync to align unread state.
+      final now = DateTime.now();
+      if (_lastResumeSyncAt != null &&
+          now.difference(_lastResumeSyncAt!).inSeconds < 3) {
+        return;
+      }
+      _lastResumeSyncAt = now;
+      ChatPushService.start();
+      _refreshUnreadState();
+      return;
+    }
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      // Save battery and avoid noisy reconnect loops in background.
+      ChatPushService.stop();
+    }
+  }
 
-        if (count > previous) {
-          final list = await NotificationService.getNotifications(page: 1);
-          final directMessages = list.where(
-            (n) => n.type == NotificationModel.directMessage && !n.isRead,
-          );
-          final latest = directMessages.isNotEmpty ? directMessages.first : null;
-          if (latest != null) {
-            await NotificationService.showPrivateMessageNotification(
-              senderName: latest.senderName ?? '好友',
-              messagePreview: latest.content,
-              unreadCount: count,
-            );
-          }
-        }
+  void _onPushUnreadUpdated() {
+    // Only handle direct messages (comment/like not implemented for now)
+    final next = ChatPushService.unreadBySender.value;
+    _unreadDmBySender = next;
+    _unreadCount = next.values.fold<int>(0, (sum, v) => sum + v);
+    notifyListeners();
+  }
+
+  // 刷新未读数 + 私信分组未读
+  Future<void> _refreshUnreadState() async {
+    try {
+      // Only sync direct-message unread (comment/like not implemented for now)
+      final list =
+          await NotificationService.getNotifications(page: 1, pageSize: 50);
+      final dmUnread = <String, int>{};
+      for (final n in list) {
+        if (n.type != NotificationModel.directMessage || n.isRead) continue;
+        final senderId = n.senderId;
+        if (senderId == null || senderId.isEmpty) continue;
+        dmUnread[senderId] = (dmUnread[senderId] ?? 0) + 1;
+      }
+
+      final changed = !_mapEquals(_unreadDmBySender, dmUnread);
+      _unreadDmBySender = dmUnread;
+      _unreadCount = dmUnread.values.fold<int>(0, (sum, v) => sum + v);
+      if (changed) {
+        notifyListeners();
       }
     } catch (e) {
       print('Failed to fetch unread count: $e');
@@ -73,13 +120,50 @@ class NotificationProvider extends ChangeNotifier {
     try {
       final list = await NotificationService.getNotifications(page: 1);
       _notifications = list;
-      // 更新未读数（如果列表里全读了，理论上后端会更新，这里再拉一次）
-      _fetchUnreadCount();
+      // 暂时仅实现私信未读，通知列表本身仍可展示
+      _refreshUnreadState();
     } catch (e) {
       print('Failed to fetch notifications: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  // 标记与某个发送者相关的私信通知为已读
+  Future<void> markDirectMessagesAsRead(String senderId) async {
+    if (senderId.isEmpty) return;
+    if (!AuthService.isLoggedIn) return;
+
+    // 只扫前几页，避免请求过多；通常未读私信都在最新页
+    const pageSize = 50;
+    const maxPages = 5;
+    try {
+      for (var page = 1; page <= maxPages; page++) {
+        final list = await NotificationService.getNotifications(
+            page: page, pageSize: pageSize);
+        if (list.isEmpty) {
+          break;
+        }
+        final targets = list.where((n) {
+          return n.type == NotificationModel.directMessage &&
+              !n.isRead &&
+              (n.senderId ?? '') == senderId;
+        });
+        var foundAny = false;
+        for (final n in targets) {
+          foundAny = true;
+          await NotificationService.markAsRead(n.id);
+        }
+        if (!foundAny) {
+          // 如果这一页没有未读私信，基本说明已清完（列表是按时间倒序）
+          break;
+        }
+      }
+    } catch (e) {
+      print('Failed to mark direct messages as read: $e');
+    } finally {
+      await _refreshUnreadState();
     }
   }
 
@@ -99,5 +183,13 @@ class NotificationProvider extends ChangeNotifier {
       print('Failed to mark all as read: $e');
     }
   }
-}
 
+  bool _mapEquals(Map<String, int> a, Map<String, int> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (final entry in a.entries) {
+      if (b[entry.key] != entry.value) return false;
+    }
+    return true;
+  }
+}
