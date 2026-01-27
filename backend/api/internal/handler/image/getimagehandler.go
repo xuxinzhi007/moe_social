@@ -2,7 +2,6 @@ package image
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -67,10 +66,10 @@ func GetImageHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			contentType = "image/svg+xml"
 		}
 
-		// 设置响应头
+		// 缓存：文件名带时间戳/唯一 key，基本可视为不可变资源
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 		w.Header().Set("Content-Type", contentType)
 		w.Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=%s", req.Filename))
-		w.Header().Set("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
 
 		// 打开并读取文件
 		file, err := os.Open(imgPath)
@@ -80,10 +79,7 @@ func GetImageHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		defer file.Close()
 
-		// 将文件内容写入响应
-		if _, err := io.Copy(w, file); err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-			return
-		}
+		// 交给 ServeContent：支持 Range、If-Modified-Since/304，滚动预览更顺滑
+		http.ServeContent(w, r, filename, fileInfo.ModTime(), file)
 	}
 }

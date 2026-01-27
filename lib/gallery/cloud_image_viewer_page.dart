@@ -7,6 +7,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../utils/error_handler.dart';
 
@@ -123,7 +124,7 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
 
           return PhotoViewGalleryPageOptions(
             heroAttributes: PhotoViewHeroAttributes(tag: heroTag),
-            imageProvider: NetworkImage(url),
+            imageProvider: CachedNetworkImageProvider(url),
             minScale: PhotoViewComputedScale.contained,
             maxScale: PhotoViewComputedScale.covered * 4.0,
             errorBuilder: (context, error, stackTrace) {
