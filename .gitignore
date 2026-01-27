@@ -101,3 +101,5 @@ x86/
 default.etcd
 backend/rpc/super.exe
 backend/api/super.exe
+release.jks.b64
+android/app/release.jks.bak
