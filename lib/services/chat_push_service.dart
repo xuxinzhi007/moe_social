@@ -21,6 +21,11 @@ class ChatPushService {
   static Stream<Map<String, dynamic>> get incomingMessages =>
       _incomingController.stream;
 
+  /// 未打开聊天页时的“暂存消息队列”
+  /// - key: senderId
+  /// - value: 按到达顺序排列的消息 map（包含 from/content/timestamp）
+  static final Map<String, List<Map<String, dynamic>>> _pendingBySender = {};
+
   static WebSocketChannel? _channel;
   static StreamSubscription? _subscription;
   static Timer? _reconnectTimer;
@@ -45,6 +50,7 @@ class ChatPushService {
     _channel?.sink.close();
     _channel = null;
     _connecting = false;
+    // 不清空 _pendingBySender：避免 stop/restart 导致未消费消息丢失
   }
 
   // Ensure the current user is considered online even if they never open a DM.
@@ -164,6 +170,9 @@ class ChatPushService {
     // Broadcast message to listeners
     _incomingController.add(map);
 
+    // 如果当前没有对应聊天页订阅（比如停留在好友列表），把消息暂存起来
+    _enqueuePending(from, map);
+
     // Increment unread counter by sender
     final next = Map<String, int>.from(unreadBySender.value);
     next[from] = (next[from] ?? 0) + 1;
@@ -176,5 +185,25 @@ class ChatPushService {
     if (!next.containsKey(senderId)) return;
     next.remove(senderId);
     unreadBySender.value = next;
+  }
+
+  /// 取出（并清空）某个发送者的待处理消息，用于进入聊天页时补齐。
+  static List<Map<String, dynamic>> takePendingMessages(String senderId) {
+    if (senderId.isEmpty) return const [];
+    final list = _pendingBySender.remove(senderId);
+    if (list == null || list.isEmpty) return const [];
+    return List<Map<String, dynamic>>.from(list);
+  }
+
+  static void _enqueuePending(String senderId, Map<String, dynamic> msg) {
+    if (senderId.isEmpty) return;
+    final list = _pendingBySender.putIfAbsent(
+        senderId, () => <Map<String, dynamic>>[]);
+    list.add(msg);
+    // 防止无限增长：每个 sender 最多保留最近 50 条
+    const maxPerSender = 50;
+    if (list.length > maxPerSender) {
+      list.removeRange(0, list.length - maxPerSender);
+    }
   }
 }
