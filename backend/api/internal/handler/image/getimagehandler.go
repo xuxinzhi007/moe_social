@@ -27,8 +27,17 @@ func GetImageHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			imgDir = "./data/images"
 		}
 
+		folder, filename, ok := splitImageKey(req.Filename)
+		if !ok {
+			httpx.ErrorCtx(r.Context(), w, fmt.Errorf("图片不存在"))
+			return
+		}
+		// 防止路径穿越
+		folder = filepath.Base(folder)
+		filename = filepath.Base(filename)
+
 		// 构建图片文件路径
-		imgPath := filepath.Join(imgDir, req.Filename)
+		imgPath := filepath.Join(imgDir, folder, filename)
 
 		// 检查文件是否存在
 		if _, err := os.Stat(imgPath); os.IsNotExist(err) {

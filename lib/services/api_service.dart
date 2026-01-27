@@ -897,53 +897,87 @@ class ApiService {
 
   // 上传图片（真实实现，调用后端API）
   static Future<String> uploadImage(File image) async {
-    try {
-      final uri = Uri.parse('$baseUrl/api/upload');
+    final uri = Uri.parse('$baseUrl/api/upload');
 
-      // 创建multipart请求
+    Future<String> doUpload(http.Client client) async {
+      // 创建 multipart 请求（注意：MultipartRequest 不能复用，所以重试时必须重新构建）
       final request = http.MultipartRequest('POST', uri);
+
+      // 避免某些隧道/代理对 keep-alive 连接的复用导致 Broken pipe
+      request.headers['Connection'] = 'close';
 
       // 添加认证令牌
       final token = _currentToken;
-      if (token != null) {
+      if (token != null && token.isNotEmpty) {
         request.headers['Authorization'] = 'Bearer $token';
       }
 
-      // 添加文件字段
-      final fileStream = http.ByteStream(image.openRead());
       final length = await image.length();
-
-      final multipartFile = http.MultipartFile(
+      final multipartFile = await http.MultipartFile.fromPath(
         'file',
-        fileStream,
-        length,
+        image.path,
         filename: image.path.split('/').last,
       );
-
       request.files.add(multipartFile);
 
-      // 发送请求
-      final streamedResponse = await request.send();
+      _log('📤 Upload image: size=$length bytes, uri=$uri');
+
+      // 发送请求（超时保护：cpolar/网络抖动时避免无限挂起）
+      final streamedResponse = await client
+          .send(request)
+          .timeout(const Duration(seconds: 90));
       final response = await http.Response.fromStream(streamedResponse);
 
-      // 解析响应
       if (response.statusCode == 200) {
         final result = json.decode(response.body) as Map<String, dynamic>;
         if (result['success'] == true) {
           final imageInfo = result['data'] as Map<String, dynamic>;
           return imageInfo['url'] as String;
-        } else {
-          throw ApiException(result['message'] ?? '上传失败',
-              result['code'] ?? response.statusCode);
         }
-      } else {
         throw ApiException(
-            '上传失败，状态码：${response.statusCode}', response.statusCode);
+            result['message'] ?? '上传失败', result['code'] ?? response.statusCode);
+      }
+
+      if (response.statusCode == 413) {
+        throw ApiException('图片太大，上传被拒绝(413)，请降低拍照分辨率/压缩后再试', 413);
+      }
+      throw ApiException('上传失败，状态码：${response.statusCode}', response.statusCode);
+    }
+
+    // 尝试上传；遇到 Broken pipe/连接被重置，自动重试一次
+    try {
+      final client = http.Client();
+      try {
+        return await doUpload(client);
+      } finally {
+        client.close();
       }
     } catch (e) {
-      _log('❌ 图片上传失败: $e');
-      if (e is ApiException) rethrow;
-      throw ApiException('图片上传失败: $e', null);
+      final msg = e.toString();
+      final shouldRetry = msg.contains('Broken pipe') ||
+          msg.contains('Connection reset') ||
+          msg.contains('SocketException');
+      if (!shouldRetry) {
+        _log('❌ 图片上传失败: $e');
+        if (e is ApiException) rethrow;
+        throw ApiException('图片上传失败: $e', null);
+      }
+
+      _log('⚠️ 上传连接中断，准备重试一次: $e');
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      try {
+        final client = http.Client();
+        try {
+          return await doUpload(client);
+        } finally {
+          client.close();
+        }
+      } catch (e2) {
+        _log('❌ 图片上传重试失败: $e2');
+        if (e2 is ApiException) rethrow;
+        throw ApiException('图片上传失败(重试后仍失败): $e2', null);
+      }
     }
   }
 

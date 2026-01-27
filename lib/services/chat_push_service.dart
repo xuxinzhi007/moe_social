@@ -71,16 +71,16 @@ class ChatPushService {
     return token.isEmpty ? null : token;
   }
 
-  static Uri _buildWebSocketUri({String? tokenForWeb}) {
+  static Uri _buildWebSocketUri({String? token}) {
     final base = ApiService.baseUrl;
     final uri = Uri.parse(base);
     final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
     final defaultPort = uri.scheme == 'https' ? 443 : 80;
 
-    // Web 平台无法携带自定义 headers，这里退回 query token（后端兼容）。
+    // 使用 query token（后端兼容），避免部分 WS 握手环境拿不到 Authorization header。
     final query = <String, String>{};
-    if (kIsWeb && tokenForWeb != null && tokenForWeb.isNotEmpty) {
-      query['token'] = tokenForWeb;
+    if (token != null && token.isNotEmpty) {
+      query['token'] = token;
     }
 
     return Uri(
@@ -109,7 +109,7 @@ class ChatPushService {
 
     _connecting = true;
     try {
-      final wsUri = _buildWebSocketUri(tokenForWeb: rawToken);
+      final wsUri = _buildWebSocketUri(token: rawToken);
 
       // 准备headers，包含Authorization token
       final headers = <String, String>{};

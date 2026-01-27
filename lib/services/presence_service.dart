@@ -53,10 +53,10 @@ class PresenceService {
     final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
     final defaultPort = uri.scheme == 'https' ? 443 : 80;
 
-    // Web 平台无法携带自定义 headers，这里退回 query token（后端兼容）。
+    // 使用 query token（后端兼容），避免部分 WS 握手环境拿不到 Authorization header。
     final rawToken = _rawToken();
     final query = <String, String>{};
-    if (kIsWeb && rawToken != null && rawToken.isNotEmpty) {
+    if (rawToken != null && rawToken.isNotEmpty) {
       query['token'] = rawToken;
     }
 
