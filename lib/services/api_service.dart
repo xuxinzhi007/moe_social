@@ -897,9 +897,15 @@ class ApiService {
 
   // 上传图片（真实实现，调用后端API）
   static Future<String> uploadImage(File image) async {
+    final info = await uploadImageInfo(image);
+    return info['url'] as String;
+  }
+
+  /// 上传图片并返回后端的 ImageInfo（包含 filename/url/size/created_at）
+  static Future<Map<String, dynamic>> uploadImageInfo(File image) async {
     final uri = Uri.parse('$baseUrl/api/upload');
 
-    Future<String> doUpload(http.Client client) async {
+    Future<Map<String, dynamic>> doUpload(http.Client client) async {
       // 创建 multipart 请求（注意：MultipartRequest 不能复用，所以重试时必须重新构建）
       final request = http.MultipartRequest('POST', uri);
 
@@ -932,7 +938,7 @@ class ApiService {
         final result = json.decode(response.body) as Map<String, dynamic>;
         if (result['success'] == true) {
           final imageInfo = result['data'] as Map<String, dynamic>;
-          return imageInfo['url'] as String;
+          return imageInfo;
         }
         throw ApiException(
             result['message'] ?? '上传失败', result['code'] ?? response.statusCode);

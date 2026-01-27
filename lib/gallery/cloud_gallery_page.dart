@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../services/api_service.dart';
 import '../auth_service.dart';
 import '../utils/error_handler.dart';
@@ -31,6 +32,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
   bool _hasMore = true;
   final ImagePicker _picker = ImagePicker();
   final ScrollController _scrollController = ScrollController();
+  final Set<String> _seenKeys = <String>{}; // 用于去重，避免插入/分页导致重复
 
   int? _maxBytes;
   int? _usedBytes;
@@ -102,7 +104,17 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
       if (result['success'] == true) {
         final images = result['data'] as List;
         setState(() {
-          _images.addAll(images);
+          for (final it in images) {
+            if (it is! Map) continue;
+            final key = it['filename']?.toString() ?? it['id']?.toString() ?? '';
+            if (key.isEmpty) {
+              _images.add(it);
+              continue;
+            }
+            if (_seenKeys.add(key)) {
+              _images.add(it);
+            }
+          }
           _total = result['total'] as int;
           _hasMore = _images.length < _total;
           _currentPage++;
@@ -125,6 +137,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
     }
     setState(() {
       _images = [];
+      _seenKeys.clear();
       _currentPage = 1;
       _hasMore = true;
       _total = 0;
@@ -309,11 +322,21 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
         _isMutating = true;
       });
 
-      await ApiService.uploadImage(File(picked.path));
+      final imageInfo = await ApiService.uploadImageInfo(File(picked.path));
 
-      // 上传后刷新列表（自动拉第一页，避免“必须点加载更多才出现”）
+      // 上传后“插入顶部”，避免整页刷新导致慢/闪
       if (!mounted) return;
-      await _refreshAll(exitSelect: false);
+      final key = imageInfo['filename']?.toString() ?? imageInfo['id']?.toString() ?? '';
+      setState(() {
+        if (key.isEmpty || _seenKeys.add(key)) {
+          _images.insert(0, imageInfo);
+          _total = (_total <= 0) ? _images.length : _total + 1;
+          // 列表变长后通常还可以继续分页
+          _hasMore = _images.length < _total;
+        }
+      });
+      // 容量统计可以异步刷新，不阻塞 UI
+      _loadQuota();
       ErrorHandler.showSuccess(context, '上传成功');
     } catch (e) {
       ErrorHandler.showError(context, '上传失败: $e');
@@ -466,12 +489,23 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                             },
                             child: Hero(
                               tag: heroTag,
-                              child: Image.network(
-                                imageUrl,
+                              child: CachedNetworkImage(
+                                imageUrl: imageUrl,
                                 fit: BoxFit.cover,
-                                width: double.infinity,
-                                height: double.infinity,
-                                errorBuilder: (context, error, stackTrace) {
+                                memCacheWidth: 420, // 缩略图解码更快、占用更小
+                                placeholder: (context, _) {
+                                  return Container(
+                                    color: Colors.grey[200],
+                                    child: const Center(
+                                      child: SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                errorWidget: (context, _, __) {
                                   return Container(
                                     color: Colors.grey[200],
                                     child: const Center(
