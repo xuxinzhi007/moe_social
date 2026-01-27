@@ -62,6 +62,22 @@ static const bool _isProduction = true; // 使用生产环境
    - 使用已注册的账号登录
    - 查看日志中的API请求和响应
 
+## ✅ WebSocket 实测记录（Authorization Header）
+
+本项目的 WebSocket（聊天/在线状态/远程控制）已支持通过 `Authorization: Bearer <token>` 进行鉴权。
+
+### 验证点
+- **/ws/presence**：握手成功后会先推送 `presence_snapshot`
+- **/ws/chat**：发送 `{"type":"message","to":"<userId>","content":"..."}` 可收到服务端转发消息
+- **/ws/remote**：发送任意文本帧会原样回传（用于远程通道连通性检查）
+
+### 复现步骤（手工）
+1. 先通过 App 登录，确保拿到 JWT（App 会自动携带 token 连接 WS）
+2. 打开后端日志，观察是否出现 WS 连接建立/鉴权失败提示
+3. 验证三条 WS 均能建立连接并按“验证点”收发消息
+
+> 备注：如果你希望用命令行复现，可使用 `websocat` / `wscat` 等工具连接，并在请求头里加 `Authorization`。
+
 ## 💡 注意事项
 
 - API地址可以正常访问 ✅

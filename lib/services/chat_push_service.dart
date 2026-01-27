@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show ValueNotifier;
+import 'package:flutter/foundation.dart' show ValueNotifier, kIsWeb;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'api_service.dart';
+import 'ws_channel_connector.dart';
 
 // ChatPushService listens on /ws/chat to receive direct messages in real time.
 // It exposes a stream of incoming messages and a per-sender unread counter.
@@ -55,19 +56,27 @@ class ChatPushService {
     } catch (_) {}
   }
 
-  static Uri _buildWebSocketUri() {
+  static String? _rawToken() {
+    var token = ApiService.token?.trim();
+    if (token == null || token.isEmpty) return null;
+    if (token.startsWith('Bearer ')) {
+      token = token.substring('Bearer '.length).trim();
+    }
+    return token.isEmpty ? null : token;
+  }
+
+  static Uri _buildWebSocketUri({String? tokenForWeb}) {
     final base = ApiService.baseUrl;
     final uri = Uri.parse(base);
     final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
     final defaultPort = uri.scheme == 'https' ? 443 : 80;
-    var token = ApiService.token?.trim();
-    if (token != null && token.startsWith('Bearer ')) {
-      token = token.substring('Bearer '.length).trim();
-    }
+
+    // Web 平台无法携带自定义 headers，这里退回 query token（后端兼容）。
     final query = <String, String>{};
-    if (token != null && token.isNotEmpty) {
-      query['token'] = token;
+    if (kIsWeb && tokenForWeb != null && tokenForWeb.isNotEmpty) {
+      query['token'] = tokenForWeb;
     }
+
     return Uri(
       scheme: scheme,
       host: uri.host,
@@ -82,8 +91,8 @@ class ChatPushService {
     if (_connecting) return;
     if (_channel != null) return;
 
-    final token = ApiService.token;
-    if (token == null || token.isEmpty) {
+    final rawToken = _rawToken();
+    if (rawToken == null || rawToken.isEmpty) {
       // Token might not be ready yet; keep retrying until auth is available.
       _reconnectTimer?.cancel();
       _reconnectTimer = Timer(const Duration(seconds: 3), () {
@@ -92,12 +101,17 @@ class ChatPushService {
       return;
     }
 
-    // Web is supported by web_socket_channel; no special handling needed.
-
     _connecting = true;
     try {
-      final wsUri = _buildWebSocketUri();
-      final ch = WebSocketChannel.connect(wsUri);
+      final wsUri = _buildWebSocketUri(tokenForWeb: rawToken);
+
+      // 准备headers，包含Authorization token
+      final headers = <String, String>{};
+      if (!kIsWeb) {
+        headers['Authorization'] = 'Bearer $rawToken';
+      }
+
+      final ch = connectMoeWebSocket(wsUri, headers: headers);
       _channel = ch;
       _heartbeatTimer?.cancel();
       _heartbeatTimer = Timer.periodic(const Duration(seconds: 20), (_) {

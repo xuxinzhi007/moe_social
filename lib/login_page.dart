@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'utils/validators.dart';
-import 'utils/error_handler.dart';
 import 'forgot_password_page.dart';
 import 'widgets/fade_in_up.dart'; // 引入动画组件
 import 'package:provider/provider.dart';
 import 'providers/notification_provider.dart';
+import 'providers/loading_provider.dart';
+import 'widgets/app_message_widget.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,7 +19,6 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLoading = false;
   bool _obscurePassword = true;
 
   // Moe 风格配色
@@ -27,41 +27,36 @@ class _LoginPageState extends State<LoginPage> {
   final Color _accentColor = const Color(0xFF91EAE4); // 薄荷绿
 
   Future<void> _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+    if (!_formKey.currentState!.validate()) return;
 
-      try {
-        final result = await AuthService.login(
-          _emailController.text,
-          _passwordController.text,
-        );
+    final loadingProvider = context.read<LoadingProvider>();
 
-        if (!mounted) return;
-
-        setState(() {
-          _isLoading = false;
-        });
-
-        if (result.success) {
-          // Start push services after login (provider was created before login).
-          try {
-            context.read<NotificationProvider>().init();
-          } catch (_) {}
-          ErrorHandler.showSuccess(context, '欢迎回来！(｡♥‿♥｡)');
-          Navigator.pushReplacementNamed(context, '/home');
-        } else {
-          ErrorHandler.showError(context, result.errorMessage ?? '登录失败，请稍后重试');
+    await loadingProvider.executeOperation<AuthResult>(
+      operation: () => AuthService.login(
+        _emailController.text,
+        _passwordController.text,
+      ),
+      key: LoadingKeys.login,
+      // AuthService.login 返回 AuthResult，不会抛异常；因此成功提示需要基于 result.success 决定
+      onSuccess: (result) {
+        if (!result.success) {
+          loadingProvider.setError(result.errorMessage ?? '登录失败，请稍后重试');
+          return;
         }
-      } catch (e) {
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-        });
-        ErrorHandler.handleException(context, e as Exception);
-      }
-    }
+
+        loadingProvider.setSuccess('欢迎回来！(｡♥‿♥｡)');
+
+        // Start push services after login
+        try {
+          context.read<NotificationProvider>().init();
+        } catch (_) {}
+
+        Navigator.pushReplacementNamed(context, '/home');
+      },
+      onError: (error) {
+        // 错误已经通过LoadingProvider统一显示，这里不需要额外处理
+      },
+    );
   }
 
   @override
@@ -235,34 +230,30 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
                               const SizedBox(height: 20),
-                              _isLoading
-                                  ? CircularProgressIndicator(
-                                      color: _primaryColor)
-                                  : SizedBox(
-                                      width: double.infinity,
-                                      height: 50,
-                                      child: ElevatedButton(
-                                        onPressed: _login,
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: _primaryColor,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(25),
-                                          ),
-                                          elevation: 5,
-                                          shadowColor:
-                                              _primaryColor.withOpacity(0.4),
-                                        ),
-                                        child: const Text(
-                                          '登 录',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 50,
+                                child: LoadingButton(
+                                  operationKey: LoadingKeys.login,
+                                  onPressed: _login,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: _primaryColor,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(25),
                                     ),
+                                    elevation: 5,
+                                    shadowColor: _primaryColor.withOpacity(0.4),
+                                  ),
+                                  child: const Text(
+                                    '登 录',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),

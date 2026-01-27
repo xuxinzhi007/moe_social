@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'dart:io';
 import '../auth_service.dart';
 import '../models/post.dart';
 import '../models/topic_tag.dart';
 import '../services/api_service.dart';
 import '../services/post_service.dart';
-import '../utils/error_handler.dart';
+import '../providers/loading_provider.dart';
 import '../widgets/avatar_image.dart';
 import '../widgets/compact_topic_selector.dart';
+import '../widgets/app_message_widget.dart';
 import '../emoji/emoji_store_page.dart';
 import '../gallery/cloud_gallery_page.dart';
 
@@ -23,7 +25,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
   final TextEditingController _contentController = TextEditingController();
   final List<File> _selectedImages = [];
   final List<String> _selectedImageUrls = []; // 用于存储从云端图库选择的网络图片URL
-  bool _isLoading = false;
   bool _isLoadingUser = true;
   final ImagePicker _picker = ImagePicker();
   String? _userName;
@@ -55,7 +56,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
             setState(() {
               _selectedImageUrls.add(imageUrl);
             });
-            ErrorHandler.showSuccess(context, '图片已添加');
+            context.read<LoadingProvider>().setSuccess('图片已添加');
           },
         ),
       ),
@@ -83,7 +84,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
             // 将光标移动到插入内容之后
             controller.selection = TextSelection.collapsed(offset: safeCursorPosition + '[emoji:$emojiUrl]'.length);
             
-            ErrorHandler.showSuccess(context, '表情已添加');
+            context.read<LoadingProvider>().setSuccess('表情已添加');
           },
         ),
       ),
@@ -124,7 +125,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
         _isLoadingUser = false;
       });
     } catch (e) {
-      print('加载用户信息失败: $e');
+      debugPrint('加载用户信息失败: $e');
       setState(() {
         _isLoadingUser = false;
       });
@@ -133,63 +134,54 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   Future<void> _publishPost() async {
     if (_contentController.text.trim().isEmpty) {
-      ErrorHandler.showError(context, '请输入帖子内容');
+      context.read<LoadingProvider>().setError('请输入帖子内容');
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    final loadingProvider = context.read<LoadingProvider>();
+    await loadingProvider.executeOperation<void>(
+      key: LoadingKeys.createPost,
+      operation: () async {
+        final List<String> imageUrls = [];
 
-    try {
-      final List<String> imageUrls = [];
-      
-      // 上传本地选择的图片
-      for (final image in _selectedImages) {
-        final imageUrl = await ApiService.uploadImage(image);
-        imageUrls.add(imageUrl);
-      }
-      
-      // 直接添加从云端图库选择的网络图片URL
-      imageUrls.addAll(_selectedImageUrls);
+        // 上传本地选择的图片
+        for (final image in _selectedImages) {
+          final imageUrl = await ApiService.uploadImage(image);
+          imageUrls.add(imageUrl);
+        }
 
-      final userId = AuthService.currentUser;
-      if (userId == null) {
-        ErrorHandler.showError(context, '请先登录');
-        return;
-      }
+        // 直接添加从云端图库选择的网络图片URL
+        imageUrls.addAll(_selectedImageUrls);
 
-      final newPost = Post(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: userId,
-        userName: _userName ?? '用户',
-        userAvatar: _userAvatar ?? 'https://picsum.photos/150',
-        content: _contentController.text.trim(),
-        images: imageUrls,
-        likes: 0,
-        comments: 0,
-        isLiked: false,
-        createdAt: DateTime.now(),
-        topicTags: _selectedTopicTags, // 添加话题标签
-      );
+        final userId = AuthService.currentUser;
+        if (userId == null) {
+          throw Exception('请先登录');
+        }
 
-      await PostService.createPost(newPost);
+        final newPost = Post(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          userId: userId,
+          userName: _userName ?? '用户',
+          userAvatar: _userAvatar ?? 'https://picsum.photos/150',
+          content: _contentController.text.trim(),
+          images: imageUrls,
+          likes: 0,
+          comments: 0,
+          isLiked: false,
+          createdAt: DateTime.now(),
+          topicTags: _selectedTopicTags, // 添加话题标签
+        );
 
-      if (!mounted) return;
-
-      ErrorHandler.showSuccess(context, '帖子发布成功！(≧∇≦)/');
-      Navigator.pop(context, true);
-    } catch (e) {
-      if (mounted) {
-        ErrorHandler.handleException(context, e as Exception);
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+        await PostService.createPost(newPost);
+      },
+      onSuccess: (_) {
+        loadingProvider.setSuccess('帖子发布成功！(≧∇≦)/');
+        Navigator.pop(context, true);
+      },
+      onError: (_) {
+        // 错误已由 LoadingProvider 统一显示
+      },
+    );
   }
 
   @override
@@ -212,8 +204,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
             alignment: Alignment.center,
             child: SizedBox(
               height: 32, // 给定固定高度
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _publishPost,
+              child: LoadingButton(
+                operationKey: LoadingKeys.createPost,
+                onPressed: _publishPost,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF7F7FD5),
                   foregroundColor: Colors.white,
@@ -225,9 +218,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   minimumSize: Size.zero, // 允许更小的尺寸
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap, // 紧凑布局
                 ),
-                child: _isLoading 
-                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('发布', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                child: const Text(
+                  '发布',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
               ),
             ),
           ),

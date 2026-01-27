@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show ValueNotifier;
+import 'package:flutter/foundation.dart' show ValueNotifier, kIsWeb;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'api_service.dart';
+import 'ws_channel_connector.dart';
 
 class PresenceService {
   PresenceService._();
@@ -37,19 +38,28 @@ class PresenceService {
     _connecting = false;
   }
 
+  static String? _rawToken() {
+    var token = ApiService.token?.trim();
+    if (token == null || token.isEmpty) return null;
+    if (token.startsWith('Bearer ')) {
+      token = token.substring('Bearer '.length).trim();
+    }
+    return token.isEmpty ? null : token;
+  }
+
   static Uri _buildWebSocketUri() {
     final base = ApiService.baseUrl;
     final uri = Uri.parse(base);
     final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
     final defaultPort = uri.scheme == 'https' ? 443 : 80;
-    var token = ApiService.token?.trim();
-    if (token != null && token.startsWith('Bearer ')) {
-      token = token.substring('Bearer '.length).trim();
-    }
+
+    // Web 平台无法携带自定义 headers，这里退回 query token（后端兼容）。
+    final rawToken = _rawToken();
     final query = <String, String>{};
-    if (token != null && token.isNotEmpty) {
-      query['token'] = token;
+    if (kIsWeb && rawToken != null && rawToken.isNotEmpty) {
+      query['token'] = rawToken;
     }
+
     return Uri(
       scheme: scheme,
       host: uri.host,
@@ -65,20 +75,25 @@ class PresenceService {
     if (_connecting) return;
     if (_channel != null) return;
 
-    final token = ApiService.token;
-    if (token == null || token.isEmpty) {
+    final rawToken = _rawToken();
+    if (rawToken == null || rawToken.isEmpty) {
       // Token may not be ready yet (app just launched / just refreshed).
       // Keep retrying so presence can recover as soon as auth is available.
       _scheduleReconnect();
       return;
     }
 
-    // Web is supported by web_socket_channel; no special handling needed.
-
     _connecting = true;
     try {
       final uri = _buildWebSocketUri();
-      final channel = WebSocketChannel.connect(uri);
+
+      // 准备headers，包含Authorization token
+      final headers = <String, String>{};
+      if (!kIsWeb) {
+        headers['Authorization'] = 'Bearer $rawToken';
+      }
+
+      final channel = connectMoeWebSocket(uri, headers: headers);
       _channel = channel;
       _lastMessageAt = DateTime.now();
       _heartbeatTimer?.cancel();
