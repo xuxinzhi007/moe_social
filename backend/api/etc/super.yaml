@@ -28,7 +28,11 @@ Image:
   # 服务端机器的本地目录（建议用绝对路径；Windows 用 C:/...）
   LocalDir: "D:/moe_images"
   # 对外访问地址（用于拼接图片 url；cpolar/服务器域名放这里）
-  PublicBaseUrl: "http://localhost:8888"
+  # 建议留空：后端会根据本次请求的 Host 自动拼接（cpolar 域名变了也不用改配置）
+  PublicBaseUrl: ""
+  # 云空间容量上限（字节）。0 表示不限制/不展示容量。
+  # 1GB = 1073741824
+  MaxBytes: 1073741824
 
 # RPC服务配置
 SuperRpc:

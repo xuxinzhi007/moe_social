@@ -18,7 +18,10 @@ Ollama:
 # 图片“云空间”（实际落到服务端本地目录）
 Image:
   LocalDir: "./data/images"
-  PublicBaseUrl: "http://localhost:8888"
+  # 建议留空：后端会根据本次请求的 Host 自动拼接（cpolar 域名变了也不用改配置）
+  PublicBaseUrl: ""
+  # 1GB = 1073741824（0 表示不限制/不展示容量）
+  MaxBytes: 1073741824
 
 # RPC服务配置 - 直接连接方式（不使用etcd）
 SuperRpc:

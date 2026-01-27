@@ -272,6 +272,18 @@ type GetImageListResp struct {
 	Total int         `json:"total"`
 }
 
+type ImageQuota struct {
+	UsedBytes      int64 `json:"used_bytes"`
+	MaxBytes       int64 `json:"max_bytes"`
+	RemainingBytes int64 `json:"remaining_bytes"`
+	Count          int   `json:"count"`
+}
+
+type GetImageQuotaResp struct {
+	BaseResp
+	Data ImageQuota `json:"data"`
+}
+
 type GetNotificationsReq struct {
 	UserId   string `form:"user_id"`
 	Page     int    `form:"page,default=1"`

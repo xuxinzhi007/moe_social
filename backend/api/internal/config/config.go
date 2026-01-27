@@ -55,4 +55,8 @@ type ImageConf struct {
 	// - 本地调试: "http://localhost:8888"
 	// - cpolar: "http://xxxx.r3.cpolar.top"
 	PublicBaseUrl string `json:"PublicBaseUrl" yaml:"PublicBaseUrl"`
+
+	// MaxBytes: 云空间最大容量（字节）。0 表示不限制/不展示容量。
+	// 例如 1073741824 = 1GB
+	MaxBytes int64 `json:"MaxBytes" yaml:"MaxBytes"`
 }

@@ -142,6 +142,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: image.GetImageListHandler(serverCtx),
 			},
 			{
+				Method:  http.MethodGet,
+				Path:    "/api/images/quota",
+				Handler: image.GetImageQuotaHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodDelete,
 				Path:    "/api/images/:filename",
 				Handler: image.DeleteImageHandler(serverCtx),
