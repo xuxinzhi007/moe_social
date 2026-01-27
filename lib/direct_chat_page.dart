@@ -79,6 +79,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
       });
 
       await _loadMessages(userId);
+      _mergePendingWsMessages();
       await _syncOfflineMessages();
 
       // Now that we merged offline messages, mark them as read.
@@ -91,6 +92,57 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
       await _connectWebSocket();
       await _ensurePeerOnline();
+    } catch (_) {}
+  }
+
+  void _mergePendingWsMessages() {
+    try {
+      final currentUserId = _currentUserId;
+      if (currentUserId == null) return;
+
+      final pending = ChatPushService.takePendingMessages(widget.userId);
+      if (pending.isEmpty) return;
+
+      final existingKeys = <String>{};
+      for (final m in _messages) {
+        existingKeys
+            .add('${m.senderId}|${m.time.toIso8601String()}|${m.content}');
+      }
+
+      var changed = false;
+      for (final map in pending) {
+        final from = map['from']?.toString();
+        final content = map['content']?.toString();
+        final ts = map['timestamp'];
+        if (from == null || from.isEmpty || content == null) continue;
+        if (from != widget.userId) continue;
+
+        DateTime time;
+        if (ts is int) {
+          time = DateTime.fromMillisecondsSinceEpoch(ts);
+        } else {
+          time = DateTime.now();
+        }
+
+        final key = '$from|${time.toIso8601String()}|$content';
+        if (existingKeys.contains(key)) continue;
+        existingKeys.add(key);
+        _messages.add(
+          _DirectMessage(senderId: from, content: content, time: time),
+        );
+        changed = true;
+      }
+
+      if (changed && mounted) {
+        setState(() {
+          _messages.sort((a, b) => a.time.compareTo(b.time));
+        });
+        _saveMessages();
+        _scrollToBottom();
+      }
+
+      // 进入会话后，不应继续对该发送者累计未读
+      ChatPushService.markSenderRead(widget.userId);
     } catch (_) {}
   }
 
