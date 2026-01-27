@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
@@ -28,8 +29,18 @@ func NewGetImageListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetI
 }
 
 func (l *GetImageListLogic) GetImageList(req *types.GetImageListReq) (resp *types.GetImageListResp, err error) {
+	imgDir := strings.TrimSpace(l.svcCtx.Config.Image.LocalDir)
+	if imgDir == "" {
+		imgDir = "./data/images"
+	}
+	base := strings.TrimRight(strings.TrimSpace(l.svcCtx.Config.Image.PublicBaseUrl), "/")
+	if base == "" {
+		// fallback：本地开发默认地址（cpolar 等场景建议配置 PublicBaseUrl）
+		base = "http://localhost:8888"
+	}
+
 	// 读取本地图片目录
-	files, err := os.ReadDir(localImgDir)
+	files, err := os.ReadDir(imgDir)
 	if err != nil {
 		return &types.GetImageListResp{
 			BaseResp: common.HandleError(err),
@@ -54,7 +65,7 @@ func (l *GetImageListLogic) GetImageList(req *types.GetImageListReq) (resp *type
 		imageInfo := types.ImageInfo{
 			Id:        file.Name(),
 			Filename:  file.Name(),
-			Url:       fmt.Sprintf("%s/api/images/%s", localServerUrl, file.Name()),
+			Url:       fmt.Sprintf("%s/api/images/%s", base, file.Name()),
 			Size:      fileInfo.Size(),
 			CreatedAt: fileInfo.ModTime().Format("2006-01-02 15:04:05"),
 		}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
@@ -27,8 +28,13 @@ func NewDeleteImageLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Delet
 }
 
 func (l *DeleteImageLogic) DeleteImage(req *types.DeleteImageReq) (resp *types.DeleteImageResp, err error) {
+	imgDir := strings.TrimSpace(l.svcCtx.Config.Image.LocalDir)
+	if imgDir == "" {
+		imgDir = "./data/images"
+	}
+
 	// 构建图片文件路径
-	imgPath := filepath.Join(localImgDir, req.Filename)
+	imgPath := filepath.Join(imgDir, req.Filename)
 
 	// 检查文件是否存在
 	if _, err := os.Stat(imgPath); os.IsNotExist(err) {

@@ -9,13 +9,13 @@ import 'models/user.dart';
 import 'models/post.dart';
 import 'models/achievement_badge.dart';
 import 'services/achievement_service.dart';
-import 'widgets/avatar_image.dart';
 import 'widgets/dynamic_avatar.dart';
 import 'widgets/achievement_badge_display.dart';
 import 'wallet_page.dart';
 import 'widgets/fade_in_up.dart';
 import 'following_page.dart';
 import 'followers_page.dart';
+import 'gallery/cloud_gallery_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -153,28 +153,25 @@ class _ProfilePageState extends State<ProfilePage> {
                       delay: const Duration(milliseconds: 200),
                       child: _buildMenuCard([
                         _MenuItem(
-                          icon: Icons.edit_outlined,
-                          title: '编辑资料',
-                          color: Colors.blueAccent,
-                          onTap: () async {
-                            if (_user != null) {
-                              final result = await Navigator.pushNamed(
-                                context,
-                                '/edit-profile',
-                                arguments: _user,
-                              );
-                              if (result == true) {
-                                _loadUserInfo();
-                              }
-                            }
-                          },
-                        ),
-                        _MenuItem(
                           icon: Icons.military_tech_outlined,
                           title: '成就徽章',
                           subtitle: '已解锁 ${_userBadges.where((b) => b.isUnlocked).length} 个',
                           color: Colors.amber,
                           onTap: _showAllBadges,
+                        ),
+                        _MenuItem(
+                          icon: Icons.cloud_outlined,
+                          title: '云端图库',
+                          subtitle: '上传/管理你的图片云盘',
+                          color: const Color(0xFF86A8E7),
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CloudGalleryPage(),
+                              ),
+                            );
+                          },
                         ),
                         _MenuItem(
                           icon: Icons.favorite_border_rounded,
