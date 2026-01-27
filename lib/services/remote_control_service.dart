@@ -10,6 +10,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../auth_service.dart';
 import 'api_service.dart';
+import 'ws_channel_connector.dart';
 
 class RemoteControlService {
   static WebSocketChannel? _channel;
@@ -71,17 +72,12 @@ class RemoteControlService {
     final base = ApiService.baseUrl;
     final uri = Uri.parse(base);
     final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
-    final token = ApiService.token;
-    final query = <String, String>{};
-    if (token != null && token.isNotEmpty) {
-      query['token'] = token;
-    }
+
     return Uri(
       scheme: scheme,
       host: uri.host,
       port: uri.hasPort ? uri.port : null,
       path: '/ws/remote',
-      queryParameters: query.isEmpty ? null : query,
     );
   }
 
@@ -95,7 +91,18 @@ class RemoteControlService {
     }
     try {
       final uri = _buildWebSocketUri();
-      final channel = WebSocketChannel.connect(uri);
+
+      // 准备headers，包含Authorization token
+      final headers = <String, String>{};
+      var rawToken = ApiService.token?.trim();
+      if (rawToken != null && rawToken.startsWith('Bearer ')) {
+        rawToken = rawToken.substring('Bearer '.length).trim();
+      }
+      if (rawToken != null && rawToken.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $rawToken';
+      }
+
+      final channel = connectMoeWebSocket(uri, headers: headers);
       _channel = channel;
       _subscription = channel.stream.listen(
         _handleMessage,

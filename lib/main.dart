@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:provider/provider.dart';
 import 'dart:ui';
@@ -39,6 +38,8 @@ import 'utils/error_handler.dart';
 import 'providers/theme_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/device_info_provider.dart';
+import 'providers/loading_provider.dart';
+import 'widgets/app_message_widget.dart';
 import 'services/notification_service.dart';
 import 'services/remote_control_service.dart';
 import 'services/presence_service.dart';
@@ -75,6 +76,9 @@ void main() async {
     // 创建设备信息提供者
     final deviceInfoProvider = DeviceInfoProvider();
     deviceInfoProvider.init(); // 启动设备信息同步
+
+    // 创建加载状态提供者
+    final loadingProvider = LoadingProvider();
 
     await NotificationService.initLocalNotifications();
     await RemoteControlService.init();
@@ -174,6 +178,7 @@ void main() async {
           ChangeNotifierProvider.value(value: themeProvider),
           ChangeNotifierProvider.value(value: notificationProvider),
           ChangeNotifierProvider.value(value: deviceInfoProvider),
+          ChangeNotifierProvider.value(value: loadingProvider),
         ],
         child: const MyApp(),
       ),
@@ -199,6 +204,9 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: themeProvider.currentTheme,
       initialRoute: AuthService.isLoggedIn ? '/home' : '/login',
+      builder: (context, child) {
+        return AppMessageWidget(child: child ?? Container());
+      },
       routes: {
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),

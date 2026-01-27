@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'utils/validators.dart';
-import 'utils/error_handler.dart';
 import 'widgets/fade_in_up.dart';
+import 'package:provider/provider.dart';
+import 'providers/loading_provider.dart';
+import 'widgets/app_message_widget.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -17,7 +19,6 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  bool _isLoading = false;
   bool _obscurePassword = true;
 
   // 使用与登录页相同的配色
@@ -26,38 +27,30 @@ class _RegisterPageState extends State<RegisterPage> {
   final Color _accentColor = const Color(0xFF91EAE4);
 
   Future<void> _register() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+    if (!_formKey.currentState!.validate()) return;
 
-      try {
-        final result = await AuthService.register(
-          _usernameController.text,
-          _emailController.text,
-          _passwordController.text,
-        );
+    final loadingProvider = context.read<LoadingProvider>();
 
-        if (!mounted) return;
-
-        setState(() {
-          _isLoading = false;
-        });
-
-        if (result.success) {
-          ErrorHandler.showSuccess(context, '欢迎加入 Moe Social！(≧∇≦)/');
-          Navigator.pop(context);
-        } else {
-          ErrorHandler.showError(context, result.errorMessage ?? '注册失败，请稍后重试');
+    await loadingProvider.executeOperation<AuthResult>(
+      operation: () => AuthService.register(
+        _usernameController.text,
+        _emailController.text,
+        _passwordController.text,
+      ),
+      key: LoadingKeys.register,
+      onSuccess: (result) {
+        if (!result.success) {
+          loadingProvider.setError(result.errorMessage ?? '注册失败，请稍后重试');
+          return;
         }
-      } catch (e) {
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-        });
-        ErrorHandler.handleException(context, e as Exception);
-      }
-    }
+
+        loadingProvider.setSuccess('欢迎加入 Moe Social！(≧∇≦)/');
+        Navigator.pop(context);
+      },
+      onError: (_) {
+        // 错误已通过 LoadingProvider 统一显示
+      },
+    );
   }
 
   @override
@@ -207,31 +200,30 @@ class _RegisterPageState extends State<RegisterPage> {
                                           value, _passwordController.text),
                                     ),
                                     const SizedBox(height: 32),
-                                    _isLoading
-                                        ? CircularProgressIndicator(color: _primaryColor)
-                                        : SizedBox(
-                                            width: double.infinity,
-                                            height: 50,
-                                            child: ElevatedButton(
-                                              onPressed: _register,
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: _primaryColor,
-                                                foregroundColor: Colors.white,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius: BorderRadius.circular(25),
-                                                ),
-                                                elevation: 5,
-                                                shadowColor: _primaryColor.withOpacity(0.4),
-                                              ),
-                                              child: const Text(
-                                                '立即注册',
-                                                style: TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 50,
+                                      child: LoadingButton(
+                                        operationKey: LoadingKeys.register,
+                                        onPressed: _register,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: _primaryColor,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(25),
                                           ),
+                                          elevation: 5,
+                                          shadowColor: _primaryColor.withOpacity(0.4),
+                                        ),
+                                        child: const Text(
+                                          '立即注册',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                     const SizedBox(height: 20),
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
