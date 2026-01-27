@@ -23,12 +23,14 @@ class CloudGalleryPage extends StatefulWidget {
 
 class _CloudGalleryPageState extends State<CloudGalleryPage> {
   List<dynamic> _images = [];
-  bool _isLoading = false;
+  bool _isFetching = false; // 列表加载中（分页）
+  bool _isMutating = false; // 上传/删除等操作中
   int _currentPage = 1;
   int _pageSize = 10;
   int _total = 0;
   bool _hasMore = true;
   final ImagePicker _picker = ImagePicker();
+  final ScrollController _scrollController = ScrollController();
 
   int? _maxBytes;
   int? _usedBytes;
@@ -39,9 +41,25 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(() {
+      if (!_scrollController.hasClients) return;
+      final pos = _scrollController.position;
+      // 接近底部自动加载下一页
+      if (pos.pixels >= pos.maxScrollExtent - 240) {
+        _loadImages();
+      }
+    });
     _loadQuota();
     _loadImages();
   }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  bool get _busy => _isFetching || _isMutating;
 
   String _formatBytes(int bytes) {
     const kb = 1024.0;
@@ -71,11 +89,12 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
     }
   }
   
-  Future<void> _loadImages() async {
-    if (_isLoading || !_hasMore) return;
-    
+  Future<void> _loadImages({bool force = false}) async {
+    if (_isFetching) return;
+    if (!_hasMore && !force) return;
+
     setState(() {
-      _isLoading = true;
+      _isFetching = true;
     });
     
     try {
@@ -95,52 +114,31 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
       ErrorHandler.showError(context, '加载图片失败: $e');
     } finally {
       setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-  
-  Future<void> _deleteImage(String filename) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('确认删除'),
-        content: const Text('确定要删除这张图片吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('删除', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-    
-    if (confirm != true) return;
-    
-    setState(() {
-      _isLoading = true;
-    });
-    
-    try {
-      await ApiService.delete('/api/images/$filename');
-      setState(() {
-        _images.removeWhere((image) => image['filename'] == filename);
-        _total--;
-      });
-      ErrorHandler.showSuccess(context, '删除成功');
-    } catch (e) {
-      ErrorHandler.showError(context, '删除失败: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
+        _isFetching = false;
       });
     }
   }
 
+  Future<void> _refreshAll({bool exitSelect = true}) async {
+    if (exitSelect) {
+      _exitSelectMode();
+    }
+    setState(() {
+      _images = [];
+      _currentPage = 1;
+      _hasMore = true;
+      _total = 0;
+    });
+
+    await _loadQuota();
+    await _loadImages(force: true);
+
+    // 体验优化：如果删太多导致列表很空，自动补齐到至少一页
+    while (mounted && _hasMore && _images.length < _pageSize && !_isFetching) {
+      await _loadImages(force: true);
+    }
+  }
+  
   void _enterSelectMode({int? initialIndex}) {
     if (_selectMode) return;
     HapticFeedback.mediumImpact();
@@ -191,7 +189,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
     );
     if (confirm != true) return;
 
-    setState(() => _isLoading = true);
+    setState(() => _isMutating = true);
     try {
       final indices = _selected.toList()..sort((a, b) => b.compareTo(a));
       for (final i in indices) {
@@ -199,19 +197,16 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
         final filename = image['filename']?.toString() ?? '';
         if (filename.isEmpty) continue;
         await ApiService.delete('/api/images/$filename');
-        _images.removeAt(i);
       }
-      _total = _images.length;
-      _hasMore = _images.length < _total;
-      await _loadQuota();
+
+      await _refreshAll(exitSelect: true);
       if (!mounted) return;
       ErrorHandler.showSuccess(context, '已删除 ${indices.length} 张');
-      _exitSelectMode();
     } catch (e) {
       if (!mounted) return;
       ErrorHandler.showError(context, '批量删除失败: $e');
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isMutating = false);
     }
   }
 
@@ -222,7 +217,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() => _isMutating = true);
     try {
       final dir = await getApplicationDocumentsDirectory();
       final dio = Dio();
@@ -259,7 +254,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
       if (!mounted) return;
       ErrorHandler.showError(context, '批量下载失败: $e');
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isMutating = false);
     }
   }
 
@@ -311,28 +306,21 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
       if (picked == null) return;
 
       setState(() {
-        _isLoading = true;
+        _isMutating = true;
       });
 
       await ApiService.uploadImage(File(picked.path));
 
-      // 上传后刷新列表（后端会按用户目录返回）
+      // 上传后刷新列表（自动拉第一页，避免“必须点加载更多才出现”）
       if (!mounted) return;
-      setState(() {
-        _images = [];
-        _currentPage = 1;
-        _hasMore = true;
-        _total = 0;
-      });
-      await _loadQuota();
-      await _loadImages();
+      await _refreshAll(exitSelect: false);
       ErrorHandler.showSuccess(context, '上传成功');
     } catch (e) {
       ErrorHandler.showError(context, '上传失败: $e');
     } finally {
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _isMutating = false;
         });
       }
     }
@@ -356,17 +344,17 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
           if (!widget.isSelectMode && _selectMode) ...[
             IconButton(
               icon: const Icon(Icons.download_outlined),
-              onPressed: _isLoading ? null : _bulkDownloadSelected,
+              onPressed: _busy ? null : _bulkDownloadSelected,
               tooltip: '批量下载',
             ),
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.red),
-              onPressed: _isLoading ? null : _bulkDeleteSelected,
+              onPressed: _busy ? null : _bulkDeleteSelected,
               tooltip: '批量删除',
             ),
             IconButton(
               icon: const Icon(Icons.close),
-              onPressed: _isLoading ? null : _exitSelectMode,
+              onPressed: _busy ? null : _exitSelectMode,
               tooltip: '退出多选',
             ),
           ],
@@ -374,19 +362,13 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: () {
-                setState(() {
-                  _images = [];
-                  _currentPage = 1;
-                  _hasMore = true;
-                });
-                _loadQuota();
-                _loadImages();
+                _refreshAll(exitSelect: false);
               },
             ),
           if (!widget.isSelectMode)
             IconButton(
               icon: const Icon(Icons.cloud_upload_outlined),
-              onPressed: (_isLoading || _selectMode) ? null : _pickAndUpload,
+              onPressed: (_busy || _selectMode) ? null : _pickAndUpload,
               tooltip: '上传图片',
             ),
         ],
@@ -394,7 +376,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
       floatingActionButton: widget.isSelectMode
           ? null
           : FloatingActionButton(
-              onPressed: (_isLoading || _selectMode) ? null : _pickAndUpload,
+              onPressed: (_busy || _selectMode) ? null : _pickAndUpload,
               child: const Icon(Icons.add_rounded),
             ),
       body: Column(
@@ -424,9 +406,10 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
               ),
             ),
           Expanded(
-            child: _isLoading && _images.isEmpty
+            child: _isFetching && _images.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : GridView.builder(
+                    controller: _scrollController,
                     padding: const EdgeInsets.all(8),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
@@ -436,22 +419,22 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                     itemCount: _images.length + (_hasMore ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index == _images.length) {
-                        return _isLoading
-                            ? const Center(child: CircularProgressIndicator())
-                            : GestureDetector(
-                                onTap: _loadImages,
-                                child: Container(
-                                  color: Colors.grey[200],
-                                  child: const Center(
-                                    child: Text('加载更多'),
-                                  ),
-                                ),
-                              );
+                        // 触底占位：自动触发下一页，同时保留点击兜底
+                        if (!_isFetching) {
+                          Future.microtask(() => _loadImages());
+                        }
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: _isFetching
+                                ? const CircularProgressIndicator()
+                                : const Text('加载更多'),
+                          ),
+                        );
                       }
 
                       final image = _images[index];
                       final imageUrl = image['url'] as String;
-                      final filename = image['filename'] as String;
                       final heroTag = 'cloud_image_$index';
                       final isSelected = _selected.contains(index);
 
@@ -521,16 +504,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                                 ),
                               ),
                             ),
-                          if (!widget.isSelectMode && !_selectMode)
-                            Positioned(
-                              top: 4,
-                              right: 4,
-                              child: IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () => _deleteImage(filename),
-                                iconSize: 18,
-                              ),
-                            ),
+                          // 不再展示“单个删除按钮”：统一用长按多选批量删
                           if (widget.isSelectMode)
                             Positioned(
                               top: 4,

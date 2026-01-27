@@ -7,6 +7,7 @@ import 'widgets/avatar_image.dart';
 import 'widgets/signature_input.dart';
 import 'widgets/gender_selector.dart';
 import 'widgets/birthday_selector.dart';
+import 'gallery/cloud_gallery_page.dart';
 
 class EditProfilePage extends StatefulWidget {
   final User user;
@@ -67,6 +68,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
     setState(() {
       _hasUnsavedChanges = _checkHasChanges();
     });
+  }
+
+  Future<void> _pickAvatarFromCloud() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CloudGalleryPage(
+          isSelectMode: true,
+          onImageSelected: (imageUrl) {
+            setState(() {
+              _avatarController.text = imageUrl;
+              _hasUnsavedChanges = _checkHasChanges();
+            });
+          },
+        ),
+      ),
+    );
   }
 
   bool _checkHasChanges() {
@@ -240,16 +258,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       Positioned(
                         bottom: 0,
                         right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: Colors.blue,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            color: Colors.white,
-                            size: 20,
+                        child: GestureDetector(
+                          onTap: _isSaving ? null : _pickAvatarFromCloud,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(
+                              color: Colors.blue,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.cloud_upload_outlined,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
                         ),
                       ),
@@ -302,11 +323,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 // 头像URL
                 TextField(
                   controller: _avatarController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: '头像URL',
                     prefixIcon: Icon(Icons.image_outlined),
                     border: OutlineInputBorder(),
                     helperText: '输入头像图片的URL地址',
+                    suffixIcon: IconButton(
+                      tooltip: '从云端图库选择',
+                      onPressed: _isSaving ? null : _pickAvatarFromCloud,
+                      icon: const Icon(Icons.cloud_outlined),
+                    ),
                   ),
                   keyboardType: TextInputType.url,
                   onChanged: (value) {
