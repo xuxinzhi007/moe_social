@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"backend/api/internal/common"
@@ -28,16 +29,22 @@ func UploadImageHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		defer file.Close()
 
+		imgDir := strings.TrimSpace(svcCtx.Config.Image.LocalDir)
+		if imgDir == "" {
+			imgDir = "./data/images"
+		}
+
 		// 确保本地图片目录存在
-		if err := os.MkdirAll(localImgDir, os.ModePerm); err != nil {
+		if err := os.MkdirAll(imgDir, os.ModePerm); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
 
 		// 生成唯一文件名，避免覆盖
 		timestamp := time.Now().Unix()
-		filename := fmt.Sprintf("%d_%s", timestamp, fileHeader.Filename)
-		imgPath := filepath.Join(localImgDir, filename)
+		orig := filepath.Base(fileHeader.Filename)
+		filename := fmt.Sprintf("%d_%s", timestamp, orig)
+		imgPath := filepath.Join(imgDir, filename)
 
 		// 创建文件并写入内容
 		outFile, err := os.Create(imgPath)
@@ -61,7 +68,15 @@ func UploadImageHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 
 		// 生成图片访问URL
-		imgUrl := fmt.Sprintf("%s/api/images/%s", localServerUrl, filename)
+		base := strings.TrimRight(strings.TrimSpace(svcCtx.Config.Image.PublicBaseUrl), "/")
+		if base == "" {
+			scheme := "http"
+			if r.TLS != nil {
+				scheme = "https"
+			}
+			base = fmt.Sprintf("%s://%s", scheme, r.Host)
+		}
+		imgUrl := fmt.Sprintf("%s/api/images/%s", base, filename)
 
 		// 构建响应
 		imageInfo := types.ImageInfo{

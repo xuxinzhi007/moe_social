@@ -606,6 +606,35 @@ class _SettingsPageState extends State<SettingsPage> {
           _buildSectionTitle('账户与安全'),
           _buildSettingsCard([
             _SettingsTile(
+              icon: Icons.edit_outlined,
+              title: '编辑资料',
+              subtitle: '修改昵称、头像、签名等',
+              iconColor: Colors.blueAccent,
+              onTap: () async {
+                try {
+                  final userId = AuthService.currentUser;
+                  if (userId == null) return;
+                  final user = await ApiService.getUserInfo(userId);
+                  if (!mounted) return;
+                  final result = await Navigator.pushNamed(
+                    context,
+                    '/edit-profile',
+                    arguments: user,
+                  );
+                  if (result == true && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('资料已更新')),
+                    );
+                  }
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('打开编辑失败: $e')),
+                  );
+                }
+              },
+            ),
+            _SettingsTile(
               icon: Icons.lock_rounded,
               title: '修改密码',
               iconColor: Colors.blue,

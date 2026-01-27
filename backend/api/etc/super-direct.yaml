@@ -15,6 +15,11 @@ Ollama:
   # 可选：用于「记忆抽取」的系统提示词，不填则使用内置中文抽取提示
   MemoryExtractPrompt: ""
 
+# 图片“云空间”（实际落到服务端本地目录）
+Image:
+  LocalDir: "./data/images"
+  PublicBaseUrl: "http://localhost:8888"
+
 # RPC服务配置 - 直接连接方式（不使用etcd）
 SuperRpc:
   Endpoints:

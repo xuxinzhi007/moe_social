@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
@@ -21,8 +22,13 @@ func GetImageHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
+		imgDir := strings.TrimSpace(svcCtx.Config.Image.LocalDir)
+		if imgDir == "" {
+			imgDir = "./data/images"
+		}
+
 		// 构建图片文件路径
-		imgPath := filepath.Join(localImgDir, req.Filename)
+		imgPath := filepath.Join(imgDir, req.Filename)
 
 		// 检查文件是否存在
 		if _, err := os.Stat(imgPath); os.IsNotExist(err) {

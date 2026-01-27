@@ -22,6 +22,9 @@ type Config struct {
 
 	// Agora 配置
 	Agora AgoraConf `json:"Agora" yaml:"Agora"`
+
+	// 本地“云空间”配置（图片上传落盘）
+	Image ImageConf `json:"Image" yaml:"Image"`
 }
 
 type OllamaConf struct {
@@ -40,4 +43,16 @@ type OllamaConf struct {
 type AgoraConf struct {
 	AppId          string `json:"AppId" yaml:"AppId"`
 	AppCertificate string `json:"AppCertificate" yaml:"AppCertificate"`
+}
+
+type ImageConf struct {
+	// LocalDir: 图片落盘目录（服务端机器的本地路径）
+	// - Windows: "C:/Users/xxx/Desktop/moe_social_data/images"
+	// - Linux/Mac: "/data/moe_social/images"
+	LocalDir string `json:"LocalDir" yaml:"LocalDir"`
+
+	// PublicBaseUrl: 对外访问的 API base（用于拼图片 URL）
+	// - 本地调试: "http://localhost:8888"
+	// - cpolar: "http://xxxx.r3.cpolar.top"
+	PublicBaseUrl string `json:"PublicBaseUrl" yaml:"PublicBaseUrl"`
 }
