@@ -51,15 +51,24 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       // 获取关注数和粉丝数
-      final followingCount = await ApiService.getFollowings(userId, page: 1, pageSize: 1).then((result) => result['total'] as int).catchError((_) => 0);
-      final followerCount = await ApiService.getFollowers(userId, page: 1, pageSize: 1).then((result) => result['total'] as int).catchError((_) => 0);
-      
+      final followingCount =
+          await ApiService.getFollowings(userId, page: 1, pageSize: 1)
+              .then((result) => result['total'] as int)
+              .catchError((_) => 0);
+      final followerCount =
+          await ApiService.getFollowers(userId, page: 1, pageSize: 1)
+              .then((result) => result['total'] as int)
+              .catchError((_) => 0);
+
       final futures = await Future.wait([
         ApiService.getUserInfo(userId),
-        ApiService.getUserVipStatus(userId).catchError((_) => <String, dynamic>{}),
+        ApiService.getUserVipStatus(userId)
+            .catchError((_) => <String, dynamic>{}),
         ApiService.getPosts(page: 1, pageSize: 100).then((result) {
           final posts = result['posts'] as List<Post>;
-          return posts.where((p) => p.userId.toString() == userId.toString()).length;
+          return posts
+              .where((p) => p.userId.toString() == userId.toString())
+              .length;
         }).catchError((_) => 0),
       ]);
 
@@ -111,16 +120,19 @@ class _ProfilePageState extends State<ProfilePage> {
           physics: const BouncingScrollPhysics(),
           slivers: [
             SliverAppBar(
-                expandedHeight: 460.0,
-                pinned: true,
-                stretch: true,
+              expandedHeight: 460.0,
+              pinned: true,
+              stretch: true,
               backgroundColor: const Color(0xFF7F7FD5),
               elevation: 0,
-              title: const Text('个人中心', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              title: const Text('个人中心',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold)),
               centerTitle: true,
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.settings_outlined, color: Colors.white),
+                  icon:
+                      const Icon(Icons.settings_outlined, color: Colors.white),
                   onPressed: () {
                     Navigator.pushNamed(context, '/settings').then((_) {
                       _loadUserInfo();
@@ -148,14 +160,14 @@ class _ProfilePageState extends State<ProfilePage> {
                         child: _buildVipCard(),
                       ),
                     const SizedBox(height: 16),
-                    
                     FadeInUp(
                       delay: const Duration(milliseconds: 200),
                       child: _buildMenuCard([
                         _MenuItem(
                           icon: Icons.military_tech_outlined,
                           title: '成就徽章',
-                          subtitle: '已解锁 ${_userBadges.where((b) => b.isUnlocked).length} 个',
+                          subtitle:
+                              '已解锁 ${_userBadges.where((b) => b.isUnlocked).length} 个',
                           color: Colors.amber,
                           onTap: _showAllBadges,
                         ),
@@ -188,14 +200,6 @@ class _ProfilePageState extends State<ProfilePage> {
                           },
                         ),
                         _MenuItem(
-                          icon: Icons.people_alt_outlined,
-                          title: '好友管理',
-                          color: Colors.teal,
-                          onTap: () {
-                            Navigator.pushNamed(context, '/friends');
-                          },
-                        ),
-                        _MenuItem(
                           icon: Icons.history_rounded,
                           title: '浏览历史',
                           color: Colors.orangeAccent,
@@ -203,40 +207,41 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ]),
                     ),
-                    
                     const SizedBox(height: 16),
-                    
                     FadeInUp(
                       delay: const Duration(milliseconds: 300),
                       child: _buildMenuCard([
                         _MenuItem(
-                          icon: Icons.account_balance_wallet_outlined, 
+                          icon: Icons.account_balance_wallet_outlined,
                           title: '我的钱包',
-                          subtitle: '余额: ¥${_user?.balance.toStringAsFixed(2) ?? '0.00'}',
+                          subtitle:
+                              '余额: ¥${_user?.balance.toStringAsFixed(2) ?? '0.00'}',
                           color: Colors.green,
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const WalletPage()),
+                              MaterialPageRoute(
+                                  builder: (context) => const WalletPage()),
                             ).then((value) {
                               _loadUserInfo();
                             });
                           },
                         ),
                         _MenuItem(
-                          icon: Icons.help_outline_rounded, 
+                          icon: Icons.help_outline_rounded,
                           title: '帮助与反馈',
                           color: Colors.purpleAccent,
                           onTap: () {},
                         ),
                         _MenuItem(
-                          icon: Icons.smart_toy_outlined, 
+                          icon: Icons.smart_toy_outlined,
                           title: 'AutoGLM 助手 (实验性)',
                           color: Colors.indigoAccent,
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const AutoGLMPage()),
+                              MaterialPageRoute(
+                                  builder: (context) => const AutoGLMPage()),
                             );
                           },
                           trailing: Transform.scale(
@@ -248,28 +253,32 @@ class _ProfilePageState extends State<ProfilePage> {
                                 setState(() {
                                   AutoGLMService.enableOverlay = value;
                                 });
-                                
+
                                 // 调用 Service 控制悬浮窗
                                 if (value) {
                                   // 检查权限
-                                  bool hasPerm = await AutoGLMService.checkOverlayPermission();
+                                  bool hasPerm = await AutoGLMService
+                                      .checkOverlayPermission();
                                   if (!hasPerm) {
-                                    await AutoGLMService.requestOverlayPermission();
+                                    await AutoGLMService
+                                        .requestOverlayPermission();
                                     // 简单等待一下
-                                    await Future.delayed(const Duration(seconds: 1));
-                                    hasPerm = await AutoGLMService.checkOverlayPermission();
+                                    await Future.delayed(
+                                        const Duration(seconds: 1));
+                                    hasPerm = await AutoGLMService
+                                        .checkOverlayPermission();
                                     if (!hasPerm) {
-                                      setState(() => AutoGLMService.enableOverlay = false);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('需要悬浮窗权限才能显示'))
-                                      );
+                                      setState(() =>
+                                          AutoGLMService.enableOverlay = false);
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(const SnackBar(
+                                              content: Text('需要悬浮窗权限才能显示')));
                                       return;
                                     }
                                   }
                                   await AutoGLMService.showOverlay();
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('悬浮窗已开启'))
-                                  );
+                                      const SnackBar(content: Text('悬浮窗已开启')));
                                 } else {
                                   await AutoGLMService.removeOverlay();
                                 }
@@ -279,14 +288,12 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ]),
                     ),
-
                     const SizedBox(height: 16),
-
                     FadeInUp(
                       delay: const Duration(milliseconds: 400),
                       child: _buildMenuCard([
                         _MenuItem(
-                          icon: Icons.logout_rounded, 
+                          icon: Icons.logout_rounded,
                           title: '退出登录',
                           color: Colors.redAccent,
                           isDestructive: true,
@@ -294,7 +301,6 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ]),
                     ),
-                    
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -341,7 +347,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
         ),
-        
+
         // 用户信息内容
         // 使用 SafeArea 确保内容不被顶部遮挡，并居中显示
         SafeArea(
@@ -373,7 +379,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 Text(
                   _user?.username ?? '未知用户',
                   style: const TextStyle(
-                    fontSize: 24, 
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -383,7 +389,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   _user?.email ?? '',
                   style: TextStyle(color: Colors.white.withOpacity(0.9)),
                 ),
-                
+
                 const SizedBox(height: 16),
                 // 设备信息
                 Consumer<DeviceInfoProvider>(
@@ -395,7 +401,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 8),
                 // 统计数据
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
@@ -404,24 +411,34 @@ class _ProfilePageState extends State<ProfilePage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _buildStatItem('动态', '$_postCount', onTap: () {}),
-                      Container(height: 20, width: 1, color: Colors.white30, margin: const EdgeInsets.symmetric(horizontal: 16)),
+                      Container(
+                          height: 20,
+                          width: 1,
+                          color: Colors.white30,
+                          margin: const EdgeInsets.symmetric(horizontal: 16)),
                       _buildStatItem('关注', '$_followingCount', onTap: () {
                         if (_user != null) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => FollowingPage(userId: _user!.id),
+                              builder: (context) =>
+                                  FollowingPage(userId: _user!.id),
                             ),
                           );
                         }
                       }),
-                      Container(height: 20, width: 1, color: Colors.white30, margin: const EdgeInsets.symmetric(horizontal: 16)),
+                      Container(
+                          height: 20,
+                          width: 1,
+                          color: Colors.white30,
+                          margin: const EdgeInsets.symmetric(horizontal: 16)),
                       _buildStatItem('粉丝', '$_followerCount', onTap: () {
                         if (_user != null) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => FollowersPage(userId: _user!.id),
+                              builder: (context) =>
+                                  FollowersPage(userId: _user!.id),
                             ),
                           );
                         }
@@ -431,11 +448,15 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
 
                 // 徽章展示区域
-                if (_userBadges.where((badge) => badge.isUnlocked).isNotEmpty) ...[
+                if (_userBadges
+                    .where((badge) => badge.isUnlocked)
+                    .isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 32), // 增加边距防止太宽
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 32), // 增加边距防止太宽
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(20),
@@ -445,7 +466,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.military_tech, color: Colors.white, size: 16),
+                            const Icon(Icons.military_tech,
+                                color: Colors.white, size: 16),
                             const SizedBox(width: 6),
                             const Text(
                               '成就徽章',
@@ -502,11 +524,8 @@ class _ProfilePageState extends State<ProfilePage> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                _getDeviceIcon(provider.deviceType),
-                color: Colors.white,
-                size: 16
-              ),
+              Icon(_getDeviceIcon(provider.deviceType),
+                  color: Colors.white, size: 16),
               const SizedBox(width: 6),
               Text(
                 provider.deviceType.isNotEmpty ? provider.deviceType : '未知设备',
@@ -514,15 +533,16 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const SizedBox(width: 16),
               Icon(
-                provider.batteryLevel != null && provider.batteryLevel! < 20 
-                  ? Icons.battery_alert 
-                  : Icons.battery_std,
-                color: Colors.white,
-                size: 16
-              ),
+                  provider.batteryLevel != null && provider.batteryLevel! < 20
+                      ? Icons.battery_alert
+                      : Icons.battery_std,
+                  color: Colors.white,
+                  size: 16),
               const SizedBox(width: 6),
               Text(
-                provider.batteryLevel != null ? '${provider.batteryLevel}%' : '未知',
+                provider.batteryLevel != null
+                    ? '${provider.batteryLevel}%'
+                    : '未知',
                 style: const TextStyle(color: Colors.white, fontSize: 13),
               ),
             ],
@@ -541,13 +561,16 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
               const SizedBox(width: 16),
-              const Icon(Icons.location_on_outlined, color: Colors.white, size: 16),
+              const Icon(Icons.location_on_outlined,
+                  color: Colors.white, size: 16),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
-                  provider.locationText.isNotEmpty 
-                      ? provider.locationText 
-                      : (provider.latitude != null ? '${provider.latitude!.toStringAsFixed(2)}, ${provider.longitude!.toStringAsFixed(2)}' : '未知'),
+                  provider.locationText.isNotEmpty
+                      ? provider.locationText
+                      : (provider.latitude != null
+                          ? '${provider.latitude!.toStringAsFixed(2)}, ${provider.longitude!.toStringAsFixed(2)}'
+                          : '未知'),
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -561,13 +584,20 @@ class _ProfilePageState extends State<ProfilePage> {
 
   IconData _getDeviceIcon(String type) {
     switch (type.toLowerCase()) {
-      case 'android': return Icons.android;
-      case 'ios': return Icons.phone_iphone;
-      case 'macos': return Icons.desktop_mac;
-      case 'windows': return Icons.window;
-      case 'linux': return Icons.computer;
-      case 'web': return Icons.web;
-      default: return Icons.smartphone;
+      case 'android':
+        return Icons.android;
+      case 'ios':
+        return Icons.phone_iphone;
+      case 'macos':
+        return Icons.desktop_mac;
+      case 'windows':
+        return Icons.window;
+      case 'linux':
+        return Icons.computer;
+      case 'web':
+        return Icons.web;
+      default:
+        return Icons.smartphone;
     }
   }
 
@@ -576,8 +606,14 @@ class _ProfilePageState extends State<ProfilePage> {
       onTap: onTap,
       child: Column(
         children: [
-          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white)),
+          Text(label,
+              style: TextStyle(
+                  color: Colors.white.withOpacity(0.8), fontSize: 12)),
         ],
       ),
     );
@@ -647,7 +683,8 @@ class _ProfilePageState extends State<ProfilePage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.orange,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15)),
                 elevation: 0,
                 padding: EdgeInsets.zero,
               ),
@@ -693,15 +730,18 @@ class _ProfilePageState extends State<ProfilePage> {
                     color: item.isDestructive ? Colors.red : Colors.black87,
                   ),
                 ),
-                subtitle: item.subtitle != null 
-                    ? Text(item.subtitle!, style: TextStyle(fontSize: 12, color: Colors.grey[500])) 
+                subtitle: item.subtitle != null
+                    ? Text(item.subtitle!,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]))
                     : null,
-                trailing: item.trailing ?? const Icon(Icons.chevron_right_rounded, color: Colors.grey, size: 20),
+                trailing: item.trailing ??
+                    const Icon(Icons.chevron_right_rounded,
+                        color: Colors.grey, size: 20),
                 onTap: item.onTap,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               ),
-              if (!isLast)
-                const Divider(height: 1, indent: 60, endIndent: 20),
+              if (!isLast) const Divider(height: 1, indent: 60, endIndent: 20),
             ],
           );
         }).toList(),
@@ -748,7 +788,8 @@ class _ProfilePageState extends State<ProfilePage> {
             if (badge.isUnlocked) ...[
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.green[50],
                   borderRadius: BorderRadius.circular(12),
@@ -757,7 +798,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                    const Icon(Icons.check_circle,
+                        color: Colors.green, size: 16),
                     const SizedBox(width: 6),
                     const Text(
                       '已解锁',
