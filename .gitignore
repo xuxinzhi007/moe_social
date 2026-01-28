@@ -59,6 +59,18 @@ key.properties
 **/*.keystore
 **/*.jks
 
+# Secrets / credentials (never commit)
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.mobileprovision
+
 # iOS related
 **/dgph
 *.mode1v3
