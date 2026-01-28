@@ -1214,8 +1214,7 @@ class _HomePageState extends State<HomePage> {
   Object _feedItemAt(int index, List<Post> posts) {
     final inserts = _cardInsertIndexes(posts.length);
     if (inserts.contains(index)) {
-      return _HomeFeedCard.forIndex(index,
-          onPickTopic: () => _pickTopic(context));
+      return _HomeFeedCard.forIndex(index);
     }
     // map index to post index by subtracting number of insertions before it
     final before = inserts.where((i) => i < index).length;
@@ -1225,14 +1224,13 @@ class _HomePageState extends State<HomePage> {
 
   Set<int> _cardInsertIndexes(int postCount) {
     final s = <int>{};
-    // Always show a discovery card at top of feed.
-    s.add(0);
-    // Also show a secondary card after a few posts if there are enough.
+    // Insert a lightweight tip card after a few posts.
     if (postCount >= 4) {
-      s.add(1 + 4);
+      s.add(4);
     }
     if (postCount >= 10) {
-      s.add(2 + 10);
+      // account for earlier insertion at index 4
+      s.add(10 + (postCount >= 4 ? 1 : 0));
     }
     return s;
   }
@@ -1973,82 +1971,10 @@ class _HomeFeedCard {
 
   Widget build(BuildContext context) => _builder(context);
 
-  static _HomeFeedCard forIndex(int index, {VoidCallback? onPickTopic}) {
+  static _HomeFeedCard forIndex(int index) {
     if (index == 0) {
-      return _HomeFeedCard((context) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              gradient: const LinearGradient(
-                colors: [Color(0xFF91EAE4), Color(0xFF86A8E7)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF86A8E7).withOpacity(0.20),
-                  blurRadius: 18,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.auto_awesome_rounded,
-                      color: Colors.white, size: 22),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '发现小惊喜',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '试试切换分区/关注，让信息流更贴合你',
-                        style: TextStyle(color: Colors.white, height: 1.2),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                TextButton(
-                  onPressed: onPickTopic,
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.18),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: Colors.white.withOpacity(0.25)),
-                    ),
-                  ),
-                  child: const Text('选分区',
-                      style: TextStyle(fontWeight: FontWeight.w800)),
-                ),
-              ],
-            ),
-          ),
-        );
-      });
+      // Card removed (kept for future use)
+      return _HomeFeedCard((context) => const SizedBox.shrink());
     }
 
     return _HomeFeedCard((context) {
