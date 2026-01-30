@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'dart:convert';
 // import '../config/app_config.dart'; // AI服务内部已使用
@@ -108,12 +109,25 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
   }
 
   Future<void> _checkAccessibilityService() async {
+    if (kIsWeb) {
+      // Web端不支持无障碍服务，设置为已连接以便测试UI
+      if (mounted) {
+        setState(() {
+          _isAccessibilityServiceConnected = true;
+        });
+      }
+      _logger.info('运行在Web端，跳过无障碍服务检查', category: LogCategory.system);
+      return;
+    }
+
     try {
       const channel = MethodChannel('com.moe_social/autoglm');
       final result = await channel.invokeMethod('checkAccessibilityService');
-      setState(() {
-        _isAccessibilityServiceConnected = result == true;
-      });
+      if (mounted) {
+        setState(() {
+          _isAccessibilityServiceConnected = result == true;
+        });
+      }
 
       if (_isAccessibilityServiceConnected) {
         _logger.info('无障碍服务已连接', category: LogCategory.system);
@@ -122,6 +136,11 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
       }
     } catch (e) {
       _logger.error('检查无障碍服务失败: $e', category: LogCategory.system);
+      if (mounted) {
+        setState(() {
+          _isAccessibilityServiceConnected = false;
+        });
+      }
     }
   }
 
@@ -649,7 +668,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
   }
 
   Future<void> _executeTask(String command) async {
-    if (!_isAccessibilityServiceConnected) {
+    if (!_isAccessibilityServiceConnected && !kIsWeb) {
       _logger.warn('无障碍服务未连接，无法执行任务', category: LogCategory.system);
       return;
     }
@@ -672,27 +691,32 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
         category: LogCategory.user,
       );
 
-      // 使用AI驱动的执行引擎
-      final result = await _executionEngine.executeUserInstruction(command);
-
-      if (result['success'] == true) {
-        _logger.info('任务执行完成',
-          metadata: {
-            'totalSteps': result['totalSteps'],
-            'completedSteps': result['completedSteps'],
-            'successfulSteps': result['successfulSteps'],
-            'totalDuration': result['totalDuration'],
-          },
-          category: LogCategory.system);
-
-        // 更新UI显示完成状态
-        setState(() {
-          _currentStep = result['totalSteps'] as int? ?? 0;
-        });
+      if (kIsWeb) {
+        // Web端模拟执行
+        await _simulateTaskExecution(command);
       } else {
-        _logger.error('任务执行失败: ${result['error'] ?? '未知错误'}',
-          metadata: result,
-          category: LogCategory.system);
+        // 移动端真实执行
+        final result = await _executionEngine.executeUserInstruction(command);
+
+        if (result['success'] == true) {
+          _logger.info('任务执行完成',
+            metadata: {
+              'totalSteps': result['totalSteps'],
+              'completedSteps': result['completedSteps'],
+              'successfulSteps': result['successfulSteps'],
+              'totalDuration': result['totalDuration'],
+            },
+            category: LogCategory.system);
+
+          // 更新UI显示完成状态
+          setState(() {
+            _currentStep = result['totalSteps'] as int? ?? 0;
+          });
+        } else {
+          _logger.error('任务执行失败: ${result['error'] ?? '未知错误'}',
+            metadata: result,
+            category: LogCategory.system);
+        }
       }
 
     } catch (e, stackTrace) {
@@ -716,6 +740,54 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
 
       _pulseController.stop();
       _progressController.reset();
+    }
+  }
+
+  /// Web端模拟任务执行
+  Future<void> _simulateTaskExecution(String command) async {
+    _logger.info('Web端模拟执行，仅用于UI演示', category: LogCategory.system);
+
+    // 模拟任务分析阶段
+    _logger.info('正在分析任务: $command', category: LogCategory.ai);
+    await Future.delayed(const Duration(seconds: 1));
+
+    // 模拟生成执行计划
+    final steps = _getSimulatedSteps(command);
+    _logger.info('任务规划完成，共${steps.length}个步骤',
+      metadata: {'stepCount': steps.length},
+      category: LogCategory.ai);
+
+    // 模拟执行每个步骤
+    for (int i = 0; i < steps.length; i++) {
+      if (!_isProcessing) break; // 检查是否被停止
+
+      setState(() => _currentStep = i + 1);
+
+      _logger.info('执行步骤 ${i + 1}: ${steps[i]}',
+        category: LogCategory.device);
+
+      // 模拟步骤执行时间
+      await Future.delayed(const Duration(milliseconds: 800));
+
+      _logger.info('步骤 ${i + 1} 执行成功',
+        category: LogCategory.device);
+    }
+
+    _logger.info('模拟任务执行完成 ✨', category: LogCategory.system);
+  }
+
+  /// 根据命令生成模拟的执行步骤
+  List<String> _getSimulatedSteps(String command) {
+    final lowerCommand = command.toLowerCase();
+
+    if (lowerCommand.contains('点赞')) {
+      return ['分析界面', '查找点赞按钮', '点击点赞', '验证结果'];
+    } else if (lowerCommand.contains('搜索')) {
+      return ['分析界面', '查找搜索框', '点击搜索框', '输入搜索内容', '点击搜索按钮', '等待结果'];
+    } else if (lowerCommand.contains('发布')) {
+      return ['分析界面', '查找发布入口', '点击发布按钮', '进入发布页面'];
+    } else {
+      return ['分析界面', '识别操作目标', '执行操作', '验证结果'];
     }
   }
 
