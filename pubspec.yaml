@@ -58,6 +58,11 @@ dependencies:
   battery_plus: ^6.2.0
   lottie: ^3.1.0
 
+  # AutoGLM系统依赖
+  flutter_secure_storage: ^9.2.2  # 安全配置存储
+  sqflite: ^2.3.0                 # 本地数据库（日志持久化）
+  json_annotation: ^4.8.1         # JSON序列化
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
