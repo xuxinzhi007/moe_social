@@ -1,8 +1,8 @@
 import 'package:provider/provider.dart';
 import 'providers/device_info_provider.dart';
 import 'package:flutter/material.dart';
-import 'autoglm/autoglm_page.dart'; // Import AutoGLM Page
-import 'autoglm/autoglm_service.dart'; // Import AutoGLM Service
+import 'pages/autoglm_page.dart';
+import 'autoglm/autoglm_service.dart';
 import 'auth_service.dart';
 import 'services/api_service.dart';
 import 'models/user.dart';
@@ -182,6 +182,13 @@ class _ProfilePageState extends State<ProfilePage> {
                           subtitle: '签到获取经验，提升等级',
                           color: const Color(0xFF7F7FD5),
                           onTap: () => _navigateToCheckIn(),
+                        ),
+                        _MenuItem(
+                          icon: Icons.auto_awesome_rounded,
+                          title: 'AutoGLM 助手',
+                          subtitle: 'AI智能操作助手',
+                          color: const Color(0xFF91EAE4),
+                          onTap: () => _navigateToAutoGLM(),
                         ),
                         _MenuItem(
                           icon: Icons.cloud_outlined,
@@ -1142,6 +1149,16 @@ class _ProfilePageState extends State<ProfilePage> {
       context,
       MaterialPageRoute(
         builder: (context) => CheckInPage(userId: userId),
+      ),
+    );
+  }
+
+  /// 导航到AutoGLM助手页面
+  void _navigateToAutoGLM() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AutoGLMPage(),
       ),
     );
   }

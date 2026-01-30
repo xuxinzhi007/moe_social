@@ -9,6 +9,7 @@
 #include <agora_rtc_engine/agora_rtc_engine_plugin.h>
 #include <battery_plus/battery_plus_windows_plugin.h>
 #include <file_selector_windows/file_selector_windows.h>
+#include <flutter_secure_storage_windows/flutter_secure_storage_windows_plugin.h>
 #include <flutter_tts/flutter_tts_plugin.h>
 #include <geolocator_windows/geolocator_windows.h>
 #include <iris_method_channel/iris_method_channel_plugin_c_api.h>
@@ -23,6 +24,8 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("BatteryPlusWindowsPlugin"));
   FileSelectorWindowsRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FileSelectorWindows"));
+  FlutterSecureStorageWindowsPluginRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("FlutterSecureStorageWindowsPlugin"));
   FlutterTtsPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FlutterTtsPlugin"));
   GeolocatorWindowsRegisterWithRegistrar(
