@@ -125,7 +125,7 @@ class _ProfilePageState extends State<ProfilePage> {
           physics: const BouncingScrollPhysics(),
           slivers: [
             SliverAppBar(
-              expandedHeight: 520.0,
+              expandedHeight: 420.0,
               pinned: true,
               stretch: true,
               backgroundColor: const Color(0xFF7F7FD5),
@@ -367,96 +367,167 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(height: 20), // 额外顶部间距
+                const SizedBox(height: 15),
+                // 用户头像和基本信息的水平布局
                 Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: DynamicAvatar(
+                          avatarUrl: _user?.avatar ?? '',
+                          size: 70,
+                          frameId: _user?.equippedFrameId,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _user?.username ?? '未知用户',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _user?.email ?? '',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            // 统计数据紧凑显示
+                            Row(
+                              children: [
+                                _buildStatItemCompact('动态', '$_postCount'),
+                                const SizedBox(width: 16),
+                                _buildStatItemCompact('关注', '$_followingCount'),
+                                const SizedBox(width: 16),
+                                _buildStatItemCompact('粉丝', '$_followerCount'),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                  child: DynamicAvatar(
-                    avatarUrl: _user?.avatar ?? '',
-                    size: 92, // 46 * 2
-                    frameId: _user?.equippedFrameId,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  _user?.username ?? '未知用户',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _user?.email ?? '',
-                  style: TextStyle(color: Colors.white.withOpacity(0.9)),
                 ),
 
-                const SizedBox(height: 16),
-                // 设备信息
+                const SizedBox(height: 12),
+                // 设备信息完整显示
                 Consumer<DeviceInfoProvider>(
                   builder: (context, provider, child) {
-                    return _buildDeviceInfo(provider);
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(_getDeviceIcon(provider.deviceType),
+                                      color: Colors.white, size: 14),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    provider.deviceType.isNotEmpty ? provider.deviceType : '未知设备',
+                                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                      provider.batteryLevel != null && provider.batteryLevel! < 20
+                                          ? Icons.battery_alert
+                                          : Icons.battery_std,
+                                      color: Colors.white,
+                                      size: 14),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    provider.batteryLevel != null
+                                        ? '${provider.batteryLevel}%'
+                                        : '未知',
+                                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Flexible(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.wifi, color: Colors.white, size: 14),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        provider.wifiName.isNotEmpty ? provider.wifiName : '未连接',
+                                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Flexible(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.location_on_outlined,
+                                        color: Colors.white, size: 14),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        provider.locationText.isNotEmpty
+                                            ? provider.locationText
+                                            : (provider.latitude != null
+                                                ? '${provider.latitude!.toStringAsFixed(2)}, ${provider.longitude!.toStringAsFixed(2)}'
+                                                : '未知'),
+                                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
                   },
-                ),
-
-                const SizedBox(height: 8),
-                // 统计数据
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildStatItem('动态', '$_postCount', onTap: () {}),
-                      Container(
-                          height: 20,
-                          width: 1,
-                          color: Colors.white30,
-                          margin: const EdgeInsets.symmetric(horizontal: 16)),
-                      _buildStatItem('关注', '$_followingCount', onTap: () {
-                        if (_user != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  FollowingPage(userId: _user!.id),
-                            ),
-                          );
-                        }
-                      }),
-                      Container(
-                          height: 20,
-                          width: 1,
-                          color: Colors.white30,
-                          margin: const EdgeInsets.symmetric(horizontal: 16)),
-                      _buildStatItem('粉丝', '$_followerCount', onTap: () {
-                        if (_user != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  FollowersPage(userId: _user!.id),
-                            ),
-                          );
-                        }
-                      }),
-                    ],
-                  ),
                 ),
 
                 // 用户等级信息
@@ -480,85 +551,92 @@ class _ProfilePageState extends State<ProfilePage> {
                           GestureDetector(
                             onTap: () => _navigateToUserLevel(),
                             child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 32),
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              margin: const EdgeInsets.symmetric(horizontal: 20),
+                              padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: levelProvider.getLevelGradient(userLevel.level),
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
                                 ),
                                 borderRadius: BorderRadius.circular(20),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
+                                    color: Colors.black.withOpacity(0.15),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
                                   ),
                                 ],
                               ),
-                              child: Row(
+                              child: Column(
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: const Icon(
-                                      Icons.star_rounded,
-                                      color: Colors.white,
-                                      size: 16,
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.2),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const Icon(
+                                          Icons.star_rounded,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              userLevel.levelTitle,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              'Lv.${userLevel.level} • ${userLevel.experience}/${userLevel.nextLevelExp} EXP',
+                                              style: const TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const Icon(
+                                        Icons.arrow_forward_ios_rounded,
+                                        color: Colors.white70,
+                                        size: 14,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  // 进度条
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: LinearProgressIndicator(
+                                      value: userLevel.progress,
+                                      backgroundColor: Colors.white.withOpacity(0.25),
+                                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                      minHeight: 5,
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          userLevel.levelTitle,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          'Lv.${userLevel.level} • ${userLevel.experience}/${userLevel.nextLevelExp} EXP',
-                                          style: const TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    userLevel.isMaxLevel
+                                        ? '已达到最高等级！'
+                                        : '距离下一级还需 ${userLevel.expToNext} 经验',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 11,
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  const Icon(
-                                    Icons.arrow_forward_ios_rounded,
-                                    color: Colors.white70,
-                                    size: 12,
                                   ),
                                 ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          // 进度条
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 32),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: LinearProgressIndicator(
-                                value: userLevel.progress,
-                                backgroundColor: Colors.white.withOpacity(0.2),
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  levelProvider.getLevelGradient(userLevel.level)[0],
-                                ),
-                                minHeight: 4,
                               ),
                             ),
                           ),
@@ -738,6 +816,22 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: Colors.white.withOpacity(0.8), fontSize: 12)),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatItemCompact(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(value,
+            style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white)),
+        Text(label,
+            style: TextStyle(
+                color: Colors.white.withOpacity(0.8), fontSize: 11)),
+      ],
     );
   }
 

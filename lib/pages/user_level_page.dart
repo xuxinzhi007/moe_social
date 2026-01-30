@@ -115,7 +115,7 @@ class _UserLevelPageState extends State<UserLevelPage>
   /// 构建应用栏
   Widget _buildAppBar(BuildContext context, UserLevelProvider levelProvider) {
     return SliverAppBar(
-      expandedHeight: 220,
+      expandedHeight: 200,
       floating: true,
       pinned: true,
       elevation: 0,
@@ -131,57 +131,80 @@ class _UserLevelPageState extends State<UserLevelPage>
           ),
         ),
         child: FlexibleSpaceBar(
-          title: const Text(
-            '我的等级',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-            ),
-          ),
           centerTitle: true,
-          background: Container(
-            padding: const EdgeInsets.only(top: 90),
-            child: Column(
-              children: [
-                AnimatedBuilder(
-                  animation: _scaleAnimation,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _scaleAnimation.value,
-                      child: Transform.rotate(
-                        angle: _rotationAnimation.value * 3.14159,
-                        child: Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
-                              width: 2,
+          background: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 60, bottom: 20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    '我的等级',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      AnimatedBuilder(
+                        animation: _scaleAnimation,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: _scaleAnimation.value,
+                            child: Transform.rotate(
+                              angle: _rotationAnimation.value * 3.14159,
+                              child: Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.3),
+                                    width: 2,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.star_rounded,
+                                  color: Colors.white,
+                                  size: 25,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Lv.${levelProvider.currentLevel}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          child: const Icon(
-                            Icons.star_rounded,
-                            color: Colors.white,
-                            size: 40,
-                          ),
-                        ),
+                          if (levelProvider.userLevel != null)
+                            Text(
+                              levelProvider.userLevel!.levelTitle,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                        ],
                       ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Lv.${levelProvider.currentLevel}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -210,102 +233,97 @@ class _UserLevelPageState extends State<UserLevelPage>
             ),
           ],
         ),
-        child: Column(
+        child: Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: levelProvider.getLevelGradient(levelProvider.currentLevel),
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: levelProvider.getLevelColor(levelProvider.currentLevel).withOpacity(0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.star_rounded,
-                    color: Colors.white,
-                    size: 40,
-                  ),
+            Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: levelProvider.getLevelGradient(levelProvider.currentLevel),
                 ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: levelProvider.getLevelColor(levelProvider.currentLevel).withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.star_rounded,
+                color: Colors.white,
+                size: 30,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
                       Text(
                         levelProvider.levelTitle,
                         style: const TextStyle(
-                          fontSize: 20,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF2D3748),
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: levelProvider.getLevelColor(levelProvider.currentLevel).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Lv.${levelProvider.currentLevel}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: levelProvider.getLevelColor(levelProvider.currentLevel),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.psychology_rounded,
+                        size: 16,
+                        color: Colors.grey.shade600,
+                      ),
+                      const SizedBox(width: 4),
                       Text(
-                        'Lv.${levelProvider.currentLevel}',
+                        '总经验: ${levelProvider.totalExperience}',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const Spacer(),
+                      Icon(
+                        levelProvider.isMaxLevel ? Icons.emoji_events_rounded : Icons.trending_up_rounded,
+                        size: 16,
+                        color: levelProvider.getLevelColor(levelProvider.currentLevel),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        levelProvider.isMaxLevel
+                            ? '已达最高等级'
+                            : '还需 ${levelProvider.expToNext} 经验',
+                        style: TextStyle(
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: levelProvider.getLevelColor(levelProvider.currentLevel),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.psychology_rounded,
-                            size: 16,
-                            color: Colors.grey.shade600,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '总经验: ${levelProvider.totalExperience}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    levelProvider.isMaxLevel ? Icons.emoji_events_rounded : Icons.trending_up_rounded,
-                    color: levelProvider.getLevelColor(levelProvider.currentLevel),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      levelProvider.isMaxLevel
-                          ? '恭喜！您已达到最高等级'
-                          : '距离下一级还需 ${levelProvider.expToNext} 经验',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: levelProvider.getLevelColor(levelProvider.currentLevel),
-                      ),
-                    ),
                   ),
                 ],
               ),
