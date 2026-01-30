@@ -105,6 +105,12 @@ func autoMigrate() error {
 		&model.EmojiPack{},     // 表情包套餐表
 		&model.UserEmojiPack{}, // 用户拥有的表情包关联表
 		&model.UserMemory{},
+		// 签到等级系统
+		&model.UserLevel{},    // 用户等级表
+		&model.LevelConfig{},  // 等级配置表
+		&model.UserCheckIn{},  // 用户签到记录表
+		&model.CheckInReward{}, // 签到奖励配置表
+		&model.ExpLog{},       // 经验日志表
 	)
 }
 

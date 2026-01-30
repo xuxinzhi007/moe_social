@@ -274,3 +274,29 @@ func (s *SuperServer) UpdateUserAvatar(ctx context.Context, in *super.UpdateUser
 	l := logic.NewUpdateUserAvatarLogic(ctx, s.svcCtx)
 	return l.UpdateUserAvatar(in)
 }
+
+// 签到等级相关服务
+func (s *SuperServer) CheckIn(ctx context.Context, in *super.CheckInReq) (*super.CheckInResp, error) {
+	l := logic.NewCheckInLogic(ctx, s.svcCtx)
+	return l.CheckIn(in)
+}
+
+func (s *SuperServer) GetUserLevel(ctx context.Context, in *super.GetUserLevelReq) (*super.GetUserLevelResp, error) {
+	l := logic.NewGetUserLevelLogic(ctx, s.svcCtx)
+	return l.GetUserLevel(in)
+}
+
+func (s *SuperServer) GetCheckInStatus(ctx context.Context, in *super.GetCheckInStatusReq) (*super.GetCheckInStatusResp, error) {
+	l := logic.NewGetCheckInStatusLogic(ctx, s.svcCtx)
+	return l.GetCheckInStatus(in)
+}
+
+func (s *SuperServer) GetCheckInHistory(ctx context.Context, in *super.GetCheckInHistoryReq) (*super.GetCheckInHistoryResp, error) {
+	l := logic.NewGetCheckInHistoryLogic(ctx, s.svcCtx)
+	return l.GetCheckInHistory(in)
+}
+
+func (s *SuperServer) GetExpLogs(ctx context.Context, in *super.GetExpLogsReq) (*super.GetExpLogsResp, error) {
+	l := logic.NewGetExpLogsLogic(ctx, s.svcCtx)
+	return l.GetExpLogs(in)
+}

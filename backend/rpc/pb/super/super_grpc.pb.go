@@ -67,6 +67,11 @@ const (
 	Super_CheckFollow_FullMethodName            = "/super.Super/CheckFollow"
 	Super_GetUserAvatar_FullMethodName          = "/super.Super/GetUserAvatar"
 	Super_UpdateUserAvatar_FullMethodName       = "/super.Super/UpdateUserAvatar"
+	Super_CheckIn_FullMethodName                = "/super.Super/CheckIn"
+	Super_GetUserLevel_FullMethodName           = "/super.Super/GetUserLevel"
+	Super_GetCheckInStatus_FullMethodName       = "/super.Super/GetCheckInStatus"
+	Super_GetCheckInHistory_FullMethodName      = "/super.Super/GetCheckInHistory"
+	Super_GetExpLogs_FullMethodName             = "/super.Super/GetExpLogs"
 )
 
 // SuperClient is the client API for Super service.
@@ -133,6 +138,12 @@ type SuperClient interface {
 	// 虚拟形象相关服务
 	GetUserAvatar(ctx context.Context, in *GetUserAvatarReq, opts ...grpc.CallOption) (*GetUserAvatarResp, error)
 	UpdateUserAvatar(ctx context.Context, in *UpdateUserAvatarReq, opts ...grpc.CallOption) (*UpdateUserAvatarResp, error)
+	// 签到等级相关服务
+	CheckIn(ctx context.Context, in *CheckInReq, opts ...grpc.CallOption) (*CheckInResp, error)
+	GetUserLevel(ctx context.Context, in *GetUserLevelReq, opts ...grpc.CallOption) (*GetUserLevelResp, error)
+	GetCheckInStatus(ctx context.Context, in *GetCheckInStatusReq, opts ...grpc.CallOption) (*GetCheckInStatusResp, error)
+	GetCheckInHistory(ctx context.Context, in *GetCheckInHistoryReq, opts ...grpc.CallOption) (*GetCheckInHistoryResp, error)
+	GetExpLogs(ctx context.Context, in *GetExpLogsReq, opts ...grpc.CallOption) (*GetExpLogsResp, error)
 }
 
 type superClient struct {
@@ -575,6 +586,51 @@ func (c *superClient) UpdateUserAvatar(ctx context.Context, in *UpdateUserAvatar
 	return out, nil
 }
 
+func (c *superClient) CheckIn(ctx context.Context, in *CheckInReq, opts ...grpc.CallOption) (*CheckInResp, error) {
+	out := new(CheckInResp)
+	err := c.cc.Invoke(ctx, Super_CheckIn_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) GetUserLevel(ctx context.Context, in *GetUserLevelReq, opts ...grpc.CallOption) (*GetUserLevelResp, error) {
+	out := new(GetUserLevelResp)
+	err := c.cc.Invoke(ctx, Super_GetUserLevel_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) GetCheckInStatus(ctx context.Context, in *GetCheckInStatusReq, opts ...grpc.CallOption) (*GetCheckInStatusResp, error) {
+	out := new(GetCheckInStatusResp)
+	err := c.cc.Invoke(ctx, Super_GetCheckInStatus_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) GetCheckInHistory(ctx context.Context, in *GetCheckInHistoryReq, opts ...grpc.CallOption) (*GetCheckInHistoryResp, error) {
+	out := new(GetCheckInHistoryResp)
+	err := c.cc.Invoke(ctx, Super_GetCheckInHistory_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) GetExpLogs(ctx context.Context, in *GetExpLogsReq, opts ...grpc.CallOption) (*GetExpLogsResp, error) {
+	out := new(GetExpLogsResp)
+	err := c.cc.Invoke(ctx, Super_GetExpLogs_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SuperServer is the server API for Super service.
 // All implementations must embed UnimplementedSuperServer
 // for forward compatibility
@@ -639,6 +695,12 @@ type SuperServer interface {
 	// 虚拟形象相关服务
 	GetUserAvatar(context.Context, *GetUserAvatarReq) (*GetUserAvatarResp, error)
 	UpdateUserAvatar(context.Context, *UpdateUserAvatarReq) (*UpdateUserAvatarResp, error)
+	// 签到等级相关服务
+	CheckIn(context.Context, *CheckInReq) (*CheckInResp, error)
+	GetUserLevel(context.Context, *GetUserLevelReq) (*GetUserLevelResp, error)
+	GetCheckInStatus(context.Context, *GetCheckInStatusReq) (*GetCheckInStatusResp, error)
+	GetCheckInHistory(context.Context, *GetCheckInHistoryReq) (*GetCheckInHistoryResp, error)
+	GetExpLogs(context.Context, *GetExpLogsReq) (*GetExpLogsResp, error)
 	mustEmbedUnimplementedSuperServer()
 }
 
@@ -789,6 +851,21 @@ func (UnimplementedSuperServer) GetUserAvatar(context.Context, *GetUserAvatarReq
 }
 func (UnimplementedSuperServer) UpdateUserAvatar(context.Context, *UpdateUserAvatarReq) (*UpdateUserAvatarResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateUserAvatar not implemented")
+}
+func (UnimplementedSuperServer) CheckIn(context.Context, *CheckInReq) (*CheckInResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckIn not implemented")
+}
+func (UnimplementedSuperServer) GetUserLevel(context.Context, *GetUserLevelReq) (*GetUserLevelResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserLevel not implemented")
+}
+func (UnimplementedSuperServer) GetCheckInStatus(context.Context, *GetCheckInStatusReq) (*GetCheckInStatusResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCheckInStatus not implemented")
+}
+func (UnimplementedSuperServer) GetCheckInHistory(context.Context, *GetCheckInHistoryReq) (*GetCheckInHistoryResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCheckInHistory not implemented")
+}
+func (UnimplementedSuperServer) GetExpLogs(context.Context, *GetExpLogsReq) (*GetExpLogsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetExpLogs not implemented")
 }
 func (UnimplementedSuperServer) mustEmbedUnimplementedSuperServer() {}
 
@@ -1667,6 +1744,96 @@ func _Super_UpdateUserAvatar_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Super_CheckIn_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckInReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).CheckIn(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_CheckIn_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).CheckIn(ctx, req.(*CheckInReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_GetUserLevel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserLevelReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).GetUserLevel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_GetUserLevel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).GetUserLevel(ctx, req.(*GetUserLevelReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_GetCheckInStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCheckInStatusReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).GetCheckInStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_GetCheckInStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).GetCheckInStatus(ctx, req.(*GetCheckInStatusReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_GetCheckInHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCheckInHistoryReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).GetCheckInHistory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_GetCheckInHistory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).GetCheckInHistory(ctx, req.(*GetCheckInHistoryReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_GetExpLogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetExpLogsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).GetExpLogs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_GetExpLogs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).GetExpLogs(ctx, req.(*GetExpLogsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Super_ServiceDesc is the grpc.ServiceDesc for Super service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1865,6 +2032,26 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateUserAvatar",
 			Handler:    _Super_UpdateUserAvatar_Handler,
+		},
+		{
+			MethodName: "CheckIn",
+			Handler:    _Super_CheckIn_Handler,
+		},
+		{
+			MethodName: "GetUserLevel",
+			Handler:    _Super_GetUserLevel_Handler,
+		},
+		{
+			MethodName: "GetCheckInStatus",
+			Handler:    _Super_GetCheckInStatus_Handler,
+		},
+		{
+			MethodName: "GetCheckInHistory",
+			Handler:    _Super_GetCheckInHistory_Handler,
+		},
+		{
+			MethodName: "GetExpLogs",
+			Handler:    _Super_GetExpLogs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

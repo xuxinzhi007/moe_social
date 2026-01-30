@@ -629,6 +629,13 @@ service Super {
   // 虚拟形象相关服务
   rpc GetUserAvatar(GetUserAvatarReq) returns (GetUserAvatarResp);
   rpc UpdateUserAvatar(UpdateUserAvatarReq) returns (UpdateUserAvatarResp);
+
+  // 签到等级相关服务
+  rpc CheckIn(CheckInReq) returns (CheckInResp);
+  rpc GetUserLevel(GetUserLevelReq) returns (GetUserLevelResp);
+  rpc GetCheckInStatus(GetCheckInStatusReq) returns (GetCheckInStatusResp);
+  rpc GetCheckInHistory(GetCheckInHistoryReq) returns (GetCheckInHistoryResp);
+  rpc GetExpLogs(GetExpLogsReq) returns (GetExpLogsResp);
 }
 
 // 关注相关消息
@@ -719,4 +726,90 @@ message UpdateUserAvatarReq {
 // 更新用户虚拟形象响应
 message UpdateUserAvatarResp {
   UserAvatarData avatar = 1;
+}
+
+// 签到等级相关消息
+message UserLevelInfo {
+  int32 level = 1;
+  int32 experience = 2;
+  int32 total_exp = 3;
+  int32 next_level_exp = 4;
+  string level_title = 5;
+  string badge_url = 6;
+  double progress = 7;
+}
+
+message CheckInStatus {
+  bool has_checked_today = 1;
+  int32 consecutive_days = 2;
+  int32 today_reward = 3;
+  int32 next_day_reward = 4;
+  bool can_check_in = 5;
+}
+
+message CheckInRecord {
+  string check_in_date = 1;
+  int32 consecutive_days = 2;
+  int32 exp_reward = 3;
+  bool is_special_reward = 4;
+  string special_reward_desc = 5;
+}
+
+message ExpLogRecord {
+  string id = 1;
+  int32 exp_change = 2;
+  string source = 3;
+  string description = 4;
+  string created_at = 5;
+}
+
+// 签到等级相关请求响应
+message CheckInReq {
+  string user_id = 1;
+}
+
+message CheckInResp {
+  int32 exp_gained = 1;
+  int32 new_level = 2;
+  int32 consecutive_days = 3;
+  bool level_up = 4;
+  string special_reward = 5;
+}
+
+message GetUserLevelReq {
+  string user_id = 1;
+}
+
+message GetUserLevelResp {
+  UserLevelInfo level_info = 1;
+}
+
+message GetCheckInStatusReq {
+  string user_id = 1;
+}
+
+message GetCheckInStatusResp {
+  CheckInStatus status = 1;
+}
+
+message GetCheckInHistoryReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetCheckInHistoryResp {
+  repeated CheckInRecord records = 1;
+  int32 total = 2;
+}
+
+message GetExpLogsReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetExpLogsResp {
+  repeated ExpLogRecord logs = 1;
+  int32 total = 2;
 }

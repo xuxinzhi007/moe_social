@@ -58,6 +58,39 @@ type CheckFollowResp struct {
 	Data bool `json:"data"`
 }
 
+type CheckInData struct {
+	ExpGained       int    `json:"exp_gained"`
+	NewLevel        int    `json:"new_level"`
+	ConsecutiveDays int    `json:"consecutive_days"`
+	LevelUp         bool   `json:"level_up"`
+	SpecialReward   string `json:"special_reward"`
+}
+
+type CheckInRecord struct {
+	CheckInDate       string `json:"check_in_date"`
+	ConsecutiveDays   int    `json:"consecutive_days"`
+	ExpReward         int    `json:"exp_reward"`
+	IsSpecialReward   bool   `json:"is_special_reward"`
+	SpecialRewardDesc string `json:"special_reward_desc"`
+}
+
+type CheckInReq struct {
+	UserId string `path:"user_id"`
+}
+
+type CheckInResp struct {
+	BaseResp
+	Data CheckInData `json:"data"`
+}
+
+type CheckInStatus struct {
+	HasCheckedToday bool `json:"has_checked_today"`
+	ConsecutiveDays int  `json:"consecutive_days"`
+	TodayReward     int  `json:"today_reward"`
+	NextDayReward   int  `json:"next_day_reward"`
+	CanCheckIn      bool `json:"can_check_in"`
+}
+
 type CheckUserVipReq struct {
 	UserId string `path:"user_id"`
 }
@@ -175,6 +208,14 @@ type EmptyReq struct {
 type EmptyResp struct {
 }
 
+type ExpLogRecord struct {
+	Id          string `json:"id"`
+	ExpChange   int    `json:"exp_change"`
+	Source      string `json:"source"`
+	Description string `json:"description"`
+	CreatedAt   string `json:"created_at"`
+}
+
 type FavoriteEmojiPackReq struct {
 	PackId string `path:"pack_id"`
 	UserId string `json:"user_id"`
@@ -216,6 +257,27 @@ type GetAvatarOutfitsResp struct {
 	Total int            `json:"total"`
 }
 
+type GetCheckInHistoryReq struct {
+	UserId   string `path:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type GetCheckInHistoryResp struct {
+	BaseResp
+	Data  []CheckInRecord `json:"data"`
+	Total int             `json:"total"`
+}
+
+type GetCheckInStatusReq struct {
+	UserId string `path:"user_id"`
+}
+
+type GetCheckInStatusResp struct {
+	BaseResp
+	Data CheckInStatus `json:"data"`
+}
+
 type GetEmojiPackReq struct {
 	PackId string `path:"pack_id"`
 }
@@ -235,6 +297,18 @@ type GetEmojiPacksResp struct {
 	BaseResp
 	Data  []EmojiPack `json:"data"`
 	Total int         `json:"total"`
+}
+
+type GetExpLogsReq struct {
+	UserId   string `path:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type GetExpLogsResp struct {
+	BaseResp
+	Data  []ExpLogRecord `json:"data"`
+	Total int            `json:"total"`
 }
 
 type GetFollowersReq struct {
@@ -270,18 +344,6 @@ type GetImageListResp struct {
 	BaseResp
 	Data  []ImageInfo `json:"data"`
 	Total int         `json:"total"`
-}
-
-type ImageQuota struct {
-	UsedBytes      int64 `json:"used_bytes"`
-	MaxBytes       int64 `json:"max_bytes"`
-	RemainingBytes int64 `json:"remaining_bytes"`
-	Count          int   `json:"count"`
-}
-
-type GetImageQuotaResp struct {
-	BaseResp
-	Data ImageQuota `json:"data"`
 }
 
 type GetNotificationsReq struct {
@@ -418,6 +480,15 @@ type GetUserInfoReq struct {
 type GetUserInfoResp struct {
 	BaseResp
 	Data User `json:"data"`
+}
+
+type GetUserLevelReq struct {
+	UserId string `path:"user_id"`
+}
+
+type GetUserLevelResp struct {
+	BaseResp
+	Data UserLevelInfo `json:"data"`
 }
 
 type GetUserMemoriesReq struct {
@@ -789,6 +860,16 @@ type UserAvatar struct {
 	BaseConfig    BaseConfig   `json:"base_config"`
 	CurrentOutfit OutfitConfig `json:"current_outfit"`
 	OwnedOutfits  []string     `json:"owned_outfits"`
+}
+
+type UserLevelInfo struct {
+	Level        int     `json:"level"`
+	Experience   int     `json:"experience"`
+	TotalExp     int     `json:"total_exp"`
+	NextLevelExp int     `json:"next_level_exp"`
+	LevelTitle   string  `json:"level_title"`
+	BadgeUrl     string  `json:"badge_url"`
+	Progress     float64 `json:"progress"`
 }
 
 type UserMemory struct {
