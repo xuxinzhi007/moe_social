@@ -16,6 +16,11 @@ import 'widgets/fade_in_up.dart';
 import 'following_page.dart';
 import 'followers_page.dart';
 import 'gallery/cloud_gallery_page.dart';
+import 'pages/checkin_page.dart';
+import 'pages/user_level_page.dart';
+import 'providers/checkin_provider.dart';
+import 'providers/user_level_provider.dart';
+import 'models/user_level.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -161,6 +166,11 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     const SizedBox(height: 16),
                     FadeInUp(
+                      delay: const Duration(milliseconds: 150),
+                      child: _buildUserLevelCard(),
+                    ),
+                    const SizedBox(height: 16),
+                    FadeInUp(
                       delay: const Duration(milliseconds: 200),
                       child: _buildMenuCard([
                         _MenuItem(
@@ -170,6 +180,13 @@ class _ProfilePageState extends State<ProfilePage> {
                               '已解锁 ${_userBadges.where((b) => b.isUnlocked).length} 个',
                           color: Colors.amber,
                           onTap: _showAllBadges,
+                        ),
+                        _MenuItem(
+                          icon: Icons.calendar_today_rounded,
+                          title: '每日签到',
+                          subtitle: '签到获取经验，提升等级',
+                          color: const Color(0xFF7F7FD5),
+                          onTap: () => _navigateToCheckIn(),
                         ),
                         _MenuItem(
                           icon: Icons.cloud_outlined,
@@ -908,6 +925,196 @@ class _ProfilePageState extends State<ProfilePage> {
             child: const Text('确定', style: TextStyle(color: Colors.red)),
           ),
         ],
+      ),
+    );
+  }
+  /// 构建用户等级卡片
+  Widget _buildUserLevelCard() {
+    return Consumer<UserLevelProvider>(
+      builder: (context, levelProvider, child) {
+        // 在页面加载时获取用户等级信息
+        if (levelProvider.userLevel == null && !levelProvider.isLoading) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final userId = AuthService.currentUser;
+            if (userId != null) {
+              levelProvider.loadUserLevel(userId);
+            }
+          });
+        }
+
+        if (levelProvider.isLoading) {
+          return Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF91EAE4), Color(0xFF7F7FD5)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    strokeWidth: 2,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text(
+                  '加载等级信息...',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final userLevel = levelProvider.userLevel;
+        if (userLevel == null) {
+          return const SizedBox.shrink();
+        }
+
+        return GestureDetector(
+          onTap: () => _navigateToUserLevel(),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: levelProvider.getLevelGradient(userLevel.level),
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: const Icon(
+                        Icons.star_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            userLevel.levelTitle,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Lv.${userLevel.level} • ${userLevel.experience}/${userLevel.nextLevelExp} EXP',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.white70,
+                      size: 16,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: userLevel.progress,
+                    backgroundColor: Colors.white.withOpacity(0.3),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                    minHeight: 6,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  userLevel.isMaxLevel
+                      ? '已达到最高等级！'
+                      : '距离下一级还需 ${userLevel.expToNext} 经验',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 导航到签到页面
+  void _navigateToCheckIn() {
+    final userId = AuthService.currentUser;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请先登录')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CheckInPage(userId: userId),
+      ),
+    );
+  }
+
+  /// 导航到用户等级页面
+  void _navigateToUserLevel() {
+    final userId = AuthService.currentUser;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请先登录')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UserLevelPage(userId: userId),
       ),
     );
   }
