@@ -39,6 +39,8 @@ import 'providers/theme_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/device_info_provider.dart';
 import 'providers/loading_provider.dart';
+import 'providers/checkin_provider.dart';
+import 'providers/user_level_provider.dart';
 import 'widgets/app_message_widget.dart';
 import 'services/notification_service.dart';
 import 'services/remote_control_service.dart';
@@ -180,6 +182,8 @@ void main() async {
           ChangeNotifierProvider.value(value: notificationProvider),
           ChangeNotifierProvider.value(value: deviceInfoProvider),
           ChangeNotifierProvider.value(value: loadingProvider),
+          ChangeNotifierProvider(create: (_) => CheckInProvider()),
+          ChangeNotifierProvider(create: (_) => UserLevelProvider()),
         ],
         child: const MyApp(),
       ),

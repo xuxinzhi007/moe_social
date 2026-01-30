@@ -411,7 +411,7 @@ class _CheckInPageState extends State<CheckInPage>
                   child: _buildRewardItem(
                     '明日奖励',
                     '${checkInProvider.nextDayReward} 经验',
-                    Icons.tomorrow,
+                    Icons.schedule_rounded,
                     const Color(0xFF86A8E7),
                   ),
                 ),
