@@ -9,6 +9,11 @@ import '../models/user.dart';
 import '../models/vip_plan.dart';
 import '../models/vip_order.dart';
 import '../models/vip_record.dart';
+import '../models/user_level.dart';
+import '../models/checkin_status.dart';
+import '../models/checkin_record.dart';
+import '../models/checkin_data.dart';
+import '../models/exp_log.dart';
 
 // 自定义异常类，用于传递错误信息
 class ApiException implements Exception {
@@ -1038,5 +1043,56 @@ class ApiService {
     final result =
         await _request('/api/user/$followerId/follow/$followingId/check');
     return result['data'] as bool;
+  }
+
+  // ========== 签到等级系统相关API ==========
+
+  /// 执行每日签到
+  static Future<CheckInData> checkIn(String userId) async {
+    final result = await _request('/api/user/$userId/check-in',
+        method: 'POST');
+    return CheckInData.fromJson(result['data']);
+  }
+
+  /// 获取用户等级信息
+  static Future<UserLevelInfo> getUserLevel(String userId) async {
+    final result = await _request('/api/user/$userId/level');
+    return UserLevelInfo.fromJson(result['data']);
+  }
+
+  /// 获取签到状态
+  static Future<CheckInStatus> getCheckInStatus(String userId) async {
+    final result = await _request('/api/user/$userId/check-in/status');
+    return CheckInStatus.fromJson(result['data']);
+  }
+
+  /// 获取签到历史记录
+  static Future<Map<String, dynamic>> getCheckInHistory(String userId,
+      {int page = 1, int pageSize = 20}) async {
+    final result = await _request(
+        '/api/user/$userId/check-in/history?page=$page&page_size=$pageSize');
+    final recordsJson = result['data'] as List;
+    final records = recordsJson
+        .map((json) => CheckInRecord.fromJson(json as Map<String, dynamic>))
+        .toList();
+    return {
+      'records': records,
+      'total': result['total'] as int,
+    };
+  }
+
+  /// 获取经验日志
+  static Future<Map<String, dynamic>> getExpLogs(String userId,
+      {int page = 1, int pageSize = 20}) async {
+    final result = await _request(
+        '/api/user/$userId/exp/logs?page=$page&page_size=$pageSize');
+    final logsJson = result['data'] as List;
+    final logs = logsJson
+        .map((json) => ExpLogRecord.fromJson(json as Map<String, dynamic>))
+        .toList();
+    return {
+      'logs': logs,
+      'total': result['total'] as int,
+    };
   }
 }

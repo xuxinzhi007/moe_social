@@ -18,6 +18,10 @@ type (
 	AvatarOutfitConfig         = super.AvatarOutfitConfig
 	CheckFollowReq             = super.CheckFollowReq
 	CheckFollowResp            = super.CheckFollowResp
+	CheckInRecord              = super.CheckInRecord
+	CheckInReq                 = super.CheckInReq
+	CheckInResp                = super.CheckInResp
+	CheckInStatus              = super.CheckInStatus
 	CheckUserVipReq            = super.CheckUserVipReq
 	CheckUserVipResp           = super.CheckUserVipResp
 	Comment                    = super.Comment
@@ -35,8 +39,15 @@ type (
 	DeleteUserMemoryResp       = super.DeleteUserMemoryResp
 	DeleteUserReq              = super.DeleteUserReq
 	DeleteUserResp             = super.DeleteUserResp
+	ExpLogRecord               = super.ExpLogRecord
 	FollowUserReq              = super.FollowUserReq
 	FollowUserResp             = super.FollowUserResp
+	GetCheckInHistoryReq       = super.GetCheckInHistoryReq
+	GetCheckInHistoryResp      = super.GetCheckInHistoryResp
+	GetCheckInStatusReq        = super.GetCheckInStatusReq
+	GetCheckInStatusResp       = super.GetCheckInStatusResp
+	GetExpLogsReq              = super.GetExpLogsReq
+	GetExpLogsResp             = super.GetExpLogsResp
 	GetFollowersReq            = super.GetFollowersReq
 	GetFollowersResp           = super.GetFollowersResp
 	GetFollowingsReq           = super.GetFollowingsReq
@@ -65,6 +76,8 @@ type (
 	GetUserCountResp           = super.GetUserCountResp
 	GetUserInfoReq             = super.GetUserInfoReq
 	GetUserInfoResp            = super.GetUserInfoResp
+	GetUserLevelReq            = super.GetUserLevelReq
+	GetUserLevelResp           = super.GetUserLevelResp
 	GetUserMemoriesReq         = super.GetUserMemoriesReq
 	GetUserMemoriesResp        = super.GetUserMemoriesResp
 	GetUserReq                 = super.GetUserReq
@@ -118,6 +131,7 @@ type (
 	UpsertUserMemoryResp       = super.UpsertUserMemoryResp
 	User                       = super.User
 	UserAvatarData             = super.UserAvatarData
+	UserLevelInfo              = super.UserLevelInfo
 	UserMemory                 = super.UserMemory
 	VipOrder                   = super.VipOrder
 	VipPlan                    = super.VipPlan
@@ -184,6 +198,12 @@ type (
 		// 虚拟形象相关服务
 		GetUserAvatar(ctx context.Context, in *GetUserAvatarReq, opts ...grpc.CallOption) (*GetUserAvatarResp, error)
 		UpdateUserAvatar(ctx context.Context, in *UpdateUserAvatarReq, opts ...grpc.CallOption) (*UpdateUserAvatarResp, error)
+		// 签到等级相关服务
+		CheckIn(ctx context.Context, in *CheckInReq, opts ...grpc.CallOption) (*CheckInResp, error)
+		GetUserLevel(ctx context.Context, in *GetUserLevelReq, opts ...grpc.CallOption) (*GetUserLevelResp, error)
+		GetCheckInStatus(ctx context.Context, in *GetCheckInStatusReq, opts ...grpc.CallOption) (*GetCheckInStatusResp, error)
+		GetCheckInHistory(ctx context.Context, in *GetCheckInHistoryReq, opts ...grpc.CallOption) (*GetCheckInHistoryResp, error)
+		GetExpLogs(ctx context.Context, in *GetExpLogsReq, opts ...grpc.CallOption) (*GetExpLogsResp, error)
 	}
 
 	defaultSuper struct {
@@ -447,4 +467,30 @@ func (m *defaultSuper) GetUserAvatar(ctx context.Context, in *GetUserAvatarReq, 
 func (m *defaultSuper) UpdateUserAvatar(ctx context.Context, in *UpdateUserAvatarReq, opts ...grpc.CallOption) (*UpdateUserAvatarResp, error) {
 	client := super.NewSuperClient(m.cli.Conn())
 	return client.UpdateUserAvatar(ctx, in, opts...)
+}
+
+// 签到等级相关服务
+func (m *defaultSuper) CheckIn(ctx context.Context, in *CheckInReq, opts ...grpc.CallOption) (*CheckInResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.CheckIn(ctx, in, opts...)
+}
+
+func (m *defaultSuper) GetUserLevel(ctx context.Context, in *GetUserLevelReq, opts ...grpc.CallOption) (*GetUserLevelResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.GetUserLevel(ctx, in, opts...)
+}
+
+func (m *defaultSuper) GetCheckInStatus(ctx context.Context, in *GetCheckInStatusReq, opts ...grpc.CallOption) (*GetCheckInStatusResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.GetCheckInStatus(ctx, in, opts...)
+}
+
+func (m *defaultSuper) GetCheckInHistory(ctx context.Context, in *GetCheckInHistoryReq, opts ...grpc.CallOption) (*GetCheckInHistoryResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.GetCheckInHistory(ctx, in, opts...)
+}
+
+func (m *defaultSuper) GetExpLogs(ctx context.Context, in *GetExpLogsReq, opts ...grpc.CallOption) (*GetExpLogsResp, error) {
+	client := super.NewSuperClient(m.cli.Conn())
+	return client.GetExpLogs(ctx, in, opts...)
 }

@@ -1149,3 +1149,138 @@ service Super {
 	get /api/chat/online/batch (ChatOnlineBatchReq) returns (ChatOnlineBatchResp)
 }
 
+// 签到等级相关结构
+type UserLevelInfo {
+	Level        int     `json:"level"`
+	Experience   int     `json:"experience"`
+	TotalExp     int     `json:"total_exp"`
+	NextLevelExp int     `json:"next_level_exp"`
+	LevelTitle   string  `json:"level_title"`
+	BadgeUrl     string  `json:"badge_url"`
+	Progress     float64 `json:"progress"`
+}
+
+type CheckInStatus {
+	HasCheckedToday bool `json:"has_checked_today"`
+	ConsecutiveDays int  `json:"consecutive_days"`
+	TodayReward     int  `json:"today_reward"`
+	NextDayReward   int  `json:"next_day_reward"`
+	CanCheckIn      bool `json:"can_check_in"`
+}
+
+type CheckInRecord {
+	CheckInDate       string `json:"check_in_date"`
+	ConsecutiveDays   int    `json:"consecutive_days"`
+	ExpReward         int    `json:"exp_reward"`
+	IsSpecialReward   bool   `json:"is_special_reward"`
+	SpecialRewardDesc string `json:"special_reward_desc"`
+}
+
+type ExpLogRecord {
+	Id          string `json:"id"`
+	ExpChange   int    `json:"exp_change"`
+	Source      string `json:"source"`
+	Description string `json:"description"`
+	CreatedAt   string `json:"created_at"`
+}
+
+// 签到等级相关请求
+type CheckInReq {
+	UserId string `path:"user_id"`
+}
+
+type GetUserLevelReq {
+	UserId string `path:"user_id"`
+}
+
+type GetCheckInStatusReq {
+	UserId string `path:"user_id"`
+}
+
+type GetCheckInHistoryReq {
+	UserId   string `path:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type GetExpLogsReq {
+	UserId   string `path:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+// 签到等级相关响应
+type CheckInData {
+	ExpGained       int    `json:"exp_gained"`
+	NewLevel        int    `json:"new_level"`
+	ConsecutiveDays int    `json:"consecutive_days"`
+	LevelUp         bool   `json:"level_up"`
+	SpecialReward   string `json:"special_reward"`
+}
+
+type CheckInResp {
+	BaseResp
+	Data CheckInData `json:"data"`
+}
+
+type GetUserLevelResp {
+	BaseResp
+	Data UserLevelInfo `json:"data"`
+}
+
+type GetCheckInStatusResp {
+	BaseResp
+	Data CheckInStatus `json:"data"`
+}
+
+type GetCheckInHistoryResp {
+	BaseResp
+	Data  []CheckInRecord `json:"data"`
+	Total int             `json:"total"`
+}
+
+type GetExpLogsResp {
+	BaseResp
+	Data  []ExpLogRecord `json:"data"`
+	Total int            `json:"total"`
+}
+
+// 签到等级相关API服务
+@server (
+	group: checkin
+)
+service Super {
+	@handler checkIn
+	post /api/user/:user_id/check-in (CheckInReq) returns (CheckInResp)
+
+	@handler getUserLevel
+	get /api/user/:user_id/level (GetUserLevelReq) returns (GetUserLevelResp)
+
+	@handler getCheckInStatus
+	get /api/user/:user_id/check-in/status (GetCheckInStatusReq) returns (GetCheckInStatusResp)
+
+	@handler getCheckInHistory
+	get /api/user/:user_id/check-in/history (GetCheckInHistoryReq) returns (GetCheckInHistoryResp)
+
+	@handler getExpLogs
+	get /api/user/:user_id/exp/logs (GetExpLogsReq) returns (GetExpLogsResp)
+}
+
+// WebSocket 服务组 (不使用JWT middleware，在handler内部验证token)
+@server (
+	group: chat
+)
+service Super {
+	@doc "WebSocket聊天服务"
+	@handler ChatWs
+	get /ws/chat
+
+	@doc "WebSocket远程控制服务"
+	@handler RemoteWs
+	get /ws/remote
+
+	@doc "WebSocket在线状态服务"
+	@handler PresenceWs
+	get /ws/presence
+}
+
