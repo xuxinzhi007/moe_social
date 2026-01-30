@@ -115,7 +115,7 @@ class _UserLevelPageState extends State<UserLevelPage>
   /// 构建应用栏
   Widget _buildAppBar(BuildContext context, UserLevelProvider levelProvider) {
     return SliverAppBar(
-      expandedHeight: 180,
+      expandedHeight: 220,
       floating: true,
       pinned: true,
       elevation: 0,
@@ -141,7 +141,7 @@ class _UserLevelPageState extends State<UserLevelPage>
           ),
           centerTitle: true,
           background: Container(
-            padding: const EdgeInsets.only(top: 100),
+            padding: const EdgeInsets.only(top: 90),
             child: Column(
               children: [
                 AnimatedBuilder(

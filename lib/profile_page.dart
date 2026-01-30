@@ -125,7 +125,7 @@ class _ProfilePageState extends State<ProfilePage> {
           physics: const BouncingScrollPhysics(),
           slivers: [
             SliverAppBar(
-              expandedHeight: 460.0,
+              expandedHeight: 520.0,
               pinned: true,
               stretch: true,
               backgroundColor: const Color(0xFF7F7FD5),
@@ -164,11 +164,6 @@ class _ProfilePageState extends State<ProfilePage> {
                         delay: const Duration(milliseconds: 100),
                         child: _buildVipCard(),
                       ),
-                    const SizedBox(height: 16),
-                    FadeInUp(
-                      delay: const Duration(milliseconds: 150),
-                      child: _buildUserLevelCard(),
-                    ),
                     const SizedBox(height: 16),
                     FadeInUp(
                       delay: const Duration(milliseconds: 200),
@@ -462,6 +457,116 @@ class _ProfilePageState extends State<ProfilePage> {
                       }),
                     ],
                   ),
+                ),
+
+                // 用户等级信息
+                Consumer<UserLevelProvider>(
+                  builder: (context, levelProvider, child) {
+                    // 在页面加载时获取用户等级信息
+                    if (levelProvider.userLevel == null && !levelProvider.isLoading) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        final userId = AuthService.currentUser;
+                        if (userId != null) {
+                          levelProvider.loadUserLevel(userId);
+                        }
+                      });
+                    }
+
+                    if (levelProvider.userLevel != null) {
+                      final userLevel = levelProvider.userLevel!;
+                      return Column(
+                        children: [
+                          const SizedBox(height: 16),
+                          GestureDetector(
+                            onTap: () => _navigateToUserLevel(),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 32),
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: levelProvider.getLevelGradient(userLevel.level),
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.star_rounded,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          userLevel.levelTitle,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Lv.${userLevel.level} • ${userLevel.experience}/${userLevel.nextLevelExp} EXP',
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    color: Colors.white70,
+                                    size: 12,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          // 进度条
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 32),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: LinearProgressIndicator(
+                                value: userLevel.progress,
+                                backgroundColor: Colors.white.withOpacity(0.2),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  levelProvider.getLevelGradient(userLevel.level)[0],
+                                ),
+                                minHeight: 4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
                 ),
 
                 // 徽章展示区域
@@ -926,160 +1031,6 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ],
       ),
-    );
-  }
-  /// 构建用户等级卡片
-  Widget _buildUserLevelCard() {
-    return Consumer<UserLevelProvider>(
-      builder: (context, levelProvider, child) {
-        // 在页面加载时获取用户等级信息
-        if (levelProvider.userLevel == null && !levelProvider.isLoading) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            final userId = AuthService.currentUser;
-            if (userId != null) {
-              levelProvider.loadUserLevel(userId);
-            }
-          });
-        }
-
-        if (levelProvider.isLoading) {
-          return Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF91EAE4), Color(0xFF7F7FD5)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    strokeWidth: 2,
-                  ),
-                ),
-                SizedBox(width: 12),
-                Text(
-                  '加载等级信息...',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        final userLevel = levelProvider.userLevel;
-        if (userLevel == null) {
-          return const SizedBox.shrink();
-        }
-
-        return GestureDetector(
-          onTap: () => _navigateToUserLevel(),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: levelProvider.getLevelGradient(userLevel.level),
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: const Icon(
-                        Icons.star_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            userLevel.levelTitle,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            'Lv.${userLevel.level} • ${userLevel.experience}/${userLevel.nextLevelExp} EXP',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      color: Colors.white70,
-                      size: 16,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: userLevel.progress,
-                    backgroundColor: Colors.white.withOpacity(0.3),
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                    minHeight: 6,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  userLevel.isMaxLevel
-                      ? '已达到最高等级！'
-                      : '距离下一级还需 ${userLevel.expToNext} 经验',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 
