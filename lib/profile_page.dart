@@ -13,14 +13,10 @@ import 'widgets/dynamic_avatar.dart';
 import 'widgets/achievement_badge_display.dart';
 import 'wallet_page.dart';
 import 'widgets/fade_in_up.dart';
-import 'following_page.dart';
-import 'followers_page.dart';
 import 'gallery/cloud_gallery_page.dart';
 import 'pages/checkin_page.dart';
 import 'pages/user_level_page.dart';
-import 'providers/checkin_provider.dart';
 import 'providers/user_level_provider.dart';
-import 'models/user_level.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -33,6 +29,7 @@ class _ProfilePageState extends State<ProfilePage> {
   User? _user;
   Map<String, dynamic>? _vipStatus;
   bool _isLoading = true;
+  bool _isLoadingDetails = false; // 用于跟踪详细信息加载状态
   bool _isVip = false;
   int _postCount = 0;
   int _followingCount = 0;
@@ -48,73 +45,174 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _loadUserInfo() async {
     final userId = AuthService.currentUser;
-    if (userId == null) return;
+    if (userId == null) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      return;
+    }
 
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // 获取关注数和粉丝数
-      final followingCount =
-          await ApiService.getFollowings(userId, page: 1, pageSize: 1)
-              .then((result) => result['total'] as int)
-              .catchError((_) => 0);
-      final followerCount =
-          await ApiService.getFollowers(userId, page: 1, pageSize: 1)
-              .then((result) => result['total'] as int)
-              .catchError((_) => 0);
-
-      final futures = await Future.wait([
-        ApiService.getUserInfo(userId),
-        ApiService.getUserVipStatus(userId)
-            .catchError((_) => <String, dynamic>{}),
-        ApiService.getPosts(page: 1, pageSize: 100).then((result) {
-          final posts = result['posts'] as List<Post>;
-          return posts
-              .where((p) => p.userId.toString() == userId.toString())
-              .length;
-        }).catchError((_) => 0),
-      ]);
-
-      final user = futures[0] as User;
-      final vipStatus = futures[1] as Map<String, dynamic>;
-      final postCount = futures[2] as int;
-
-      bool isVip = vipStatus['is_vip'] as bool? ?? false;
-
-      // 加载用户徽章
-      final userBadges = _achievementService.getUserBadges(userId);
+      // 优化：分批加载，核心信息优先
+      // 第一阶段：加载核心用户信息（最重要，最快）
+      final user = await ApiService.getUserInfo(userId)
+          .timeout(const Duration(seconds: 8));
 
       if (mounted) {
         setState(() {
           _user = user;
+          _isLoading = false; // 基本信息已加载，可以显示页面
+          _isLoadingDetails = true; // 开始加载详细信息
+        });
+      }
+
+      // 第二阶段：并行加载其他信息，但设置合理超时
+      final results = await Future.wait([
+        // VIP状态
+        ApiService.getUserVipStatus(userId)
+            .timeout(const Duration(seconds: 5))
+            .catchError((_) => <String, dynamic>{}),
+
+        // 关注数（限制为只获取总数，不获取具体列表）
+        _getFollowingCount(userId),
+
+        // 粉丝数（限制为只获取总数）
+        _getFollowerCount(userId),
+
+        // 帖子数量（优化：应该从用户信息API获取，而不是获取所有帖子）
+        _getUserPostCount(userId),
+      ]);
+
+      final vipStatus = results[0] as Map<String, dynamic>;
+      final followingCount = results[1] as int;
+      final followerCount = results[2] as int;
+      final postCount = results[3] as int;
+
+      bool isVip = vipStatus['is_vip'] as bool? ?? false;
+
+      // 第三阶段：加载用户徽章和等级信息（非关键信息，可以后加载）
+      final userBadges = _achievementService.getUserBadges(userId);
+
+      // 预先触发用户等级加载，避免在UI构建时才开始请求
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          final levelProvider = context.read<UserLevelProvider>();
+          if (levelProvider.userLevel == null && !levelProvider.isLoading) {
+            levelProvider.loadUserLevel(userId);
+          }
+        }
+      });
+
+      if (mounted) {
+        setState(() {
           _vipStatus = vipStatus;
           _isVip = isVip;
           _postCount = postCount;
           _followingCount = followingCount;
           _followerCount = followerCount;
           _userBadges = userBadges;
-          _isLoading = false;
+          _isLoadingDetails = false; // 详细信息加载完成
         });
       }
     } catch (e) {
+      print('Profile loading error: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _isLoadingDetails = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加载用户信息失败: $e')),
+          SnackBar(
+            content: Text('加载个人信息失败，请检查网络连接'),
+            action: SnackBarAction(
+              label: '重试',
+              onPressed: _loadUserInfo,
+            ),
+          ),
         );
       }
     }
   }
 
+  /// 优化：获取关注数量
+  Future<int> _getFollowingCount(String userId) async {
+    try {
+      final result = await ApiService.getFollowings(userId, page: 1, pageSize: 1)
+          .timeout(const Duration(seconds: 5));
+      return result['total'] as int? ?? 0;
+    } catch (e) {
+      return 0; // 失败时返回0，不影响页面显示
+    }
+  }
+
+  /// 优化：获取粉丝数量
+  Future<int> _getFollowerCount(String userId) async {
+    try {
+      final result = await ApiService.getFollowers(userId, page: 1, pageSize: 1)
+          .timeout(const Duration(seconds: 5));
+      return result['total'] as int? ?? 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  /// 优化：获取用户帖子数量
+  Future<int> _getUserPostCount(String userId) async {
+    try {
+      // TODO: 应该添加专门的API获取用户帖子数量
+      // 临时方案：获取较少的帖子进行过滤，减少网络传输
+      final result = await ApiService.getPosts(page: 1, pageSize: 20)
+          .timeout(const Duration(seconds: 8));
+      final posts = result['posts'] as List<Post>;
+
+      // 这里仍然是客户端过滤，但至少减少了数据量
+      // 最佳方案是后端提供专门的用户帖子计数API
+      return posts
+          .where((p) => p.userId.toString() == userId.toString())
+          .length;
+    } catch (e) {
+      return 0; // 失败时返回0，不影响页面显示
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+    if (_isLoading && _user == null) {
+      // 完全加载状态：显示更友好的加载界面
+      return Scaffold(
+        backgroundColor: const Color(0xFFF5F7FA),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(
+                color: Color(0xFF7F7FD5),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '正在加载个人信息...',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '首次加载可能需要几秒钟',
+                style: TextStyle(
+                  color: Colors.grey[500],
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -130,9 +228,25 @@ class _ProfilePageState extends State<ProfilePage> {
               stretch: true,
               backgroundColor: const Color(0xFF7F7FD5),
               elevation: 0,
-              title: const Text('个人中心',
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
+              title: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('个人中心',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
+                  if (_isLoadingDetails) ...[
+                    const SizedBox(width: 8),
+                    const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
               centerTitle: true,
               actions: [
                 IconButton(

@@ -615,6 +615,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
                     width: 56,
                     height: 56,
                     child: FloatingActionButton(
+                      heroTag: "execute_button",
                       onPressed: _isProcessing ? _stopTask : _executeCurrentTask,
                       backgroundColor: _isProcessing
                           ? Colors.red
@@ -642,6 +643,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
       children: [
         if (_isProcessing)
           FloatingActionButton(
+            heroTag: "pause_button",
             mini: true,
             onPressed: _pauseTask,
             backgroundColor: Colors.orange,
@@ -650,6 +652,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
           ),
         const SizedBox(height: 8),
         FloatingActionButton(
+          heroTag: "quick_actions_button",
           onPressed: _showQuickActions,
           backgroundColor: const Color(0xFF86A8E7),
           child: const Icon(Icons.apps, color: Colors.white),
