@@ -23,6 +23,7 @@ class AppConfig {
 
   /// 默认配置值
   static const String defaultApiUrl = 'https://api-inference.modelscope.cn/v1/chat/completions';
+  static const String defaultApiKey = 'ms-fa33637f-6572-4170-82b1-95f458fe9e7b';
   static const String defaultModelName = 'ZhipuAI/AutoGLM-Phone-9B';
   static const int defaultMaxSteps = 20;
   static const int defaultStepTimeoutSeconds = 30;
@@ -44,9 +45,9 @@ class AppConfig {
 
   static Future<String> getApiKey() async {
     try {
-      return await _secureStorage.read(key: _keyApiKey) ?? '';
+      return await _secureStorage.read(key: _keyApiKey) ?? defaultApiKey;
     } catch (e) {
-      return '';
+      return defaultApiKey;
     }
   }
 

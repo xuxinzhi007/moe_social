@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dio/dio.dart';
 import '../config/app_config.dart';
 import '../services/enhanced_logger.dart';
 import '../widgets/fade_in_up.dart';
@@ -31,10 +32,10 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
 
   final List<String> _logLevels = ['debug', 'info', 'warn', 'error', 'critical'];
   final List<String> _presetModels = [
-    'ZhipuAI/AutoGLM-Phone-9B',
+    'ZhipuAI/AutoGLM-Phone-9B',  // 默认推荐模型
     'ZhipuAI/AutoGLM-Web-6B',
-    'OpenAI/GPT-4V',
-    'Claude/Claude-3-Vision',
+    'qwen-vl-max',
+    'glm-4v',
   ];
 
   @override
@@ -158,6 +159,8 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSectionTitle('🌐 API 配置', '配置AI模型服务接口'),
+            const SizedBox(height: 12),
+            _buildConfigTip(),
             const SizedBox(height: 16),
             _buildApiUrlField(),
             const SizedBox(height: 16),
@@ -302,8 +305,8 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
       controller: _apiKeyController,
       obscureText: _obscureApiKey,
       decoration: InputDecoration(
-        labelText: 'API 密钥 *',
-        hintText: '请输入 API 密钥',
+        labelText: 'API 密钥',
+        hintText: '已有默认密钥，如需使用自己的密钥请替换',
         prefixIcon: Icon(Icons.key, color: Color(0xFF7F7FD5)),
         suffixIcon: Row(
           mainAxisSize: MainAxisSize.min,
@@ -327,10 +330,8 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
         fillColor: Colors.grey[50],
       ),
       validator: (value) {
-        if (value == null || value.isEmpty) {
-          return '请输入API密钥';
-        }
-        if (value.length < 20) {
+        // 如果有输入值，验证格式
+        if (value != null && value.isNotEmpty && value.length < 20) {
           return 'API密钥长度不足';
         }
         return null;
@@ -641,23 +642,95 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
   }
 
   Future<void> _testConnection() async {
-    if (!await AppConfig.validateApiConfig()) {
-      _showSnackBar('请先配置有效的API地址和密钥', isError: true);
+    // 使用当前输入框的值进行测试，如果为空则使用默认值
+    final apiUrl = _apiUrlController.text.trim().isNotEmpty
+        ? _apiUrlController.text.trim()
+        : await AppConfig.getApiUrl();
+    final apiKey = _apiKeyController.text.trim().isNotEmpty
+        ? _apiKeyController.text.trim()
+        : await AppConfig.getApiKey();
+    final modelName = _modelNameController.text.trim().isNotEmpty
+        ? _modelNameController.text.trim()
+        : await AppConfig.getModelName();
+
+    if (apiUrl.isEmpty) {
+      _showSnackBar('API地址不能为空', isError: true);
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      // 这里应该实际调用API测试连接
-      // 为了演示，我们模拟一个延迟
-      await Future.delayed(const Duration(seconds: 2));
+      _logger.info('开始测试API连接...',
+        metadata: {'apiUrl': apiUrl, 'modelName': modelName},
+        category: LogCategory.network);
 
-      _logger.info('API连接测试成功', category: LogCategory.network);
-      _showSnackBar('API连接测试成功！');
+      // 构建测试请求
+      final dio = Dio();
+      dio.options.connectTimeout = const Duration(seconds: 10);
+      dio.options.receiveTimeout = const Duration(seconds: 30);
+
+      final testRequest = {
+        'model': modelName,
+        'messages': [
+          {
+            'role': 'user',
+            'content': 'Hello, this is a connection test. Please respond with "Connection OK".'
+          }
+        ],
+        'max_tokens': 20,
+        'temperature': 0.1,
+      };
+
+      final response = await dio.post(
+        apiUrl,
+        data: testRequest,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $apiKey',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        final content = responseData['choices']?[0]?['message']?['content'];
+
+        _logger.info('API连接测试成功',
+          metadata: {'response': content},
+          category: LogCategory.network);
+        _showSnackBar('API连接测试成功！✅\n模型响应：$content');
+      } else {
+        throw Exception('API返回错误状态码: ${response.statusCode}');
+      }
+
     } catch (e) {
-      _logger.error('API连接测试失败: $e', category: LogCategory.network);
-      _showSnackBar('连接测试失败: $e', isError: true);
+      String errorMessage = e.toString();
+
+      // 解析常见的错误类型
+      if (errorMessage.contains('DioException') || errorMessage.contains('DioError')) {
+        if (errorMessage.contains('CONNECT_TIMEOUT')) {
+          errorMessage = '连接超时，请检查网络或API地址是否正确';
+        } else if (errorMessage.contains('RECEIVE_TIMEOUT')) {
+          errorMessage = '请求超时，API服务响应较慢';
+        } else if (errorMessage.contains('404')) {
+          errorMessage = 'API地址不存在 (404)，请检查URL是否正确';
+        } else if (errorMessage.contains('401')) {
+          errorMessage = 'API密钥无效或已过期 (401)';
+        } else if (errorMessage.contains('403')) {
+          errorMessage = '访问被拒绝 (403)，请检查API权限';
+        } else if (errorMessage.contains('429')) {
+          errorMessage = '请求频率过高 (429)，请稍后再试';
+        } else if (errorMessage.contains('500')) {
+          errorMessage = 'API服务器内部错误 (500)';
+        } else if (errorMessage.contains('CONNECTION_ERROR')) {
+          errorMessage = '网络连接失败，请检查网络设置';
+        }
+      }
+
+      _logger.error('API连接测试失败: $errorMessage', category: LogCategory.network);
+      _showSnackBar('连接测试失败 ❌\n$errorMessage', isError: true);
     } finally {
       setState(() => _isLoading = false);
     }
@@ -674,9 +747,12 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text('🌐 API 配置', style: TextStyle(fontWeight: FontWeight.bold)),
-              Text('• API地址：AI服务的接口地址'),
-              Text('• API密钥：用于身份验证的密钥'),
-              Text('• 模型名称：使用的AI模型标识'),
+              Text('• API地址：默认使用 ModelScope 推理服务'),
+              Text('• API密钥：已提供默认密钥，可直接使用或替换为您的密钥'),
+              Text('• 模型名称：推荐使用 ZhipuAI/AutoGLM-Phone-9B'),
+              SizedBox(height: 12),
+              Text('💡 开箱即用：默认配置已就绪，点击"测试连接"即可开始使用',
+                   style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w500)),
               SizedBox(height: 16),
               Text('⚙️ 任务配置', style: TextStyle(fontWeight: FontWeight.bold)),
               Text('• 最大步数：单个任务的最大执行步骤'),
@@ -813,6 +889,40 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
           textColor: Colors.white,
           onPressed: () {},
         ),
+      ),
+    );
+  }
+
+  Widget _buildConfigTip() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF7F7FD5).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: const Color(0xFF7F7FD5).withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.lightbulb_outline,
+            color: const Color(0xFF7F7FD5),
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '💡 开箱即用：已配置默认密钥，可直接使用。如需使用自己的密钥，请替换即可',
+              style: TextStyle(
+                fontSize: 13,
+                color: const Color(0xFF7F7FD5),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
