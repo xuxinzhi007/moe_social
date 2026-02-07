@@ -15,7 +15,7 @@ import geolocator_apple
 import iris_method_channel
 import network_info_plus
 import package_info_plus
-import shared_preferences_foundation
+import shared_preferences_macos
 import speech_to_text
 import sqflite_darwin
 import url_launcher_macos

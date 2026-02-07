@@ -298,13 +298,6 @@ class _ProfilePageState extends State<ProfilePage> {
                           onTap: () => _navigateToCheckIn(),
                         ),
                         _MenuItem(
-                          icon: Icons.auto_awesome_rounded,
-                          title: 'AutoGLM 助手',
-                          subtitle: 'AI智能操作助手',
-                          color: const Color(0xFF91EAE4),
-                          onTap: () => _navigateToAutoGLM(),
-                        ),
-                        _MenuItem(
                           icon: Icons.cloud_outlined,
                           title: '云端图库',
                           subtitle: '上传/管理你的图片云盘',
@@ -368,7 +361,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         _MenuItem(
                           icon: Icons.smart_toy_outlined,
-                          title: 'AutoGLM 助手 (实验性)',
+                          title: 'AutoGLM 助手',
                           color: Colors.indigoAccent,
                           onTap: () {
                             Navigator.push(

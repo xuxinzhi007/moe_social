@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:convert';
 // import '../config/app_config.dart'; // AI服务内部已使用
@@ -8,6 +8,7 @@ import '../services/enhanced_logger.dart';
 import '../services/task_execution_engine.dart';
 import '../services/ai_inference_service.dart';
 import '../widgets/fade_in_up.dart';
+import '../autoglm/autoglm_service.dart';
 import 'autoglm_config_page.dart';
 
 class AutoGLMPage extends StatefulWidget {
@@ -17,7 +18,7 @@ class AutoGLMPage extends StatefulWidget {
   _AutoGLMPageState createState() => _AutoGLMPageState();
 }
 
-class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin {
+class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin, WidgetsBindingObserver {
   final _logger = EnhancedLogger();
   final _executionEngine = EnhancedExecutionEngine();
 
@@ -26,6 +27,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
 
   bool _isProcessing = false;
   bool _isAccessibilityServiceConnected = false;
+  bool _hasShownAccessibilityHint = false;
   String? _currentTraceId;
   ExecutionPlan? _currentPlan;
   int _currentStep = 0;
@@ -52,7 +54,8 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
   void initState() {
     super.initState();
     _initializeAnimations();
-    _checkAccessibilityService();
+    WidgetsBinding.instance.addObserver(this);
+    _checkAccessibilityService(showDialogIfDisabled: true);
     _setupLogListener();
     _initializeAIService();
   }
@@ -108,9 +111,8 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
     });
   }
 
-  Future<void> _checkAccessibilityService() async {
+  Future<void> _checkAccessibilityService({bool showDialogIfDisabled = false}) async {
     if (kIsWeb) {
-      // Web端不支持无障碍服务，设置为已连接以便测试UI
       if (mounted) {
         setState(() {
           _isAccessibilityServiceConnected = true;
@@ -121,11 +123,10 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
     }
 
     try {
-      const channel = MethodChannel('com.moe_social/autoglm');
-      final result = await channel.invokeMethod('checkAccessibilityService');
+      final result = await AutoGLMService.checkServiceStatus();
       if (mounted) {
         setState(() {
-          _isAccessibilityServiceConnected = result == true;
+          _isAccessibilityServiceConnected = result;
         });
       }
 
@@ -133,6 +134,10 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
         _logger.info('无障碍服务已连接', category: LogCategory.system);
       } else {
         _logger.warn('无障碍服务未连接，部分功能将不可用', category: LogCategory.system);
+        if (showDialogIfDisabled && !_hasShownAccessibilityHint && mounted) {
+          _hasShownAccessibilityHint = true;
+          _showAccessibilityDialog();
+        }
       }
     } catch (e) {
       _logger.error('检查无障碍服务失败: $e', category: LogCategory.system);
@@ -141,6 +146,36 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
           _isAccessibilityServiceConnected = false;
         });
       }
+    }
+  }
+
+  void _showAccessibilityDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('需要开启无障碍服务'),
+        content: const Text('请在系统设置中开启 Moe Social 助手无障碍服务，以便 AutoGLM 正常工作。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('稍后再说'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _openAccessibilitySettings();
+            },
+            child: const Text('前往开启'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkAccessibilityService();
     }
   }
 
@@ -199,32 +234,34 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
   Widget _buildStatusCard() {
     return FadeInUp(
       delay: const Duration(milliseconds: 100),
-      child: Container(
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              _isAccessibilityServiceConnected
-                  ? const Color(0xFF91EAE4)
-                  : Colors.orange,
-              _isAccessibilityServiceConnected
-                  ? const Color(0xFF7F7FD5)
-                  : Colors.deepOrange,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
+      child: GestureDetector(
+        onTap: _isAccessibilityServiceConnected ? null : _openAccessibilitySettings,
+        child: Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                _isAccessibilityServiceConnected
+                    ? const Color(0xFF91EAE4)
+                    : Colors.orange,
+                _isAccessibilityServiceConnected
+                    ? const Color(0xFF7F7FD5)
+                    : Colors.deepOrange,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-          ],
-        ),
-        child: Row(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
           children: [
             AnimatedBuilder(
               animation: _pulseAnimation,
@@ -312,6 +349,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
                 child: const Text('设置'),
               ),
           ],
+          ),
         ),
       ),
     );
@@ -673,6 +711,10 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
   Future<void> _executeTask(String command) async {
     if (!_isAccessibilityServiceConnected && !kIsWeb) {
       _logger.warn('无障碍服务未连接，无法执行任务', category: LogCategory.system);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请先在系统设置中启用 Moe Social 助手无障碍服务')),
+      );
+      _openAccessibilitySettings();
       return;
     }
 
@@ -796,8 +838,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
 
   Future<String> _getCurrentScreenshot() async {
     try {
-      const channel = MethodChannel('com.moe_social/autoglm');
-      final screenshot = await channel.invokeMethod('takeScreenshot');
+      final screenshot = await AutoGLMService.getScreenshot();
       return screenshot ?? '';
     } catch (e) {
       _logger.warn('获取截图失败: $e', category: LogCategory.device);
@@ -836,9 +877,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
   }
 
   void _openAccessibilitySettings() {
-    // 打开无障碍服务设置
-    const channel = MethodChannel('com.moe_social/autoglm');
-    channel.invokeMethod('openAccessibilitySettings');
+    AutoGLMService.openAccessibilitySettings();
   }
 
   void _showAnalytics() {
@@ -951,16 +990,23 @@ class _AutoGLMPageState extends State<AutoGLMPage> with TickerProviderStateMixin
     );
   }
 
-  void _handleQuickAction(String action) {
+  void _handleQuickAction(String action) async {
     switch (action) {
       case 'screenshot':
-        _executeTask('截取当前屏幕');
+        final screenshot = await _getCurrentScreenshot();
+        if (screenshot.isNotEmpty) {
+          _logger.info('已截取当前屏幕', category: LogCategory.device);
+        } else {
+          _logger.warn('截图失败', category: LogCategory.device);
+        }
         break;
       case 'home':
-        _executeTask('返回桌面');
+        await AutoGLMService.performHome();
+        _logger.info('已发送返回桌面指令', category: LogCategory.device);
         break;
       case 'back':
-        _executeTask('返回上一级');
+        await AutoGLMService.performBack();
+        _logger.info('已发送返回上级指令', category: LogCategory.device);
         break;
       case 'restart_service':
         _restartService();

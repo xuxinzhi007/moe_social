@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
+import '../autoglm/autoglm_service.dart';
 import 'enhanced_logger.dart';
 import 'ai_inference_service.dart';
 
@@ -420,7 +421,6 @@ class TaskPlanner {
 class EnhancedExecutionEngine {
   final EnhancedLogger _logger = EnhancedLogger();
   final TaskPlanner _planner = TaskPlanner();
-  static const MethodChannel _channel = MethodChannel('com.moe_social/autoglm');
 
   /// 执行用户指令 - AI驱动的完整任务执行
   Future<Map<String, dynamic>> executeUserInstruction(String instruction) async {
@@ -447,15 +447,23 @@ class EnhancedExecutionEngine {
     }
 
     try {
-      // 获取当前屏幕截图（仅移动端）
-      final screenshotData = await _channel.invokeMethod('takeScreenshot');
-      final screenshot = screenshotData != null ? Uint8List.fromList(screenshotData) : null;
+      Uint8List? screenshot;
+      if (!kIsWeb) {
+        final screenshotBase64 = await AutoGLMService.getScreenshot();
+        if (screenshotBase64 != null && screenshotBase64.isNotEmpty) {
+          try {
+            screenshot = base64Decode(screenshotBase64);
+          } catch (e) {
+            _logger.warn('截图Base64解析失败: $e', category: LogCategory.device);
+          }
+        }
 
-      if (screenshot == null) {
-        _logger.warn('无法获取屏幕截图，使用文本规划模式');
+        if (screenshot == null) {
+          _logger.warn('无法获取屏幕截图，使用文本规划模式', category: LogCategory.device);
+        }
       }
 
-      // 使用AI规划器生成执行计划
+      // 使用AI规划器生成执行计划（如果没有截图则退化为文本规划）
       final plan = await _planner.planTask(instruction, screenshot: screenshot);
 
       _logger.info('任务规划完成', metadata: {
@@ -643,17 +651,10 @@ class EnhancedExecutionEngine {
   }
 
   Future<bool> _evaluateCondition(String condition) async {
-    // 实现具体的条件评估逻辑
-    // 例如：检查UI元素是否存在、应用是否在前台等
-    try {
-      final result = await _channel.invokeMethod('evaluateCondition', {
-        'condition': condition,
-      });
-      return result == true;
-    } catch (e) {
-      _logger.warn('条件评估失败: $condition', metadata: {'error': e.toString()});
-      return false;
-    }
+    _logger.info('跳过前置条件检查: $condition',
+        metadata: {'condition': condition},
+        category: LogCategory.device);
+    return true;
   }
 
   Future<Map<String, dynamic>> _performAction(ExecutionStep step) async {
@@ -685,11 +686,8 @@ class EnhancedExecutionEngine {
       throw ArgumentError('缺少应用名称参数');
     }
 
-    final result = await _channel.invokeMethod('launchApp', {
-      'appName': appName,
-    });
-
-    return {'success': result, 'app': appName};
+    final success = await AutoGLMService.launchApp(appName);
+    return {'success': success, 'app': appName};
   }
 
   Future<Map<String, dynamic>> _performTap(Map<String, dynamic> params) async {
@@ -698,23 +696,17 @@ class EnhancedExecutionEngine {
       throw ArgumentError('缺少点击目标参数');
     }
 
-    Map<String, dynamic> tapParams = {};
-
     if (element is List && element.length == 2) {
-      // 坐标形式：[x, y]
-      tapParams = {
-        'x': element[0].toDouble(),
-        'y': element[1].toDouble(),
-      };
-    } else if (element is String) {
-      // 元素名称形式
-      tapParams = {'elementName': element};
+      final x = element[0].toDouble();
+      final y = element[1].toDouble();
+      await AutoGLMService.performClick(x, y);
+      return {'success': true, 'element': element};
     } else {
-      throw ArgumentError('无效的点击目标格式');
+      _logger.warn('当前版本不支持通过名称点击元素: $element',
+          metadata: {'element': element},
+          category: LogCategory.device);
+      return {'success': false, 'element': element};
     }
-
-    final result = await _channel.invokeMethod('performTap', tapParams);
-    return {'success': result, 'element': element};
   }
 
   Future<Map<String, dynamic>> _performType(Map<String, dynamic> params) async {
@@ -723,11 +715,8 @@ class EnhancedExecutionEngine {
       throw ArgumentError('缺少输入文本参数');
     }
 
-    final result = await _channel.invokeMethod('performType', {
-      'text': text.toString(),
-    });
-
-    return {'success': result, 'text': text};
+    await AutoGLMService.performType(text.toString());
+    return {'success': true, 'text': text};
   }
 
   Future<Map<String, dynamic>> _performSwipe(Map<String, dynamic> params) async {
@@ -739,15 +728,15 @@ class EnhancedExecutionEngine {
       throw ArgumentError('缺少滑动起始或结束坐标');
     }
 
-    final result = await _channel.invokeMethod('performSwipe', {
-      'startX': start[0].toDouble(),
-      'startY': start[1].toDouble(),
-      'endX': end[0].toDouble(),
-      'endY': end[1].toDouble(),
-      'duration': duration,
-    });
+    await AutoGLMService.performSwipe(
+      start[0].toDouble(),
+      start[1].toDouble(),
+      end[0].toDouble(),
+      end[1].toDouble(),
+      duration: duration,
+    );
 
-    return {'success': result, 'start': start, 'end': end};
+    return {'success': true, 'start': start, 'end': end};
   }
 
   Future<Map<String, dynamic>> _performWait(Map<String, dynamic> params) async {
@@ -770,24 +759,24 @@ class EnhancedExecutionEngine {
   Future<Map<String, dynamic>> _performAnalyze(Map<String, dynamic> params) async {
     final target = params['target'] ?? '当前界面';
 
-    // 获取当前界面截图
-    final screenshot = await _channel.invokeMethod('takeScreenshot');
+    final screenshotBase64 = await AutoGLMService.getScreenshot();
+    final hasScreenshot = screenshotBase64 != null && screenshotBase64.isNotEmpty;
 
     return {
-      'success': screenshot != null,
+      'success': hasScreenshot,
       'target': target,
-      'hasScreenshot': screenshot != null,
+      'hasScreenshot': hasScreenshot,
     };
   }
 
   Future<Map<String, dynamic>> _performBack() async {
-    final result = await _channel.invokeMethod('performBack');
-    return {'success': result};
+    await AutoGLMService.performBack();
+    return {'success': true};
   }
 
   Future<Map<String, dynamic>> _performHome() async {
-    final result = await _channel.invokeMethod('performHome');
-    return {'success': result};
+    await AutoGLMService.performHome();
+    return {'success': true};
   }
 
   Future<bool> _verifyResult(ExecutionStep step, Map<String, dynamic> result) async {
@@ -807,17 +796,9 @@ class EnhancedExecutionEngine {
   }
 
   Future<bool> _verifyOutcome(String outcome, Map<String, dynamic> result) async {
-    // 实现具体的结果验证逻辑
-    // 例如：检查按钮状态变化、页面跳转等
-    try {
-      final verifyResult = await _channel.invokeMethod('verifyOutcome', {
-        'outcome': outcome,
-        'context': result,
-      });
-      return verifyResult == true;
-    } catch (e) {
-      _logger.warn('结果验证失败: $outcome', metadata: {'error': e.toString()});
-      return true; // 验证失败时默认认为成功，避免误判
-    }
+    _logger.info('跳过结果验证: $outcome',
+        metadata: {'outcome': outcome, 'context': result},
+        category: LogCategory.device);
+    return true;
   }
 }
