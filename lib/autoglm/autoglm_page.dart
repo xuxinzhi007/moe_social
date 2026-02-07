@@ -17,6 +17,13 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
   final List<String> _logs = [];
   bool _isServiceEnabled = false;
   bool _isProcessing = false;
+  final List<String> _presetCommands = [
+    '给第一条动态点赞',
+    '搜索"Flutter"',
+    '发布一条动态说Hello',
+    '打开设置页面',
+    '返回桌面',
+  ];
   
   // 历史消息记录
   List<Map<String, dynamic>> _history = [];
@@ -737,37 +744,76 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
               ],
             ),
             child: SafeArea(
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      decoration: InputDecoration(
-                        hintText: '输入指令 (例如: 给第一条动态点赞)',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  if (_presetCommands.isNotEmpty)
+                    SizedBox(
+                      height: 40,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _presetCommands.length,
+                        itemBuilder: (context, index) {
+                          return Container(
+                            margin: const EdgeInsets.only(right: 8),
+                            child: ActionChip(
+                              label: Text(_presetCommands[index]),
+                              onPressed: _isProcessing
+                                  ? null
+                                  : () {
+                                      _controller.text = _presetCommands[index];
+                                    },
+                              backgroundColor: const Color(0xFFF5F7FA),
+                              labelStyle: const TextStyle(
+                                color: Color(0xFF7F7FD5),
+                                fontSize: 12,
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                      enabled: !_isProcessing,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  FloatingActionButton(
-                    onPressed: _isProcessing 
-                      ? (_isStopping ? null : _stopTask) 
-                      : _startTask,
-                    elevation: 0,
-                    backgroundColor: _isProcessing ? Colors.red : Theme.of(context).primaryColor,
-                    mini: true,
-                    child: _isProcessing 
-                      ? (_isStopping 
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Icon(Icons.stop_rounded))
-                      : const Icon(Icons.send_rounded),
+                  if (_presetCommands.isNotEmpty) const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _controller,
+                          decoration: InputDecoration(
+                            hintText: '输入指令 (例如: 给第一条动态点赞)',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(24),
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey[100],
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          ),
+                          enabled: !_isProcessing,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      FloatingActionButton(
+                        onPressed: _isProcessing
+                            ? (_isStopping ? null : _stopTask)
+                            : _startTask,
+                        elevation: 0,
+                        backgroundColor: _isProcessing ? Colors.red : Theme.of(context).primaryColor,
+                        mini: true,
+                        child: _isProcessing
+                            ? (_isStopping
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.stop_rounded))
+                            : const Icon(Icons.send_rounded),
+                      ),
+                    ],
                   ),
                 ],
               ),
