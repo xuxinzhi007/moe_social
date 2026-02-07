@@ -1,7 +1,7 @@
 import 'package:provider/provider.dart';
 import 'providers/device_info_provider.dart';
 import 'package:flutter/material.dart';
-import 'pages/autoglm_page.dart';
+import 'autoglm/autoglm_page.dart';
 import 'autoglm/autoglm_service.dart';
 import 'auth_service.dart';
 import 'services/api_service.dart';
