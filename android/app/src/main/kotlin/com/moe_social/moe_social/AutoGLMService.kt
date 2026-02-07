@@ -469,10 +469,6 @@ class AutoGLMService : AccessibilityService() {
             val rootNode = rootInActiveWindow ?: return false
             val editNode = findEditableNode(rootNode) ?: return false
 
-            // 先清空现有内容
-            editNode.performAction(AccessibilityNodeInfo.ACTION_SELECT_ALL)
-
-            // 输入新内容
             val arguments = Bundle().apply {
                 putString(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
             }
@@ -663,7 +659,8 @@ class AutoGLMService : AccessibilityService() {
         try {
             val packages = packageManager.getInstalledPackages(PackageManager.GET_META_DATA)
             for (packageInfo in packages) {
-                val appLabel = packageManager.getApplicationLabel(packageInfo.applicationInfo).toString()
+                val appInfo = packageInfo.applicationInfo ?: continue
+                val appLabel = packageManager.getApplicationLabel(appInfo).toString()
                 if (appLabel.contains(appName, ignoreCase = true)) {
                     appPackageMap[appName] = packageInfo.packageName
                     return packageInfo.packageName
@@ -682,7 +679,8 @@ class AutoGLMService : AccessibilityService() {
                 val packages = packageManager.getInstalledPackages(PackageManager.GET_META_DATA)
                 for (packageInfo in packages) {
                     try {
-                        val appLabel = packageManager.getApplicationLabel(packageInfo.applicationInfo).toString()
+                        val appInfo = packageInfo.applicationInfo ?: continue
+                        val appLabel = packageManager.getApplicationLabel(appInfo).toString()
                         appPackageMap[appLabel] = packageInfo.packageName
                     } catch (e: Exception) {
                         // 忽略单个应用的错误
