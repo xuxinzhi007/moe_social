@@ -285,11 +285,11 @@ class _DirectChatPageState extends State<DirectChatPage> {
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
-      final max = _scrollController.position.maxScrollExtent;
+      // Reverse: true 意味着 offset 0 是列表底部（最新消息）
       _scrollController.animateTo(
-        max,
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
+        0.0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutQuart,
       );
     });
   }
@@ -424,56 +424,96 @@ class _DirectChatPageState extends State<DirectChatPage> {
   @override
   Widget build(BuildContext context) {
     final currentUserId = _currentUserId;
+    // 反转消息列表用于显示（最新的在最前面）
+    final reversedMessages = List<_DirectMessage>.from(_messages.reversed);
+
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: 0,
         title: Row(
           children: [
             NetworkAvatarImage(
               imageUrl: widget.avatar,
-              radius: 16,
+              radius: 20,
               placeholderIcon: Icons.person,
             ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(widget.username),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: _peerOnline ? Colors.green : Colors.grey,
-                        shape: BoxShape.circle,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.username,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: _peerOnline ? Colors.green : Colors.grey,
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _peerOnline ? '在线' : '离线',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 4),
+                      Text(
+                        _peerOnline ? '在线' : '离线',
+                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: () {},
+          ),
+        ],
       ),
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                final isMe =
-                    currentUserId != null && message.senderId == currentUserId;
-                return _buildMessageBubble(message, isMe);
-              },
+            child: Container(
+              color: const Color(0xFFF5F7FA), // 浅灰背景色
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                reverse: true, // 反向列表，从底部开始
+                itemCount: reversedMessages.length,
+                itemBuilder: (context, index) {
+                  final message = reversedMessages[index];
+                  final isMe =
+                      currentUserId != null && message.senderId == currentUserId;
+                  
+                  // 检查是否显示时间
+                  bool showTime = false;
+                  if (index == reversedMessages.length - 1) {
+                    showTime = true; // 第一条（最旧的）显示时间
+                  } else {
+                    final nextMessage = reversedMessages[index + 1];
+                    final diff = message.time.difference(nextMessage.time).inMinutes.abs();
+                    if (diff > 5) {
+                      showTime = true; // 间隔超过5分钟显示时间
+                    }
+                  }
+
+                  return Column(
+                    children: [
+                      if (showTime) _buildTimeTag(message.time),
+                      _buildMessageBubble(message, isMe),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
           _buildInputArea(),
@@ -482,88 +522,181 @@ class _DirectChatPageState extends State<DirectChatPage> {
     );
   }
 
-  Widget _buildMessageBubble(_DirectMessage message, bool isMe) {
-    final alignment = isMe ? Alignment.centerRight : Alignment.centerLeft;
-    final crossAlign = isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start;
-    final bgColor = isMe ? const Color(0xFF7F7FD5) : Colors.grey.shade200;
-    final textColor = isMe ? Colors.white : Colors.black87;
+  Widget _buildTimeTag(DateTime time) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        crossAxisAlignment: crossAlign,
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        _formatTime(time),
+        style: TextStyle(
+          color: Colors.grey[600],
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+
+  String _formatTime(DateTime time) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final msgDate = DateTime(time.year, time.month, time.day);
+
+    String timeStr = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+
+    if (msgDate == today) {
+      return timeStr;
+    } else if (msgDate == yesterday) {
+      return '昨天 $timeStr';
+    } else {
+      return '${time.month}/${time.day} $timeStr';
+    }
+  }
+
+  Widget _buildMessageBubble(_DirectMessage message, bool isMe) {
+    final alignment = isMe ? MainAxisAlignment.end : MainAxisAlignment.start;
+    final bgColor = isMe ? const Color(0xFF7F7FD5) : Colors.white;
+    final textColor = isMe ? Colors.white : Colors.black87;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: alignment,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Align(
-            alignment: alignment,
+          if (!isMe) ...[
+            NetworkAvatarImage(
+              imageUrl: widget.avatar,
+              radius: 18,
+              placeholderIcon: Icons.person,
+            ),
+            const SizedBox(width: 8),
+          ],
+          Flexible(
             child: Container(
               constraints: const BoxConstraints(maxWidth: 260),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 color: bgColor,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(18),
+                  topRight: const Radius.circular(18),
+                  bottomLeft: Radius.circular(isMe ? 18 : 4),
+                  bottomRight: Radius.circular(isMe ? 4 : 18),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Text(
                 message.content,
-                style: TextStyle(color: textColor),
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 16,
+                  height: 1.4,
+                ),
               ),
             ),
           ),
+          if (isMe) ...[
+            const SizedBox(width: 8),
+            // 这里可以添加自己的头像，如果需要的话
+            // 目前保持简洁，只显示对方头像
+          ],
         ],
       ),
     );
   }
 
   Widget _buildInputArea() {
-    return SafeArea(
-      top: false,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 6,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline_rounded),
+              color: Colors.grey[600],
+              onPressed: () {
+                // TODO: 添加更多功能，如图片、文件等
+              },
+            ),
             Expanded(
-              child: TextField(
-                controller: _controller,
-                focusNode: _inputFocusNode,
-                minLines: 1,
-                maxLines: 4,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) {
-                  if (!_isSending) {
-                    _sendMessage();
-                  }
-                },
-                decoration: const InputDecoration(
-                  hintText: '发送消息...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(20)),
-                    borderSide: BorderSide.none,
+              child: Container(
+                constraints: const BoxConstraints(maxHeight: 120),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F7FA),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                ),
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _inputFocusNode,
+                  minLines: 1,
+                  maxLines: 5,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) {
+                    if (!_isSending) {
+                      _sendMessage();
+                    }
+                  },
+                  decoration: const InputDecoration(
+                    hintText: '发送消息...',
+                    hintStyle: TextStyle(color: Colors.grey),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    isDense: true,
                   ),
-                  filled: true,
-                  fillColor: Color(0xFFF5F7FA),
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  style: const TextStyle(fontSize: 16),
                 ),
               ),
             ),
             const SizedBox(width: 8),
-            IconButton(
-              icon: _isSending
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.send_rounded, color: Color(0xFF7F7FD5)),
-              onPressed: _isSending ? null : _sendMessage,
+            GestureDetector(
+              onTap: _isSending ? null : _sendMessage,
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: _isSending 
+                      ? Colors.grey[300] 
+                      : const Color(0xFF7F7FD5),
+                  shape: BoxShape.circle,
+                ),
+                child: _isSending
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Icon(
+                        Icons.send_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+              ),
             ),
           ],
         ),
