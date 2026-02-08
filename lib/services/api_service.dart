@@ -115,28 +115,23 @@ class ApiService {
       final result = await _performRequest(path, method, body);
       return result;
     } on ApiException catch (e) {
-      // 检查是否是登录请求，如果是登录请求失败，直接抛出错误，不尝试刷新token
       if (path == '/api/user/login') {
         rethrow;
       }
 
-      // 检查是否是token过期错误（根据后端返回的错误码判断）
       if (e.code == 401 ||
           e.message.contains('token') ||
-          e.message.contains('Token')) {
-        // Token过期，尝试刷新token
+          e.message.contains('Token') ||
+          e.message.contains('账户失效') ||
+          e.message.contains('登录已过期')) {
         final newToken = await _refreshToken();
         if (newToken != null) {
-          // 刷新成功，使用新token重新请求
           return await _performRequest(path, method, body);
         } else {
-          // 刷新token失败，清除登录状态
           _onLogoutCallback?.call();
-          // 抛出错误，让上层处理
           throw ApiException('登录已过期，请重新登录', 401);
         }
       }
-      // 其他错误直接抛出
       rethrow;
     }
   }
