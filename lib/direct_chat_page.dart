@@ -124,6 +124,14 @@ class _DirectChatPageState extends State<DirectChatPage> {
           time = DateTime.now();
         }
 
+        final hasSimilar = _messages.any((m) {
+          if (m.senderId != from) return false;
+          if (m.content != content) return false;
+          final diff = m.time.difference(time).inMinutes.abs();
+          return diff <= 5;
+        });
+        if (hasSimilar) continue;
+
         final key = '$from|${time.toIso8601String()}|$content';
         if (existingKeys.contains(key)) continue;
         existingKeys.add(key);
@@ -171,6 +179,17 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
       for (final n in dms) {
         final time = n.createdAt;
+
+        final hasSimilar = _messages.any((m) {
+          if (m.senderId != widget.userId) return false;
+          if (m.content != n.content) return false;
+          final diff = m.time.difference(time).inMinutes.abs();
+          return diff <= 5;
+        });
+        if (hasSimilar) {
+          continue;
+        }
+
         final key = '${widget.userId}|${time.toIso8601String()}|${n.content}';
         if (existingKeys.contains(key)) {
           continue;
@@ -266,16 +285,12 @@ class _DirectChatPageState extends State<DirectChatPage> {
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
-      final position = _scrollController.position;
-      final max = position.maxScrollExtent;
-      final current = position.pixels;
-      if (max - current <= 80) {
-        _scrollController.animateTo(
-          max,
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-        );
-      }
+      final max = _scrollController.position.maxScrollExtent;
+      _scrollController.animateTo(
+        max,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+      );
     });
   }
 
