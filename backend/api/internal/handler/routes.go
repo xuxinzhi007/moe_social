@@ -216,6 +216,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodPost,
+				Path:    "/api/llm/show/raw",
+				Handler: llm.ShowRawHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
 				Path:    "/api/llm/agents",
 				Handler: llm.CreateAgentHandler(serverCtx),
 			},
