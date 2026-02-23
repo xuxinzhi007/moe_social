@@ -613,6 +613,12 @@ type LlmModelsResp struct {
 	Models []string `json:"models"`
 }
 
+type LlmCreateAgentReq struct {
+	Name         string `json:"name"`
+	BaseModel    string `json:"base_model"`
+	SystemPrompt string `json:"system_prompt"`
+}
+
 type LoginData struct {
 	User  User   `json:"user"`
 	Token string `json:"token"`

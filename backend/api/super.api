@@ -1020,6 +1020,12 @@ type LlmModelsResp {
 	Models []string `json:"models"`
 }
 
+type LlmCreateAgentReq {
+	Name         string `json:"name"`
+	BaseModel    string `json:"base_model"`
+	SystemPrompt string `json:"system_prompt"`
+}
+
 // LLM 聊天相关API服务
 @server (
 	group: llm
@@ -1028,6 +1034,10 @@ service Super {
 	// 获取可用模型列表
 	@handler models
 	get /api/llm/models (EmptyReq) returns (LlmModelsResp)
+
+	// 创建带有个性化系统提示词的新模型
+	@handler createAgent
+	post /api/llm/agents (LlmCreateAgentReq) returns (BaseResp)
 
 	// 发送聊天消息
 	@handler chat

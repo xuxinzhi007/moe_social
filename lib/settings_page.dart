@@ -9,9 +9,11 @@ import 'services/api_service.dart';
 import 'services/memory_service.dart';
 import 'services/update_service.dart';
 import 'services/remote_control_service.dart';
+import 'pages/ai/llm_terminal_mode_settings_page.dart';
 import 'providers/theme_provider.dart';
 import 'providers/device_info_provider.dart';
 import 'memory_timeline_page.dart';
+import 'services/llm_endpoint_config.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -565,6 +567,45 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 24),
           _buildSectionTitle('AI 模型'),
           _buildSettingsCard([
+            _SettingsTile(
+              icon: Icons.terminal_rounded,
+              title: '终端同款（本地 Ollama）',
+              subtitle: '直连电脑 Ollama，尽量对齐终端输出',
+              iconColor: Colors.deepPurpleAccent,
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LlmTerminalModeSettingsPage(),
+                  ),
+                );
+                // 返回后触发 rebuild，让 subtitle 能显示最新状态
+                if (mounted) setState(() {});
+              },
+              trailing: FutureBuilder<bool>(
+                future: LlmEndpointConfig.isDirectEnabled(),
+                builder: (context, snapshot) {
+                  final enabled = snapshot.data == true;
+                  return Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: (enabled ? Colors.green : Colors.grey)
+                          .withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      enabled ? '已开启' : '未开启',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: enabled ? Colors.green : Colors.grey[700],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
             _SettingsTile(
               icon: Icons.psychology_rounded,
               title: '模型记忆线',

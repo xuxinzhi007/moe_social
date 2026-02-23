@@ -200,9 +200,24 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: llm.ChatHandler(serverCtx),
 			},
 			{
+				Method:  http.MethodPost,
+				Path:    "/api/llm/chat/raw",
+				Handler: llm.ChatRawHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodGet,
 				Path:    "/api/llm/models",
 				Handler: llm.ModelsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/llm/models/raw",
+				Handler: llm.ModelsRawHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/llm/agents",
+				Handler: llm.CreateAgentHandler(serverCtx),
 			},
 		},
 	)
