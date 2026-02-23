@@ -298,7 +298,8 @@ class _MainPageState extends State<MainPage> {
 
   final List<Widget> _pages = [
     HomePage(),
-    ChatTabPage(),
+    FriendsPage(),
+    OllamaChatPage(),
     GachaPage(),
     ProfilePage(),
   ];
@@ -336,7 +337,12 @@ class _MainPageState extends State<MainPage> {
             NavigationDestination(
               icon: Icon(Icons.chat_bubble_outline),
               selectedIcon: Icon(Icons.chat_bubble_rounded),
-              label: '聊天',
+              label: '好友',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.smart_toy_outlined),
+              selectedIcon: Icon(Icons.smart_toy_rounded),
+              label: 'AI',
             ),
             NavigationDestination(
               icon: Icon(Icons.casino_outlined),
@@ -355,33 +361,7 @@ class _MainPageState extends State<MainPage> {
   }
 }
 
-class ChatTabPage extends StatelessWidget {
-  const ChatTabPage({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('聊天'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: '好友'),
-              Tab(text: 'AI聊天'),
-            ],
-          ),
-        ),
-        body: const TabBarView(
-          children: [
-            FriendsPage(),
-            OllamaChatPage(),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ... existing HomePage code ...
 class HomePage extends StatefulWidget {
