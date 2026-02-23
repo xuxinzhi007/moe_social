@@ -17,9 +17,6 @@ class _LlmTerminalModeSettingsPageState
     extends State<LlmTerminalModeSettingsPage> {
   bool _loading = true;
   bool _enabled = false;
-  bool _useBackendProxy = true;
-  bool _ignoreAgentSystemPrompt = true;
-  late TextEditingController _baseUrlController;
 
   bool _testing = false;
   String? _testResult;
@@ -27,71 +24,28 @@ class _LlmTerminalModeSettingsPageState
   @override
   void initState() {
     super.initState();
-    _baseUrlController = TextEditingController();
     _load();
   }
 
   @override
-  void dispose() {
-    _baseUrlController.dispose();
-    super.dispose();
-  }
+  void dispose() => super.dispose();
 
   Future<void> _load() async {
-    final enabled = await LlmEndpointConfig.isDirectEnabled();
-    final baseUrl = await LlmEndpointConfig.getDirectBaseUrl();
-    final useProxy = await LlmEndpointConfig.useBackendProxy();
-    final ignore = await LlmEndpointConfig.ignoreAgentSystemPrompt();
+    final enabled = await LlmEndpointConfig.isTerminalModeEnabled();
     if (!mounted) return;
     setState(() {
       _enabled = enabled;
-      _baseUrlController.text = baseUrl;
-      _useBackendProxy = useProxy;
-      _ignoreAgentSystemPrompt = ignore;
       _loading = false;
     });
   }
 
   Future<void> _saveEnabled(bool v) async {
     setState(() => _enabled = v);
-    await LlmEndpointConfig.setDirectEnabled(v);
-  }
-
-  Future<void> _saveBaseUrl() async {
-    final v = _baseUrlController.text.trim();
-    await LlmEndpointConfig.setDirectBaseUrl(v);
-  }
-
-  Future<void> _saveUseProxy(bool v) async {
-    setState(() => _useBackendProxy = v);
-    await LlmEndpointConfig.setUseBackendProxy(v);
-  }
-
-  Future<void> _saveIgnore(bool v) async {
-    setState(() => _ignoreAgentSystemPrompt = v);
-    await LlmEndpointConfig.setIgnoreAgentSystemPrompt(v);
-  }
-
-  Uri? _buildTagsUri() {
-    final base = _baseUrlController.text.trim().replaceAll(RegExp(r'/+$'), '');
-    if (base.isEmpty) return null;
-    final uri = Uri.tryParse(base);
-    if (uri == null || !uri.hasScheme) return null;
-    return Uri.parse('$base/api/tags');
+    await LlmEndpointConfig.setTerminalModeEnabled(v);
   }
 
   Future<void> _testConnection() async {
-    Uri uri;
-    if (_useBackendProxy) {
-      uri = Uri.parse('${LlmEndpointConfig.modelsUri()}');
-    } else {
-      final u = _buildTagsUri();
-      if (u == null) {
-        setState(() => _testResult = '地址不合法，请填写如 http://192.168.1.16:11434');
-        return;
-      }
-      uri = u;
-    }
+    final uri = await LlmEndpointConfig.modelsUri();
     setState(() {
       _testing = true;
       _testResult = null;
@@ -103,12 +57,7 @@ class _LlmTerminalModeSettingsPageState
         setState(() => _testResult = '连接失败：${resp.statusCode}\n$text');
         return;
       }
-      final data = jsonDecode(text);
-      int count = 0;
-      if (data is Map && data['models'] is List) {
-        count = (data['models'] as List).length;
-      }
-      setState(() => _testResult = '连接成功：发现 $count 个模型');
+      setState(() => _testResult = '连接成功：后端 raw 转发可用');
     } catch (e) {
       setState(() => _testResult = '连接出错：$e');
     } finally {
@@ -148,44 +97,13 @@ class _LlmTerminalModeSettingsPageState
                     children: [
                       SwitchListTile.adaptive(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('启用本地 Ollama 直连'),
-                        subtitle: const Text('开启后将绕过后端包装，尽量对齐终端输出'),
+                        title: const Text('启用终端同款（后端 raw 转发）'),
+                        subtitle: const Text('默认开启：不注入记忆/总结，最大程度贴近终端输出'),
                         value: _enabled,
                         activeColor: primary,
                         onChanged: (v) => _saveEnabled(v),
                       ),
-                      SwitchListTile.adaptive(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('通过后端转发（推荐：内网穿透场景）'),
-                        subtitle: const Text('手机只访问后端(8888)，后端再调用本机 11434'),
-                        value: _useBackendProxy,
-                        activeColor: primary,
-                        onChanged: (v) => _saveUseProxy(v),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: _baseUrlController,
-                        enabled: !_useBackendProxy,
-                        decoration: const InputDecoration(
-                          labelText: 'Ollama 地址（电脑局域网 IP）',
-                          hintText: '例如：http://192.168.1.16:11434',
-                          border: OutlineInputBorder(),
-                        ),
-                        onChanged: (_) {
-                          _testResult = null;
-                        },
-                        onEditingComplete: _saveBaseUrl,
-                      ),
                       const SizedBox(height: 12),
-                      SwitchListTile.adaptive(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('忽略智能体 System Prompt'),
-                        subtitle: const Text('建议开启：避免额外提示词导致输出偏离终端'),
-                        value: _ignoreAgentSystemPrompt,
-                        activeColor: primary,
-                        onChanged: (v) => _saveIgnore(v),
-                      ),
-                      const SizedBox(height: 8),
                       Row(
                         children: [
                           Expanded(
@@ -193,7 +111,6 @@ class _LlmTerminalModeSettingsPageState
                               onPressed: _testing
                                   ? null
                                   : () async {
-                                      await _saveBaseUrl();
                                       await _testConnection();
                                     },
                               icon: _testing
@@ -256,7 +173,7 @@ class _LlmTerminalModeSettingsPageState
                   ),
                   child: const Text(
                     '提示：要做到“和电脑终端一致”，手机必须能访问到同一台电脑上的 Ollama。\n'
-                    '如果你在外网/内网穿透环境，建议开启“通过后端转发”，无需手机直连 11434。',
+                    '当前模式通过后端(8888/cpolar)转发到本机 Ollama(11434)，手机无需直接连 11434。',
                     style: TextStyle(color: Colors.black87, height: 1.35),
                   ),
                 ),

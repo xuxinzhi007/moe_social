@@ -420,7 +420,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     _scrollToBottom();
 
     try {
-      final directEnabled = await LlmEndpointConfig.isDirectEnabled();
+      final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
       final uri = await LlmEndpointConfig.chatUri();
       final headers = <String, String>{'Content-Type': 'application/json'};
       final token = ApiService.token;
@@ -434,7 +434,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
             body: jsonEncode({
               'model': _modelName,
               'messages': apiMessages,
-              if (directEnabled) 'stream': false,
+              if (terminalMode) 'stream': false,
             }),
           )
           // LLM 生成首包可能较慢（尤其是首次加载模型时），这里给更宽裕的超时
@@ -465,7 +465,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
       String content = '';
       double remainingRatio = 1.0;
       bool summarized = false;
-      if (directEnabled) {
+      if (terminalMode) {
         final msg = (data is Map) ? data['message'] : null;
         if (msg is Map && msg['content'] is String) {
           content = msg['content'] as String;

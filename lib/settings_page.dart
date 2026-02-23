@@ -583,7 +583,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 if (mounted) setState(() {});
               },
               trailing: FutureBuilder<bool>(
-                future: LlmEndpointConfig.isDirectEnabled(),
+                future: LlmEndpointConfig.isTerminalModeEnabled(),
                 builder: (context, snapshot) {
                   final enabled = snapshot.data == true;
                   return Container(

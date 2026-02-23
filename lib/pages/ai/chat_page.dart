@@ -165,15 +165,10 @@ class _ChatPageState extends State<ChatPage> {
           .map((m) => {'role': m.role, 'content': m.content})
           .toList();
           
-      // system prompt 注入：
-      // - 后端模式：按原逻辑注入（便于智能体人设）
-      // - “终端同款/直连 Ollama”模式：默认不注入，避免输出偏离终端
-      final directEnabled = await LlmEndpointConfig.isDirectEnabled();
-      final ignoreAgentSystem = await LlmEndpointConfig.ignoreAgentSystemPrompt();
-      if (widget.agent.systemPrompt.isNotEmpty &&
-          (!directEnabled || !ignoreAgentSystem)) {
-        history.insert(
-            0, {'role': 'system', 'content': widget.agent.systemPrompt});
+      // 终端同款模式：不注入智能体 System Prompt，避免偏离终端输出
+      final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
+      if (!terminalMode && widget.agent.systemPrompt.isNotEmpty) {
+        history.insert(0, {'role': 'system', 'content': widget.agent.systemPrompt});
       }
 
       final uri = await LlmEndpointConfig.chatUri();
@@ -189,7 +184,7 @@ class _ChatPageState extends State<ChatPage> {
         body: jsonEncode({
           'model': widget.agent.modelName,
           'messages': history,
-          if (directEnabled) 'stream': false,
+          if (terminalMode) 'stream': false,
         }),
       ).timeout(const Duration(seconds: 180));
 
@@ -201,7 +196,7 @@ class _ChatPageState extends State<ChatPage> {
         final decodedBody = utf8.decode(response.bodyBytes);
         final data = jsonDecode(decodedBody);
         String content = '';
-        if (directEnabled) {
+        if (terminalMode) {
           // Ollama /api/chat 响应格式：{ message: { role, content }, ... }
           final msg = (data is Map) ? data['message'] : null;
           if (msg is Map && msg['content'] is String) {
@@ -373,9 +368,17 @@ class _ChatPageState extends State<ChatPage> {
         title: Column(
           children: [
             Text(widget.agent.name, style: const TextStyle(fontSize: 16)),
-            Text(
-              _currentSession?.title ?? '加载中...',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            FutureBuilder<bool>(
+              future: LlmEndpointConfig.isTerminalModeEnabled(),
+              builder: (context, snapshot) {
+                final terminal = snapshot.data == true;
+                final sessionTitle = _currentSession?.title ?? '加载中...';
+                final suffix = terminal ? ' · 终端同款' : '';
+                return Text(
+                  '$sessionTitle$suffix',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                );
+              },
             ),
           ],
         ),
@@ -501,9 +504,22 @@ class _ChatPageState extends State<ChatPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SelectableText(
-                    message.content,
-                    style: TextStyle(color: textColor, fontSize: 15, height: 1.5),
+                  GestureDetector(
+                    onLongPress: () async {
+                      final text = message.content.trim();
+                      if (text.isEmpty) return;
+                      await Clipboard.setData(ClipboardData(text: text));
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('已复制到剪贴板')),
+                      );
+                    },
+                    child: SelectableText(
+                      message.content,
+                      style:
+                          TextStyle(color: textColor, fontSize: 15, height: 1.5),
+                    ),
                   ),
                   if (!isUser)
                     Align(
