@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'services/api_service.dart';
+import 'services/llm_endpoint_config.dart';
 
 class OllamaChatPage extends StatefulWidget {
   const OllamaChatPage({super.key});
@@ -59,7 +60,6 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   bool _isSending = false;
   String _modelName = 'qwen2.5:0.5b-instruct';
   List<String> _models = [];
-  bool _isLoadingModels = false;
   String? _modelsError;
   // bool _memoryEnabled = true; // Always true now
   bool _ollamaOnline = false; // Ollama 在线状态（通过模型列表判断）
@@ -336,15 +336,15 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
 
   Future<void> _loadModels() async {
     setState(() {
-      _isLoadingModels = true;
       _modelsError = null;
     });
 
     try {
-      final uri = Uri.parse('${ApiService.baseUrl}/api/llm/models');
+      final uri = await LlmEndpointConfig.modelsUri();
       final response = await http.get(uri).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final decodedBody = utf8.decode(response.bodyBytes);
+        final data = jsonDecode(decodedBody);
         List<String> list = <String>[];
         if (data is Map && data['models'] is List) {
           final raw = data['models'] as List;
@@ -385,9 +385,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
         _ollamaOnline = false;
       });
     } finally {
-      setState(() {
-        _isLoadingModels = false;
-      });
+      // no-op: _modelsError/_models 会触发需要的 UI 更新
     }
   }
 
@@ -422,7 +420,8 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     _scrollToBottom();
 
     try {
-      final uri = Uri.parse('${ApiService.baseUrl}/api/llm/chat');
+      final directEnabled = await LlmEndpointConfig.isDirectEnabled();
+      final uri = await LlmEndpointConfig.chatUri();
       final headers = <String, String>{'Content-Type': 'application/json'};
       final token = ApiService.token;
       if (token != null) {
@@ -435,6 +434,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
             body: jsonEncode({
               'model': _modelName,
               'messages': apiMessages,
+              if (directEnabled) 'stream': false,
             }),
           )
           // LLM 生成首包可能较慢（尤其是首次加载模型时），这里给更宽裕的超时
@@ -460,12 +460,27 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
         return;
       }
 
-      final data = jsonDecode(response.body);
-      final content = data is Map && data['content'] is String ? data['content'] as String : '';
-      final remainingRatio = data is Map && data['remaining_ratio'] is num
-          ? (data['remaining_ratio'] as num).toDouble()
-          : 1.0;
-      final summarized = data is Map && data['summarized'] == true;
+      final decodedBody = utf8.decode(response.bodyBytes);
+      final data = jsonDecode(decodedBody);
+      String content = '';
+      double remainingRatio = 1.0;
+      bool summarized = false;
+      if (directEnabled) {
+        final msg = (data is Map) ? data['message'] : null;
+        if (msg is Map && msg['content'] is String) {
+          content = msg['content'] as String;
+        } else if (data is Map && data['error'] is String) {
+          content = 'Ollama 错误: ${data['error']}';
+        } else {
+          content = '响应格式异常（直连 Ollama）';
+        }
+      } else {
+        content = data is Map && data['content'] is String ? data['content'] as String : '';
+        remainingRatio = data is Map && data['remaining_ratio'] is num
+            ? (data['remaining_ratio'] as num).toDouble()
+            : 1.0;
+        summarized = data is Map && data['summarized'] == true;
+      }
       setState(() {
         _currentSession.messages[assistantIndex] = _ChatMessage(
           role: 'assistant',

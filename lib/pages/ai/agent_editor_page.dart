@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../models/ai_agent.dart';
 import '../../services/ai_db_service.dart';
 import '../../services/api_service.dart';
+import '../../services/llm_endpoint_config.dart';
 
 class AgentEditorPage extends StatefulWidget {
   final AiAgent? agent;
@@ -23,6 +24,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   List<String> _models = [];
   bool _isLoadingModels = false;
   bool _isSaving = false;
+  bool _createRealModel = false;
 
   @override
   void initState() {
@@ -48,10 +50,11 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   Future<void> _loadModels() async {
     setState(() => _isLoadingModels = true);
     try {
-      final uri = Uri.parse('${ApiService.baseUrl}/api/llm/models');
+      final uri = await LlmEndpointConfig.modelsUri();
       final response = await http.get(uri).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final decodedBody = utf8.decode(response.bodyBytes);
+        final data = jsonDecode(decodedBody);
         List<String> list = [];
         if (data is Map && data['models'] is List) {
           final raw = data['models'] as List;
@@ -89,12 +92,72 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     final desc = _descController.text.trim();
     final prompt = _promptController.text.trim();
 
+    String modelForChat = _modelName;
+
+    if (widget.agent == null && _createRealModel) {
+      try {
+        final baseModel = _modelName.trim();
+        if (baseModel.isEmpty) {
+          throw Exception('请选择基础模型');
+        }
+
+        String safeName = name.toLowerCase();
+        safeName = safeName.replaceAll(RegExp(r'\s+'), '-');
+        safeName = safeName.replaceAll(RegExp(r'[^a-z0-9_\-\.:/]'), '_');
+        if (safeName.isEmpty) {
+          throw Exception('无效的模型名称');
+        }
+
+        final uri = Uri.parse('${ApiService.baseUrl}/api/llm/agents');
+        final headers = <String, String>{
+          'Content-Type': 'application/json',
+        };
+        final token = ApiService.token;
+        if (token != null && token.isNotEmpty) {
+          headers['Authorization'] = 'Bearer $token';
+        }
+
+        final body = jsonEncode({
+          'name': safeName,
+          'base_model': baseModel,
+          'system_prompt': prompt,
+        });
+
+        final response = await http
+            .post(uri, headers: headers, body: body)
+            .timeout(const Duration(minutes: 5));
+
+        if (response.statusCode != 200) {
+          throw Exception('创建 Ollama 模型失败: ${response.statusCode}');
+        }
+
+        final data = jsonDecode(response.body);
+        final success = data is Map && (data['success'] == true);
+        if (!success) {
+          final msg = data is Map && data['message'] is String
+              ? data['message'] as String
+              : '创建 Ollama 模型失败';
+          throw Exception(msg);
+        }
+
+        modelForChat = safeName;
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString())),
+          );
+        }
+        setState(() => _isSaving = false);
+        return;
+      }
+    }
+
     final agent = AiAgent(
       id: widget.agent?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
       name: name,
       description: desc,
       systemPrompt: prompt,
-      modelName: _modelName,
+      modelName: modelForChat,
       createdAt: widget.agent?.createdAt ?? DateTime.now(),
     );
 
@@ -142,6 +205,16 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
               validator: (v) => v == null || v.trim().isEmpty ? '请输入名称' : null,
             ),
             const SizedBox(height: 16),
+            if (widget.agent == null)
+              SwitchListTile(
+                title: const Text('在 Ollama 中创建真实模型'),
+                subtitle: const Text('使用上面的基础模型和系统提示词创建可复用模型'),
+                value: _createRealModel,
+                onChanged: (v) {
+                  setState(() => _createRealModel = v);
+                },
+              ),
+            if (widget.agent == null) const SizedBox(height: 16),
             TextFormField(
               controller: _descController,
               decoration: const InputDecoration(

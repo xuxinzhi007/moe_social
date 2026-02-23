@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import '../../services/api_service.dart';
+import '../../services/llm_endpoint_config.dart';
 import '../../services/ai_db_service.dart';
 import '../../models/ai_agent.dart';
 import 'agent_editor_page.dart';
@@ -38,10 +38,11 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
   Future<void> _loadOllamaModels() async {
     if (mounted) setState(() => _isLoadingModels = true);
     try {
-      final uri = Uri.parse('${ApiService.baseUrl}/api/llm/models');
+      final uri = await LlmEndpointConfig.modelsUri();
       final response = await http.get(uri).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final decodedBody = utf8.decode(response.bodyBytes);
+        final data = jsonDecode(decodedBody);
         List<String> list = [];
         if (data is Map && data['models'] is List) {
           final raw = data['models'] as List;

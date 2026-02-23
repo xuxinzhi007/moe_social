@@ -208,18 +208,19 @@ class ApiService {
 
       // 调试日志
       _log('📥 API Response: ${response.statusCode}');
+      final bodyText = _decodeUtf8Body(response);
       // 不再全量输出 response.body（会把 avatar/user_avatar/images 等字段刷屏）
       if (_verboseApiLog) {
-        _log('📥 Response Body: ${_safeTextForLog(response.body)}');
+        _log('📥 Response Body: ${_safeTextForLog(bodyText)}');
       }
 
       // 检查响应体是否为空
-      if (response.body.isEmpty) {
+      if (bodyText.isEmpty) {
         throw ApiException('服务器返回空响应', response.statusCode);
       }
 
       // 检查是否是HTML响应（通常是404页面或服务器错误页面）
-      final trimmedBody = response.body.trim();
+      final trimmedBody = bodyText.trim();
       if (trimmedBody.startsWith('<!DOCTYPE html>') ||
           trimmedBody.startsWith('<html>')) {
         String errorMessage = '无法连接到服务器';
@@ -256,14 +257,13 @@ class ApiService {
       // 解析响应
       Map<String, dynamic> result;
       try {
-        result = json.decode(response.body) as Map<String, dynamic>;
+        result = json.decode(bodyText) as Map<String, dynamic>;
       } catch (e) {
         _log('❌ JSON解析失败: $e');
-        _log('❌ 响应内容(截断): ${_safeTextForLog(response.body, maxLen: 200)}');
+        _log('❌ 响应内容(截断): ${_safeTextForLog(bodyText, maxLen: 200)}');
 
         // 如果响应看起来像HTML，给出更友好的错误提示
-        if (response.body.contains('<html>') ||
-            response.body.contains('<!DOCTYPE')) {
+        if (bodyText.contains('<html>') || bodyText.contains('<!DOCTYPE')) {
           String errorMessage = '服务器返回了HTML页面而不是JSON数据';
           if (response.statusCode == 404 && baseUrl.contains('cpolar.top')) {
             errorMessage = 'cpolar隧道可能已断开，请检查隧道状态或切换到本地开发环境';
@@ -303,6 +303,16 @@ class ApiService {
       if (e is ApiException) rethrow;
       _log('❌ 未知请求错误: $e');
       throw ApiException('网络请求发生错误: $e', null);
+    }
+  }
+
+  static String _decodeUtf8Body(http.Response response) {
+    try {
+      // 某些网关/隧道会丢失 charset，http 包可能用错误编码解 response.body；
+      // 对 JSON/文本接口，优先按 UTF-8 解码 bodyBytes 更可靠。
+      return utf8.decode(response.bodyBytes);
+    } catch (_) {
+      return response.body;
     }
   }
 

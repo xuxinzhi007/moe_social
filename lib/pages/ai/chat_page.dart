@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../services/api_service.dart';
+import '../../services/llm_endpoint_config.dart';
 import '../../services/ai_db_service.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_chat_session.dart';
@@ -31,6 +32,7 @@ class _ChatPageState extends State<ChatPage> {
   
   bool _isSending = false;
   bool _isLoadingHistory = true;
+  bool _wasManuallyStopped = false;
   
   // Voice
   final stt.SpeechToText _speech = stt.SpeechToText();
@@ -39,8 +41,6 @@ class _ChatPageState extends State<ChatPage> {
   final FlutterTts _tts = FlutterTts();
   bool _isSpeaking = false;
   String? _speakingMessageId;
-  double _ttsRate = 0.5;
-  double _ttsPitch = 1.0;
 
   @override
   void initState() {
@@ -152,6 +152,7 @@ class _ChatPageState extends State<ChatPage> {
       _messages.add(userMsg);
       _controller.clear();
       _isSending = true;
+      _wasManuallyStopped = false;
     });
     _scrollToBottom();
     
@@ -164,14 +165,21 @@ class _ChatPageState extends State<ChatPage> {
           .map((m) => {'role': m.role, 'content': m.content})
           .toList();
           
-      // Prepend system prompt
-      if (widget.agent.systemPrompt.isNotEmpty) {
-        history.insert(0, {'role': 'system', 'content': widget.agent.systemPrompt});
+      // system prompt 注入：
+      // - 后端模式：按原逻辑注入（便于智能体人设）
+      // - “终端同款/直连 Ollama”模式：默认不注入，避免输出偏离终端
+      final directEnabled = await LlmEndpointConfig.isDirectEnabled();
+      final ignoreAgentSystem = await LlmEndpointConfig.ignoreAgentSystemPrompt();
+      if (widget.agent.systemPrompt.isNotEmpty &&
+          (!directEnabled || !ignoreAgentSystem)) {
+        history.insert(
+            0, {'role': 'system', 'content': widget.agent.systemPrompt});
       }
 
-      final uri = Uri.parse('${ApiService.baseUrl}/api/llm/chat');
+      final uri = await LlmEndpointConfig.chatUri();
       final headers = <String, String>{'Content-Type': 'application/json'};
       if (ApiService.token != null) {
+        // 直连 Ollama 不需要鉴权，但带上也无害；后端模式需要
         headers['Authorization'] = 'Bearer ${ApiService.token}';
       }
 
@@ -181,12 +189,36 @@ class _ChatPageState extends State<ChatPage> {
         body: jsonEncode({
           'model': widget.agent.modelName,
           'messages': history,
+          if (directEnabled) 'stream': false,
         }),
       ).timeout(const Duration(seconds: 180));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final content = data['content'] as String;
+        if (_wasManuallyStopped) {
+          return;
+        }
+        // 统一按 UTF-8 解码，避免 charset 不一致导致乱码
+        final decodedBody = utf8.decode(response.bodyBytes);
+        final data = jsonDecode(decodedBody);
+        String content = '';
+        if (directEnabled) {
+          // Ollama /api/chat 响应格式：{ message: { role, content }, ... }
+          final msg = (data is Map) ? data['message'] : null;
+          if (msg is Map && msg['content'] is String) {
+            content = msg['content'] as String;
+          } else if (data is Map && data['error'] is String) {
+            content = 'Ollama 错误: ${data['error']}';
+          } else {
+            content = '响应格式异常（直连 Ollama）';
+          }
+        } else {
+          // 后端 /api/llm/chat 响应格式：{ content, remaining_ratio, summarized, ... }
+          if (data is Map && data['content'] is String) {
+            content = data['content'] as String;
+          } else {
+            content = '响应格式异常（后端）';
+          }
+        }
         
         final assistantMsg = AiChatMessage(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -195,14 +227,14 @@ class _ChatPageState extends State<ChatPage> {
           content: content,
           createdAt: DateTime.now(),
         );
-        
+
+        await AiDbService().insertMessage(assistantMsg);
+
         if (mounted) {
           setState(() {
             _messages.add(assistantMsg);
           });
-          await AiDbService().insertMessage(assistantMsg);
           
-          // Update title if it's new
           if (_messages.length <= 2 && _currentSession!.title == '新对话') {
             final newTitle = text.length > 10 ? '${text.substring(0, 10)}...' : text;
             final updatedSession = AiChatSession(
@@ -220,6 +252,9 @@ class _ChatPageState extends State<ChatPage> {
           }
         }
       } else {
+        if (_wasManuallyStopped) {
+          return;
+        }
         final errorMsg = AiChatMessage(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           sessionId: _currentSession!.id,
@@ -227,12 +262,15 @@ class _ChatPageState extends State<ChatPage> {
           content: '请求失败 (${response.statusCode})',
           createdAt: DateTime.now(),
         );
+        await AiDbService().insertMessage(errorMsg);
         if (mounted) {
           setState(() => _messages.add(errorMsg));
-          await AiDbService().insertMessage(errorMsg);
         }
       }
     } catch (e) {
+      if (_wasManuallyStopped) {
+        return;
+      }
       final errorMsg = AiChatMessage(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         sessionId: _currentSession!.id,
@@ -240,9 +278,9 @@ class _ChatPageState extends State<ChatPage> {
         content: '请求出错: $e',
         createdAt: DateTime.now(),
       );
+      await AiDbService().insertMessage(errorMsg);
       if (mounted) {
         setState(() => _messages.add(errorMsg));
-        await AiDbService().insertMessage(errorMsg);
       }
     } finally {
       if (mounted) {
@@ -304,6 +342,27 @@ class _ChatPageState extends State<ChatPage> {
       },
       localeId: 'zh_CN',
     );
+  }
+
+  void _stopGeneration() {
+    if (!_isSending) return;
+    _wasManuallyStopped = true;
+    final now = DateTime.now();
+    final msg = AiChatMessage(
+      id: now.millisecondsSinceEpoch.toString(),
+      sessionId: _currentSession!.id,
+      role: 'assistant',
+      content: '已手动停止生成',
+      createdAt: now,
+    );
+    AiDbService().insertMessage(msg);
+    if (mounted) {
+      setState(() {
+        _messages.add(msg);
+        _isSending = false;
+      });
+      _scrollToBottom();
+    }
   }
 
   @override
@@ -390,8 +449,11 @@ class _ChatPageState extends State<ChatPage> {
                 : ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                    itemCount: _messages.length,
+                    itemCount: _messages.length + (_isSending ? 1 : 0),
                     itemBuilder: (context, index) {
+                      if (_isSending && index == _messages.length) {
+                        return _buildTypingBubble();
+                      }
                       final msg = _messages[index];
                       return _buildMessageBubble(msg);
                     },
@@ -474,6 +536,44 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  Widget _buildTypingBubble() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const CircleAvatar(
+            radius: 16,
+            backgroundColor: Color(0xFFE0E0E0),
+            child: Icon(Icons.smart_toy_rounded, size: 18, color: Colors.black54),
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 5,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Text(
+                '...',
+                style: TextStyle(color: Colors.black87, fontSize: 15, height: 1.5),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildInputArea() {
     return Container(
       padding: EdgeInsets.only(
@@ -511,11 +611,9 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ),
           IconButton(
-            icon: _isSending 
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.send_rounded),
-            color: const Color(0xFF7F7FD5),
-            onPressed: _sendMessage,
+            icon: Icon(_isSending ? Icons.stop_rounded : Icons.send_rounded),
+            color: _isSending ? Colors.red : const Color(0xFF7F7FD5),
+            onPressed: _isSending ? _stopGeneration : _sendMessage,
           ),
         ],
       ),
