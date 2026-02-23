@@ -57,6 +57,7 @@ dependencies:
   geocoding: ^2.1.1
   battery_plus: ^6.2.0
   lottie: ^3.1.0
+  flutter_overlay_window: ^0.5.0
 
   # AutoGLM系统依赖
   flutter_secure_storage: ^9.2.2  # 安全配置存储

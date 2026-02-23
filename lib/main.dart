@@ -42,10 +42,12 @@ import 'providers/loading_provider.dart';
 import 'providers/checkin_provider.dart';
 import 'providers/user_level_provider.dart';
 import 'widgets/app_message_widget.dart';
+import 'widgets/daily_quote_widget.dart';
 import 'services/notification_service.dart';
 import 'services/remote_control_service.dart';
 import 'services/presence_service.dart';
 import 'services/chat_push_service.dart';
+import 'services/accessibility_overlay_service.dart';
 import 'avatar_editor_page.dart';
 import 'gallery/cloud_gallery_page.dart';
 import 'emoji/emoji_store_page.dart';
@@ -67,6 +69,9 @@ void main() async {
       PresenceService.start();
       ChatPushService.start();
     }
+    
+    // 初始化无障碍悬浮窗监听
+    AccessibilityOverlayService.init();
 
     // 创建主题提供者
     final themeProvider = ThemeProvider();
@@ -708,7 +713,7 @@ class _HomePageState extends State<HomePage> {
   SliverAppBar _buildSliverAppBar(BuildContext context) {
     return SliverAppBar(
       pinned: true,
-      expandedHeight: 220,
+      expandedHeight: 260,
       elevation: 0,
       backgroundColor: Colors.white,
       title: Row(
@@ -844,6 +849,11 @@ class _HomePageState extends State<HomePage> {
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1,
                   ),
+                ),
+                const SizedBox(height: 12),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 32),
+                  child: DailyQuoteWidget(embedded: true),
                 ),
               ],
             ),

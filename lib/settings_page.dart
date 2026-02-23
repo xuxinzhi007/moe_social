@@ -10,10 +10,12 @@ import 'services/memory_service.dart';
 import 'services/update_service.dart';
 import 'services/remote_control_service.dart';
 import 'pages/ai/llm_terminal_mode_settings_page.dart';
+import 'pages/ai/input_assist_settings_page.dart';
 import 'providers/theme_provider.dart';
 import 'providers/device_info_provider.dart';
 import 'memory_timeline_page.dart';
 import 'services/llm_endpoint_config.dart';
+import 'package:flutter/services.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -584,6 +586,46 @@ class _SettingsPageState extends State<SettingsPage> {
               },
               trailing: FutureBuilder<bool>(
                 future: LlmEndpointConfig.isTerminalModeEnabled(),
+                builder: (context, snapshot) {
+                  final enabled = snapshot.data == true;
+                  return Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: (enabled ? Colors.green : Colors.grey)
+                          .withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      enabled ? '已开启' : '未开启',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: enabled ? Colors.green : Colors.grey[700],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            _SettingsTile(
+              icon: Icons.bubble_chart_rounded,
+              title: '输入辅助悬浮球',
+              subtitle: '在 QQ/微信 输入框旁一键生成回复',
+              iconColor: Colors.pinkAccent,
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const InputAssistSettingsPage(),
+                  ),
+                );
+                if (mounted) setState(() {});
+              },
+              trailing: FutureBuilder<bool>(
+                future: const MethodChannel('com.moe_social/autoglm')
+                    .invokeMethod<bool>('getInputAssistEnabled')
+                    .then((v) => v ?? false),
                 builder: (context, snapshot) {
                   final enabled = snapshot.data == true;
                   return Container(
