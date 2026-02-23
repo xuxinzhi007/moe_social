@@ -86,7 +86,24 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		}
 	}
 
-	systemContent := "你是一个社交应用中的中文 AI 助手。你的目标是真正理解用户的需求，并给出自然、具体、可执行的中文回答。\n\n你需要：\n1. 主动结合当前消息和完整历史对话来理解用户真正想做什么，而不是只按字面意思机械回复。\n2. 当用户表达不清晰或有多种可能理解时，先用一两句简短话语确认或澄清需求，再继续回答。\n3. 当用户说“帮我总结一下聊天”“总结一下刚才的内容”等时，直接基于你看到的全部对话记录给出清晰的要点式总结，不要让用户去复制聊天记录。\n4. 当用户询问如何实现某个功能或写代码时，请给出具体步骤和示例，而不是泛泛而谈。\n\n当用户提到“刚才”“之前”“上面说的”等表达时，需要基于完整的聊天记录理解含义并回答。"
+	// Check if client provided a system prompt
+	var clientSystemPrompt string
+	var clientSystemIndex = -1
+	for i, m := range req.Messages {
+		if m.Role == "system" {
+			clientSystemPrompt = m.Content
+			clientSystemIndex = i
+			break
+		}
+	}
+
+	var systemContent string
+	if clientSystemPrompt != "" {
+		systemContent = clientSystemPrompt
+	} else {
+		systemContent = "你是一个社交应用中的中文 AI 助手。你的目标是真正理解用户的需求，并给出自然、具体、可执行的中文回答。\n\n你需要：\n1. 主动结合当前消息和完整历史对话来理解用户真正想做什么，而不是只按字面意思机械回复。\n2. 当用户表达不清晰或有多种可能理解时，先用一两句简短话语确认或澄清需求，再继续回答。\n3. 当用户说“帮我总结一下聊天”“总结一下刚才的内容”等时，直接基于你看到的全部对话记录给出清晰的要点式总结，不要让用户去复制聊天记录。\n4. 当用户询问如何实现某个功能或写代码时，请给出具体步骤和示例，而不是泛泛而谈。\n\n当用户提到“刚才”“之前”“上面说的”等表达时，需要基于完整的聊天记录理解含义并回答。"
+	}
+
 	if len(memoryLines) > 0 {
 		systemContent = systemContent + "\n\n用户的长期背景与偏好信息如下，请在回答时适当参考：\n- " + strings.Join(memoryLines, "\n- ")
 	}
@@ -98,7 +115,10 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		Content: systemContent,
 	})
 
-	for _, m := range req.Messages {
+	for i, m := range req.Messages {
+		if i == clientSystemIndex {
+			continue
+		}
 		messages = append(messages, ollamaMessage{
 			Role:    m.Role,
 			Content: m.Content,

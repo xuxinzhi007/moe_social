@@ -49,7 +49,7 @@ import 'services/chat_push_service.dart';
 import 'avatar_editor_page.dart';
 import 'gallery/cloud_gallery_page.dart';
 import 'emoji/emoji_store_page.dart';
-import 'ollama_chat_page.dart';
+import 'pages/ai/agent_list_page.dart';
 import 'friends_page.dart';
 import 'direct_chat_page.dart';
 import 'models/user.dart';
@@ -206,6 +206,7 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       title: 'Moe Social',
+      navigatorKey: AuthService.navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: themeProvider.currentTheme,
       initialRoute: AuthService.isLoggedIn ? '/home' : '/login',
@@ -299,7 +300,7 @@ class _MainPageState extends State<MainPage> {
   final List<Widget> _pages = [
     HomePage(),
     FriendsPage(),
-    OllamaChatPage(),
+    AgentListPage(),
     GachaPage(),
     ProfilePage(),
   ];

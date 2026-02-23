@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/user.dart';
 import 'services/api_service.dart';
@@ -21,6 +22,8 @@ class AuthService {
   // 存储键名
   static const String _tokenKey = 'auth_token';
   static const String _userIdKey = 'user_id';
+  
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   // 内存中的登录状态
   static String? _currentUser;
@@ -50,6 +53,11 @@ class AuthService {
       onLogout: logout,
       onTokenUpdate: updateToken,
     );
+    
+    // 设置 WebSocket 401 回调
+    ChatPushService.onAuthError = () {
+      logout();
+    };
 
     // 如果有token，设置到ApiService
     if (_token != null && _token!.isNotEmpty) {
@@ -108,6 +116,9 @@ class AuthService {
     // Stop websocket-based services to avoid reconnect loops.
     PresenceService.stop();
     ChatPushService.stop();
+    
+    // 跳转到登录页
+    navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
   }
 
   // 持久化存储认证数据
