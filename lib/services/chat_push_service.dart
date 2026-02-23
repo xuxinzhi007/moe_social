@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show ValueNotifier, kIsWeb;
+import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'api_service.dart';
@@ -93,6 +93,8 @@ class ChatPushService {
     );
   }
 
+  static void Function()? onAuthError;
+
   static void _connect() {
     if (_connecting) return;
     if (_channel != null) return;
@@ -126,7 +128,18 @@ class ChatPushService {
       _subscription = ch.stream.listen(
         _handleMessage,
         onDone: _handleDisconnected,
-        onError: (_) => _handleDisconnected(),
+        onError: (error) {
+          // 如果是 401 错误，说明 Token 过期或无效，停止重试，避免无限循环报错
+          if (error.toString().contains('401')) {
+            if (kDebugMode) {
+              debugPrint('WebSocket 401 Unauthorized. Stopping retry. Please relogin.');
+            }
+            stop();
+            onAuthError?.call();
+            return;
+          }
+          _handleDisconnected();
+        },
         cancelOnError: true,
       );
     } catch (_) {
