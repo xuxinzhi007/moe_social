@@ -277,7 +277,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
           throw Exception('创建 Ollama 模型失败: ${response.statusCode}');
         }
 
-        final data = jsonDecode(response.body);
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
         final success = data is Map && (data['success'] == true);
         if (!success) {
           final msg = data is Map && data['message'] is String

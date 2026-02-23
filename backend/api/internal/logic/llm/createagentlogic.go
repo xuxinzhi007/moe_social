@@ -62,13 +62,15 @@ func (l *CreateAgentLogic) CreateAgent(req *types.LlmCreateAgentReq) (*types.Bas
 		return &resp, nil
 	}
 
-	escapedPrompt := strings.ReplaceAll(systemPrompt, `"`, `\"`)
-	modelfile := fmt.Sprintf("FROM %s\n\nSYSTEM \"%s\"\n", baseModel, escapedPrompt)
-
+	// Use Ollama create API fields compatible with newer versions.
+	// Some versions no longer accept "modelfile" directly and require "from"/"files".
 	body := map[string]interface{}{
-		"name":      safeName,
-		"modelfile": modelfile,
-		"stream":    false,
+		"model":  safeName,
+		"from":   baseModel,
+		"stream": false,
+	}
+	if systemPrompt != "" {
+		body["system"] = systemPrompt
 	}
 
 	payload, err := json.Marshal(body)
@@ -82,6 +84,9 @@ func (l *CreateAgentLogic) CreateAgent(req *types.LlmCreateAgentReq) (*types.Bas
 	}
 
 	baseURL := strings.TrimRight(l.svcCtx.Config.Ollama.BaseUrl, "/")
+	if baseURL == "" {
+		baseURL = "http://127.0.0.1:11434"
+	}
 	createURL, err := url.JoinPath(baseURL, "/api/create")
 	if err != nil {
 		resp := common.HandleError(err)
@@ -105,7 +110,7 @@ func (l *CreateAgentLogic) CreateAgent(req *types.LlmCreateAgentReq) (*types.Bas
 	respBody, _ := io.ReadAll(httpResp.Body)
 
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
-		err = fmt.Errorf("创建 Ollama 模型失败: %s", strings.TrimSpace(string(respBody)))
+		err = fmt.Errorf("创建 Ollama 模型失败(%d): %s", httpResp.StatusCode, strings.TrimSpace(string(respBody)))
 		resp := common.HandleError(err)
 		return &resp, nil
 	}
