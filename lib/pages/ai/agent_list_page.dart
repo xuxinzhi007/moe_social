@@ -249,6 +249,8 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
       padding: const EdgeInsets.all(16),
       itemBuilder: (context, index) {
         final modelName = _ollamaModels[index];
+        final existing = _agents.where((a) => a.modelName == modelName).firstOrNull;
+        final alreadyAdded = existing != null;
         return Card(
           elevation: 2,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -264,12 +266,14 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: alreadyAdded
+                          ? Colors.green.withOpacity(0.1)
+                          : Colors.blue.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.memory_rounded,
-                      color: Colors.blue,
+                    child: Icon(
+                      alreadyAdded ? Icons.check_circle_rounded : Icons.memory_rounded,
+                      color: alreadyAdded ? Colors.green : Colors.blue,
                       size: 32,
                     ),
                   ),
@@ -286,17 +290,22 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Ollama 原生模型',
+                        Text(
+                          alreadyAdded ? '已添加 · 点击进入对话' : 'Ollama 原生模型',
                           style: TextStyle(
-                            color: Colors.grey,
+                            color: alreadyAdded ? Colors.green.shade600 : Colors.grey,
                             fontSize: 14,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+                  Icon(
+                    alreadyAdded
+                        ? Icons.chat_bubble_outline_rounded
+                        : Icons.add_circle_outline_rounded,
+                    color: alreadyAdded ? Colors.green : Colors.blue,
+                  ),
                 ],
               ),
             ),
@@ -307,6 +316,18 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
   }
 
   Future<void> _createAgentFromModel(String modelName) async {
+    // 若同模型智能体已存在，直接进入对话，不重复创建
+    final existing = _agents.where((a) => a.modelName == modelName).firstOrNull;
+    if (existing != null) {
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ChatPage(agent: existing)),
+        );
+      }
+      return;
+    }
+
     final agent = AiAgent(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: modelName,
@@ -317,13 +338,11 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
     );
     await AiDbService().insertAgent(agent);
     await _loadAgents();
-    
+
     if (mounted) {
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) => ChatPage(agent: agent),
-        ),
+        MaterialPageRoute(builder: (context) => ChatPage(agent: agent)),
       );
     }
   }

@@ -84,6 +84,47 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     }
   }
 
+  Widget _buildPromptPreview(String prompt) {
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.blue.shade100),
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.blue.shade50.withOpacity(0.4),
+        ),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+          childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+          leading: const Icon(Icons.visibility_outlined, size: 18, color: Colors.blueGrey),
+          title: const Text(
+            '查看当前保存的提示词',
+            style: TextStyle(fontSize: 13, color: Colors.blueGrey, fontWeight: FontWeight.w500),
+          ),
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: prompt.isEmpty
+                  ? Text(
+                      '暂未设置提示词',
+                      style: TextStyle(color: Colors.grey.shade400, fontStyle: FontStyle.italic, fontSize: 13),
+                    )
+                  : SelectableText(
+                      prompt,
+                      style: const TextStyle(fontSize: 13, height: 1.6, color: Colors.black87),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
@@ -248,13 +289,19 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                 child: Text('正在加载模型列表...', style: TextStyle(color: Colors.grey, fontSize: 12)),
               ),
             const SizedBox(height: 16),
+            if (widget.agent != null) ...[
+              _buildPromptPreview(widget.agent!.systemPrompt),
+              const SizedBox(height: 12),
+            ],
             TextFormField(
               controller: _promptController,
               maxLines: 8,
-              decoration: const InputDecoration(
-                labelText: '系统提示词 (System Prompt)',
+              decoration: InputDecoration(
+                labelText: widget.agent != null
+                    ? '修改系统提示词'
+                    : '系统提示词 (System Prompt)',
                 hintText: '设定智能体的人设、语气、擅长领域等...',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
                 alignLabelWithHint: true,
               ),
             ),
