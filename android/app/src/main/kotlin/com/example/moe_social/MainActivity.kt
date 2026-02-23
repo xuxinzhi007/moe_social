@@ -15,6 +15,8 @@ import android.net.Uri
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.moe_social/autoglm"
+    private val PREFS_NAME = "moe_prefs"
+    private val KEY_INPUT_ASSIST_ENABLED = "input_assist_enabled"
     private var lastImeIdLogged: String? = null
     private var lastIsAdbLogged: Boolean? = null
 
@@ -39,10 +41,42 @@ class MainActivity : FlutterActivity() {
             }
         )
 
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, "com.moe_social/accessibility_events").setStreamHandler(
+            object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                    AutoGLMAccessibilityService.accessibilityEventListener = { eventType, data ->
+                        runOnUiThread {
+                            try {
+                                events?.success(mapOf("type" to eventType, "data" to data))
+                            } catch (e: Exception) {}
+                        }
+                    }
+                }
+
+                override fun onCancel(arguments: Any?) {
+                    AutoGLMAccessibilityService.accessibilityEventListener = null
+                }
+            }
+        )
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             if (call.method == "openAccessibilitySettings") {
                 val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
                 startActivity(intent)
+                result.success(true)
+                return@setMethodCallHandler
+            }
+
+            if (call.method == "getInputAssistEnabled") {
+                val sp = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                result.success(sp.getBoolean(KEY_INPUT_ASSIST_ENABLED, false))
+                return@setMethodCallHandler
+            }
+
+            if (call.method == "setInputAssistEnabled") {
+                val enabled = call.argument<Boolean>("enabled") ?: false
+                val sp = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                sp.edit().putBoolean(KEY_INPUT_ASSIST_ENABLED, enabled).apply()
                 result.success(true)
                 return@setMethodCallHandler
             }

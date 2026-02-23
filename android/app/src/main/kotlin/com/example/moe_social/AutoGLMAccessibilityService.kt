@@ -30,6 +30,7 @@ class AutoGLMAccessibilityService : AccessibilityService() {
     companion object {
         var instance: AutoGLMAccessibilityService? = null
         var logListener: ((String) -> Unit)? = null
+        var accessibilityEventListener: ((String, String) -> Unit)? = null
     }
     
     private fun log(msg: String) {
@@ -93,7 +94,8 @@ class AutoGLMAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        // 监听事件，暂不需要处理，但必须重写
+        // AutoGLM 本身的事件监听留空（避免干扰第三方App输入/返回键）。
+        // 输入辅助悬浮球改为手动常驻显示，不依赖无障碍事件触发。
     }
 
     override fun onInterrupt() {

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="accessibility_service_description">Moe Social 自动化助手，用于帮助您自动执行操作。</string>
+    <string name="input_assist_service_description">Moe AI 输入辅助：检测输入框并弹出悬浮球。</string>
 </resources>
 
