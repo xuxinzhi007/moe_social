@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -360,6 +361,131 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  void _showAgentInfo() {
+    final agent = widget.agent;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.5,
+          minChildSize: 0.3,
+          maxChildSize: 0.85,
+          expand: false,
+          builder: (_, scrollCtrl) {
+            return Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 4),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: Theme.of(ctx).primaryColor.withOpacity(0.12),
+                        child: Icon(Icons.smart_toy_rounded,
+                            color: Theme.of(ctx).primaryColor),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(agent.name,
+                                style: const TextStyle(
+                                    fontSize: 17, fontWeight: FontWeight.bold)),
+                            if (agent.description.isNotEmpty)
+                              Text(agent.description,
+                                  style: TextStyle(
+                                      fontSize: 13, color: Colors.grey.shade600)),
+                            Text('模型：${agent.modelName}',
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey.shade500)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: ListView(
+                    controller: scrollCtrl,
+                    padding: const EdgeInsets.all(20),
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.subject_rounded,
+                              size: 16, color: Colors.grey),
+                          const SizedBox(width: 6),
+                          const Text('系统提示词',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey)),
+                          const Spacer(),
+                          if (agent.systemPrompt.isNotEmpty)
+                            TextButton.icon(
+                              style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                              icon: const Icon(Icons.copy_rounded, size: 14),
+                              label: const Text('复制', style: TextStyle(fontSize: 12)),
+                              onPressed: () async {
+                                await Clipboard.setData(
+                                    ClipboardData(text: agent.systemPrompt));
+                                if (!mounted) return;
+                                Navigator.pop(ctx);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('提示词已复制')),
+                                );
+                              },
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F7FA),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: agent.systemPrompt.isEmpty
+                            ? Text('未设置系统提示词',
+                                style: TextStyle(
+                                    color: Colors.grey.shade400,
+                                    fontSize: 14,
+                                    fontStyle: FontStyle.italic))
+                            : SelectableText(
+                                agent.systemPrompt,
+                                style: const TextStyle(
+                                    fontSize: 14, height: 1.6, color: Colors.black87),
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -383,6 +509,11 @@ class _ChatPageState extends State<ChatPage> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline_rounded),
+            tooltip: '查看智能体信息',
+            onPressed: _showAgentInfo,
+          ),
           Builder(
             builder: (context) => IconButton(
               icon: const Icon(Icons.history_rounded),
@@ -579,9 +710,9 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                 ],
               ),
-              child: const Text(
-                '...',
-                style: TextStyle(color: Colors.black87, fontSize: 15, height: 1.5),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 4),
+                child: _TypingDotsIndicator(),
               ),
             ),
           ),
@@ -633,6 +764,67 @@ class _ChatPageState extends State<ChatPage> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _TypingDotsIndicator extends StatefulWidget {
+  const _TypingDotsIndicator();
+
+  @override
+  State<_TypingDotsIndicator> createState() => _TypingDotsIndicatorState();
+}
+
+class _TypingDotsIndicatorState extends State<_TypingDotsIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: List.generate(3, (i) {
+            final phase = (_ctrl.value + i / 3.0) % 1.0;
+            // 0→0.5: bounce up, 0.5→1: rest
+            final y = phase < 0.5
+                ? -6.0 * math.sin(phase * math.pi * 2)
+                : 0.0;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 3),
+              child: Transform.translate(
+                offset: Offset(0, y),
+                child: Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade500,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 }
