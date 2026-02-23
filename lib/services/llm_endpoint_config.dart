@@ -33,5 +33,9 @@ class LlmEndpointConfig {
     }
     return Uri.parse('${ApiService.baseUrl}/api/llm/chat');
   }
+
+  /// 代理 Ollama POST /api/show，用于读取模型的 Modelfile / 系统提示词
+  static Uri showUri() =>
+      Uri.parse('${ApiService.baseUrl}/api/llm/show/raw');
 }
 

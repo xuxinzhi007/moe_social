@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../../models/ai_agent.dart';
 import '../../services/ai_db_service.dart';
@@ -84,40 +85,144 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     }
   }
 
-  Widget _buildPromptPreview(String prompt) {
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.blue.shade100),
-          borderRadius: BorderRadius.circular(8),
-          color: Colors.blue.shade50.withOpacity(0.4),
-        ),
+  /// 从 Ollama /api/show 获取模型实际系统提示词
+  Future<String> _fetchOllamaSystemPrompt(String modelName) async {
+    try {
+      final uri = LlmEndpointConfig.showUri();
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      final token = ApiService.token;
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+      final response = await http
+          .post(uri, headers: headers, body: jsonEncode({'name': modelName}))
+          .timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        // 新版 Ollama 直接返回 system 字段
+        if (data is Map && data['system'] is String && (data['system'] as String).isNotEmpty) {
+          return data['system'] as String;
+        }
+        // 旧版从 modelfile 解析 SYSTEM 指令
+        if (data is Map && data['modelfile'] is String) {
+          final mf = data['modelfile'] as String;
+          final tripleMatch =
+              RegExp(r'SYSTEM\s+"""([\s\S]*?)"""', multiLine: true).firstMatch(mf);
+          if (tripleMatch != null) return tripleMatch.group(1)?.trim() ?? '';
+          final singleMatch = RegExp(r'SYSTEM\s+"(.*?)"').firstMatch(mf);
+          if (singleMatch != null) return singleMatch.group(1)?.trim() ?? '';
+        }
+        return '';
+      }
+      return '（读取失败：HTTP ${response.statusCode}）';
+    } catch (e) {
+      return '（读取失败：$e）';
+    }
+  }
+
+  Widget _buildPromptPreview(String localPrompt, String modelName) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.blue.shade100),
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.blue.shade50.withOpacity(0.4),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 14),
           childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
           leading: const Icon(Icons.visibility_outlined, size: 18, color: Colors.blueGrey),
           title: const Text(
-            '查看当前保存的提示词',
+            '查看当前提示词（含 Ollama 模型内置）',
             style: TextStyle(fontSize: 13, color: Colors.blueGrey, fontWeight: FontWeight.w500),
           ),
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: prompt.isEmpty
-                  ? Text(
-                      '暂未设置提示词',
-                      style: TextStyle(color: Colors.grey.shade400, fontStyle: FontStyle.italic, fontSize: 13),
-                    )
-                  : SelectableText(
-                      prompt,
-                      style: const TextStyle(fontSize: 13, height: 1.6, color: Colors.black87),
-                    ),
+            FutureBuilder<String>(
+              future: _fetchOllamaSystemPrompt(modelName),
+              builder: (ctx, snap) {
+                final ollamaPrompt = snap.data;
+                final effectivePrompt = (ollamaPrompt != null && ollamaPrompt.isNotEmpty)
+                    ? ollamaPrompt
+                    : localPrompt;
+                final isLoading = snap.connectionState == ConnectionState.waiting;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (isLoading)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            SizedBox(width: 8),
+                            Text('正在从 Ollama 读取...', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          ],
+                        ),
+                      )
+                    else ...[
+                      if (ollamaPrompt != null && ollamaPrompt.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.check_circle_outline_rounded,
+                                  size: 13, color: Colors.green),
+                              const SizedBox(width: 4),
+                              Text('来自 Ollama Modelfile',
+                                  style: TextStyle(fontSize: 11, color: Colors.green.shade700)),
+                            ],
+                          ),
+                        ),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: effectivePrompt.isEmpty
+                            ? Text(
+                                '暂未设置提示词',
+                                style: TextStyle(
+                                    color: Colors.grey.shade400,
+                                    fontStyle: FontStyle.italic,
+                                    fontSize: 13),
+                              )
+                            : SelectableText(
+                                effectivePrompt,
+                                style: const TextStyle(
+                                    fontSize: 13, height: 1.6, color: Colors.black87),
+                              ),
+                      ),
+                      if (effectivePrompt.isNotEmpty)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton.icon(
+                            style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                            icon: const Icon(Icons.copy_rounded, size: 13),
+                            label: const Text('复制', style: TextStyle(fontSize: 12)),
+                            onPressed: () async {
+                              await Clipboard.setData(
+                                  ClipboardData(text: effectivePrompt));
+                              if (!ctx.mounted) return;
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                const SnackBar(content: Text('提示词已复制')),
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -267,6 +372,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: _modelName,
+              isExpanded: true,
               decoration: const InputDecoration(
                 labelText: '模型',
                 border: OutlineInputBorder(),
@@ -274,10 +380,18 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
               items: _models.isEmpty
                   ? [
                       DropdownMenuItem(
-                          value: _modelName, child: Text(_modelName))
+                        value: _modelName,
+                        child: Text(
+                          _modelName,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      )
                     ]
                   : _models.map((m) {
-                      return DropdownMenuItem(value: m, child: Text(m));
+                      return DropdownMenuItem(
+                        value: m,
+                        child: Text(m, overflow: TextOverflow.ellipsis),
+                      );
                     }).toList(),
               onChanged: (v) {
                 if (v != null) setState(() => _modelName = v);
@@ -290,7 +404,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
               ),
             const SizedBox(height: 16),
             if (widget.agent != null) ...[
-              _buildPromptPreview(widget.agent!.systemPrompt),
+              _buildPromptPreview(widget.agent!.systemPrompt, widget.agent!.modelName),
               const SizedBox(height: 12),
             ],
             TextFormField(
