@@ -3,6 +3,7 @@ import 'models/comment.dart';
 import 'services/post_service.dart';
 import 'services/api_service.dart';
 import 'auth_service.dart';
+import 'services/like_state_manager.dart';
 import 'widgets/avatar_image.dart';
 import 'widgets/fade_in_up.dart';
 import 'widgets/like_button.dart';
@@ -125,51 +126,14 @@ class _CommentsPageState extends State<CommentsPage> {
       return;
     }
 
-    // 乐观更新
-    setState(() {
-      _comments = _comments.map((comment) {
-        if (comment.id == commentId) {
-          final isLiked = !comment.isLiked;
-          return comment.copyWith(
-            isLiked: isLiked,
-            likes: isLiked ? comment.likes + 1 : comment.likes - 1,
-          );
-        }
-        return comment;
-      }).toList();
-    });
-
+    // 乐观更新：LikeStateManager 会自动处理状态变化，UI 通过 ValueListenableBuilder 监听更新
+    // 这里只需要调用 Service 方法即可
     try {
-      final updatedComment = await PostService.toggleCommentLike(commentId, userId);
-      setState(() {
-        _comments = _comments.map((comment) {
-          if (comment.id == commentId) {
-            // 如果服务端返回的状态与当前乐观状态不一致（比如并发修改），以服务端为准
-            // 但如果仅仅是 likes 数量差异，尽量不闪烁
-            if (comment.isLiked != updatedComment.isLiked) {
-               return updatedComment;
-            }
-            return comment;
-          }
-          return comment;
-        }).toList();
-      });
+      await PostService.toggleCommentLike(commentId, userId);
+      // 无需手动 setState 更新 _comments，因为 LikeButton 现在直接监听 LikeStateManager
     } catch (e) {
       print('Failed to toggle comment like: $e');
       _showCustomSnackBar(context, '操作失败', isError: true);
-      // 回滚
-      setState(() {
-        _comments = _comments.map((comment) {
-          if (comment.id == commentId) {
-            final isLiked = !comment.isLiked;
-            return comment.copyWith(
-              isLiked: isLiked,
-              likes: isLiked ? comment.likes + 1 : comment.likes - 1,
-            );
-          }
-          return comment;
-        }).toList();
-      });
     }
   }
 
@@ -419,13 +383,29 @@ class _CommentsPageState extends State<CommentsPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    // 使用新的点赞按钮
-                    LikeButton(
-                      isLiked: comment.isLiked,
-                      likeCount: comment.likes,
-                      onTap: () => _toggleCommentLike(comment.id),
-                      size: 18,
-                      showCount: true,
+                    // 使用新的点赞按钮，绑定状态管理器
+                    ValueListenableBuilder<bool>(
+                      valueListenable: LikeStateManager().getCommentStatusNotifier(
+                        comment.id,
+                        initialValue: comment.isLiked,
+                      ),
+                      builder: (context, isLiked, _) {
+                        return ValueListenableBuilder<int>(
+                          valueListenable: LikeStateManager().getCommentCountNotifier(
+                            comment.id,
+                            initialValue: comment.likes,
+                          ),
+                          builder: (context, likeCount, _) {
+                            return LikeButton(
+                              isLiked: isLiked,
+                              likeCount: likeCount,
+                              onTap: () => _toggleCommentLike(comment.id),
+                              size: 18,
+                              showCount: true,
+                            );
+                          },
+                        );
+                      },
                     ),
                     const SizedBox(width: 16),
                     InkWell(

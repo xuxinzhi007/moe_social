@@ -241,25 +241,17 @@ class _HomePageState extends State<HomePage> {
     }
 
     try {
-      final originalPost = _allPosts.firstWhere((post) => post.id == postId);
+      // PostService 内部通过 LikeStateManager 处理乐观更新和状态同步
+      // UI 会通过 PostCard 中的 ValueListenableBuilder 自动刷新
       final updatedPost = await PostService.toggleLike(postId, userId);
-
-      // 保留原来的话题标签信息，避免点赞后话题标签消失
-      final postWithTags = updatedPost.copyWith(
-        topicTags: originalPost.topicTags,
-      );
-
-      setState(() {
-        _allPosts = _allPosts.map((post) {
-          if (post.id == postId) {
-            return postWithTags;
-          }
-          return post;
-        }).toList();
-        _displayPosts = _computeDisplayPosts(_allPosts);
-      });
-
-      // Don't persist like state locally; server is the source of truth.
+      
+      // 默默更新本地数据源，保持数据一致性，但不触发重排或重绘
+      final postIndex = _allPosts.indexWhere((p) => p.id == postId);
+      if (postIndex != -1) {
+        _allPosts[postIndex] = updatedPost;
+        // 如果需要，也可以更新 _displayPosts 中对应的项，防止后续操作引用旧对象
+        // 但不需要 setState，避免列表重排导致跳动
+      }
     } catch (e) {
       if (mounted) {
         ErrorHandler.handleException(context, e as Exception);

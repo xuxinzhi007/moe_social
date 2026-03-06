@@ -7,7 +7,9 @@ import 'package:provider/provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/loading_provider.dart';
 import 'widgets/app_message_widget.dart';
-import 'widgets/auth_background.dart'; // 引入新背景
+import 'widgets/moe_input_field.dart';
+import 'widgets/auth_background.dart';
+import 'widgets/auth_background.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -116,14 +118,14 @@ class _LoginPageState extends State<LoginPage> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      _buildMoeInput(
+                      MoeInputField(
                         controller: _emailController,
                         hintText: '邮箱',
                         icon: Icons.email_outlined,
                         validator: Validators.email,
                       ),
                       const SizedBox(height: 20),
-                      _buildMoeInput(
+                      MoeInputField(
                         controller: _passwordController,
                         hintText: '密码',
                         icon: Icons.lock_outline,
@@ -212,52 +214,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // 萌系输入框：悬浮、圆润、无边框
-  Widget _buildMoeInput({
-    required TextEditingController controller,
-    required String hintText,
-    required IconData icon,
-    bool isPassword = false,
-    String? Function(String?)? validator,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF7F7FD5).withOpacity(0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: TextFormField(
-        controller: controller,
-        obscureText: isPassword ? _obscurePassword : false,
-        validator: validator,
-        style: const TextStyle(color: Colors.black87),
-        decoration: InputDecoration(
-          hintText: hintText,
-          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
-          prefixIcon: Icon(icon, color: _primaryColor.withOpacity(0.6), size: 22),
-          suffixIcon: isPassword
-              ? IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                    color: Colors.grey[300],
-                    size: 20,
-                  ),
-                  onPressed: () =>
-                      setState(() => _obscurePassword = !_obscurePassword),
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        ),
-      ),
-    );
-  }
 
   @override
   void dispose() {
