@@ -7,6 +7,7 @@ import 'services/api_service.dart';
 import 'services/presence_service.dart';
 import 'widgets/avatar_image.dart';
 import 'providers/notification_provider.dart';
+import 'widgets/fade_in_up.dart';
 
 class FriendsPage extends StatefulWidget {
   const FriendsPage({super.key});
@@ -54,7 +55,6 @@ class _FriendsPageState extends State<FriendsPage> {
     if (_friends.isEmpty) return;
     final current = PresenceService.online.value;
     if (PresenceService.isConnected && current.isNotEmpty) {
-      // Presence is active; stop fallback polling.
       _onlineTimer?.cancel();
       _onlineTimer = null;
     }
@@ -118,7 +118,6 @@ class _FriendsPageState extends State<FriendsPage> {
   Future<void> _ensureOnlineStatus() async {
     if (!mounted || _friends.isEmpty) return;
 
-    // Prefer push-based presence if available.
     final presenceMap = PresenceService.online.value;
     if (PresenceService.isConnected && presenceMap.isNotEmpty) {
       final next = <String, bool>{};
@@ -131,7 +130,6 @@ class _FriendsPageState extends State<FriendsPage> {
       return;
     }
 
-    // Fallback: batch polling at a lower frequency.
     _startOnlinePolling();
   }
 
@@ -148,7 +146,6 @@ class _FriendsPageState extends State<FriendsPage> {
       return;
     }
 
-    // If presence websocket is active and has data, prefer it.
     final presenceMap = PresenceService.online.value;
     if (PresenceService.isConnected && presenceMap.isNotEmpty) {
       final next = <String, bool>{};
@@ -169,7 +166,6 @@ class _FriendsPageState extends State<FriendsPage> {
         _onlineStatus = status;
       });
     } catch (_) {
-      // Keep last known status on error.
     }
   }
 
@@ -198,6 +194,8 @@ class _FriendsPageState extends State<FriendsPage> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -214,9 +212,9 @@ class _FriendsPageState extends State<FriendsPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('取消'),
+                  child: const Text('取消', style: TextStyle(color: Colors.grey)),
                 ),
-                TextButton(
+                ElevatedButton(
                   onPressed: isLoading
                       ? null
                       : () async {
@@ -267,11 +265,18 @@ class _FriendsPageState extends State<FriendsPage> {
                             });
                           }
                         },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF7F7FD5),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
                   child: isLoading
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                       : const Text('添加'),
                 ),
@@ -298,12 +303,23 @@ class _FriendsPageState extends State<FriendsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('好友管理'),
+        title: const Text('好友', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.person_add_alt_1_rounded),
-            onPressed: _showAddFriendDialog,
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF7F7FD5).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.person_add_rounded, color: Color(0xFF7F7FD5)),
+              onPressed: _showAddFriendDialog,
+            ),
           ),
         ],
       ),
@@ -313,25 +329,28 @@ class _FriendsPageState extends State<FriendsPage> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF7F7FD5)));
     }
     if (_hasError) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+            Icon(Icons.error_outline_rounded, size: 60, color: Colors.grey[300]),
             const SizedBox(height: 16),
-            const Text('加载好友列表失败'),
-            const SizedBox(height: 8),
             Text(
               _errorMessage,
-              style: const TextStyle(color: Colors.grey),
+              style: TextStyle(color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _loadFriends,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7F7FD5),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              ),
               child: const Text('重试'),
             ),
           ],
@@ -343,48 +362,90 @@ class _FriendsPageState extends State<FriendsPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.people_outline, size: 56, color: Colors.grey),
-            const SizedBox(height: 16),
-            const Text('还没有好友，试着通过邮箱添加一个吧'),
+            Container(
+              padding: const EdgeInsets.all(30),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10)),
+                ],
+              ),
+              child: Icon(Icons.people_outline_rounded, size: 80, color: Colors.grey[300]),
+            ),
             const SizedBox(height: 24),
+            Text(
+              '还没有好友，试着通过邮箱添加一个吧',
+              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+            ),
+            const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: _showAddFriendDialog,
-              icon: const Icon(Icons.person_add_alt_1_rounded),
+              icon: const Icon(Icons.person_add_rounded),
               label: const Text('添加好友'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7F7FD5),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                elevation: 4,
+                shadowColor: const Color(0xFF7F7FD5).withOpacity(0.4),
+              ),
             ),
           ],
         ),
       );
     }
+    
     final friends = _filteredFriends;
+    
     return Column(
       children: [
+        // 搜索框
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: '搜索好友昵称或邮箱',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            onChanged: (value) {
-              setState(() {
-                _searchKeyword = value;
-              });
-            },
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: '搜索好友昵称或邮箱',
+                hintStyle: TextStyle(color: Colors.grey[400]),
+                prefixIcon: Icon(Icons.search_rounded, color: Colors.grey[400]),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchKeyword = value;
+                });
+              },
+            ),
           ),
         ),
+        
         Expanded(
           child: RefreshIndicator(
             onRefresh: _loadFriends,
+            color: const Color(0xFF7F7FD5),
             child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: friends.length,
               itemBuilder: (context, index) {
                 final user = friends[index];
-                return _buildFriendItem(user);
+                return FadeInUp(
+                  delay: Duration(milliseconds: 30 * index),
+                  child: _buildFriendCard(user),
+                );
               },
             ),
           ),
@@ -393,153 +454,246 @@ class _FriendsPageState extends State<FriendsPage> {
     );
   }
 
-  Widget _buildFriendItem(User user) {
+  Widget _buildFriendCard(User user) {
     final isOnline = _onlineStatus[user.id] ?? false;
     final dmUnread =
         context.watch<NotificationProvider>().unreadDmBySender[user.id] ?? 0;
-    return ListTile(
-      leading: NetworkAvatarImage(
-        imageUrl: user.avatar,
-        radius: 24,
-        placeholderIcon: Icons.person,
-      ),
-      title: Text(
-        user.username,
-        style: const TextStyle(fontWeight: FontWeight.w500),
-      ),
-      subtitle: Text(user.email),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: isOnline ? Colors.green : Colors.grey,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                isOnline ? '在线' : '离线',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
-          ),
-          const SizedBox(width: 8),
-          if (dmUnread > 0)
-            Container(
-              margin: const EdgeInsets.only(right: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.redAccent,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                dmUnread > 99 ? '99+' : dmUnread.toString(),
-                style: const TextStyle(
-                    color: Colors.white, fontSize: 11, height: 1.1),
-              ),
-            ),
-          IconButton(
-            icon: const Icon(Icons.chat_bubble_outline_rounded,
-                color: Color(0xFF7F7FD5)),
-            onPressed: () {
-              Navigator.pushNamed(
-                context,
-                '/direct-chat',
-                arguments: {
-                  'userId': user.id,
-                  'username': user.username,
-                  'avatar': user.avatar,
-                },
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {
-              _showFriendActions(user);
-            },
+        
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      onTap: () {
-        Navigator.pushNamed(
-          context,
-          '/user-profile',
-          arguments: {
-            'userId': user.id,
-            'userName': user.username,
-            'userAvatar': user.avatar,
-            'heroTag': 'friend_${user.id}',
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: () {
+            Navigator.pushNamed(
+              context,
+              '/user-profile',
+              arguments: {
+                'userId': user.id,
+                'userName': user.username,
+                'userAvatar': user.avatar,
+                'heroTag': 'friend_${user.id}',
+              },
+            );
           },
-        );
-      },
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // 头像与在线状态
+                Stack(
+                  children: [
+                    Hero(
+                      tag: 'friend_${user.id}',
+                      child: NetworkAvatarImage(
+                        imageUrl: user.avatar,
+                        radius: 28,
+                        placeholderIcon: Icons.person,
+                      ),
+                    ),
+                    if (isOnline)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4CAF50),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(width: 16),
+                
+                // 用户信息
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.username,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Color(0xFF333333),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        user.email,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[500],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // 操作区
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (dmUnread > 0)
+                      Container(
+                        margin: const EdgeInsets.only(right: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF6B6B),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          dmUnread > 99 ? '99+' : dmUnread.toString(),
+                          style: const TextStyle(
+                            color: Colors.white, 
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold
+                          ),
+                        ),
+                      ),
+                    
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF7F7FD5).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.chat_bubble_outline_rounded,
+                            color: Color(0xFF7F7FD5), size: 20),
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/direct-chat',
+                            arguments: {
+                              'userId': user.id,
+                              'username': user.username,
+                              'avatar': user.avatar,
+                            },
+                          );
+                        },
+                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 8),
+                    
+                    IconButton(
+                      icon: Icon(Icons.more_vert_rounded, color: Colors.grey[400]),
+                      onPressed: () => _showFriendActions(user),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
   void _showFriendActions(User user) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.chat_bubble_outline_rounded),
-                title: const Text('私聊'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(
-                    this.context,
-                    '/direct-chat',
-                    arguments: {
-                      'userId': user.id,
-                      'username': user.username,
-                      'avatar': user.avatar,
-                    },
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.person_remove_alt_1_rounded,
-                    color: Colors.red),
-                title: const Text('删除好友', style: TextStyle(color: Colors.red)),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final currentUserId = AuthService.currentUser;
-                  if (currentUserId == null) {
-                    ScaffoldMessenger.of(this.context).showSnackBar(
-                      const SnackBar(content: Text('请先登录')),
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7F7FD5).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.chat_bubble_rounded, color: Color(0xFF7F7FD5)),
+                  ),
+                  title: const Text('私聊', style: TextStyle(fontWeight: FontWeight.bold)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(
+                      this.context,
+                      '/direct-chat',
+                      arguments: {
+                        'userId': user.id,
+                        'username': user.username,
+                        'avatar': user.avatar,
+                      },
                     );
-                    return;
-                  }
-                  try {
-                    await ApiService.unfollowUser(currentUserId, user.id);
-                    if (mounted) {
-                      ScaffoldMessenger.of(this.context).showSnackBar(
-                        SnackBar(content: Text('已取消关注 ${user.username}')),
-                      );
-                      _loadFriends();
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.person_remove_rounded, color: Colors.redAccent),
+                  ),
+                  title: const Text('删除好友', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final currentUserId = AuthService.currentUser;
+                    if (currentUserId == null) return;
+                    
+                    try {
+                      await ApiService.unfollowUser(currentUserId, user.id);
+                      if (mounted) {
+                        ScaffoldMessenger.of(this.context).showSnackBar(
+                          SnackBar(content: Text('已取消关注 ${user.username}')),
+                        );
+                        _loadFriends();
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(this.context).showSnackBar(
+                          SnackBar(content: Text(e.toString())),
+                        );
+                      }
                     }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(this.context).showSnackBar(
-                        SnackBar(content: Text(e.toString())),
-                      );
-                    }
-                  }
-                },
-              ),
-            ],
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         );
       },

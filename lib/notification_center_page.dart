@@ -75,7 +75,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
+              child: const Text('取消', style: TextStyle(color: Colors.grey)),
             ),
             TextButton(
               onPressed: () async {
@@ -170,12 +170,12 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
     }
     
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         shape: BoxShape.circle,
       ),
-      child: Icon(icon, color: color, size: 24),
+      child: Icon(icon, color: color, size: 20),
     );
   }
 
@@ -184,7 +184,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('消息中心', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('消息中心', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -193,7 +193,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
             TextButton.icon(
               onPressed: _markAllAsRead,
               icon: const Icon(Icons.done_all_rounded, size: 16),
-              label: const Text('全部已读'),
+              label: const Text('已读'),
               style: TextButton.styleFrom(
                 foregroundColor: const Color(0xFF7F7FD5),
               ),
@@ -204,123 +204,157 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _notifications.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10),
-                          ],
-                        ),
-                        child: Icon(Icons.notifications_none_rounded, size: 64, color: Colors.grey[300]),
-                      ),
-                      const SizedBox(height: 24),
-                      const Text('暂无新消息', style: TextStyle(color: Colors.grey, fontSize: 16)),
-                    ],
-                  ),
-                )
-              : ListView.separated(
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF7F7FD5)));
+    }
+    
+    if (_notifications.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(30),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10)),
+                ],
+              ),
+              child: Icon(Icons.notifications_none_rounded, size: 80, color: Colors.grey[300]),
+            ),
+            const SizedBox(height: 24),
+            const Text('暂无新消息', style: TextStyle(color: Colors.grey, fontSize: 16)),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: _notifications.length,
+      itemBuilder: (context, index) {
+        final notification = _notifications[index];
+        return FadeInUp(
+          delay: Duration(milliseconds: 30 * (index % 10)),
+          child: Dismissible(
+            key: Key(notification.id),
+            background: Container(
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.redAccent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              child: const Icon(Icons.delete_outline, color: Colors.white),
+            ),
+            direction: DismissDirection.endToStart,
+            onDismissed: (direction) {
+              // 实际应用中应该调用删除API
+              setState(() {
+                _notifications.removeAt(index);
+              });
+            },
+            child: GestureDetector(
+              onTap: () {
+                if (!notification.isRead) {
+                  _markAsRead(notification.id);
+                }
+              },
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.06),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: !notification.isRead 
+                      ? Border.all(color: const Color(0xFF7F7FD5).withOpacity(0.3), width: 1.5)
+                      : null,
+                ),
+                child: Padding(
                   padding: const EdgeInsets.all(16),
-                  itemCount: _notifications.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final notification = _notifications[index];
-                    return FadeInUp(
-                      delay: Duration(milliseconds: 30 * (index % 10)),
-                      child: GestureDetector(
-                        onTap: () {
-                          if (!notification.isRead) {
-                            _markAsRead(notification.id);
-                          }
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.05),
-                                blurRadius: 5,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                            border: !notification.isRead 
-                                ? Border.all(color: const Color(0xFF7F7FD5).withOpacity(0.3), width: 1.5)
-                                : null,
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 左侧图标或头像
+                      notification.relatedUserAvatar != null
+                          ? NetworkAvatarImage(
+                              imageUrl: notification.relatedUserAvatar!,
+                              radius: 24,
+                              placeholderIcon: Icons.person,
+                            )
+                          : _buildNotificationIcon(notification.type),
+                      
+                      const SizedBox(width: 16),
+                      
+                      // 内容区域
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                notification.relatedUserAvatar != null
-                                    ? NetworkAvatarImage(
-                                        imageUrl: notification.relatedUserAvatar!,
-                                        radius: 24,
-                                        placeholderIcon: Icons.person,
-                                      )
-                                    : _buildNotificationIcon(notification.type),
-                                const SizedBox(width: 16),
                                 Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              notification.title,
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 15,
-                                                color: Colors.grey[800],
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                          if (!notification.isRead)
-                                            Container(
-                                              margin: const EdgeInsets.only(left: 8),
-                                              width: 8,
-                                              height: 8,
-                                              decoration: const BoxDecoration(
-                                                color: Color(0xFF7F7FD5),
-                                                shape: BoxShape.circle,
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        notification.content,
-                                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        _formatTime(notification.createdAt),
-                                        style: TextStyle(fontSize: 12, color: Colors.grey[400]),
-                                      ),
-                                    ],
+                                  child: Text(
+                                    notification.title,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                      color: Colors.grey[800],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
+                                if (!notification.isRead)
+                                  Container(
+                                    margin: const EdgeInsets.only(left: 8),
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF7F7FD5),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
                               ],
                             ),
-                          ),
+                            const SizedBox(height: 6),
+                            Text(
+                              notification.content,
+                              style: TextStyle(color: Colors.grey[600], fontSize: 14, height: 1.4),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _formatTime(notification.createdAt),
+                              style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  },
+                    ],
+                  ),
                 ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
