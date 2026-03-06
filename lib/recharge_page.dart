@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:moe_social/auth_service.dart';
 import 'package:moe_social/services/api_service.dart';
 import 'package:moe_social/widgets/custom_button.dart';
-import 'package:moe_social/widgets/custom_text_field.dart';
 import 'widgets/fade_in_up.dart';
 
 class RechargePage extends StatefulWidget {
@@ -22,9 +21,9 @@ class _RechargePageState extends State<RechargePage> {
   final List<int> _presetAmounts = [10, 50, 100, 200, 500, 1000];
   int? _selectedAmount;
 
-  // 定义页面主色调，与钱包页保持一致
-  final Color _primaryColor = const Color(0xFF2C3E50); // 深蓝
-  final Color _accentColor = const Color(0xFF4CA1AF); // 青色
+  // Moe 风格配色
+  final Color _primaryColor = const Color(0xFF7F7FD5);
+  final Color _accentColor = const Color(0xFF86A8E7);
 
   @override
   void initState() {
@@ -34,11 +33,14 @@ class _RechargePageState extends State<RechargePage> {
 
   Future<void> _loadUserInfo() async {
     try {
-      final userId = await AuthService.getUserId();
+      final userId = AuthService.currentUser;
+      if (userId == null) return;
       final userInfo = await ApiService.getUserInfo(userId);
-      setState(() {
-        _currentBalance = userInfo.balance;
-      });
+      if (mounted) {
+        setState(() {
+          _currentBalance = userInfo.balance;
+        });
+      }
     } catch (e) {
       print('加载用户信息失败: $e');
     }
@@ -61,7 +63,9 @@ class _RechargePageState extends State<RechargePage> {
     });
 
     try {
-      final userId = await AuthService.getUserId();
+      final userId = AuthService.currentUser;
+      if (userId == null) return;
+      
       await ApiService.recharge(
         userId,
         amount,
@@ -69,9 +73,11 @@ class _RechargePageState extends State<RechargePage> {
       );
 
       final userInfo = await ApiService.getUserInfo(userId);
-      setState(() {
-        _currentBalance = userInfo.balance;
-      });
+      if (mounted) {
+        setState(() {
+          _currentBalance = userInfo.balance;
+        });
+      }
 
       _showSuccess('充值成功！\n当前余额: ${_currentBalance.toStringAsFixed(2)} 元');
       _amountController.clear();
@@ -82,9 +88,11 @@ class _RechargePageState extends State<RechargePage> {
       print('充值失败: $e');
       _showError('充值失败: ${e.toString()}');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -92,7 +100,7 @@ class _RechargePageState extends State<RechargePage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.redAccent,
+        backgroundColor: const Color(0xFFFF6B6B),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
@@ -103,7 +111,7 @@ class _RechargePageState extends State<RechargePage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.green,
+        backgroundColor: const Color(0xFF4ECDC4),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
@@ -123,6 +131,7 @@ class _RechargePageState extends State<RechargePage> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
+        physics: const BouncingScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -137,7 +146,7 @@ class _RechargePageState extends State<RechargePage> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
                       color: _primaryColor.withOpacity(0.3),
@@ -148,11 +157,12 @@ class _RechargePageState extends State<RechargePage> {
                 ),
                 child: Column(
                   children: [
-                    const Text(
+                    Text(
                       '当前余额',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.white70,
+                        color: Colors.white.withOpacity(0.9),
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -185,8 +195,9 @@ class _RechargePageState extends State<RechargePage> {
                   const Text(
                     '选择充值金额',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
+                      color: Color(0xFF555555),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -211,23 +222,30 @@ class _RechargePageState extends State<RechargePage> {
                             _amountController.text = amount.toString();
                           });
                         },
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           decoration: BoxDecoration(
-                            color: isSelected ? _accentColor : Colors.white,
-                            borderRadius: BorderRadius.circular(12),
+                            color: isSelected ? _primaryColor : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: isSelected ? Colors.transparent : Colors.grey.withOpacity(0.2),
-                              width: 1.5,
+                              color: isSelected ? Colors.transparent : Colors.grey.withOpacity(0.1),
+                              width: 1,
                             ),
-                            boxShadow: isSelected ? [
-                              BoxShadow(
-                                color: _accentColor.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ] : [],
+                            boxShadow: [
+                              if (isSelected)
+                                BoxShadow(
+                                  color: _primaryColor.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                )
+                              else
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                            ],
                           ),
                           alignment: Alignment.center,
                           child: Text(
@@ -258,38 +276,33 @@ class _RechargePageState extends State<RechargePage> {
                     '其他金额',
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF555555),
                     ),
                   ),
                   const SizedBox(height: 12),
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.grey.withOpacity(0.05),
+                          color: const Color(0xFF7F7FD5).withOpacity(0.08),
                           blurRadius: 10,
-                          offset: const Offset(0, 2),
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
-                    child: CustomTextField(
+                    child: TextField(
                       controller: _amountController,
-                      labelText: '充值金额',
-                      hintText: '请输入具体金额',
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      prefixIcon: Icons.attach_money_rounded,
-                      inputDecoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        prefixIcon: Icon(Icons.attach_money_rounded, color: _accentColor),
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      decoration: InputDecoration(
                         hintText: '请输入具体金额',
+                        hintStyle: TextStyle(color: Colors.grey[400], fontWeight: FontWeight.normal),
+                        prefixIcon: Icon(Icons.attach_money_rounded, color: _primaryColor),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                       ),
                       onTap: () {
                         // 如果用户手动输入，清除预设选择
@@ -313,30 +326,26 @@ class _RechargePageState extends State<RechargePage> {
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.05),
+                      color: const Color(0xFF7F7FD5).withOpacity(0.08),
                       blurRadius: 10,
-                      offset: const Offset(0, 2),
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: CustomTextField(
+                child: TextField(
                   controller: _descriptionController,
-                  labelText: '备注说明',
-                  hintText: '可选',
                   maxLines: 1,
-                  prefixIcon: Icons.edit_note_rounded,
-                  inputDecoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    prefixIcon: const Icon(Icons.edit_note_rounded, color: Colors.grey),
+                  style: const TextStyle(fontSize: 16),
+                  decoration: InputDecoration(
+                    labelText: '备注说明',
+                    labelStyle: TextStyle(color: Colors.grey[600]),
                     hintText: '可选',
+                    prefixIcon: const Icon(Icons.edit_note_rounded, color: Colors.grey),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   ),
                 ),
               ),
@@ -355,7 +364,9 @@ class _RechargePageState extends State<RechargePage> {
                 height: 56,
                 fontSize: 18,
                 borderRadius: BorderRadius.circular(28),
-                backgroundColor: _primaryColor, // 保持深色
+                backgroundColor: _primaryColor, // 使用薰衣草色
+                shadowColor: _primaryColor.withOpacity(0.4),
+                elevation: 8,
               ),
             ),
 
@@ -366,21 +377,21 @@ class _RechargePageState extends State<RechargePage> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.orange.withOpacity(0.2)),
+                  color: const Color(0xFFFFF9C4).withOpacity(0.3), // 浅黄色背景
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFFFE082).withOpacity(0.5)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.info_outline_rounded, size: 20, color: Colors.orange[700]),
+                    Icon(Icons.info_outline_rounded, size: 20, color: Colors.orange[400]),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         '温馨提示：\n1. 本次充值为模拟充值，不会产生真实扣费\n2. 充值金额将直接添加到您的测试账户余额\n3. 遇到问题请联系客服',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.orange[800],
+                          color: Colors.orange[700],
                           height: 1.5,
                         ),
                       ),

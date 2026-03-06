@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:moe_social/auth_service.dart';
 import 'package:moe_social/services/api_service.dart';
 import 'package:moe_social/recharge_page.dart';
-// 暂时移除动画库以排查卡死问题
-// import 'widgets/fade_in_up.dart';
+import 'widgets/fade_in_up.dart'; // 恢复导入
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -159,8 +158,9 @@ class _WalletPageState extends State<WalletPage> {
       ),
       body: RefreshIndicator(
         onRefresh: _refresh,
+        color: const Color(0xFF7F7FD5),
         child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.only(bottom: 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,31 +168,38 @@ class _WalletPageState extends State<WalletPage> {
               // 余额卡片
               Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: _buildBalanceCard(),
+                child: FadeInUp(
+                  delay: const Duration(milliseconds: 100),
+                  child: _buildBalanceCard(),
+                ),
               ),
               
               // 交易明细标题
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 4, 
-                      height: 18, 
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF7F7FD5),
-                        borderRadius: BorderRadius.circular(2),
+                child: FadeInUp(
+                  delay: const Duration(milliseconds: 200),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 4, 
+                        height: 18, 
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF7F7FD5),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      '交易明细',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(width: 8),
+                      const Text(
+                        '交易明细',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF555555),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
 
@@ -231,7 +238,7 @@ class _WalletPageState extends State<WalletPage> {
                       if (_isLoading) {
                         return const Padding(
                           padding: EdgeInsets.all(20),
-                          child: Center(child: CircularProgressIndicator()),
+                          child: Center(child: CircularProgressIndicator(color: Color(0xFF7F7FD5))),
                         );
                       } else if (_hasMore) {
                         return Padding(
@@ -239,7 +246,7 @@ class _WalletPageState extends State<WalletPage> {
                           child: Center(
                             child: TextButton(
                               onPressed: _loadTransactions,
-                              child: const Text('点击加载更多'),
+                              child: const Text('点击加载更多', style: TextStyle(color: Color(0xFF7F7FD5))),
                             ),
                           ),
                         );
@@ -249,7 +256,10 @@ class _WalletPageState extends State<WalletPage> {
                     }
 
                     final transaction = _transactions[index] as Map<String, dynamic>;
-                    return _buildTransactionItem(transaction);
+                    return FadeInUp(
+                      delay: Duration(milliseconds: 300 + (index * 50).clamp(0, 500)),
+                      child: _buildTransactionItem(transaction),
+                    );
                   },
                 ),
             ],
@@ -260,22 +270,20 @@ class _WalletPageState extends State<WalletPage> {
   }
 
   Widget _buildBalanceCard() {
-    // 移除 Stack，改用 Column + Align 线性布局
-    // 解决 HitTest 异常和内容遮挡问题
     return Container(
       width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 180), // 最小高度而不是固定高度
+      constraints: const BoxConstraints(minHeight: 180),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF2C3E50), Color(0xFF4CA1AF)],
+          colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)], // 薰衣草 -> 天空蓝
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2C3E50).withOpacity(0.4),
+            color: const Color(0xFF7F7FD5).withOpacity(0.4),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -294,14 +302,15 @@ class _WalletPageState extends State<WalletPage> {
                   color: Colors.white.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.attach_money, color: Colors.white, size: 20),
+                child: const Icon(Icons.account_balance_wallet_rounded, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 8),
               Text(
                 '账户余额',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withOpacity(0.9),
                   fontSize: 14,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -309,44 +318,53 @@ class _WalletPageState extends State<WalletPage> {
           
           const SizedBox(height: 24),
           
-          // 中间：余额数字 (自适应缩放)
-          const Text(
-            '¥',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              _balance.toStringAsFixed(2),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 40,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1,
+          // 中间：余额数字
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              const Text(
+                '¥ ',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _balance.toStringAsFixed(2),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 40,
+                      fontWeight: FontWeight.w900, // 更粗的字体
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           
           const SizedBox(height: 16),
           
-          // 底部：充值按钮 (右对齐)
+          // 底部：充值按钮
           Align(
             alignment: Alignment.centerRight,
             child: ElevatedButton.icon(
               onPressed: _goToRecharge,
-              icon: const Icon(Icons.add_circle_outline, size: 18),
-              label: const Text('充值'),
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('立即充值'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF2C3E50),
+                foregroundColor: const Color(0xFF7F7FD5),
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -358,19 +376,19 @@ class _WalletPageState extends State<WalletPage> {
   Widget _buildTransactionItem(Map<String, dynamic> transaction) {
     final type = transaction['type'] as String;
     final isRecharge = type == 'recharge';
-    final color = isRecharge ? Colors.green : Colors.orange;
+    final color = isRecharge ? const Color(0xFF4ECDC4) : const Color(0xFFFF6B6B); // 充值青色，消费红色
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20), // 保持统一圆角
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: const Color(0xFF7F7FD5).withOpacity(0.05), // 使用主色调的淡阴影
             blurRadius: 10,
-            offset: const Offset(0, 2),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -381,7 +399,7 @@ class _WalletPageState extends State<WalletPage> {
             height: 48,
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(
               isRecharge ? Icons.arrow_downward_rounded : Icons.shopping_bag_outlined,
@@ -397,8 +415,9 @@ class _WalletPageState extends State<WalletPage> {
                 Text(
                   transaction['description'] as String? ?? _formatTransactionType(type),
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                     fontSize: 16,
+                    color: Color(0xFF333333),
                   ),
                 ),
                 const SizedBox(height: 4),
