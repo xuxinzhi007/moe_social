@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../services/avatar_asset_service.dart';
 
 /// 虚拟形象组件选择器
 /// 用于选择脸型、发型、眼睛、服装、配饰等
@@ -15,12 +16,20 @@ class ComponentSelector extends StatelessWidget {
     required this.title,
     required this.currentValue,
     required this.options,
-    required this.assetBasePath,
+    required this.assetBasePath, // e.g. "assets/avatars/faces/"
     required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
+    // 解析 category (faces, hairs) 从 assetBasePath
+    // 假设路径格式为 assets/avatars/category/
+    final parts = assetBasePath.split('/');
+    String category = 'unknown';
+    if (parts.length >= 3) {
+      category = parts[parts.length - 2]; // faces, hairs...
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         // 响应式网格计算
@@ -52,7 +61,7 @@ class ComponentSelector extends StatelessWidget {
                     crossAxisCount: crossAxisCount,
                     crossAxisSpacing: 8,
                     mainAxisSpacing: 8,
-                    childAspectRatio: 0.9, // 略微高一点，适应不同内容
+                    childAspectRatio: 0.9,
                   ),
                   itemCount: options.length,
                   itemBuilder: (context, index) {
@@ -60,10 +69,8 @@ class ComponentSelector extends StatelessWidget {
                     final isSelected = option == currentValue;
 
                     return _ComponentOption(
+                      category: category,
                       option: option,
-                      assetPath: option == 'none'
-                          ? null
-                          : '$assetBasePath$option.svg',
                       isSelected: isSelected,
                       onTap: () => onChanged(option),
                     );
@@ -79,14 +86,14 @@ class ComponentSelector extends StatelessWidget {
 }
 
 class _ComponentOption extends StatelessWidget {
+  final String category;
   final String option;
-  final String? assetPath;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _ComponentOption({
+    required this.category,
     required this.option,
-    required this.assetPath,
     required this.isSelected,
     required this.onTap,
   });
@@ -172,41 +179,51 @@ class _ComponentOption extends StatelessWidget {
       );
     }
 
-    // 显示SVG预览
-    if (assetPath != null) {
-      return FutureBuilder<bool>(
-        future: _checkAssetExists(assetPath!),
-        builder: (context, snapshot) {
-          if (snapshot.data == true) {
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: SvgPicture.asset(
-                    assetPath!,
-                    fit: BoxFit.contain,
-                  ),
+    // 显示预览 (PNG 或 SVG)
+    // 对于发型，预览通常显示 front
+    return FutureBuilder<String?>(
+      future: _resolvePreviewPath(),
+      builder: (context, snapshot) {
+        final path = snapshot.data;
+        if (path != null) {
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: path.endsWith('.svg')
+                    ? SvgPicture.asset(
+                        path,
+                        fit: BoxFit.contain,
+                      )
+                    : Image.asset(
+                        path,
+                        fit: BoxFit.contain,
+                      ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _getOptionDisplayName(option),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey[600],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  _getOptionDisplayName(option),
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey[600],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            );
-          } else {
-            // 占位符
-            return _buildPlaceholder();
-          }
-        },
-      );
-    }
+                textAlign: TextAlign.center,
+              ),
+            ],
+          );
+        } else {
+          return _buildPlaceholder();
+        }
+      },
+    );
+  }
 
-    return _buildPlaceholder();
+  Future<String?> _resolvePreviewPath() async {
+    // 优先尝试 front 变体作为缩略图
+    final front = await AvatarAssetService.instance.getAssetPath(category, option, variant: 'front');
+    if (front != null) return front;
+    
+    return await AvatarAssetService.instance.getAssetPath(category, option);
   }
 
   Widget _buildPlaceholder() {
@@ -241,7 +258,6 @@ class _ComponentOption extends StatelessWidget {
 
   /// 获取选项的显示名称
   String _getOptionDisplayName(String option) {
-    // 可以根据需要自定义显示名称
     final nameMap = {
       'face_1': '圆脸',
       'face_2': '瓜子脸',
@@ -264,15 +280,5 @@ class _ComponentOption extends StatelessWidget {
     };
 
     return nameMap[option] ?? option;
-  }
-
-  /// 检查资源是否存在
-  Future<bool> _checkAssetExists(String assetPath) async {
-    try {
-      // 简化实现，实际项目中可能需要更复杂的检查
-      return true;
-    } catch (e) {
-      return false;
-    }
   }
 }
