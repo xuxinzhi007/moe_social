@@ -27,6 +27,10 @@ class _CommentsPageState extends State<CommentsPage> {
   String? _userName;
   String? _userAvatar;
 
+  // Moe 风格颜色
+  final Color _primaryColor = const Color(0xFF7F7FD5);
+  final Color _accentColor = const Color(0xFF86A8E7);
+
   @override
   void initState() {
     super.initState();
@@ -194,14 +198,35 @@ class _CommentsPageState extends State<CommentsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        title: Text('评论 (${_comments.length})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87, size: 20),
-          onPressed: () => Navigator.pop(context),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [_primaryColor, _accentColor],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _primaryColor.withOpacity(0.2),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            child: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              title: Text('评论 (${_comments.length})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white)),
+              centerTitle: true,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ),
         ),
       ),
       body: Column(
@@ -246,37 +271,44 @@ class _CommentsPageState extends State<CommentsPage> {
           ),
 
           // 底部悬浮输入区域
-          SafeArea(
-            child: Container(
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 20,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24), // 适配全面屏底部
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
               ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF7F7FD5).withOpacity(0.3), width: 1.5),
-                    ),
-                    child: NetworkAvatarImage(
-                      imageUrl: _userAvatar,
-                      radius: 16,
-                      placeholderIcon: Icons.person,
-                    ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFF7F7FD5).withOpacity(0.3), width: 1.5),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
+                  child: NetworkAvatarImage(
+                    imageUrl: _userAvatar,
+                    radius: 16,
+                    placeholderIcon: Icons.person,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F7FA),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: TextField(
                       controller: _commentController,
                       decoration: const InputDecoration(
@@ -284,32 +316,37 @@ class _CommentsPageState extends State<CommentsPage> {
                         border: InputBorder.none,
                         isDense: true,
                         hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                        contentPadding: EdgeInsets.symmetric(vertical: 10),
                       ),
                       minLines: 1,
                       maxLines: 3,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  _isSubmitting
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF7F7FD5)),
-                        )
-                      : InkWell(
-                          onTap: _addComment,
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF7F7FD5),
-                              shape: BoxShape.circle,
+                ),
+                const SizedBox(width: 12),
+                _isSubmitting
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF7F7FD5)),
+                      )
+                    : InkWell(
+                        onTap: _addComment,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                            child: const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 18),
+                            shape: BoxShape.circle,
                           ),
+                          child: const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 20),
                         ),
-                ],
-              ),
+                      ),
+              ],
             ),
           ),
         ],
@@ -328,7 +365,7 @@ class _CommentsPageState extends State<CommentsPage> {
             radius: 18,
             placeholderIcon: Icons.person,
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,7 +390,7 @@ class _CommentsPageState extends State<CommentsPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
@@ -374,10 +411,10 @@ class _CommentsPageState extends State<CommentsPage> {
                   ),
                   child: Text(
                     comment.content,
-                    style: const TextStyle(height: 1.4, fontSize: 14, color: Colors.black87),
+                    style: const TextStyle(height: 1.5, fontSize: 14, color: Colors.black87),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 // 交互按钮行
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
