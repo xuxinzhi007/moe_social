@@ -10,8 +10,8 @@ import '../widgets/post_skeleton.dart';
 import '../widgets/fade_in_up.dart';
 import '../utils/error_handler.dart';
 import '../providers/notification_provider.dart';
-import '../widgets/daily_quote_widget.dart';
 import '../widgets/post_card.dart';
+import '../widgets/home_banner.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -415,93 +415,9 @@ class _HomePageState extends State<HomePage> {
         ),
         const SizedBox(width: 8),
       ],
-      flexibleSpace: FlexibleSpaceBar(
+      flexibleSpace: const FlexibleSpaceBar(
         collapseMode: CollapseMode.parallax,
-        background: _buildBanner(context),
-      ),
-    );
-  }
-
-  Widget _buildBanner(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 92, 16, 12),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF7F7FD5),
-            Color(0xFF86A8E7),
-            Color(0xFF91EAE4),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF7F7FD5).withOpacity(0.22),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -20,
-            top: -20,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.10),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Positioned(
-            left: -30,
-            bottom: -30,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.10),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.explore_rounded,
-                      size: 40, color: Colors.white),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  '发现更可爱的世界',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 32),
-                  child: DailyQuoteWidget(embedded: true),
-                ),
-              ],
-            ),
-          ),
-        ],
+        background: HomeBanner(),
       ),
     );
   }

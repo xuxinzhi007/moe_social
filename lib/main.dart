@@ -28,6 +28,7 @@ import 'recharge_page.dart';
 import 'gacha_page.dart';
 import 'user_profile_page.dart';
 import 'widgets/app_message_widget.dart';
+import 'widgets/moe_bottom_bar.dart';
 import 'services/notification_service.dart';
 import 'services/remote_control_service.dart';
 import 'services/presence_service.dart';
@@ -304,54 +305,40 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _pages[_selectedIndex],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: NavigationBar(
-          elevation: 0,
-          backgroundColor: Colors.white,
-          indicatorColor: Theme.of(context).primaryColor.withOpacity(0.2),
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: (int index) {
-            setState(() {
-              _selectedIndex = index;
-            });
-          },
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home_rounded),
-              label: '首页',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.chat_bubble_outline),
-              selectedIcon: Icon(Icons.chat_bubble_rounded),
-              label: '好友',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.smart_toy_outlined),
-              selectedIcon: Icon(Icons.smart_toy_rounded),
-              label: 'AI',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.casino_outlined),
-              selectedIcon: Icon(Icons.casino_rounded),
-              label: '扭蛋',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person_rounded),
-              label: '我的',
-            ),
-          ],
-        ),
+      bottomNavigationBar: MoeBottomBar(
+        selectedIndex: _selectedIndex,
+        onItemSelected: (int index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home_rounded),
+            label: '首页',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.chat_bubble_outline),
+            selectedIcon: Icon(Icons.chat_bubble_rounded),
+            label: '好友',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.smart_toy_outlined),
+            selectedIcon: Icon(Icons.smart_toy_rounded),
+            label: 'AI',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.casino_outlined),
+            selectedIcon: Icon(Icons.casino_rounded),
+            label: '扭蛋',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person_rounded),
+            label: '我的',
+          ),
+        ],
       ),
     );
   }
