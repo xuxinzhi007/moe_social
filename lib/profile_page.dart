@@ -2,7 +2,7 @@ import 'package:provider/provider.dart';
 import 'providers/device_info_provider.dart';
 import 'package:flutter/material.dart';
 import 'autoglm/autoglm_page.dart';
-import 'autoglm/autoglm_service.dart';
+import 'autoglm/autoglm_service.dart'; // 恢复导入
 import 'auth_service.dart';
 import 'services/api_service.dart';
 import 'models/user.dart';
@@ -30,7 +30,7 @@ class _ProfilePageState extends State<ProfilePage> {
   User? _user;
   Map<String, dynamic>? _vipStatus;
   bool _isLoading = true;
-  bool _isLoadingDetails = false; // 用于跟踪详细信息加载状态
+  bool _isLoadingDetails = false;
   bool _isVip = false;
   int _postCount = 0;
   int _followingCount = 0;
@@ -60,33 +60,23 @@ class _ProfilePageState extends State<ProfilePage> {
     });
 
     try {
-      // 优化：分批加载，核心信息优先
-      // 第一阶段：加载核心用户信息（最重要，最快）
       final user = await ApiService.getUserInfo(userId)
           .timeout(const Duration(seconds: 8));
 
       if (mounted) {
         setState(() {
           _user = user;
-          _isLoading = false; // 基本信息已加载，可以显示页面
-          _isLoadingDetails = true; // 开始加载详细信息
+          _isLoading = false;
+          _isLoadingDetails = true;
         });
       }
 
-      // 第二阶段：并行加载其他信息，但设置合理超时
       final results = await Future.wait([
-        // VIP状态
         ApiService.getUserVipStatus(userId)
             .timeout(const Duration(seconds: 5))
             .catchError((_) => <String, dynamic>{}),
-
-        // 关注数（限制为只获取总数，不获取具体列表）
         _getFollowingCount(userId),
-
-        // 粉丝数（限制为只获取总数）
         _getFollowerCount(userId),
-
-        // 帖子数量（优化：应该从用户信息API获取，而不是获取所有帖子）
         _getUserPostCount(userId),
       ]);
 
@@ -97,10 +87,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
       bool isVip = vipStatus['is_vip'] as bool? ?? false;
 
-      // 第三阶段：加载用户徽章和等级信息（非关键信息，可以后加载）
       final userBadges = _achievementService.getUserBadges(userId);
 
-      // 预先触发用户等级加载，避免在UI构建时才开始请求
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           final levelProvider = context.read<UserLevelProvider>();
@@ -118,7 +106,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _followingCount = followingCount;
           _followerCount = followerCount;
           _userBadges = userBadges;
-          _isLoadingDetails = false; // 详细信息加载完成
+          _isLoadingDetails = false;
         });
       }
     } catch (e) {
@@ -130,7 +118,7 @@ class _ProfilePageState extends State<ProfilePage> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('加载个人信息失败，请检查网络连接'),
+            content: const Text('加载个人信息失败，请检查网络连接'),
             action: SnackBarAction(
               label: '重试',
               onPressed: _loadUserInfo,
@@ -141,18 +129,16 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  /// 优化：获取关注数量
   Future<int> _getFollowingCount(String userId) async {
     try {
       final result = await ApiService.getFollowings(userId, page: 1, pageSize: 1)
           .timeout(const Duration(seconds: 5));
       return result['total'] as int? ?? 0;
     } catch (e) {
-      return 0; // 失败时返回0，不影响页面显示
+      return 0;
     }
   }
 
-  /// 优化：获取粉丝数量
   Future<int> _getFollowerCount(String userId) async {
     try {
       final result = await ApiService.getFollowers(userId, page: 1, pageSize: 1)
@@ -163,22 +149,16 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  /// 优化：获取用户帖子数量
   Future<int> _getUserPostCount(String userId) async {
     try {
-      // TODO: 应该添加专门的API获取用户帖子数量
-      // 临时方案：获取较少的帖子进行过滤，减少网络传输
       final result = await ApiService.getPosts(page: 1, pageSize: 20)
           .timeout(const Duration(seconds: 8));
       final posts = result['posts'] as List<Post>;
-
-      // 这里仍然是客户端过滤，但至少减少了数据量
-      // 最佳方案是后端提供专门的用户帖子计数API
       return posts
           .where((p) => p.userId.toString() == userId.toString())
           .length;
     } catch (e) {
-      return 0; // 失败时返回0，不影响页面显示
+      return 0;
     }
   }
 
@@ -190,15 +170,15 @@ class _ProfilePageState extends State<ProfilePage> {
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircularProgressIndicator(
+            children: const [
+              CircularProgressIndicator(
                 color: Color(0xFF7F7FD5),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Text(
                 '正在加载个人信息...',
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: Colors.grey,
                   fontSize: 16,
                 ),
               ),
@@ -243,6 +223,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               centerTitle: true,
               actions: [
+                // 恢复设置按钮
                 IconButton(
                   icon: const Icon(Icons.settings_outlined, color: Colors.white),
                   onPressed: () {
@@ -273,7 +254,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     const SizedBox(height: 16),
                     
-                    // 核心功能组
+                    // 1. 我的足迹
                     FadeInUp(
                       delay: const Duration(milliseconds: 200),
                       child: Column(
@@ -315,13 +296,20 @@ class _ProfilePageState extends State<ProfilePage> {
                                 );
                               },
                             ),
+                            _MenuItem(
+                              icon: Icons.favorite_rounded,
+                              title: '我的收藏',
+                              subtitle: '你喜欢的内容都在这',
+                              color: const Color(0xFFFF6B6B),
+                              onTap: () {},
+                            ),
                           ]),
                         ],
                       ),
                     ),
                     const SizedBox(height: 20),
 
-                    // 互动与活动组
+                    // 2. 每日福利
                     FadeInUp(
                       delay: const Duration(milliseconds: 300),
                       child: Column(
@@ -329,7 +317,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         children: [
                           const Padding(
                             padding: EdgeInsets.only(left: 12, bottom: 10),
-                            child: Text('互动与活动', 
+                            child: Text('每日福利', 
                               style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
                           ),
                           _buildMenuCard([
@@ -340,36 +328,6 @@ class _ProfilePageState extends State<ProfilePage> {
                               color: const Color(0xFF7F7FD5),
                               onTap: () => _navigateToCheckIn(),
                             ),
-                            _MenuItem(
-                              icon: Icons.favorite_rounded,
-                              title: '我的收藏',
-                              color: const Color(0xFFFF6B6B),
-                              onTap: () {},
-                            ),
-                            _MenuItem(
-                              icon: Icons.history_rounded,
-                              title: '浏览历史',
-                              color: const Color(0xFFFFB347),
-                              onTap: () {},
-                            ),
-                          ]),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // 更多服务组
-                    FadeInUp(
-                      delay: const Duration(milliseconds: 400),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(left: 12, bottom: 10),
-                            child: Text('更多服务', 
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
-                          ),
-                          _buildMenuCard([
                             _MenuItem(
                               icon: Icons.account_balance_wallet_rounded,
                               title: '我的钱包',
@@ -385,6 +343,24 @@ class _ProfilePageState extends State<ProfilePage> {
                                 });
                               },
                             ),
+                          ]),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // 3. 实验室与系统
+                    FadeInUp(
+                      delay: const Duration(milliseconds: 400),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(left: 12, bottom: 10),
+                            child: Text('实验室与系统', 
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
+                          ),
+                          _buildMenuCard([
                             _MenuItem(
                               icon: Icons.smart_toy_rounded,
                               title: 'AutoGLM 助手',
@@ -396,6 +372,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                       builder: (context) => const AutoGLMPage()),
                                 );
                               },
+                              // 恢复 AutoGLM 开关
                               trailing: Transform.scale(
                                 scale: 0.8,
                                 child: Switch(
@@ -433,30 +410,17 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ),
                               ),
                             ),
+                            // 移除列表中的“通用设置”
                             _MenuItem(
-                              icon: Icons.help_rounded,
-                              title: '帮助与反馈',
-                              color: const Color(0xFF91EAE4),
-                              onTap: () {},
-                            ),
-                          ]),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // 退出登录
-                    FadeInUp(
-                      delay: const Duration(milliseconds: 500),
-                      child: _buildMenuCard([
-                          _MenuItem(
                               icon: Icons.logout_rounded,
                               title: '退出登录',
                               color: const Color(0xFFFF6B6B),
                               isDestructive: true,
                               onTap: () => _showLogoutDialog(context),
                             ),
-                      ]),
+                          ]),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 40),
                   ],
@@ -473,20 +437,19 @@ class _ProfilePageState extends State<ProfilePage> {
     return Stack(
       alignment: Alignment.center,
       children: [
-        // 背景图 - 充满整个 FlexibleSpaceBar
+        // 背景图
         const Positioned.fill(
           child: ProfileBg(),
         ),
 
         // 用户信息内容
-        // 使用 SafeArea 确保内容不被顶部遮挡，并居中显示
         SafeArea(
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const SizedBox(height: 15),
-                // 用户头像和基本信息的水平布局
+                // 用户头像和基本信息
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Row(
@@ -523,16 +486,44 @@ class _ProfilePageState extends State<ProfilePage> {
                                 color: Colors.white,
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _user?.email ?? '',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
-                                fontSize: 13,
-                              ),
+                            const SizedBox(height: 4),
+                            // 等级胶囊条 (Compact Level Indicator)
+                            Consumer<UserLevelProvider>(
+                              builder: (context, levelProvider, child) {
+                                final userLevel = levelProvider.userLevel;
+                                if (userLevel == null) return const SizedBox.shrink();
+                                return GestureDetector(
+                                  onTap: () => _navigateToUserLevel(),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.white.withOpacity(0.4)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.stars_rounded, size: 14, color: Colors.white),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Lv.${userLevel.level} ${userLevel.levelTitle}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(Icons.arrow_forward_ios_rounded, size: 10, color: Colors.white70),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                             const SizedBox(height: 8),
-                            // 统计数据紧凑显示
+                            // 统计数据
                             Row(
                               children: [
                                 _buildStatItemCompact('动态', '$_postCount'),
@@ -549,99 +540,41 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
 
-                const SizedBox(height: 12),
-                // 设备信息完整显示
+                const SizedBox(height: 16),
+                // 设备信息
                 Consumer<DeviceInfoProvider>(
                   builder: (context, provider, child) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(_getDeviceIcon(provider.deviceType),
-                                      color: Colors.white, size: 14),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    provider.deviceType.isNotEmpty ? provider.deviceType : '未知设备',
-                                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                      provider.batteryLevel != null && provider.batteryLevel! < 20
-                                          ? Icons.battery_alert
-                                          : Icons.battery_std,
-                                      color: Colors.white,
-                                      size: 14),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    provider.batteryLevel != null
-                                        ? '${provider.batteryLevel}%'
-                                        : '未知',
-                                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            ],
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(_getDeviceIcon(provider.deviceType),
+                              color: Colors.white, size: 14),
+                          const SizedBox(width: 6),
+                          Text(
+                            provider.deviceType.isNotEmpty ? provider.deviceType : '未知设备',
+                            style: const TextStyle(color: Colors.white, fontSize: 12),
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Flexible(
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.wifi, color: Colors.white, size: 14),
-                                    const SizedBox(width: 6),
-                                    Flexible(
-                                      child: Text(
-                                        provider.wifiName.isNotEmpty ? provider.wifiName : '未连接',
-                                        style: const TextStyle(color: Colors.white, fontSize: 12),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Flexible(
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.location_on_outlined,
-                                        color: Colors.white, size: 14),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Text(
-                                        provider.locationText.isNotEmpty
-                                            ? provider.locationText
-                                            : (provider.latitude != null
-                                                ? '${provider.latitude!.toStringAsFixed(2)}, ${provider.longitude!.toStringAsFixed(2)}'
-                                                : '未知'),
-                                        style: const TextStyle(color: Colors.white, fontSize: 12),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                          const SizedBox(width: 12),
+                          Container(width: 1, height: 12, color: Colors.white30),
+                          const SizedBox(width: 12),
+                          const Icon(Icons.location_on_outlined, color: Colors.white, size: 14),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              provider.locationText.isNotEmpty
+                                  ? provider.locationText
+                                  : '未知位置',
+                              style: const TextStyle(color: Colors.white, fontSize: 12),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ),
@@ -649,175 +582,36 @@ class _ProfilePageState extends State<ProfilePage> {
                   },
                 ),
 
-                // 用户等级信息
-                Consumer<UserLevelProvider>(
-                  builder: (context, levelProvider, child) {
-                    // 在页面加载时获取用户等级信息
-                    if (levelProvider.userLevel == null && !levelProvider.isLoading) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        final userId = AuthService.currentUser;
-                        if (userId != null) {
-                          levelProvider.loadUserLevel(userId);
-                        }
-                      });
-                    }
-
-                    if (levelProvider.userLevel != null) {
-                      final userLevel = levelProvider.userLevel!;
-                      return Column(
-                        children: [
-                          const SizedBox(height: 16),
-                          GestureDetector(
-                            onTap: () => _navigateToUserLevel(),
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 20),
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: levelProvider.getLevelGradient(userLevel.level),
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.15),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 6),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(10),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: const Icon(
-                                          Icons.star_rounded,
-                                          color: Colors.white,
-                                          size: 18,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              userLevel.levelTitle,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              'Lv.${userLevel.level} • ${userLevel.experience}/${userLevel.nextLevelExp} EXP',
-                                              style: const TextStyle(
-                                                color: Colors.white70,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const Icon(
-                                        Icons.arrow_forward_ios_rounded,
-                                        color: Colors.white70,
-                                        size: 14,
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  // 进度条
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(6),
-                                    child: LinearProgressIndicator(
-                                      value: userLevel.progress,
-                                      backgroundColor: Colors.white.withOpacity(0.25),
-                                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                                      minHeight: 5,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    userLevel.isMaxLevel
-                                        ? '已达到最高等级！'
-                                        : '距离下一级还需 ${userLevel.expToNext} 经验',
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
+                // 移除原先的大块 UserLevelProvider Consumer Card
 
                 // 徽章展示区域
-                if (_userBadges
-                    .where((badge) => badge.isUnlocked)
-                    .isNotEmpty) ...[
+                if (_userBadges.where((badge) => badge.isUnlocked).isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Container(
-                    margin:
-                        const EdgeInsets.symmetric(horizontal: 32), // 增加边距防止太宽
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
+                    margin: const EdgeInsets.symmetric(horizontal: 32),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.military_tech,
-                                color: Colors.white, size: 16),
-                            const SizedBox(width: 6),
-                            const Text(
-                              '成就徽章',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: _userBadges
-                                .where((badge) => badge.isUnlocked)
-                                .take(6) // 最多显示6个徽章
-                                .map((badge) => Container(
-                                      margin: const EdgeInsets.only(right: 8),
-                                      child: BadgeCard(
-                                        badge: badge,
-                                        size: 28,
-                                        showProgress: false,
-                                        onTap: () => _showBadgeDetails(badge),
-                                      ),
-                                    ))
-                                .toList(),
-                          ),
-                        ),
-                      ],
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: _userBadges
+                            .where((badge) => badge.isUnlocked)
+                            .take(6)
+                            .map((badge) => Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  child: BadgeCard(
+                                    badge: badge,
+                                    size: 32, // 稍微加大一点
+                                    showProgress: false,
+                                    onTap: () => _showBadgeDetails(badge),
+                                  ),
+                                ))
+                            .toList(),
+                      ),
                     ),
                   ),
                 ],
@@ -904,8 +698,6 @@ class _ProfilePageState extends State<ProfilePage> {
             child: const Icon(Icons.star_rounded, color: Colors.white, size: 28),
           ),
           const SizedBox(width: 16),
-          // 在 Web 的某些约束组合下 Row 子节点可能拿到 Infinity 宽度，导致按钮 layout 断言失败
-          // 这里显式用 Expanded 给中间文案区域一个“可计算宽度”，并给按钮一个有限宽度，避免白屏
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1035,7 +827,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
               ),
-              if (!isLast) 
+              if (!isLast)
                 Padding(
                   padding: const EdgeInsets.only(left: 68, right: 20),
                   child: Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
@@ -1138,7 +930,6 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         child: Column(
           children: [
-            // 顶部拖拽指示器
             Container(
               margin: const EdgeInsets.only(top: 12, bottom: 8),
               width: 40,
@@ -1148,7 +939,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            // 标题
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Row(
@@ -1168,7 +958,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 ],
               ),
             ),
-            // 徽章网格
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -1210,7 +999,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  /// 导航到签到页面
   void _navigateToCheckIn() {
     final userId = AuthService.currentUser;
     if (userId == null) {
@@ -1228,7 +1016,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  /// 导航到用户等级页面
   void _navigateToUserLevel() {
     final userId = AuthService.currentUser;
     if (userId == null) {
@@ -1254,7 +1041,7 @@ class _MenuItem {
   final Color color;
   final VoidCallback onTap;
   final bool isDestructive;
-  final Widget? trailing; // 自定义尾部组件
+  final Widget? trailing;
 
   _MenuItem({
     required this.icon,
