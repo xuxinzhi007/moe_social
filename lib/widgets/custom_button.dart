@@ -12,7 +12,9 @@ class CustomButton extends StatelessWidget {
   final double? fontSize;
   final EdgeInsets? padding;
   final BorderRadius? borderRadius;
-  final bool isOutline; // 新增：是否为边框模式
+  final bool isOutline;
+  final double? elevation;
+  final Color? shadowColor;
 
   const CustomButton({
     super.key,
@@ -28,6 +30,8 @@ class CustomButton extends StatelessWidget {
     this.padding,
     this.borderRadius,
     this.isOutline = false,
+    this.elevation,
+    this.shadowColor,
   });
 
   @override
@@ -58,8 +62,8 @@ class CustomButton extends StatelessWidget {
                 backgroundColor: primary,
                 foregroundColor: onPrimary,
                 padding: padding ?? const EdgeInsets.symmetric(horizontal: 24),
-                elevation: isDisabled ? 0 : 4,
-                shadowColor: primary.withOpacity(0.4),
+                elevation: elevation ?? (isDisabled ? 0 : 4),
+                shadowColor: shadowColor ?? primary.withOpacity(0.4),
                 shape: RoundedRectangleBorder(borderRadius: radius),
                 splashFactory: InkRipple.splashFactory,
               ),

@@ -71,7 +71,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('订单创建成功！订单号: ${order.id}'),
-            backgroundColor: Colors.green,
+            backgroundColor: const Color(0xFF4ECDC4),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -82,7 +82,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('购买失败: $e'),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: const Color(0xFFFF6B6B),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -108,14 +108,18 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
       ),
       body: Stack(
         children: [
-          // 背景图
+          // 顶部背景
           Container(
             height: 320,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF141E30), Color(0xFF243B55)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+                colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
               ),
             ),
           ),
@@ -124,6 +128,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator(color: Colors.white))
                 : SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -145,18 +150,32 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                               const SizedBox(height: 8),
                               Row(
                                 children: [
-                                  const Icon(Icons.check_circle, color: Color(0xFFFFD700), size: 16),
-                                  const SizedBox(width: 4),
+                                  Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.check_circle, color: Color(0xFFFFD700), size: 16),
+                                  ),
+                                  const SizedBox(width: 6),
                                   Text(
                                     '解锁尊贵身份标识',
-                                    style: TextStyle(color: Colors.white.withOpacity(0.8)),
+                                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w500),
                                   ),
                                   const SizedBox(width: 16),
-                                  const Icon(Icons.check_circle, color: Color(0xFFFFD700), size: 16),
-                                  const SizedBox(width: 4),
+                                  Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.check_circle, color: Color(0xFFFFD700), size: 16),
+                                  ),
+                                  const SizedBox(width: 6),
                                   Text(
                                     '专享高级功能',
-                                    style: TextStyle(color: Colors.white.withOpacity(0.8)),
+                                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w500),
                                   ),
                                 ],
                               ),
@@ -184,7 +203,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                           )
                         else
                           SizedBox(
-                            height: 220,
+                            height: 230,
                             child: ListView.builder(
                               padding: const EdgeInsets.symmetric(horizontal: 16),
                               scrollDirection: Axis.horizontal,
@@ -215,18 +234,32 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                '会员权益',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 4,
+                                    height: 18,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF7F7FD5),
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    '会员权益',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF333333),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 20),
-                              _buildBenefitItem(Icons.color_lens_rounded, '专属主题色', '解锁更多个性化主题颜色'),
-                              _buildBenefitItem(Icons.hd_rounded, '高清画质', '上传/查看原图特权'),
-                              _buildBenefitItem(Icons.speed_rounded, '极速体验', '专属线路加速'),
-                              _buildBenefitItem(Icons.star_rounded, '身份铭牌', '尊贵 VIP 专属标识'),
+                              const SizedBox(height: 24),
+                              _buildBenefitItem(Icons.color_lens_rounded, '专属主题色', '解锁更多个性化主题颜色', Colors.purpleAccent),
+                              _buildBenefitItem(Icons.hd_rounded, '高清画质', '上传/查看原图特权', Colors.blueAccent),
+                              _buildBenefitItem(Icons.speed_rounded, '极速体验', '专属线路加速', Colors.greenAccent),
+                              _buildBenefitItem(Icons.star_rounded, '身份铭牌', '尊贵 VIP 专属标识', Colors.orangeAccent),
                               // 底部留白，防止被浮动按钮遮挡
                               const SizedBox(height: 80),
                             ],
@@ -245,45 +278,50 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
+              color: const Color(0xFF7F7FD5).withOpacity(0.1),
+              blurRadius: 20,
               offset: const Offset(0, -5),
             ),
           ],
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SafeArea(
           child: Row(
             children: [
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('总计', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  Text(
-                    '¥${_getSelectedPlanPrice()}',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFFF8F00),
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('总计', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Text(
+                      '¥${_getSelectedPlanPrice()}',
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFFFF8F00),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(width: 20),
               Expanded(
                 child: SizedBox(
-                  height: 50,
+                  height: 54,
                   child: ElevatedButton(
                     onPressed: (_isLoading || _isPurchasing || _plans.isEmpty) 
                         ? null 
                         : _purchaseVip,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF141E30),
-                      foregroundColor: const Color(0xFFFFD700),
+                      backgroundColor: const Color(0xFF7F7FD5),
+                      foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
+                        borderRadius: BorderRadius.circular(27),
                       ),
-                      elevation: 5,
+                      elevation: 8,
+                      shadowColor: const Color(0xFF7F7FD5).withOpacity(0.4),
                     ),
                     child: _isPurchasing
                         ? const SizedBox(
@@ -291,7 +329,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                             height: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(Color(0xFFFFD700)),
+                              valueColor: AlwaysStoppedAnimation(Colors.white),
                             ),
                           )
                         : const Text(
@@ -332,8 +370,8 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
         margin: const EdgeInsets.only(right: 16, bottom: 20, top: 10), // 留出阴影空间
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFFF9E6) : Colors.white.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? Colors.white : Colors.white.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isSelected ? const Color(0xFFFFD700) : Colors.transparent,
             width: 2,
@@ -344,6 +382,12 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                 color: const Color(0xFFFFD700).withOpacity(0.4),
                 blurRadius: 15,
                 offset: const Offset(0, 8),
+              )
+            else
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
           ],
         ),
@@ -355,7 +399,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: isSelected ? Colors.black87 : Colors.black54,
+                color: isSelected ? const Color(0xFF333333) : Colors.grey[700],
               ),
               textAlign: TextAlign.center,
             ),
@@ -386,7 +430,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFFFD700) : Colors.grey[200],
+                color: isSelected ? const Color(0xFFFFD700) : Colors.grey[100],
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
@@ -404,18 +448,18 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
     );
   }
 
-  Widget _buildBenefitItem(IconData icon, String title, String subtitle) {
+  Widget _buildBenefitItem(IconData icon, String title, String subtitle, Color iconColor) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: 24),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF5F7FA),
-              borderRadius: BorderRadius.circular(12),
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(icon, color: const Color(0xFF2C3E50), size: 24),
+            child: Icon(icon, color: iconColor, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -424,8 +468,9 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF333333)),
                 ),
+                const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: TextStyle(color: Colors.grey[500], fontSize: 13),
