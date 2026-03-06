@@ -5,6 +5,7 @@ import 'widgets/fade_in_up.dart';
 import 'package:provider/provider.dart';
 import 'providers/loading_provider.dart';
 import 'widgets/app_message_widget.dart';
+import 'widgets/moe_input_field.dart';
 import 'widgets/auth_background.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -104,14 +105,14 @@ class _RegisterPageState extends State<RegisterPage> {
                       key: _formKey,
                       child: Column(
                         children: [
-                          _buildMoeInput(
+                          MoeInputField(
                             controller: _usernameController,
                             hintText: '用户名',
                             icon: Icons.person_outline_rounded,
                             validator: Validators.username,
                           ),
                           const SizedBox(height: 20),
-                          _buildMoeInput(
+                          MoeInputField(
                             controller: _emailController,
                             hintText: '电子邮箱',
                             icon: Icons.email_outlined,
@@ -119,7 +120,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             keyboardType: TextInputType.emailAddress,
                           ),
                           const SizedBox(height: 20),
-                          _buildMoeInput(
+                          MoeInputField(
                             controller: _passwordController,
                             hintText: '设置密码',
                             icon: Icons.lock_outline_rounded,
@@ -127,7 +128,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             validator: Validators.password,
                           ),
                           const SizedBox(height: 20),
-                          _buildMoeInput(
+                          MoeInputField(
                             controller: _confirmPasswordController,
                             hintText: '确认密码',
                             icon: Icons.lock_reset_rounded,
@@ -201,53 +202,6 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _buildMoeInput({
-    required TextEditingController controller,
-    required String hintText,
-    required IconData icon,
-    bool isPassword = false,
-    String? Function(String?)? validator,
-    TextInputType? keyboardType,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF7F7FD5).withOpacity(0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: TextFormField(
-        controller: controller,
-        obscureText: isPassword ? _obscurePassword : false,
-        validator: validator,
-        keyboardType: keyboardType,
-        style: const TextStyle(color: Colors.black87),
-        decoration: InputDecoration(
-          hintText: hintText,
-          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
-          prefixIcon: Icon(icon, color: _primaryColor.withOpacity(0.6), size: 22),
-          suffixIcon: isPassword
-              ? IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                    color: Colors.grey[300],
-                    size: 20,
-                  ),
-                  onPressed: () =>
-                      setState(() => _obscurePassword = !_obscurePassword),
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        ),
-      ),
-    );
-  }
 
   @override
   void dispose() {

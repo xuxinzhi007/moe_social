@@ -988,9 +988,8 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           TextButton(
             onPressed: () {
-              AuthService.logout();
               Navigator.pop(context);
-              Navigator.pushReplacementNamed(context, '/login');
+              AuthService.logout();
             },
             child: const Text('确定', style: TextStyle(color: Colors.red)),
           ),

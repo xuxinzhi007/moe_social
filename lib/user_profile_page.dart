@@ -12,7 +12,10 @@ import 'widgets/network_image.dart';
 import 'widgets/fade_in_up.dart';
 import 'widgets/achievement_badge_display.dart';
 import 'widgets/gift_selector.dart';
+import 'widgets/post_card.dart';
 import 'widgets/gift_animation.dart';
+import 'services/post_service.dart';
+import 'utils/error_handler.dart';
 import 'following_page.dart';
 import 'followers_page.dart';
 import 'voice_call_page.dart';
@@ -118,7 +121,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     try {
       // 临时方案：获取最新帖子并在前端过滤
       // 扩大获取范围到100条，以增加匹配几率
-      final result = await ApiService.getPosts(page: 1, pageSize: 100);
+      final result = await PostService.getPosts(page: 1, pageSize: 100);
       final allPosts = result['posts'] as List<Post>;
 
       final myPosts = allPosts.where((p) => p.userId.toString() == widget.userId.toString()).toList();
@@ -157,6 +160,29 @@ class _UserProfilePageState extends State<UserProfilePage> {
         setState(() {
           _isLoadingStats = false;
         });
+      }
+    }
+  }
+
+  Future<void> _toggleLike(String postId) async {
+    final currentUserId = AuthService.currentUser;
+    if (currentUserId == null) {
+      if (mounted) {
+        ErrorHandler.showError(context, '请先登录');
+      }
+      return;
+    }
+
+    try {
+      final updatedPost = await PostService.toggleLike(postId, currentUserId);
+      
+      final postIndex = _userPosts.indexWhere((p) => p.id == postId);
+      if (postIndex != -1) {
+        _userPosts[postIndex] = updatedPost;
+      }
+    } catch (e) {
+      if (mounted) {
+        ErrorHandler.handleException(context, e as Exception);
       }
     }
   }
@@ -651,7 +677,21 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         ),
                       )
                     else
-                      ..._userPosts.map((post) => _buildSimplePostItem(post)),
+                      ..._userPosts.map((post) => FadeInUp(
+                        delay: const Duration(milliseconds: 100),
+                        child: PostCard(
+                          post: post,
+                          onLike: () => _toggleLike(post.id),
+                          onComment: () async {
+                            await Navigator.pushNamed(context, '/comments', arguments: post.id);
+                            // 评论返回后刷新，可选
+                          },
+                          onShare: () {},
+                          onAvatarTap: () {
+                            // 已经是个人主页，通常不需要跳转或刷新自己
+                          },
+                        ),
+                      )),
                     
                     const SizedBox(height: 16),
                   ],
@@ -665,69 +705,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
-  // 简化的帖子列表项
-  Widget _buildSimplePostItem(Post post) {
-    return InkWell(
-      onTap: () {
-        // 可以跳转到帖子详情
-      },
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Colors.grey[100]!),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  _formatTime(post.createdAt),
-                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
-                ),
-                const Spacer(),
-                Icon(Icons.more_horiz, color: Colors.grey[300], size: 16),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              post.content,
-              style: const TextStyle(fontSize: 15, height: 1.5),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (post.images.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 12.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: NetworkImageWidget(
-                    imageUrl: post.images.first,
-                    width: double.infinity,
-                    height: 160,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(Icons.favorite_rounded, size: 16, color: Colors.pink[100]),
-                const SizedBox(width: 4),
-                Text('${post.likes}', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-                const SizedBox(width: 16),
-                Icon(Icons.chat_bubble_rounded, size: 16, color: Colors.blue[100]),
-                const SizedBox(width: 4),
-                Text('${post.comments}', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   void _showGiftSelector() {
     showModalBottomSheet(

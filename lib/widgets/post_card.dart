@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/post.dart';
+import '../services/like_state_manager.dart';
 import '../widgets/avatar_image.dart';
 import '../widgets/network_image.dart';
 import '../widgets/topic_tag_selector.dart';
@@ -237,10 +238,26 @@ class PostCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  LikeButton(
-                    isLiked: post.isLiked,
-                    likeCount: post.likes,
-                    onTap: onLike ?? () {},
+                  ValueListenableBuilder<bool>(
+                    valueListenable: LikeStateManager().getStatusNotifier(
+                      post.id,
+                      initialValue: post.isLiked,
+                    ),
+                    builder: (context, isLiked, _) {
+                      return ValueListenableBuilder<int>(
+                        valueListenable: LikeStateManager().getCountNotifier(
+                          post.id,
+                          initialValue: post.likes,
+                        ),
+                        builder: (context, likeCount, _) {
+                          return LikeButton(
+                            isLiked: isLiked,
+                            likeCount: likeCount,
+                            onTap: onLike ?? () {},
+                          );
+                        },
+                      );
+                    },
                   ),
                   _buildActionButton(
                       context,
