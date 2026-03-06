@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
 import 'services/api_service.dart';
@@ -373,6 +375,85 @@ class _DirectChatPageState extends State<DirectChatPage> {
     } catch (_) {}
   }
 
+  /// 图片消息前缀，用于区分文本与图片
+  static const String _imgPrefix = '[IMG]';
+
+  bool _isImageContent(String content) =>
+      content.startsWith(_imgPrefix) && content.length > _imgPrefix.length;
+
+  String _getImageUrl(String content) =>
+      content.substring(_imgPrefix.length).trim();
+
+  Future<void> _pickAndSendImage() async {
+    if (_isSending) return;
+    final currentUserId = _currentUserId;
+    if (currentUserId == null) return;
+
+    try {
+      final picker = ImagePicker();
+      final xFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1200,
+        imageQuality: 85,
+      );
+      if (xFile == null || !mounted) return;
+
+      final path = xFile.path;
+      if (path.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('暂不支持在网页端发送图片')),
+          );
+        }
+        return;
+      }
+
+      setState(() => _isSending = true);
+
+      final file = File(path);
+      if (!await file.exists()) return;
+      final url = await ApiService.uploadImage(file);
+      final content = '$_imgPrefix$url';
+
+      if (!mounted) return;
+      setState(() {
+        _messages.add(
+          _DirectMessage(
+            senderId: currentUserId,
+            content: content,
+            time: DateTime.now(),
+          ),
+        );
+        _isSending = false;
+      });
+      await _saveMessages();
+      _scrollToBottom();
+
+      final channel = ChatPushService.channel;
+      if (channel != null) {
+        final payload = json.encode({
+          'type': 'message',
+          'to': widget.userId,
+          'content': content,
+        });
+        try {
+          channel.sink.add(payload);
+        } catch (_) {}
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('发送图片失败: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSending = false);
+        _inputFocusNode.requestFocus();
+      }
+    }
+  }
+
   Future<void> _sendMessage() async {
     if (_isSending) return;
     final text = _controller.text.trim();
@@ -655,14 +736,44 @@ class _DirectChatPageState extends State<DirectChatPage> {
                   ),
                 ],
               ),
-              child: Text(
-                message.content,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 15,
-                  height: 1.4,
-                ),
-              ),
+              child: _isImageContent(message.content)
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        _getImageUrl(message.content),
+                        fit: BoxFit.cover,
+                        width: 200,
+                        height: 200,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return SizedBox(
+                            width: 200,
+                            height: 200,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) => Icon(
+                          Icons.broken_image_outlined,
+                          size: 48,
+                          color: textColor.withOpacity(0.6),
+                        ),
+                      ),
+                    )
+                  : Text(
+                      message.content,
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: 15,
+                        height: 1.4,
+                      ),
+                    ),
             ),
           ),
           if (isMe) ...[
@@ -700,9 +811,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
             IconButton(
               icon: const Icon(Icons.add_circle_outline_rounded),
               color: Colors.grey[400],
-              onPressed: () {
-                // TODO: 添加更多功能
-              },
+              onPressed: _isSending ? null : _pickAndSendImage,
             ),
             Expanded(
               child: Container(

@@ -18,6 +18,8 @@ import 'gallery/cloud_gallery_page.dart';
 import 'pages/checkin_page.dart';
 import 'pages/user_level_page.dart';
 import 'providers/user_level_provider.dart';
+import 'following_page.dart';
+import 'followers_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -296,13 +298,6 @@ class _ProfilePageState extends State<ProfilePage> {
                                 );
                               },
                             ),
-                            _MenuItem(
-                              icon: Icons.favorite_rounded,
-                              title: '我的收藏',
-                              subtitle: '你喜欢的内容都在这',
-                              color: const Color(0xFFFF6B6B),
-                              onTap: () {},
-                            ),
                           ]),
                         ],
                       ),
@@ -528,9 +523,33 @@ class _ProfilePageState extends State<ProfilePage> {
                               children: [
                                 _buildStatItemCompact('动态', '$_postCount'),
                                 const SizedBox(width: 16),
-                                _buildStatItemCompact('关注', '$_followingCount'),
+                                _buildStatItemCompact(
+                                  '关注',
+                                  '$_followingCount',
+                                  onTap: _user != null
+                                      ? () => Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  FollowingPage(userId: _user!.id),
+                                            ),
+                                          )
+                                      : null,
+                                ),
                                 const SizedBox(width: 16),
-                                _buildStatItemCompact('粉丝', '$_followerCount'),
+                                _buildStatItemCompact(
+                                  '粉丝',
+                                  '$_followerCount',
+                                  onTap: _user != null
+                                      ? () => Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  FollowersPage(userId: _user!.id),
+                                            ),
+                                          )
+                                      : null,
+                                ),
                               ],
                             ),
                           ],
@@ -642,8 +661,8 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Widget _buildStatItemCompact(String label, String value) {
-    return Column(
+  Widget _buildStatItemCompact(String label, String value, {VoidCallback? onTap}) {
+    final child = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -667,6 +686,14 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ],
     );
+    if (onTap != null) {
+      return GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: child,
+      );
+    }
+    return child;
   }
 
   Widget _buildVipCard() {
