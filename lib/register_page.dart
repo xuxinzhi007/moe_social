@@ -5,6 +5,7 @@ import 'widgets/fade_in_up.dart';
 import 'package:provider/provider.dart';
 import 'providers/loading_provider.dart';
 import 'widgets/app_message_widget.dart';
+import 'widgets/auth_background.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -21,10 +22,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
 
-  // 使用与登录页相同的配色
   final Color _primaryColor = const Color(0xFF7F7FD5);
-  final Color _secondaryColor = const Color(0xFF86A8E7);
-  final Color _accentColor = const Color(0xFF91EAE4);
 
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
@@ -43,272 +41,210 @@ class _RegisterPageState extends State<RegisterPage> {
           loadingProvider.setError(result.errorMessage ?? '注册失败，请稍后重试');
           return;
         }
-
         loadingProvider.setSuccess('欢迎加入 Moe Social！(≧∇≦)/');
         Navigator.pop(context);
       },
-      onError: (_) {
-        // 错误已通过 LoadingProvider 统一显示
-      },
+      onError: (_) {},
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      extendBodyBehindAppBar: true, // 让AppBar浮在背景上
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: SizedBox(
-          height: size.height, // 确保高度撑满
-          child: Stack(
-            children: [
-              // 1. 背景层
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                height: size.height * 0.35, // 稍微调小一点，给表单更多空间
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [_secondaryColor, _primaryColor], // 反转渐变，增加变化
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(60),
-                      bottomRight: Radius.circular(60),
-                    ),
-                  ),
-                ),
-              ),
-              // 装饰
-              Positioned(
-                top: -30,
-                left: -30,
-                child: Container(
-                  width: 150,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-
-              // 2. 内容层
-              Positioned.fill(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Column(
-                    children: [
-                      SizedBox(height: MediaQuery.of(context).padding.top + 40),
-                      
-                      // 标题
-                      FadeInUp(
-                        duration: const Duration(milliseconds: 800),
-                        child: const Text(
+    return AuthBackground(
+      child: Stack(
+        children: [
+          // 顶部返回按钮
+          Positioned(
+            top: 10,
+            left: 10,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black54),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 60), // 给返回按钮留出空间
+                  FadeInUp(
+                    duration: const Duration(milliseconds: 800),
+                    child: Column(
+                      children: [
+                        const Text(
                           '创建账号',
                           style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 1.2,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF333333),
+                            letterSpacing: 1,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      FadeInUp(
-                        duration: const Duration(milliseconds: 800),
-                        delay: const Duration(milliseconds: 100),
-                        child: Text(
+                        const SizedBox(height: 8),
+                        Text(
                           '开始你的萌系社交之旅',
                           style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 15,
+                            color: Colors.grey[500],
+                            letterSpacing: 1,
                           ),
                         ),
-                      ),
+                      ],
+                    ),
+                  ),
 
-                      const SizedBox(height: 40),
+                  const SizedBox(height: 40),
 
-                      // 注册表单卡片
-                      Expanded( // 使用Expanded填充剩余空间，避免溢出
-                        child: FadeInUp(
-                          duration: const Duration(milliseconds: 1000),
-                          delay: const Duration(milliseconds: 200),
-                          child: Container(
+                  FadeInUp(
+                    delay: const Duration(milliseconds: 200),
+                    duration: const Duration(milliseconds: 800),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          _buildMoeInput(
+                            controller: _usernameController,
+                            hintText: '用户名',
+                            icon: Icons.person_outline_rounded,
+                            validator: Validators.username,
+                          ),
+                          const SizedBox(height: 20),
+                          _buildMoeInput(
+                            controller: _emailController,
+                            hintText: '电子邮箱',
+                            icon: Icons.email_outlined,
+                            validator: Validators.email,
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                          const SizedBox(height: 20),
+                          _buildMoeInput(
+                            controller: _passwordController,
+                            hintText: '设置密码',
+                            icon: Icons.lock_outline_rounded,
+                            isPassword: true,
+                            validator: Validators.password,
+                          ),
+                          const SizedBox(height: 20),
+                          _buildMoeInput(
+                            controller: _confirmPasswordController,
+                            hintText: '确认密码',
+                            icon: Icons.lock_reset_rounded,
+                            isPassword: true,
+                            validator: (value) => Validators.confirmPassword(
+                                value, _passwordController.text),
+                          ),
+                          const SizedBox(height: 40),
+                          SizedBox(
                             width: double.infinity,
-                            margin: const EdgeInsets.only(bottom: 30),
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(30),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.1),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 10),
+                            height: 56,
+                            child: LoadingButton(
+                              operationKey: LoadingKeys.register,
+                              onPressed: _register,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _primaryColor,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(28),
                                 ),
-                              ],
-                            ),
-                            child: SingleChildScrollView( // 卡片内部可滚动
-                              child: Form(
-                                key: _formKey,
-                                child: Column(
-                                  children: [
-                                    _buildTextField(
-                                      controller: _usernameController,
-                                      label: '用户名',
-                                      icon: Icons.person_outline,
-                                      validator: Validators.username,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    _buildTextField(
-                                      controller: _emailController,
-                                      label: '电子邮箱',
-                                      icon: Icons.email_outlined,
-                                      validator: Validators.email,
-                                      keyboardType: TextInputType.emailAddress,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    _buildTextField(
-                                      controller: _passwordController,
-                                      label: '设置密码',
-                                      icon: Icons.lock_outline,
-                                      isPassword: true,
-                                      validator: Validators.password,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    _buildTextField(
-                                      controller: _confirmPasswordController,
-                                      label: '确认密码',
-                                      icon: Icons.lock_reset_outlined,
-                                      isPassword: true,
-                                      validator: (value) => Validators.confirmPassword(
-                                          value, _passwordController.text),
-                                    ),
-                                    const SizedBox(height: 32),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      height: 50,
-                                      child: LoadingButton(
-                                        operationKey: LoadingKeys.register,
-                                        onPressed: _register,
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: _primaryColor,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(25),
-                                          ),
-                                          elevation: 5,
-                                          shadowColor: _primaryColor.withOpacity(0.4),
-                                        ),
-                                        child: const Text(
-                                          '立即注册',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          '已有账户？',
-                                          style: TextStyle(color: Colors.grey[600]),
-                                        ),
-                                        TextButton(
-                                          onPressed: () => Navigator.pop(context),
-                                          child: Text(
-                                            '直接登录',
-                                            style: TextStyle(
-                                              color: _primaryColor,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
+                                elevation: 8,
+                                shadowColor: _primaryColor.withOpacity(0.4),
+                              ),
+                              child: const Text(
+                                '立即注册',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 2,
                                 ),
                               ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
+
+                  const SizedBox(height: 30),
+
+                  FadeInUp(
+                    delay: const Duration(milliseconds: 400),
+                    duration: const Duration(milliseconds: 800),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '已有账户？',
+                          style: TextStyle(color: Colors.grey[500]),
+                        ),
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Text(
+                            ' 直接登录',
+                            style: TextStyle(
+                              color: _primaryColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildTextField({
+  Widget _buildMoeInput({
     required TextEditingController controller,
-    required String label,
+    required String hintText,
     required IconData icon,
     bool isPassword = false,
     String? Function(String?)? validator,
     TextInputType? keyboardType,
   }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: isPassword ? _obscurePassword : false,
-      validator: validator,
-      keyboardType: keyboardType,
-      style: const TextStyle(color: Colors.black87),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: Colors.grey[600]),
-        prefixIcon: Icon(icon, color: _primaryColor.withOpacity(0.7)),
-        suffixIcon: isPassword
-            ? IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                  color: Colors.grey[400],
-                ),
-                onPressed: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
-              )
-            : null,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide(color: Colors.grey[200]!),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF7F7FD5).withOpacity(0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: controller,
+        obscureText: isPassword ? _obscurePassword : false,
+        validator: validator,
+        keyboardType: keyboardType,
+        style: const TextStyle(color: Colors.black87),
+        decoration: InputDecoration(
+          hintText: hintText,
+          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
+          prefixIcon: Icon(icon, color: _primaryColor.withOpacity(0.6), size: 22),
+          suffixIcon: isPassword
+              ? IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    color: Colors.grey[300],
+                    size: 20,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide(color: _primaryColor),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide(color: Colors.red[200]!),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide(color: Colors.red[400]!),
-        ),
-        filled: true,
-        fillColor: Colors.grey[50],
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
     );
   }
