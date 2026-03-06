@@ -11,6 +11,7 @@ import 'services/chat_push_service.dart';
 import 'services/presence_service.dart';
 import 'services/notification_service.dart';
 import 'models/notification.dart';
+import 'widgets/fade_in_up.dart'; // 引入动画组件
 
 class DirectChatPage extends StatefulWidget {
   final String userId;
@@ -39,6 +40,11 @@ class _DirectChatPageState extends State<DirectChatPage> {
   bool _peerOnline = false;
   Timer? _onlineTimer;
   bool _presenceListening = false;
+
+  // 定义 Moe 风格颜色
+  final Color _primaryColor = const Color(0xFF7F7FD5);
+  final Color _accentColor = const Color(0xFF86A8E7);
+  final Color _backgroundColor = const Color(0xFFF5F7FA);
 
   @override
   void initState() {
@@ -428,62 +434,107 @@ class _DirectChatPageState extends State<DirectChatPage> {
     final reversedMessages = List<_DirectMessage>.from(_messages.reversed);
 
     return Scaffold(
-      appBar: AppBar(
-        titleSpacing: 0,
-        title: Row(
-          children: [
-            NetworkAvatarImage(
-              imageUrl: widget.avatar,
-              radius: 20,
-              placeholderIcon: Icons.person,
+      backgroundColor: _backgroundColor,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [_primaryColor, _accentColor],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            boxShadow: [
+              BoxShadow(
+                color: _primaryColor.withOpacity(0.2),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            child: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              titleSpacing: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+              title: Row(
                 children: [
-                  Text(
-                    widget.username,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  NetworkAvatarImage(
+                    imageUrl: widget.avatar,
+                    radius: 18,
+                    placeholderIcon: Icons.person,
                   ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: _peerOnline ? Colors.green : Colors.grey,
-                          shape: BoxShape.circle,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          widget.username,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _peerOnline ? '在线' : '离线',
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: _peerOnline ? const Color(0xFF69F0AE) : Colors.white54,
+                                shape: BoxShape.circle,
+                                boxShadow: _peerOnline
+                                    ? [
+                                        const BoxShadow(
+                                          color: Color(0xFF69F0AE),
+                                          blurRadius: 6,
+                                          spreadRadius: 1,
+                                        )
+                                      ]
+                                    : null,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _peerOnline ? '在线' : '离线',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _peerOnline ? const Color(0xFF69F0AE) : Colors.white70,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
+                  onPressed: () {},
+                ),
+              ],
             ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {},
           ),
-        ],
+        ),
       ),
       body: Column(
         children: [
           Expanded(
             child: Container(
-              color: const Color(0xFFF5F7FA), // 浅灰背景色
+              decoration: const BoxDecoration(
+                color: Color(0xFFF5F7FA), // 浅灰背景色
+              ),
               child: ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -506,11 +557,15 @@ class _DirectChatPageState extends State<DirectChatPage> {
                     }
                   }
 
-                  return Column(
-                    children: [
-                      if (showTime) _buildTimeTag(message.time),
-                      _buildMessageBubble(message, isMe),
-                    ],
+                  return FadeInUp(
+                    duration: const Duration(milliseconds: 300),
+                    offset: 20,
+                    child: Column(
+                      children: [
+                        if (showTime) _buildTimeTag(message.time),
+                        _buildMessageBubble(message, isMe),
+                      ],
+                    ),
                   );
                 },
               ),
@@ -524,17 +579,19 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
   Widget _buildTimeTag(DateTime time) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 12),
+      margin: const EdgeInsets.symmetric(vertical: 16),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.2),
+        color: Colors.white.withOpacity(0.5),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
       ),
       child: Text(
         _formatTime(time),
         style: TextStyle(
-          color: Colors.grey[600],
-          fontSize: 12,
+          color: Colors.grey[500],
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
@@ -559,19 +616,19 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
   Widget _buildMessageBubble(_DirectMessage message, bool isMe) {
     final alignment = isMe ? MainAxisAlignment.end : MainAxisAlignment.start;
-    final bgColor = isMe ? const Color(0xFF7F7FD5) : Colors.white;
+    final bgColor = isMe ? _primaryColor : Colors.white;
     final textColor = isMe ? Colors.white : Colors.black87;
     
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       child: Row(
         mainAxisAlignment: alignment,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
             NetworkAvatarImage(
               imageUrl: widget.avatar,
-              radius: 18,
+              radius: 16,
               placeholderIcon: Icons.person,
             ),
             const SizedBox(width: 8),
@@ -579,20 +636,22 @@ class _DirectChatPageState extends State<DirectChatPage> {
           Flexible(
             child: Container(
               constraints: const BoxConstraints(maxWidth: 260),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: bgColor,
                 borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(18),
-                  topRight: const Radius.circular(18),
-                  bottomLeft: Radius.circular(isMe ? 18 : 4),
-                  bottomRight: Radius.circular(isMe ? 4 : 18),
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: Radius.circular(isMe ? 20 : 4),
+                  bottomRight: Radius.circular(isMe ? 4 : 20),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+                    color: isMe 
+                        ? _primaryColor.withOpacity(0.3)
+                        : Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
@@ -600,7 +659,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
                 message.content,
                 style: TextStyle(
                   color: textColor,
-                  fontSize: 16,
+                  fontSize: 15,
                   height: 1.4,
                 ),
               ),
@@ -609,7 +668,6 @@ class _DirectChatPageState extends State<DirectChatPage> {
           if (isMe) ...[
             const SizedBox(width: 8),
             // 这里可以添加自己的头像，如果需要的话
-            // 目前保持简洁，只显示对方头像
           ],
         ],
       ),
@@ -618,36 +676,41 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
   Widget _buildInputArea() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24), // 底部多留白适配全面屏手势
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+            color: _primaryColor.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
           ),
         ],
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
       ),
       child: SafeArea(
         top: false,
+        bottom: false, // 已经在 padding 中处理了
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             IconButton(
               icon: const Icon(Icons.add_circle_outline_rounded),
-              color: Colors.grey[600],
+              color: Colors.grey[400],
               onPressed: () {
-                // TODO: 添加更多功能，如图片、文件等
+                // TODO: 添加更多功能
               },
             ),
             Expanded(
               child: Container(
-                constraints: const BoxConstraints(maxHeight: 120),
+                constraints: const BoxConstraints(maxHeight: 100),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF5F7FA),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                  border: Border.all(color: Colors.grey.withOpacity(0.1)),
                 ),
                 child: TextField(
                   controller: _controller,
@@ -662,25 +725,34 @@ class _DirectChatPageState extends State<DirectChatPage> {
                   },
                   decoration: const InputDecoration(
                     hintText: '发送消息...',
-                    hintStyle: TextStyle(color: Colors.grey),
+                    hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     isDense: true,
                   ),
-                  style: const TextStyle(fontSize: 16),
+                  style: const TextStyle(fontSize: 15),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             GestureDetector(
               onTap: _isSending ? null : _sendMessage,
               child: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: _isSending 
-                      ? Colors.grey[300] 
-                      : const Color(0xFF7F7FD5),
+                  gradient: LinearGradient(
+                    colors: [_primaryColor, _accentColor],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: _primaryColor.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: _isSending
                     ? const SizedBox(
