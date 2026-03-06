@@ -34,15 +34,24 @@ class AvatarAssetService {
 
       // 扫描所有assets文件
       for (final String key in manifestMap.keys) {
-        if (key.startsWith('assets/avatars/') && key.endsWith('.svg')) {
+        if (key.startsWith('assets/avatars/') && 
+           (key.endsWith('.svg') || key.endsWith('.png'))) {
           final parts = key.split('/');
           if (parts.length >= 4) {
-            final category =
-                parts[2]; // faces, hairs, eyes, clothes, accessories
-            final fileName = parts[3].replaceAll('.svg', ''); // 去掉扩展名
+            final category = parts[2]; // faces, hairs, eyes, clothes, accessories
+            // 去掉扩展名，如果是 hair_01_front.png，归一化为 hair_01
+            var fileName = parts[3].replaceAll('.svg', '').replaceAll('.png', '');
+            
+            // 特殊处理发型分层：hair_01_front -> hair_01
+            if (category == 'hairs') {
+              fileName = fileName.replaceAll('_front', '').replaceAll('_back', '');
+            }
 
             if (options.containsKey(category)) {
-              options[category]!.add(fileName);
+              // 避免重复添加 (因为可能同时存在 .svg, .png, _front.png, _back.png)
+              if (!options[category]!.contains(fileName)) {
+                options[category]!.add(fileName);
+              }
             }
           }
         }
@@ -72,7 +81,29 @@ class AvatarAssetService {
     }
   }
 
-  /// 检查指定的SVG文件是否存在
+  /// 获取资源的实际路径（优先 PNG，其次 SVG）
+  /// [category] 分类
+  /// [name] 资源名
+  /// [variant] 变体（如 'front', 'back'），仅用于 PNG
+  Future<String?> getAssetPath(String category, String name, {String? variant}) async {
+    // 1. 尝试查找特定变体的 PNG (例如 hair_01_back.png)
+    if (variant != null) {
+      final pngVariantPath = 'assets/avatars/$category/${name}_$variant.png';
+      if (await assetExists(pngVariantPath)) return pngVariantPath;
+    }
+
+    // 2. 尝试查找标准 PNG (例如 hair_01.png)
+    final pngPath = 'assets/avatars/$category/$name.png';
+    if (await assetExists(pngPath)) return pngPath;
+
+    // 3. 尝试查找 SVG (例如 hair_01.svg)
+    final svgPath = 'assets/avatars/$category/$name.svg';
+    if (await assetExists(svgPath)) return svgPath;
+
+    return null;
+  }
+
+  /// 检查指定的资源文件是否存在
   Future<bool> assetExists(String assetPath) async {
     try {
       await rootBundle.load(assetPath);
