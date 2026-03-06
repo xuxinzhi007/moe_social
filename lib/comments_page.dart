@@ -5,6 +5,7 @@ import 'services/api_service.dart';
 import 'auth_service.dart';
 import 'widgets/avatar_image.dart';
 import 'widgets/fade_in_up.dart';
+import 'widgets/like_button.dart';
 
 class CommentsPage extends StatefulWidget {
   final String postId;
@@ -120,12 +121,31 @@ class _CommentsPageState extends State<CommentsPage> {
       return;
     }
 
+    // 乐观更新
+    setState(() {
+      _comments = _comments.map((comment) {
+        if (comment.id == commentId) {
+          final isLiked = !comment.isLiked;
+          return comment.copyWith(
+            isLiked: isLiked,
+            likes: isLiked ? comment.likes + 1 : comment.likes - 1,
+          );
+        }
+        return comment;
+      }).toList();
+    });
+
     try {
       final updatedComment = await PostService.toggleCommentLike(commentId, userId);
       setState(() {
         _comments = _comments.map((comment) {
           if (comment.id == commentId) {
-            return updatedComment;
+            // 如果服务端返回的状态与当前乐观状态不一致（比如并发修改），以服务端为准
+            // 但如果仅仅是 likes 数量差异，尽量不闪烁
+            if (comment.isLiked != updatedComment.isLiked) {
+               return updatedComment;
+            }
+            return comment;
           }
           return comment;
         }).toList();
@@ -133,6 +153,19 @@ class _CommentsPageState extends State<CommentsPage> {
     } catch (e) {
       print('Failed to toggle comment like: $e');
       _showCustomSnackBar(context, '操作失败', isError: true);
+      // 回滚
+      setState(() {
+        _comments = _comments.map((comment) {
+          if (comment.id == commentId) {
+            final isLiked = !comment.isLiked;
+            return comment.copyWith(
+              isLiked: isLiked,
+              likes: isLiked ? comment.likes + 1 : comment.likes - 1,
+            );
+          }
+          return comment;
+        }).toList();
+      });
     }
   }
 
@@ -162,10 +195,14 @@ class _CommentsPageState extends State<CommentsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text('评论 (${_comments.length})', style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text('评论 (${_comments.length})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: Column(
         children: [
@@ -178,95 +215,97 @@ class _CommentsPageState extends State<CommentsPage> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.chat_bubble_outline_rounded, size: 60, color: Colors.grey[300]),
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF7F7FD5).withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.chat_bubble_outline_rounded, size: 48, color: Color(0xFF7F7FD5)),
+                            ),
                             const SizedBox(height: 16),
-                            const Text(
+                            Text(
                               '暂无评论，快来抢沙发吧！',
-                              style: TextStyle(color: Colors.grey),
+                              style: TextStyle(color: Colors.grey[600], fontSize: 15),
                             ),
                           ],
                         ),
                       )
                     : ListView.builder(
+                        physics: const BouncingScrollPhysics(),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                         itemCount: _comments.length,
                         itemBuilder: (context, index) {
                           final comment = _comments[index];
                           return FadeInUp(
                             delay: Duration(milliseconds: 30 * index),
-                            child: _buildCommentItem(comment)
+                            child: _buildBubbleCommentItem(comment)
                           );
                         },
                       ),
           ),
 
-          // 底部输入区域
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: SafeArea(
+          // 底部悬浮输入区域
+          SafeArea(
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
               child: Row(
                 children: [
                   Container(
+                    padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.grey[200]!, width: 1),
+                      border: Border.all(color: const Color(0xFF7F7FD5).withOpacity(0.3), width: 1.5),
                     ),
                     child: NetworkAvatarImage(
                       imageUrl: _userAvatar,
-                      radius: 20,
+                      radius: 16,
                       placeholderIcon: Icons.person,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(24),
+                    child: TextField(
+                      controller: _commentController,
+                      decoration: const InputDecoration(
+                        hintText: '写下你的想法...',
+                        border: InputBorder.none,
+                        isDense: true,
+                        hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
                       ),
-                      child: TextField(
-                        controller: _commentController,
-                        decoration: const InputDecoration(
-                          hintText: '写下你的评论...',
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 10,
-                          ),
-                          hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                        ),
-                      ),
+                      minLines: 1,
+                      maxLines: 3,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   _isSubmitting
                       ? const SizedBox(
                           width: 24,
                           height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF7F7FD5)),
                         )
-                      : Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF7F7FD5),
-                            shape: BoxShape.circle,
-                          ),
-                          child: IconButton(
-                            onPressed: _addComment,
-                            icon: const Icon(Icons.arrow_upward_rounded),
-                            color: Colors.white,
-                            iconSize: 20,
+                      : InkWell(
+                          onTap: _addComment,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
                             padding: const EdgeInsets.all(8),
-                            constraints: const BoxConstraints(),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF7F7FD5),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 18),
                           ),
                         ),
                 ],
@@ -278,7 +317,7 @@ class _CommentsPageState extends State<CommentsPage> {
     );
   }
 
-  Widget _buildCommentItem(Comment comment) {
+  Widget _buildBubbleCommentItem(Comment comment) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -286,105 +325,94 @@ class _CommentsPageState extends State<CommentsPage> {
         children: [
           NetworkAvatarImage(
             imageUrl: comment.userAvatar,
-            radius: 20,
+            radius: 18,
             placeholderIcon: Icons.person,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    Text(
+                      comment.userName,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _formatTime(comment.createdAt),
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
                 Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: const BorderRadius.only(
                       topRight: Radius.circular(20),
                       bottomLeft: Radius.circular(20),
                       bottomRight: Radius.circular(20),
-                      topLeft: Radius.circular(5),
+                      topLeft: Radius.circular(4),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withOpacity(0.05),
-                        blurRadius: 5,
-                        offset: const Offset(0, 2),
+                        color: const Color(0xFF7F7FD5).withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(2, 4),
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            comment.userName,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          Text(
-                            _formatTime(comment.createdAt),
-                            style: TextStyle(
-                              color: Colors.grey[400],
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        comment.content,
-                        style: const TextStyle(height: 1.4, fontSize: 15),
-                      ),
-                    ],
+                  child: Text(
+                    comment.content,
+                    style: const TextStyle(height: 1.4, fontSize: 14, color: Colors.black87),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
+                // 交互按钮行
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    const SizedBox(width: 8),
-                    InkWell(
+                    // 使用新的点赞按钮
+                    LikeButton(
+                      isLiked: comment.isLiked,
+                      likeCount: comment.likes,
                       onTap: () => _toggleCommentLike(comment.id),
-                      child: Row(
-                        children: [
-                          Icon(
-                            comment.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                            color: comment.isLiked ? Colors.pinkAccent : Colors.grey[400],
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            comment.likes > 0 ? '${comment.likes}' : '赞',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
+                      size: 18,
+                      showCount: true,
                     ),
-                    const SizedBox(width: 20),
+                    const SizedBox(width: 16),
                     InkWell(
                       onTap: () {},
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.reply_rounded,
-                            color: Colors.grey[400],
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '回复',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.reply_rounded,
+                              color: Colors.grey[400],
+                              size: 16,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Text(
+                              '回复',
+                              style: TextStyle(
+                                color: Colors.grey[500],
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],

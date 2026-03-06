@@ -13,6 +13,7 @@ import '../widgets/compact_topic_selector.dart';
 import '../widgets/app_message_widget.dart';
 import '../emoji/emoji_store_page.dart';
 import '../gallery/cloud_gallery_page.dart';
+import '../widgets/custom_button.dart';
 
 class CreatePostPage extends StatefulWidget {
   const CreatePostPage({super.key});
@@ -44,7 +45,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       });
     }
   }
-  
+
   void _openCloudGallery() {
     Navigator.push(
       context,
@@ -62,7 +63,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       ),
     );
   }
-  
+
   void _openEmojiStore() {
     Navigator.push(
       context,
@@ -73,17 +74,17 @@ class _CreatePostPageState extends State<CreatePostPage> {
             final controller = _contentController;
             final cursorPosition = controller.selection.baseOffset;
             final text = controller.text;
-            
+
             // 确保cursorPosition在有效范围内
             final safeCursorPosition = cursorPosition >= 0 && cursorPosition <= text.length ? cursorPosition : text.length;
-            
+
             // 在光标位置插入表情URL占位符
             final newText = text.substring(0, safeCursorPosition) + '[emoji:$emojiUrl]' + text.substring(safeCursorPosition);
             controller.text = newText;
-            
+
             // 将光标移动到插入内容之后
             controller.selection = TextSelection.collapsed(offset: safeCursorPosition + '[emoji:$emojiUrl]'.length);
-            
+
             context.read<LoadingProvider>().setSuccess('表情已添加');
           },
         ),
@@ -186,293 +187,315 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primaryColor = theme.primaryColor;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('发布新动态', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        backgroundColor: Colors.white,
+        title: const Text('记录心情', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+        backgroundColor: const Color(0xFFF5F7FA),
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.close_rounded, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
+        leading: Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+              ),
+            ],
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.close_rounded, color: Colors.black54, size: 20),
+            onPressed: () => Navigator.pop(context),
+            padding: EdgeInsets.zero,
+          ),
         ),
         actions: [
-          // 修复：使用 Container + Alignment 代替 Padding，解决 RenderBox size 错误
           Container(
             margin: const EdgeInsets.only(right: 16),
             alignment: Alignment.center,
             child: SizedBox(
-              height: 32, // 给定固定高度
+              height: 32,
+              width: 70,
               child: LoadingButton(
                 operationKey: LoadingKeys.createPost,
                 onPressed: _publishPost,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7F7FD5),
+                  backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
-                  elevation: 0,
+                  elevation: 2,
+                  shadowColor: primaryColor.withOpacity(0.3),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  minimumSize: Size.zero, // 允许更小的尺寸
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap, // 紧凑布局
+                  padding: EdgeInsets.zero,
                 ),
                 child: const Text(
                   '发布',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
               ),
             ),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 用户信息栏
-            if (!_isLoadingUser)
-              Row(
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(24, 10, 24, 100), // 底部留出工具栏空间
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                      boxShadow: [
-                        BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 5),
-                      ],
-                    ),
-                    child: NetworkAvatarImage(
-                      imageUrl: _userAvatar,
-                      radius: 24,
-                      placeholderIcon: Icons.person,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  // 日期和天气（装饰性）
+                  Row(
                     children: [
                       Text(
-                        _userName ?? '用户',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                        '${DateTime.now().month}月${DateTime.now().day}日',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.grey[800],
+                          letterSpacing: 1,
                         ),
                       ),
-                      const Text(
-                        '分享此时此刻...',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.wb_sunny_rounded, size: 14, color: Colors.orange),
+                            SizedBox(width: 4),
+                            Text('晴朗', style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.bold)),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
-            
-            const SizedBox(height: 20),
+                  
+                  const SizedBox(height: 20),
 
-            // 内容输入卡片
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
+                  // 输入区域 - 无边框设计
                   TextField(
                     controller: _contentController,
-                    maxLines: 8,
-                    decoration: const InputDecoration(
-                      hintText: '写点什么吧... (例如: 今天天气真好~)',
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.all(20),
-                      hintStyle: TextStyle(color: Colors.black26),
-                    ),
-                    style: const TextStyle(fontSize: 16, height: 1.5),
-                  ),
-                  
-                  // 图片预览区域
-                  if (_selectedImages.isNotEmpty || _selectedImageUrls.isNotEmpty)
-                    Container(
-                      height: 120,
-                      margin: const EdgeInsets.only(bottom: 20),
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _selectedImages.length + _selectedImageUrls.length,
-                        itemBuilder: (context, index) {
-                          Widget imageWidget;
-                          
-                          if (index < _selectedImages.length) {
-                            // 显示本地选择的图片
-                            imageWidget = Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                image: DecorationImage(
-                                  image: FileImage(_selectedImages[index]),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            );
-                          } else {
-                            // 显示从云端图库选择的网络图片
-                            final urlIndex = index - _selectedImages.length;
-                            final imageUrl = _selectedImageUrls[urlIndex];
-                            imageWidget = Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                image: DecorationImage(
-                                  image: NetworkImage(imageUrl),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            );
-                          }
-                          
-                          return Container(
-                             margin: const EdgeInsets.only(right: 12),
-                             width: 110, // 明确宽度
-                             height: 110, // 明确高度
-                             child: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                Positioned.fill(
-                                  child: imageWidget,
-                                ),
-                                Positioned(
-                                  top: -5,
-                                  right: -5,
-                                  child: GestureDetector(
-                                    onTap: () => _removeImage(index),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.6),
-                                        shape: BoxShape.circle,
-                                        border: Border.all(color: Colors.white, width: 1),
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 14,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
+                    maxLines: null,
+                    minLines: 5,
+                    decoration: InputDecoration(
+                      hintText: '写下此刻的想法...\n无论是开心的事，还是小小的烦恼，\n这里都是你的秘密花园 (｡･ω･｡)',
+                      hintStyle: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 15,
+                        height: 1.6,
                       ),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    style: const TextStyle(
+                      fontSize: 16, 
+                      height: 1.6,
+                      color: Colors.black87,
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 图片预览区域 - 拍立得风格
+                  if (_selectedImages.isNotEmpty || _selectedImageUrls.isNotEmpty)
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        ...List.generate(_selectedImages.length, (index) {
+                          return _buildPolaroidImage(
+                            imageProvider: FileImage(_selectedImages[index]),
+                            onRemove: () => _removeImage(index),
+                          );
+                        }),
+                        ...List.generate(_selectedImageUrls.length, (index) {
+                          final urlIndex = index + _selectedImages.length;
+                          return _buildPolaroidImage(
+                            imageProvider: NetworkImage(_selectedImageUrls[index]),
+                            onRemove: () => _removeImage(urlIndex),
+                          );
+                        }),
+                      ],
+                    ),
+                  
+                  const SizedBox(height: 30),
+
+                  // 话题标签
+                  if (_selectedTopicTags.isNotEmpty)
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _selectedTopicTags.map((tag) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: tag.color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: tag.color.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '#${tag.name}', 
+                              style: TextStyle(
+                                color: tag.color, 
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _selectedTopicTags.remove(tag);
+                                });
+                              },
+                              child: Icon(Icons.close, size: 14, color: tag.color),
+                            )
+                          ],
+                        ),
+                      )).toList(),
                     ),
                 ],
               ),
             ),
-            
-            const SizedBox(height: 20),
-
-            // 话题标签选择器 - 紧凑版
-            CompactTopicSelector(
-              selectedTags: _selectedTopicTags,
-              onTagsChanged: (tags) {
-                setState(() {
-                  _selectedTopicTags = tags;
-                });
-              },
-              userId: AuthService.currentUser ?? 'guest',
-              maxTags: 3,
-            ),
-
-            const SizedBox(height: 20),
-
-            // 工具栏 - 使用SingleChildScrollView允许横向滚动
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              child: Row(
-                children: [
-                  _buildToolButton(
-                    icon: Icons.image_rounded,
-                    label: '图片',
-                    color: Colors.green,
-                    onTap: _addImage,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildToolButton(
-                    icon: Icons.cloud_upload_outlined,
-                    label: '云端图库',
-                    color: Colors.blue,
-                    onTap: _openCloudGallery,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildToolButton(
-                    icon: Icons.emoji_emotions_outlined,
-                    label: '表情',
-                    color: Colors.purple,
-                    onTap: _openEmojiStore,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildToolButton(
-                    icon: Icons.alternate_email_rounded,
-                    label: '提到',
-                    color: Colors.orange,
-                    onTap: () {},
-                  ),
-                  const SizedBox(width: 12),
-                  _buildToolButton(
-                    icon: Icons.tag_rounded,
-                    label: '话题',
-                    color: Colors.blue,
-                    onTap: () {},
+          ),
+          
+          // 底部悬浮工具栏
+          SafeArea(
+            top: false,
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.15),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildToolIcon(Icons.image_rounded, Colors.green, _addImage),
+                  _buildToolIcon(Icons.cloud_upload_rounded, Colors.blue, _openCloudGallery),
+                  _buildToolIcon(Icons.emoji_emotions_rounded, Colors.amber, _openEmojiStore),
+                  _buildToolIcon(Icons.tag_rounded, Colors.purple, () {
+                    // 临时打开话题选择器
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                        ),
+                        child: CompactTopicSelector(
+                          selectedTags: _selectedTopicTags,
+                          onTagsChanged: (tags) {
+                            setState(() {
+                              _selectedTopicTags = tags;
+                            });
+                          },
+                          userId: AuthService.currentUser ?? 'guest',
+                          maxTags: 5,
+                        ),
+                      ),
+                    );
+                  }),
+                  Container(
+                    width: 1,
+                    height: 24,
+                    color: Colors.grey[200],
+                  ),
+                  _buildToolIcon(Icons.keyboard_hide_rounded, Colors.grey, () {
+                    FocusScope.of(context).unfocus();
+                  }),
+                ],
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildToolButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildPolaroidImage({required ImageProvider imageProvider, required VoidCallback onRemove}) {
+    return Stack(
+      children: [
+        Container(
+          width: 100,
+          height: 120,
+          padding: const EdgeInsets.fromLTRB(6, 6, 6, 20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(4),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(2, 2),
+              ),
+            ],
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              image: DecorationImage(
+                image: imageProvider,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: -6,
+          right: -6,
+          child: IconButton(
+            onPressed: onRemove,
+            icon: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: const BoxDecoration(
+                color: Colors.redAccent,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close, size: 14, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildToolIcon(IconData icon, Color color, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.05),
-              blurRadius: 5,
-            ),
-          ],
+          color: color.withOpacity(0.1),
+          shape: BoxShape.circle,
         ),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 6),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          ],
-        ),
+        child: Icon(icon, color: color, size: 22),
       ),
     );
   }

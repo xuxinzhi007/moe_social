@@ -11,6 +11,7 @@ import 'models/achievement_badge.dart';
 import 'services/achievement_service.dart';
 import 'widgets/dynamic_avatar.dart';
 import 'widgets/achievement_badge_display.dart';
+import 'widgets/profile_bg.dart';
 import 'wallet_page.dart';
 import 'widgets/fade_in_up.dart';
 import 'gallery/cloud_gallery_page.dart';
@@ -279,30 +280,31 @@ class _ProfilePageState extends State<ProfilePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Padding(
-                            padding: EdgeInsets.only(left: 8, bottom: 8),
+                            padding: EdgeInsets.only(left: 12, bottom: 10),
                             child: Text('我的足迹', 
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black54)),
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
                           ),
                           _buildMenuCard([
                             _MenuItem(
                               icon: Icons.face_rounded,
                               title: '编辑形象',
-                              color: Colors.blueAccent,
+                              subtitle: '打造你的专属萌物形象',
+                              color: const Color(0xFF6A8EAE),
                               onTap: () {
                                 Navigator.pushNamed(context, '/avatar-editor');
                               },
                             ),
                             _MenuItem(
-                              icon: Icons.military_tech_outlined,
+                              icon: Icons.military_tech_rounded,
                               title: '成就徽章',
                               subtitle: '已解锁 ${_userBadges.where((b) => b.isUnlocked).length} 个',
-                              color: Colors.amber,
+                              color: const Color(0xFFFFB347),
                               onTap: _showAllBadges,
                             ),
                             _MenuItem(
-                              icon: Icons.cloud_outlined,
+                              icon: Icons.cloud_queue_rounded,
                               title: '云端图库',
-                              subtitle: '管理云端图片',
+                              subtitle: '管理你的美好回忆',
                               color: const Color(0xFF86A8E7),
                               onTap: () async {
                                 await Navigator.push(
@@ -326,28 +328,28 @@ class _ProfilePageState extends State<ProfilePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Padding(
-                            padding: EdgeInsets.only(left: 8, bottom: 8),
+                            padding: EdgeInsets.only(left: 12, bottom: 10),
                             child: Text('互动与活动', 
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black54)),
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
                           ),
                           _buildMenuCard([
                             _MenuItem(
                               icon: Icons.calendar_today_rounded,
                               title: '每日签到',
-                              subtitle: '签到获取经验',
+                              subtitle: '连续签到有惊喜哦',
                               color: const Color(0xFF7F7FD5),
                               onTap: () => _navigateToCheckIn(),
                             ),
                             _MenuItem(
-                              icon: Icons.favorite_border_rounded,
+                              icon: Icons.favorite_rounded,
                               title: '我的收藏',
-                              color: Colors.pinkAccent,
+                              color: const Color(0xFFFF6B6B),
                               onTap: () {},
                             ),
                             _MenuItem(
                               icon: Icons.history_rounded,
                               title: '浏览历史',
-                              color: Colors.orangeAccent,
+                              color: const Color(0xFFFFB347),
                               onTap: () {},
                             ),
                           ]),
@@ -363,16 +365,16 @@ class _ProfilePageState extends State<ProfilePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Padding(
-                            padding: EdgeInsets.only(left: 8, bottom: 8),
+                            padding: EdgeInsets.only(left: 12, bottom: 10),
                             child: Text('更多服务', 
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black54)),
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
                           ),
                           _buildMenuCard([
                             _MenuItem(
-                              icon: Icons.account_balance_wallet_outlined,
+                              icon: Icons.account_balance_wallet_rounded,
                               title: '我的钱包',
                               subtitle: '余额: ¥${_user?.balance.toStringAsFixed(2) ?? '0.00'}',
-                              color: Colors.green,
+                              color: const Color(0xFF4ECDC4),
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -384,9 +386,9 @@ class _ProfilePageState extends State<ProfilePage> {
                               },
                             ),
                             _MenuItem(
-                              icon: Icons.smart_toy_outlined,
+                              icon: Icons.smart_toy_rounded,
                               title: 'AutoGLM 助手',
-                              color: Colors.indigoAccent,
+                              color: const Color(0xFF7F7FD5),
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -398,7 +400,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 scale: 0.8,
                                 child: Switch(
                                   value: AutoGLMService.enableOverlay,
-                                  activeColor: Colors.indigoAccent,
+                                  activeColor: const Color(0xFF7F7FD5),
                                   onChanged: (value) async {
                                     setState(() {
                                       AutoGLMService.enableOverlay = value;
@@ -432,9 +434,9 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                             ),
                             _MenuItem(
-                              icon: Icons.help_outline_rounded,
+                              icon: Icons.help_rounded,
                               title: '帮助与反馈',
-                              color: Colors.purpleAccent,
+                              color: const Color(0xFF91EAE4),
                               onTap: () {},
                             ),
                           ]),
@@ -447,13 +449,13 @@ class _ProfilePageState extends State<ProfilePage> {
                     FadeInUp(
                       delay: const Duration(milliseconds: 500),
                       child: _buildMenuCard([
-                        _MenuItem(
-                          icon: Icons.logout_rounded,
-                          title: '退出登录',
-                          color: Colors.redAccent,
-                          isDestructive: true,
-                          onTap: () => _showLogoutDialog(context),
-                        ),
+                          _MenuItem(
+                              icon: Icons.logout_rounded,
+                              title: '退出登录',
+                              color: const Color(0xFFFF6B6B),
+                              isDestructive: true,
+                              onTap: () => _showLogoutDialog(context),
+                            ),
                       ]),
                     ),
                     const SizedBox(height: 40),
@@ -472,35 +474,8 @@ class _ProfilePageState extends State<ProfilePage> {
       alignment: Alignment.center,
       children: [
         // 背景图 - 充满整个 FlexibleSpaceBar
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color(0xFF7F7FD5),
-                Color(0xFF86A8E7),
-                Color(0xFF91EAE4),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(40),
-              bottomRight: Radius.circular(40),
-            ),
-          ),
-        ),
-        // 装饰圆
-        Positioned(
-          top: -50,
-          right: -50,
-          child: Container(
-            width: 200,
-            height: 200,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-          ),
+        const Positioned.fill(
+          child: ProfileBg(),
         ),
 
         // 用户信息内容
@@ -578,19 +553,20 @@ class _ProfilePageState extends State<ProfilePage> {
                 // 设备信息完整显示
                 Consumer<DeviceInfoProvider>(
                   builder: (context, provider, child) {
-                    return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -874,41 +850,59 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildStatItemCompact(String label, String value) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(value,
-            style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white)),
-        Text(label,
-            style: TextStyle(
-                color: Colors.white.withOpacity(0.8), fontSize: 11)),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+            height: 1.1,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.7),
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildVipCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+          colors: [Color(0xFFFFD700), Color(0xFFFFB347)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.orange.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
+            color: const Color(0xFFFFB347).withOpacity(0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Row(
         children: [
-          const Icon(Icons.star_rounded, color: Colors.white, size: 40),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.star_rounded, color: Colors.white, size: 28),
+          ),
           const SizedBox(width: 16),
           // 在 Web 的某些约束组合下 Row 子节点可能拿到 Infinity 宽度，导致按钮 layout 断言失败
           // 这里显式用 Expanded 给中间文案区域一个“可计算宽度”，并给按钮一个有限宽度，避免白屏
@@ -917,13 +911,14 @@ class _ProfilePageState extends State<ProfilePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'VIP会员中心',
+                  'VIP 会员中心',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
                 ),
+                const SizedBox(height: 2),
                 if (_vipStatus != null && _vipStatus!['expires_at'] != null)
                   Text(
                     '到期: ${_vipStatus!['expires_at']}',
@@ -933,7 +928,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   )
                 else
                   const Text(
-                    '开通享特权',
+                    '解锁尊贵特权',
                     style: TextStyle(color: Colors.white70, fontSize: 12),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -943,7 +938,6 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(width: 12),
           SizedBox(
-            width: 96,
             height: 36,
             child: ElevatedButton(
               onPressed: () {
@@ -951,13 +945,13 @@ class _ProfilePageState extends State<ProfilePage> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
-                foregroundColor: Colors.orange,
+                foregroundColor: const Color(0xFFFFA500),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15)),
+                    borderRadius: BorderRadius.circular(18)),
                 elevation: 0,
-                padding: EdgeInsets.zero,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
               ),
-              child: const Text('立即查看'),
+              child: const Text('立即查看', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -969,12 +963,12 @@ class _ProfilePageState extends State<ProfilePage> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
+            color: const Color(0xFF7F7FD5).withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -983,34 +977,69 @@ class _ProfilePageState extends State<ProfilePage> {
           final isLast = items.last == item;
           return Column(
             children: [
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: item.color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: item.onTap,
+                  borderRadius: BorderRadius.only(
+                    topLeft: items.first == item ? const Radius.circular(24) : Radius.zero,
+                    topRight: items.first == item ? const Radius.circular(24) : Radius.zero,
+                    bottomLeft: isLast ? const Radius.circular(24) : Radius.zero,
+                    bottomRight: isLast ? const Radius.circular(24) : Radius.zero,
                   ),
-                  child: Icon(item.icon, color: item.color, size: 20),
-                ),
-                title: Text(
-                  item.title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: item.isDestructive ? Colors.red : Colors.black87,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: item.color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Icon(item.icon, color: item.color, size: 22),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.title,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                  color: item.isDestructive ? Colors.redAccent : const Color(0xFF333333),
+                                ),
+                              ),
+                              if (item.subtitle != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  item.subtitle!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[400],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        item.trailing ?? Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          color: Colors.grey[300],
+                          size: 16,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                subtitle: item.subtitle != null
-                    ? Text(item.subtitle!,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[500]))
-                    : null,
-                trailing: item.trailing ??
-                    const Icon(Icons.chevron_right_rounded,
-                        color: Colors.grey, size: 20),
-                onTap: item.onTap,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               ),
-              if (!isLast) const Divider(height: 1, indent: 60, endIndent: 20),
+              if (!isLast) 
+                Padding(
+                  padding: const EdgeInsets.only(left: 68, right: 20),
+                  child: Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+                ),
             ],
           );
         }).toList(),
