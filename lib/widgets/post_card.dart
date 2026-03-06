@@ -23,266 +23,272 @@ class PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primaryColor = theme.primaryColor;
+    final secondaryColor = theme.colorScheme.secondary;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
-            blurRadius: 20,
+            color: primaryColor.withOpacity(0.08), // 使用主题色阴影
+            blurRadius: 24,
             offset: const Offset(0, 8),
             spreadRadius: 0,
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 用户信息
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: onAvatarTap,
-                  child: Hero(
-                    tag: 'avatar_${post.id}',
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFF7F7FD5).withOpacity(0.3),
-                            const Color(0xFF86A8E7).withOpacity(0.3),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 用户信息
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: onAvatarTap,
+                    child: Hero(
+                      tag: 'avatar_${post.id}',
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              primaryColor.withOpacity(0.3),
+                              secondaryColor.withOpacity(0.3),
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: primaryColor.withOpacity(0.2),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
                           ],
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF7F7FD5).withOpacity(0.2),
-                            blurRadius: 8,
-                            spreadRadius: 1,
+                        padding: const EdgeInsets.all(2),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: theme.scaffoldBackgroundColor, // 适配暗黑模式
                           ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.all(2),
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                        ),
-                        child: NetworkAvatarImage(
-                          imageUrl: post.userAvatar,
-                          radius: 22,
-                          placeholderIcon: Icons.person,
+                          child: NetworkAvatarImage(
+                            imageUrl: post.userAvatar,
+                            radius: 22,
+                            placeholderIcon: Icons.person,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        post.userName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          post.userName,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: theme.textTheme.titleLarge?.color,
+                          ),
                         ),
-                      ),
-                      Text(
-                        _formatTime(post.createdAt),
-                        style: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 12,
+                        Text(
+                          _formatTime(post.createdAt),
+                          style: TextStyle(
+                            color: theme.textTheme.bodySmall?.color ?? Colors.grey[400],
+                            fontSize: 12,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.more_horiz_rounded),
-                  color: Colors.grey[400],
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(Icons.more_horiz_rounded, color: theme.iconTheme.color?.withOpacity(0.5)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // 帖子内容
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: _renderContentWithEmojis(context, post.content),
+              ),
+
+              // 话题标签
+              if (post.topicTags.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: post.topicTags
+                      .map((tag) => TopicTagDisplay(
+                            tag: tag,
+                            fontSize: 12,
+                            showUsageCount: false,
+                            onTap: () {
+                              // 跳转到话题动态列表页面
+                              Navigator.pushNamed(
+                                context,
+                                '/topic-posts',
+                                arguments: tag,
+                              );
+                            },
+                          ))
+                      .toList(),
                 ),
               ],
-            ),
-            const SizedBox(height: 12),
 
-            // 帖子内容
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: _renderContentWithEmojis(post.content),
-            ),
-
-            // 话题标签
-            if (post.topicTags.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: post.topicTags
-                    .map((tag) => TopicTagDisplay(
-                          tag: tag,
-                          fontSize: 12,
-                          showUsageCount: false,
-                          onTap: () {
-                            // 跳转到话题动态列表页面
-                            Navigator.pushNamed(
-                              context,
-                              '/topic-posts',
-                              arguments: tag,
-                            );
-                          },
-                        ))
-                    .toList(),
-              ),
-            ],
 
-            const SizedBox(height: 12),
-
-            // 帖子图片
-            if (post.images.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              post.images.length == 1
-                  ? GestureDetector(
-                      onTap: () {},
-                      child: Hero(
-                        tag: 'post_img_${post.id}_0',
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.1),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: NetworkImageWidget(
-                              imageUrl: post.images[0],
-                              width: double.infinity,
-                              height: 300,
-                              fit: BoxFit.cover,
+              // 帖子图片
+              if (post.images.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                post.images.length == 1
+                    ? GestureDetector(
+                        onTap: () {},
+                        child: Hero(
+                          tag: 'post_img_${post.id}_0',
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: NetworkImageWidget(
+                                imageUrl: post.images[0],
+                                width: double.infinity,
+                                height: 300,
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    )
-                  : SizedBox(
-                      height: 200,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: post.images.length,
-                        itemBuilder: (context, imgIndex) {
-                          return Container(
-                            margin: EdgeInsets.only(
-                              right: imgIndex < post.images.length - 1 ? 12 : 0,
-                            ),
-                            child: GestureDetector(
-                              onTap: () {},
-                              child: Hero(
-                                tag: 'post_img_${post.id}_$imgIndex',
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.grey.withOpacity(0.1),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: NetworkImageWidget(
-                                      imageUrl: post.images[imgIndex],
-                                      width: 200,
-                                      height: 200,
-                                      fit: BoxFit.cover,
+                      )
+                    : SizedBox(
+                        height: 200,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: post.images.length,
+                          itemBuilder: (context, imgIndex) {
+                            return Container(
+                              margin: EdgeInsets.only(
+                                right: imgIndex < post.images.length - 1 ? 12 : 0,
+                              ),
+                              child: GestureDetector(
+                                onTap: () {},
+                                child: Hero(
+                                  tag: 'post_img_${post.id}_$imgIndex',
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(16),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.05),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: NetworkImageWidget(
+                                        imageUrl: post.images[imgIndex],
+                                        width: 200,
+                                        height: 200,
+                                        fit: BoxFit.cover,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
-                    ),
-            ],
-
-            const SizedBox(height: 20),
-            Container(
-              height: 1,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.transparent,
-                    Colors.grey[200]!,
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // 帖子互动
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                LikeButton(
-                  isLiked: post.isLiked,
-                  likeCount: post.likes,
-                  onTap: onLike ?? () {},
-                ),
-                _buildActionButton(
-                    icon: Icons.chat_bubble_outline_rounded,
-                    count: post.comments,
-                    onTap: onComment ?? () {}),
-                _buildActionButton(
-                    icon: Icons.share_rounded, label: '分享', onTap: onShare ?? () {}),
               ],
-            ),
-          ],
+
+              const SizedBox(height: 20),
+              Divider(
+                height: 1, 
+                color: theme.dividerColor.withOpacity(0.1),
+              ),
+              const SizedBox(height: 12),
+
+              // 帖子互动
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  LikeButton(
+                    isLiked: post.isLiked,
+                    likeCount: post.likes,
+                    onTap: onLike ?? () {},
+                  ),
+                  _buildActionButton(
+                      context,
+                      icon: Icons.chat_bubble_outline_rounded,
+                      count: post.comments,
+                      onTap: onComment ?? () {}),
+                  _buildActionButton(
+                      context,
+                      icon: Icons.share_rounded, label: '分享', onTap: onShare ?? () {}),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildActionButton(
+      BuildContext context,
       {required IconData icon,
       int? count,
       String? label,
       required VoidCallback onTap}) {
+    final theme = Theme.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
+        splashColor: theme.primaryColor.withOpacity(0.1),
+        highlightColor: theme.primaryColor.withOpacity(0.05),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            color: theme.scaffoldBackgroundColor.withOpacity(0.5), // 轻微背景色
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: Colors.grey[600], size: 20),
+              Icon(icon, color: theme.iconTheme.color?.withOpacity(0.6), size: 20),
               if (count != null || label != null) ...[
                 const SizedBox(width: 6),
                 Text(
                   count?.toString() ?? label ?? '',
                   style: TextStyle(
-                    color: Colors.grey[700],
+                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -310,7 +316,15 @@ class PostCard extends StatelessWidget {
     }
   }
 
-  Widget _renderContentWithEmojis(String content) {
+  Widget _renderContentWithEmojis(BuildContext context, String content) {
+    final theme = Theme.of(context);
+    final textStyle = TextStyle(
+      fontSize: 15,
+      height: 1.6,
+      letterSpacing: 0.2,
+      color: theme.textTheme.bodyLarge?.color,
+    );
+
     // 表情占位符正则表达式：[emoji:url]格式
     final emojiRegex = RegExp(r'\[emoji:(.*?)\]');
     final matches = emojiRegex.allMatches(content);
@@ -319,11 +333,7 @@ class PostCard extends StatelessWidget {
       // 如果没有表情占位符，直接返回普通文本
       return Text(
         content,
-        style: const TextStyle(
-          fontSize: 15,
-          height: 1.6,
-          letterSpacing: 0.2,
-        ),
+        style: textStyle,
       );
     }
 
@@ -336,11 +346,7 @@ class PostCard extends StatelessWidget {
       if (match.start > lastIndex) {
         spans.add(TextSpan(
           text: content.substring(lastIndex, match.start),
-          style: const TextStyle(
-            fontSize: 15,
-            height: 1.6,
-            letterSpacing: 0.2,
-          ),
+          style: textStyle,
         ));
       }
 
@@ -368,11 +374,7 @@ class PostCard extends StatelessWidget {
     if (lastIndex < content.length) {
       spans.add(TextSpan(
         text: content.substring(lastIndex),
-        style: const TextStyle(
-          fontSize: 15,
-          height: 1.6,
-          letterSpacing: 0.2,
-        ),
+        style: textStyle,
       ));
     }
 
