@@ -8,6 +8,7 @@ import 'services/presence_service.dart';
 import 'widgets/avatar_image.dart';
 import 'providers/notification_provider.dart';
 import 'widgets/fade_in_up.dart';
+import 'widgets/moe_toast.dart';
 
 class FriendsPage extends StatefulWidget {
   const FriendsPage({super.key});
@@ -228,9 +229,7 @@ class _FriendsPageState extends State<FriendsPage> {
                           final currentUserId = AuthService.currentUser;
                           if (currentUserId == null) {
                             Navigator.of(dialogContext).pop();
-                            ScaffoldMessenger.of(rootContext).showSnackBar(
-                              const SnackBar(content: Text('请先登录')),
-                            );
+                            MoeToast.error(rootContext, '请先登录');
                             return;
                           }
                           setState(() {
@@ -251,11 +250,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                 currentUserId, targetUser.id);
                             if (rootContext.mounted) {
                               Navigator.of(dialogContext).pop();
-                              ScaffoldMessenger.of(rootContext).showSnackBar(
-                                SnackBar(
-                                    content:
-                                        Text('已关注 ${targetUser.username}')),
-                              );
+                              MoeToast.success(rootContext, '已关注 ${targetUser.username}');
                               _loadFriends();
                             }
                           } catch (e) {
@@ -677,16 +672,12 @@ class _FriendsPageState extends State<FriendsPage> {
                     try {
                       await ApiService.unfollowUser(currentUserId, user.id);
                       if (mounted) {
-                        ScaffoldMessenger.of(this.context).showSnackBar(
-                          SnackBar(content: Text('已取消关注 ${user.username}')),
-                        );
+                        MoeToast.success(this.context, '已取消关注 ${user.username}');
                         _loadFriends();
                       }
                     } catch (e) {
                       if (mounted) {
-                        ScaffoldMessenger.of(this.context).showSnackBar(
-                          SnackBar(content: Text(e.toString())),
-                        );
+                        MoeToast.error(this.context, '操作失败，请重试');
                       }
                     }
                   },

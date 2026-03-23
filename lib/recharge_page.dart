@@ -3,6 +3,7 @@ import 'package:moe_social/auth_service.dart';
 import 'package:moe_social/services/api_service.dart';
 import 'package:moe_social/widgets/custom_button.dart';
 import 'widgets/fade_in_up.dart';
+import 'widgets/moe_toast.dart';
 
 class RechargePage extends StatefulWidget {
   const RechargePage({super.key});
@@ -97,25 +98,11 @@ class _RechargePageState extends State<RechargePage> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: const Color(0xFFFF6B6B),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+    MoeToast.error(context, message);
   }
 
   void _showSuccess(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: const Color(0xFF4ECDC4),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+    MoeToast.success(context, message);
   }
 
   @override

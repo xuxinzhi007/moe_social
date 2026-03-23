@@ -3,6 +3,7 @@ import 'package:moe_social/auth_service.dart';
 import 'package:moe_social/services/api_service.dart';
 import 'package:moe_social/recharge_page.dart';
 import 'widgets/fade_in_up.dart'; // 恢复导入
+import 'widgets/moe_toast.dart';
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -91,12 +92,7 @@ class _WalletPageState extends State<WalletPage> {
     } catch (e) {
       print('加载交易记录失败: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('加载交易记录失败: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        MoeToast.error(context, '加载交易记录失败，请检查网络');
       }
     } finally {
       if (mounted) {

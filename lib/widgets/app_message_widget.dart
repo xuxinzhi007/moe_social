@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/loading_provider.dart';
+import 'moe_toast.dart';
+import 'moe_loading.dart';
 
 /// 全局消息显示组件
-/// 用于显示成功、错误、加载等状态消息
+/// 监听 LoadingProvider 并自动用 MoeToast 弹出通知
 class AppMessageWidget extends StatelessWidget {
   final Widget child;
 
@@ -16,54 +18,27 @@ class AppMessageWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<LoadingProvider>(
       builder: (context, loadingProvider, _) {
+        // 监听到新的 success/error 消息时，弹出 MoeToast
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!context.mounted) return;
+          if (loadingProvider.successMessage != null) {
+            MoeToast.success(context, loadingProvider.successMessage!);
+            loadingProvider.clearMessages();
+          } else if (loadingProvider.errorMessage != null) {
+            MoeToast.error(context, loadingProvider.errorMessage!);
+            loadingProvider.clearMessages();
+          }
+        });
+
         return Stack(
           children: [
             child,
-
-            // 全局加载指示器
+            // 全局加载指示器（半透明遮罩 + MoeLoading）
             if (loadingProvider.isLoading)
               Container(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withOpacity(0.15),
                 child: const Center(
-                  child: Card(
-                    child: Padding(
-                      padding: EdgeInsets.all(20.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 16),
-                          Text('请稍候...'),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-            // 错误消息
-            if (loadingProvider.errorMessage != null)
-              Positioned(
-                top: MediaQuery.of(context).padding.top + 10,
-                left: 16,
-                right: 16,
-                child: _MessageCard(
-                  message: loadingProvider.errorMessage!,
-                  type: MessageType.error,
-                  onDismiss: () => loadingProvider.clearMessages(),
-                ),
-              ),
-
-            // 成功消息
-            if (loadingProvider.successMessage != null)
-              Positioned(
-                top: MediaQuery.of(context).padding.top + 10,
-                left: 16,
-                right: 16,
-                child: _MessageCard(
-                  message: loadingProvider.successMessage!,
-                  type: MessageType.success,
-                  onDismiss: () => loadingProvider.clearMessages(),
+                  child: MoeLoading(),
                 ),
               ),
           ],
@@ -75,133 +50,7 @@ class AppMessageWidget extends StatelessWidget {
 
 enum MessageType { success, error, warning, info }
 
-class _MessageCard extends StatefulWidget {
-  final String message;
-  final MessageType type;
-  final VoidCallback onDismiss;
-
-  const _MessageCard({
-    Key? key,
-    required this.message,
-    required this.type,
-    required this.onDismiss,
-  }) : super(key: key);
-
-  @override
-  State<_MessageCard> createState() => _MessageCardState();
-}
-
-class _MessageCardState extends State<_MessageCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<Offset> _slideAnimation;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, -1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    ));
-
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(_animationController);
-
-    _animationController.forward();
-
-    // 自动关闭消息
-    Future.delayed(const Duration(seconds: 4), () {
-      if (mounted) {
-        _dismiss();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  void _dismiss() async {
-    await _animationController.reverse();
-    widget.onDismiss();
-  }
-
-  Color _getBackgroundColor() {
-    switch (widget.type) {
-      case MessageType.success:
-        return Colors.green;
-      case MessageType.error:
-        return Colors.red;
-      case MessageType.warning:
-        return Colors.orange;
-      case MessageType.info:
-        return Colors.blue;
-    }
-  }
-
-  IconData _getIcon() {
-    switch (widget.type) {
-      case MessageType.success:
-        return Icons.check_circle;
-      case MessageType.error:
-        return Icons.error;
-      case MessageType.warning:
-        return Icons.warning;
-      case MessageType.info:
-        return Icons.info;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SlideTransition(
-      position: _slideAnimation,
-      child: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Card(
-          color: _getBackgroundColor(),
-          elevation: 6,
-          child: ListTile(
-            leading: Icon(
-              _getIcon(),
-              color: Colors.white,
-            ),
-            title: Text(
-              widget.message,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            trailing: IconButton(
-              icon: const Icon(
-                Icons.close,
-                color: Colors.white,
-              ),
-              onPressed: _dismiss,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 局部加载组件
-/// 用于特定操作的加载状态显示
+/// 局部加载组件（用于特定操作的加载状态）
 class OperationLoadingWidget extends StatelessWidget {
   final String operationKey;
   final Widget child;
@@ -226,12 +75,7 @@ class OperationLoadingWidget extends StatelessWidget {
 
         return Stack(
           children: [
-            // 使用透明度显示原组件
-            Opacity(
-              opacity: 0.5,
-              child: child,
-            ),
-            // 加载指示器覆盖层
+            Opacity(opacity: 0.5, child: child),
             Positioned.fill(
               child: Container(
                 color: Colors.white.withOpacity(0.8),
@@ -239,7 +83,7 @@ class OperationLoadingWidget extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const CircularProgressIndicator(),
+                      const MoeSmallLoading(),
                       if (loadingText != null) ...[
                         const SizedBox(height: 8),
                         Text(
@@ -262,8 +106,7 @@ class OperationLoadingWidget extends StatelessWidget {
   }
 }
 
-/// 加载按钮组件
-/// 自带加载状态的按钮
+/// 加载按钮组件（自带加载状态）
 class LoadingButton extends StatelessWidget {
   final String operationKey;
   final VoidCallback? onPressed;
@@ -288,14 +131,7 @@ class LoadingButton extends StatelessWidget {
           onPressed: isLoading ? null : onPressed,
           style: style,
           child: isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
+              ? const MoeSmallLoading(color: Colors.white, size: 20)
               : child,
         );
       },

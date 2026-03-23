@@ -12,6 +12,7 @@ import '../utils/error_handler.dart';
 import '../providers/notification_provider.dart';
 import '../widgets/post_card.dart';
 import '../widgets/home_banner.dart';
+import '../widgets/moe_loading.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -849,9 +850,7 @@ class _HomePageState extends State<HomePage> {
         child: Center(
           child: Column(
             children: [
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7F7FD5)),
-              ),
+              const MoeSmallLoading(),
               const SizedBox(height: 12),
               Text(
                 '加载中...',

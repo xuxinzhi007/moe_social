@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
+import 'widgets/moe_toast.dart';
 import 'services/api_service.dart';
 import 'widgets/avatar_image.dart';
 import 'package:provider/provider.dart';
@@ -402,9 +403,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
       final path = xFile.path;
       if (path.isEmpty) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('暂不支持在网页端发送图片')),
-          );
+          MoeToast.error(context, '暂不支持在网页端发送图片');
         }
         return;
       }
@@ -443,9 +442,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('发送图片失败: $e')),
-        );
+        MoeToast.error(context, '发送图片失败，请重试');
       }
     } finally {
       if (mounted) {

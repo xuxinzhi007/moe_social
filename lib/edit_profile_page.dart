@@ -8,6 +8,7 @@ import 'widgets/signature_input.dart';
 import 'widgets/gender_selector.dart';
 import 'widgets/birthday_selector.dart';
 import 'gallery/cloud_gallery_page.dart';
+import 'widgets/moe_toast.dart';
 
 class EditProfilePage extends StatefulWidget {
   final User user;
@@ -177,22 +178,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       if (mounted) {
         _hasUnsavedChanges = false;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('保存成功'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context, true); // 返回true表示已更新
+        MoeToast.success(context, '保存成功');
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('保存失败: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        MoeToast.error(context, '保存失败，请稍后重试');
       }
     } finally {
       if (mounted) {
