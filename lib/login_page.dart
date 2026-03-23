@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/loading_provider.dart';
 import 'widgets/app_message_widget.dart';
+import 'widgets/moe_toast.dart';
 import 'widgets/moe_input_field.dart';
 import 'widgets/auth_background.dart';
 
@@ -21,7 +22,6 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
 
   final Color _primaryColor = const Color(0xFF7F7FD5);
 
@@ -38,9 +38,11 @@ class _LoginPageState extends State<LoginPage> {
       key: LoadingKeys.login,
       onSuccess: (result) {
         if (!result.success) {
+          MoeToast.error(context, result.errorMessage ?? '登录失败，请稍后重试');
           loadingProvider.setError(result.errorMessage ?? '登录失败，请稍后重试');
           return;
         }
+        MoeToast.success(context, '欢迎回来！(｡♥‿♥｡)');
         loadingProvider.setSuccess('欢迎回来！(｡♥‿♥｡)');
         try {
           context.read<NotificationProvider>().init();

@@ -4,6 +4,7 @@ import 'services/api_service.dart';
 import 'models/vip_plan.dart';
 import 'recharge_page.dart';
 import 'widgets/fade_in_up.dart';
+import 'widgets/moe_toast.dart';
 
 class VipPurchasePage extends StatefulWidget {
   const VipPurchasePage({super.key});
@@ -55,9 +56,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加载VIP套餐失败: $e')),
-        );
+        MoeToast.error(context, '加载VIP套餐失败，请稍后重试');
       }
     }
   }
@@ -78,9 +77,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
 
     final userId = AuthService.currentUser;
     if (userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先登录')),
-      );
+      MoeToast.error(context, '请先登录');
       return;
     }
 
@@ -133,29 +130,19 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
           isVip;
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              paid
-                  ? '开通成功，已从钱包扣款 ¥${order.amount.toStringAsFixed(2)}'
-                  : '订单已创建，但当前未确认完成扣款，请稍后查看订单状态',
-            ),
-            backgroundColor:
-                paid ? const Color(0xFF4ECDC4) : const Color(0xFFFFB347),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        if (paid) {
+          MoeToast.success(context, '开通成功，已从钱包扣款 ¥${order.amount.toStringAsFixed(2)}');
+        } else {
+          MoeToast.show(context, '订单已创建，请稍后查看订单状态',
+              icon: Icons.info_outline_rounded,
+              backgroundColor: const Color(0xFFFFF8E1),
+              textColor: const Color(0xFF8B6914));
+        }
         Navigator.pop(context, paid);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('购买失败: $e'),
-            backgroundColor: const Color(0xFFFF6B6B),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        MoeToast.error(context, '购买失败，请稍后重试');
       }
     } finally {
       if (mounted) {

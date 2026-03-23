@@ -11,6 +11,7 @@ import 'widgets/dynamic_avatar.dart';
 import 'widgets/fade_in_up.dart';
 import 'widgets/achievement_badge_display.dart';
 import 'widgets/post_card.dart';
+import 'widgets/moe_toast.dart';
 import 'widgets/gift_animation.dart';
 import 'services/post_service.dart';
 import 'utils/error_handler.dart';
@@ -187,43 +188,19 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   Future<void> _toggleFollow() async {
     if (!AuthService.isLoggedIn) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('请先登录'),
-          duration: const Duration(seconds: 1),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+      MoeToast.error(context, '请先登录');
       return;
     }
     
     final currentUserId = AuthService.currentUser;
     if (currentUserId == null) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('获取用户信息失败'),
-          duration: const Duration(seconds: 1),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+      MoeToast.error(context, '获取用户信息失败');
       return;
     }
     
     // 禁止关注自己
     if (currentUserId == widget.userId) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('不能关注自己'),
-          duration: const Duration(seconds: 1),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+      MoeToast.error(context, '不能关注自己');
       return;
     }
     
@@ -240,25 +217,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
         // 刷新关注统计数据
         _loadFollowStats();
 
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_isFollowing ? '已关注' : '已取消关注'),
-            duration: const Duration(seconds: 1),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        MoeToast.success(context, _isFollowing ? '已关注' : '已取消关注');
       } else {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? '操作失败'),
-            duration: const Duration(seconds: 1),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        MoeToast.error(context, result['message'] ?? '操作失败');
       }
     } catch (e) {
       print('关注操作失败: $e');
@@ -277,15 +238,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         errorMessage = '关注的用户不存在';
       }
       
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          duration: const Duration(seconds: 1),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+      MoeToast.error(context, errorMessage);
     }
   }
 
@@ -489,9 +442,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                 // 这里简化处理，直接使用对方的 userId 作为频道名，或者双方 id 组合
                                 final currentUserId = AuthService.currentUser;
                                 if (currentUserId == null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('请先登录')),
-                                  );
+                                  MoeToast.error(context, '请先登录');
                                   return;
                                 }
                                 
@@ -842,24 +793,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
         onAnimationComplete: () {
           Navigator.of(context).pop();
           // 显示发送成功提示
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Text(gift.emoji, style: const TextStyle(fontSize: 20)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '已送出${gift.name}给 ${_user?.username ?? widget.userName ?? '用户'}',
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              duration: const Duration(seconds: 3),
-            ),
+          MoeToast.show(
+            context,
+            '${gift.emoji} 已送出${gift.name}给 ${_user?.username ?? widget.userName ?? '用户'}',
+            icon: Icons.favorite_rounded,
+            backgroundColor: const Color(0xFFF0FDF4),
+            textColor: const Color(0xFF16A34A),
+            duration: const Duration(seconds: 3),
           );
         },
       ),

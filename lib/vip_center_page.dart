@@ -6,6 +6,7 @@ import 'vip_purchase_page.dart';
 import 'vip_orders_page.dart';
 import 'vip_history_page.dart';
 import 'widgets/fade_in_up.dart';
+import 'widgets/moe_toast.dart';
 import 'widgets/moe_menu_card.dart'; // 引入通用菜单组件
 
 class VipCenterPage extends StatefulWidget {
@@ -66,9 +67,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加载VIP信息失败: $e')),
-        );
+        MoeToast.error(context, '加载VIP信息失败，请稍后重试');
       }
     }
   }
@@ -84,28 +83,14 @@ class _VipCenterPageState extends State<VipCenterPage> {
     try {
       await ApiService.updateAutoRenew(userId, value);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(value ? '已开启自动续费' : '已关闭自动续费'),
-            backgroundColor: const Color(0xFF4ECDC4), // 青色成功提示
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        MoeToast.success(context, value ? '已开启自动续费' : '已关闭自动续费');
       }
     } catch (e) {
       setState(() {
         _autoRenew = !value;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('操作失败: $e'),
-            backgroundColor: const Color(0xFFFF6B6B),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        MoeToast.error(context, '操作失败，请稍后重试');
       }
     }
   }

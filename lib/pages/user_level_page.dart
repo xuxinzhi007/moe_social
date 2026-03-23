@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../providers/user_level_provider.dart';
 import '../providers/checkin_provider.dart';
 import '../widgets/fade_in_up.dart';
+import '../widgets/moe_toast.dart';
+import '../widgets/moe_loading.dart';
 
 /// 用户等级页面 - 遵循 Moe Social Design Language 梦幻风格
 class UserLevelPage extends StatefulWidget {
@@ -80,9 +82,7 @@ class _UserLevelPageState extends State<UserLevelPage>
 
           if (levelProvider.isLoading) {
             return const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7F7FD5)),
-              ),
+              child: MoeLoading(),
             );
           }
 

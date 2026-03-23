@@ -19,6 +19,7 @@ import 'pages/user_level_page.dart';
 import 'providers/user_level_provider.dart';
 import 'following_page.dart';
 import 'followers_page.dart';
+import 'widgets/moe_toast.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -115,15 +116,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _isLoading = false;
           _isLoadingDetails = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('加载个人信息失败，请检查网络连接'),
-            action: SnackBarAction(
-              label: '重试',
-              onPressed: _loadUserInfo,
-            ),
-          ),
-        );
+        MoeToast.error(context, '加载个人信息失败，请检查网络连接');
       }
     }
   }
@@ -371,16 +364,14 @@ class _ProfilePageState extends State<ProfilePage> {
                                         if (!hasPerm) {
                                           setState(() => AutoGLMService.enableOverlay = false);
                                           if (mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(content: Text('需要悬浮窗权限才能显示')));
+                                            MoeToast.error(context, '需要悬浮窗权限才能显示');
                                           }
                                           return;
                                         }
                                       }
                                       await AutoGLMService.showOverlay();
                                       if (mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('悬浮窗已开启')));
+                                        MoeToast.success(context, '悬浮窗已开启');
                                       }
                                     } else {
                                       await AutoGLMService.removeOverlay();
@@ -998,9 +989,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void _navigateToCheckIn() {
     final userId = AuthService.currentUser;
     if (userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先登录')),
-      );
+      MoeToast.error(context, '请先登录');
       return;
     }
 
@@ -1015,9 +1004,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void _navigateToUserLevel() {
     final userId = AuthService.currentUser;
     if (userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先登录')),
-      );
+      MoeToast.error(context, '请先登录');
       return;
     }
 

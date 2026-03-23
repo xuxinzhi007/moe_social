@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/checkin_provider.dart';
 import '../providers/user_level_provider.dart';
 import '../widgets/fade_in_up.dart';
+import '../widgets/moe_toast.dart';
 
 /// 签到主页面 - 遵循 Moe Social Design Language 梦幻风格
 class CheckInPage extends StatefulWidget {
@@ -99,7 +100,7 @@ class _CheckInPageState extends State<CheckInPage>
   /// 构建应用栏
   Widget _buildAppBar(BuildContext context) {
     return SliverAppBar(
-      expandedHeight: 120,
+      expandedHeight: 70,
       floating: true,
       pinned: true,
       elevation: 0,
@@ -112,16 +113,17 @@ class _CheckInPageState extends State<CheckInPage>
             colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
           ),
         ),
-        child: const FlexibleSpaceBar(
-          title: Text(
-            '每日签到',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
+        child: const SafeArea(
+          child: Center(
+            child: Text(
+              '每日签到',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
             ),
           ),
-          centerTitle: true,
         ),
       ),
       leading: IconButton(
@@ -142,7 +144,7 @@ class _CheckInPageState extends State<CheckInPage>
     return FadeInUp(
       delay: const Duration(milliseconds: 100),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -151,83 +153,77 @@ class _CheckInPageState extends State<CheckInPage>
                 ? levelProvider.getLevelGradient(levelProvider.currentLevel)
                 : [const Color(0xFF91EAE4), const Color(0xFF7F7FD5)],
           ),
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+              blurRadius: 15,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
-        child: Column(
+        child: Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Icon(
-                    Icons.star_rounded,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.star_rounded,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        levelProvider.levelTitle,
+                        '${levelProvider.levelTitle} Lv.${levelProvider.currentLevel}',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        'Lv.${levelProvider.currentLevel}',
+                        '${levelProvider.currentExperience}/${levelProvider.userLevel?.nextLevelExp ?? 100}',
                         style: const TextStyle(
-                          color: Colors.white70,
+                          color: Colors.white,
                           fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
-                ),
-                Text(
-                  '${levelProvider.currentExperience}/${levelProvider.userLevel?.nextLevelExp ?? 100}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: levelProvider.progress,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                      minHeight: 6,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: LinearProgressIndicator(
-                value: levelProvider.progress,
-                backgroundColor: Colors.white.withOpacity(0.2),
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                minHeight: 8,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              levelProvider.isMaxLevel
-                  ? '已达到最高等级！'
-                  : '距离下一级还需 ${levelProvider.expToNext} 经验',
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
+                  const SizedBox(height: 4),
+                  Text(
+                    levelProvider.isMaxLevel
+                        ? '已达到最高等级！'
+                        : '距下级差 ${levelProvider.expToNext} 经验',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -244,29 +240,60 @@ class _CheckInPageState extends State<CheckInPage>
     return FadeInUp(
       delay: const Duration(milliseconds: 200),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+              blurRadius: 15,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
-        child: Column(
+        child: Row(
           children: [
-            const Text(
-              '每日签到',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2D3748),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '每日签到',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2D3748),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    hasChecked
+                        ? '今日已签到'
+                        : canCheckIn
+                            ? '点击右侧按钮签到'
+                            : '无法签到',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: hasChecked
+                          ? Colors.green.shade600
+                          : canCheckIn
+                              ? const Color(0xFF7F7FD5)
+                              : Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    checkInProvider.checkInStatus?.consecutiveDaysText ?? '开始你的签到之旅',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
             AnimatedBuilder(
               animation: _bounceAnimation,
               builder: (context, child) {
@@ -275,8 +302,8 @@ class _CheckInPageState extends State<CheckInPage>
                   child: GestureDetector(
                     onTap: hasChecked ? null : () => _performCheckIn(checkInProvider, levelProvider),
                     child: Container(
-                      width: 120,
-                      height: 120,
+                      width: 80,
+                      height: 80,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
@@ -293,8 +320,8 @@ class _CheckInPageState extends State<CheckInPage>
                             color: (hasChecked || !canCheckIn)
                                 ? Colors.grey.withOpacity(0.3)
                                 : const Color(0xFF7F7FD5).withOpacity(0.4),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
+                            blurRadius: 15,
+                            offset: const Offset(0, 6),
                           ),
                         ],
                       ),
@@ -306,8 +333,8 @@ class _CheckInPageState extends State<CheckInPage>
                             children: [
                               if (canCheckIn && !hasChecked && !checkInProvider.isCheckingIn)
                                 Container(
-                                  width: 120 + (_rippleAnimation.value * 40),
-                                  height: 120 + (_rippleAnimation.value * 40),
+                                  width: 80 + (_rippleAnimation.value * 24),
+                                  height: 80 + (_rippleAnimation.value * 24),
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(
@@ -325,7 +352,7 @@ class _CheckInPageState extends State<CheckInPage>
                                         ? Icons.hourglass_empty_rounded
                                         : Icons.calendar_today_rounded,
                                 color: Colors.white,
-                                size: 48,
+                                size: 32,
                               ),
                             ],
                           );
@@ -335,31 +362,6 @@ class _CheckInPageState extends State<CheckInPage>
                   ),
                 );
               },
-            ),
-            const SizedBox(height: 16),
-            Text(
-              hasChecked
-                  ? '今日已签到'
-                  : canCheckIn
-                      ? '点击签到'
-                      : '无法签到',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: hasChecked
-                    ? Colors.green.shade600
-                    : canCheckIn
-                        ? const Color(0xFF7F7FD5)
-                        : Colors.grey.shade600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              checkInProvider.checkInStatus?.consecutiveDaysText ?? '开始你的签到之旅',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
             ),
           ],
         ),
@@ -372,10 +374,10 @@ class _CheckInPageState extends State<CheckInPage>
     return FadeInUp(
       delay: const Duration(milliseconds: 300),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.06),
@@ -390,12 +392,12 @@ class _CheckInPageState extends State<CheckInPage>
             const Text(
               '签到奖励',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF2D3748),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
@@ -425,28 +427,35 @@ class _CheckInPageState extends State<CheckInPage>
 
   Widget _buildRewardItem(String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
+      child: Row(
         children: [
           Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: color,
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -459,10 +468,10 @@ class _CheckInPageState extends State<CheckInPage>
     return FadeInUp(
       delay: const Duration(milliseconds: 400),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.06),
@@ -477,12 +486,12 @@ class _CheckInPageState extends State<CheckInPage>
             const Text(
               '我的成就',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF2D3748),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
@@ -521,18 +530,18 @@ class _CheckInPageState extends State<CheckInPage>
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: color, size: 24),
+          child: Icon(icon, color: color, size: 20),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
           value,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.bold,
             color: color,
           ),
@@ -540,7 +549,7 @@ class _CheckInPageState extends State<CheckInPage>
         Text(
           title,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             color: Colors.grey.shade600,
           ),
         ),
@@ -583,39 +592,17 @@ class _CheckInPageState extends State<CheckInPage>
 
   /// 显示成功消息
   void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    MoeToast.success(context, message);
   }
 
   /// 显示错误消息
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    MoeToast.error(context, message);
   }
 
   /// 显示历史页面
   void _showHistoryPage(BuildContext context) {
-    // TODO: 导航到签到历史页面
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('签到历史功能开发中...')),
-    );
+    MoeToast.show(context, '签到历史功能开发中...',
+        icon: Icons.info_outline_rounded);
   }
 }

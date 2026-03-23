@@ -16,6 +16,7 @@ import 'services/llm_endpoint_config.dart';
 import 'package:flutter/services.dart';
 import 'widgets/moe_menu_card.dart'; // 引入新的 MoeMenuCard 组件
 import 'widgets/fade_in_up.dart'; // 引入 FadeInUp 动画
+import 'widgets/moe_toast.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -481,16 +482,12 @@ class _SettingsPageState extends State<SettingsPage> {
           ElevatedButton(
             onPressed: () async {
               if (newPasswordController.text != confirmPasswordController.text) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('两次输入的密码不一致')),
-                );
+                MoeToast.error(context, '两次输入的密码不一致');
                 return;
               }
               
               if (newPasswordController.text.length < 6) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('密码长度不能少于6位')),
-                );
+                MoeToast.error(context, '密码长度不能少于6位');
                 return;
               }
               
@@ -508,15 +505,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 );
                 if (mounted) {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('密码修改成功')),
-                  );
+                  MoeToast.success(context, '密码修改成功');
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('密码修改失败: $e')),
-                  );
+                  MoeToast.error(context, '密码修改失败，请检查原密码是否正确');
                 }
               }
             },
@@ -752,15 +745,11 @@ class _SettingsPageState extends State<SettingsPage> {
                         arguments: user,
                       );
                       if (result == true && mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('资料已更新')),
-                        );
+                        MoeToast.success(context, '资料已更新');
                       }
                     } catch (e) {
                       if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('打开编辑失败: $e')),
-                      );
+                      MoeToast.error(context, '打开编辑页面失败');
                     }
                   },
                 ),
@@ -1049,19 +1038,14 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
   Future<void> _openAccessibilitySettings() async {
     try {
       await openAppSettings();
-      if(mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('请在无障碍设置中找到「Moe Social 助手」并启用'),
-              duration: Duration(seconds: 4),
-            ),
-          );
+      if (mounted) {
+        MoeToast.show(context, '请在无障碍设置中找到「Moe Social 助手」并启用',
+            icon: Icons.info_outline_rounded,
+            duration: const Duration(seconds: 4));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('无法打开设置: $e')),
-        );
+        MoeToast.error(context, '无法打开设置');
       }
     }
   }
@@ -1081,9 +1065,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('请在系统设置中为「${item.title}」授予权限')),
-      );
+      MoeToast.error(context, '请在系统设置中为「${item.title}」授予权限');
       await openAppSettings();
     }
   }
@@ -1112,11 +1094,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
       }
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('权限申请完成：$granted 个已授权，$denied 个未授权'),
-          ),
-        );
+        MoeToast.success(context, '权限申请完成：$granted 个已授权，$denied 个未授权');
       }
     } finally {
       if (mounted) {
