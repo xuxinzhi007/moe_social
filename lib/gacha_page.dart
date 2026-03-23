@@ -9,6 +9,7 @@ import 'auth_service.dart';
 import 'services/api_service.dart';
 import 'inventory_page.dart';
 import 'recharge_page.dart';
+import 'widgets/moe_toast.dart';
 
 class GachaPage extends StatefulWidget {
   const GachaPage({super.key});
@@ -95,22 +96,11 @@ class _GachaPageState extends State<GachaPage>
     // 1. 检查余额
     double cost = count == 10 ? 45.0 : 5.0 * count;
     if (_currentUser!.balance < cost) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('余额不足，请充值'),
-          action: SnackBarAction(
-            label: '充值',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const RechargePage()),
-              ).then((_) {
-                _loadUserInfo(); // 充值返回后刷新余额
-              });
-            },
-          ),
-        ),
-      );
+      MoeToast.error(context, '余额不足，请先充值');
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const RechargePage()),
+      ).then((_) => _loadUserInfo());
       return;
     }
 
@@ -123,8 +113,10 @@ class _GachaPageState extends State<GachaPage>
 
     // 2. 扣费 (调用后端 API)
     try {
-      await ApiService.recharge(_currentUser!.id, -cost, '扭蛋消费');
-
+      final res = await ApiService.recharge(_currentUser!.id, -cost, '扭蛋消费');
+      if (res['success'] != true) {
+        throw Exception(res['message'] ?? '余额不足或网络异常');
+      }
       // Refresh from server (balance is server-truth)
       await _loadUserInfo();
     } catch (e) {
@@ -132,10 +124,8 @@ class _GachaPageState extends State<GachaPage>
         setState(() {
           _isPlaying = false;
         });
+        MoeToast.error(context, '扣费失败：$e');
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('扣费失败: $e')),
-      );
       return;
     }
 

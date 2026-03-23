@@ -26,6 +26,7 @@ import 'notification_center_page.dart';
 import 'wallet_page.dart';
 import 'recharge_page.dart';
 import 'gacha_page.dart';
+import 'pages/game/game_lobby_page.dart';
 import 'user_profile_page.dart';
 import 'widgets/app_message_widget.dart';
 import 'widgets/moe_bottom_bar.dart';
@@ -44,6 +45,7 @@ import 'providers/device_info_provider.dart';
 import 'providers/loading_provider.dart';
 import 'providers/checkin_provider.dart';
 import 'providers/user_level_provider.dart';
+import 'providers/game_provider.dart';
 import 'pages/home_page.dart';
 
 void main() async {
@@ -178,6 +180,7 @@ void main() async {
           ChangeNotifierProvider.value(value: loadingProvider),
           ChangeNotifierProvider(create: (_) => CheckInProvider()),
           ChangeNotifierProvider(create: (_) => UserLevelProvider()),
+          ChangeNotifierProvider(create: (_) => GameProvider()),
         ],
         child: const MyApp(),
       ),
@@ -292,7 +295,7 @@ class _MainPageState extends State<MainPage> {
     () => HomePage(),
     () => FriendsPage(),
     () => AgentListPage(),
-    () => GachaPage(),
+    () => const GameLobbyPage(),
     () => ProfilePage(),
   ];
   late final List<Widget?> _loadedPages =
@@ -339,9 +342,9 @@ class _MainPageState extends State<MainPage> {
             label: 'AI',
           ),
           NavigationDestination(
-            icon: Icon(Icons.casino_outlined),
-            selectedIcon: Icon(Icons.casino_rounded),
-            label: '扭蛋',
+            icon: Icon(Icons.sports_esports_outlined),
+            selectedIcon: Icon(Icons.sports_esports_rounded),
+            label: '娱乐',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),
