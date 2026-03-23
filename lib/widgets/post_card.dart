@@ -5,6 +5,7 @@ import '../widgets/avatar_image.dart';
 import '../widgets/network_image.dart';
 import '../widgets/topic_tag_selector.dart';
 import '../widgets/like_button.dart';
+import '../widgets/moe_bouncing_button.dart';
 
 class PostCard extends StatelessWidget {
   final Post post;
@@ -12,6 +13,11 @@ class PostCard extends StatelessWidget {
   final VoidCallback? onComment;
   final VoidCallback? onShare;
   final VoidCallback? onAvatarTap;
+  /// Hero 标签命名空间前缀。
+  /// 在同一 Navigator 栈中若有多个页面都渲染 PostCard（如首页 + 用户主页），
+  /// 必须传入不同的前缀，否则 Hero 标签重复会导致头像消失、无法点击。
+  /// 首页（根页面）保持默认空字符串；其他嵌套页面传入唯一前缀，例如 'up_'。
+  final String heroTagPrefix;
 
   const PostCard({
     super.key,
@@ -20,6 +26,7 @@ class PostCard extends StatelessWidget {
     this.onComment,
     this.onShare,
     this.onAvatarTap,
+    this.heroTagPrefix = '',
   });
 
   @override
@@ -56,7 +63,7 @@ class PostCard extends StatelessWidget {
                   GestureDetector(
                     onTap: onAvatarTap,
                     child: Hero(
-                      tag: 'avatar_${post.id}',
+                      tag: '${heroTagPrefix}avatar_${post.id}',
                       child: Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
@@ -154,77 +161,8 @@ class PostCard extends StatelessWidget {
 
               // 帖子图片
               if (post.images.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                post.images.length == 1
-                    ? GestureDetector(
-                        onTap: () {},
-                        child: Hero(
-                          tag: 'post_img_${post.id}_0',
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: NetworkImageWidget(
-                                imageUrl: post.images[0],
-                                width: double.infinity,
-                                height: 300,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                        ),
-                      )
-                    : SizedBox(
-                        height: 200,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          itemCount: post.images.length,
-                          itemBuilder: (context, imgIndex) {
-                            return Container(
-                              margin: EdgeInsets.only(
-                                right: imgIndex < post.images.length - 1 ? 12 : 0,
-                              ),
-                              child: GestureDetector(
-                                onTap: () {},
-                                child: Hero(
-                                  tag: 'post_img_${post.id}_$imgIndex',
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(16),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(0.05),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ],
-                                      ),
-                                      child: NetworkImageWidget(
-                                        imageUrl: post.images[imgIndex],
-                                        width: 200,
-                                        height: 200,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                const SizedBox(height: 8),
+                _buildImageGrid(context, post.images, post.id),
               ],
 
               const SizedBox(height: 20),
@@ -283,37 +221,88 @@ class PostCard extends StatelessWidget {
       String? label,
       required VoidCallback onTap}) {
     final theme = Theme.of(context);
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        splashColor: theme.primaryColor.withOpacity(0.1),
-        highlightColor: theme.primaryColor.withOpacity(0.05),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: theme.scaffoldBackgroundColor.withOpacity(0.5), // 轻微背景色
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: theme.iconTheme.color?.withOpacity(0.6), size: 20),
-              if (count != null || label != null) ...[
-                const SizedBox(width: 6),
-                Text(
-                  count?.toString() ?? label ?? '',
-                  style: TextStyle(
-                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
+    return MoeBouncingButton(
+      onTap: onTap,
+      scaleFactor: 0.85,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: theme.scaffoldBackgroundColor.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: theme.iconTheme.color?.withOpacity(0.6), size: 20),
+            if (count != null || label != null) ...[
+              const SizedBox(width: 6),
+              Text(
+                count?.toString() ?? label ?? '',
+                style: TextStyle(
+                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                 ),
-              ],
+              ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageGrid(BuildContext context, List<String> images, String postId) {
+    if (images.isEmpty) return const SizedBox.shrink();
+
+    // 单张大图
+    if (images.length == 1) {
+      return GestureDetector(
+        onTap: () {},
+        child: Hero(
+          tag: '${heroTagPrefix}post_img_${postId}_0',
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: NetworkImageWidget(
+              imageUrl: images[0],
+              width: double.infinity,
+              height: 250,
+              fit: BoxFit.cover,
+            ),
           ),
         ),
+      );
+    }
+
+    // 2-4张图使用2列，其他使用3列
+    int crossAxisCount = images.length == 2 || images.length == 4 ? 2 : 3;
+    double spacing = 6.0;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final totalSpacing = spacing * (crossAxisCount - 1);
+          final itemSize = (constraints.maxWidth - totalSpacing) / crossAxisCount;
+
+          return Wrap(
+            spacing: spacing,
+            runSpacing: spacing,
+            children: List.generate(images.length, (index) {
+              return GestureDetector(
+                onTap: () {},
+                child: Hero(
+                  tag: '${heroTagPrefix}post_img_${postId}_$index',
+                  child: NetworkImageWidget(
+                    imageUrl: images[index],
+                    width: itemSize,
+                    height: itemSize,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              );
+            }),
+          );
+        }
       ),
     );
   }

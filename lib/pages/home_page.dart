@@ -301,7 +301,7 @@ class _HomePageState extends State<HomePage> {
                     final postIndex =
                         visible.indexWhere((p) => p.id == post.id);
                     return FadeInUp(
-                      delay: Duration(milliseconds: 30 * (postIndex % 5)),
+                      delay: Duration(milliseconds: postIndex < 5 ? 30 * postIndex : 0),
                       child: _buildPostCard(post, postIndex),
                     );
                   },

@@ -96,6 +96,7 @@ class MoeBottomBar extends StatelessWidget {
                         AnimatedSize(
                           duration: const Duration(milliseconds: 200),
                           curve: Curves.easeInOut,
+                          clipBehavior: Clip.none,
                           child: SizedBox(
                             width: isSelected ? null : 0,
                             child: Padding(
