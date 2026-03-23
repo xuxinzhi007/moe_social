@@ -257,7 +257,7 @@ class _WalletPageState extends State<WalletPage> {
 
                     final transaction = _transactions[index] as Map<String, dynamic>;
                     return FadeInUp(
-                      delay: Duration(milliseconds: 300 + (index * 50).clamp(0, 500)),
+                      delay: Duration(milliseconds: 30 * (index % 8)),
                       child: _buildTransactionItem(transaction),
                     );
                   },

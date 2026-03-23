@@ -443,7 +443,7 @@ class _FriendsPageState extends State<FriendsPage> {
               itemBuilder: (context, index) {
                 final user = friends[index];
                 return FadeInUp(
-                  delay: Duration(milliseconds: 30 * index),
+                  delay: Duration(milliseconds: 30 * (index % 8)),
                   child: _buildFriendCard(user),
                 );
               },

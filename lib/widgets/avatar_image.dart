@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// 简化的网络头像组件
 /// 使用Flutter内置组件，自动处理错误和加载状态
@@ -31,26 +32,15 @@ class NetworkAvatarImage extends StatelessWidget {
       return _buildDataUriAvatar();
     }
 
-    // 使用Image.network加载图片，通过errorBuilder处理错误
-    // 这样可以确保图片加载成功时不会显示占位图
+    // 使用CachedNetworkImage加载图片，自动缓存
     return ClipOval(
-      child: Image.network(
-        imageUrl!,
+      child: CachedNetworkImage(
+        imageUrl: imageUrl!,
         width: radius * 2,
         height: radius * 2,
         fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) {
-            // 加载完成，显示图片
-            return child;
-          }
-          // 加载中，显示占位图
-          return _buildPlaceholder();
-        },
-        errorBuilder: (context, error, stackTrace) {
-          // 加载失败，显示占位图
-          return _buildPlaceholder();
-        },
+        placeholder: (context, url) => _buildPlaceholder(),
+        errorWidget: (context, url, error) => _buildPlaceholder(),
       ),
     );
   }

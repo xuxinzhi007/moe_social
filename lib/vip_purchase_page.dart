@@ -211,7 +211,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                               itemBuilder: (context, index) {
                                 final plan = _plans[index];
                                 return FadeInUp(
-                                  delay: Duration(milliseconds: 100 * index),
+                                  delay: Duration(milliseconds: 30 * (index % 8)),
                                   child: _buildPlanCard(plan),
                                 );
                               },

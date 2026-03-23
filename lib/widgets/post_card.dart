@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/post.dart';
 import '../services/like_state_manager.dart';
 import '../widgets/avatar_image.dart';
@@ -157,7 +158,10 @@ class PostCard extends StatelessWidget {
                                 ListTile(
                                   leading: const Icon(Icons.report_rounded, color: Colors.red),
                                   title: const Text('举报'),
-                                  onTap: () => Navigator.pop(context),
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    _showReportDialog(context, post);
+                                  },
                                 ),
                                 const SizedBox(height: 8),
                               ],
@@ -273,6 +277,55 @@ ${post.content}
     Share.share(
       shareText,
       subject: '来自萌社的分享',
+    );
+  }
+
+  static void _showReportDialog(BuildContext context, Post post) {
+    final reasons = [
+      {'icon': Icons.security_rounded, 'title': '垃圾营销', 'color': Colors.orange},
+      {'icon': Icons.warning_rounded, 'title': '不实信息', 'color': Colors.red},
+      {'icon': Icons.person_off_rounded, 'title': '人身攻击', 'color': Colors.purple},
+      {'icon': Icons.casino_rounded, 'title': '违法违规', 'color': Colors.deepOrange},
+      {'icon': Icons.face_rounded, 'title': '色情低俗', 'color': Colors.pink},
+      {'icon': Icons.more_horiz_rounded, 'title': '其他原因', 'color': Colors.grey},
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.report_rounded, color: Colors.red[400]),
+            const SizedBox(width: 8),
+            const Text('举报内容', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: reasons.map((r) => ListTile(
+            leading: Icon(r['icon'] as IconData, color: r['color'] as Color),
+            title: Text(r['title'] as String),
+            onTap: () {
+              Navigator.pop(context);
+              _submitReport(context, post, r['title'] as String);
+            },
+          )).toList(),
+        ),
+      ),
+    );
+  }
+
+  static void _submitReport(BuildContext context, Post post, String reason) {
+    // TODO: 调用后端举报接口
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('已提交「$reason」举报，感谢反馈'),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
     );
   }
 
@@ -442,8 +495,8 @@ ${post.content}
         alignment: PlaceholderAlignment.middle,
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 2),
-          child: Image.network(
-            emojiUrl,
+          child: CachedNetworkImage(
+            imageUrl: emojiUrl,
             width: 24,
             height: 24,
             fit: BoxFit.cover,
