@@ -288,23 +288,37 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
-
-  final List<Widget> _pages = [
-    HomePage(),
-    FriendsPage(),
-    AgentListPage(),
-    GachaPage(),
-    ProfilePage(),
+  late final List<Widget Function()> _pageBuilders = [
+    () => HomePage(),
+    () => FriendsPage(),
+    () => AgentListPage(),
+    () => GachaPage(),
+    () => ProfilePage(),
   ];
+  late final List<Widget?> _loadedPages =
+      List<Widget?>.filled(_pageBuilders.length, null, growable: false);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadedPages[_selectedIndex] = _pageBuilders[_selectedIndex]();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: List.generate(
+          _pageBuilders.length,
+          (index) => _loadedPages[index] ?? const SizedBox.shrink(),
+        ),
+      ),
       bottomNavigationBar: MoeBottomBar(
         selectedIndex: _selectedIndex,
         onItemSelected: (int index) {
           setState(() {
+            _loadedPages[index] ??= _pageBuilders[index]();
             _selectedIndex = index;
           });
         },

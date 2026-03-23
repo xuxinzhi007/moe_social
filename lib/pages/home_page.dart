@@ -935,8 +935,22 @@ class _HomePageState extends State<HomePage> {
       post: post,
       onLike: () => _toggleLike(post.id),
       onComment: () async {
-        await Navigator.pushNamed(context, '/comments', arguments: post.id);
-        _fetchPosts();
+        final result = await Navigator.pushNamed(context, '/comments', arguments: post.id);
+        if (result != null && result is int) {
+          // 返回值是新的评论数，同时更新源数据和当前展示列表
+          setState(() {
+            final allIndex = _allPosts.indexWhere((p) => p.id == post.id);
+            if (allIndex != -1) {
+              final updatedPost = _allPosts[allIndex].copyWith(comments: result);
+              _allPosts[allIndex] = updatedPost;
+
+              final displayIndex = _displayPosts.indexWhere((p) => p.id == post.id);
+              if (displayIndex != -1) {
+                _displayPosts[displayIndex] = updatedPost;
+              }
+            }
+          });
+        }
       },
       onAvatarTap: () {
         final heroTag = 'avatar_${post.id}';

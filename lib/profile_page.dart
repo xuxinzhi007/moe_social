@@ -13,7 +13,6 @@ import 'widgets/dynamic_avatar.dart';
 import 'widgets/achievement_badge_display.dart';
 import 'widgets/profile_bg.dart';
 import 'wallet_page.dart';
-import 'widgets/fade_in_up.dart';
 import 'gallery/cloud_gallery_page.dart';
 import 'pages/checkin_page.dart';
 import 'pages/user_level_page.dart';
@@ -30,7 +29,6 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   User? _user;
-  Map<String, dynamic>? _vipStatus;
   bool _isLoading = true;
   bool _isLoadingDetails = false;
   bool _isVip = false;
@@ -102,7 +100,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
       if (mounted) {
         setState(() {
-          _vipStatus = vipStatus;
           _isVip = isVip;
           _postCount = postCount;
           _followingCount = followingCount;
@@ -249,104 +246,100 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   children: [
                     const SizedBox(height: 16),
-                    if (_isVip)
-                      FadeInUp(
-                        delay: const Duration(milliseconds: 100),
-                        child: _buildVipCard(),
-                      ),
                     const SizedBox(height: 16),
                     
                     // 1. 我的足迹
-                    FadeInUp(
-                      delay: const Duration(milliseconds: 200),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(left: 12, bottom: 10),
-                            child: Text('我的足迹', 
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(left: 12, bottom: 10),
+                          child: Text('我的足迹', 
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
+                        ),
+                        _buildMenuCard([
+                          _MenuItem(
+                            icon: Icons.military_tech_rounded,
+                            title: '成就徽章',
+                            subtitle: '已解锁 ${_userBadges.where((b) => b.isUnlocked).length} 个',
+                            color: const Color(0xFFFFB347),
+                            onTap: _showAllBadges,
                           ),
-                          _buildMenuCard([
-                            _MenuItem(
-                              icon: Icons.military_tech_rounded,
-                              title: '成就徽章',
-                              subtitle: '已解锁 ${_userBadges.where((b) => b.isUnlocked).length} 个',
-                              color: const Color(0xFFFFB347),
-                              onTap: _showAllBadges,
-                            ),
-                            _MenuItem(
-                              icon: Icons.cloud_queue_rounded,
-                              title: '云端图库',
-                              subtitle: '管理你的美好回忆',
-                              color: const Color(0xFF86A8E7),
-                              onTap: () async {
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const CloudGalleryPage(),
-                                  ),
-                                );
-                              },
-                            ),
-                          ]),
-                        ],
-                      ),
+                          _MenuItem(
+                            icon: Icons.cloud_queue_rounded,
+                            title: '云端图库',
+                            subtitle: '管理你的美好回忆',
+                            color: const Color(0xFF86A8E7),
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const CloudGalleryPage(),
+                                ),
+                              );
+                            },
+                          ),
+                        ]),
+                      ],
                     ),
                     const SizedBox(height: 20),
 
                     // 2. 每日福利
-                    FadeInUp(
-                      delay: const Duration(milliseconds: 300),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(left: 12, bottom: 10),
-                            child: Text('每日福利', 
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(left: 12, bottom: 10),
+                          child: Text('每日福利', 
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
+                        ),
+                        _buildMenuCard([
+                          _MenuItem(
+                            icon: Icons.calendar_today_rounded,
+                            title: '每日签到',
+                            subtitle: '连续签到有惊喜哦',
+                            color: const Color(0xFF7F7FD5),
+                            onTap: () => _navigateToCheckIn(),
                           ),
-                          _buildMenuCard([
-                            _MenuItem(
-                              icon: Icons.calendar_today_rounded,
-                              title: '每日签到',
-                              subtitle: '连续签到有惊喜哦',
-                              color: const Color(0xFF7F7FD5),
-                              onTap: () => _navigateToCheckIn(),
-                            ),
-                            _MenuItem(
-                              icon: Icons.account_balance_wallet_rounded,
-                              title: '我的钱包',
-                              subtitle: '余额: ¥${_user?.balance.toStringAsFixed(2) ?? '0.00'}',
-                              color: const Color(0xFF4ECDC4),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => const WalletPage()),
-                                ).then((value) {
-                                  _loadUserInfo();
-                                });
-                              },
-                            ),
-                          ]),
-                        ],
-                      ),
+                          _MenuItem(
+                            icon: Icons.account_balance_wallet_rounded,
+                            title: '我的钱包',
+                            subtitle: '余额: ¥${_user?.balance.toStringAsFixed(2) ?? '0.00'}',
+                            color: const Color(0xFF4ECDC4),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => const WalletPage()),
+                              ).then((value) {
+                                _loadUserInfo();
+                              });
+                            },
+                          ),
+                          _MenuItem(
+                            icon: Icons.workspace_premium_rounded,
+                            title: 'VIP 会员中心',
+                            subtitle: AuthService.currentUser == null
+                                ? '登录后查看会员权益与套餐'
+                                : (_isVip ? '查看会员状态与续费信息' : '开通 VIP，解锁更多特权'),
+                            color: const Color(0xFFFFB347),
+                            onTap: _openVipCenter,
+                          ),
+                        ]),
+                      ],
                     ),
                     const SizedBox(height: 20),
 
                     // 3. 实验室与系统
-                    FadeInUp(
-                      delay: const Duration(milliseconds: 400),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(left: 12, bottom: 10),
-                            child: Text('实验室与系统', 
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
-                          ),
-                          _buildMenuCard([
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(left: 12, bottom: 10),
+                          child: Text('实验室与系统', 
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
+                        ),
+                        _buildMenuCard([
                             _MenuItem(
                               icon: Icons.smart_toy_rounded,
                               title: 'AutoGLM 助手',
@@ -404,9 +397,8 @@ class _ProfilePageState extends State<ProfilePage> {
                               isDestructive: true,
                               onTap: () => _showLogoutDialog(context),
                             ),
-                          ]),
-                        ],
-                      ),
+                        ]),
+                      ],
                     ),
                     const SizedBox(height: 40),
                   ],
@@ -464,13 +456,42 @@ class _ProfilePageState extends State<ProfilePage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              _user?.username ?? '未知用户',
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    _user?.username ?? '未知用户',
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (_isVip) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFD700),
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: const Text(
+                                      'VIP',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFF7A4F00),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                             const SizedBox(height: 4),
                             // 等级胶囊条 (Compact Level Indicator)
@@ -687,86 +708,44 @@ class _ProfilePageState extends State<ProfilePage> {
     return child;
   }
 
-  Widget _buildVipCard() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFD700), Color(0xFFFFB347)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  Future<void> _openVipCenter() async {
+    if (AuthService.currentUser == null) {
+      final shouldLogin = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('先登录再查看'),
+          content: const Text('登录后可查看会员权益、套餐和开通记录。'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('稍后再说'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('去登录'),
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFFB347).withOpacity(0.3),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.star_rounded, color: Colors.white, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'VIP 会员中心',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                if (_vipStatus != null && _vipStatus!['expires_at'] != null)
-                  Text(
-                    '到期: ${_vipStatus!['expires_at']}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  )
-                else
-                  const Text(
-                    '解锁尊贵特权',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          SizedBox(
-            height: 36,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/vip-center');
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFFFFA500),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18)),
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-              ),
-              child: const Text('立即查看', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ),
-        ],
-      ),
-    );
+      );
+
+      if (shouldLogin == true && mounted) {
+        await Navigator.pushNamed(context, '/login');
+        if (mounted) {
+          _loadUserInfo();
+        }
+      }
+      return;
+    }
+
+    if (!mounted) return;
+    final result = await Navigator.pushNamed(context, '/vip-center');
+    if (mounted) {
+      Future.delayed(const Duration(milliseconds: 250), () {
+        if (mounted && (result == true || _isVip == false)) {
+          _loadUserInfo();
+        }
+      });
+    }
   }
 
   Widget _buildMenuCard(List<_MenuItem> items) {
