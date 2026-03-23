@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/post.dart';
 import '../services/like_state_manager.dart';
 import '../widgets/avatar_image.dart';
@@ -6,6 +7,7 @@ import '../widgets/network_image.dart';
 import '../widgets/topic_tag_selector.dart';
 import '../widgets/like_button.dart';
 import '../widgets/moe_bouncing_button.dart';
+import '../widgets/post_image_viewer.dart';
 
 class PostCard extends StatelessWidget {
   final Post post;
@@ -120,7 +122,50 @@ class PostCard extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                          ),
+                          child: SafeArea(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                                  width: 40,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[300],
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                ListTile(
+                                  leading: const Icon(Icons.link_rounded, color: Color(0xFF7F7FD5)),
+                                  title: const Text('复制链接'),
+                                  onTap: () => Navigator.pop(context),
+                                ),
+                                ListTile(
+                                  leading: const Icon(Icons.visibility_off_rounded, color: Colors.orange),
+                                  title: const Text('不感兴趣'),
+                                  onTap: () => Navigator.pop(context),
+                                ),
+                                ListTile(
+                                  leading: const Icon(Icons.report_rounded, color: Colors.red),
+                                  title: const Text('举报'),
+                                  onTap: () => Navigator.pop(context),
+                                ),
+                                const SizedBox(height: 8),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                     icon: Icon(Icons.more_horiz_rounded, color: theme.iconTheme.color?.withOpacity(0.5)),
                   ),
                 ],
@@ -204,13 +249,30 @@ class PostCard extends StatelessWidget {
                       onTap: onComment ?? () {}),
                   _buildActionButton(
                       context,
-                      icon: Icons.share_rounded, label: '分享', onTap: onShare ?? () {}),
+                      icon: Icons.share_rounded,
+                      label: '分享',
+                      onTap: onShare ?? () {
+                        _handleShare(post);
+                      }),
                 ],
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  static void _handleShare(Post post) {
+    final shareText = '''${post.userName} 的动态：
+
+${post.content}
+
+#萌社 ${post.topicTags.isNotEmpty ? post.topicTags.map((t) => '#$t').join(' ') : ''}''';
+
+    Share.share(
+      shareText,
+      subject: '来自萌社的分享',
     );
   }
 
@@ -257,7 +319,15 @@ class PostCard extends StatelessWidget {
     // 单张大图
     if (images.length == 1) {
       return GestureDetector(
-        onTap: () {},
+        onTap: () {
+          PostImageViewer.show(
+            context,
+            imageUrls: images,
+            postId: postId,
+            heroTagPrefix: heroTagPrefix,
+            initialIndex: 0,
+          );
+        },
         child: Hero(
           tag: '${heroTagPrefix}post_img_${postId}_0',
           child: ClipRRect(
@@ -289,7 +359,15 @@ class PostCard extends StatelessWidget {
             runSpacing: spacing,
             children: List.generate(images.length, (index) {
               return GestureDetector(
-                onTap: () {},
+                onTap: () {
+                  PostImageViewer.show(
+                    context,
+                    imageUrls: images,
+                    postId: postId,
+                    heroTagPrefix: heroTagPrefix,
+                    initialIndex: index,
+                  );
+                },
                 child: Hero(
                   tag: '${heroTagPrefix}post_img_${postId}_$index',
                   child: NetworkImageWidget(

@@ -9,7 +9,6 @@ import 'providers/loading_provider.dart';
 import 'widgets/app_message_widget.dart';
 import 'widgets/moe_input_field.dart';
 import 'widgets/auth_background.dart';
-import 'widgets/auth_background.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

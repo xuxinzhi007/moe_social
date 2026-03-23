@@ -80,15 +80,15 @@ class _CommentsPageState extends State<CommentsPage> {
       return;
     }
 
-    setState(() {
-      _isSubmitting = true;
-    });
-
     final userId = AuthService.currentUser;
     if (userId == null) {
       _showCustomSnackBar(context, '请先登录', isError: true);
       return;
     }
+
+    setState(() {
+      _isSubmitting = true;
+    });
 
     try {
       final comment = Comment(
@@ -227,7 +227,7 @@ class _CommentsPageState extends State<CommentsPage> {
                         itemBuilder: (context, index) {
                           final comment = _comments[index];
                           return FadeInUp(
-                            delay: Duration(milliseconds: 30 * index),
+                            delay: Duration(milliseconds: 30 * (index % 8)),
                             child: _buildBubbleCommentItem(comment)
                           );
                         },
@@ -409,7 +409,13 @@ class _CommentsPageState extends State<CommentsPage> {
                     ),
                     const SizedBox(width: 16),
                     InkWell(
-                      onTap: () {},
+                      onTap: () {
+                        _commentController.text = '@${comment.userName} ';
+                        FocusScope.of(context).requestFocus(FocusNode());
+                        Future.delayed(const Duration(milliseconds: 100), () {
+                          FocusScope.of(context).requestFocus(FocusNode());
+                        });
+                      },
                       borderRadius: BorderRadius.circular(12),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
