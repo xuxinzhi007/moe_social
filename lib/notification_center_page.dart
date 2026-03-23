@@ -242,7 +242,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
       itemBuilder: (context, index) {
         final notification = _notifications[index];
         return FadeInUp(
-          delay: Duration(milliseconds: 30 * (index % 10)),
+          delay: Duration(milliseconds: 30 * (index % 8)),
           child: Dismissible(
             key: Key(notification.id),
             background: Container(

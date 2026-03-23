@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// 统一的网络图片组件
 /// 自动处理加载状态、错误处理和占位图
@@ -24,20 +25,13 @@ class NetworkImageWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget imageWidget = Image.network(
-      imageUrl,
+    Widget imageWidget = CachedNetworkImage(
+      imageUrl: imageUrl,
       width: width,
       height: height,
       fit: fit,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) {
-          return child;
-        }
-        return placeholder ?? _defaultPlaceholder();
-      },
-      errorBuilder: (context, error, stackTrace) {
-        return errorWidget ?? _defaultErrorWidget();
-      },
+      placeholder: (context, url) => placeholder ?? _defaultPlaceholder(),
+      errorWidget: (context, url, error) => errorWidget ?? _defaultErrorWidget(),
     );
 
     // 如果有圆角，添加裁剪

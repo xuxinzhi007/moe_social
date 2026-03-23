@@ -675,19 +675,23 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         ),
                       )
                     else
-                      ..._userPosts.map((post) => FadeInUp(
-                        delay: const Duration(milliseconds: 100),
-                        child: PostCard(
-                          post: post,
-                          heroTagPrefix: 'up_',
-                          onLike: () => _toggleLike(post.id),
-                          onComment: () async {
+                      ..._userPosts.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final post = entry.value;
+                        return FadeInUp(
+                          delay: Duration(milliseconds: 30 * (index % 8)),
+                          child: PostCard(
+                            post: post,
+                            heroTagPrefix: 'up_',
+                            onLike: () => _toggleLike(post.id),
+                            onComment: () async {
                             await Navigator.pushNamed(context, '/comments', arguments: post.id);
                           },
                           onShare: () {},
                           onAvatarTap: () {},
                         ),
-                      )),
+                      );
+                    }),
                     
                     const SizedBox(height: 16),
                   ],

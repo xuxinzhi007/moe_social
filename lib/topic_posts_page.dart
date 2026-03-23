@@ -187,7 +187,7 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
                     itemBuilder: (context, index) {
                       final post = _posts[index];
                       return FadeInUp(
-                        delay: Duration(milliseconds: 30 * (index % 5)),
+                        delay: Duration(milliseconds: 30 * (index % 8)),
                         child: PostCard(
                           post: post,
                           onLike: () => _toggleLike(post.id),
