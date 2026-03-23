@@ -11,7 +11,6 @@ import '../providers/loading_provider.dart';
 import '../widgets/avatar_image.dart';
 import '../widgets/compact_topic_selector.dart';
 import '../widgets/app_message_widget.dart';
-import '../emoji/emoji_store_page.dart';
 import '../gallery/cloud_gallery_page.dart';
 import '../widgets/custom_button.dart';
 
@@ -58,34 +57,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
               _selectedImageUrls.add(imageUrl);
             });
             context.read<LoadingProvider>().setSuccess('图片已添加');
-          },
-        ),
-      ),
-    );
-  }
-
-  void _openEmojiStore() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EmojiStorePage(
-          onEmojiSelected: (emojiUrl) {
-            // 将选择的表情URL插入到文本内容中
-            final controller = _contentController;
-            final cursorPosition = controller.selection.baseOffset;
-            final text = controller.text;
-
-            // 确保cursorPosition在有效范围内
-            final safeCursorPosition = cursorPosition >= 0 && cursorPosition <= text.length ? cursorPosition : text.length;
-
-            // 在光标位置插入表情URL占位符
-            final newText = text.substring(0, safeCursorPosition) + '[emoji:$emojiUrl]' + text.substring(safeCursorPosition);
-            controller.text = newText;
-
-            // 将光标移动到插入内容之后
-            controller.selection = TextSelection.collapsed(offset: safeCursorPosition + '[emoji:$emojiUrl]'.length);
-
-            context.read<LoadingProvider>().setSuccess('表情已添加');
           },
         ),
       ),
@@ -396,7 +367,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 children: [
                   _buildToolIcon(Icons.image_rounded, Colors.green, _addImage),
                   _buildToolIcon(Icons.cloud_upload_rounded, Colors.blue, _openCloudGallery),
-                  _buildToolIcon(Icons.emoji_emotions_rounded, Colors.amber, _openEmojiStore),
                   _buildToolIcon(Icons.tag_rounded, Colors.purple, () {
                     // 临时打开话题选择器
                     showModalBottomSheet(

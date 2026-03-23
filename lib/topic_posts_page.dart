@@ -5,7 +5,6 @@ import 'services/post_service.dart';
 import 'widgets/post_card.dart';
 import 'auth_service.dart';
 import 'widgets/fade_in_up.dart';
-import 'widgets/topic_tag_selector.dart';
 import 'utils/error_handler.dart';
 
 /// 话题动态列表页面 - 显示指定话题下的所有动态
@@ -25,10 +24,8 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
   List<Post> _posts = [];
   bool _isLoading = false;
   bool _isLoadingMore = false;
-  int _currentPage = 1;
   bool _hasMore = true;
   int _totalPosts = 0;
-  static const int _pageSize = 10;
 
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingTriggered = false;
@@ -69,7 +66,6 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
   Future<void> _fetchPosts() async {
     setState(() {
       _isLoading = true;
-      _currentPage = 1;
       _hasMore = true;
     });
 
@@ -87,7 +83,6 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
       setState(() {
         _posts = filteredPosts;
         _totalPosts = filteredPosts.length;
-        _currentPage = 1;
         _hasMore = false; // 暂时不支持分页
       });
     } catch (e) {

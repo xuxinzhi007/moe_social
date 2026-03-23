@@ -269,15 +269,6 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           _buildMenuCard([
                             _MenuItem(
-                              icon: Icons.face_rounded,
-                              title: '编辑形象',
-                              subtitle: '打造你的专属萌物形象',
-                              color: const Color(0xFF6A8EAE),
-                              onTap: () {
-                                Navigator.pushNamed(context, '/avatar-editor');
-                              },
-                            ),
-                            _MenuItem(
                               icon: Icons.military_tech_rounded,
                               title: '成就徽章',
                               subtitle: '已解锁 ${_userBadges.where((b) => b.isUnlocked).length} 个',

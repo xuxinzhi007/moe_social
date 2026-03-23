@@ -34,9 +34,7 @@ import 'services/remote_control_service.dart';
 import 'services/presence_service.dart';
 import 'services/chat_push_service.dart';
 import 'services/accessibility_overlay_service.dart';
-import 'avatar_editor_page.dart';
 import 'gallery/cloud_gallery_page.dart';
-import 'emoji/emoji_store_page.dart';
 import 'pages/ai/agent_list_page.dart';
 import 'friends_page.dart';
 import 'direct_chat_page.dart';
@@ -257,8 +255,6 @@ class MyApp extends StatelessWidget {
             heroTag: args['heroTag'] as String?,
           );
         },
-        '/avatar-editor': (context) => const AvatarEditorPage(),
-        '/emoji-store': (context) => const EmojiStorePage(),
         '/cloud-gallery': (context) => const CloudGalleryPage(),
         '/topic-posts': (context) {
           final tag = ModalRoute.of(context)!.settings.arguments as TopicTag;

@@ -8,10 +8,8 @@ import 'services/api_service.dart';
 import 'services/achievement_service.dart';
 import 'widgets/avatar_image.dart';
 import 'widgets/dynamic_avatar.dart';
-import 'widgets/network_image.dart';
 import 'widgets/fade_in_up.dart';
 import 'widgets/achievement_badge_display.dart';
-import 'widgets/gift_selector.dart';
 import 'widgets/post_card.dart';
 import 'widgets/gift_animation.dart';
 import 'services/post_service.dart';
@@ -681,15 +679,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         delay: const Duration(milliseconds: 100),
                         child: PostCard(
                           post: post,
+                          heroTagPrefix: 'up_',
                           onLike: () => _toggleLike(post.id),
                           onComment: () async {
                             await Navigator.pushNamed(context, '/comments', arguments: post.id);
-                            // 评论返回后刷新，可选
                           },
                           onShare: () {},
-                          onAvatarTap: () {
-                            // 已经是个人主页，通常不需要跳转或刷新自己
-                          },
+                          onAvatarTap: () {},
                         ),
                       )),
                     
@@ -939,17 +935,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
-  String _formatTime(DateTime time) {
-    final now = DateTime.now();
-    final difference = now.difference(time);
-    if (difference.inDays > 0) {
-      return '${time.year}-${time.month}-${time.day}';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}小时前';
-    } else {
-      return '${difference.inMinutes}分钟前';
-    }
-  }
 }
 
 // 简单的统计组件
