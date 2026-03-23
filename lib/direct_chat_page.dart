@@ -602,7 +602,50 @@ class _DirectChatPageState extends State<DirectChatPage> {
               actions: [
                 IconButton(
                   icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
-                  onPressed: () {},
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                        ),
+                        child: SafeArea(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                                width: 40,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[300],
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              ListTile(
+                                leading: const Icon(Icons.person_rounded, color: Color(0xFF7F7FD5)),
+                                title: const Text('查看对方主页'),
+                                onTap: () => Navigator.pop(context),
+                              ),
+                              ListTile(
+                                leading: const Icon(Icons.delete_outline_rounded, color: Colors.orange),
+                                title: const Text('清空聊天记录'),
+                                onTap: () => Navigator.pop(context),
+                              ),
+                              ListTile(
+                                leading: const Icon(Icons.block_rounded, color: Colors.red),
+                                title: const Text('屏蔽此人'),
+                                onTap: () => Navigator.pop(context),
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
