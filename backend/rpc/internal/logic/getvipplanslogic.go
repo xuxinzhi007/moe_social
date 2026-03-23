@@ -2,6 +2,7 @@ package logic
 
 import (
 	"context"
+	"strconv"
 
 	"backend/model"
 	"backend/rpc/internal/errorx"
@@ -38,7 +39,7 @@ func (l *GetVipPlansLogic) GetVipPlans(in *super.GetVipPlansReq) (*super.GetVipP
 	respPlans := make([]*super.VipPlan, len(plans))
 	for i, plan := range plans {
 		respPlans[i] = &super.VipPlan{
-			Id:           string(rune(plan.ID)),
+			Id:           strconv.FormatUint(uint64(plan.ID), 10),
 			Name:         plan.Name,
 			Description:  plan.Features,
 			Price:        float32(plan.Price),

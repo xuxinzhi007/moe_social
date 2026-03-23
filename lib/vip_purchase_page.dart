@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'services/api_service.dart';
 import 'models/vip_plan.dart';
+import 'recharge_page.dart';
 import 'widgets/fade_in_up.dart';
 
 class VipPurchasePage extends StatefulWidget {
@@ -16,22 +17,33 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
   bool _isLoading = true;
   String? _selectedPlanId;
   bool _isPurchasing = false;
+  double _balance = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _loadVipPlans();
+    _loadInitialData();
   }
 
-  Future<void> _loadVipPlans() async {
+  Future<void> _loadInitialData() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final plans = await ApiService.getVipPlans();
+      final userId = AuthService.currentUser;
+      final futures = <Future<dynamic>>[
+        ApiService.getVipPlans(),
+        if (userId != null) ApiService.getUserInfo(userId),
+      ];
+      final results = await Future.wait(futures);
+      final plans = results[0] as List<VipPlan>;
+
       setState(() {
         _plans = plans;
+        if (userId != null && results.length > 1) {
+          _balance = results[1].balance as double;
+        }
         // 默认选中第一个
         if (plans.isNotEmpty) {
           _selectedPlanId = plans.first.id;
@@ -50,6 +62,17 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
     }
   }
 
+  Future<void> _refreshBalance() async {
+    final userId = AuthService.currentUser;
+    if (userId == null) return;
+    final userInfo = await ApiService.getUserInfo(userId);
+    if (mounted) {
+      setState(() {
+        _balance = userInfo.balance;
+      });
+    }
+  }
+
   Future<void> _purchaseVip() async {
     if (_selectedPlanId == null) return;
 
@@ -61,21 +84,68 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
       return;
     }
 
+    final selectedPlan = _getSelectedPlan();
+    if (selectedPlan == null) return;
+
+    if (_balance < selectedPlan.price) {
+      final shouldRecharge = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('余额不足'),
+          content: Text(
+            '当前余额 ¥${_balance.toStringAsFixed(2)}，开通 ${selectedPlan.name} 需要 ¥${selectedPlan.price.toStringAsFixed(2)}。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('去充值'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldRecharge == true && mounted) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const RechargePage()),
+        );
+        await _refreshBalance();
+      }
+      return;
+    }
+
     setState(() {
       _isPurchasing = true;
     });
 
     try {
       final order = await ApiService.createVipOrder(userId, _selectedPlanId!);
+      await _refreshBalance();
+      final vipStatus = await ApiService.syncUserVipStatus(userId);
+      final isVip = vipStatus['is_vip'] as bool? ?? false;
+      final paid = order.paidAt != null ||
+          order.status.toLowerCase() == 'paid' ||
+          order.status.toLowerCase() == 'completed' ||
+          isVip;
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('订单创建成功！订单号: ${order.id}'),
-            backgroundColor: const Color(0xFF4ECDC4),
+            content: Text(
+              paid
+                  ? '开通成功，已从钱包扣款 ¥${order.amount.toStringAsFixed(2)}'
+                  : '订单已创建，但当前未确认完成扣款，请稍后查看订单状态',
+            ),
+            backgroundColor:
+                paid ? const Color(0xFF4ECDC4) : const Color(0xFFFFB347),
             behavior: SnackBarBehavior.floating,
           ),
         );
-        Navigator.pop(context, true); // 返回true表示购买成功
+        Navigator.pop(context, paid);
       }
     } catch (e) {
       if (mounted) {
@@ -306,6 +376,22 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                   ],
                 ),
               ),
+              const Spacer(),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text('钱包余额', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  Text(
+                    '¥${_balance.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF7F7FD5),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(width: 20),
               Expanded(
                 child: SizedBox(
@@ -353,6 +439,14 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
     if (_plans.isEmpty || _selectedPlanId == null) return '0.00';
     final plan = _plans.firstWhere((p) => p.id == _selectedPlanId, orElse: () => _plans.first);
     return plan.price.toStringAsFixed(2);
+  }
+
+  VipPlan? _getSelectedPlan() {
+    if (_plans.isEmpty || _selectedPlanId == null) return null;
+    return _plans.firstWhere(
+      (p) => p.id == _selectedPlanId,
+      orElse: () => _plans.first,
+    );
   }
 
   Widget _buildPlanCard(VipPlan plan) {

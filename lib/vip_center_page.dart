@@ -29,7 +29,17 @@ class _VipCenterPageState extends State<VipCenterPage> {
 
   Future<void> _loadVipInfo() async {
     final userId = AuthService.currentUser;
-    if (userId == null) return;
+    if (userId == null) {
+      if (mounted) {
+        setState(() {
+          _vipStatus = null;
+          _activeRecord = null;
+          _autoRenew = false;
+          _isLoading = false;
+        });
+      }
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -102,6 +112,8 @@ class _VipCenterPageState extends State<VipCenterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isLoggedIn = AuthService.currentUser != null;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       extendBodyBehindAppBar: true,
@@ -111,7 +123,9 @@ class _VipCenterPageState extends State<VipCenterPage> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: _isLoading
+      body: !isLoggedIn
+          ? _buildGuestView()
+          : _isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF7F7FD5)))
           : Stack(
               children: [
@@ -203,6 +217,9 @@ class _VipCenterPageState extends State<VipCenterPage> {
                                       MaterialPageRoute(builder: (context) => const VipPurchasePage()),
                                     );
                                     if (result == true) {
+                                      if (mounted) {
+                                        Navigator.pop(context, true);
+                                      }
                                       _loadVipInfo();
                                     }
                                   },
@@ -231,6 +248,104 @@ class _VipCenterPageState extends State<VipCenterPage> {
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _buildGuestView() {
+    return Stack(
+      children: [
+        Container(
+          height: 300,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(30),
+              bottomRight: Radius.circular(30),
+            ),
+          ),
+        ),
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7F7FD5).withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.workspace_premium_rounded,
+                      size: 36,
+                      color: Color(0xFF7F7FD5),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '登录后查看 VIP 会员中心',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF333333),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '登录后可查看会员权益、套餐价格、订单记录和续费状态。',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        await Navigator.pushNamed(context, '/login');
+                        if (mounted) {
+                          _loadVipInfo();
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF7F7FD5),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                      ),
+                      child: const Text('去登录'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

@@ -160,9 +160,14 @@ class _CommentsPageState extends State<CommentsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: PreferredSize(
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.of(context).pop(_comments.length);
+        return false; // 阻止默认的 pop，因为我们自己已经 pop 了
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F7FA),
+        appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Container(
           decoration: BoxDecoration(
@@ -187,7 +192,7 @@ class _CommentsPageState extends State<CommentsPage> {
               centerTitle: true,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(context, _comments.length),
               ),
             ),
           ),
@@ -315,6 +320,7 @@ class _CommentsPageState extends State<CommentsPage> {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -375,15 +381,17 @@ class _CommentsPageState extends State<CommentsPage> {
                   ),
                   child: Text(
                     comment.content,
-                    style: const TextStyle(height: 1.5, fontSize: 14, color: Colors.black87),
+                    style: const TextStyle(
+                      height: 1.5,
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),
-                // 交互按钮行
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    // 使用新的点赞按钮，绑定状态管理器
                     ValueListenableBuilder<bool>(
                       valueListenable: LikeStateManager().getCommentStatusNotifier(
                         comment.id,
@@ -418,7 +426,10 @@ class _CommentsPageState extends State<CommentsPage> {
                       },
                       borderRadius: BorderRadius.circular(12),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         child: Row(
                           children: [
                             Icon(

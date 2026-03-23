@@ -2,6 +2,7 @@ package logic
 
 import (
 	"context"
+	"strconv"
 
 	"backend/model"
 	"backend/rpc/internal/errorx"
@@ -63,9 +64,9 @@ func (l *GetVipOrdersLogic) GetVipOrders(in *super.GetVipOrdersReq) (*super.GetV
 		// }
 
 		respOrders[i] = &super.VipOrder{
-			Id:        string(rune(order.ID)),
+			Id:        strconv.FormatUint(uint64(order.ID), 10),
 			UserId:    in.UserId,
-			PlanId:    string(rune(order.PlanID)),
+			PlanId:    strconv.FormatUint(uint64(order.PlanID), 10),
 			PlanName:  order.Plan.Name,
 			Amount:    float32(order.Amount),
 			Status:    order.Status,
