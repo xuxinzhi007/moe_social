@@ -107,23 +107,73 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
             foregroundColor: Colors.white,
             title: Text(room.name, style: const TextStyle(fontWeight: FontWeight.bold)),
             actions: [
-              TextButton.icon(
-                onPressed: () => setState(() => _showMyBets = !_showMyBets),
-                icon: Icon(
-                  Icons.receipt_long_rounded,
-                  color: _showMyBets ? const Color(0xFF7F7FD5) : Colors.white70,
-                  size: 18,
-                ),
-                label: Text(
-                  '我的记录',
-                  style: TextStyle(
-                      color: _showMyBets ? const Color(0xFF7F7FD5) : Colors.white70,
-                      fontSize: 13),
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  setState(() => _showMyBets = !_showMyBets);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  margin: const EdgeInsets.only(right: 16),
+                  decoration: BoxDecoration(
+                    color: _showMyBets ? const Color(0xFF7F7FD5).withOpacity(0.2) : Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _showMyBets ? const Color(0xFF7F7FD5) : Colors.transparent,
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.receipt_long_rounded,
+                        color: _showMyBets ? const Color(0xFF7F7FD5) : Colors.white70,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '我的记录',
+                        style: TextStyle(
+                            color: _showMyBets ? const Color(0xFF7F7FD5) : Colors.white70,
+                            fontSize: 13),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-          body: _showMyBets ? _buildMyBetsView(provider) : _buildGameView(provider, room),
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              // 背景装饰
+              Positioned(
+                top: -100,
+                right: -100,
+                child: Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7F7FD5).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -100,
+                left: -100,
+                child: Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF86A8E7).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              _showMyBets ? _buildMyBetsView(provider) : _buildGameView(provider, room),
+            ],
+          ),
         );
       },
     );
@@ -158,19 +208,38 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
     final hasBet = provider.hasBet(room.id);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF16213E),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [const Color(0xFF16213E), const Color(0xFF0F3460)],
+        ),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 8),
+          BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 12),
         ],
       ),
       child: Row(
         children: [
           // 倒计时圆圈
-          SizedBox(
-            width: 64,
-            height: 64,
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [const Color(0xFF7F7FD5), const Color(0xFF86A8E7)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF7F7FD5).withOpacity(0.5),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -178,7 +247,7 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
                   value: room.phase == GamePhase.betting ? room.countdown / room.totalTime : 0,
                   backgroundColor: Colors.white12,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    isUrgent ? Colors.redAccent : const Color(0xFF7F7FD5),
+                    isUrgent ? Colors.redAccent : Colors.white,
                   ),
                   strokeWidth: 3,
                 ),
@@ -190,19 +259,19 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
                             '${room.countdown}',
                             style: TextStyle(
                               color: isUrgent ? Colors.redAccent : Colors.white,
-                              fontSize: 20,
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const Text('秒',
-                              style: TextStyle(color: Colors.white54, fontSize: 10)),
+                              style: TextStyle(color: Colors.white70, fontSize: 11)),
                         ],
                       )
-                    : const Icon(Icons.hourglass_bottom_rounded, color: Colors.white54),
+                    : const Icon(Icons.hourglass_bottom_rounded, color: Colors.white70, size: 24),
               ],
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 20),
           Expanded(
             child: room.phase == GamePhase.result && room.currentResult != null
                 ? _buildResultChip(room.currentResult!)
@@ -215,24 +284,35 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
                             : '第 ${room.roundNumber} 局 · 开奖中...',
                         style: const TextStyle(color: Colors.white54, fontSize: 12),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
                         hasBet ? '已下注，等待开奖结果' : '选好后点击确认下注',
                         style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 15,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
           ),
           if (room.phase == GamePhase.result && room.roundProfit != 0)
-            Text(
-              '${room.roundProfit >= 0 ? '+' : ''}¥${room.roundProfit.toStringAsFixed(2)}',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: room.roundProfit >= 0 ? Colors.greenAccent : Colors.redAccent,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: room.roundProfit >= 0 ? Colors.greenAccent.withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: room.roundProfit >= 0 ? Colors.greenAccent : Colors.redAccent,
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                '${room.roundProfit >= 0 ? '+' : ''}¥${room.roundProfit.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: room.roundProfit >= 0 ? Colors.greenAccent : Colors.redAccent,
+                ),
               ),
             ),
         ],
@@ -243,40 +323,94 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
   Widget _buildResultChip(int result) {
     final isBig = result >= 6;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isBig
               ? [const Color(0xFF7F7FD5), const Color(0xFF86A8E7)]
               : [const Color(0xFF91EAE4), const Color(0xFF7F7FD5)],
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: isBig ? const Color(0xFF7F7FD5).withOpacity(0.4) : const Color(0xFF91EAE4).withOpacity(0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Text(
-        '$result · ${isBig ? '大 · 红' : '小 · 黑'}',
-        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: Text(
+                '$result',
+                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            isBig ? '大 · 红' : '小 · 黑',
+            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildLiveBetsScroll() {
-    return SizedBox(
-      height: 36,
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _liveBets.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (context, i) {
           final b = _liveBets[_liveBets.length - 1 - i]; // 最新在最前
+          final color = _optionColor(b.option);
           return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.07),
-              borderRadius: BorderRadius.circular(18),
+              color: Colors.white.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: color.withOpacity(0.3),
+                width: 1,
+              ),
             ),
-            child: Text(
-              '${b.name} 押${_optionLabel(b.option)} ¥${b.amount.toStringAsFixed(0)}',
-              style: const TextStyle(color: Colors.white60, fontSize: 12),
+            child: Row(
+              children: [
+                Text(
+                  b.name,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '押${_optionLabel(b.option)}',
+                    style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '¥${b.amount.toStringAsFixed(0)}',
+                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ],
             ),
           );
         },
@@ -287,38 +421,61 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
   Widget _buildBetPanel(GameProvider provider, GameRoomState room) {
     final hasBet = provider.hasBet(room.id);
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [const Color(0xFF16213E), const Color(0x8016213E)],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildBetGroupRow('大 / 小', [BetOption.big, BetOption.small],
               _myBigSmallBet, (o) => setState(() => _myBigSmallBet = o), hasBet),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           _buildAmountRow(_bigSmallAmount, (v) => setState(() => _bigSmallAmount = v), room.minBet, hasBet),
 
-          Divider(color: Colors.white.withOpacity(0.08), height: 24),
+          Container(
+            height: 1,
+            margin: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [Colors.transparent, Colors.white.withOpacity(0.2), Colors.transparent],
+              ),
+            ),
+          ),
 
           _buildBetGroupRow('红 / 黑', [BetOption.red, BetOption.black],
               _myColorBet, (o) => setState(() => _myColorBet = o), hasBet),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           _buildAmountRow(_colorAmount, (v) => setState(() => _colorAmount = v), room.minBet, hasBet),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
-            height: 48,
+            height: 52,
             child: ElevatedButton(
               onPressed: (hasBet || room.phase != GamePhase.betting) ? null : () => _placeBet(provider),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF7F7FD5),
                 foregroundColor: Colors.white,
                 disabledBackgroundColor: Colors.white12,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shadowColor: const Color(0xFF7F7FD5).withOpacity(0.5),
+                elevation: 8,
               ),
               child: Text(
                 hasBet
@@ -326,7 +483,7 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
                     : room.phase != GamePhase.betting
                         ? '开奖中...'
                         : '确认下注',
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -338,27 +495,44 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
   Widget _buildBetGroupRow(String label, List<BetOption> options, BetOption? selected, ValueChanged<BetOption?> onSelect, bool hasBet) {
     return Row(
       children: [
-        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 13)),
-        const SizedBox(width: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+        ),
+        const SizedBox(width: 16),
         ...options.map((opt) {
           final isSelected = selected == opt;
           final color = _optionColor(opt);
           return GestureDetector(
-            onTap: hasBet ? null : () => onSelect(isSelected ? null : opt),
+            onTap: hasBet ? null : () {
+              HapticFeedback.lightImpact();
+              onSelect(isSelected ? null : opt);
+            },
             child: Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 9),
+              margin: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
               decoration: BoxDecoration(
-                color: isSelected ? color.withOpacity(0.25) : Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(10),
+                color: isSelected ? color.withOpacity(0.25) : Colors.white.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: isSelected ? color : Colors.transparent, width: 1.5),
+                boxShadow: isSelected ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ] : [],
               ),
               child: Text(
                 _optionLabel(opt),
                 style: TextStyle(
                   color: isSelected ? color : Colors.white38,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 15,
+                  fontSize: 16,
                 ),
               ),
             ),
@@ -371,7 +545,15 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
   Widget _buildAmountRow(double value, ValueChanged<double> onChanged, double minBet, bool hasBet) {
     return Row(
       children: [
-        const Text('金额', style: TextStyle(color: Colors.white38, fontSize: 12)),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Text('金额', style: TextStyle(color: Colors.white70, fontSize: 12)),
+        ),
+        const SizedBox(width: 12),
         Expanded(
           child: Slider(
             value: value.clamp(minBet, minBet * 100),
@@ -380,14 +562,30 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
             divisions: 99,
             activeColor: const Color(0xFF7F7FD5),
             inactiveColor: Colors.white12,
+            thumbColor: const Color(0xFF7F7FD5),
             onChanged: hasBet ? null : onChanged,
           ),
         ),
-        SizedBox(
-          width: 56,
+        const SizedBox(width: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [const Color(0xFF7F7FD5), const Color(0xFF86A8E7)],
+            ),
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF7F7FD5).withOpacity(0.3),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
           child: Text(
             '¥${value.toStringAsFixed(0)}',
-            textAlign: TextAlign.right,
             style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
           ),
         ),
@@ -399,24 +597,37 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('最近开奖', style: TextStyle(color: Colors.white38, fontSize: 12)),
-        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Text('最近开奖', style: TextStyle(color: Colors.white70, fontSize: 12)),
+        ),
+        const SizedBox(height: 12),
         Wrap(
-          spacing: 6,
-          runSpacing: 6,
+          spacing: 8,
+          runSpacing: 8,
           children: room.history.take(12).map((r) {
             final isBig = (r.result ?? 0) >= 6;
+            final color = isBig ? const Color(0xFF7F7FD5) : const Color(0xFF86A8E7);
             return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: (isBig ? const Color(0xFF7F7FD5) : const Color(0xFF86A8E7)).withOpacity(0.15),
-                borderRadius: BorderRadius.circular(8),
+                color: color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: color.withOpacity(0.3),
+                  width: 1,
+                ),
               ),
               child: Text(
                 '${r.result} ${isBig ? '大' : '小'}',
                 style: TextStyle(
-                  color: isBig ? const Color(0xFF86A8E7) : Colors.white60,
+                  color: color,
                   fontSize: 12,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             );

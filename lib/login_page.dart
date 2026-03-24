@@ -38,16 +38,20 @@ class _LoginPageState extends State<LoginPage> {
       key: LoadingKeys.login,
       onSuccess: (result) {
         if (!result.success) {
-          MoeToast.error(context, result.errorMessage ?? '登录失败，请稍后重试');
           loadingProvider.setError(result.errorMessage ?? '登录失败，请稍后重试');
           return;
         }
-        MoeToast.success(context, '欢迎回来！(｡♥‿♥｡)');
-        loadingProvider.setSuccess('欢迎回来！(｡♥‿♥｡)');
         try {
           context.read<NotificationProvider>().init();
         } catch (_) {}
-        Navigator.pushReplacementNamed(context, '/home');
+        // 导航到首页后再显示通知
+        Navigator.pushReplacementNamed(context, '/home').then((_) {
+          // 在首页显示登录成功通知
+          final currentContext = AuthService.navigatorKey.currentContext;
+          if (currentContext != null) {
+            MoeToast.success(currentContext, '欢迎回来！(｡♥♥｡)');
+          }
+        });
       },
       onError: (_) {},
     );

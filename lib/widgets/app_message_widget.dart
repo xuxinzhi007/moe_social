@@ -21,12 +21,16 @@ class AppMessageWidget extends StatelessWidget {
         // 监听到新的 success/error 消息时，弹出 MoeToast
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!context.mounted) return;
-          if (loadingProvider.successMessage != null) {
-            MoeToast.success(context, loadingProvider.successMessage!);
-            loadingProvider.clearMessages();
-          } else if (loadingProvider.errorMessage != null) {
-            MoeToast.error(context, loadingProvider.errorMessage!);
-            loadingProvider.clearMessages();
+          // 检查是否存在 Overlay
+          final overlay = Overlay.maybeOf(context);
+          if (overlay != null) {
+            if (loadingProvider.successMessage != null) {
+              MoeToast.success(context, loadingProvider.successMessage!);
+              loadingProvider.clearMessages();
+            } else if (loadingProvider.errorMessage != null) {
+              MoeToast.error(context, loadingProvider.errorMessage!);
+              loadingProvider.clearMessages();
+            }
           }
         });
 
