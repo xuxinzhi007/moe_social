@@ -7,6 +7,8 @@ import '../models/ai_agent.dart';
 import '../models/ai_chat_session.dart';
 import '../models/ai_chat_message.dart';
 import '../models/ai_memory.dart';
+import '../models/ai_memory_profile.dart';
+import '../models/ai_memory_settings.dart';
 
 class AiDbService {
   static final AiDbService _instance = AiDbService._internal();
@@ -36,7 +38,7 @@ class AiDbService {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -89,6 +91,36 @@ class AiDbService {
     await db.execute(
         'CREATE INDEX idx_memories_agent ON memories(agent_id, importance DESC, updated_at DESC)');
 
+    await db.execute('''
+      CREATE TABLE memory_profiles(
+        id TEXT PRIMARY KEY,
+        agent_id TEXT NOT NULL,
+        profile_type TEXT DEFAULT 'general',
+        title TEXT NOT NULL,
+        summary TEXT NOT NULL,
+        confidence REAL DEFAULT 0.6,
+        updated_at INTEGER NOT NULL
+      )
+    ''');
+
+    await db.execute(
+        'CREATE INDEX idx_memory_profiles_agent ON memory_profiles(agent_id, updated_at DESC)');
+
+    await db.execute('''
+      CREATE TABLE memory_settings(
+        agent_id TEXT PRIMARY KEY,
+        extract_model TEXT NOT NULL,
+        curate_model TEXT NOT NULL,
+        inject_mode TEXT DEFAULT 'profile_plus_top_raw',
+        max_injected_raw_items INTEGER DEFAULT 6,
+        auto_extract INTEGER DEFAULT 1,
+        auto_curate INTEGER DEFAULT 1,
+        curate_every_n_memories INTEGER DEFAULT 4,
+        curate_every_n_turns INTEGER DEFAULT 6,
+        updated_at INTEGER NOT NULL
+      )
+    ''');
+
     final now = DateTime.now();
     await db.insert(
         'agents',
@@ -117,6 +149,35 @@ class AiDbService {
       ''');
       await db.execute(
           'CREATE INDEX IF NOT EXISTS idx_memories_agent ON memories(agent_id, importance DESC, updated_at DESC)');
+    }
+    if (oldVersion < 3) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS memory_profiles(
+          id TEXT PRIMARY KEY,
+          agent_id TEXT NOT NULL,
+          profile_type TEXT DEFAULT 'general',
+          title TEXT NOT NULL,
+          summary TEXT NOT NULL,
+          confidence REAL DEFAULT 0.6,
+          updated_at INTEGER NOT NULL
+        )
+      ''');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_memory_profiles_agent ON memory_profiles(agent_id, updated_at DESC)');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS memory_settings(
+          agent_id TEXT PRIMARY KEY,
+          extract_model TEXT NOT NULL,
+          curate_model TEXT NOT NULL,
+          inject_mode TEXT DEFAULT 'profile_plus_top_raw',
+          max_injected_raw_items INTEGER DEFAULT 6,
+          auto_extract INTEGER DEFAULT 1,
+          auto_curate INTEGER DEFAULT 1,
+          curate_every_n_memories INTEGER DEFAULT 4,
+          curate_every_n_turns INTEGER DEFAULT 6,
+          updated_at INTEGER NOT NULL
+        )
+      ''');
     }
   }
 
@@ -154,6 +215,8 @@ class AiDbService {
       await deleteSession(session.id);
     }
     await db.delete('memories', where: 'agent_id = ?', whereArgs: [id]);
+    await db.delete('memory_profiles', where: 'agent_id = ?', whereArgs: [id]);
+    await db.delete('memory_settings', where: 'agent_id = ?', whereArgs: [id]);
   }
 
   // ─── Session Operations ──────────────────────────────────────────────────
@@ -248,5 +311,67 @@ class AiDbService {
   Future<void> clearMemories(String agentId) async {
     final db = await database;
     await db.delete('memories', where: 'agent_id = ?', whereArgs: [agentId]);
+  }
+
+  Future<List<AiMemoryProfile>> getMemoryProfiles(String agentId) async {
+    final db = await database;
+    final maps = await db.query(
+      'memory_profiles',
+      where: 'agent_id = ?',
+      whereArgs: [agentId],
+      orderBy: 'updated_at DESC',
+    );
+    return maps.map(AiMemoryProfile.fromMap).toList();
+  }
+
+  Future<void> replaceMemoryProfiles(
+    String agentId,
+    List<AiMemoryProfile> profiles,
+  ) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete(
+        'memory_profiles',
+        where: 'agent_id = ?',
+        whereArgs: [agentId],
+      );
+      for (final profile in profiles) {
+        await txn.insert(
+          'memory_profiles',
+          profile.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
+  }
+
+  Future<void> clearMemoryProfiles(String agentId) async {
+    final db = await database;
+    await db.delete(
+      'memory_profiles',
+      where: 'agent_id = ?',
+      whereArgs: [agentId],
+    );
+  }
+
+  Future<AiMemorySettings?> getMemorySettings(String agentId) async {
+    final db = await database;
+    final maps = await db.query(
+      'memory_settings',
+      where: 'agent_id = ?',
+      whereArgs: [agentId],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return AiMemorySettings.fromMap(maps.first);
+  }
+
+  Future<void> upsertMemorySettings(AiMemorySettings settings) async {
+    final db = await database;
+    await db.insert(
+      'memory_settings',
+      settings.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 }

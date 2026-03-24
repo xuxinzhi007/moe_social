@@ -1,7 +1,16 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
 import '../../models/ai_agent.dart';
 import '../../models/ai_memory.dart';
+import '../../models/ai_memory_profile.dart';
+import '../../models/ai_memory_settings.dart';
 import '../../services/ai_db_service.dart';
+import '../../services/api_service.dart';
+import '../../services/llm_endpoint_config.dart';
+import '../../services/memory_agent_service.dart';
 
 class MemoryManagerPage extends StatefulWidget {
   final AiAgent agent;
@@ -14,7 +23,12 @@ class MemoryManagerPage extends StatefulWidget {
 
 class _MemoryManagerPageState extends State<MemoryManagerPage> {
   List<AiMemory> _memories = [];
+  List<AiMemoryProfile> _profiles = [];
+  AiMemorySettings? _settings;
+  List<String> _models = [];
   bool _isLoading = true;
+  bool _isSavingSettings = false;
+  bool _isCurating = false;
   String _filterCategory = 'all';
 
   final _categories = [
@@ -34,12 +48,74 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
-    final list = await AiDbService().getMemories(widget.agent.id);
+    final db = AiDbService();
+    final memoryAgent = MemoryAgentService();
+    final list = await db.getMemories(widget.agent.id);
+    final profiles = await db.getMemoryProfiles(widget.agent.id);
+    final settings = await memoryAgent.getOrCreateSettings(widget.agent);
+    final models = await _loadModels();
     if (mounted) {
       setState(() {
         _memories = list;
+        _profiles = profiles;
+        _settings = settings;
+        _models = models;
         _isLoading = false;
       });
+    }
+  }
+
+  Future<List<String>> _loadModels() async {
+    try {
+      final uri = await LlmEndpointConfig.modelsUri();
+      final response = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) return [widget.agent.modelName];
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      if (data is Map && data['models'] is List) {
+        final raw = data['models'] as List;
+        final list = raw.whereType<String>().isNotEmpty
+            ? raw.whereType<String>().toList()
+            : raw
+                .whereType<Map>()
+                .map((m) => m['name'])
+                .whereType<String>()
+                .toList();
+        if (list.isNotEmpty) return list;
+      }
+    } catch (_) {}
+    return [widget.agent.modelName];
+  }
+
+  Future<void> _persistSettings(AiMemorySettings settings) async {
+    setState(() => _isSavingSettings = true);
+    await AiDbService().upsertMemorySettings(
+      settings.copyWith(updatedAt: DateTime.now()),
+    );
+    if (mounted) {
+      setState(() {
+        _settings = settings.copyWith(updatedAt: DateTime.now());
+        _isSavingSettings = false;
+      });
+    }
+  }
+
+  Future<void> _curateNow() async {
+    if (_isCurating) return;
+    setState(() => _isCurating = true);
+    try {
+      await MemoryAgentService().curateProfiles(agent: widget.agent);
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('记忆画像已重新整理')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('整理失败：$e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isCurating = false);
     }
   }
 
@@ -174,6 +250,7 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
   @override
   Widget build(BuildContext context) {
     final filtered = _filtered;
+    final settings = _settings;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -196,10 +273,18 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
             ),
         ],
       ),
-      body: _isLoading
+      body: _isLoading || settings == null
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: _buildProfilesCard(),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: _buildSettingsCard(settings),
+                ),
                 // ── 分类筛选标签 ──────────────────────────────────
                 SizedBox(
                   height: 48,
@@ -250,6 +335,169 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
         onPressed: _addManually,
         icon: const Icon(Icons.add),
         label: const Text('手动添加'),
+      ),
+    );
+  }
+
+  Widget _buildProfilesCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome_rounded, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                '长期画像（${_profiles.length}）',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: _isCurating ? null : _curateNow,
+                icon: _isCurating
+                    ? const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded, size: 16),
+                label: const Text('整理'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          if (_profiles.isEmpty)
+            Text(
+              '还没有整理后的用户画像。新增几条记忆后，点击“整理”即可生成更稳定的长期摘要。',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 13,
+                height: 1.5,
+              ),
+            )
+          else
+            ..._profiles.map((profile) => Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7F8FC),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          profile.title,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          profile.summary,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            height: 1.5,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsCard(AiMemorySettings settings) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.tune_rounded, size: 18),
+              const SizedBox(width: 8),
+              const Text(
+                '记忆设置',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const Spacer(),
+              if (_isSavingSettings)
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: settings.extractModel,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: '记忆提取模型',
+              border: OutlineInputBorder(),
+            ),
+            items: _models
+                .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                .toList(),
+            onChanged: (v) {
+              if (v == null) return;
+              _persistSettings(settings.copyWith(extractModel: v));
+            },
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: settings.curateModel,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: '记忆整理模型',
+              border: OutlineInputBorder(),
+            ),
+            items: _models
+                .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                .toList(),
+            onChanged: (v) {
+              if (v == null) return;
+              _persistSettings(settings.copyWith(curateModel: v));
+            },
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('自动提取记忆'),
+            value: settings.autoExtract,
+            onChanged: (v) =>
+                _persistSettings(settings.copyWith(autoExtract: v)),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('自动整理画像'),
+            subtitle: const Text('每累计一定数量的新记忆时自动执行'),
+            value: settings.autoCurate,
+            onChanged: (v) =>
+                _persistSettings(settings.copyWith(autoCurate: v)),
+          ),
+        ],
       ),
     );
   }

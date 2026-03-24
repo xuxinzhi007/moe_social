@@ -4,8 +4,31 @@ import '../../providers/game_provider.dart';
 import '../../widgets/fade_in_up.dart';
 import 'game_room_page.dart';
 
-class GameRoomListPage extends StatelessWidget {
+class GameRoomListPage extends StatefulWidget {
   const GameRoomListPage({super.key});
+
+  @override
+  State<GameRoomListPage> createState() => _GameRoomListPageState();
+}
+
+class _GameRoomListPageState extends State<GameRoomListPage> {
+  @override
+  void initState() {
+    super.initState();
+    // 进入游戏列表页才启动全局倒计时，避免未使用游戏时空转
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<GameProvider>().startTimer();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    // 离开游戏列表页（回到主界面）时停止定时器
+    context.read<GameProvider>().stopTimer();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

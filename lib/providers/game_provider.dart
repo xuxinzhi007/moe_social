@@ -94,13 +94,13 @@ class GameProvider extends ChangeNotifier {
   // 当前房间的暂存下注
   final Map<String, MyBetRecord> pendingBets = {};
 
-  GameProvider() {
-    _startTimer();
-  }
+  GameProvider();
 
-  void _startTimer() {
+  /// 进入游戏相关页面时调用，启动倒计时
+  void startTimer() {
+    if (_timer != null && _timer!.isActive) return;
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      for (var room in rooms.values) {
+      for (final room in rooms.values) {
         if (room.countdown > 0) {
           room.countdown--;
           if (room.countdown == 0) {
@@ -110,6 +110,12 @@ class GameProvider extends ChangeNotifier {
       }
       notifyListeners();
     });
+  }
+
+  /// 离开所有游戏相关页面时调用，停止倒计时
+  void stopTimer() {
+    _timer?.cancel();
+    _timer = null;
   }
 
   void placeBet(String roomId, BetOption? bigSmall, double bigSmallAmt, BetOption? color, double colorAmt) {
