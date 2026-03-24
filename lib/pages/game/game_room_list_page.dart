@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/game_provider.dart';
 import '../../widgets/fade_in_up.dart';
@@ -39,23 +40,56 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: const Color(0xFF2D3748),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+            ),
+          ),
+        ),
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Consumer<GameProvider>(
-        builder: (context, provider, child) {
-          final rooms = provider.rooms.values.toList();
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: rooms.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 16),
-            itemBuilder: (context, index) {
-              final room = rooms[index];
-              return FadeInUp(
-                delay: Duration(milliseconds: index * 100),
-                child: _buildRoomCard(context, room, provider),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 背景装饰
+          Positioned(
+            top: -100,
+            right: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                color: const Color(0xFF7F7FD5).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Consumer<GameProvider>(
+            builder: (context, provider, child) {
+              final rooms = provider.rooms.values.toList();
+              return ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: rooms.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 16),
+                itemBuilder: (context, index) {
+                  final room = rooms[index];
+                  return FadeInUp(
+                    delay: Duration(milliseconds: index * 100),
+                    child: _buildRoomCard(context, room, provider),
+                  );
+                },
               );
             },
-          );
-        },
+          ),
+        ],
       ),
     );
   }
@@ -66,6 +100,7 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
 
     return GestureDetector(
       onTap: () {
+        HapticFeedback.lightImpact();
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -75,19 +110,23 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
       },
       child: Container(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+            colors: [room.gradient[0].withOpacity(0.9), room.gradient[1].withOpacity(0.9)],
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: room.gradient[0].withOpacity(0.3),
+              color: room.gradient[0].withOpacity(0.4),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
           ],
+          border: Border.all(
+            color: Colors.white.withOpacity(0.1),
+            width: 1,
+          ),
         ),
         child: Stack(
           children: [
@@ -100,7 +139,19 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                 height: 120,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: room.gradient[0].withOpacity(0.15),
+                  color: Colors.white.withOpacity(0.1),
+                ),
+              ),
+            ),
+            Positioned(
+              left: -20,
+              bottom: -20,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.05),
                 ),
               ),
             ),
@@ -112,14 +163,21 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(colors: room.gradient),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: room.gradient[0].withOpacity(0.4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        child: const Icon(Icons.casino_rounded, color: Colors.white, size: 26),
+                        child: const Icon(Icons.casino_rounded, color: Colors.white, size: 28),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,23 +190,27 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 3),
                             Text(
                               room.description,
-                              style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
+                              style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
                             ),
                           ],
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.2),
+                            width: 1,
+                          ),
                         ),
                         child: Text(
                           '¥${room.minBet.toInt()} 起',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                         ),
                       ),
                     ],
@@ -163,8 +225,16 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.timer_rounded, color: isUrgent ? Colors.redAccent : Colors.white70, size: 14),
-                                const SizedBox(width: 4),
+                                Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    color: isUrgent ? Colors.redAccent.withOpacity(0.2) : Colors.white.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(Icons.timer_rounded, color: isUrgent ? Colors.redAccent : Colors.white70, size: 14),
+                                ),
+                                const SizedBox(width: 8),
                                 Text(
                                   isUrgent ? '即将开奖！' : '距离开奖',
                                   style: TextStyle(
@@ -172,7 +242,7 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                                     fontSize: 12,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 10),
                                 Text(
                                   '${room.countdown} 秒',
                                   style: TextStyle(
@@ -183,16 +253,16 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 10),
                             ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(6),
                               child: LinearProgressIndicator(
                                 value: room.countdown / room.totalTime,
                                 backgroundColor: Colors.white.withOpacity(0.1),
                                 valueColor: AlwaysStoppedAnimation<Color>(
                                   isUrgent ? Colors.redAccent : room.gradient[0],
                                 ),
-                                minHeight: 6,
+                                minHeight: 8,
                               ),
                             ),
                           ],
@@ -200,10 +270,17 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                       ),
                       const SizedBox(width: 16),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(colors: hasBet ? [Colors.green, Colors.greenAccent] : room.gradient),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: hasBet ? Colors.green.withOpacity(0.3) : room.gradient[0].withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Text(
                           hasBet ? '已下注' : '进入下注',

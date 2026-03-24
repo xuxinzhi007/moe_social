@@ -19,6 +19,13 @@ class MoeToast {
     _overlayEntry = null;
     _timer?.cancel();
 
+    // 检查是否存在 Overlay
+    final overlay = Overlay.maybeOf(context);
+    if (overlay == null) {
+      print('MoeToast: No Overlay found, cannot show toast');
+      return;
+    }
+
     _overlayEntry = OverlayEntry(
       builder: (context) => _ToastWidget(
         message: message,
@@ -28,7 +35,7 @@ class MoeToast {
       ),
     );
 
-    Overlay.of(context).insert(_overlayEntry!);
+    overlay.insert(_overlayEntry!);
 
     _timer = Timer(duration, () {
       _overlayEntry?.remove();
@@ -57,6 +64,28 @@ class MoeToast {
       textColor: const Color(0xFFDC2626),
     );
   }
+
+  /// 信息提示
+  static void info(BuildContext context, String message) {
+    show(
+      context, 
+      message, 
+      icon: Icons.info_rounded,
+      backgroundColor: const Color(0xFFEFF6FF),
+      textColor: const Color(0xFF2563EB),
+    );
+  }
+
+  /// 警告提示
+  static void warning(BuildContext context, String message) {
+    show(
+      context, 
+      message, 
+      icon: Icons.warning_rounded,
+      backgroundColor: const Color(0xFFFFFBEB),
+      textColor: const Color(0xFFD97706),
+    );
+  }
 }
 
 class _ToastWidget extends StatefulWidget {
@@ -80,6 +109,7 @@ class _ToastWidgetState extends State<_ToastWidget> with SingleTickerProviderSta
   late AnimationController _controller;
   late Animation<double> _opacity;
   late Animation<Offset> _offset;
+  late Animation<double> _scale;
 
   @override
   void initState() {
@@ -87,14 +117,22 @@ class _ToastWidgetState extends State<_ToastWidget> with SingleTickerProviderSta
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
+      reverseDuration: const Duration(milliseconds: 200),
     );
     _opacity = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
       parent: _controller,
       curve: Curves.easeOut,
+      reverseCurve: Curves.easeIn,
     ));
-    _offset = Tween<Offset>(begin: const Offset(0, -0.5), end: Offset.zero).animate(CurvedAnimation(
+    _offset = Tween<Offset>(begin: const Offset(0, -1.0), end: Offset.zero).animate(CurvedAnimation(
       parent: _controller,
       curve: Curves.easeOutBack,
+      reverseCurve: Curves.easeInOut,
+    ));
+    _scale = Tween<double>(begin: 0.9, end: 1.0).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutBack,
+      reverseCurve: Curves.easeInOut,
     ));
 
     _controller.forward();
@@ -109,52 +147,58 @@ class _ToastWidgetState extends State<_ToastWidget> with SingleTickerProviderSta
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      top: MediaQuery.of(context).padding.top + 20,
-      left: 20,
-      right: 20,
+      top: MediaQuery.of(context).padding.top + 40,
+      left: 24,
+      right: 24,
       child: Material(
         color: Colors.transparent,
-        child: SlideTransition(
-          position: _offset,
-          child: FadeTransition(
-            opacity: _opacity,
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                decoration: BoxDecoration(
-                  color: widget.backgroundColor ?? Colors.black.withOpacity(0.8),
-                  borderRadius: BorderRadius.circular(100),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (widget.icon != null) ...[
-                      Icon(
-                        widget.icon,
-                        color: widget.textColor ?? Colors.white,
-                        size: 20,
+        child: ScaleTransition(
+          scale: _scale,
+          child: SlideTransition(
+            position: _offset,
+            child: FadeTransition(
+              opacity: _opacity,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: widget.backgroundColor ?? Colors.black.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 24,
+                        offset: const Offset(0, 12),
                       ),
-                      const SizedBox(width: 8),
                     ],
-                    Flexible(
-                      child: Text(
-                        widget.message,
-                        style: TextStyle(
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.icon != null) ...[
+                        Icon(
+                          widget.icon,
                           color: widget.textColor ?? Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                          size: 20,
                         ),
-                        textAlign: TextAlign.center,
+                        const SizedBox(width: 12),
+                      ],
+                      Flexible(
+                        child: Text(
+                          widget.message,
+                          style: TextStyle(
+                            color: widget.textColor ?? Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.3,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
