@@ -9,9 +9,12 @@ import 'package:flutter_tts/flutter_tts.dart';
 import '../../services/api_service.dart';
 import '../../services/llm_endpoint_config.dart';
 import '../../services/ai_db_service.dart';
+import '../../services/memory_service.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_chat_session.dart';
 import '../../models/ai_chat_message.dart';
+import '../../models/ai_memory.dart';
+import 'memory_manager_page.dart';
 
 class ChatPage extends StatefulWidget {
   final AiAgent agent;
@@ -26,15 +29,19 @@ class _ChatPageState extends State<ChatPage> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
-  
+
   List<AiChatSession> _sessions = [];
   AiChatSession? _currentSession;
   List<AiChatMessage> _messages = [];
-  
+  List<AiMemory> _memories = [];
+
   bool _isSending = false;
   bool _isLoadingHistory = true;
   bool _wasManuallyStopped = false;
-  
+
+  // 上次新增记忆数量（用于提示气泡）
+  int _lastNewMemoryCount = 0;
+
   // Voice
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _speechAvailable = false;
@@ -48,6 +55,7 @@ class _ChatPageState extends State<ChatPage> {
     super.initState();
     _initVoice();
     _loadSessions();
+    _loadMemories();
   }
 
   @override
@@ -73,15 +81,18 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _loadSessions() async {
     final sessions = await AiDbService().getSessions(widget.agent.id);
     if (mounted) {
-      setState(() {
-        _sessions = sessions;
-      });
+      setState(() => _sessions = sessions);
       if (_sessions.isNotEmpty) {
         _loadSession(_sessions.first);
       } else {
         _createNewSession();
       }
     }
+  }
+
+  Future<void> _loadMemories() async {
+    final memories = await AiDbService().getMemories(widget.agent.id);
+    if (mounted) setState(() => _memories = memories);
   }
 
   Future<void> _createNewSession() async {
@@ -93,9 +104,7 @@ class _ChatPageState extends State<ChatPage> {
     );
     await AiDbService().insertSession(session);
     if (mounted) {
-      setState(() {
-        _sessions.insert(0, session);
-      });
+      setState(() => _sessions.insert(0, session));
       _loadSession(session);
     }
   }
@@ -114,18 +123,18 @@ class _ChatPageState extends State<ChatPage> {
       _scrollToBottom();
     }
   }
-  
+
   Future<void> _deleteSession(String id) async {
     await AiDbService().deleteSession(id);
     if (mounted) {
       setState(() {
         _sessions.removeWhere((s) => s.id == id);
         if (_currentSession?.id == id) {
-           if (_sessions.isNotEmpty) {
-             _loadSession(_sessions.first);
-           } else {
-             _createNewSession();
-           }
+          if (_sessions.isNotEmpty) {
+            _loadSession(_sessions.first);
+          } else {
+            _createNewSession();
+          }
         }
       });
     }
@@ -136,9 +145,7 @@ class _ChatPageState extends State<ChatPage> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
-    if (_currentSession == null) {
-      await _createNewSession();
-    }
+    if (_currentSession == null) await _createNewSession();
 
     final now = DateTime.now();
     final userMsg = AiChatMessage(
@@ -154,85 +161,114 @@ class _ChatPageState extends State<ChatPage> {
       _controller.clear();
       _isSending = true;
       _wasManuallyStopped = false;
+      _lastNewMemoryCount = 0;
     });
     _scrollToBottom();
-    
     await AiDbService().insertMessage(userMsg);
 
-    // Call API
     try {
+      final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
+
+      // ── 构建对话历史（排除 system 角色，避免重复） ──────────────────
       final history = _messages
-          .where((m) => m.role != 'system') 
+          .where((m) => m.role != 'system')
           .map((m) => {'role': m.role, 'content': m.content})
           .toList();
-          
-      // 终端同款模式：不注入智能体 System Prompt，避免偏离终端输出
-      final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
-      if (!terminalMode && widget.agent.systemPrompt.isNotEmpty) {
-        history.insert(0, {'role': 'system', 'content': widget.agent.systemPrompt});
-      }
+
+      // ── 始终注入 System Prompt + 长期记忆（已修复：不再受 terminalMode 影响）──
+      final enrichedSystemPrompt = MemoryService.buildPromptWithMemories(
+        widget.agent.systemPrompt,
+        _memories,
+      );
+      history.insert(0, {'role': 'system', 'content': enrichedSystemPrompt});
 
       final uri = await LlmEndpointConfig.chatUri();
       final headers = <String, String>{'Content-Type': 'application/json'};
       if (ApiService.token != null) {
-        // 直连 Ollama 不需要鉴权，但带上也无害；后端模式需要
         headers['Authorization'] = 'Bearer ${ApiService.token}';
       }
 
-      final response = await http.post(
-        uri,
-        headers: headers,
-        body: jsonEncode({
-          'model': widget.agent.modelName,
-          'messages': history,
-          if (terminalMode) 'stream': false,
-        }),
-      ).timeout(const Duration(seconds: 180));
+      final response = await http
+          .post(
+            uri,
+            headers: headers,
+            body: jsonEncode({
+              'model': widget.agent.modelName,
+              'messages': history,
+              if (terminalMode) 'stream': false,
+            }),
+          )
+          .timeout(const Duration(seconds: 180));
+
+      if (_wasManuallyStopped) return;
 
       if (response.statusCode == 200) {
-        if (_wasManuallyStopped) {
-          return;
-        }
-        // 统一按 UTF-8 解码，避免 charset 不一致导致乱码
         final decodedBody = utf8.decode(response.bodyBytes);
         final data = jsonDecode(decodedBody);
-        String content = '';
+        String rawContent = '';
+
         if (terminalMode) {
-          // Ollama /api/chat 响应格式：{ message: { role, content }, ... }
           final msg = (data is Map) ? data['message'] : null;
           if (msg is Map && msg['content'] is String) {
-            content = msg['content'] as String;
+            rawContent = msg['content'] as String;
           } else if (data is Map && data['error'] is String) {
-            content = 'Ollama 错误: ${data['error']}';
+            rawContent = 'Ollama 错误: ${data['error']}';
           } else {
-            content = '响应格式异常（直连 Ollama）';
+            rawContent = '响应格式异常（直连 Ollama）';
           }
         } else {
-          // 后端 /api/llm/chat 响应格式：{ content, remaining_ratio, summarized, ... }
           if (data is Map && data['content'] is String) {
-            content = data['content'] as String;
+            rawContent = data['content'] as String;
           } else {
-            content = '响应格式异常（后端）';
+            rawContent = '响应格式异常（后端）';
           }
         }
-        
+
+        // ── 提取并保存新记忆 ─────────────────────────────────────────
+        final extractedTexts = MemoryService.extractMemories(rawContent);
+        if (extractedTexts.isNotEmpty) {
+          final newMemories = <AiMemory>[];
+          for (final text in extractedTexts) {
+            final mem = AiMemory(
+              id: '${DateTime.now().millisecondsSinceEpoch}_${newMemories.length}',
+              agentId: widget.agent.id,
+              content: text,
+              category: MemoryService.inferCategory(text),
+              importance: MemoryService.inferImportance(text),
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            );
+            await AiDbService().insertMemory(mem);
+            newMemories.add(mem);
+          }
+          if (mounted) {
+            setState(() {
+              _memories = [..._memories, ...newMemories];
+              _lastNewMemoryCount = newMemories.length;
+            });
+          }
+        }
+
+        // ── 清理展示内容（移除记忆标签） ─────────────────────────────
+        final displayContent = MemoryService.cleanResponse(rawContent);
+
         final assistantMsg = AiChatMessage(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           sessionId: _currentSession!.id,
           role: 'assistant',
-          content: content,
+          content: displayContent,
           createdAt: DateTime.now(),
         );
 
         await AiDbService().insertMessage(assistantMsg);
 
         if (mounted) {
-          setState(() {
-            _messages.add(assistantMsg);
-          });
-          
+          setState(() => _messages.add(assistantMsg));
+
+          // 自动更新会话标题
           if (_messages.length <= 2 && _currentSession!.title == '新对话') {
-            final newTitle = text.length > 10 ? '${text.substring(0, 10)}...' : text;
+            final newTitle =
+                text.length > 10 ? '${text.substring(0, 10)}...' : text;
             final updatedSession = AiChatSession(
               id: _currentSession!.id,
               agentId: widget.agent.id,
@@ -242,50 +278,63 @@ class _ChatPageState extends State<ChatPage> {
             await AiDbService().updateSession(updatedSession);
             setState(() {
               _currentSession = updatedSession;
-              final index = _sessions.indexWhere((s) => s.id == updatedSession.id);
-              if (index != -1) _sessions[index] = updatedSession;
+              final idx =
+                  _sessions.indexWhere((s) => s.id == updatedSession.id);
+              if (idx != -1) _sessions[idx] = updatedSession;
             });
           }
         }
       } else {
-        if (_wasManuallyStopped) {
-          return;
-        }
-        final errorMsg = AiChatMessage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          sessionId: _currentSession!.id,
-          role: 'assistant',
-          content: '请求失败 (${response.statusCode})',
-          createdAt: DateTime.now(),
-        );
-        await AiDbService().insertMessage(errorMsg);
-        if (mounted) {
-          setState(() => _messages.add(errorMsg));
-        }
+        if (_wasManuallyStopped) return;
+        await _appendError('请求失败 (${response.statusCode})');
       }
     } catch (e) {
-      if (_wasManuallyStopped) {
-        return;
-      }
-      final errorMsg = AiChatMessage(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        sessionId: _currentSession!.id,
-        role: 'assistant',
-        content: '请求出错: $e',
-        createdAt: DateTime.now(),
-      );
-      await AiDbService().insertMessage(errorMsg);
-      if (mounted) {
-        setState(() => _messages.add(errorMsg));
-      }
+      if (_wasManuallyStopped) return;
+      await _appendError('请求出错: $e');
     } finally {
       if (mounted) {
         setState(() => _isSending = false);
         _scrollToBottom();
+        // 显示记忆提示气泡
+        if (_lastNewMemoryCount > 0) {
+          _showMemorySnackBar(_lastNewMemoryCount);
+        }
       }
     }
   }
-  
+
+  Future<void> _appendError(String text) async {
+    final errorMsg = AiChatMessage(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      sessionId: _currentSession!.id,
+      role: 'assistant',
+      content: text,
+      createdAt: DateTime.now(),
+    );
+    await AiDbService().insertMessage(errorMsg);
+    if (mounted) setState(() => _messages.add(errorMsg));
+  }
+
+  void _showMemorySnackBar(int count) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+        content: Row(
+          children: [
+            const Text('🧠', style: TextStyle(fontSize: 16)),
+            const SizedBox(width: 8),
+            Text('已记住 $count 条新信息'),
+          ],
+        ),
+        action: SnackBarAction(
+          label: '查看',
+          onPressed: () => _openMemoryManager(),
+        ),
+      ),
+    );
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -322,15 +371,13 @@ class _ChatPageState extends State<ChatPage> {
       return;
     }
     if (!_speechAvailable) {
-       _initVoice(); // Try init again
-       if (!_speechAvailable) return;
+      _initVoice();
+      if (!_speechAvailable) return;
     }
     setState(() => _isListening = true);
     await _speech.listen(
       onResult: (result) {
-        setState(() {
-          _controller.text = result.recognizedWords;
-        });
+        setState(() => _controller.text = result.recognizedWords);
         if (result.finalResult) {
           setState(() => _isListening = false);
           _sendMessage();
@@ -361,6 +408,15 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  void _openMemoryManager() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MemoryManagerPage(agent: widget.agent),
+      ),
+    ).then((_) => _loadMemories());
+  }
+
   void _showAgentInfo() {
     final agent = widget.agent;
     showModalBottomSheet(
@@ -388,12 +444,14 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   child: Row(
                     children: [
                       CircleAvatar(
                         radius: 22,
-                        backgroundColor: Theme.of(ctx).primaryColor.withOpacity(0.12),
+                        backgroundColor:
+                            Theme.of(ctx).primaryColor.withOpacity(0.12),
                         child: Icon(Icons.smart_toy_rounded,
                             color: Theme.of(ctx).primaryColor),
                       ),
@@ -408,7 +466,8 @@ class _ChatPageState extends State<ChatPage> {
                             if (agent.description.isNotEmpty)
                               Text(agent.description,
                                   style: TextStyle(
-                                      fontSize: 13, color: Colors.grey.shade600)),
+                                      fontSize: 13,
+                                      color: Colors.grey.shade600)),
                             Text('模型：${agent.modelName}',
                                 style: TextStyle(
                                     fontSize: 12, color: Colors.grey.shade500)),
@@ -441,7 +500,8 @@ class _ChatPageState extends State<ChatPage> {
                                   padding: EdgeInsets.zero,
                                   tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                               icon: const Icon(Icons.copy_rounded, size: 14),
-                              label: const Text('复制', style: TextStyle(fontSize: 12)),
+                              label:
+                                  const Text('复制', style: TextStyle(fontSize: 12)),
                               onPressed: () async {
                                 await Clipboard.setData(
                                     ClipboardData(text: agent.systemPrompt));
@@ -472,9 +532,83 @@ class _ChatPageState extends State<ChatPage> {
                             : SelectableText(
                                 agent.systemPrompt,
                                 style: const TextStyle(
-                                    fontSize: 14, height: 1.6, color: Colors.black87),
+                                    fontSize: 14,
+                                    height: 1.6,
+                                    color: Colors.black87),
                               ),
                       ),
+                      const SizedBox(height: 20),
+                      // 记忆预览
+                      Row(
+                        children: [
+                          const Text('🧠', style: TextStyle(fontSize: 14)),
+                          const SizedBox(width: 6),
+                          Text(
+                            '长期记忆（${_memories.length} 条）',
+                            style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey),
+                          ),
+                          const Spacer(),
+                          TextButton(
+                            style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _openMemoryManager();
+                            },
+                            child: const Text('管理', style: TextStyle(fontSize: 12)),
+                          ),
+                        ],
+                      ),
+                      if (_memories.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            '暂无记忆。和 AI 多聊几句，它会自动记住重要信息。',
+                            style: TextStyle(
+                                color: Colors.grey.shade400,
+                                fontSize: 13,
+                                fontStyle: FontStyle.italic),
+                          ),
+                        )
+                      else
+                        ...(_memories.take(3).map((m) {
+                          final (_, emoji) = AiMemory.categoryMeta(m.category);
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(emoji,
+                                    style: const TextStyle(fontSize: 13)),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    m.content,
+                                    style: const TextStyle(
+                                        fontSize: 13, color: Colors.black87),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        })),
+                      if (_memories.length > 3)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _openMemoryManager();
+                            },
+                            child: Text('查看全部 ${_memories.length} 条记忆'),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -494,17 +628,38 @@ class _ChatPageState extends State<ChatPage> {
         title: Column(
           children: [
             Text(widget.agent.name, style: const TextStyle(fontSize: 16)),
-            FutureBuilder<bool>(
-              future: LlmEndpointConfig.isTerminalModeEnabled(),
-              builder: (context, snapshot) {
-                final terminal = snapshot.data == true;
-                final sessionTitle = _currentSession?.title ?? '加载中...';
-                final suffix = terminal ? ' · 终端同款' : '';
-                return Text(
-                  '$sessionTitle$suffix',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                );
-              },
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FutureBuilder<bool>(
+                  future: LlmEndpointConfig.isTerminalModeEnabled(),
+                  builder: (context, snapshot) {
+                    final terminal = snapshot.data == true;
+                    final sessionTitle = _currentSession?.title ?? '加载中...';
+                    final suffix = terminal ? ' · 终端同款' : '';
+                    return Text(
+                      '$sessionTitle$suffix',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    );
+                  },
+                ),
+                if (_memories.isNotEmpty) ...[
+                  const SizedBox(width: 4),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '🧠${_memories.length}',
+                      style: TextStyle(
+                          fontSize: 10, color: Colors.purple.shade700),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
@@ -526,12 +681,14 @@ class _ChatPageState extends State<ChatPage> {
         child: Column(
           children: [
             UserAccountsDrawerHeader(
-              decoration: BoxDecoration(color: Theme.of(context).primaryColor),
+              decoration:
+                  BoxDecoration(color: Theme.of(context).primaryColor),
               accountName: Text(widget.agent.name),
               accountEmail: Text(widget.agent.modelName),
               currentAccountPicture: CircleAvatar(
                 backgroundColor: Colors.white,
-                child: Icon(Icons.smart_toy_rounded, color: Theme.of(context).primaryColor),
+                child: Icon(Icons.smart_toy_rounded,
+                    color: Theme.of(context).primaryColor),
               ),
             ),
             ListTile(
@@ -540,6 +697,14 @@ class _ChatPageState extends State<ChatPage> {
               onTap: () {
                 Navigator.pop(context);
                 _createNewSession();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.psychology_rounded),
+              title: Text('记忆库（${_memories.length} 条）'),
+              onTap: () {
+                Navigator.pop(context);
+                _openMemoryManager();
               },
             ),
             const Divider(),
@@ -555,8 +720,12 @@ class _ChatPageState extends State<ChatPage> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                        color: isCurrent ? Theme.of(context).primaryColor : null,
+                        fontWeight: isCurrent
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isCurrent
+                            ? Theme.of(context).primaryColor
+                            : null,
                       ),
                     ),
                     selected: isCurrent,
@@ -582,14 +751,14 @@ class _ChatPageState extends State<ChatPage> {
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
                     controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 20),
                     itemCount: _messages.length + (_isSending ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (_isSending && index == _messages.length) {
                         return _buildTypingBubble();
                       }
-                      final msg = _messages[index];
-                      return _buildMessageBubble(msg);
+                      return _buildMessageBubble(_messages[index]);
                     },
                   ),
           ),
@@ -603,24 +772,27 @@ class _ChatPageState extends State<ChatPage> {
     final isUser = message.role == 'user';
     final color = isUser ? const Color(0xFF7F7FD5) : Colors.white;
     final textColor = isUser ? Colors.white : Colors.black87;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
-             const CircleAvatar(
-               radius: 16,
-               backgroundColor: Color(0xFFE0E0E0),
-               child: Icon(Icons.smart_toy_rounded, size: 18, color: Colors.black54),
-             ),
-             const SizedBox(width: 8),
+            const CircleAvatar(
+              radius: 16,
+              backgroundColor: Color(0xFFE0E0E0),
+              child: Icon(Icons.smart_toy_rounded,
+                  size: 18, color: Colors.black54),
+            ),
+            const SizedBox(width: 8),
           ],
           Flexible(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: color,
                 borderRadius: BorderRadius.circular(18),
@@ -648,8 +820,8 @@ class _ChatPageState extends State<ChatPage> {
                     },
                     child: SelectableText(
                       message.content,
-                      style:
-                          TextStyle(color: textColor, fontSize: 15, height: 1.5),
+                      style: TextStyle(
+                          color: textColor, fontSize: 15, height: 1.5),
                     ),
                   ),
                   if (!isUser)
@@ -663,7 +835,8 @@ class _ChatPageState extends State<ChatPage> {
                           size: 18,
                           color: Colors.grey,
                         ),
-                        onPressed: () => _playTts(message.content, message.id),
+                        onPressed: () =>
+                            _playTts(message.content, message.id),
                       ),
                     ),
                 ],
@@ -675,7 +848,8 @@ class _ChatPageState extends State<ChatPage> {
             const CircleAvatar(
               radius: 16,
               backgroundColor: Color(0xFF7F7FD5),
-              child: Icon(Icons.person_rounded, size: 18, color: Colors.white),
+              child:
+                  Icon(Icons.person_rounded, size: 18, color: Colors.white),
             ),
           ],
         ],
@@ -693,12 +867,14 @@ class _ChatPageState extends State<ChatPage> {
           const CircleAvatar(
             radius: 16,
             backgroundColor: Color(0xFFE0E0E0),
-            child: Icon(Icons.smart_toy_rounded, size: 18, color: Colors.black54),
+            child: Icon(Icons.smart_toy_rounded,
+                size: 18, color: Colors.black54),
           ),
           const SizedBox(width: 8),
           Flexible(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
@@ -758,7 +934,8 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ),
           IconButton(
-            icon: Icon(_isSending ? Icons.stop_rounded : Icons.send_rounded),
+            icon: Icon(
+                _isSending ? Icons.stop_rounded : Icons.send_rounded),
             color: _isSending ? Colors.red : const Color(0xFF7F7FD5),
             onPressed: _isSending ? _stopGeneration : _sendMessage,
           ),
@@ -804,7 +981,6 @@ class _TypingDotsIndicatorState extends State<_TypingDotsIndicator>
           crossAxisAlignment: CrossAxisAlignment.center,
           children: List.generate(3, (i) {
             final phase = (_ctrl.value + i / 3.0) % 1.0;
-            // 0→0.5: bounce up, 0.5→1: rest
             final y = phase < 0.5
                 ? -6.0 * math.sin(phase * math.pi * 2)
                 : 0.0;
