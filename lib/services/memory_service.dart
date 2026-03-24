@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../models/ai_memory.dart';
 import '../models/user_memory.dart';
 import 'api_service.dart';
@@ -31,35 +33,62 @@ class MemoryService {
 
   static const _tagPattern = r'\[记忆:([^\]]{1,300})\]';
 
-  /// 把已有记忆列表拼接到基础 system prompt 里，并在末尾追加记忆存储指令
+  /// 把已有记忆列表拼接到基础 system prompt 里（仅注入上下文，不要求 AI 打标签）
+  ///
+  /// 记忆提取由独立的背景调用完成（见 ChatPage._extractMemoriesInBackground），
+  /// 主对话 prompt 保持简洁，对小模型更友好。
   static String buildPromptWithMemories(
     String basePrompt,
     List<AiMemory> memories,
   ) {
     final buffer = StringBuffer();
-
     buffer.write(basePrompt.isNotEmpty ? basePrompt : '你是一位友好、智能的 AI 助手。');
 
     if (memories.isNotEmpty) {
-      buffer.write('\n\n─────────────────────────────\n');
-      buffer.write('【关于该用户的长期记忆】\n');
-      buffer.write('以下是你通过历次对话积累的用户信息，请在回复时自然地参考：\n');
-      for (final m in memories) {
-        final (_, emoji) = AiMemory.categoryMeta(m.category);
-        buffer.write('$emoji ${m.content}\n');
+      buffer.write('\n\n--- 你的长期记忆数据库 ---\n');
+      buffer.write('（以下是你之前和该用户聊天记住的事实。在回答时，如果相关，请自然地体现出你记得这些事，就像老朋友一样。不要生硬地罗列，只需在对话中表现出你“知道”即可）：\n');
+      for (int i = 0; i < memories.length; i++) {
+        final (_, emoji) = AiMemory.categoryMeta(memories[i].category);
+        buffer.write('${i + 1}. $emoji ${memories[i].content}\n');
       }
-      buffer.write('─────────────────────────────');
+      buffer.write('----------------------\n');
     }
 
-    buffer.write('\n\n【记忆存储指令】\n');
-    buffer.write(
-        '如果本次对话中出现了值得长期记住的信息（例如用户的偏好、习惯、重要事件、待办提醒、个人信息等），');
-    buffer.write('请在你的回复正文末尾**另起一行**，用以下格式追加（可多条，勿放在正文中间）：\n');
-    buffer.write('[记忆:具体内容]\n');
-    buffer.write('示例：[记忆:用户喜欢喝美式咖啡，不加糖]\n');
-    buffer.write('若本轮对话无需记录，则不添加该标签。**记忆标签对用户不可见，不会被展示出来。**');
-
     return buffer.toString();
+  }
+
+  /// 构建专门用于记忆提取的 prompt
+  ///
+  /// 传入已有记忆，让大模型判断是新记忆、旧记忆还是有冲突需要更新。
+  static String buildExtractionPrompt(String userMessage, String aiResponse, List<AiMemory> currentMemories) {
+    String existing = currentMemories.isEmpty 
+        ? "无" 
+        : currentMemories.map((m) => m.content).join("；");
+        
+    return '你是信息提取助手。请分析最新对话，提取关于用户的重要长期记忆。\n'
+        '【已有记忆】：$existing\n'
+        '【提取规则】：\n'
+        '1. 提取用户的个人信息（如名字/年龄）、明确偏好（如喜欢/讨厌什么）、重要计划（如明天考试）、日常习惯。\n'
+        '2. 去重过滤：如果对话中的信息在【已有记忆】中已经存在，绝对不要重复提取。\n'
+        '3. 冲突更新：如果对话中的新信息与【已有记忆】矛盾（如用户之前说叫小明，现在说改名叫小红），请提取新信息。\n'
+        '4. 格式：每条新记忆或更新的记忆，用 [记忆:具体内容] 单独一行输出。示例：[记忆:用户明天下午三点有面试]\n'
+        '5. 如果本轮对话没有任何值得长期记忆的实质性新信息，请只输出"无"。\n\n'
+        '【最新对话】\n'
+        '用户：$userMessage\n'
+        '助手：$aiResponse';
+  }
+
+  static String buildCurationPrompt(List<AiMemory> memories) {
+    final raw = memories
+        .take(30)
+        .map((m) => '- [${m.category}] ${m.content}')
+        .join('\n');
+    return '你是长期记忆整理助手。请把下面零散的用户记忆整理成稳定的用户画像摘要。\n'
+        '请合并重复、消除同义表述、保留最新有效信息。\n'
+        '输出 JSON 数组，不要输出额外解释。每项格式如下：\n'
+        '[{"profile_type":"identity|preference|habit|plan|style|general","title":"简短标题","summary":"1句话稳定描述","confidence":0.0-1.0}]\n'
+        '最多输出 6 项。\n\n'
+        '【原始记忆】\n$raw';
   }
 
   /// 从 AI 回复中提取所有 [记忆:xxx] 标签内容
@@ -70,6 +99,36 @@ class MemoryService {
         .map((m) => m.group(1)!.trim())
         .where((s) => s.isNotEmpty)
         .toList();
+  }
+
+  static List<Map<String, dynamic>> parseProfiles(String response) {
+    try {
+      final match = RegExp(r'\[[\s\S]*\]').firstMatch(response);
+      if (match == null) return const [];
+      final parsed = jsonDecode(match.group(0)!);
+      if (parsed is! List) return const [];
+      return parsed
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  static String normalizeMemoryText(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^\w\s\u4e00-\u9fa5]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
+  static bool isDuplicateMemory(String left, String right) {
+    final a = normalizeMemoryText(left);
+    final b = normalizeMemoryText(right);
+    if (a.isEmpty || b.isEmpty) return false;
+    return a == b || a.contains(b) || b.contains(a);
   }
 
   /// 移除回复中的记忆标签（用于展示给用户的内容）

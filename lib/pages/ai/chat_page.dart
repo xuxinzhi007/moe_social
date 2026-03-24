@@ -9,11 +9,13 @@ import 'package:flutter_tts/flutter_tts.dart';
 import '../../services/api_service.dart';
 import '../../services/llm_endpoint_config.dart';
 import '../../services/ai_db_service.dart';
-import '../../services/memory_service.dart';
+import '../../services/memory_agent_service.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_chat_session.dart';
 import '../../models/ai_chat_message.dart';
 import '../../models/ai_memory.dart';
+import '../../models/ai_memory_profile.dart';
+import '../../models/ai_memory_settings.dart';
 import 'memory_manager_page.dart';
 
 class ChatPage extends StatefulWidget {
@@ -34,13 +36,13 @@ class _ChatPageState extends State<ChatPage> {
   AiChatSession? _currentSession;
   List<AiChatMessage> _messages = [];
   List<AiMemory> _memories = [];
+  List<AiMemoryProfile> _profiles = [];
+  AiMemorySettings? _memorySettings;
 
   bool _isSending = false;
   bool _isLoadingHistory = true;
   bool _wasManuallyStopped = false;
 
-  // 上次新增记忆数量（用于提示气泡）
-  int _lastNewMemoryCount = 0;
 
   // Voice
   final stt.SpeechToText _speech = stt.SpeechToText();
@@ -55,7 +57,7 @@ class _ChatPageState extends State<ChatPage> {
     super.initState();
     _initVoice();
     _loadSessions();
-    _loadMemories();
+    _loadMemoryState();
   }
 
   @override
@@ -90,9 +92,19 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  Future<void> _loadMemories() async {
-    final memories = await AiDbService().getMemories(widget.agent.id);
-    if (mounted) setState(() => _memories = memories);
+  Future<void> _loadMemoryState() async {
+    final db = AiDbService();
+    final agentService = MemoryAgentService();
+    final memories = await db.getMemories(widget.agent.id);
+    final profiles = await db.getMemoryProfiles(widget.agent.id);
+    final settings = await agentService.getOrCreateSettings(widget.agent);
+    if (mounted) {
+      setState(() {
+        _memories = memories;
+        _profiles = profiles;
+        _memorySettings = settings;
+      });
+    }
   }
 
   Future<void> _createNewSession() async {
@@ -161,7 +173,6 @@ class _ChatPageState extends State<ChatPage> {
       _controller.clear();
       _isSending = true;
       _wasManuallyStopped = false;
-      _lastNewMemoryCount = 0;
     });
     _scrollToBottom();
     await AiDbService().insertMessage(userMsg);
@@ -175,11 +186,9 @@ class _ChatPageState extends State<ChatPage> {
           .map((m) => {'role': m.role, 'content': m.content})
           .toList();
 
-      // ── 始终注入 System Prompt + 长期记忆（已修复：不再受 terminalMode 影响）──
-      final enrichedSystemPrompt = MemoryService.buildPromptWithMemories(
-        widget.agent.systemPrompt,
-        _memories,
-      );
+      // 使用本地记忆智能体构建注入上下文：画像 + 高优先级原始记忆
+      final enrichedSystemPrompt =
+          await MemoryAgentService().buildInjectedPrompt(widget.agent);
       history.insert(0, {'role': 'system', 'content': enrichedSystemPrompt});
 
       final uri = await LlmEndpointConfig.chatUri();
@@ -205,62 +214,37 @@ class _ChatPageState extends State<ChatPage> {
       if (response.statusCode == 200) {
         final decodedBody = utf8.decode(response.bodyBytes);
         final data = jsonDecode(decodedBody);
-        String rawContent = '';
+        String content = '';
 
         if (terminalMode) {
           final msg = (data is Map) ? data['message'] : null;
           if (msg is Map && msg['content'] is String) {
-            rawContent = msg['content'] as String;
+            content = msg['content'] as String;
           } else if (data is Map && data['error'] is String) {
-            rawContent = 'Ollama 错误: ${data['error']}';
+            content = 'Ollama 错误: ${data['error']}';
           } else {
-            rawContent = '响应格式异常（直连 Ollama）';
+            content = '响应格式异常（直连 Ollama）';
           }
         } else {
           if (data is Map && data['content'] is String) {
-            rawContent = data['content'] as String;
+            content = data['content'] as String;
           } else {
-            rawContent = '响应格式异常（后端）';
+            content = '响应格式异常（后端）';
           }
         }
-
-        // ── 提取并保存新记忆 ─────────────────────────────────────────
-        final extractedTexts = MemoryService.extractMemories(rawContent);
-        if (extractedTexts.isNotEmpty) {
-          final newMemories = <AiMemory>[];
-          for (final text in extractedTexts) {
-            final mem = AiMemory(
-              id: '${DateTime.now().millisecondsSinceEpoch}_${newMemories.length}',
-              agentId: widget.agent.id,
-              content: text,
-              category: MemoryService.inferCategory(text),
-              importance: MemoryService.inferImportance(text),
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-            );
-            await AiDbService().insertMemory(mem);
-            newMemories.add(mem);
-          }
-          if (mounted) {
-            setState(() {
-              _memories = [..._memories, ...newMemories];
-              _lastNewMemoryCount = newMemories.length;
-            });
-          }
-        }
-
-        // ── 清理展示内容（移除记忆标签） ─────────────────────────────
-        final displayContent = MemoryService.cleanResponse(rawContent);
 
         final assistantMsg = AiChatMessage(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           sessionId: _currentSession!.id,
           role: 'assistant',
-          content: displayContent,
+          content: content,
           createdAt: DateTime.now(),
         );
 
         await AiDbService().insertMessage(assistantMsg);
+
+        // ── 后台静默交给记忆智能体：提取 + 必要时整理画像 ──────────────
+        _processMemoryTurnInBackground(text, content);
 
         if (mounted) {
           setState(() => _messages.add(assistantMsg));
@@ -295,11 +279,27 @@ class _ChatPageState extends State<ChatPage> {
       if (mounted) {
         setState(() => _isSending = false);
         _scrollToBottom();
-        // 显示记忆提示气泡
-        if (_lastNewMemoryCount > 0) {
-          _showMemorySnackBar(_lastNewMemoryCount);
-        }
       }
+    }
+  }
+
+  /// 后台本地记忆智能体：提取新记忆，并在阈值满足时整理画像。
+  Future<void> _processMemoryTurnInBackground(
+    String userMessage,
+    String aiResponse,
+  ) async {
+    try {
+      final result = await MemoryAgentService().processConversationTurn(
+        agent: widget.agent,
+        sessionId: _currentSession!.id,
+        userMessage: userMessage,
+        aiResponse: aiResponse,
+      );
+      await _loadMemoryState();
+      if (!mounted || result.newMemoryCount <= 0) return;
+      _showMemorySnackBar(result.newMemoryCount);
+    } catch (_) {
+      // 记忆是增强功能，失败时不影响主对话
     }
   }
 
@@ -414,7 +414,7 @@ class _ChatPageState extends State<ChatPage> {
       MaterialPageRoute(
         builder: (_) => MemoryManagerPage(agent: widget.agent),
       ),
-    ).then((_) => _loadMemories());
+    ).then((_) => _loadMemoryState());
   }
 
   void _showAgentInfo() {
@@ -770,86 +770,118 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _buildMessageBubble(AiChatMessage message) {
     final isUser = message.role == 'user';
-    final color = isUser ? const Color(0xFF7F7FD5) : Colors.white;
     final textColor = isUser ? Colors.white : Colors.black87;
+    final timeStr = "${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}";
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
-        mainAxisAlignment:
-            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isUser) ...[
-            const CircleAvatar(
+            CircleAvatar(
               radius: 16,
-              backgroundColor: Color(0xFFE0E0E0),
-              child: Icon(Icons.smart_toy_rounded,
-                  size: 18, color: Colors.black54),
+              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+              child: Icon(Icons.smart_toy_rounded, size: 18, color: Theme.of(context).primaryColor),
             ),
             const SizedBox(width: 8),
           ],
           Flexible(
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 5,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  GestureDetector(
-                    onLongPress: () async {
-                      final text = message.content.trim();
-                      if (text.isEmpty) return;
-                      await Clipboard.setData(ClipboardData(text: text));
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('已复制到剪贴板')),
-                      );
-                    },
-                    child: SelectableText(
-                      message.content,
-                      style: TextStyle(
-                          color: textColor, fontSize: 15, height: 1.5),
+            child: Column(
+              crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    gradient: isUser
+                        ? const LinearGradient(
+                            colors: [Color(0xFF8A2387), Color(0xFFE94057)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : null,
+                    color: isUser ? null : Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(20),
+                      topRight: const Radius.circular(20),
+                      bottomLeft: isUser ? const Radius.circular(20) : const Radius.circular(4),
+                      bottomRight: isUser ? const Radius.circular(4) : const Radius.circular(20),
                     ),
-                  ),
-                  if (!isUser)
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: IconButton(
-                        icon: Icon(
-                          _isSpeaking && _speakingMessageId == message.id
-                              ? Icons.volume_off_rounded
-                              : Icons.volume_up_rounded,
-                          size: 18,
-                          color: Colors.grey,
-                        ),
-                        onPressed: () =>
-                            _playTts(message.content, message.id),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isUser ? const Color(0xFFE94057) : Colors.black).withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
                       ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GestureDetector(
+                        onLongPress: () async {
+                          final text = message.content.trim();
+                          if (text.isEmpty) return;
+                          await Clipboard.setData(ClipboardData(text: text));
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('已复制到剪贴板')),
+                          );
+                        },
+                        child: SelectableText(
+                          message.content,
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: 15,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                      if (!isUser) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              timeStr,
+                              style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+                            ),
+                            const SizedBox(width: 12),
+                            InkWell(
+                              onTap: () => _playTts(message.content, message.id),
+                              child: Icon(
+                                _isSpeaking && _speakingMessageId == message.id
+                                    ? Icons.volume_off_rounded
+                                    : Icons.volume_up_rounded,
+                                size: 16,
+                                color: Colors.grey.shade400,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ]
+                    ],
+                  ),
+                ),
+                if (isUser)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4, right: 4),
+                    child: Text(
+                      timeStr,
+                      style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
           ),
           if (isUser) ...[
             const SizedBox(width: 8),
             const CircleAvatar(
               radius: 16,
-              backgroundColor: Color(0xFF7F7FD5),
-              child:
-                  Icon(Icons.person_rounded, size: 18, color: Colors.white),
+              backgroundColor: Color(0xFFE94057),
+              child: Icon(Icons.person_rounded, size: 18, color: Colors.white),
             ),
           ],
         ],
@@ -859,38 +891,36 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _buildTypingBubble() {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             radius: 16,
-            backgroundColor: Color(0xFFE0E0E0),
-            child: Icon(Icons.smart_toy_rounded,
-                size: 18, color: Colors.black54),
+            backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+            child: Icon(Icons.smart_toy_rounded, size: 18, color: Theme.of(context).primaryColor),
           ),
           const SizedBox(width: 8),
-          Flexible(
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 5,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+                bottomLeft: Radius.circular(4),
+                bottomRight: Radius.circular(20),
               ),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 4),
-                child: _TypingDotsIndicator(),
-              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
+            child: const _TypingDotsIndicator(),
           ),
         ],
       ),
@@ -899,45 +929,80 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _buildInputArea() {
     return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          )
+        ],
+      ),
       padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
+        left: 12,
+        right: 12,
         top: 12,
         bottom: MediaQuery.of(context).padding.bottom + 12,
       ),
-      color: Colors.white,
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          IconButton(
-            icon: Icon(_isListening ? Icons.mic_off : Icons.mic),
-            color: _isListening ? Colors.red : const Color(0xFF7F7FD5),
-            onPressed: _toggleListening,
+          Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: IconButton(
+              icon: Icon(_isListening ? Icons.mic_off : Icons.mic_rounded),
+              color: _isListening ? Colors.red : Colors.grey.shade600,
+              onPressed: _toggleListening,
+            ),
           ),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: const Color(0xFFF5F7FA),
                 borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.grey.shade200),
               ),
               child: TextField(
                 controller: _controller,
                 focusNode: _focusNode,
                 maxLines: 5,
                 minLines: 1,
-                decoration: const InputDecoration(
-                  hintText: '输入消息...',
+                textInputAction: TextInputAction.send,
+                decoration: InputDecoration(
+                  hintText: _isListening ? '请说话...' : '输入消息...',
+                  hintStyle: TextStyle(color: Colors.grey.shade400),
                   border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
                 onSubmitted: (_) => _sendMessage(),
               ),
             ),
           ),
-          IconButton(
-            icon: Icon(
-                _isSending ? Icons.stop_rounded : Icons.send_rounded),
-            color: _isSending ? Colors.red : const Color(0xFF7F7FD5),
-            onPressed: _isSending ? _stopGeneration : _sendMessage,
+          const SizedBox(width: 8),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: _isSending
+                ? IconButton(
+                    icon: const Icon(Icons.stop_circle_rounded),
+                    color: Colors.redAccent,
+                    onPressed: _stopGeneration,
+                  )
+                : Container(
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF8A2387), Color(0xFFE94057)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.send_rounded, size: 20),
+                      color: Colors.white,
+                      onPressed: _sendMessage,
+                    ),
+                  ),
           ),
         ],
       ),
