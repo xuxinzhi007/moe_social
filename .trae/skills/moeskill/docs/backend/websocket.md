@@ -1,5 +1,63 @@
 # WebSocket 实时通信实现
 
+## 项目实际 WebSocket 服务（必读）
+
+项目前端有两个 WebSocket 服务，均在 `lib/services/` 目录：
+
+| 服务 | 路径 | 作用 |
+|------|------|------|
+| `ChatPushService` | `/ws/chat` | 私信推送、未读消息数（`unreadBySender` Map） |
+| `PresenceService` | `/ws/presence` | 在线状态（`online` ValueNotifier） |
+
+### 正确的启动 / 停止时机
+
+```dart
+// ✅ 登录成功后启动
+AuthService.login(...);
+PresenceService.start();
+ChatPushService.start();
+
+// ✅ 注销时停止（防止重连风暴）
+PresenceService.stop();
+ChatPushService.stop();
+
+// ✅ App 启动时，若已登录则立即启动（main.dart）
+if (AuthService.isLoggedIn) {
+  PresenceService.start();
+  ChatPushService.start();
+}
+
+// ✅ Token 刷新后重新启动（auth_service.dart updateToken）
+AuthService.updateToken(newToken);
+// 内部会自动调用 PresenceService.start() / ChatPushService.start()
+```
+
+### 401 自动登出
+
+`ChatPushService` 有一个 `onAuthError` 回调，在 WebSocket 收到 401 时触发。`AuthService.init()` 中已配置：
+
+```dart
+ChatPushService.onAuthError = () { AuthService.logout(); };
+```
+
+**不要在其他地方重复设置**，会覆盖已有配置导致未预期行为。
+
+### Web 平台特殊处理
+
+`NotificationProvider` 在 Web 端页面进入 `paused`/`inactive` 时**不停止** ChatPushService / PresenceService，避免浏览器路由切换误判为离线。Mobile 端遵循正常 App 生命周期。
+
+### 读取在线状态和未读消息数
+
+```dart
+// 在线状态（ValueNotifier，可用 ValueListenableBuilder）
+PresenceService.online.value  // bool
+
+// 某个用户的未读消息数
+ChatPushService.unreadBySender[userId] ?? 0
+```
+
+---
+
 ## 概述
 
 Moe Social项目使用WebSocket实现实时通信功能，包括在线状态管理、实时消息推送、聊天功能等。本指南将详细介绍如何在项目中实现WebSocket通信。

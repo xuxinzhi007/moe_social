@@ -1,5 +1,102 @@
 # 常见问题
 
+## 项目特有问题（必读）
+
+这些是 Moe Social 项目本身代码中已经确认的坑，开发时直接对照处理。
+
+---
+
+### 1. MoeToast 弹窗不显示
+
+**症状**：调用了 `MoeToast.success/error` 或 `loadingProvider.setSuccess/setError`，但没有任何提示出现，控制台可能有 `MoeToast: No Overlay found` 日志。
+
+**根本原因**：`MoeToast` 依赖 `Overlay.maybeOf(context)` 找 Overlay。以下两种 context 处于 Navigator Overlay **上方**，会返回 null：
+- `AuthService.navigatorKey.currentContext`（Navigator 自身的 context）
+- `MaterialApp.builder` 里的 context（`AppMessageWidget` 所在位置）
+
+**解法**：始终用**页面内的 `context`** 调用 MoeToast，在导航跳转**之前**调用：
+```dart
+MoeToast.success(context, '操作成功');       // 先 toast
+Navigator.pushReplacementNamed(context, '/home'); // 后跳转
+```
+
+---
+
+### 2. executeOperation 的 onSuccess 被调用，但实际上操作失败
+
+**症状**：登录 / 注册失败（密码错误等），但 `onSuccess` 回调仍然执行，导致错误地跳转或显示成功提示。
+
+**根本原因**：`AuthService.login/register` 内部 catch 了 `ApiException` 并封装成 `AuthResult.failure(...)`，不抛出。`executeOperation` 认为 Future 正常完成，调用 `onSuccess`。
+
+**解法**：`onSuccess` 里必须检查 `result.success`：
+```dart
+onSuccess: (result) {
+  if (!result.success) {
+    MoeToast.error(context, result.errorMessage ?? '操作失败');
+    return;
+  }
+  // 真正成功才往下走
+}
+```
+
+---
+
+### 3. 登录后通知/消息不更新
+
+**症状**：登录成功后未读消息数不显示，WebSocket 没有连接，push 通知不响应。
+
+**根本原因**：`NotificationProvider.init()` 没有在登录成功后调用。
+
+**解法**：
+```dart
+onSuccess: (result) {
+  if (!result.success) { ... return; }
+  try { context.read<NotificationProvider>().init(); } catch (_) {}
+  // 再导航
+}
+```
+
+---
+
+### 4. 点赞状态在切换页面后丢失或反转
+
+**症状**：从帖子列表点赞，切换页面后点赞状态消失或与实际相反。
+
+**根本原因**：服务端 List 接口返回的 `isLiked` 字段不可靠（已知 bug），实际状态需要从本地 `LikeStateManager` + `AuthService.getLikeStatus` 合并。
+
+**解法**：不要直接信任 API 返回的 `isLiked`，通过 `PostService.getPosts` 等已有方法获取帖子，内部已处理合并逻辑。
+
+---
+
+### 5. Web 端刷新后路由参数丢失
+
+**症状**：Web 端刷新 `/user-profile` 或 `/direct-chat` 页面，出现空白或崩溃。
+
+**根本原因**：Web 端刷新后 `ModalRoute.of(context)?.settings.arguments` 为 null，直接 `!` 断言会崩溃。
+
+**解法**：有参数的路由必须做防御性检查（项目中已对 `/user-profile`、`/direct-chat` 做了）：
+```dart
+'/user-profile': (context) {
+  final args = ModalRoute.of(context)?.settings.arguments;
+  if (args is! Map<String, dynamic>) {
+    return const Scaffold(body: Center(child: Text('页面参数丢失，请返回首页重新进入')));
+  }
+  return UserProfilePage(...);
+},
+```
+
+---
+
+### 6. 未完成的后端功能（TODO）
+
+以下功能前端 UI 已存在，但后端接口尚未实现，开发时注意不要误以为是前端 bug：
+
+- **举报帖子**：`post_card.dart` 中只弹 Snackbar，实际接口调用注释为 `TODO: 调用后端举报接口`
+- **按话题筛选帖子**：`topic_posts_page.dart` 中注释 `TODO: 后端支持按话题ID筛选`
+- **话题历史/推荐**：`topic_tag.dart` 中有两处 TODO 占位
+
+---
+
 ## 概述
 
 在Moe Social项目开发和使用过程中，可能会遇到各种问题。本指南将详细介绍常见问题及其解决方案，帮助开发者和用户快速解决问题。
