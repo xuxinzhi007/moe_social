@@ -70,6 +70,16 @@
    go run super.go
    ```
 
+## Android 开发环境注意事项
+
+Android 模拟器/真机无法直接访问开发机的 `localhost`，项目使用 **cpolar** 内网穿透。
+
+`lib/services/api_service.dart` 中 `_isProduction = false` 时，Android 的 `baseUrl` 是一个 cpolar 生成的公网域名（如 `https://xxxxx.cpolar.cn`）。
+
+**每次重启 cpolar 后域名会变**，需要更新 `api_service.dart` 中对应的 Android dev URL。Web/Windows 调试不受影响，直接用 `localhost:8888`。
+
+---
+
 ## 验证初始化
 
 - **前端**：应用启动后，可以看到登录/注册页面

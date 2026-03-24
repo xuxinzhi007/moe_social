@@ -4,25 +4,66 @@
 
 Flutter是一个由Google开发的开源UI工具包，用于构建跨平台应用。本项目使用Flutter来开发前端界面，支持Android、iOS、Web、Windows、macOS和Linux平台。
 
-## 项目结构
-
-Flutter项目的基本结构如下：
+## 项目结构（实际目录）
 
 ```
 lib/
-├── main.dart           # 应用入口
-├── auth_service.dart   # 认证服务
-├── login_page.dart     # 登录页面
-├── register_page.dart  # 注册页面
-├── profile_page.dart   # 个人资料页面
-├── settings_page.dart  # 设置页面
-├── autoglm/            # AutoGLM智能助手
-├── models/             # 数据模型
-├── pages/              # 应用页面
-├── services/           # 服务类
-├── utils/              # 工具类
-└── widgets/            # 通用组件
+├── main.dart                  # 应用入口、路由表、MultiProvider 注册
+├── auth_service.dart          # 认证服务（login/logout/token/navigatorKey）
+│
+├── pages/                     # 按功能分组的页面（新页面优先放这里）
+│   ├── home_page.dart         # 首页 feed
+│   ├── ai/                    # AI 助手相关页面
+│   └── game/                  # 游戏大厅相关页面
+│
+├── gallery/                   # 云相册功能
+│
+├── *_page.dart（根目录）       # 历史遗留页面（直接放在 lib/ 下）
+│   ├── login_page.dart
+│   ├── register_page.dart
+│   ├── profile_page.dart
+│   ├── comments_page.dart
+│   ├── recharge_page.dart
+│   └── ...（其余功能页）
+│
+├── models/                    # 数据模型（fromJson/toJson）
+│   ├── user.dart
+│   ├── post.dart
+│   ├── notification.dart      # typedef NotificationItem = NotificationModel
+│   └── topic_tag.dart
+│
+├── providers/                 # ChangeNotifier 状态管理
+│   ├── loading_provider.dart  # 全局/操作级 loading + success/error 消息
+│   ├── theme_provider.dart
+│   ├── notification_provider.dart
+│   ├── checkin_provider.dart
+│   ├── user_level_provider.dart
+│   └── game_provider.dart
+│
+├── services/                  # API、WebSocket、业务逻辑
+│   ├── api_service.dart       # HTTP 请求、token 刷新、ApiException
+│   ├── post_service.dart      # 帖子 + 点赞状态合并
+│   ├── chat_push_service.dart # WebSocket /ws/chat（私信推送）
+│   ├── presence_service.dart  # WebSocket /ws/presence（在线状态）
+│   ├── notification_service.dart
+│   ├── memory_service.dart    # AI 记忆功能
+│   └── ...
+│
+├── widgets/                   # 可复用 UI 组件
+│   ├── moe_toast.dart         # 顶部弹窗通知
+│   ├── moe_loading.dart       # 品牌 Loading 动画
+│   ├── moe_input_field.dart   # 统一输入框
+│   ├── moe_bottom_bar.dart    # 底部导航栏
+│   ├── app_message_widget.dart # 全局 loading 遮罩 + toast 中转
+│   └── auth_background.dart   # 登录/注册页背景
+│
+└── utils/                     # 工具函数
+    ├── validators.dart        # 表单校验（email/password/username）
+    ├── error_handler.dart     # SnackBar 错误提示（旧方式，新代码用 MoeToast）
+    └── config/                # 应用配置
 ```
+
+> **新增页面位置约定**：放到 `lib/pages/<功能模块>/` 下，并在 `main.dart` 路由表里注册。
 
 ## 核心概念
 
