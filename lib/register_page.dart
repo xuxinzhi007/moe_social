@@ -7,6 +7,7 @@ import 'providers/loading_provider.dart';
 import 'widgets/app_message_widget.dart';
 import 'widgets/moe_input_field.dart';
 import 'widgets/auth_background.dart';
+import 'widgets/moe_toast.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -39,10 +40,10 @@ class _RegisterPageState extends State<RegisterPage> {
       key: LoadingKeys.register,
       onSuccess: (result) {
         if (!result.success) {
-          loadingProvider.setError(result.errorMessage ?? '注册失败，请稍后重试');
+          MoeToast.error(context, result.errorMessage ?? '注册失败，请稍后重试');
           return;
         }
-        loadingProvider.setSuccess('欢迎加入 Moe Social！(≧∇≦)/');
+        MoeToast.success(context, '欢迎加入 Moe Social！(≧∇≦)/');
         Navigator.pop(context);
       },
       onError: (_) {},
