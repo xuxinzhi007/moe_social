@@ -13,9 +13,8 @@ import 'package:battery_plus/battery_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../auth_service.dart';
 import '../services/api_service.dart';
-import '../services/memory_service.dart';
 
-class DeviceInfoProvider with ChangeNotifier {
+class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
   String _version = '';
   String _deviceId = '';
   String _deviceType = '';
@@ -28,6 +27,10 @@ class DeviceInfoProvider with ChangeNotifier {
   int? _batteryLevel;
   Timer? _deviceInfoTimer;
   bool _isInitialized = false;
+
+  // 限流：避免前台切换时频繁触发，相邻两次同步间隔最少 10 分钟
+  DateTime? _lastSyncAt;
+  static const Duration _minSyncInterval = Duration(minutes: 10);
 
   String get version => _version;
   String get deviceId => _deviceId;
@@ -43,19 +46,35 @@ class DeviceInfoProvider with ChangeNotifier {
   Future<void> init() async {
     if (_isInitialized) return;
     _isInitialized = true;
-    
+
     _initDeviceType();
     await _loadVersion();
     await _ensureDeviceId();
-    
-    // Initial sync
-    syncDeviceInfoToServer();
-    
-    // Periodic sync every 5 minutes
+
+    WidgetsBinding.instance.addObserver(this);
+
+    // 启动时做一次轻量同步（不请求 GPS，只上报基本设备信息）
+    syncDeviceInfoToServer(requestLocationPermission: false);
+
+    // 定时同步改为 30 分钟一次，GPS 耗电由前台切换触发
     _deviceInfoTimer?.cancel();
-    _deviceInfoTimer = Timer.periodic(const Duration(minutes: 5), (_) {
-      syncDeviceInfoToServer();
+    _deviceInfoTimer = Timer.periodic(const Duration(minutes: 30), (_) {
+      syncDeviceInfoToServer(requestLocationPermission: false);
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // App 从后台切回前台时，做一次含 GPS 的完整同步（节流：10 分钟内只跑一次）
+    if (state == AppLifecycleState.resumed) {
+      final now = DateTime.now();
+      if (_lastSyncAt != null &&
+          now.difference(_lastSyncAt!) < _minSyncInterval) {
+        return;
+      }
+      _lastSyncAt = now;
+      syncDeviceInfoToServer(requestLocationPermission: true);
+    }
   }
 
   void _initDeviceType() {
@@ -311,6 +330,7 @@ class DeviceInfoProvider with ChangeNotifier {
   @override
   void dispose() {
     _deviceInfoTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 }
