@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'auth_service.dart';
 import 'models/user.dart';
@@ -9,6 +11,18 @@ import 'widgets/avatar_image.dart';
 import 'providers/notification_provider.dart';
 import 'widgets/fade_in_up.dart';
 import 'widgets/moe_toast.dart';
+import 'widgets/moe_loading.dart';
+
+// 筛选类型
+enum _FilterType { all, online, recent }
+
+// 好友分组
+enum _FriendGroup {
+  all,
+  online,
+  recent,
+  favorite,
+}
 
 class FriendsPage extends StatefulWidget {
   const FriendsPage({super.key});
@@ -26,6 +40,11 @@ class _FriendsPageState extends State<FriendsPage> {
   Map<String, bool> _onlineStatus = {};
   Timer? _onlineTimer;
   bool _presenceListening = false;
+  _FilterType _filterType = _FilterType.all;
+  _FriendGroup _currentGroup = _FriendGroup.all;
+  Set<String> _favoriteFriends = {};
+  Map<String, DateTime> _recentInteractions = {};
+  bool _showFab = true;
 
   @override
   void didChangeDependencies() {
@@ -319,40 +338,27 @@ class _FriendsPageState extends State<FriendsPage> {
         ],
       ),
       body: _buildBody(),
+      floatingActionButton: _showFab ? _buildFloatingActionButton() : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+
+  Widget _buildFloatingActionButton() {
+    return FloatingActionButton(
+      onPressed: _showAddFriendDialog,
+      backgroundColor: const Color(0xFF7F7FD5),
+      foregroundColor: Colors.white,
+      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: const Icon(Icons.person_add_rounded, size: 24),
     );
   }
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFF7F7FD5)));
+      return const Center(child: MoeLoading());
     }
     if (_hasError) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline_rounded, size: 60, color: Colors.grey[300]),
-            const SizedBox(height: 16),
-            Text(
-              _errorMessage,
-              style: TextStyle(color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _loadFriends,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7F7FD5),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              ),
-              child: const Text('重试'),
-            ),
-          ],
-        ),
-      );
-    }
-    if (_friends.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -366,12 +372,62 @@ class _FriendsPageState extends State<FriendsPage> {
                   BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10)),
                 ],
               ),
-              child: Icon(Icons.people_outline_rounded, size: 80, color: Colors.grey[300]),
+              child: Icon(Icons.error_outline_rounded, size: 80, color: Colors.grey[300]),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _errorMessage,
+              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _loadFriends,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7F7FD5),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                elevation: 4,
+                shadowColor: const Color(0xFF7F7FD5).withOpacity(0.4),
+              ),
+              child: const Text('重试'),
+            ),
+          ],
+        ),
+      );
+    }
+    if (_friends.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(40),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(color: const Color(0xFF7F7FD5).withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10)),
+                ],
+              ),
+              child: const Icon(Icons.people_outline_rounded, size: 80, color: Colors.white),
             ),
             const SizedBox(height: 24),
             Text(
               '还没有好友，试着通过邮箱添加一个吧',
               style: TextStyle(color: Colors.grey[600], fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '添加好友后，可以实时聊天、互动',
+              style: TextStyle(color: Colors.grey[500], fontSize: 14),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
             ElevatedButton.icon(
@@ -381,18 +437,16 @@ class _FriendsPageState extends State<FriendsPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF7F7FD5),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                elevation: 4,
-                shadowColor: const Color(0xFF7F7FD5).withOpacity(0.4),
+                elevation: 6,
+                shadowColor: const Color(0xFF7F7FD5).withOpacity(0.5),
               ),
             ),
           ],
         ),
       );
     }
-    
-    final friends = _filteredFriends;
     
     return Column(
       children: [
@@ -422,11 +476,15 @@ class _FriendsPageState extends State<FriendsPage> {
               onChanged: (value) {
                 setState(() {
                   _searchKeyword = value;
+                  _showFab = value.isEmpty;
                 });
               },
             ),
           ),
         ),
+        
+        // 分组标签栏
+        _buildGroupTabs(),
         
         Expanded(
           child: RefreshIndicator(
@@ -434,9 +492,9 @@ class _FriendsPageState extends State<FriendsPage> {
             color: const Color(0xFF7F7FD5),
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: friends.length,
+              itemCount: _getFilteredFriends().length,
               itemBuilder: (context, index) {
-                final user = friends[index];
+                final user = _getFilteredFriends()[index];
                 return FadeInUp(
                   delay: Duration(milliseconds: 30 * (index % 8)),
                   child: _buildFriendCard(user),
@@ -449,10 +507,119 @@ class _FriendsPageState extends State<FriendsPage> {
     );
   }
 
+  Widget _buildGroupTabs() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          _buildGroupTab(_FriendGroup.all, '全部', Icons.people_rounded),
+          const SizedBox(width: 10),
+          _buildGroupTab(_FriendGroup.online, '在线', Icons.circle_rounded),
+          const SizedBox(width: 10),
+          _buildGroupTab(_FriendGroup.recent, '最近', Icons.access_time_rounded),
+          const SizedBox(width: 10),
+          _buildGroupTab(_FriendGroup.favorite, '收藏', Icons.star_rounded),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGroupTab(_FriendGroup group, String label, IconData icon) {
+    final isSelected = _currentGroup == group;
+    final onlineCount = _friends.where((f) => _onlineStatus[f.id] ?? false).length;
+    
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          setState(() {
+            _currentGroup = group;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF7F7FD5) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+            border: Border.all(
+              color: isSelected ? const Color(0xFF7F7FD5) : Colors.grey[200]!,
+              width: 1,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18, color: isSelected ? Colors.white : Colors.grey[600]),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? Colors.white : Colors.grey[600],
+                ),
+              ),
+              if (group == _FriendGroup.online && onlineCount > 0) ...[
+                const SizedBox(height: 2),
+                Text(
+                  '$onlineCount',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: isSelected ? Colors.white : Colors.grey[500],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<User> _getFilteredFriends() {
+    var friends = _filteredFriends;
+    
+    switch (_currentGroup) {
+      case _FriendGroup.online:
+        friends = friends.where((f) => _onlineStatus[f.id] ?? false).toList();
+        break;
+      case _FriendGroup.recent:
+        friends.sort((a, b) {
+          final aTime = _recentInteractions[a.id] ?? DateTime(0);
+          final bTime = _recentInteractions[b.id] ?? DateTime(0);
+          return bTime.compareTo(aTime);
+        });
+        break;
+      case _FriendGroup.favorite:
+        friends = friends.where((f) => _favoriteFriends.contains(f.id)).toList();
+        break;
+      case _FriendGroup.all:
+      default:
+        friends.sort((a, b) {
+          final aOnline = (_onlineStatus[a.id] ?? false) ? 1 : 0;
+          final bOnline = (_onlineStatus[b.id] ?? false) ? 1 : 0;
+          if (aOnline != bOnline) return bOnline.compareTo(aOnline);
+          return a.username.compareTo(b.username);
+        });
+        break;
+    }
+    
+    return friends;
+  }
+
   Widget _buildFriendCard(User user) {
     final isOnline = _onlineStatus[user.id] ?? false;
     final dmUnread =
         context.watch<NotificationProvider>().unreadDmBySender[user.id] ?? 0;
+    final isFavorite = _favoriteFriends.contains(user.id);
         
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -461,17 +628,22 @@ class _FriendsPageState extends State<FriendsPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
-            blurRadius: 10,
+            color: Colors.grey.withOpacity(0.08),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
+        border: Border.all(
+          color: isOnline ? const Color(0xFF4CAF50).withOpacity(0.3) : Colors.transparent,
+          width: 1,
+        ),
       ),
       child: Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           onTap: () {
+            _updateRecentInteraction(user.id);
             Navigator.pushNamed(
               context,
               '/user-profile',
@@ -493,10 +665,22 @@ class _FriendsPageState extends State<FriendsPage> {
                   children: [
                     Hero(
                       tag: 'friend_${user.id}',
-                      child: NetworkAvatarImage(
-                        imageUrl: user.avatar,
-                        radius: 28,
-                        placeholderIcon: Icons.person,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(28),
+                          boxShadow: [
+                            BoxShadow(
+                              color: isOnline ? const Color(0xFF4CAF50).withOpacity(0.3) : Colors.grey.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: NetworkAvatarImage(
+                          imageUrl: user.avatar,
+                          radius: 28,
+                          placeholderIcon: Icons.person,
+                        ),
                       ),
                     ),
                     if (isOnline)
@@ -504,12 +688,19 @@ class _FriendsPageState extends State<FriendsPage> {
                         right: 0,
                         bottom: 0,
                         child: Container(
-                          width: 14,
-                          height: 14,
+                          width: 16,
+                          height: 16,
                           decoration: BoxDecoration(
                             color: const Color(0xFF4CAF50),
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF4CAF50).withOpacity(0.5),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -522,13 +713,34 @@ class _FriendsPageState extends State<FriendsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        user.username,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Color(0xFF333333),
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            user.username,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Color(0xFF333333),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (isOnline)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF4CAF50).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Text(
+                                '在线',
+                                style: TextStyle(
+                                  color: Color(0xFF4CAF50),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -551,10 +763,17 @@ class _FriendsPageState extends State<FriendsPage> {
                     if (dmUnread > 0)
                       Container(
                         margin: const EdgeInsets.only(right: 12),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFF6B6B),
                           borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFF6B6B).withOpacity(0.3),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
                         ),
                         child: Text(
                           dmUnread > 99 ? '99+' : dmUnread.toString(),
@@ -566,15 +785,56 @@ class _FriendsPageState extends State<FriendsPage> {
                         ),
                       ),
                     
+                    // 收藏按钮
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        setState(() {
+                          if (isFavorite) {
+                            _favoriteFriends.remove(user.id);
+                          } else {
+                            _favoriteFriends.add(user.id);
+                          }
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isFavorite ? const Color(0xFFFFD700).withOpacity(0.1) : Colors.grey[100],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          isFavorite ? Icons.star_rounded : Icons.star_border_rounded,
+                          color: isFavorite ? const Color(0xFFFFD700) : Colors.grey[400],
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 12),
+                    
+                    // 聊天按钮
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFF7F7FD5).withOpacity(0.1),
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+                        ),
                         borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF7F7FD5).withOpacity(0.3),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.chat_bubble_outline_rounded,
-                            color: Color(0xFF7F7FD5), size: 20),
+                            color: Colors.white, size: 20),
                         onPressed: () {
+                          _updateRecentInteraction(user.id);
                           Navigator.pushNamed(
                             context,
                             '/direct-chat',
@@ -589,15 +849,6 @@ class _FriendsPageState extends State<FriendsPage> {
                         padding: EdgeInsets.zero,
                       ),
                     ),
-                    
-                    const SizedBox(width: 8),
-                    
-                    IconButton(
-                      icon: Icon(Icons.more_vert_rounded, color: Colors.grey[400]),
-                      onPressed: () => _showFriendActions(user),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
                   ],
                 ),
               ],
@@ -606,6 +857,12 @@ class _FriendsPageState extends State<FriendsPage> {
         ),
       ),
     );
+  }
+
+  void _updateRecentInteraction(String userId) {
+    setState(() {
+      _recentInteractions[userId] = DateTime.now();
+    });
   }
 
   void _showFriendActions(User user) {
