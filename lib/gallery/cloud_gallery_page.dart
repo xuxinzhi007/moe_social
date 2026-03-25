@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 import '../services/api_service.dart';
 import '../auth_service.dart';
 import '../utils/error_handler.dart';
@@ -24,15 +25,15 @@ class CloudGalleryPage extends StatefulWidget {
 
 class _CloudGalleryPageState extends State<CloudGalleryPage> {
   List<dynamic> _images = [];
-  bool _isFetching = false; // 列表加载中（分页）
-  bool _isMutating = false; // 上传/删除等操作中
+  bool _isFetching = false;
+  bool _isMutating = false;
   int _currentPage = 1;
-  int _pageSize = 10;
+  int _pageSize = 15;
   int _total = 0;
   bool _hasMore = true;
   final ImagePicker _picker = ImagePicker();
   final ScrollController _scrollController = ScrollController();
-  final Set<String> _seenKeys = <String>{}; // 用于去重，避免插入/分页导致重复
+  final Set<String> _seenKeys = <String>{};
 
   int? _maxBytes;
   int? _usedBytes;
@@ -46,7 +47,6 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
     _scrollController.addListener(() {
       if (!_scrollController.hasClients) return;
       final pos = _scrollController.position;
-      // 接近底部自动加载下一页
       if (pos.pixels >= pos.maxScrollExtent - 240) {
         _loadImages();
       }
@@ -86,9 +86,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
           _maxBytes = max is num ? max.toInt() : int.tryParse('$max');
         });
       }
-    } catch (_) {
-      // ignore quota errors silently
-    }
+    } catch (_) {}
   }
   
   Future<void> _loadImages({bool force = false}) async {
@@ -146,7 +144,6 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
     await _loadQuota();
     await _loadImages(force: true);
 
-    // 体验优化：如果删太多导致列表很空，自动补齐到至少一页
     while (mounted && _hasMore && _images.length < _pageSize && !_isFetching) {
       await _loadImages(force: true);
     }
@@ -186,16 +183,22 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('批量删除'),
-        content: Text('确定要删除已选择的 ${_selected.length} 张图片吗？'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('删除确认', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Text('确定要删除选中的 ${_selected.length} 张图片吗？此操作无法恢复。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: const Text('取消', style: TextStyle(color: Colors.grey)),
           ),
-          TextButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('删除', style: TextStyle(color: Colors.red)),
+            child: const Text('删除'),
           ),
         ],
       ),
@@ -214,10 +217,10 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
 
       await _refreshAll(exitSelect: true);
       if (!mounted) return;
-      ErrorHandler.showSuccess(context, '已删除 ${indices.length} 张');
+      ErrorHandler.showSuccess(context, '已成功删除 ${_selected.length} 张图片');
     } catch (e) {
       if (!mounted) return;
-      ErrorHandler.showError(context, '批量删除失败: $e');
+      ErrorHandler.showError(context, '删除失败: $e');
     } finally {
       if (mounted) setState(() => _isMutating = false);
     }
@@ -226,7 +229,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
   Future<void> _bulkDownloadSelected() async {
     if (_selected.isEmpty) return;
     if (kIsWeb) {
-      ErrorHandler.showError(context, 'Web 暂不支持下载，请用手机端');
+      ErrorHandler.showError(context, 'Web 暂不支持下载，请使用手机端');
       return;
     }
 
@@ -257,8 +260,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
       }
 
       if (!mounted) return;
-      ErrorHandler.showSuccess(context, '已下载 ${indices.length} 张（保存在应用目录）');
-      // 打开最后一张，方便用户“保存到相册/分享”
+      ErrorHandler.showSuccess(context, '已下载 ${_selected.length} 张图片到本地');
       if (lastPath != null) {
         await OpenFilex.open(lastPath);
       }
@@ -273,7 +275,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
 
   Future<void> _pickAndUpload() async {
     if (kIsWeb) {
-      ErrorHandler.showError(context, 'Web 暂不支持本地上传，请用手机端');
+      ErrorHandler.showError(context, 'Web 暂不支持本地上传，请使用手机端');
       return;
     }
     final userId = AuthService.currentUser;
@@ -284,23 +286,46 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
 
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('从相册选择'),
-                onTap: () => Navigator.pop(context, ImageSource.gallery),
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_camera_outlined),
-                title: const Text('拍照上传'),
-                onTap: () => Navigator.pop(context, ImageSource.camera),
-              ),
-              const SizedBox(height: 8),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), shape: BoxShape.circle),
+                    child: const Icon(Icons.photo_library_outlined, color: Colors.blue),
+                  ),
+                  title: const Text('从相册选择', style: TextStyle(fontWeight: FontWeight.w500)),
+                  onTap: () => Navigator.pop(context, ImageSource.gallery),
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.purple.withOpacity(0.1), shape: BoxShape.circle),
+                    child: const Icon(Icons.camera_alt_outlined, color: Colors.purple),
+                  ),
+                  title: const Text('拍照上传', style: TextStyle(fontWeight: FontWeight.w500)),
+                  onTap: () => Navigator.pop(context, ImageSource.camera),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -310,8 +335,6 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
     try {
       final picked = await _picker.pickImage(
         source: source,
-        // 拍照图片往往很大，cpolar/移动网络容易在上传过程中断开（Broken pipe）。
-        // 限制尺寸 + 压缩质量可以显著提高上传成功率。
         maxWidth: 1600,
         maxHeight: 1600,
         imageQuality: source == ImageSource.camera ? 80 : 88,
@@ -324,18 +347,15 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
 
       final imageInfo = await ApiService.uploadImageInfo(File(picked.path));
 
-      // 上传后“插入顶部”，避免整页刷新导致慢/闪
       if (!mounted) return;
       final key = imageInfo['filename']?.toString() ?? imageInfo['id']?.toString() ?? '';
       setState(() {
         if (key.isEmpty || _seenKeys.add(key)) {
           _images.insert(0, imageInfo);
           _total = (_total <= 0) ? _images.length : _total + 1;
-          // 列表变长后通常还可以继续分页
           _hasMore = _images.length < _total;
         }
       });
-      // 容量统计可以异步刷新，不阻塞 UI
       _loadQuota();
       ErrorHandler.showSuccess(context, '上传成功');
     } catch (e) {
@@ -348,122 +368,220 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
       }
     }
   }
+
+  Widget _buildQuotaCard() {
+    final maxBytes = _maxBytes ?? 0;
+    final usedBytes = _usedBytes ?? 0;
+    if (widget.isSelectMode || maxBytes <= 0) return const SizedBox.shrink();
+    
+    final progress = (usedBytes / maxBytes).clamp(0.0, 1.0);
+    final isWarning = progress > 0.85;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: (isWarning ? Colors.red : Colors.blue).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.cloud_done_outlined,
+                  size: 20,
+                  color: isWarning ? Colors.red : Colors.blue,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '云端存储空间',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '已用 ${_formatBytes(usedBytes)} / 共 ${_formatBytes(maxBytes)}',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                '${(progress * 100).toInt()}%',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isWarning ? Colors.red : Colors.blue,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: Colors.grey[200],
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isWarning ? Colors.redAccent : Colors.blueAccent,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.photo_library_outlined, size: 80, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          Text('图库空空如也', style: TextStyle(fontSize: 16, color: Colors.grey[500])),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.cloud_upload_outlined),
+            label: const Text('上传第一张图片'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            ),
+            onPressed: _pickAndUpload,
+          ),
+        ],
+      ),
+    );
+  }
   
   @override
   Widget build(BuildContext context) {
-    final maxBytes = _maxBytes ?? 0;
-    final usedBytes = _usedBytes ?? 0;
-    final showQuota = !widget.isSelectMode && maxBytes > 0;
-    final progress = maxBytes > 0 ? (usedBytes / maxBytes).clamp(0.0, 1.0) : 0.0;
-
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA), // Moe 风格背景底色
       appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
         title: Text(
           widget.isSelectMode
               ? '选择图片'
-              : (_selectMode ? '已选择 ${_selected.length}' : '云端图库'),
+              : (_selectMode ? '已选 ${_selected.length} 项' : '我的云图库'),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         actions: [
           if (!widget.isSelectMode && _selectMode) ...[
             IconButton(
-              icon: const Icon(Icons.download_outlined),
+              icon: const Icon(Icons.download_rounded, color: Colors.blueAccent),
               onPressed: _busy ? null : _bulkDownloadSelected,
               tooltip: '批量下载',
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              icon: const Icon(Icons.delete_rounded, color: Colors.redAccent),
               onPressed: _busy ? null : _bulkDeleteSelected,
               tooltip: '批量删除',
             ),
             IconButton(
-              icon: const Icon(Icons.close),
+              icon: const Icon(Icons.close_rounded),
               onPressed: _busy ? null : _exitSelectMode,
-              tooltip: '退出多选',
             ),
           ],
-          if (!widget.isSelectMode)
+          if (!widget.isSelectMode && !_selectMode)
             IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () {
-                _refreshAll(exitSelect: false);
-              },
-            ),
-          if (!widget.isSelectMode)
-            IconButton(
-              icon: const Icon(Icons.cloud_upload_outlined),
-              onPressed: (_busy || _selectMode) ? null : _pickAndUpload,
-              tooltip: '上传图片',
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: () => _refreshAll(exitSelect: false),
             ),
         ],
       ),
-      floatingActionButton: widget.isSelectMode
+      floatingActionButton: widget.isSelectMode || _selectMode
           ? null
-          : FloatingActionButton(
-              onPressed: (_busy || _selectMode) ? null : _pickAndUpload,
-              child: const Icon(Icons.add_rounded),
+          : FloatingActionButton.extended(
+              onPressed: _busy ? null : _pickAndUpload,
+              icon: const Icon(Icons.add_a_photo_rounded, color: Colors.white),
+              label: const Text('上传图片', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              backgroundColor: const Color(0xFF7F7FD5), // Moe 主题色
+              elevation: 4,
             ),
       body: Column(
         children: [
-          if (showQuota)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.cloud_outlined, size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '已用 ${_formatBytes(usedBytes)} / ${_formatBytes(maxBytes)}（剩余 ${_formatBytes((maxBytes - usedBytes).clamp(0, maxBytes))}）',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  LinearProgressIndicator(value: progress),
-                ],
-              ),
-            ),
+          _buildQuotaCard(),
           Expanded(
             child: _isFetching && _images.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : GridView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(8),
+                ? GridView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
                       crossAxisSpacing: 8,
                       mainAxisSpacing: 8,
                     ),
-                    itemCount: _images.length + (_hasMore ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index == _images.length) {
-                        // 触底占位：自动触发下一页，同时保留点击兜底
-                        if (!_isFetching) {
-                          Future.microtask(() => _loadImages());
-                        }
-                        return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: _isFetching
-                                ? const CircularProgressIndicator()
-                                : const Text('加载更多'),
-                          ),
-                        );
-                      }
+                    itemCount: 15,
+                    itemBuilder: (_, __) => Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  )
+                : _images.isEmpty
+                    ? _buildEmptyState()
+                    : GridView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                        ),
+                        itemCount: _images.length + (_hasMore ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == _images.length) {
+                            if (!_isFetching) {
+                              Future.microtask(() => _loadImages());
+                            }
+                            return Center(
+                              child: _isFetching
+                                  ? const SizedBox(
+                                      width: 24, height: 24,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const SizedBox(),
+                            );
+                          }
 
-                      final image = _images[index];
-                      final imageUrl = image['url'] as String;
-                      final heroTag = 'cloud_image_$index';
-                      final isSelected = _selected.contains(index);
+                          final image = _images[index];
+                          final imageUrl = image['url'] as String;
+                          final heroTag = 'cloud_image_$index';
+                          final isSelected = _selected.contains(index);
 
-                      return Stack(
-                        children: [
-                          GestureDetector(
+                          return GestureDetector(
                             onLongPress: widget.isSelectMode
                                 ? null
                                 : () => _enterSelectMode(initialIndex: index),
@@ -487,75 +605,76 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                                 ),
                               );
                             },
-                            child: Hero(
-                              tag: heroTag,
-                              child: CachedNetworkImage(
-                                imageUrl: imageUrl,
-                                fit: BoxFit.cover,
-                                memCacheWidth: 420, // 缩略图解码更快、占用更小
-                                placeholder: (context, _) {
-                                  return Container(
-                                    color: Colors.grey[200],
-                                    child: const Center(
-                                      child: SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Hero(
+                                  tag: heroTag,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: CachedNetworkImage(
+                                      imageUrl: imageUrl,
+                                      fit: BoxFit.cover,
+                                      memCacheWidth: 400,
+                                      placeholder: (context, _) => Shimmer.fromColors(
+                                        baseColor: Colors.grey[200]!,
+                                        highlightColor: Colors.grey[100]!,
+                                        child: Container(color: Colors.white),
+                                      ),
+                                      errorWidget: (context, _, __) => Container(
+                                        color: Colors.grey[100],
+                                        child: const Icon(Icons.broken_image_rounded, color: Colors.grey),
                                       ),
                                     ),
-                                  );
-                                },
-                                errorWidget: (context, _, __) {
-                                  return Container(
-                                    color: Colors.grey[200],
-                                    child: const Center(
-                                      child: Icon(Icons.broken_image_outlined),
+                                  ),
+                                ),
+                                // 选中状态蒙层
+                                if (isSelected)
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.4),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.blueAccent, width: 3),
                                     ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                          if (!widget.isSelectMode && _selectMode)
-                            Positioned(
-                              top: 6,
-                              left: 6,
-                              child: InkWell(
-                                onTap: () => _toggleSelected(index),
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.35),
-                                    borderRadius: BorderRadius.circular(14),
                                   ),
-                                  child: Icon(
-                                    isSelected
-                                        ? Icons.check_circle
-                                        : Icons.radio_button_unchecked,
-                                    color: isSelected ? Colors.lightBlueAccent : Colors.white,
-                                    size: 22,
+                                if (!widget.isSelectMode && _selectMode)
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: Icon(
+                                      isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                                      color: isSelected ? Colors.blueAccent : Colors.white.withOpacity(0.8),
+                                      size: 24,
+                                    ),
                                   ),
-                                ),
-                              ),
+                                if (widget.isSelectMode)
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black45,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(Icons.check, color: Colors.white, size: 14),
+                                    ),
+                                  ),
+                              ],
                             ),
-                          // 不再展示“单个删除按钮”：统一用长按多选批量删
-                          if (widget.isSelectMode)
-                            Positioned(
-                              top: 4,
-                              right: 4,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withOpacity(0.8),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(Icons.check, color: Colors.white, size: 16),
-                              ),
-                            ),
-                        ],
-                      );
-                    },
-                  ),
+                          );
+                        },
+                      ),
           ),
         ],
       ),

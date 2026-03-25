@@ -32,6 +32,11 @@ class ChatPushService {
   static Timer? _heartbeatTimer;
   static bool _connecting = false;
 
+  // 指数退避：每次断线后延迟翻倍，上限 30 秒
+  static int _reconnectAttempts = 0;
+  static const int _maxReconnectDelay = 30;
+  static const int _baseReconnectDelay = 3;
+
   static bool get isConnected => _channel != null;
 
   static WebSocketChannel? get channel => _channel;
@@ -50,6 +55,7 @@ class ChatPushService {
     _channel?.sink.close();
     _channel = null;
     _connecting = false;
+    _reconnectAttempts = 0;
     // 不清空 _pendingBySender：避免 stop/restart 导致未消费消息丢失
   }
 
@@ -142,6 +148,8 @@ class ChatPushService {
         },
         cancelOnError: true,
       );
+      // 连接成功，重置退避计数
+      _reconnectAttempts = 0;
     } catch (_) {
       _handleDisconnected();
     } finally {
@@ -156,8 +164,12 @@ class ChatPushService {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
 
+    // 指数退避：3s → 6s → 12s → 24s → 30s（上限）
     _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(const Duration(seconds: 3), () {
+    final delay = _baseReconnectDelay * (1 << _reconnectAttempts);
+    final clampedDelay = delay.clamp(_baseReconnectDelay, _maxReconnectDelay);
+    _reconnectAttempts++;
+    _reconnectTimer = Timer(Duration(seconds: clampedDelay), () {
       _connect();
     });
   }

@@ -20,6 +20,11 @@ class PresenceService {
   static Timer? _heartbeatTimer;
   static DateTime? _lastMessageAt;
 
+  // 指数退避：每次断线后延迟翻倍，上限 30 秒
+  static int _reconnectAttempts = 0;
+  static const int _maxReconnectDelay = 30;
+  static const int _baseReconnectDelay = 3;
+
   static bool get isConnected => _channel != null;
 
   static void start() {
@@ -36,6 +41,7 @@ class PresenceService {
     _channel?.sink.close();
     _channel = null;
     _connecting = false;
+    _reconnectAttempts = 0;
   }
 
   static String? _rawToken() {
@@ -111,6 +117,8 @@ class PresenceService {
         onDone: _handleDisconnected,
         cancelOnError: true,
       );
+      // 连接成功，重置退避计数
+      _reconnectAttempts = 0;
     } catch (_) {
       _handleDisconnected();
     } finally {
@@ -130,7 +138,11 @@ class PresenceService {
 
   static void _scheduleReconnect() {
     _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(const Duration(seconds: 3), () {
+    // 指数退避：3s → 6s → 12s → 24s → 30s（上限）
+    final delay = _baseReconnectDelay * (1 << _reconnectAttempts);
+    final clampedDelay = delay.clamp(_baseReconnectDelay, _maxReconnectDelay);
+    _reconnectAttempts++;
+    _reconnectTimer = Timer(Duration(seconds: clampedDelay), () {
       _connect();
     });
   }
