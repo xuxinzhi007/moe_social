@@ -171,17 +171,34 @@ func (l *ChatWsLogic) handleChatMessage(userID string, msg map[string]interface{
 		return
 	}
 
+	// 支持 both "target_id" and "to" fields
 	targetID, ok := msg["target_id"].(string)
 	if !ok {
-		l.Logger.Errorf("Invalid target ID")
-		return
+		// 尝试从 "to" 字段获取
+		targetID, ok = msg["to"].(string)
+		if !ok {
+			l.Logger.Errorf("Invalid target ID: neither 'target_id' nor 'to' field found")
+			return
+		}
+	}
+
+	// 尝试获取发送者信息
+	senderName := "用户"
+	senderAvatar := ""
+	if name, ok := msg["sender_name"].(string); ok {
+		senderName = name
+	}
+	if avatar, ok := msg["sender_avatar"].(string); ok {
+		senderAvatar = avatar
 	}
 
 	// 创建聊天消息
-	chatMsg := ChatMessage{
-		From:    userID,
-		Content: content,
-		Time:    time.Now().Format(time.RFC3339),
+	chatMsg := map[string]interface{}{
+		"from":          userID,
+		"content":       content,
+		"time":          time.Now().Format(time.RFC3339),
+		"sender_name":   senderName,
+		"sender_avatar": senderAvatar,
 	}
 
 	// 发送消息给目标用户
