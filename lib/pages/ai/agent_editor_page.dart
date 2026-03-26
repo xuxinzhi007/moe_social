@@ -21,7 +21,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   late TextEditingController _nameController;
   late TextEditingController _descController;
   late TextEditingController _promptController;
-  String _modelName = 'qwen2.5:0.5b-instruct';
+  String _modelName = 'llama3:8b'; // 使用更常见的默认模型
   List<String> _models = [];
   bool _isLoadingModels = false;
   bool _isSaving = false;
