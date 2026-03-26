@@ -775,6 +775,34 @@ service Super {
 
 	@handler readAllNotifications
 	post /api/notifications/read-all (ReadAllNotificationsReq) returns (BaseResp)
+
+	// 推送通知相关API
+	@handler sendNotification
+	post /api/notification/send (SendNotificationReq) returns (BaseResp)
+
+	@handler sendBatchNotification
+	post /api/notification/send-batch (SendBatchNotificationReq) returns (BaseResp)
+
+	@handler broadcastNotification
+	post /api/notification/broadcast (BroadcastNotificationReq) returns (BaseResp)
+}
+
+// 推送通知相关结构
+type SendNotificationReq {
+	UserId string      `json:"user_id"`
+	Type   string      `json:"type"`
+	Data   interface{} `json:"data"`
+}
+
+type SendBatchNotificationReq {
+	UserIDs []string    `json:"user_ids"`
+	Type    string      `json:"type"`
+	Data    interface{} `json:"data"`
+}
+
+type BroadcastNotificationReq {
+	Type string      `json:"type"`
+	Data interface{} `json:"data"`
 }
 
 // 虚拟形象相关结构

@@ -170,14 +170,32 @@ goctl api go -api super.api -dir .
 goctl api go -api super.api -dir . -style gozero
 ```
 
-### Windows 环境下的特殊处理
+### Windows 环境下的注意事项
 
-在 Windows 环境下，shell 脚本（.sh 文件）无法直接运行。如果需要生成 API 代码，可以直接使用 goctl 命令，如上面所示。
+1. **环境变量配置**：
+   - 确保 `C:\Users\YourUsername\go\bin` 目录已添加到系统的 PATH 环境变量中
+   - 这样可以在任何目录中直接运行 `goctl` 命令
+   - 配置完成后需要重启终端使环境变量生效
 
-如果项目中提供了 shell 脚本，可以：
-1. 使用 Git Bash 或 WSL (Windows Subsystem for Linux) 运行脚本
-2. 手动执行脚本中的命令
-3. 创建一个批处理文件 (.bat) 来执行相同的操作
+2. **Shell 脚本执行**：
+   - 在 Windows 环境下，`.sh` 脚本无法直接运行
+   - 可以使用 Git Bash 或 WSL (Windows Subsystem for Linux) 运行 shell 脚本
+   - 或者直接执行脚本中的 `goctl` 命令来生成代码，因为 goctl 已经配置好了环境变量
+   - 例如：直接运行 `goctl api go -api super.api -dir ./` 来替代运行 `bash generate_api.sh`
+
+3. **API 定义语法**：
+   - goctl 不支持内嵌的匿名结构体语法
+   - 需要为复杂的响应结构创建单独的命名类型
+   - 例如：使用 `VoiceCallData` 而不是内嵌的 `struct`
+
+4. **路径分隔符**：
+   - Windows 使用 `\` 作为路径分隔符，而 Go 代码中使用 `/`
+   - 在配置文件和代码中使用 `/` 作为路径分隔符
+
+5. **常见问题**：
+   - **goctl 命令无法识别**：检查环境变量配置，确保 `C:\Users\YourUsername\go\bin` 在 PATH 中
+   - **API 语法错误**：避免使用内嵌的匿名结构体，创建单独的命名类型
+   - **权限问题**：确保以管理员身份运行终端（如果需要）
 
 ### 生成的文件结构
 

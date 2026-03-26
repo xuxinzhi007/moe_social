@@ -30,6 +30,11 @@ type BaseResp struct {
 	Success bool   `json:"success"`
 }
 
+type BroadcastNotificationReq struct {
+	Type string      `json:"type"`
+	Data interface{} `json:"data"`
+}
+
 type ChatOnlineBatchReq struct {
 	UserIds string `form:"user_ids"` // 逗号分隔的用户ID列表
 }
@@ -732,6 +737,18 @@ type ResetPasswordReq struct {
 
 type ResetPasswordResp struct {
 	BaseResp
+}
+
+type SendBatchNotificationReq struct {
+	UserIDs []string    `json:"user_ids"`
+	Type    string      `json:"type"`
+	Data    interface{} `json:"data"`
+}
+
+type SendNotificationReq struct {
+	UserId string      `json:"user_id"`
+	Type   string      `json:"type"`
+	Data   interface{} `json:"data"`
 }
 
 type SyncUserVipStatusData struct {

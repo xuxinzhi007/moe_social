@@ -10,6 +10,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../auth_service.dart';
 import 'api_service.dart';
+import 'push_notification_service.dart';
 import 'ws_channel_connector.dart';
 
 class RemoteControlService {
@@ -100,21 +101,38 @@ class RemoteControlService {
       }
       if (rawToken != null && rawToken.isNotEmpty) {
         headers['Authorization'] = 'Bearer $rawToken';
+      } else {
+        // 如果没有token，尝试从AuthService获取
+        rawToken = AuthService.token?.trim();
+        if (rawToken != null && rawToken.isNotEmpty) {
+          headers['Authorization'] = 'Bearer $rawToken';
+        }
       }
+
+      print('WebSocket连接: $uri');
+      print('Authorization: ${headers.containsKey('Authorization') ? '已设置' : '未设置'}');
 
       final channel = connectMoeWebSocket(uri, headers: headers);
       _channel = channel;
       _subscription = channel.stream.listen(
         _handleMessage,
-        onError: (_) {},
+        onError: (error) {
+          print('WebSocket错误: $error');
+          _channel = null;
+          _subscription?.cancel();
+          _subscription = null;
+        },
         onDone: () {
+          print('WebSocket连接关闭');
           _channel = null;
           _subscription?.cancel();
           _subscription = null;
         },
         cancelOnError: true,
       );
-    } catch (_) {}
+    } catch (e) {
+      print('WebSocket连接异常: $e');
+    }
   }
 
   static Future<Map<String, dynamic>> sendCommand({
@@ -203,7 +221,22 @@ class RemoteControlService {
     }
     if (type == 'command') {
       await _handleIncomingCommand(map);
+      return;
     }
+    if (type == 'notification') {
+      // 处理推送通知
+      await _handleNotification(map);
+      return;
+    }
+  }
+
+  static Future<void> _handleNotification(Map<String, dynamic> map) async {
+    // 处理推送通知，调用 PushNotificationService 来处理
+    print('收到推送通知: ${json.encode(map)}');
+    // 提取通知数据
+    final notificationData = map['data'] as Map<String, dynamic>? ?? {};
+    // 调用 PushNotificationService 处理通知
+    PushNotificationService.handleWebSocketNotification(notificationData);
   }
 
   static Future<void> _handleIncomingCommand(Map<String, dynamic> map) async {
