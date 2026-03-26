@@ -4,22 +4,23 @@
 package chat
 
 import (
+	"context"
 	"net/http"
 
 	"backend/api/internal/logic/chat"
 	"backend/api/internal/svc"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 // WebSocket在线状态服务
 func PresenceWsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		l := chat.NewPresenceWsLogic(r.Context(), svcCtx)
-		err := l.PresenceWs()
-		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.Ok(w)
-		}
+		// 创建一个新的上下文，包含 HTTP 请求和响应
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, "http.Request", r)
+		ctx = context.WithValue(ctx, "http.ResponseWriter", &w)
+
+		l := chat.NewPresenceWsLogic(ctx, svcCtx)
+		_ = l.PresenceWs()
+		// WebSocket 连接已经升级，不需要返回响应
 	}
 }

@@ -6,9 +6,8 @@ class PushNotificationService {
 
   static Future<void> initialize(GlobalKey<NavigatorState> key) async {
     navigatorKey = key;
-    print('推送通知服务初始化 - 模拟模式');
-    // 这里不使用Firebase，避免初始化失败导致应用崩溃
-    // 实际使用时，需要在Firebase控制台创建项目并配置
+    print('推送通知服务初始化 - WebSocket模式');
+    // 现在使用WebSocket接收推送通知
   }
 
   static void _handleMessage(Map<String, dynamic> data) {
@@ -34,9 +33,16 @@ class PushNotificationService {
     }
   }
 
+  // 处理来自WebSocket的通知
+  static void handleWebSocketNotification(Map<String, dynamic> data) {
+    print('处理WebSocket推送通知: ${data['type']}');
+    _handleMessage(data);
+  }
+
   static Future<String> getToken() async {
-    print('获取推送令牌 - 模拟模式');
-    return 'mock_token';
+    print('获取推送令牌 - WebSocket模式');
+    // 在WebSocket模式下，我们不需要Firebase token
+    return 'websocket_token';
   }
 
   // 模拟接收到来电通知

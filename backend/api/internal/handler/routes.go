@@ -215,6 +215,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		[]rest.Route{
 			{
+				Method:  http.MethodPost,
+				Path:    "/api/notification/broadcast",
+				Handler: notification.BroadcastNotificationHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/notification/send",
+				Handler: notification.SendNotificationHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/notification/send-batch",
+				Handler: notification.SendBatchNotificationHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodGet,
 				Path:    "/api/notifications",
 				Handler: notification.GetNotificationsHandler(serverCtx),
