@@ -962,6 +962,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                         ),
                         const SizedBox(width: 12),
                         FloatingActionButton(
+                          heroTag: "autoglm_task_button",
                           onPressed: _isProcessing
                               ? (_isStopping ? null : () {
                                   HapticFeedback.lightImpact();

@@ -520,6 +520,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
       floatingActionButton: widget.isSelectMode || _selectMode
           ? null
           : FloatingActionButton.extended(
+              heroTag: "cloud_gallery_upload_button",
               onPressed: _busy ? null : _pickAndUpload,
               icon: const Icon(Icons.add_a_photo_rounded, color: Colors.white),
               label: const Text('上传图片', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

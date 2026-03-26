@@ -225,6 +225,7 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
       elevation: 6,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: const Icon(Icons.add_rounded, size: 24),
+      heroTag: 'agent_list_fab',
     );
   }
 

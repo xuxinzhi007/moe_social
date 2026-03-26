@@ -34,6 +34,7 @@ class ChatPushService {
   static Timer? _heartbeatTimer;
   static bool _connecting = false;
   static GlobalKey<NavigatorState>? _navigatorKey;
+  static BuildContext? _globalContext;
 
   // 指数退避：每次断线后延迟翻倍，上限 30 秒
   static int _reconnectAttempts = 0;
@@ -46,6 +47,10 @@ class ChatPushService {
 
   static void initialize(GlobalKey<NavigatorState> key) {
     _navigatorKey = key;
+  }
+
+  static void setGlobalContext(BuildContext context) {
+    _globalContext = context;
   }
 
   static void start() {
@@ -195,11 +200,15 @@ class ChatPushService {
 
     final from = map['from']?.toString();
     final content = map['content']?.toString();
-    final senderName = map['sender_name']?.toString() ?? '用户';
-    final avatarUrl = map['sender_avatar']?.toString() ?? '';
+    // 尝试从不同的字段名获取发送者信息
+    final senderName = map['sender_name']?.toString() ?? map['senderName']?.toString() ?? '用户';
+    final avatarUrl = map['sender_avatar']?.toString() ?? map['senderAvatar']?.toString() ?? '';
     if (from == null || from.isEmpty || content == null) {
       return;
     }
+
+    // 打印接收到的消息，用于调试
+    print('ChatPushService: Received message from $from: $content, senderName: $senderName, avatarUrl: $avatarUrl');
 
     // Broadcast message to listeners
     _incomingController.add(map);
@@ -213,18 +222,31 @@ class ChatPushService {
     unreadBySender.value = next;
 
     // 显示消息通知弹窗
-    _showMessageNotification(senderName, content, avatarUrl);
+    _showMessageNotification(senderName, content, avatarUrl, from);
   }
 
-  static void _showMessageNotification(String senderName, String message, String avatarUrl) {
-    if (_navigatorKey?.currentContext != null) {
+  static void _showMessageNotification(String senderName, String message, String avatarUrl, String senderId) {
+    // 优先使用全局上下文，因为它在 Overlay 内部
+    if (_globalContext != null) {
+      MessageNotification.show(
+        _globalContext!,
+        senderName,
+        message,
+        avatarUrl,
+        senderId,
+      );
+    } else if (_navigatorKey?.currentContext != null) {
+      // 作为备用方案，尝试使用 navigatorKey 的上下文
       final context = _navigatorKey!.currentContext!;
       MessageNotification.show(
         context,
         senderName,
         message,
         avatarUrl,
+        senderId,
       );
+    } else {
+      print('ChatPushService: No context available to show notification');
     }
   }
 

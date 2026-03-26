@@ -332,6 +332,7 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
               ],
             ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: "memory_manager_add_button",
         onPressed: _addManually,
         icon: const Icon(Icons.add),
         label: const Text('手动添加'),
