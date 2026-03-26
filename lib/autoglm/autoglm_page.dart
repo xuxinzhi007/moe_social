@@ -754,7 +754,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
             delay: const Duration(milliseconds: 150),
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -771,18 +771,20 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.info_outline, color: Color(0xFF7F7FD5)),
+                      const Icon(Icons.info_outline, color: Color(0xFF7F7FD5), size: 16),
                       const SizedBox(width: 8),
-                      const Text('功能介绍', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const Text('功能介绍', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
                     'AutoGLM 助手可以帮助你自动执行各种任务，如打开应用、点击按钮、输入文本等。只需输入你的指令，AI 会自动分析并执行相应的操作。',
-                    style: TextStyle(fontSize: 13, color: Colors.grey[700], height: 1.4),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[700], height: 1.4),
+                    softWrap: true,
                   ),
                 ],
               ),
@@ -834,17 +836,18 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                           ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.event_note_outlined, color: Colors.grey[300], size: 48),
-                                  const SizedBox(height: 16),
+                                  Icon(Icons.event_note_outlined, color: Colors.grey[300], size: 36),
+                                  const SizedBox(height: 12),
                                   const Text(
                                     '暂无执行日志',
-                                    style: TextStyle(color: Colors.grey, fontSize: 14),
+                                    style: TextStyle(color: Colors.grey, fontSize: 13),
                                   ),
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: 6),
                                   Text(
                                     '输入指令开始执行任务',
-                                    style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                                    style: TextStyle(color: Colors.grey[400], fontSize: 11),
                                   ),
                                 ],
                               ),

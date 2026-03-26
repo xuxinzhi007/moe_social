@@ -221,13 +221,25 @@ class _ChatPageState extends State<ChatPage> {
           if (msg is Map && msg['content'] is String) {
             content = msg['content'] as String;
           } else if (data is Map && data['error'] is String) {
-            content = 'Ollama 错误: ${data['error']}';
+            final errorMessage = data['error'] as String;
+            if (errorMessage.contains('model not found')) {
+              content = '模型不存在，请选择一个真实存在的模型。\n\n建议：\n1. 检查Ollama是否已安装该模型\n2. 尝试使用常见模型如 llama3:8b\n3. 确保模型名称拼写正确';
+            } else {
+              content = 'Ollama 错误: $errorMessage';
+            }
           } else {
             content = '响应格式异常（直连 Ollama）';
           }
         } else {
           if (data is Map && data['content'] is String) {
             content = data['content'] as String;
+          } else if (data is Map && data['error'] is String) {
+            final errorMessage = data['error'] as String;
+            if (errorMessage.contains('model not found')) {
+              content = '模型不存在，请选择一个真实存在的模型。\n\n建议：\n1. 检查Ollama是否已安装该模型\n2. 尝试使用常见模型如 llama3:8b\n3. 确保模型名称拼写正确';
+            } else {
+              content = '后端错误: $errorMessage';
+            }
           } else {
             content = '响应格式异常（后端）';
           }

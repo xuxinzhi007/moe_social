@@ -290,77 +290,95 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
     }
     return Column(
       children: [
-        // 搜索栏
+        // 搜索栏和筛选器
         Padding(
-          padding: const EdgeInsets.all(16),
-          child: MoeSearchBar(
-            hintText: '搜索智能体',
-            onSearch: (query) {
-              setState(() {
-                _searchQuery = query;
-                _filterAgents();
-              });
-            },
-            onClear: () {
-              setState(() {
-                _searchQuery = '';
-                _filterAgents();
-              });
-            },
-          ),
-        ),
-        
-        // 分类和排序
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          padding: const EdgeInsets.all(12),
+          child: Column(
             children: [
-              // 分类选择
-              DropdownButton<String>(
-                value: _selectedCategory,
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedCategory = value;
-                      _filterAgents();
-                    });
-                  }
+              // 搜索栏
+              MoeSearchBar(
+                hintText: '搜索智能体',
+                onSearch: (query) {
+                  setState(() {
+                    _searchQuery = query;
+                    _filterAgents();
+                  });
                 },
-                items: _categories.map((category) {
-                  return DropdownMenuItem<String>(
-                    value: category,
-                    child: Text(category),
-                  );
-                }).toList(),
-                style: const TextStyle(color: Color(0xFF333333)),
-                underline: Container(
-                  height: 2,
-                  color: const Color(0xFF7F7FD5),
-                ),
+                onClear: () {
+                  setState(() {
+                    _searchQuery = '';
+                    _filterAgents();
+                  });
+                },
               ),
               
-              // 排序选择
-              DropdownButton<String>(
-                value: _sortBy,
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _sortBy = value;
-                      _filterAgents();
-                    });
-                  }
-                },
-                items: _sortOptions.map((option) {
-                  return DropdownMenuItem<String>(
-                    value: option,
-                    child: Text(option),
-                  );
-                }).toList(),
-                style: const TextStyle(color: Color(0xFF333333)),
-                underline: Container(
-                  height: 2,
-                  color: const Color(0xFF7F7FD5),
+              // 分类和排序（紧凑布局）
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  children: [
+                    // 分类选择
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedCategory,
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _selectedCategory = value;
+                              _filterAgents();
+                            });
+                          }
+                        },
+                        items: _categories.map((category) {
+                          return DropdownMenuItem<String>(
+                            value: category,
+                            child: Text(category, style: const TextStyle(fontSize: 12)),
+                          );
+                        }).toList(),
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                        style: const TextStyle(color: Color(0xFF333333), fontSize: 12),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // 排序选择
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: _sortBy,
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _sortBy = value;
+                              _filterAgents();
+                            });
+                          }
+                        },
+                        items: _sortOptions.map((option) {
+                          return DropdownMenuItem<String>(
+                            value: option,
+                            child: Text(option, style: const TextStyle(fontSize: 12)),
+                          );
+                        }).toList(),
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                        style: const TextStyle(color: Color(0xFF333333), fontSize: 12),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -374,9 +392,9 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.search_off, color: Colors.grey[300], size: 64),
-                      const SizedBox(height: 16),
-                      Text('没有找到匹配的智能体', style: TextStyle(color: Colors.grey[600])),
+                      Icon(Icons.search_off, color: Colors.grey[300], size: 48),
+                      const SizedBox(height: 12),
+                      Text('没有找到匹配的智能体', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
                       const SizedBox(height: 8),
                       TextButton(
                         onPressed: () {
@@ -386,14 +404,14 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                             _filterAgents();
                           });
                         },
-                        child: const Text('清除筛选', style: TextStyle(color: Color(0xFF7F7FD5))),
+                        child: const Text('清除筛选', style: TextStyle(color: Color(0xFF7F7FD5), fontSize: 12)),
                       ),
                     ],
                   ),
                 )
               : ListView.builder(
                   itemCount: _filteredAgents.length,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   itemBuilder: (context, index) {
                     final agent = _filteredAgents[index];
                     final agentColor = _agentColors[agent.id] ?? const Color(0xFF7F7FD5);
@@ -401,15 +419,15 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                     return FadeInUp(
                       delay: Duration(milliseconds: 30 * (index % 8)),
                       child: Container(
-                        margin: const EdgeInsets.only(bottom: 16),
+                        margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.grey.withOpacity(0.08),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                           border: Border.all(
@@ -419,9 +437,9 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                         ),
                         child: Material(
                           color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(16),
                             onTap: () {
                               HapticFeedback.lightImpact();
                               // 更新使用频率
@@ -437,13 +455,13 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                             },
                             onLongPress: () => _showAgentOptions(agent),
                             child: Padding(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(12),
                               child: Row(
                                 children: [
                                   // 智能体头像
                                   Container(
-                                    width: 64,
-                                    height: 64,
+                                    width: 52,
+                                    height: 52,
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
                                         begin: Alignment.topLeft,
@@ -454,7 +472,7 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                                       boxShadow: [
                                         BoxShadow(
                                           color: agentColor.withOpacity(0.3),
-                                          blurRadius: 8,
+                                          blurRadius: 6,
                                           offset: const Offset(0, 2),
                                         ),
                                       ],
@@ -462,31 +480,37 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                                     child: Icon(
                                       Icons.smart_toy_rounded,
                                       color: Colors.white,
-                                      size: 36,
+                                      size: 28,
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
+                                  const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
-                                            Text(
-                                              agent.name,
-                                              style: const TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                                color: Color(0xFF333333),
+                                            Expanded(
+                                              child: Text(
+                                                agent.name,
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF333333),
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
                                             if (usageCount > 0)
                                               Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                margin: const EdgeInsets.only(left: 8),
+                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                                 decoration: BoxDecoration(
                                                   color: Colors.grey[100],
-                                                  borderRadius: BorderRadius.circular(10),
+                                                  borderRadius: BorderRadius.circular(8),
                                                 ),
                                                 child: Text(
                                                   '使用 $usageCount 次',
@@ -503,35 +527,35 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                                           agent.description,
                                           style: TextStyle(
                                             color: Colors.grey[600],
-                                            fontSize: 14,
+                                            fontSize: 12,
                                           ),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                        const SizedBox(height: 8),
+                                        const SizedBox(height: 6),
                                         Row(
                                           children: [
                                             Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                               decoration: BoxDecoration(
                                                 color: agentColor.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(12),
+                                                borderRadius: BorderRadius.circular(8),
                                               ),
                                               child: Text(
                                                 agent.modelName,
                                                 style: TextStyle(
                                                   color: agentColor,
-                                                  fontSize: 11,
+                                                  fontSize: 10,
                                                   fontWeight: FontWeight.w600,
                                                 ),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
+                                            const SizedBox(width: 6),
                                             Expanded(
                                               child: Text(
-                                                '创建于 ${agent.createdAt.year}-${agent.createdAt.month}-${agent.createdAt.day}',
+                                                '${agent.createdAt.year}-${agent.createdAt.month}-${agent.createdAt.day}',
                                                 style: TextStyle(
                                                   color: Colors.grey[400],
                                                   fontSize: 10,
@@ -545,7 +569,8 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                                       ],
                                     ),
                                   ),
-                                  const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 16),
+                                  const SizedBox(width: 8),
+                                  const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 14),
                                 ],
                               ),
                             ),
@@ -612,7 +637,7 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
     
     return ListView.builder(
       itemCount: modelCategories.length,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       itemBuilder: (context, categoryIndex) {
         final category = modelCategories.keys.elementAt(categoryIndex);
         final categoryModels = modelCategories[category]!;
@@ -624,31 +649,31 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
             children: [
               // 分类标题
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Row(
                   children: [
                     Container(
                       width: 4,
-                      height: 20,
+                      height: 16,
                       decoration: BoxDecoration(
                         color: const Color(0xFF86A8E7),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     Text(
                       category,
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF333333),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     Text(
                       '(${categoryModels.length})',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 12,
                         color: Colors.grey[500],
                       ),
                     ),
@@ -664,15 +689,15 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                   final cardColor = alreadyAdded ? const Color(0xFF4CAF50) : const Color(0xFF86A8E7);
                   
                   return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
+                    margin: const EdgeInsets.only(bottom: 10),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.grey.withOpacity(0.08),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                       border: Border.all(
@@ -682,137 +707,142 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                     ),
                     child: Material(
                       color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(16),
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(16),
                         onTap: () {
                           HapticFeedback.lightImpact();
                           _createAgentFromModel(modelName);
                         },
                         child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              // 模型图标
-                              Container(
-                                width: 56,
-                                height: 56,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [cardColor, cardColor.withOpacity(0.7)],
-                                  ),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: cardColor.withOpacity(0.3),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  alreadyAdded ? Icons.check_circle_rounded : Icons.memory_rounded,
-                                  color: Colors.white,
-                                  size: 32,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          modelName,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF333333),
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        if (alreadyAdded)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFF4CAF50).withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(10),
-                                            ),
-                                            child: const Text(
-                                              '已添加',
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                color: Color(0xFF4CAF50),
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      _getModelDescription(modelName),
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 12,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: cardColor.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          child: Text(
-                                            alreadyAdded ? '已创建智能体' : 'Ollama 模型',
-                                            style: TextStyle(
-                                              color: cardColor,
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[100],
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          child: Text(
-                                            _getModelSize(modelName),
-                                            style: const TextStyle(
-                                              color: Colors.grey,
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(
-                                alreadyAdded
-                                    ? Icons.chat_bubble_outline_rounded
-                                    : Icons.add_circle_outline_rounded,
-                                color: cardColor,
-                                size: 24,
-                              ),
-                            ],
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      // 模型图标
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [cardColor, cardColor.withOpacity(0.7)],
                           ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: cardColor.withOpacity(0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
+                        child: Icon(
+                          alreadyAdded ? Icons.check_circle_rounded : Icons.memory_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    modelName,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF333333),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (alreadyAdded)
+                                  Container(
+                                    margin: const EdgeInsets.only(left: 8),
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF4CAF50).withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text(
+                                      '已添加',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Color(0xFF4CAF50),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _getModelDescription(modelName),
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 11,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: cardColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    alreadyAdded ? '已创建' : 'Ollama',
+                                    style: TextStyle(
+                                      color: cardColor,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[100],
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    _getModelSize(modelName),
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        alreadyAdded
+                            ? Icons.chat_bubble_outline_rounded
+                            : Icons.add_circle_outline_rounded,
+                        color: cardColor,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ),
                       ),
                     ),
                   );
