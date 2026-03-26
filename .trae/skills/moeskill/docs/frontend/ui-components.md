@@ -6,7 +6,81 @@
 
 ## 核心组件
 
-### 1. 按钮组件
+### 1. 基础布局组件
+
+#### Container - 万能容器
+```dart
+Container(
+  width: 200,
+  height: 100,
+  padding: EdgeInsets.all(16),
+  margin: EdgeInsets.symmetric(horizontal: 20),
+  decoration: BoxDecoration(
+    color: Colors.blue,
+    borderRadius: BorderRadius.circular(12),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black26,
+        blurRadius: 10,
+        offset: Offset(0, 5),
+      ),
+    ],
+  ),
+  child: Text(
+    'Container示例',
+    style: TextStyle(color: Colors.white, fontSize: 16),
+  ),
+)
+```
+
+#### Row & Column - 线性布局
+```dart
+// Row 水平布局
+Row(
+  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  crossAxisAlignment: CrossAxisAlignment.center,
+  children: [
+    Icon(Icons.home, size: 30),
+    Icon(Icons.search, size: 30),
+    Icon(Icons.person, size: 30),
+  ],
+)
+
+// Column 垂直布局
+Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    Text('用户名', style: TextStyle(fontWeight: FontWeight.bold)),
+    SizedBox(height: 8),
+    TextField(
+      decoration: InputDecoration(
+        hintText: '请输入用户名',
+        border: OutlineInputBorder(),
+      ),
+    ),
+  ],
+)
+```
+
+#### Stack - 堆叠布局
+```dart
+Stack(
+  alignment: Alignment.center,
+  children: [
+    Container(width: 200, height: 200, color: Colors.blue),
+    Container(width: 150, height: 150, color: Colors.red),
+    Container(width: 100, height: 100, color: Colors.green),
+    Positioned(
+      bottom: 10,
+      right: 10,
+      child: Icon(Icons.add, color: Colors.white),
+    ),
+  ],
+)
+```
+
+### 2. 按钮组件
 
 #### CustomButton
 
@@ -28,6 +102,23 @@ CustomButton(
 - 支持不同尺寸：小、中、大
 - 内置加载状态和禁用状态
 - 自定义颜色和样式
+
+#### ElevatedButton配置
+```dart
+ElevatedButton(
+  onPressed: () {},
+  child: Text('点击我'),
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Colors.blue,
+    foregroundColor: Colors.white,
+    padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+    elevation: 5,
+  ),
+)
+```
 
 ### 2. 输入组件
 
@@ -68,16 +159,22 @@ CustomTextField(
 
 ```dart
 Card(
+  elevation: 4,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(12),
+  ),
   child: Padding(
     padding: EdgeInsets.all(16),
     child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('卡片标题'),
+        Text('卡片标题', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        SizedBox(height: 8),
         Text('卡片内容'),
       ],
     ),
   ),
-);
+)
 ```
 
 #### 特性
@@ -85,6 +182,87 @@ Card(
 - 圆角边框
 - 可点击效果
 - 自定义颜色和样式
+
+### 4. 滚动与列表组件
+
+#### ListView.builder（长列表优化）
+```dart
+ListView.builder(
+  itemCount: 1000,
+  itemExtent: 80,  // 固定高度，提高性能
+  cacheExtent: 200,  // 预加载范围
+  itemBuilder: (context, index) {
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundImage: NetworkImage('https://example.com/avatar/$index'),
+      ),
+      title: Text('用户 $index'),
+      subtitle: Text('副标题'),
+      trailing: Icon(Icons.arrow_forward_ios),
+      onTap: () {
+        Navigator.pushNamed(context, '/detail', arguments: index);
+      },
+    );
+  },
+)
+```
+
+#### GridView
+```dart
+GridView.builder(
+  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+    crossAxisCount: 2,  // 每行2个
+    crossAxisSpacing: 10,
+    mainAxisSpacing: 10,
+    childAspectRatio: 1.0,  // 宽高比
+  ),
+  itemCount: 20,
+  itemBuilder: (context, index) {
+    return Container(
+      color: Colors.blue,
+      child: Center(child: Text('Item $index')),
+    );
+  },
+)
+```
+
+#### CustomScrollView（复合滚动）
+```dart
+CustomScrollView(
+  slivers: [
+    SliverAppBar(
+      expandedHeight: 200,
+      pinned: true,
+      flexibleSpace: FlexibleSpaceBar(
+        title: Text('标题'),
+        background: Image.network(
+          'https://example.com/header.jpg',
+          fit: BoxFit.cover,
+        ),
+      ),
+    ),
+    SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) => ListTile(title: Text('Item $index')),
+        childCount: 50,
+      ),
+    ),
+  ],
+)
+```
+
+#### SingleChildScrollView（单个子项滚动）
+```dart
+SingleChildScrollView(
+  padding: EdgeInsets.all(16),
+  child: Column(
+    children: [
+      // 大量内容
+      ...List.generate(50, (index) => ListTile(title: Text('Item $index'))),
+    ],
+  ),
+)
+```
 
 ### 4. 头像组件
 

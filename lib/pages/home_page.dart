@@ -12,6 +12,9 @@ import '../utils/error_handler.dart';
 import '../providers/notification_provider.dart';
 import '../widgets/post_card.dart';
 import '../widgets/home_banner.dart';
+import '../widgets/enhanced_home_banner.dart';
+import '../widgets/quick_actions_grid.dart';
+import '../widgets/trending_topics.dart';
 import '../widgets/moe_loading.dart';
 
 class HomePage extends StatefulWidget {
@@ -65,6 +68,69 @@ class _HomePageState extends State<HomePage> {
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  // 获取热门话题（模拟数据，实际应从API获取）
+  List<TopicTag> _getTrendingTopics() {
+    return [
+      TopicTag(
+        id: '1', 
+        name: '心情随笔', 
+        color: const Color(0xFFAB47BC),
+        createdAt: DateTime.now(),
+      ),
+      TopicTag(
+        id: '2', 
+        name: '日常生活', 
+        color: const Color(0xFF42A5F5),
+        createdAt: DateTime.now(),
+      ),
+      TopicTag(
+        id: '3', 
+        name: '美食分享', 
+        color: const Color(0xFFFF7043),
+        createdAt: DateTime.now(),
+      ),
+      TopicTag(
+        id: '4', 
+        name: '旅行日记', 
+        color: const Color(0xFF66BB6A),
+        createdAt: DateTime.now(),
+      ),
+      TopicTag(
+        id: '5', 
+        name: '摄影技巧', 
+        color: const Color(0xFFFFA726),
+        createdAt: DateTime.now(),
+      ),
+      TopicTag(
+        id: '6', 
+        name: '萌宠日常', 
+        color: const Color(0xFFEC407A),
+        createdAt: DateTime.now(),
+      ),
+      TopicTag(
+        id: '7', 
+        name: '游戏攻略', 
+        color: const Color(0xFF7E57C2),
+        createdAt: DateTime.now(),
+      ),
+      TopicTag(
+        id: '8', 
+        name: '音乐推荐', 
+        color: const Color(0xFF26C6DA),
+        createdAt: DateTime.now(),
+      ),
+    ];
+  }
+
+  // 处理话题选择
+  void _onTopicSelected(TopicTag topic) {
+    setState(() {
+      _activeTopic = topic;
+      _mode = _HomeFeedMode.topic;
+    });
+    _fetchPosts();
   }
 
   // 滚动监听器
@@ -271,6 +337,17 @@ class _HomePageState extends State<HomePage> {
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             _buildSliverAppBar(context),
+            // 快捷功能入口
+            const SliverToBoxAdapter(child: QuickActionsGrid()),
+            
+            // 热门话题
+            SliverToBoxAdapter(
+              child: TrendingTopics(
+                topics: _getTrendingTopics(),
+                onTopicTap: (topic) => _onTopicSelected(topic),
+              ),
+            ),
+            
             SliverPersistentHeader(
               pinned: true,
               delegate: _HomeHeaderDelegate(
@@ -349,7 +426,7 @@ class _HomePageState extends State<HomePage> {
   SliverAppBar _buildSliverAppBar(BuildContext context) {
     return SliverAppBar(
       pinned: true,
-      expandedHeight: 280,
+      expandedHeight: 300,
       elevation: 0,
       backgroundColor: Colors.white,
       title: Row(
@@ -410,7 +487,7 @@ class _HomePageState extends State<HomePage> {
       ],
       flexibleSpace: const FlexibleSpaceBar(
         collapseMode: CollapseMode.parallax,
-        background: HomeBanner(),
+        background: EnhancedHomeBanner(),
       ),
     );
   }
