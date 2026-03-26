@@ -1116,6 +1116,42 @@ type GetRtcTokenResp {
 	AppId string `json:"app_id"`
 }
 
+// 语音呼叫相关请求
+type VoiceCallReq {
+	ReceiverId string `json:"receiver_id"`
+}
+
+type VoiceCallData {
+	CallId      string `json:"call_id"`
+	ChannelName string `json:"channel_name"`
+}
+
+type VoiceCallResp {
+	BaseResp
+	Data VoiceCallData `json:"data"`
+}
+
+type VoiceAnswerReq {
+	CallId string `json:"call_id"`
+}
+
+type VoiceAnswerData {
+	ChannelName string `json:"channel_name"`
+}
+
+type VoiceAnswerResp {
+	BaseResp
+	Data VoiceAnswerData `json:"data"`
+}
+
+type VoiceRejectReq {
+	CallId string `json:"call_id"`
+}
+
+type VoiceCancelReq {
+	CallId string `json:"call_id"`
+}
+
 // 语音通话相关API服务
 @server (
 	group: voice
@@ -1124,6 +1160,18 @@ type GetRtcTokenResp {
 service Super {
 	@handler getRtcToken
 	get /api/voice/token (GetRtcTokenReq) returns (GetRtcTokenResp)
+
+	@handler voiceCall
+	post /api/voice/call (VoiceCallReq) returns (VoiceCallResp)
+
+	@handler voiceAnswer
+	post /api/voice/answer (VoiceAnswerReq) returns (VoiceAnswerResp)
+
+	@handler voiceReject
+	post /api/voice/reject (VoiceRejectReq) returns (BaseResp)
+
+	@handler voiceCancel
+	post /api/voice/cancel (VoiceCancelReq) returns (BaseResp)
 }
 
 // 聊天在线状态相关结构

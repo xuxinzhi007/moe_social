@@ -35,6 +35,7 @@ import 'services/remote_control_service.dart';
 import 'services/presence_service.dart';
 import 'services/chat_push_service.dart';
 import 'services/accessibility_overlay_service.dart';
+import 'services/push_notification_service.dart';
 import 'gallery/cloud_gallery_page.dart';
 import 'pages/ai/agent_list_page.dart';
 import 'friends_page.dart';
@@ -82,6 +83,11 @@ void main() async {
 
     await NotificationService.initLocalNotifications();
     await RemoteControlService.init();
+    
+    // 初始化推送通知服务
+    if (!kIsWeb) {
+      await PushNotificationService.initialize(AuthService.navigatorKey);
+    }
 
     // 捕获Flutter框架错误
     FlutterError.onError = (FlutterErrorDetails details) {

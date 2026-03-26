@@ -128,6 +128,18 @@ route {
 
 ### 安装goctl工具
 
+#### Windows
+
+```powershell
+# 安装goctl
+go install github.com/zeromicro/go-zero/tools/goctl@latest
+
+# 验证安装
+goctl --version
+```
+
+#### macOS/Linux
+
 ```bash
 # 安装goctl
 go install github.com/zeromicro/go-zero/tools/goctl@latest
@@ -138,6 +150,18 @@ goctl --version
 
 ### 生成API代码
 
+#### Windows
+
+```powershell
+# 生成API代码
+goctl api go -api super.api -dir .
+
+# 生成带注释的代码
+goctl api go -api super.api -dir . -style gozero
+```
+
+#### macOS/Linux
+
 ```bash
 # 生成API代码
 goctl api go -api super.api -dir .
@@ -145,6 +169,15 @@ goctl api go -api super.api -dir .
 # 生成带注释的代码
 goctl api go -api super.api -dir . -style gozero
 ```
+
+### Windows 环境下的特殊处理
+
+在 Windows 环境下，shell 脚本（.sh 文件）无法直接运行。如果需要生成 API 代码，可以直接使用 goctl 命令，如上面所示。
+
+如果项目中提供了 shell 脚本，可以：
+1. 使用 Git Bash 或 WSL (Windows Subsystem for Linux) 运行脚本
+2. 手动执行脚本中的命令
+3. 创建一个批处理文件 (.bat) 来执行相同的操作
 
 ### 生成的文件结构
 

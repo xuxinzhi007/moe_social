@@ -59,6 +59,45 @@ class ApiService {
     return response;
   }
 
+  // 发起语音呼叫
+  static Future<Map<String, dynamic>> initiateCall(String receiverId) async {
+    final response = await _request(
+      '/api/voice/call',
+      method: 'POST',
+      body: {'receiver_id': receiverId},
+    );
+    return response;
+  }
+
+  // 接听语音呼叫
+  static Future<Map<String, dynamic>> answerCall(String callId) async {
+    final response = await _request(
+      '/api/voice/answer',
+      method: 'POST',
+      body: {'call_id': callId},
+    );
+    return response;
+  }
+
+  // 拒绝语音呼叫
+  static Future<Map<String, dynamic>> rejectCall(String callId) async {
+    final response = await _request(
+      '/api/voice/reject',
+      method: 'POST',
+      body: {'call_id': callId},
+    );
+    return response;
+  }
+
+  // 取消语音呼叫
+  static Future<Map<String, dynamic>> cancelCall() async {
+    final response = await _request(
+      '/api/voice/cancel',
+      method: 'POST',
+    );
+    return response;
+  }
+
   // 环境配置
   // 设置为 true 使用生产环境，false 使用开发环境
   static const bool _isProduction = false; // 修改这里切换环境
