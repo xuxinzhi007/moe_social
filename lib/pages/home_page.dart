@@ -274,8 +274,8 @@ class _HomePageState extends State<HomePage> {
             SliverPersistentHeader(
               pinned: true,
               delegate: _HomeHeaderDelegate(
-                minExtent: _showComposerBar ? 140 : 64,
-                maxExtent: _showComposerBar ? 140 : 64,
+                minExtent: _showComposerBar ? 120 : 64,
+                maxExtent: _showComposerBar ? 120 : 64,
                 child: _buildPinnedHeader(context),
               ),
             ),
@@ -349,7 +349,7 @@ class _HomePageState extends State<HomePage> {
   SliverAppBar _buildSliverAppBar(BuildContext context) {
     return SliverAppBar(
       pinned: true,
-      expandedHeight: 260,
+      expandedHeight: 280,
       elevation: 0,
       backgroundColor: Colors.white,
       title: Row(
@@ -421,10 +421,17 @@ class _HomePageState extends State<HomePage> {
       color: bg,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _buildModeChips(context),
-          const SizedBox(height: 8),
-          if (_showComposerBar) _buildComposerBar(context),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return _buildModeChips(context);
+            },
+          ),
+          if (_showComposerBar) ...[
+            const SizedBox(height: 8),
+            _buildComposerBar(context),
+          ],
         ],
       ),
     );
@@ -432,48 +439,68 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildModeChips(BuildContext context) {
     final mode = _mode;
-    return Row(
-      children: [
-        Expanded(
-          child: _ModeChip(
-            icon: Icons.category_rounded,
-            label: _activeTopic != null ? _activeTopic!.name : '分区',
-            selected: mode == _HomeFeedMode.topic,
-            color: Colors.pinkAccent,
-            onTap: () => _pickTopic(context),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _ModeChip(
-            icon: Icons.whatshot_rounded,
-            label: '热门',
-            selected: mode == _HomeFeedMode.hot,
-            color: Colors.orange,
-            onTap: () => _setMode(_HomeFeedMode.hot),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _ModeChip(
-            icon: Icons.new_releases_rounded,
-            label: '最新',
-            selected: mode == _HomeFeedMode.latest,
-            color: Colors.blueAccent,
-            onTap: () => _setMode(_HomeFeedMode.latest),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _ModeChip(
-            icon: Icons.star_rounded,
-            label: '关注',
-            selected: mode == _HomeFeedMode.following,
-            color: Colors.purpleAccent,
-            onTap: () => _setMode(_HomeFeedMode.following),
-          ),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Row(
+          children: [
+            Expanded(
+              flex: 1,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: _ModeChip(
+                  icon: Icons.category_rounded,
+                  label: _activeTopic != null ? _activeTopic!.name : '分区',
+                  selected: mode == _HomeFeedMode.topic,
+                  color: Colors.pinkAccent,
+                  onTap: () => _pickTopic(context),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 1,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: _ModeChip(
+                  icon: Icons.whatshot_rounded,
+                  label: '热门',
+                  selected: mode == _HomeFeedMode.hot,
+                  color: Colors.orange,
+                  onTap: () => _setMode(_HomeFeedMode.hot),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 1,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: _ModeChip(
+                  icon: Icons.new_releases_rounded,
+                  label: '最新',
+                  selected: mode == _HomeFeedMode.latest,
+                  color: Colors.blueAccent,
+                  onTap: () => _setMode(_HomeFeedMode.latest),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 1,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: _ModeChip(
+                  icon: Icons.star_rounded,
+                  label: '关注',
+                  selected: mode == _HomeFeedMode.following,
+                  color: Colors.purpleAccent,
+                  onTap: () => _setMode(_HomeFeedMode.following),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
