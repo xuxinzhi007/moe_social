@@ -322,6 +322,104 @@ MaterialApp(
 Text(AppLocalizations.of(context)!.hello);
 ```
 
+## 响应式布局
+
+### 使用LayoutBuilder
+
+```dart
+LayoutBuilder(
+  builder: (context, constraints) {
+    final maxWidth = constraints.maxWidth;
+    final maxHeight = constraints.maxHeight;
+    
+    if (maxWidth > 600) {
+      return TabletLayout();
+    } else {
+      return MobileLayout();
+    }
+  },
+)
+```
+
+### 使用MediaQuery
+
+```dart
+final size = MediaQuery.of(context).size;
+final isPortrait = size.height > size.width;
+final padding = MediaQuery.of(context).padding;
+final safeHeight = size.height - padding.top - padding.bottom;
+```
+
+### 使用Expanded和Flexible
+
+```dart
+Row(
+  children: [
+    Expanded(
+      flex: 2,
+      child: Container(color: Colors.red),
+    ),
+    Expanded(
+      flex: 1,
+      child: Container(color: Colors.blue),
+    ),
+  ],
+)
+```
+
+### 处理溢出错误
+
+```dart
+// 使用Wrap自动换行
+Wrap(
+  spacing: 8.0,
+  runSpacing: 8.0,
+  children: chips,
+)
+
+// 使用FittedBox缩放
+FittedBox(
+  fit: BoxFit.scaleDown,
+  child: Text('Long text'),
+)
+
+// 使用SingleChildScrollView滚动
+SingleChildScrollView(
+  child: Column(
+    children: widgets,
+  ),
+)
+```
+
+## 平台适配
+
+### Web平台特殊处理
+
+```dart
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+Widget build(BuildContext context) {
+  if (kIsWeb) {
+    return WebLayout();
+  }
+  return MobileLayout();
+}
+```
+
+### 避免Platform类在Web上的问题
+
+```dart
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
+
+String getPlatform() {
+  if (kIsWeb) {
+    return 'web';
+  }
+  return Platform.operatingSystem;
+}
+```
+
 ## 性能优化
 
 1. **使用const构造器**：对于不变的Widget使用const
@@ -331,6 +429,8 @@ Text(AppLocalizations.of(context)!.hello);
 5. **避免过度重建**：使用const和shouldRebuild
 6. **使用RepaintBoundary**：减少不必要的重绘
 7. **使用Image.cache**：缓存图片
+8. **使用Selector替代Consumer**：减少不必要的重建
+9. **及时释放资源**：在dispose中释放controller、subscription等
 
 ## 调试技巧
 
@@ -342,25 +442,146 @@ Text(AppLocalizations.of(context)!.hello);
 
 ## 常见问题
 
-1. **Widget不显示**
-   - 检查Widget是否正确添加到树中
-   - 检查布局约束
-   - 检查可见性设置
+### 1. Widget不显示
+- 检查Widget是否正确添加到树中
+- 检查布局约束
+- 检查可见性设置
 
-2. **状态不更新**
-   - 确保使用setState()
-   - 检查Provider是否正确配置
-   - 检查状态管理逻辑
+### 2. 状态不更新
+- 确保使用setState()
+- 检查Provider是否正确配置
+- 检查状态管理逻辑
 
-3. **网络请求失败**
-   - 检查网络连接
-   - 检查API地址
-   - 检查权限配置
+### 3. 网络请求失败
+- 检查网络连接
+- 检查API地址
+- 检查权限配置
 
-4. **性能问题**
-   - 使用Flutter DevTools分析性能
-   - 优化Widget重建
-   - 减少不必要的计算
+### 4. 性能问题
+- 使用Flutter DevTools分析性能
+- 优化Widget重建
+- 减少不必要的计算
+
+### 5. RenderFlex Overflow（溢出错误）
+```
+A RenderFlex overflowed by X pixels on the bottom/right.
+```
+**解决方案**：
+- 使用Expanded/Flexible分配空间
+- 使用LayoutBuilder获取约束
+- 使用Wrap替代Row/Column
+- 使用SingleChildScrollView添加滚动
+
+### 6. SliverGeometry错误
+```
+SliverGeometry is not valid: The "layoutExtent" exceeds the "paintExtent".
+```
+**解决方案**：
+- 确保SliverPersistentHeader的minExtent/maxExtent足够大
+- 检查子Widget的实际高度
+
+### 7. Hero动画错误
+```
+There are multiple heroes that share the same tag within a subtree.
+```
+**解决方案**：
+- 为每个Hero设置唯一的tag
+- 多个FAB需要设置不同的heroTag
+
+## 最佳实践
+
+### 1. 代码组织
+```
+lib/
+├── main.dart              # 应用入口
+├── pages/                 # 页面
+│   ├── home_page.dart
+│   └── ...
+├── widgets/               # 可复用组件
+│   ├── custom_button.dart
+│   └── ...
+├── services/              # 服务层
+│   ├── api_service.dart
+│   └── ...
+├── providers/             # 状态管理
+│   ├── user_provider.dart
+│   └── ...
+├── models/                # 数据模型
+│   ├── user.dart
+│   └── ...
+└── utils/                 # 工具函数
+    ├── constants.dart
+    └── helpers.dart
+```
+
+### 2. 命名规范
+- 文件命名：snake_case（home_page.dart）
+- 类命名：PascalCase（HomePage）
+- 变量命名：camelCase（userName）
+- 常量命名：UPPER_SNAKE_CASE（API_BASE_URL）
+
+### 3. 注释规范
+```dart
+/// 用户服务类，处理用户相关的业务逻辑
+class UserService {
+  /// 获取用户信息
+  /// 
+  /// [userId] 用户ID
+  /// 
+  /// 返回用户信息对象，如果用户不存在返回null
+  Future<User?> getUser(String userId) async {
+    // 实现代码
+  }
+}
+```
+
+### 4. 错误处理
+```dart
+try {
+  final result = await apiService.fetchData();
+  return result;
+} on ApiException catch (e) {
+  // 处理API错误
+  print('API错误: ${e.message}');
+  rethrow;
+} on NetworkException catch (e) {
+  // 处理网络错误
+  print('网络错误: ${e.message}');
+  return null;
+} catch (e) {
+  // 处理其他错误
+  print('未知错误: $e');
+  return null;
+}
+```
+
+### 5. 异步操作
+```dart
+// 使用async/await
+Future<void> fetchData() async {
+  try {
+    final data = await apiService.getData();
+    setState(() {
+      _data = data;
+    });
+  } catch (e) {
+    print('Error: $e');
+  }
+}
+
+// 并行执行多个异步操作
+Future<void> fetchMultipleData() async {
+  final results = await Future.wait([
+    apiService.getUsers(),
+    apiService.getPosts(),
+    apiService.getComments(),
+  ]);
+  
+  final users = results[0];
+  final posts = results[1];
+  final comments = results[2];
+}
+```
 
 ## 学习资源
 
