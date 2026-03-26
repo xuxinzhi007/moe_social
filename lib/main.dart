@@ -88,6 +88,9 @@ void main() async {
     if (!kIsWeb) {
       await PushNotificationService.initialize(AuthService.navigatorKey);
     }
+    
+    // 初始化聊天推送服务
+    ChatPushService.initialize(AuthService.navigatorKey);
 
     // 捕获Flutter框架错误
     FlutterError.onError = (FlutterErrorDetails details) {

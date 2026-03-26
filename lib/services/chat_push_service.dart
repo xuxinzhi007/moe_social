@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'api_service.dart';
 import 'ws_channel_connector.dart';
+import '../widgets/message_notification.dart';
 
 // ChatPushService listens on /ws/chat to receive direct messages in real time.
 // It exposes a stream of incoming messages and a per-sender unread counter.
@@ -31,6 +33,7 @@ class ChatPushService {
   static Timer? _reconnectTimer;
   static Timer? _heartbeatTimer;
   static bool _connecting = false;
+  static GlobalKey<NavigatorState>? _navigatorKey;
 
   // 指数退避：每次断线后延迟翻倍，上限 30 秒
   static int _reconnectAttempts = 0;
@@ -40,6 +43,10 @@ class ChatPushService {
   static bool get isConnected => _channel != null;
 
   static WebSocketChannel? get channel => _channel;
+
+  static void initialize(GlobalKey<NavigatorState> key) {
+    _navigatorKey = key;
+  }
 
   static void start() {
     _connect();
@@ -188,6 +195,8 @@ class ChatPushService {
 
     final from = map['from']?.toString();
     final content = map['content']?.toString();
+    final senderName = map['sender_name']?.toString() ?? '用户';
+    final avatarUrl = map['sender_avatar']?.toString() ?? '';
     if (from == null || from.isEmpty || content == null) {
       return;
     }
@@ -202,6 +211,21 @@ class ChatPushService {
     final next = Map<String, int>.from(unreadBySender.value);
     next[from] = (next[from] ?? 0) + 1;
     unreadBySender.value = next;
+
+    // 显示消息通知弹窗
+    _showMessageNotification(senderName, content, avatarUrl);
+  }
+
+  static void _showMessageNotification(String senderName, String message, String avatarUrl) {
+    if (_navigatorKey?.currentContext != null) {
+      final context = _navigatorKey!.currentContext!;
+      MessageNotification.show(
+        context,
+        senderName,
+        message,
+        avatarUrl,
+      );
+    }
   }
 
   static void markSenderRead(String senderId) {

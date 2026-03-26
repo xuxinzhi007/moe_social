@@ -435,6 +435,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
           'type': 'message',
           'to': widget.userId,
           'content': content,
+          'sender_name': widget.username,
+          'sender_avatar': widget.avatar,
         });
         try {
           channel.sink.add(payload);
@@ -477,6 +479,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
         'type': 'message',
         'to': widget.userId,
         'content': text,
+        'sender_name': widget.username,
+        'sender_avatar': widget.avatar,
       });
       try {
         channel.sink.add(payload);

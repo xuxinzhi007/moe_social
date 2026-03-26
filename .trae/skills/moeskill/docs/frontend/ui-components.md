@@ -195,6 +195,30 @@ AppMessageWidget(
 );
 ```
 
+#### MessageNotification
+
+消息通知组件 - 类似 iOS 的通知样式，用于显示收到的消息提醒。
+
+```dart
+MessageNotification.show(
+  context,
+  '张三', // 发送者名称
+  '你好，最近怎么样？', // 消息内容
+  'https://example.com/avatar.jpg', // 发送者头像
+  duration: Duration(seconds: 3), // 显示时长
+);
+
+// 手动关闭通知
+MessageNotification.dismiss();
+```
+
+#### 特性
+- 类似 iOS 的通知样式，从顶部滑入并淡出
+- 显示发送者名称、消息内容和头像
+- 支持自定义显示时长
+- 支持手动关闭
+- 内置平滑的动画效果
+
 ### 9. 底部导航栏
 
 #### MoeBottomBar
