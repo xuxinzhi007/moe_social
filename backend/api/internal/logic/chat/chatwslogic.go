@@ -141,6 +141,9 @@ func (l *ChatWsLogic) handleMessage(userID string, message []byte) {
 		return
 	}
 
+	// 打印完整消息，用于调试
+	l.Logger.Infof("Received full message from %s: %v", userID, msg)
+
 	// 根据消息类型处理
 	msgType, ok := msg["type"].(string)
 	if !ok {
@@ -182,15 +185,26 @@ func (l *ChatWsLogic) handleChatMessage(userID string, msg map[string]interface{
 		}
 	}
 
-	// 尝试获取发送者信息
+	// 尝试获取发送者信息，支持多种字段名
 	senderName := "用户"
 	senderAvatar := ""
-	if name, ok := msg["sender_name"].(string); ok {
+	
+	// 尝试从不同字段名获取发送者名称
+	if name, ok := msg["sender_name"].(string); ok && name != "" {
+		senderName = name
+	} else if name, ok := msg["senderName"].(string); ok && name != "" {
 		senderName = name
 	}
-	if avatar, ok := msg["sender_avatar"].(string); ok {
+	
+	// 尝试从不同字段名获取发送者头像
+	if avatar, ok := msg["sender_avatar"].(string); ok && avatar != "" {
+		senderAvatar = avatar
+	} else if avatar, ok := msg["senderAvatar"].(string); ok && avatar != "" {
 		senderAvatar = avatar
 	}
+
+	// 打印发送者信息，用于调试
+	l.Logger.Infof("Sending message from %s to %s: senderName=%s, senderAvatar=%s", userID, targetID, senderName, senderAvatar)
 
 	// 创建聊天消息
 	chatMsg := map[string]interface{}{
@@ -199,6 +213,8 @@ func (l *ChatWsLogic) handleChatMessage(userID string, msg map[string]interface{
 		"time":          time.Now().Format(time.RFC3339),
 		"sender_name":   senderName,
 		"sender_avatar": senderAvatar,
+		"senderName":    senderName,  // 同时添加驼峰命名的字段，确保前端兼容
+		"senderAvatar":  senderAvatar, // 同时添加驼峰命名的字段，确保前端兼容
 	}
 
 	// 发送消息给目标用户
