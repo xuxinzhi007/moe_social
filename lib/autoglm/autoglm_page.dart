@@ -2,6 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import '../widgets/fade_in_up.dart';
+import '../widgets/moe_toast.dart';
+import '../widgets/moe_loading.dart';
+import '../providers/theme_provider.dart';
 import 'autoglm_service.dart';
 
 class AutoGLMPage extends StatefulWidget {
@@ -639,24 +644,39 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final primaryColor = themeProvider.primaryColor;
+    
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('AutoGLM 助手'),
+        title: const Text('AutoGLM 助手', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
         actions: [
           PopupMenuButton<String>(
             onSelected: (value) async {
               if (value == 'copy') {
-                 final text = _logs.join("\n");
-                 await Clipboard.setData(ClipboardData(text: text));
-                 if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("日志已复制到剪贴板")));
+                final text = _logs.join("\n");
+                await Clipboard.setData(ClipboardData(text: text));
+                if (mounted) {
+                  MoeToast.success(context, "日志已复制到剪贴板");
+                }
               } else if (value == 'clear') {
-                 setState(() { _logs.clear(); });
+                setState(() { _logs.clear(); });
+                if (mounted) {
+                  MoeToast.show(context, "日志已清空");
+                }
+              } else if (value == 'help') {
+                _showHelpDialog();
               }
             },
             itemBuilder: (BuildContext context) {
               return [
                 const PopupMenuItem(value: 'copy', child: Text("复制日志")),
                 const PopupMenuItem(value: 'clear', child: Text("清空日志")),
+                const PopupMenuItem(value: 'help', child: Text("使用帮助")),
               ];
             }
           )
@@ -665,162 +685,382 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
       body: Column(
         children: [
           // 状态栏
-          InkWell(
-            onTap: () async {
-              if (!_isServiceEnabled) {
-                await AutoGLMService.openAccessibilitySettings();
-                await Future.delayed(const Duration(seconds: 1)); 
-                _checkStatus();
-              } else {
-                _checkStatus();
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              color: _isServiceEnabled ? Colors.green[50] : Colors.orange[50],
-              child: Row(
-                children: [
-                  Icon(
-                    _isServiceEnabled ? Icons.check_circle : Icons.warning_amber_rounded,
-                    color: _isServiceEnabled ? Colors.green : Colors.orange,
+          FadeInUp(
+            delay: const Duration(milliseconds: 100),
+            child: InkWell(
+              onTap: () async {
+                if (!_isServiceEnabled) {
+                  await AutoGLMService.openAccessibilitySettings();
+                  await Future.delayed(const Duration(seconds: 1)); 
+                  _checkStatus();
+                } else {
+                  _checkStatus();
+                }
+              },
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _isServiceEnabled ? Colors.green[50] : Colors.orange[50],
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _isServiceEnabled ? Colors.green[200]! : Colors.orange[200]!,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _isServiceEnabled 
-                        ? "无障碍服务已连接" 
-                        : "服务未开启，点击去设置开启 'Moe Social 助手'",
-                      style: TextStyle(
-                        color: _isServiceEnabled ? Colors.green[900] : Colors.orange[900],
-                        fontWeight: FontWeight.w500
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      offset: const Offset(0, 2),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _isServiceEnabled ? Colors.green[100]! : Colors.orange[100]!,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _isServiceEnabled ? Icons.check_circle : Icons.warning_amber_rounded,
+                        color: _isServiceEnabled ? Colors.green : Colors.orange,
+                        size: 24,
                       ),
                     ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        _isServiceEnabled 
+                          ? "无障碍服务已连接"
+                          : "服务未开启，点击去设置开启 'Moe Social 助手'",
+                        style: TextStyle(
+                          color: _isServiceEnabled ? Colors.green[800] : Colors.orange[800],
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    if (!_isServiceEnabled)
+                      const Icon(Icons.chevron_right, color: Colors.orange),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // 功能介绍卡片
+          FadeInUp(
+            delay: const Duration(milliseconds: 150),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    primaryColor.withOpacity(0.1),
+                    primaryColor.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: primaryColor.withOpacity(0.2),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: Color(0xFF7F7FD5)),
+                      const SizedBox(width: 8),
+                      const Text('功能介绍', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    ],
                   ),
-                  if (!_isServiceEnabled)
-                    const Icon(Icons.chevron_right, color: Colors.orange),
+                  const SizedBox(height: 8),
+                  Text(
+                    'AutoGLM 助手可以帮助你自动执行各种任务，如打开应用、点击按钮、输入文本等。只需输入你的指令，AI 会自动分析并执行相应的操作。',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[700], height: 1.4),
+                  ),
                 ],
               ),
             ),
           ),
 
-          // 悬浮窗控制按钮已移除，统一由外部开关控制
-          
           // 日志区域
           Expanded(
-            child: Container(
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: ListView.separated(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(12),
-                itemCount: _logs.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (context, index) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Text(
-                    _logs[index], 
-                    style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
-                  ),
+            child: FadeInUp(
+              delay: const Duration(milliseconds: 200),
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey[200]!),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      offset: const Offset(0, 2),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: primaryColor.withOpacity(0.05),
+                        border: Border(
+                          bottom: BorderSide(color: primaryColor.withOpacity(0.2)),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
+                        ),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.history, color: Color(0xFF7F7FD5), size: 16),
+                          SizedBox(width: 8),
+                          Text('执行日志', style: TextStyle(fontWeight: FontWeight.w500)),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: _logs.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.event_note_outlined, color: Colors.grey[300], size: 48),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    '暂无执行日志',
+                                    style: TextStyle(color: Colors.grey, fontSize: 14),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '输入指令开始执行任务',
+                                    style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.separated(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.all(12),
+                              itemCount: _logs.length,
+                              separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey[100]),
+                              itemBuilder: (context, index) => Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 6),
+                                child: Text(
+                                  _logs[index], 
+                                  style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
+                                ),
+                              ),
+                            ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
 
           // 输入区域
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  offset: const Offset(0, -4),
-                  blurRadius: 16,
-                )
-              ],
-            ),
-            child: SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_presetCommands.isNotEmpty)
-                    SizedBox(
-                      height: 40,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _presetCommands.length,
-                        itemBuilder: (context, index) {
-                          return Container(
-                            margin: const EdgeInsets.only(right: 8),
-                            child: ActionChip(
-                              label: Text(_presetCommands[index]),
-                              onPressed: _isProcessing
-                                  ? null
-                                  : () {
-                                      _controller.text = _presetCommands[index];
-                                    },
-                              backgroundColor: const Color(0xFFF5F7FA),
-                              labelStyle: const TextStyle(
-                                color: Color(0xFF7F7FD5),
-                                fontSize: 12,
+          FadeInUp(
+            delay: const Duration(milliseconds: 250),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    offset: const Offset(0, -4),
+                    blurRadius: 16,
+                  )
+                ],
+              ),
+              child: SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 预设指令
+                    if (_presetCommands.isNotEmpty)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        height: 44,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _presetCommands.length,
+                          itemBuilder: (context, index) {
+                            return Container(
+                              margin: const EdgeInsets.only(right: 8),
+                              child: ActionChip(
+                                label: Text(_presetCommands[index]),
+                                onPressed: _isProcessing
+                                    ? null
+                                    : () {
+                                        HapticFeedback.lightImpact();
+                                        _controller.text = _presetCommands[index];
+                                      },
+                                backgroundColor: primaryColor.withOpacity(0.1),
+                                labelStyle: TextStyle(
+                                  color: primaryColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                  side: BorderSide(
+                                    color: primaryColor.withOpacity(0.2),
+                                  ),
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  if (_presetCommands.isNotEmpty) const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _controller,
-                          decoration: InputDecoration(
-                            hintText: '输入指令 (例如: 给第一条动态点赞)',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(24),
-                              borderSide: BorderSide.none,
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey[100],
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          ),
-                          enabled: !_isProcessing,
+                            );
+                          },
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      FloatingActionButton(
-                        onPressed: _isProcessing
-                            ? (_isStopping ? null : _stopTask)
-                            : _startTask,
-                        elevation: 0,
-                        backgroundColor: _isProcessing ? Colors.red : Theme.of(context).primaryColor,
-                        mini: true,
-                        child: _isProcessing
-                            ? (_isStopping
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(Icons.stop_rounded))
-                            : const Icon(Icons.send_rounded),
+                    // 输入框和发送按钮
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey[50],
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: Colors.grey[200]!,
+                              ),
+                            ),
+                            child: TextField(
+                              controller: _controller,
+                              decoration: InputDecoration(
+                                hintText: '输入指令 (例如: 给第一条动态点赞)',
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                suffixIcon: _controller.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                                        onPressed: () {
+                                          HapticFeedback.lightImpact();
+                                          _controller.clear();
+                                        },
+                                      )
+                                    : null,
+                              ),
+                              enabled: !_isProcessing,
+                              onSubmitted: _isProcessing ? null : (_) => _startTask(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        FloatingActionButton(
+                          onPressed: _isProcessing
+                              ? (_isStopping ? null : () {
+                                  HapticFeedback.lightImpact();
+                                  _stopTask();
+                                })
+                              : () {
+                                  HapticFeedback.lightImpact();
+                                  _startTask();
+                                },
+                          elevation: 4,
+                          backgroundColor: _isProcessing ? Colors.red : primaryColor,
+                          shape: const CircleBorder(),
+                          child: _isProcessing
+                              ? (_isStopping
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.stop_rounded, color: Colors.white))
+                              : const Icon(Icons.send_rounded, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // 执行状态
+                    if (_isProcessing)
+                      Row(
+                        children: [
+                          const SizedBox(width: 8),
+                          const SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFF7F7FD5),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _isStopping ? "正在停止任务..." : "任务执行中...",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
                       ),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+  
+  // 显示帮助对话框
+  void _showHelpDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text('使用帮助', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('AutoGLM 助手使用说明:', style: TextStyle(fontWeight: FontWeight.w500)),
+              const SizedBox(height: 8),
+              const Text('1. 确保已开启无障碍服务', style: TextStyle(fontSize: 14)),
+              const Text('2. 输入你想要执行的任务指令', style: TextStyle(fontSize: 14)),
+              const Text('3. 点击发送按钮开始执行', style: TextStyle(fontSize: 14)),
+              const Text('4. 查看执行日志了解任务进展', style: TextStyle(fontSize: 14)),
+              const SizedBox(height: 12),
+              const Text('示例指令:', style: TextStyle(fontWeight: FontWeight.w500)),
+              const SizedBox(height: 4),
+              const Text('- 给第一条动态点赞', style: TextStyle(fontSize: 14)),
+              const Text('- 搜索"Flutter"', style: TextStyle(fontSize: 14)),
+              const Text('- 发布一条动态说Hello', style: TextStyle(fontSize: 14)),
+              const Text('- 打开设置页面', style: TextStyle(fontSize: 14)),
+              const Text('- 返回桌面', style: TextStyle(fontSize: 14)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('我知道了', style: TextStyle(color: Color(0xFF7F7FD5))),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -729,31 +729,6 @@ class _SettingsPageState extends State<SettingsPage> {
             child: MoeMenuCard(
               items: [
                 MoeMenuItem(
-                  icon: Icons.edit_outlined,
-                  title: '编辑资料',
-                  subtitle: '修改昵称、头像、签名等',
-                  color: Colors.blueAccent,
-                  onTap: () async {
-                    try {
-                      final userId = AuthService.currentUser;
-                      if (userId == null) return;
-                      final user = await ApiService.getUserInfo(userId);
-                      if (!mounted) return;
-                      final result = await Navigator.pushNamed(
-                        context,
-                        '/edit-profile',
-                        arguments: user,
-                      );
-                      if (result == true && mounted) {
-                        MoeToast.success(context, '资料已更新');
-                      }
-                    } catch (e) {
-                      if (!mounted) return;
-                      MoeToast.error(context, '打开编辑页面失败');
-                    }
-                  },
-                ),
-                MoeMenuItem(
                   icon: Icons.lock_rounded,
                   title: '修改密码',
                   color: Colors.blue,

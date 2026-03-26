@@ -237,6 +237,53 @@ Flutter构建失败，出现各种错误。
   - 实现网络缓存
   - 使用批量请求减少网络调用
 
+### 5. 常量表达式错误
+
+#### 问题描述
+编译失败，出现常量表达式错误，如：
+- `Error: Constant evaluation error:`
+- `The method '[]' can't be invoked on 'MaterialColor {}' in a constant expression.`
+- `Error: Method invocation is not a constant expression.`
+
+#### 可能原因
+- 在const构造函数中使用了非常量表达式
+- 使用了`Colors.grey[700]`、`Colors.black.withOpacity(0.2)`等非常量表达式
+- 在const上下文中使用了方法调用或索引操作
+
+#### 解决方案
+- **移除const修饰符**：对于包含非常量表达式的构造函数，移除`const`修饰符
+  ```dart
+  // 错误
+  const Text('文本', style: TextStyle(color: Colors.grey[700]));
+  
+  // 正确
+  Text('文本', style: TextStyle(color: Colors.grey[700]));
+  ```
+
+- **使用常量颜色**：对于需要在const上下文中使用的颜色，使用常量颜色值
+  ```dart
+  // 错误
+  const BoxDecoration(color: Colors.black.withOpacity(0.1));
+  
+  // 正确
+  BoxDecoration(color: Colors.black.withOpacity(0.1));
+  ```
+
+- **分离常量和非常量部分**：将常量部分和非常量部分分离
+  ```dart
+  // 错误
+  const BoxDecoration(
+    color: Colors.black.withOpacity(0.1),
+    borderRadius: BorderRadius.circular(8),
+  );
+  
+  // 正确
+  BoxDecoration(
+    color: Colors.black.withOpacity(0.1),
+    borderRadius: const BorderRadius.circular(8),
+  );
+  ```
+
 ## 后端常见问题
 
 ### 1. Go编译失败

@@ -1,6 +1,7 @@
 import 'package:provider/provider.dart';
 import 'providers/device_info_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'autoglm/autoglm_page.dart';
 import 'autoglm/autoglm_service.dart'; // 恢复导入
 import 'auth_service.dart';
@@ -20,6 +21,8 @@ import 'providers/user_level_provider.dart';
 import 'following_page.dart';
 import 'followers_page.dart';
 import 'widgets/moe_toast.dart';
+import 'widgets/fade_in_up.dart';
+import 'widgets/moe_loading.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -163,9 +166,7 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: const [
-              CircularProgressIndicator(
-                color: Color(0xFF7F7FD5),
-              ),
+              MoeLoading(color: Color(0xFF7F7FD5)),
               SizedBox(height: 16),
               Text(
                 '正在加载个人信息...',
@@ -199,7 +200,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   const Text('个人中心',
                       style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold)),
+                          color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
                   if (_isLoadingDetails) ...[
                     const SizedBox(width: 8),
                     const SizedBox(
@@ -219,9 +220,21 @@ class _ProfilePageState extends State<ProfilePage> {
                 IconButton(
                   icon: const Icon(Icons.settings_outlined, color: Colors.white),
                   onPressed: () {
+                    HapticFeedback.lightImpact();
                     Navigator.pushNamed(context, '/settings').then((_) {
                       _loadUserInfo();
                     });
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, color: Colors.white),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    if (_user != null) {
+                      Navigator.pushNamed(context, '/edit-profile', arguments: _user).then((_) {
+                        _loadUserInfo();
+                      });
+                    }
                   },
                 ),
               ],
@@ -242,154 +255,179 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 16),
                     
                     // 1. 我的足迹
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(left: 12, bottom: 10),
-                          child: Text('我的足迹', 
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
-                        ),
-                        _buildMenuCard([
-                          _MenuItem(
-                            icon: Icons.military_tech_rounded,
-                            title: '成就徽章',
-                            subtitle: '已解锁 ${_userBadges.where((b) => b.isUnlocked).length} 个',
-                            color: const Color(0xFFFFB347),
-                            onTap: _showAllBadges,
+                    FadeInUp(
+                      delay: const Duration(milliseconds: 100),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(left: 12, bottom: 10),
+                            child: Text('我的足迹', 
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
                           ),
-                          _MenuItem(
-                            icon: Icons.cloud_queue_rounded,
-                            title: '云端图库',
-                            subtitle: '管理你的美好回忆',
-                            color: const Color(0xFF86A8E7),
-                            onTap: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const CloudGalleryPage(),
-                                ),
-                              );
-                            },
-                          ),
-                        ]),
-                      ],
+                          _buildMenuCard([
+                            _MenuItem(
+                              icon: Icons.military_tech_rounded,
+                              title: '成就徽章',
+                              subtitle: '已解锁 ${_userBadges.where((b) => b.isUnlocked).length} 个',
+                              color: const Color(0xFFFFB347),
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                _showAllBadges();
+                              },
+                            ),
+                            _MenuItem(
+                              icon: Icons.cloud_queue_rounded,
+                              title: '云端图库',
+                              subtitle: '管理你的美好回忆',
+                              color: const Color(0xFF86A8E7),
+                              onTap: () async {
+                                HapticFeedback.lightImpact();
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const CloudGalleryPage(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ]),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 20),
 
                     // 2. 每日福利
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(left: 12, bottom: 10),
-                          child: Text('每日福利', 
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
-                        ),
-                        _buildMenuCard([
-                          _MenuItem(
-                            icon: Icons.calendar_today_rounded,
-                            title: '每日签到',
-                            subtitle: '连续签到有惊喜哦',
-                            color: const Color(0xFF7F7FD5),
-                            onTap: () => _navigateToCheckIn(),
+                    FadeInUp(
+                      delay: const Duration(milliseconds: 200),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(left: 12, bottom: 10),
+                            child: Text('每日福利', 
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
                           ),
-                          _MenuItem(
-                            icon: Icons.account_balance_wallet_rounded,
-                            title: '我的钱包',
-                            subtitle: '余额: ¥${_user?.balance.toStringAsFixed(2) ?? '0.00'}',
-                            color: const Color(0xFF4ECDC4),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => const WalletPage()),
-                              ).then((value) {
-                                _loadUserInfo();
-                              });
-                            },
-                          ),
-                          _MenuItem(
-                            icon: Icons.workspace_premium_rounded,
-                            title: 'VIP 会员中心',
-                            subtitle: AuthService.currentUser == null
-                                ? '登录后查看会员权益与套餐'
-                                : (_isVip ? '查看会员状态与续费信息' : '开通 VIP，解锁更多特权'),
-                            color: const Color(0xFFFFB347),
-                            onTap: _openVipCenter,
-                          ),
-                        ]),
-                      ],
+                          _buildMenuCard([
+                            _MenuItem(
+                              icon: Icons.calendar_today_rounded,
+                              title: '每日签到',
+                              subtitle: '连续签到有惊喜哦',
+                              color: const Color(0xFF7F7FD5),
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                _navigateToCheckIn();
+                              },
+                            ),
+                            _MenuItem(
+                              icon: Icons.account_balance_wallet_rounded,
+                              title: '我的钱包',
+                              subtitle: '余额: ¥${_user?.balance.toStringAsFixed(2) ?? '0.00'}',
+                              color: const Color(0xFF4ECDC4),
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => const WalletPage()),
+                                ).then((value) {
+                                  _loadUserInfo();
+                                });
+                              },
+                            ),
+                            _MenuItem(
+                              icon: Icons.workspace_premium_rounded,
+                              title: 'VIP 会员中心',
+                              subtitle: AuthService.currentUser == null
+                                  ? '登录后查看会员权益与套餐'
+                                  : (_isVip ? '查看会员状态与续费信息' : '开通 VIP，解锁更多特权'),
+                              color: const Color(0xFFFFB347),
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                _openVipCenter();
+                              },
+                            ),
+                          ]),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 20),
 
                     // 3. 实验室与系统
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(left: 12, bottom: 10),
-                          child: Text('实验室与系统', 
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
-                        ),
-                        _buildMenuCard([
-                            _MenuItem(
-                              icon: Icons.smart_toy_rounded,
-                              title: 'AutoGLM 助手',
-                              color: const Color(0xFF7F7FD5),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => const AutoGLMPage()),
-                                );
-                              },
-                              // 恢复 AutoGLM 开关
-                              trailing: Transform.scale(
-                                scale: 0.8,
-                                child: Switch(
-                                  value: AutoGLMService.enableOverlay,
-                                  activeColor: const Color(0xFF7F7FD5),
-                                  onChanged: (value) async {
-                                    setState(() {
-                                      AutoGLMService.enableOverlay = value;
-                                    });
+                    FadeInUp(
+                      delay: const Duration(milliseconds: 300),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(left: 12, bottom: 10),
+                            child: Text('实验室与系统', 
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
+                          ),
+                          _buildMenuCard([
+                              _MenuItem(
+                                icon: Icons.smart_toy_rounded,
+                                title: 'AutoGLM 助手',
+                                color: const Color(0xFF7F7FD5),
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => const AutoGLMPage()),
+                                  );
+                                },
+                                // 恢复 AutoGLM 开关
+                                trailing: Transform.scale(
+                                  scale: 0.8,
+                                  child: Switch(
+                                    value: AutoGLMService.enableOverlay,
+                                    activeColor: const Color(0xFF7F7FD5),
+                                    onChanged: (value) async {
+                                      HapticFeedback.lightImpact();
+                                      setState(() {
+                                        AutoGLMService.enableOverlay = value;
+                                      });
 
-                                    if (value) {
-                                      bool hasPerm = await AutoGLMService.checkOverlayPermission();
-                                      if (!hasPerm) {
-                                        await AutoGLMService.requestOverlayPermission();
-                                        await Future.delayed(const Duration(seconds: 1));
-                                        hasPerm = await AutoGLMService.checkOverlayPermission();
+                                      if (value) {
+                                        bool hasPerm = await AutoGLMService.checkOverlayPermission();
                                         if (!hasPerm) {
-                                          setState(() => AutoGLMService.enableOverlay = false);
-                                          if (mounted) {
-                                            MoeToast.error(context, '需要悬浮窗权限才能显示');
+                                          await AutoGLMService.requestOverlayPermission();
+                                          await Future.delayed(const Duration(seconds: 1));
+                                          hasPerm = await AutoGLMService.checkOverlayPermission();
+                                          if (!hasPerm) {
+                                            setState(() => AutoGLMService.enableOverlay = false);
+                                            if (mounted) {
+                                              MoeToast.error(context, '需要悬浮窗权限才能显示');
+                                            }
+                                            return;
                                           }
-                                          return;
                                         }
+                                        await AutoGLMService.showOverlay();
+                                        if (mounted) {
+                                          MoeToast.success(context, '悬浮窗已开启');
+                                        }
+                                      } else {
+                                        await AutoGLMService.removeOverlay();
                                       }
-                                      await AutoGLMService.showOverlay();
-                                      if (mounted) {
-                                        MoeToast.success(context, '悬浮窗已开启');
-                                      }
-                                    } else {
-                                      await AutoGLMService.removeOverlay();
-                                    }
-                                  },
+                                    },
+                                  ),
                                 ),
                               ),
-                            ),
-                            // 移除列表中的“通用设置”
-                            _MenuItem(
-                              icon: Icons.logout_rounded,
-                              title: '退出登录',
-                              color: const Color(0xFFFF6B6B),
-                              isDestructive: true,
-                              onTap: () => _showLogoutDialog(context),
-                            ),
-                        ]),
-                      ],
+                              // 移除列表中的“通用设置”
+                              _MenuItem(
+                                icon: Icons.logout_rounded,
+                                title: '退出登录',
+                                color: const Color(0xFFFF6B6B),
+                                isDestructive: true,
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  _showLogoutDialog(context);
+                                },
+                              ),
+                          ]),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 40),
                   ],
@@ -411,6 +449,23 @@ class _ProfilePageState extends State<ProfilePage> {
           child: ProfileBg(),
         ),
 
+        // 渐变覆盖层
+        Positioned.fill(
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF7F7FD5),
+                  Color(0xFF86A8E7),
+                  Color(0xFF91EAE4),
+                ],
+              ),
+            ),
+          ),
+        ),
+
         // 用户信息内容
         SafeArea(
           child: Center(
@@ -423,137 +478,194 @@ class _ProfilePageState extends State<ProfilePage> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
+                      FadeInUp(
+                        delay: const Duration(milliseconds: 100),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
                             ),
-                          ],
-                        ),
-                        child: DynamicAvatar(
-                          avatarUrl: _user?.avatar ?? '',
-                          size: 70,
-                          frameId: _user?.equippedFrameId,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 15,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: DynamicAvatar(
+                              avatarUrl: _user?.avatar ?? '',
+                              size: 80,
+                              frameId: _user?.equippedFrameId,
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 20),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    _user?.username ?? '未知用户',
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                if (_isVip) ...[
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 3,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFFFD700),
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    child: const Text(
-                                      'VIP',
+                            FadeInUp(
+                              delay: const Duration(milliseconds: 150),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      _user?.username ?? '未知用户',
                                       style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w800,
-                                        color: Color(0xFF7A4F00),
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.black.withOpacity(0.2),
+                                            offset: const Offset(0, 2),
+                                            blurRadius: 4,
+                                          ),
+                                        ],
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (_isVip) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                                        ),
+                                        borderRadius: BorderRadius.circular(999),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.2),
+                                            offset: const Offset(0, 2),
+                                            blurRadius: 4,
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Text(
+                                        'VIP',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w800,
+                                          color: Color(0xFF7A4F00),
+                                        ),
                                       ),
                                     ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            // 等级胶囊条 (Compact Level Indicator)
+                            FadeInUp(
+                              delay: const Duration(milliseconds: 200),
+                              child: Consumer<UserLevelProvider>(
+                                builder: (context, levelProvider, child) {
+                                  final userLevel = levelProvider.userLevel;
+                                  if (userLevel == null) return const SizedBox.shrink();
+                                  return GestureDetector(
+                                    onTap: () {
+                                      HapticFeedback.lightImpact();
+                                      _navigateToUserLevel();
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: Colors.white.withOpacity(0.4)),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.1),
+                                            offset: const Offset(0, 2),
+                                            blurRadius: 4,
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.stars_rounded, size: 16, color: Colors.white),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Lv.${userLevel.level} ${userLevel.levelTitle}',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.white70),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            // 统计数据
+                            FadeInUp(
+                              delay: const Duration(milliseconds: 250),
+                              child: Row(
+                                children: [
+                                  _buildStatItemCompact('动态', '$_postCount'),
+                                  const SizedBox(width: 20),
+                                  _buildStatItemCompact(
+                                    '关注',
+                                    '$_followingCount',
+                                    onTap: _user != null
+                                        ? () {
+                                            HapticFeedback.lightImpact();
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    FollowingPage(userId: _user!.id),
+                                              ),
+                                            );
+                                          }
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 20),
+                                  _buildStatItemCompact(
+                                    '粉丝',
+                                    '$_followerCount',
+                                    onTap: _user != null
+                                        ? () {
+                                            HapticFeedback.lightImpact();
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    FollowersPage(userId: _user!.id),
+                                              ),
+                                            );
+                                          }
+                                        : null,
                                   ),
                                 ],
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            // 等级胶囊条 (Compact Level Indicator)
-                            Consumer<UserLevelProvider>(
-                              builder: (context, levelProvider, child) {
-                                final userLevel = levelProvider.userLevel;
-                                if (userLevel == null) return const SizedBox.shrink();
-                                return GestureDetector(
-                                  onTap: () => _navigateToUserLevel(),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.white.withOpacity(0.4)),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.stars_rounded, size: 14, color: Colors.white),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'Lv.${userLevel.level} ${userLevel.levelTitle}',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        const Icon(Icons.arrow_forward_ios_rounded, size: 10, color: Colors.white70),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            // 统计数据
-                            Row(
-                              children: [
-                                _buildStatItemCompact('动态', '$_postCount'),
-                                const SizedBox(width: 16),
-                                _buildStatItemCompact(
-                                  '关注',
-                                  '$_followingCount',
-                                  onTap: _user != null
-                                      ? () => Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  FollowingPage(userId: _user!.id),
-                                            ),
-                                          )
-                                      : null,
-                                ),
-                                const SizedBox(width: 16),
-                                _buildStatItemCompact(
-                                  '粉丝',
-                                  '$_followerCount',
-                                  onTap: _user != null
-                                      ? () => Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  FollowersPage(userId: _user!.id),
-                                            ),
-                                          )
-                                      : null,
-                                ),
-                              ],
+                              ),
                             ),
                           ],
                         ),
@@ -562,77 +674,101 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 // 设备信息
-                Consumer<DeviceInfoProvider>(
-                  builder: (context, provider, child) {
-                    return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.2)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(_getDeviceIcon(provider.deviceType),
-                              color: Colors.white, size: 14),
-                          const SizedBox(width: 6),
-                          Text(
-                            provider.deviceType.isNotEmpty ? provider.deviceType : '未知设备',
-                            style: const TextStyle(color: Colors.white, fontSize: 12),
-                          ),
-                          const SizedBox(width: 12),
-                          Container(width: 1, height: 12, color: Colors.white30),
-                          const SizedBox(width: 12),
-                          const Icon(Icons.location_on_outlined, color: Colors.white, size: 14),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              provider.locationText.isNotEmpty
-                                  ? provider.locationText
-                                  : '未知位置',
-                              style: const TextStyle(color: Colors.white, fontSize: 12),
-                              overflow: TextOverflow.ellipsis,
+                FadeInUp(
+                  delay: const Duration(milliseconds: 300),
+                  child: Consumer<DeviceInfoProvider>(
+                    builder: (context, provider, child) {
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: Colors.white.withOpacity(0.3)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              offset: const Offset(0, 4),
+                              blurRadius: 8,
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(_getDeviceIcon(provider.deviceType),
+                                color: Colors.white, size: 16),
+                            const SizedBox(width: 8),
+                            Text(
+                              provider.deviceType.isNotEmpty ? provider.deviceType : '未知设备',
+                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                            ),
+                            const SizedBox(width: 16),
+                            Container(width: 1, height: 16, color: Colors.white30),
+                            const SizedBox(width: 16),
+                            const Icon(Icons.location_on_outlined, color: Colors.white, size: 16),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                provider.locationText.isNotEmpty
+                                    ? provider.locationText
+                                    : '未知位置',
+                                style: const TextStyle(color: Colors.white, fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
 
                 // 移除原先的大块 UserLevelProvider Consumer Card
 
                 // 徽章展示区域
                 if (_userBadges.where((badge) => badge.isUnlocked).isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 32),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: _userBadges
-                            .where((badge) => badge.isUnlocked)
-                            .take(6)
-                            .map((badge) => Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                                  child: BadgeCard(
-                                    badge: badge,
-                                    size: 32, // 稍微加大一点
-                                    showProgress: false,
-                                    onTap: () => _showBadgeDetails(badge),
-                                  ),
-                                ))
-                            .toList(),
+                  const SizedBox(height: 20),
+                  FadeInUp(
+                    delay: const Duration(milliseconds: 350),
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 32),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.white.withOpacity(0.3)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            offset: const Offset(0, 4),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: _userBadges
+                              .where((badge) => badge.isUnlocked)
+                              .take(6)
+                              .map((badge) => Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                                    child: BadgeCard(
+                                      badge: badge,
+                                      size: 40, // 加大徽章尺寸
+                                      showProgress: false,
+                                      onTap: () {
+                                        HapticFeedback.lightImpact();
+                                        _showBadgeDetails(badge);
+                                      },
+                                    ),
+                                  ))
+                              .toList(),
+                        ),
                       ),
                     ),
                   ),
