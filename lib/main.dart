@@ -318,6 +318,9 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 设置全局上下文，用于显示消息通知
+    ChatPushService.setGlobalContext(context);
+    
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,

@@ -351,6 +351,7 @@ class _FriendsPageState extends State<FriendsPage> {
       elevation: 6,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: const Icon(Icons.person_add_rounded, size: 24),
+      heroTag: 'friends_fab',
     );
   }
 

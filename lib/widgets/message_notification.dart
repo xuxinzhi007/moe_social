@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import '../direct_chat_page.dart';
 
 /// 消息通知组件 - 类似 iOS 的通知样式
 class MessageNotification {
@@ -11,6 +12,7 @@ class MessageNotification {
     String senderName,
     String message,
     String avatarUrl,
+    String senderId,
     {Duration duration = const Duration(seconds: 3)}
   ) {
     // 移除之前的通知
@@ -30,6 +32,7 @@ class MessageNotification {
         senderName: senderName,
         message: message,
         avatarUrl: avatarUrl,
+        senderId: senderId,
       ),
     );
 
@@ -52,11 +55,13 @@ class _MessageNotificationWidget extends StatefulWidget {
   final String senderName;
   final String message;
   final String avatarUrl;
+  final String senderId;
 
   const _MessageNotificationWidget({
     required this.senderName,
     required this.message,
     required this.avatarUrl,
+    required this.senderId,
   });
 
   @override
@@ -117,91 +122,107 @@ class _MessageNotificationWidgetState extends State<_MessageNotificationWidget> 
             position: _slideAnimation,
             child: Align(
               alignment: Alignment.topCenter,
-              child: Container(
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+              child: GestureDetector(
+                onTap: () {
+                  // 点击通知跳转到聊天页面
+                  MessageNotification.dismiss();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DirectChatPage(
+                        userId: widget.senderId,
+                        username: widget.senderName,
+                        avatar: widget.avatarUrl,
+                      ),
                     ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // 头像
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(24),
-                          image: widget.avatarUrl.isNotEmpty
-                              ? DecorationImage(
-                                  image: NetworkImage(widget.avatarUrl),
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
-                          color: Colors.grey[200],
-                        ),
-                        child: widget.avatarUrl.isEmpty
-                            ? const Center(
-                                child: Icon(
-                                  Icons.person,
-                                  color: Colors.grey,
-                                  size: 24,
-                                ),
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: 12),
-                      // 消息内容
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              widget.senderName,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              widget.message,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF606060),
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                      // 关闭按钮
-                      IconButton(
-                        onPressed: MessageNotification.dismiss,
-                        icon: const Icon(
-                          Icons.close,
-                          size: 16,
-                          color: Colors.grey,
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
                     ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // 头像
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(24),
+                            image: widget.avatarUrl.isNotEmpty && widget.avatarUrl != 'null'
+                                ? DecorationImage(
+                                    image: NetworkImage(widget.avatarUrl),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                            color: Colors.grey[200],
+                          ),
+                          child: (widget.avatarUrl.isEmpty || widget.avatarUrl == 'null')
+                              ? const Center(
+                                  child: Icon(
+                                    Icons.person,
+                                    color: Colors.grey,
+                                    size: 24,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        const SizedBox(width: 12),
+                        // 消息内容
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                widget.senderName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                widget.message,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF606060),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        // 关闭按钮
+                        IconButton(
+                          onPressed: MessageNotification.dismiss,
+                          icon: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
