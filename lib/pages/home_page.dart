@@ -11,8 +11,7 @@ import '../widgets/fade_in_up.dart';
 import '../utils/error_handler.dart';
 import '../providers/notification_provider.dart';
 import '../widgets/post_card.dart';
-import '../widgets/home_banner.dart';
-import '../widgets/enhanced_home_banner.dart';
+import '../widgets/personalized_card.dart';
 import '../widgets/quick_actions_grid.dart';
 import '../widgets/trending_topics.dart';
 import '../widgets/moe_loading.dart';
@@ -426,7 +425,7 @@ class _HomePageState extends State<HomePage> {
   SliverAppBar _buildSliverAppBar(BuildContext context) {
     return SliverAppBar(
       pinned: true,
-      expandedHeight: 300,
+      expandedHeight: 320,
       elevation: 0,
       backgroundColor: Colors.white,
       title: Row(
@@ -485,9 +484,12 @@ class _HomePageState extends State<HomePage> {
         ),
         const SizedBox(width: 8),
       ],
-      flexibleSpace: const FlexibleSpaceBar(
+      flexibleSpace: FlexibleSpaceBar(
         collapseMode: CollapseMode.parallax,
-        background: EnhancedHomeBanner(),
+        background: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 88, 16, 12),
+          child: PersonalizedCard(),
+        ),
       ),
     );
   }
