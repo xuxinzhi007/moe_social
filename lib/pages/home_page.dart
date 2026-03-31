@@ -13,7 +13,6 @@ import '../providers/notification_provider.dart';
 import '../widgets/post_card.dart';
 import '../widgets/personalized_card.dart';
 import '../widgets/quick_actions_grid.dart';
-import '../widgets/trending_topics.dart';
 import '../widgets/moe_loading.dart';
 
 class HomePage extends StatefulWidget {
@@ -339,14 +338,6 @@ class _HomePageState extends State<HomePage> {
             // 快捷功能入口
             const SliverToBoxAdapter(child: QuickActionsGrid()),
             
-            // 热门话题
-            SliverToBoxAdapter(
-              child: TrendingTopics(
-                topics: _getTrendingTopics(),
-                onTopicTap: (topic) => _onTopicSelected(topic),
-              ),
-            ),
-            
             SliverPersistentHeader(
               pinned: true,
               delegate: _HomeHeaderDelegate(
@@ -488,7 +479,7 @@ class _HomePageState extends State<HomePage> {
         collapseMode: CollapseMode.parallax,
         background: Padding(
           padding: const EdgeInsets.fromLTRB(16, 88, 16, 12),
-          child: PersonalizedCard(),
+          child: const PersonalizedCard(),
         ),
       ),
     );

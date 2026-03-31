@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'dart:math' as math;
 import 'daily_quote_widget.dart';
 import '../providers/device_info_provider.dart';
+import '../services/weather_service.dart';
 
 class PersonalizedCard extends StatefulWidget {
   const PersonalizedCard({super.key});
@@ -13,6 +14,8 @@ class PersonalizedCard extends StatefulWidget {
 
 class _PersonalizedCardState extends State<PersonalizedCard> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  WeatherData? _weatherData;
+  bool _isLoadingWeather = false;
 
   @override
   void initState() {
@@ -24,6 +27,7 @@ class _PersonalizedCardState extends State<PersonalizedCard> with SingleTickerPr
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _tryUpdateLocation();
+      _loadWeatherData();
     });
   }
 
@@ -34,6 +38,46 @@ class _PersonalizedCardState extends State<PersonalizedCard> with SingleTickerPr
         provider.syncDeviceInfoToServer(requestLocationPermission: true);
       }
     } catch (_) {}
+  }
+
+  Future<void> _loadWeatherData() async {
+    if (_isLoadingWeather) return;
+    
+    setState(() {
+      _isLoadingWeather = true;
+    });
+
+    try {
+      final provider = Provider.of<DeviceInfoProvider>(context, listen: false);
+      
+      if (provider.latitude != null && provider.longitude != null) {
+        final weather = await WeatherService.getWeatherByLocation(
+          provider.latitude!,
+          provider.longitude!,
+        );
+        if (weather != null) {
+          setState(() {
+            _weatherData = weather;
+          });
+          return;
+        }
+      }
+      
+      final cityName = _getCity(provider);
+      final weather = await WeatherService.getWeatherByCity(cityName);
+      if (weather != null) {
+        setState(() {
+          _weatherData = weather;
+        });
+      }
+    } catch (e) {
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingWeather = false;
+        });
+      }
+    }
   }
 
   @override
@@ -52,10 +96,16 @@ class _PersonalizedCardState extends State<PersonalizedCard> with SingleTickerPr
   }
 
   String _getWeatherIcon() {
+    if (_weatherData != null) {
+      return _weatherData!.getWeatherEmoji();
+    }
     return '☀️';
   }
 
   String _getCity(DeviceInfoProvider provider) {
+    if (_weatherData != null) {
+      return _weatherData!.city;
+    }
     final locationText = provider.locationText;
     if (locationText.isEmpty || locationText.contains('失败') || locationText.contains('权限') || locationText.contains('开启')) {
       return '北京';
@@ -70,6 +120,9 @@ class _PersonalizedCardState extends State<PersonalizedCard> with SingleTickerPr
   }
 
   String _getWeatherText() {
+    if (_weatherData != null) {
+      return '${_weatherData!.temp}°C ${_weatherData!.text}';
+    }
     return '26°C 晴朗';
   }
 
@@ -175,44 +228,62 @@ class _PersonalizedCardState extends State<PersonalizedCard> with SingleTickerPr
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              _getCity(deviceInfo),
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  _getWeatherIcon(),
-                                  style: TextStyle(fontSize: 22),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  _getWeatherText(),
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
+                      GestureDetector(
+                        onTap: _loadWeatherData,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: _isLoadingWeather
+                              ? const SizedBox(
+                                  width: 80,
+                                  height: 40,
+                                  child: Center(
+                                    child: SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    ),
                                   ),
+                                )
+                              : Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      _getCity(deviceInfo),
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.8),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          _getWeatherIcon(),
+                                          style: TextStyle(fontSize: 22),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          _getWeatherText(),
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          ],
                         ),
                       ),
                     ],

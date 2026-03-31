@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../models/ai_agent.dart';
 import '../models/ai_chat_session.dart';
 import '../models/ai_chat_message.dart';
@@ -25,14 +23,6 @@ class AiDbService {
   }
 
   Future<Database> _initDatabase() async {
-    if (kIsWeb) {
-      throw UnsupportedError('Web platform is not supported for local database yet.');
-    }
-    if (defaultTargetPlatform == TargetPlatform.windows ||
-        defaultTargetPlatform == TargetPlatform.linux) {
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
-    }
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'ai_agents.db');
 
