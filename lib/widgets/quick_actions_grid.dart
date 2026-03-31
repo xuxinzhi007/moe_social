@@ -5,13 +5,16 @@ class QuickActionsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final actions = [
-      {
-        'icon': Icons.edit_note,
-        'label': '发布动态',
-        'color': const Color(0xFF7F7FD5),
-        'onTap': () => Navigator.pushNamed(context, '/create-post'),
-      },
+    final showComposerOnHome =
+        MediaQuery.sizeOf(context).width >= 360;
+    final actions = <Map<String, Object>>[
+      if (!showComposerOnHome)
+        {
+          'icon': Icons.edit_note,
+          'label': '发布动态',
+          'color': const Color(0xFF7F7FD5),
+          'onTap': () => Navigator.pushNamed(context, '/create-post'),
+        },
       {
         'icon': Icons.photo_library,
         'label': '云相册',
@@ -56,15 +59,17 @@ class QuickActionsGrid extends StatelessWidget {
       },
     ];
 
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: scheme.outline.withOpacity(0.12)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: scheme.shadow.withOpacity(0.06),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -84,11 +89,12 @@ class QuickActionsGrid extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 '快捷功能',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
+                  color: scheme.onSurface,
                 ),
               ),
             ],
@@ -104,6 +110,7 @@ class QuickActionsGrid extends StatelessWidget {
               itemBuilder: (context, index) {
                 final action = actions[index];
                 return _buildActionItem(
+                  context,
                   icon: action['icon'] as IconData,
                   label: action['label'] as String,
                   color: action['color'] as Color,
@@ -117,12 +124,14 @@ class QuickActionsGrid extends StatelessWidget {
     );
   }
 
-  Widget _buildActionItem({
+  Widget _buildActionItem(
+    BuildContext context, {
     required IconData icon,
     required String label,
     required Color color,
     required VoidCallback onTap,
   }) {
+    final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -154,7 +163,7 @@ class QuickActionsGrid extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: Colors.grey[700],
+                color: onSurfaceVariant,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
