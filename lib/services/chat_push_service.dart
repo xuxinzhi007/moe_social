@@ -23,6 +23,13 @@ class ChatPushService {
   static Stream<Map<String, dynamic>> get incomingMessages =>
       _incomingController.stream;
 
+  /// 在线匹配等系统消息（match_found / match_waiting / match_cancelled）
+  static final StreamController<Map<String, dynamic>> matchEvents =
+      StreamController<Map<String, dynamic>>.broadcast();
+
+  static Stream<Map<String, dynamic>> get matchEventsStream =>
+      matchEvents.stream;
+
   /// 未打开聊天页时的“暂存消息队列”
   /// - key: senderId
   /// - value: 按到达顺序排列的消息 map（包含 from/content/timestamp）
@@ -77,6 +84,18 @@ class ChatPushService {
   static void ping() {
     try {
       _channel?.sink.add(json.encode({'type': 'ping'}));
+    } catch (_) {}
+  }
+
+  static void sendMatchJoin() {
+    try {
+      _channel?.sink.add(json.encode({'type': 'match_join'}));
+    } catch (_) {}
+  }
+
+  static void sendMatchCancel() {
+    try {
+      _channel?.sink.add(json.encode({'type': 'match_cancel'}));
     } catch (_) {}
   }
 
@@ -195,6 +214,17 @@ class ChatPushService {
       if (decoded is! Map<String, dynamic>) return;
       map = decoded;
     } catch (_) {
+      return;
+    }
+
+    final msgType = map['type']?.toString();
+    if (msgType == 'match_found' ||
+        msgType == 'match_waiting' ||
+        msgType == 'match_cancelled' ||
+        msgType == 'pong') {
+      if (msgType != 'pong') {
+        matchEvents.add(map);
+      }
       return;
     }
 

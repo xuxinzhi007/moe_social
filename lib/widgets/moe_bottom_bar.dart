@@ -33,7 +33,7 @@ class MoeBottomBar extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(32),
               boxShadow: [
                 BoxShadow(

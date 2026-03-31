@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../pages/ai/agent_list_page.dart';
+import '../pages/game/game_lobby_page.dart';
+
 class QuickActionsGrid extends StatelessWidget {
   const QuickActionsGrid({super.key});
 
@@ -31,13 +34,27 @@ class QuickActionsGrid extends StatelessWidget {
         'icon': Icons.smart_toy,
         'label': 'AI助手',
         'color': const Color(0xFFFFB347),
-        'onTap': () => Navigator.pushNamed(context, '/home', arguments: 2),
+        'onTap': () {
+          Navigator.push<void>(
+            context,
+            MaterialPageRoute<void>(
+              builder: (context) => const AgentListPage(),
+            ),
+          );
+        },
       },
       {
         'icon': Icons.games,
         'label': '游戏',
         'color': const Color(0xFF95E1D3),
-        'onTap': () => Navigator.pushNamed(context, '/home', arguments: 3),
+        'onTap': () {
+          Navigator.push<void>(
+            context,
+            MaterialPageRoute<void>(
+              builder: (context) => const GameLobbyPage(),
+            ),
+          );
+        },
       },
       {
         'icon': Icons.card_giftcard,

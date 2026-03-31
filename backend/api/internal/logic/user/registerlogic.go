@@ -38,19 +38,21 @@ func (l *RegisterLogic) Register(req *types.RegisterReq) (resp *types.RegisterRe
 		}, nil
 	}
 
-	// 转换为API响应
+	u := types.User{
+		Id:           rpcResp.User.Id,
+		Username:     rpcResp.User.Username,
+		Email:        rpcResp.User.Email,
+		MoeNo:        rpcResp.User.MoeNo,
+		Avatar:       rpcResp.User.Avatar,
+		CreatedAt:    rpcResp.User.CreatedAt,
+		UpdatedAt:    rpcResp.User.UpdatedAt,
+		IsVip:        rpcResp.User.IsVip,
+		VipExpiresAt: rpcResp.User.VipExpiresAt,
+		AutoRenew:    rpcResp.User.AutoRenew,
+	}
+
 	return &types.RegisterResp{
 		BaseResp: common.HandleRPCError(nil, "注册成功"),
-		Data: types.User{
-			Id:           rpcResp.User.Id,
-			Username:     rpcResp.User.Username,
-			Email:        rpcResp.User.Email,
-			Avatar:       rpcResp.User.Avatar,
-			CreatedAt:    rpcResp.User.CreatedAt,
-			UpdatedAt:    rpcResp.User.UpdatedAt,
-			IsVip:        rpcResp.User.IsVip,
-			VipExpiresAt: rpcResp.User.VipExpiresAt,
-			AutoRenew:    rpcResp.User.AutoRenew,
-		},
+		Data:     u,
 	}, nil
 }

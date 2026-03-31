@@ -264,6 +264,41 @@ func (s *SuperServer) CheckFollow(ctx context.Context, in *super.CheckFollowReq)
 	return l.CheckFollow(in)
 }
 
+func (s *SuperServer) SendFriendRequest(ctx context.Context, in *super.SendFriendRequestReq) (*super.SendFriendRequestResp, error) {
+	l := logic.NewFriendRelationLogic(ctx, s.svcCtx)
+	return l.SendFriendRequest(in)
+}
+
+func (s *SuperServer) ListIncomingFriendRequests(ctx context.Context, in *super.ListIncomingFriendRequestsReq) (*super.ListIncomingFriendRequestsResp, error) {
+	l := logic.NewFriendRelationLogic(ctx, s.svcCtx)
+	return l.ListIncomingFriendRequests(in)
+}
+
+func (s *SuperServer) ListOutgoingFriendRequests(ctx context.Context, in *super.ListOutgoingFriendRequestsReq) (*super.ListOutgoingFriendRequestsResp, error) {
+	l := logic.NewFriendRelationLogic(ctx, s.svcCtx)
+	return l.ListOutgoingFriendRequests(in)
+}
+
+func (s *SuperServer) AcceptFriendRequest(ctx context.Context, in *super.AcceptFriendRequestReq) (*super.AcceptFriendRequestResp, error) {
+	l := logic.NewFriendRelationLogic(ctx, s.svcCtx)
+	return l.AcceptFriendRequest(in)
+}
+
+func (s *SuperServer) RejectFriendRequest(ctx context.Context, in *super.RejectFriendRequestReq) (*super.RejectFriendRequestResp, error) {
+	l := logic.NewFriendRelationLogic(ctx, s.svcCtx)
+	return l.RejectFriendRequest(in)
+}
+
+func (s *SuperServer) ListFriends(ctx context.Context, in *super.ListFriendsReq) (*super.ListFriendsResp, error) {
+	l := logic.NewFriendRelationLogic(ctx, s.svcCtx)
+	return l.ListFriends(in)
+}
+
+func (s *SuperServer) GetFriendRelation(ctx context.Context, in *super.GetFriendRelationReq) (*super.GetFriendRelationResp, error) {
+	l := logic.NewFriendRelationLogic(ctx, s.svcCtx)
+	return l.GetFriendRelation(in)
+}
+
 // 虚拟形象相关服务
 func (s *SuperServer) GetUserAvatar(ctx context.Context, in *super.GetUserAvatarReq) (*super.GetUserAvatarResp, error) {
 	l := logic.NewGetUserAvatarLogic(ctx, s.svcCtx)

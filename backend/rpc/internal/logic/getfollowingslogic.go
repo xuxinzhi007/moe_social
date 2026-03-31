@@ -88,27 +88,8 @@ func (l *GetFollowingsLogic) GetFollowings(in *super.GetFollowingsReq) (*super.G
 		if !exists {
 			continue // 如果用户不存在，跳过
 		}
-		// 处理可能为 nil 的时间字段
-		var vipExpiresAt string
-		if user.VipEndAt != nil {
-			vipExpiresAt = user.VipEndAt.Format("2006-01-02 15:04:05")
-		} else {
-			vipExpiresAt = ""
-		}
-		
-		respUser := &super.User{
-			Id:           strconv.Itoa(int(user.ID)),
-			Username:     user.Username,
-			Email:        user.Email,
-			Avatar:       user.Avatar,
-			CreatedAt:    user.CreatedAt.Format("2006-01-02 15:04:05"),
-			UpdatedAt:    user.UpdatedAt.Format("2006-01-02 15:04:05"),
-			IsVip:        user.IsVip,
-			VipExpiresAt: vipExpiresAt,
-			AutoRenew:    user.AutoRenew,
-			Balance:      float32(user.Balance),
-		}
-		respUsers = append(respUsers, respUser)
+		u := user
+		respUsers = append(respUsers, modelUserToProto(&u))
 	}
 	
 	l.Debug("获取关注列表成功:", len(respUsers), "个用户，总数:", total)

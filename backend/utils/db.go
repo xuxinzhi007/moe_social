@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"backend/model"
@@ -15,6 +16,21 @@ import (
 
 // DB 全局数据库实例
 var DB *gorm.DB
+
+var ensureDBOnce sync.Once
+var ensureDBErr error
+
+// EnsureDB 在 API 等进程中懒加载一次数据库（与 RPC 共用全局 DB）。
+func EnsureDB() error {
+	ensureDBOnce.Do(func() {
+		if err := InitConfig(); err != nil {
+			ensureDBErr = err
+			return
+		}
+		ensureDBErr = InitDB()
+	})
+	return ensureDBErr
+}
 
 // InitConfig 初始化配置
 func InitConfig() error {
@@ -79,6 +95,7 @@ func InitDB() error {
 	if err := autoMigrate(); err != nil {
 		return fmt.Errorf("自动迁移数据库表失败: %v", err)
 	}
+	postMigrate(DB)
 
 	log.Println("数据库连接成功")
 	return nil
@@ -89,7 +106,7 @@ func autoMigrate() error {
 	return DB.AutoMigrate(
 		&model.User{},
 		&model.VipPlan{},
-		&model.VipOrder{},      // 合并了VIP记录功能
+		&model.VipOrder{}, // 合并了VIP记录功能
 		&model.VipRecord{},
 		&model.Transaction{},   // 交易记录表
 		&model.Post{},          // 帖子表
@@ -106,12 +123,18 @@ func autoMigrate() error {
 		&model.UserEmojiPack{}, // 用户拥有的表情包关联表
 		&model.UserMemory{},
 		// 签到等级系统
-		&model.UserLevel{},    // 用户等级表
-		&model.LevelConfig{},  // 等级配置表
-		&model.UserCheckIn{},  // 用户签到记录表
+		&model.UserLevel{},     // 用户等级表
+		&model.LevelConfig{},   // 等级配置表
+		&model.UserCheckIn{},   // 用户签到记录表
 		&model.CheckInReward{}, // 签到奖励配置表
-		&model.ExpLog{},       // 经验日志表
+		&model.ExpLog{},        // 经验日志表
+		&model.FriendRequest{}, // 好友申请
 	)
+}
+
+// After auto-migrate hooks for legacy rows.
+func postMigrate(db *gorm.DB) {
+	BackfillAllUserMoeNos(db)
 }
 
 // GetDB 获取数据库实例，并确保连接有效

@@ -32,6 +32,7 @@ class FriendsPage extends StatefulWidget {
 
 class _FriendsPageState extends State<FriendsPage> {
   List<User> _friends = [];
+  List<Map<String, dynamic>> _incomingRequests = [];
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
@@ -106,19 +107,14 @@ class _FriendsPageState extends State<FriendsPage> {
     }
 
     try {
-      final followingResult = await ApiService.getFollowings(currentUserId,
-          page: 1, pageSize: 1000);
-      final followerResult =
-          await ApiService.getFollowers(currentUserId, page: 1, pageSize: 1000);
-      final followings = followingResult['followings'] as List<User>;
-      final followers = followerResult['followers'] as List<User>;
-      final followerIds = followers.map((u) => u.id).toSet();
-      final friends =
-          followings.where((u) => followerIds.contains(u.id)).toList();
+      final friends = await ApiService.getFriends(currentUserId);
+      final incoming =
+          await ApiService.getIncomingFriendRequests(currentUserId);
       friends.sort((a, b) => a.username.compareTo(b.username));
       if (!mounted) return;
       setState(() {
         _friends = friends;
+        _incomingRequests = incoming;
         _isLoading = false;
         _hasError = false;
       });
@@ -188,6 +184,126 @@ class _FriendsPageState extends State<FriendsPage> {
     }
   }
 
+  void _showIncomingRequestsDialog() {
+    final rootContext = context;
+    showModalBottomSheet<void>(
+      context: rootContext,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  '好友申请',
+                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: _incomingRequests.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, i) {
+                      final row = _incomingRequests[i];
+                      final fromMap =
+                          row['from_user'] as Map<String, dynamic>? ?? {};
+                      final u = User.fromJson(fromMap);
+                      final rid = row['id']?.toString() ?? '';
+                      return Material(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(14),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      u.username,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    if (u.moeNo.isNotEmpty)
+                                      Text(
+                                        'Moe 号 ${u.moeNo}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () async {
+                                  final me = AuthService.currentUser;
+                                  if (me == null) return;
+                                  try {
+                                    await ApiService.rejectFriendRequest(
+                                        me, rid);
+                                    if (rootContext.mounted) {
+                                      Navigator.pop(ctx);
+                                      MoeToast.info(rootContext, '已拒绝');
+                                      _loadFriends();
+                                    }
+                                  } catch (e) {
+                                    if (rootContext.mounted) {
+                                      MoeToast.error(
+                                          rootContext, e.toString());
+                                    }
+                                  }
+                                },
+                                child: const Text('拒绝'),
+                              ),
+                              FilledButton(
+                                onPressed: () async {
+                                  final me = AuthService.currentUser;
+                                  if (me == null) return;
+                                  try {
+                                    await ApiService.acceptFriendRequest(
+                                        me, rid);
+                                    if (rootContext.mounted) {
+                                      Navigator.pop(ctx);
+                                      MoeToast.success(rootContext, '已同意');
+                                      _loadFriends();
+                                    }
+                                  } catch (e) {
+                                    if (rootContext.mounted) {
+                                      MoeToast.error(
+                                          rootContext, e.toString());
+                                    }
+                                  }
+                                },
+                                child: const Text('同意'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _showAddFriendDialog() {
     final rootContext = context;
     final controller = TextEditingController();
@@ -201,15 +317,15 @@ class _FriendsPageState extends State<FriendsPage> {
             return AlertDialog(
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20)),
-              title: const Text('通过邮箱添加好友'),
+              title: const Text('添加好友'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
                     controller: controller,
-                    keyboardType: TextInputType.emailAddress,
+                    keyboardType: TextInputType.text,
                     decoration: InputDecoration(
-                      hintText: '输入对方邮箱',
+                      hintText: '对方邮箱或 10 位 Moe 号',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -237,10 +353,10 @@ class _FriendsPageState extends State<FriendsPage> {
                   onPressed: isLoading
                       ? null
                       : () async {
-                          final email = controller.text.trim();
-                          if (email.isEmpty) {
+                          final raw = controller.text.trim();
+                          if (raw.isEmpty) {
                             setState(() {
-                              error = '请输入邮箱';
+                              error = '请输入邮箱或 Moe 号';
                             });
                             return;
                           }
@@ -255,20 +371,32 @@ class _FriendsPageState extends State<FriendsPage> {
                             error = null;
                           });
                           try {
-                            final targetUser =
-                                await ApiService.checkUserByEmail(email);
-                            if (targetUser.id == currentUserId) {
+                            if (raw.contains('@')) {
+                              final targetUser =
+                                  await ApiService.checkUserByEmail(raw);
+                              if (targetUser.id == currentUserId) {
+                                setState(() {
+                                  isLoading = false;
+                                  error = '不能添加自己为好友';
+                                });
+                                return;
+                              }
+                              await ApiService.sendFriendRequestByUserId(
+                                  currentUserId, targetUser.id);
+                            } else if (RegExp(r'^\d{10}$').hasMatch(raw)) {
+                              await ApiService.sendFriendRequestByMoeNo(
+                                  currentUserId, raw);
+                            } else {
                               setState(() {
                                 isLoading = false;
-                                error = '不能添加自己为好友';
+                                error = '请输入有效邮箱或 10 位 Moe 号';
                               });
                               return;
                             }
-                            await ApiService.followUser(
-                                currentUserId, targetUser.id);
                             if (rootContext.mounted) {
                               Navigator.of(dialogContext).pop();
-                              MoeToast.success(rootContext, '已关注 ${targetUser.username}');
+                              MoeToast.success(
+                                  rootContext, '好友申请已发送');
                               _loadFriends();
                             }
                           } catch (e) {
@@ -309,7 +437,10 @@ class _FriendsPageState extends State<FriendsPage> {
     return _friends.where((u) {
       final name = u.username.toLowerCase();
       final email = u.email.toLowerCase();
-      return name.contains(keyword) || email.contains(keyword);
+      final moe = u.moeNo.toLowerCase();
+      return name.contains(keyword) ||
+          email.contains(keyword) ||
+          moe.contains(keyword);
     }).toList();
   }
 
@@ -323,8 +454,18 @@ class _FriendsPageState extends State<FriendsPage> {
         elevation: 0,
         centerTitle: true,
         actions: [
+          if (_incomingRequests.isNotEmpty)
+            IconButton(
+              tooltip: '好友申请',
+              onPressed: _showIncomingRequestsDialog,
+              icon: Badge(
+                child: const Icon(Icons.mail_outline_rounded,
+                    color: Color(0xFF7F7FD5)),
+                label: Text('${_incomingRequests.length}'),
+              ),
+            ),
           Container(
-            margin: const EdgeInsets.only(right: 16),
+            margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
               color: const Color(0xFF7F7FD5).withOpacity(0.1),
               shape: BoxShape.circle,
@@ -467,7 +608,7 @@ class _FriendsPageState extends State<FriendsPage> {
             ),
             child: TextField(
               decoration: InputDecoration(
-                hintText: '搜索好友昵称或邮箱',
+                hintText: '搜索昵称、邮箱或 Moe 号',
                 hintStyle: TextStyle(color: Colors.grey[400]),
                 prefixIcon: Icon(Icons.search_rounded, color: Colors.grey[400]),
                 border: InputBorder.none,

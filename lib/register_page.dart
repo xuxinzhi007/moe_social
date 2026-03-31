@@ -43,6 +43,24 @@ class _RegisterPageState extends State<RegisterPage> {
           MoeToast.error(context, result.errorMessage ?? '注册失败，请稍后重试');
           return;
         }
+        final moe = result.moeNo;
+        if (moe != null && moe.isNotEmpty) {
+          showDialog<void>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('你的 Moe 号'),
+              content: SelectableText(
+                '请妥善保存。可使用该 10 位数字与密码登录：\n\n$moe',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('知道了'),
+                ),
+              ],
+            ),
+          );
+        }
         MoeToast.success(context, '欢迎加入 Moe Social！(≧∇≦)/');
         Navigator.pop(context);
       },

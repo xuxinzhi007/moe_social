@@ -2,7 +2,6 @@ package logic
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	"backend/model"
@@ -129,36 +128,8 @@ func (l *UpdateUserInfoLogic) UpdateUserInfo(in *super.UpdateUserInfoReq) (*supe
 	}
 
 	if len(updates) == 0 {
-		// Nothing to update
-		return &super.UpdateUserInfoResp{
-			User: &super.User{
-				Id:        strconv.Itoa(int(user.ID)),
-				Username:  user.Username,
-				Email:     user.Email,
-				Avatar:    user.Avatar,
-				Signature: user.Signature,
-				Gender:    user.Gender,
-				Birthday: func() string {
-					if user.Birthday != nil {
-						return user.Birthday.Format("2006-01-02")
-					}
-					return ""
-				}(),
-				CreatedAt: user.CreatedAt.Format("2006-01-02 15:04:05"),
-				UpdatedAt: user.UpdatedAt.Format("2006-01-02 15:04:05"),
-				IsVip:     user.IsVip,
-				VipExpiresAt: func() string {
-					if user.VipEndAt != nil {
-						return user.VipEndAt.Format("2006-01-02 15:04:05")
-					}
-					return ""
-				}(),
-				AutoRenew:       user.AutoRenew,
-				Balance:         float32(user.Balance),
-				Inventory:       user.Inventory,
-				EquippedFrameId: user.EquippedFrameId,
-			},
-		}, nil
+		_ = l.svcCtx.DB.First(&user, user.ID).Error
+		return &super.UpdateUserInfoResp{User: modelUserToProto(&user)}, nil
 	}
 
 	err := l.svcCtx.DB.Model(&user).Updates(updates).Error
@@ -167,34 +138,6 @@ func (l *UpdateUserInfoLogic) UpdateUserInfo(in *super.UpdateUserInfoReq) (*supe
 		return nil, errorx.Internal("更新用户信息失败，请稍后重试")
 	}
 
-	// 4. 构建响应
-	vipEndAt := ""
-	if user.VipEndAt != nil {
-		vipEndAt = user.VipEndAt.Format("2006-01-02 15:04:05")
-	}
-
-	birthday := ""
-	if user.Birthday != nil {
-		birthday = user.Birthday.Format("2006-01-02")
-	}
-
-	return &super.UpdateUserInfoResp{
-		User: &super.User{
-			Id:              strconv.Itoa(int(user.ID)),
-			Username:        user.Username,
-			Email:           user.Email,
-			Avatar:          user.Avatar,
-			Signature:       user.Signature,
-			Gender:          user.Gender,
-			Birthday:        birthday,
-			CreatedAt:       user.CreatedAt.Format("2006-01-02 15:04:05"),
-			UpdatedAt:       user.UpdatedAt.Format("2006-01-02 15:04:05"),
-			IsVip:           user.IsVip,
-			VipExpiresAt:    vipEndAt,
-			AutoRenew:       user.AutoRenew,
-			Balance:         float32(user.Balance),
-			Inventory:       user.Inventory,
-			EquippedFrameId: user.EquippedFrameId,
-		},
-	}, nil
+	_ = l.svcCtx.DB.First(&user, user.ID).Error
+	return &super.UpdateUserInfoResp{User: modelUserToProto(&user)}, nil
 }

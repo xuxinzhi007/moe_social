@@ -2,7 +2,6 @@ package logic
 
 import (
 	"context"
-	"strconv"
 
 	"backend/model"
 	"backend/rpc/internal/svc"
@@ -52,25 +51,10 @@ func (l *GetUsersLogic) GetUsers(in *super.GetUsersReq) (*super.GetUsersResp, er
 		return nil, result.Error
 	}
 
-	// 构建响应
 	respUsers := make([]*super.User, len(users))
-	for i, user := range users {
-		vipEndAt := ""
-		if user.VipEndAt != nil {
-			vipEndAt = user.VipEndAt.Format("2006-01-02 15:04:05")
-		}
-
-		respUsers[i] = &super.User{
-			Id:           strconv.Itoa(int(user.ID)),
-			Username:     user.Username,
-			Email:        user.Email,
-			Avatar:       user.Avatar,
-			CreatedAt:    user.CreatedAt.Format("2006-01-02 15:04:05"),
-			UpdatedAt:    user.UpdatedAt.Format("2006-01-02 15:04:05"),
-			IsVip:        user.IsVip,
-			VipExpiresAt: vipEndAt,
-			AutoRenew:    user.AutoRenew,
-		}
+	for i := range users {
+		u := users[i]
+		respUsers[i] = modelUserToProto(&u)
 	}
 
 	return &super.GetUsersResp{

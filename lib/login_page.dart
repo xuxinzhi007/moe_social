@@ -119,9 +119,10 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       MoeInputField(
                         controller: _emailController,
-                        hintText: '邮箱',
-                        icon: Icons.email_outlined,
-                        validator: Validators.email,
+                        hintText: '邮箱或 10 位 Moe 号',
+                        icon: Icons.alternate_email_rounded,
+                        keyboardType: TextInputType.emailAddress,
+                        validator: Validators.loginAccount,
                       ),
                       const SizedBox(height: 20),
                       MoeInputField(

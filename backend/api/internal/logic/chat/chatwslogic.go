@@ -18,7 +18,7 @@ import (
 
 // 全局聊天连接映射
 var (
-	chatConnections = make(map[string]*websocket.Conn)
+	chatConnections      = make(map[string]*websocket.Conn)
 	chatConnectionsMutex sync.RWMutex
 )
 
@@ -104,6 +104,7 @@ func (l *ChatWsLogic) ChatWs() error {
 // 处理 WebSocket 连接
 func (l *ChatWsLogic) handleConnection(userID string, conn *websocket.Conn) {
 	defer func() {
+		TryMatchCancel(userID)
 		chatConnectionsMutex.Lock()
 		delete(chatConnections, userID)
 		chatConnectionsMutex.Unlock()
@@ -157,6 +158,13 @@ func (l *ChatWsLogic) handleMessage(userID string, message []byte) {
 		l.sendToUser(userID, map[string]interface{}{
 			"type": "pong",
 		})
+	case "match_join":
+		TryMatchJoin(userID, l.sendToUser)
+	case "match_cancel":
+		TryMatchCancel(userID)
+		l.sendToUser(userID, map[string]interface{}{
+			"type": "match_cancelled",
+		})
 	case "message":
 		// 处理聊天消息
 		l.handleChatMessage(userID, msg)
@@ -188,14 +196,14 @@ func (l *ChatWsLogic) handleChatMessage(userID string, msg map[string]interface{
 	// 尝试获取发送者信息，支持多种字段名
 	senderName := "用户"
 	senderAvatar := ""
-	
+
 	// 尝试从不同字段名获取发送者名称
 	if name, ok := msg["sender_name"].(string); ok && name != "" {
 		senderName = name
 	} else if name, ok := msg["senderName"].(string); ok && name != "" {
 		senderName = name
 	}
-	
+
 	// 尝试从不同字段名获取发送者头像
 	if avatar, ok := msg["sender_avatar"].(string); ok && avatar != "" {
 		senderAvatar = avatar
@@ -213,7 +221,7 @@ func (l *ChatWsLogic) handleChatMessage(userID string, msg map[string]interface{
 		"time":          time.Now().Format(time.RFC3339),
 		"sender_name":   senderName,
 		"sender_avatar": senderAvatar,
-		"senderName":    senderName,  // 同时添加驼峰命名的字段，确保前端兼容
+		"senderName":    senderName,   // 同时添加驼峰命名的字段，确保前端兼容
 		"senderAvatar":  senderAvatar, // 同时添加驼峰命名的字段，确保前端兼容
 	}
 

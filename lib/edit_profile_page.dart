@@ -532,6 +532,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             _buildInfoRow('用户ID', widget.user.id),
                             const Divider(height: 24, thickness: 1, color: Color(0xFFF0F0F0)),
                             _buildInfoRow(
+                              'Moe 号',
+                              widget.user.moeNo.isNotEmpty
+                                  ? widget.user.moeNo
+                                  : '—',
+                              widget.user.moeNo.isNotEmpty
+                                  ? const Color(0xFF7F7FD5)
+                                  : null,
+                            ),
+                            const Divider(height: 24, thickness: 1, color: Color(0xFFF0F0F0)),
+                            _buildInfoRow(
                               'VIP状态',
                               widget.user.isVip ? 'VIP会员' : '普通用户',
                               widget.user.isVip ? const Color(0xFFFFD700) : null,

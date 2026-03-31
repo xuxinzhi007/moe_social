@@ -28,15 +28,15 @@ func NewUpdateUserInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Up
 func (l *UpdateUserInfoLogic) UpdateUserInfo(req *types.UpdateUserInfoReq) (resp *types.UpdateUserInfoResp, err error) {
 	// 调用RPC服务
 	rpcResp, err := l.svcCtx.SuperRpcClient.UpdateUserInfo(l.ctx, &super.UpdateUserInfoReq{
-		UserId:    req.UserId,
-		Username:  req.Username,
-		Email:     req.Email,
-		Avatar:    req.Avatar,
-		Signature: req.Signature,
-		Gender:          req.Gender,
-		Birthday:        req.Birthday,
-		Inventory:       req.Inventory,
-		EquippedFrameId: req.EquippedFrameId,
+		UserId:             req.UserId,
+		Username:           req.Username,
+		Email:              req.Email,
+		Avatar:             req.Avatar,
+		Signature:          req.Signature,
+		Gender:             req.Gender,
+		Birthday:           req.Birthday,
+		Inventory:          req.Inventory,
+		EquippedFrameId:    req.EquippedFrameId,
 		ClearEquippedFrame: req.ClearEquippedFrame,
 	})
 	if err != nil {
@@ -45,25 +45,27 @@ func (l *UpdateUserInfoLogic) UpdateUserInfo(req *types.UpdateUserInfoReq) (resp
 		}, nil
 	}
 
-	// 转换为API响应
+	u := types.User{
+		Id:              rpcResp.User.Id,
+		Username:        rpcResp.User.Username,
+		Email:           rpcResp.User.Email,
+		MoeNo:           rpcResp.User.MoeNo,
+		Avatar:          rpcResp.User.Avatar,
+		Signature:       rpcResp.User.Signature,
+		Gender:          rpcResp.User.Gender,
+		Birthday:        rpcResp.User.Birthday,
+		CreatedAt:       rpcResp.User.CreatedAt,
+		UpdatedAt:       rpcResp.User.UpdatedAt,
+		IsVip:           rpcResp.User.IsVip,
+		VipExpiresAt:    rpcResp.User.VipExpiresAt,
+		AutoRenew:       rpcResp.User.AutoRenew,
+		Balance:         float64(rpcResp.User.Balance),
+		Inventory:       rpcResp.User.Inventory,
+		EquippedFrameId: rpcResp.User.EquippedFrameId,
+	}
+
 	return &types.UpdateUserInfoResp{
 		BaseResp: common.HandleRPCError(nil, "更新用户信息成功"),
-		Data: types.User{
-			Id:           rpcResp.User.Id,
-			Username:     rpcResp.User.Username,
-			Email:        rpcResp.User.Email,
-			Avatar:       rpcResp.User.Avatar,
-			Signature:    rpcResp.User.Signature,
-			Gender:       rpcResp.User.Gender,
-			Birthday:     rpcResp.User.Birthday,
-			CreatedAt:    rpcResp.User.CreatedAt,
-			UpdatedAt:    rpcResp.User.UpdatedAt,
-			IsVip:        rpcResp.User.IsVip,
-			VipExpiresAt: rpcResp.User.VipExpiresAt,
-			AutoRenew:    rpcResp.User.AutoRenew,
-			Balance:      float64(rpcResp.User.Balance),
-			Inventory:    rpcResp.User.Inventory,
-			EquippedFrameId: rpcResp.User.EquippedFrameId,
-		},
+		Data:     u,
 	}, nil
 }

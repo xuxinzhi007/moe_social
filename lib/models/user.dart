@@ -5,6 +5,8 @@ class User {
   final String id;
   final String username;
   final String email;
+  /// 10 位数字 Moe 号（登录账号之一）
+  final String moeNo;
   final String avatar;
   final String signature; // 个性签名
   final String gender; // 性别
@@ -23,6 +25,7 @@ class User {
     required this.id,
     required this.username,
     required this.email,
+    this.moeNo = '',
     this.avatar = '',
     this.signature = '',
     this.gender = '',
@@ -44,6 +47,7 @@ class User {
       id: json['id'] as String,
       username: json['username'] as String,
       email: json['email'] as String,
+      moeNo: json['moe_no'] as String? ?? '',
       avatar: json['avatar'] as String? ?? '',
       signature: json['signature'] as String? ?? '',
       gender: json['gender'] as String? ?? '',
@@ -66,6 +70,7 @@ class User {
       'id': id,
       'username': username,
       'email': email,
+      'moe_no': moeNo,
       'avatar': avatar,
       'signature': signature,
       'gender': gender,
@@ -106,6 +111,7 @@ class User {
     String? id,
     String? username,
     String? email,
+    String? moeNo,
     String? avatar,
     String? signature,
     String? gender,
@@ -125,6 +131,7 @@ class User {
       id: id ?? this.id,
       username: username ?? this.username,
       email: email ?? this.email,
+      moeNo: moeNo ?? this.moeNo,
       avatar: avatar ?? this.avatar,
       signature: signature ?? this.signature,
       gender: gender ?? this.gender,
@@ -232,6 +239,7 @@ class User {
       id: id,
       username: username,
       email: email,
+      moeNo: moeNo,
       avatar: avatar,
       signature: signature,
       gender: gender,
@@ -241,6 +249,8 @@ class User {
       vipExpiresAt: vipExpiresAt,
       autoRenew: autoRenew,
       balance: balance,
+      inventory: inventory,
+      equippedFrameId: equippedFrameId,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );

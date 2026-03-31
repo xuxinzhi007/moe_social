@@ -50,6 +50,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
   int _followersCount = 0;
   bool _isLoadingStats = true;
 
+  /// none | friend | pending_out | pending_in
+  String _friendRelation = 'none';
+
   @override
   void initState() {
     super.initState();
@@ -103,11 +106,23 @@ class _UserProfilePageState extends State<UserProfilePage> {
         }
       }
 
+      String friendRel = 'none';
+      if (AuthService.isLoggedIn) {
+        final cur = AuthService.currentUser;
+        if (cur != null && cur != widget.userId) {
+          try {
+            friendRel =
+                await ApiService.getFriendRelation(cur, widget.userId);
+          } catch (_) {}
+        }
+      }
+
       if (mounted) {
         setState(() {
           _user = user;
           _userBadges = userBadges;
           _isFollowing = isFollowing;
+          _friendRelation = friendRel;
         });
         print('🔍 最终关注状态: $_isFollowing');
       }
@@ -183,6 +198,36 @@ class _UserProfilePageState extends State<UserProfilePage> {
       if (mounted) {
         ErrorHandler.handleException(context, e as Exception);
       }
+    }
+  }
+
+  String _friendRelationLabel() {
+    switch (_friendRelation) {
+      case 'friend':
+        return '已是好友';
+      case 'pending_out':
+        return '好友申请已发送';
+      case 'pending_in':
+        return '对方向你发了申请（在好友页处理）';
+      default:
+        return '发好友申请';
+    }
+  }
+
+  Future<void> _onSendFriendRequest() async {
+    final me = AuthService.currentUser;
+    if (me == null) {
+      MoeToast.error(context, '请先登录');
+      return;
+    }
+    try {
+      await ApiService.sendFriendRequestByUserId(me, widget.userId);
+      if (mounted) {
+        setState(() => _friendRelation = 'pending_out');
+        MoeToast.success(context, '已发送好友申请');
+      }
+    } catch (e) {
+      if (mounted) MoeToast.error(context, e.toString());
     }
   }
 
@@ -330,6 +375,18 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           email,
                           style: TextStyle(color: Colors.grey[500]),
                         ),
+                      if ((_user?.moeNo ?? '').isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          'Moe 号 ${_user!.moeNo}',
+                          style: TextStyle(
+                            color: Colors.grey[700],
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 20),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -412,6 +469,20 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       ],
 
                       const SizedBox(height: 24),
+                      if (AuthService.isLoggedIn &&
+                          AuthService.currentUser != widget.userId) ...[
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: _friendRelation == 'none'
+                                ? _onSendFriendRequest
+                                : null,
+                            icon: const Icon(Icons.how_to_reg_rounded, size: 18),
+                            label: Text(_friendRelationLabel()),
+                          ),
+                        ),
+                      ],
                       Row(
                         children: [
                           Flexible(

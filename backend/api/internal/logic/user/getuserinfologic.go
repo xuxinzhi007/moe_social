@@ -36,21 +36,24 @@ func (l *GetUserInfoLogic) GetUserInfo(req *types.GetUserInfoReq) (resp *types.G
 		}, nil
 	}
 
+	u := types.User{
+		Id:              rpcResp.User.Id,
+		Username:        rpcResp.User.Username,
+		Email:           rpcResp.User.Email,
+		MoeNo:           rpcResp.User.MoeNo,
+		Avatar:          rpcResp.User.Avatar,
+		CreatedAt:       rpcResp.User.CreatedAt,
+		UpdatedAt:       rpcResp.User.UpdatedAt,
+		IsVip:           rpcResp.User.IsVip,
+		VipExpiresAt:    rpcResp.User.VipExpiresAt,
+		AutoRenew:       rpcResp.User.AutoRenew,
+		Balance:         float64(rpcResp.User.Balance),
+		Inventory:       rpcResp.User.Inventory,
+		EquippedFrameId: rpcResp.User.EquippedFrameId,
+	}
+
 	return &types.GetUserInfoResp{
 		BaseResp: common.HandleRPCError(nil, "获取用户信息成功"),
-		Data: types.User{
-			Id:           rpcResp.User.Id,
-			Username:     rpcResp.User.Username,
-			Email:        rpcResp.User.Email,
-			Avatar:       rpcResp.User.Avatar,
-			CreatedAt:    rpcResp.User.CreatedAt,
-			UpdatedAt:    rpcResp.User.UpdatedAt,
-			IsVip:        rpcResp.User.IsVip,
-			VipExpiresAt: rpcResp.User.VipExpiresAt,
-			AutoRenew:    rpcResp.User.AutoRenew,
-			Balance:      float64(rpcResp.User.Balance),
-			Inventory:    rpcResp.User.Inventory,
-			EquippedFrameId: rpcResp.User.EquippedFrameId,
-		},
+		Data:     u,
 	}, nil
 }
