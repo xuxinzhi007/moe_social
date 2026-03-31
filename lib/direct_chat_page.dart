@@ -15,8 +15,6 @@ import 'services/chat_push_service.dart';
 import 'services/presence_service.dart';
 import 'services/notification_service.dart';
 import 'models/notification.dart';
-import 'widgets/fade_in_up.dart'; // 引入动画组件
-
 class DirectChatPage extends StatefulWidget {
   final String userId;
   final String username;
@@ -44,11 +42,6 @@ class _DirectChatPageState extends State<DirectChatPage> {
   bool _peerOnline = false;
   Timer? _onlineTimer;
   bool _presenceListening = false;
-
-  // 定义 Moe 风格颜色
-  final Color _primaryColor = const Color(0xFF7F7FD5);
-  final Color _accentColor = const Color(0xFF86A8E7);
-  final Color _backgroundColor = const Color(0xFFF5F7FA);
 
   @override
   void initState() {
@@ -513,211 +506,226 @@ class _DirectChatPageState extends State<DirectChatPage> {
   @override
   Widget build(BuildContext context) {
     final currentUserId = _currentUserId;
-    // 反转消息列表用于显示（最新的在最前面）
+    final scheme = Theme.of(context).colorScheme;
     final reversedMessages = List<_DirectMessage>.from(_messages.reversed);
+    final chatBg = Color.alphaBlend(
+      scheme.primary.withOpacity(0.04),
+      scheme.surfaceContainerLowest,
+    );
 
     return Scaffold(
-      backgroundColor: _backgroundColor,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [_primaryColor, _accentColor],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: _primaryColor.withOpacity(0.2),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+      backgroundColor: chatBg,
+      appBar: AppBar(
+        elevation: 0,
+        scrolledUnderElevation: 0.5,
+        backgroundColor: scheme.surface,
+        foregroundColor: scheme.onSurface,
+        surfaceTintColor: scheme.surfaceTint,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+        titleSpacing: 0,
+        title: InkWell(
+          onTap: () => _openPeerProfile(context),
+          borderRadius: BorderRadius.circular(12),
+          child: Row(
+            children: [
+              NetworkAvatarImage(
+                imageUrl: widget.avatar,
+                radius: 20,
+                placeholderIcon: Icons.person,
               ),
-            ],
-          ),
-          child: SafeArea(
-            child: AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              titleSpacing: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
-              title: Row(
-                children: [
-                  NetworkAvatarImage(
-                    imageUrl: widget.avatar,
-                    radius: 18,
-                    placeholderIcon: Icons.person,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      widget.username,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: scheme.onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
                       children: [
-                        Text(
-                          widget.username,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            color: _peerOnline
+                                ? const Color(0xFF34C759)
+                                : scheme.outline,
+                            shape: BoxShape.circle,
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: _peerOnline ? const Color(0xFF69F0AE) : Colors.white54,
-                                shape: BoxShape.circle,
-                                boxShadow: _peerOnline
-                                    ? [
-                                        const BoxShadow(
-                                          color: Color(0xFF69F0AE),
-                                          blurRadius: 6,
-                                          spreadRadius: 1,
-                                        )
-                                      ]
-                                    : null,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _peerOnline ? '在线' : '离线',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: _peerOnline ? const Color(0xFF69F0AE) : Colors.white70,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(width: 6),
+                        Text(
+                          _peerOnline ? '在线' : '离线',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: scheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => Container(
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                        ),
-                        child: SafeArea(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                                width: 40,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[300],
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.person_rounded, color: Color(0xFF7F7FD5)),
-                                title: const Text('查看对方主页'),
-                                onTap: () => Navigator.pop(context),
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.delete_outline_rounded, color: Colors.orange),
-                                title: const Text('清空聊天记录'),
-                                onTap: () => Navigator.pop(context),
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.block_rounded, color: Colors.red),
-                                title: const Text('屏蔽此人'),
-                                onTap: () => Navigator.pop(context),
-                              ),
-                              const SizedBox(height: 8),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.more_vert_rounded, color: scheme.onSurface),
+            onPressed: () => _showChatOptions(context),
+          ),
+        ],
       ),
       body: Column(
         children: [
           Expanded(
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFFF5F7FA), // 浅灰背景色
-              ),
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                reverse: true, // 反向列表，从底部开始
-                itemCount: reversedMessages.length,
-                itemBuilder: (context, index) {
-                  final message = reversedMessages[index];
-                  final isMe =
-                      currentUserId != null && message.senderId == currentUserId;
-                  
-                  // 检查是否显示时间
-                  bool showTime = false;
-                  if (index == reversedMessages.length - 1) {
-                    showTime = true; // 第一条（最旧的）显示时间
-                  } else {
-                    final nextMessage = reversedMessages[index + 1];
-                    final diff = message.time.difference(nextMessage.time).inMinutes.abs();
-                    if (diff > 5) {
-                      showTime = true; // 间隔超过5分钟显示时间
-                    }
-                  }
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              reverse: true,
+              itemCount: reversedMessages.length,
+              itemBuilder: (context, index) {
+                final message = reversedMessages[index];
+                final isMe =
+                    currentUserId != null && message.senderId == currentUserId;
 
-                  return FadeInUp(
-                    duration: const Duration(milliseconds: 300),
-                    offset: 20,
-                    child: Column(
-                      children: [
-                        if (showTime) _buildTimeTag(message.time),
-                        _buildMessageBubble(message, isMe),
-                      ],
+                final showPeerAvatar = !isMe &&
+                    (index == 0 ||
+                        reversedMessages[index - 1].senderId != message.senderId);
+
+                var showTime = false;
+                if (index == reversedMessages.length - 1) {
+                  showTime = true;
+                } else {
+                  final nextMessage = reversedMessages[index + 1];
+                  final diff =
+                      message.time.difference(nextMessage.time).inMinutes.abs();
+                  if (diff > 5) showTime = true;
+                }
+
+                return Column(
+                  children: [
+                    if (showTime) _buildTimeTag(context, message.time),
+                    _buildMessageBubble(
+                      context,
+                      message,
+                      isMe,
+                      showPeerAvatar: showPeerAvatar,
+                      tightBottom: index > 0 &&
+                          reversedMessages[index - 1].senderId ==
+                              message.senderId,
                     ),
-                  );
-                },
-              ),
+                  ],
+                );
+              },
             ),
           ),
-          _buildInputArea(),
+          _buildInputArea(context),
         ],
       ),
     );
   }
 
-  Widget _buildTimeTag(DateTime time) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+  void _openPeerProfile(BuildContext context) {
+    Navigator.pushNamed(
+      context,
+      '/user-profile',
+      arguments: {
+        'userId': widget.userId,
+        'userName': widget.username,
+        'userAvatar': widget.avatar,
+        'heroTag': 'dm_header_${widget.userId}',
+      },
+    );
+  }
+
+  void _showChatOptions(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: scheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: scheme.outline.withOpacity(0.35),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: Icon(Icons.person_rounded, color: scheme.primary),
+                title: const Text('查看对方主页'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _openPeerProfile(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete_outline_rounded,
+                    color: scheme.error),
+                title: const Text('清空聊天记录'),
+                onTap: () => Navigator.pop(ctx),
+              ),
+              ListTile(
+                leading: Icon(Icons.block_rounded, color: scheme.error),
+                title: const Text('屏蔽此人'),
+                onTap: () => Navigator.pop(ctx),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
       ),
-      child: Text(
-        _formatTime(time),
-        style: TextStyle(
-          color: Colors.grey[500],
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
+    );
+  }
+
+  Widget _buildTimeTag(BuildContext context, DateTime time) {
+    final scheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+        decoration: BoxDecoration(
+          color: scheme.surface.withOpacity(0.92),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: scheme.shadow.withOpacity(0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Text(
+          _formatTime(time),
+          style: TextStyle(
+            color: scheme.onSurfaceVariant,
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );
@@ -740,183 +748,194 @@ class _DirectChatPageState extends State<DirectChatPage> {
     }
   }
 
-  Widget _buildMessageBubble(_DirectMessage message, bool isMe) {
-    final alignment = isMe ? MainAxisAlignment.end : MainAxisAlignment.start;
-    final bgColor = isMe ? _primaryColor : Colors.white;
-    final textColor = isMe ? Colors.white : Colors.black87;
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        mainAxisAlignment: alignment,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isMe) ...[
-            NetworkAvatarImage(
-              imageUrl: widget.avatar,
-              radius: 16,
-              placeholderIcon: Icons.person,
-            ),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 260),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(20),
-                  topRight: const Radius.circular(20),
-                  bottomLeft: Radius.circular(isMe ? 20 : 4),
-                  bottomRight: Radius.circular(isMe ? 4 : 20),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: isMe 
-                        ? _primaryColor.withOpacity(0.3)
-                        : Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+  Widget _buildMessageBubble(
+    BuildContext context,
+    _DirectMessage message,
+    bool isMe, {
+    required bool showPeerAvatar,
+    required bool tightBottom,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final maxW = MediaQuery.sizeOf(context).width * 0.74;
+    final bubbleBg = isMe
+        ? scheme.primary
+        : scheme.surfaceContainerHighest;
+    final textColor = isMe ? scheme.onPrimary : scheme.onSurface;
+    const avatarCol = 36.0;
+
+    Widget bubbleChild = _isImageContent(message.content)
+        ? ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: CachedNetworkImage(
+              imageUrl: _getImageUrl(message.content),
+              fit: BoxFit.cover,
+              width: 200,
+              height: 200,
+              placeholder: (context, url) => SizedBox(
+                width: 200,
+                height: 200,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: scheme.primary,
                   ),
-                ],
+                ),
               ),
-              child: _isImageContent(message.content)
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: CachedNetworkImage(
-                        imageUrl: _getImageUrl(message.content),
-                        fit: BoxFit.cover,
-                        width: 200,
-                        height: 200,
-                        placeholder: (context, url) => SizedBox(
-                          width: 200,
-                          height: 200,
-                          child: Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Icon(
-                          Icons.broken_image_outlined,
-                          size: 48,
-                          color: textColor.withOpacity(0.6),
-                        ),
-                      ),
-                    )
-                  : Text(
-                      message.content,
-                      style: TextStyle(
-                        color: textColor,
-                        fontSize: 15,
-                        height: 1.4,
-                      ),
-                    ),
+              errorWidget: (context, url, error) => Icon(
+                Icons.broken_image_outlined,
+                size: 48,
+                color: textColor.withOpacity(0.6),
+              ),
             ),
+          )
+        : Text(
+            message.content,
+            style: TextStyle(
+              color: textColor,
+              fontSize: 16,
+              height: 1.45,
+            ),
+          );
+
+    final bubble = DecoratedBox(
+      decoration: BoxDecoration(
+        color: bubbleBg,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(isMe ? 18 : 6),
+          topRight: Radius.circular(isMe ? 6 : 18),
+          bottomLeft: const Radius.circular(18),
+          bottomRight: const Radius.circular(18),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.shadow.withOpacity(isMe ? 0.12 : 0.06),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
-          if (isMe) ...[
-            const SizedBox(width: 8),
-            // 这里可以添加自己的头像，如果需要的话
-          ],
         ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: bubbleChild,
+      ),
+    );
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: tightBottom ? 4 : 10),
+      child: Align(
+        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (!isMe) ...[
+              SizedBox(
+                width: avatarCol,
+                child: showPeerAvatar
+                    ? NetworkAvatarImage(
+                        imageUrl: widget.avatar,
+                        radius: 16,
+                        placeholderIcon: Icons.person,
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 8),
+            ],
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxW),
+              child: bubble,
+            ),
+            if (isMe) const SizedBox(width: 8),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildInputArea() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24), // 底部多留白适配全面屏手势
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: _primaryColor.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
-      ),
+  Widget _buildInputArea(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      elevation: 8,
+      shadowColor: scheme.shadow.withOpacity(0.12),
+      color: scheme.surface,
       child: SafeArea(
         top: false,
-        bottom: false, // 已经在 padding 中处理了
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline_rounded),
-              color: Colors.grey[400],
-              onPressed: _isSending ? null : _pickAndSendImage,
-            ),
-            Expanded(
-              child: Container(
-                constraints: const BoxConstraints(maxHeight: 100),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F7FA),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              IconButton(
+                icon: Icon(
+                  Icons.add_circle_outline_rounded,
+                  color: scheme.onSurfaceVariant,
                 ),
-                child: TextField(
-                  controller: _controller,
-                  focusNode: _inputFocusNode,
-                  minLines: 1,
-                  maxLines: 5,
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: (_) {
-                    if (!_isSending) {
-                      _sendMessage();
-                    }
-                  },
-                  decoration: const InputDecoration(
-                    hintText: '发送消息...',
-                    hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    isDense: true,
-                  ),
-                  style: const TextStyle(fontSize: 15),
-                ),
+                onPressed: _isSending ? null : _pickAndSendImage,
               ),
-            ),
-            const SizedBox(width: 12),
-            GestureDetector(
-              onTap: _isSending ? null : _sendMessage,
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [_primaryColor, _accentColor],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: _primaryColor.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
+              Expanded(
+                child: Container(
+                  constraints: const BoxConstraints(maxHeight: 120),
+                  decoration: BoxDecoration(
+                    color: scheme.surfaceContainerHighest.withOpacity(0.65),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: scheme.outline.withOpacity(0.15),
                     ),
-                  ],
-                ),
-                child: _isSending
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Icon(
-                        Icons.send_rounded,
-                        color: Colors.white,
-                        size: 20,
+                  ),
+                  child: TextField(
+                    controller: _controller,
+                    focusNode: _inputFocusNode,
+                    minLines: 1,
+                    maxLines: 5,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) {
+                      if (!_isSending) _sendMessage();
+                    },
+                    decoration: InputDecoration(
+                      hintText: '发消息…',
+                      hintStyle: TextStyle(
+                        color: scheme.onSurfaceVariant.withOpacity(0.8),
+                        fontSize: 15,
                       ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 11,
+                      ),
+                      isDense: true,
+                    ),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: FilledButton(
+                  onPressed: _isSending ? null : _sendMessage,
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(48, 48),
+                    maximumSize: const Size(48, 48),
+                    padding: EdgeInsets.zero,
+                    shape: const CircleBorder(),
+                  ),
+                  child: _isSending
+                      ? SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: scheme.onPrimary,
+                          ),
+                        )
+                      : Icon(Icons.send_rounded, color: scheme.onPrimary, size: 22),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

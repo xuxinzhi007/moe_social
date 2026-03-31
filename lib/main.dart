@@ -26,7 +26,6 @@ import 'notification_center_page.dart';
 import 'wallet_page.dart';
 import 'recharge_page.dart';
 import 'gacha_page.dart';
-import 'pages/game/game_lobby_page.dart';
 import 'user_profile_page.dart';
 import 'widgets/app_message_widget.dart';
 import 'widgets/moe_bottom_bar.dart';
@@ -37,8 +36,9 @@ import 'services/chat_push_service.dart';
 import 'services/accessibility_overlay_service.dart';
 import 'services/push_notification_service.dart';
 import 'gallery/cloud_gallery_page.dart';
-import 'pages/ai/agent_list_page.dart';
 import 'friends_page.dart';
+import 'pages/discover_page.dart';
+import 'pages/match_page.dart';
 import 'direct_chat_page.dart';
 import 'providers/theme_provider.dart';
 import 'providers/notification_provider.dart';
@@ -273,6 +273,7 @@ class MyApp extends StatelessWidget {
           return TopicPostsPage(topicTag: tag);
         },
         '/friends': (context) => const FriendsPage(),
+        '/match': (context) => const MatchPage(),
         '/direct-chat': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
           if (args is! Map<String, dynamic>) {
@@ -303,8 +304,7 @@ class _MainPageState extends State<MainPage> {
   late final List<Widget Function()> _pageBuilders = [
     () => HomePage(),
     () => FriendsPage(),
-    () => AgentListPage(),
-    () => const GameLobbyPage(),
+    () => const DiscoverPage(),
     () => ProfilePage(),
   ];
   late final List<Widget?> _loadedPages =
@@ -344,19 +344,14 @@ class _MainPageState extends State<MainPage> {
             label: '首页',
           ),
           NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline),
-            selectedIcon: Icon(Icons.chat_bubble_rounded),
+            icon: Icon(Icons.people_outline_rounded),
+            selectedIcon: Icon(Icons.people_rounded),
             label: '好友',
           ),
           NavigationDestination(
-            icon: Icon(Icons.smart_toy_outlined),
-            selectedIcon: Icon(Icons.smart_toy_rounded),
-            label: 'AI',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.sports_esports_outlined),
-            selectedIcon: Icon(Icons.sports_esports_rounded),
-            label: '娱乐',
+            icon: Icon(Icons.explore_outlined),
+            selectedIcon: Icon(Icons.explore_rounded),
+            label: '发现',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

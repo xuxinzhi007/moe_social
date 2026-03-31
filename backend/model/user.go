@@ -12,6 +12,7 @@ import (
 type User struct {
 	ID              uint           `gorm:"primarykey" json:"id"`
 	Username        string         `gorm:"uniqueIndex;size:50;not null" json:"username"`
+	MoeNo           string         `gorm:"uniqueIndex;size:10" json:"moe_no"` // 10 位数字账号
 	Password        string         `gorm:"size:100;not null" json:"-"`
 	Email           string         `gorm:"uniqueIndex;size:100;not null" json:"email"`
 	Avatar          string         `gorm:"type:text" json:"avatar"`   // 头像URL，支持长URL（如base64 data URI）

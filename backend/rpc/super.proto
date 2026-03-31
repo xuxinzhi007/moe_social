@@ -3,7 +3,7 @@ syntax = "proto3";
 
 package super;
 
-option go_package="./super";
+option go_package = "backend/rpc/pb/super;super";
 
 // 用户相关消息
 message User {
@@ -22,6 +22,7 @@ message User {
   float balance = 13; // 钱包余额
   string inventory = 14;
   string equipped_frame_id = 15;
+  string moe_no = 16;
 }
 
 // 用户注册请求
@@ -556,6 +557,76 @@ message DeleteUserMemoryReq {
 message DeleteUserMemoryResp {
 }
 
+// 好友申请（同意后互相关注）
+message FriendRequestView {
+  string id = 1;
+  User from_user = 2;
+  User to_user = 3;
+  string status = 4;
+  string created_at = 5;
+}
+
+message SendFriendRequestReq {
+  string actor_user_id = 1;
+  string to_user_id = 2;
+  string to_moe_no = 3;
+}
+
+message SendFriendRequestResp {
+  FriendRequestView data = 1;
+}
+
+message ListIncomingFriendRequestsReq {
+  string actor_user_id = 1;
+}
+
+message ListIncomingFriendRequestsResp {
+  repeated FriendRequestView data = 1;
+}
+
+message ListOutgoingFriendRequestsReq {
+  string actor_user_id = 1;
+}
+
+message ListOutgoingFriendRequestsResp {
+  repeated FriendRequestView data = 1;
+}
+
+message AcceptFriendRequestReq {
+  string actor_user_id = 1;
+  string request_id = 2;
+}
+
+message AcceptFriendRequestResp {
+  bool ok = 1;
+}
+
+message RejectFriendRequestReq {
+  string actor_user_id = 1;
+  string request_id = 2;
+}
+
+message RejectFriendRequestResp {
+  bool ok = 1;
+}
+
+message ListFriendsReq {
+  string actor_user_id = 1;
+}
+
+message ListFriendsResp {
+  repeated User users = 1;
+}
+
+message GetFriendRelationReq {
+  string actor_user_id = 1;
+  string other_user_id = 2;
+}
+
+message GetFriendRelationResp {
+  string relation = 1;
+}
+
 // 服务定义
 service Super {
   // 用户相关服务
@@ -625,6 +696,14 @@ service Super {
   rpc GetFollowings(GetFollowingsReq) returns (GetFollowingsResp);
   rpc GetFollowers(GetFollowersReq) returns (GetFollowersResp);
   rpc CheckFollow(CheckFollowReq) returns (CheckFollowResp);
+
+  rpc SendFriendRequest(SendFriendRequestReq) returns (SendFriendRequestResp);
+  rpc ListIncomingFriendRequests(ListIncomingFriendRequestsReq) returns (ListIncomingFriendRequestsResp);
+  rpc ListOutgoingFriendRequests(ListOutgoingFriendRequestsReq) returns (ListOutgoingFriendRequestsResp);
+  rpc AcceptFriendRequest(AcceptFriendRequestReq) returns (AcceptFriendRequestResp);
+  rpc RejectFriendRequest(RejectFriendRequestReq) returns (RejectFriendRequestResp);
+  rpc ListFriends(ListFriendsReq) returns (ListFriendsResp);
+  rpc GetFriendRelation(GetFriendRelationReq) returns (GetFriendRelationResp);
 
   // 虚拟形象相关服务
   rpc GetUserAvatar(GetUserAvatarReq) returns (GetUserAvatarResp);

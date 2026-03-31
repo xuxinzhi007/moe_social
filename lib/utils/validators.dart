@@ -67,6 +67,21 @@ class Validators {
     return null;
   }
 
+  /// 登录账号：邮箱或 10 位 Moe 号
+  static String? loginAccount(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return '请输入邮箱或 Moe 号';
+    }
+    final t = value.trim();
+    if (t.contains('@')) {
+      return email(t);
+    }
+    if (!RegExp(r'^\d{10}$').hasMatch(t)) {
+      return '请输入有效邮箱，或 10 位数字 Moe 号';
+    }
+    return null;
+  }
+
   // 必填字段验证
   static String? required(String? value, String fieldName) {
     if (value == null || value.isEmpty) {

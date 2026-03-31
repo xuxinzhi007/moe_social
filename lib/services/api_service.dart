@@ -410,11 +410,17 @@ class ApiService {
     }
   }
 
-  // 登录
+  // 登录：邮箱走 email 字段；否则走 username（Moe 号或用户名）
   static Future<Map<String, dynamic>> login(
-      String email, String password) async {
-    return await _request('/api/user/login',
-        method: 'POST', body: {'email': email, 'password': password});
+      String account, String password) async {
+    final t = account.trim();
+    final body = <String, dynamic>{'password': password};
+    if (t.contains('@')) {
+      body['email'] = t;
+    } else {
+      body['username'] = t;
+    }
+    return await _request('/api/user/login', method: 'POST', body: body);
   }
 
   // 注册
@@ -1088,6 +1094,60 @@ class ApiService {
     final result =
         await _request('/api/user/$followerId/follow/$followingId/check');
     return result['data'] as bool;
+  }
+
+  // ========== 好友（申请制）==========
+
+  static Future<List<User>> getFriends(String userId) async {
+    final result = await _request('/api/user/$userId/friends');
+    final list = result['data'] as List<dynamic>;
+    return list
+        .map((e) => User.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Future<void> sendFriendRequestByMoeNo(
+      String userId, String moeNo) async {
+    await _request('/api/user/$userId/friend-requests',
+        method: 'POST', body: {'to_moe_no': moeNo.trim()});
+  }
+
+  static Future<void> sendFriendRequestByUserId(
+      String userId, String toUserId) async {
+    await _request('/api/user/$userId/friend-requests',
+        method: 'POST', body: {'to_user_id': toUserId});
+  }
+
+  static Future<List<Map<String, dynamic>>> getIncomingFriendRequests(
+      String userId) async {
+    final result =
+        await _request('/api/user/$userId/friend-requests/incoming');
+    final list = result['data'] as List<dynamic>;
+    return list.map((e) => e as Map<String, dynamic>).toList();
+  }
+
+  static Future<void> acceptFriendRequest(
+      String userId, String requestId) async {
+    await _request(
+        '/api/user/$userId/friend-requests/$requestId/accept',
+        method: 'POST',
+        body: <String, dynamic>{});
+  }
+
+  static Future<void> rejectFriendRequest(
+      String userId, String requestId) async {
+    await _request(
+        '/api/user/$userId/friend-requests/$requestId/reject',
+        method: 'POST',
+        body: <String, dynamic>{});
+  }
+
+  static Future<String> getFriendRelation(
+      String userId, String otherUserId) async {
+    final result = await _request(
+        '/api/user/$userId/friends/status/$otherUserId');
+    final data = result['data'] as Map<String, dynamic>;
+    return data['relation'] as String;
   }
 
   // ========== 签到等级系统相关API ==========

@@ -11,11 +11,15 @@ import 'services/presence_service.dart';
 class AuthResult {
   final bool success;
   final String? errorMessage;
+  /// 注册成功后后端下发的 Moe 号（若有）
+  final String? moeNo;
 
-  AuthResult.success()
+  AuthResult.success({this.moeNo})
       : success = true,
         errorMessage = null;
-  AuthResult.failure(this.errorMessage) : success = false;
+  AuthResult.failure(this.errorMessage)
+      : success = false,
+        moeNo = null;
 }
 
 class AuthService {
@@ -68,9 +72,9 @@ class AuthService {
     }
   }
 
-  static Future<AuthResult> login(String email, String password) async {
+  static Future<AuthResult> login(String account, String password) async {
     try {
-      final result = await ApiService.login(email, password);
+      final result = await ApiService.login(account, password);
       // 后端返回格式: {data: {user: {...}, token: "..."}}
       final userData = result['data']['user'] as Map<String, dynamic>;
       _currentUser = userData['id'] as String;
@@ -96,9 +100,13 @@ class AuthService {
   static Future<AuthResult> register(
       String username, String email, String password) async {
     try {
-      await ApiService.register(username, email, password);
-      // Register doesn't return token directly, need to login after registration
-      return AuthResult.success();
+      final result = await ApiService.register(username, email, password);
+      final data = result['data'];
+      String? moe;
+      if (data is Map<String, dynamic>) {
+        moe = data['moe_no'] as String?;
+      }
+      return AuthResult.success(moeNo: moe);
     } on ApiException catch (e) {
       return AuthResult.failure(e.message);
     } catch (e) {

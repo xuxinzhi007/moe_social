@@ -864,6 +864,7 @@ type User struct {
 	Id              string  `json:"id"`
 	Username        string  `json:"username"`
 	Email           string  `json:"email"`
+	MoeNo           string  `json:"moe_no,omitempty"`
 	Avatar          string  `json:"avatar"`
 	Signature       string  `json:"signature"`
 	Gender          string  `json:"gender"`
@@ -876,6 +877,63 @@ type User struct {
 	Balance         float64 `json:"balance"`
 	Inventory       string  `json:"inventory"`
 	EquippedFrameId string  `json:"equipped_frame_id"`
+}
+
+type FriendRequestView struct {
+	Id        string `json:"id"`
+	FromUser  User   `json:"from_user"`
+	ToUser    User   `json:"to_user"`
+	Status    string `json:"status"`
+	CreatedAt string `json:"created_at"`
+}
+
+type SendFriendRequestReq struct {
+	UserId   string `path:"user_id"`
+	ToUserId string `json:"to_user_id,optional"`
+	ToMoeNo  string `json:"to_moe_no,optional"`
+}
+
+type SendFriendRequestResp struct {
+	BaseResp
+	Data FriendRequestView `json:"data"`
+}
+
+type ListFriendRequestsResp struct {
+	BaseResp
+	Data []FriendRequestView `json:"data"`
+}
+
+type FriendRequestActionReq struct {
+	UserId    string `path:"user_id"`
+	RequestId string `path:"request_id"`
+}
+
+type FriendRequestActionResp struct {
+	BaseResp
+	Data bool `json:"data"`
+}
+
+type ListFriendsResp struct {
+	BaseResp
+	Data []User `json:"data"`
+}
+
+type FriendRelationData struct {
+	Relation string `json:"relation"` // none | friend | pending_out | pending_in
+}
+
+type FriendStatusResp struct {
+	BaseResp
+	Data FriendRelationData `json:"data"`
+}
+
+type FriendUserPathReq struct {
+	UserId string `path:"user_id"`
+}
+
+type FriendStatusPathReq struct {
+	UserId      string `path:"user_id"`
+	OtherUserId string `path:"other_user_id"`
 }
 
 type UserAvatar struct {

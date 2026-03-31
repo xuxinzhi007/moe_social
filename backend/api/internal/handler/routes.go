@@ -336,6 +336,41 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodPost,
+				Path:    "/api/user/:user_id/friend-requests",
+				Handler: user.SendFriendRequestHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/user/:user_id/friend-requests/incoming",
+				Handler: user.ListIncomingFriendRequestsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/user/:user_id/friend-requests/outgoing",
+				Handler: user.ListOutgoingFriendRequestsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/user/:user_id/friend-requests/:request_id/accept",
+				Handler: user.AcceptFriendRequestHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/user/:user_id/friend-requests/:request_id/reject",
+				Handler: user.RejectFriendRequestHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/user/:user_id/friends",
+				Handler: user.ListFriendsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/user/:user_id/friends/status/:other_user_id",
+				Handler: user.FriendStatusHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
 				Path:    "/api/user/:user_id/memories",
 				Handler: user.UpsertUserMemoryHandler(serverCtx),
 			},

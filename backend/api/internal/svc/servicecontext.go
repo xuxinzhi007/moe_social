@@ -13,7 +13,6 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	// 创建RPC客户端
 	rpcClient := zrpc.MustNewClient(c.SuperRpc)
 
 	return &ServiceContext{

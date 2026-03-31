@@ -2,12 +2,12 @@ package logic
 
 import (
 	"context"
-	"strconv"
 
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
+	"backend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -35,26 +35,12 @@ func (l *GetUserInfoLogic) GetUserInfo(in *super.GetUserInfoReq) (*super.GetUser
 		return nil, errorx.NotFound("用户不存在")
 	}
 
-	// 构建响应
-	vipEndAt := ""
-	if user.VipEndAt != nil {
-		vipEndAt = user.VipEndAt.Format("2006-01-02 15:04:05")
+	if _, err := utils.EnsureUserMoeNo(l.svcCtx.DB, user.ID); err != nil {
+		l.Errorf("ensure moe_no: %v", err)
 	}
+	_ = l.svcCtx.DB.First(&user, user.ID).Error
 
 	return &super.GetUserInfoResp{
-		User: &super.User{
-			Id:           strconv.Itoa(int(user.ID)),
-			Username:     user.Username,
-			Email:        user.Email,
-			Avatar:       user.Avatar,
-			CreatedAt:    user.CreatedAt.Format("2006-01-02 15:04:05"),
-			UpdatedAt:    user.UpdatedAt.Format("2006-01-02 15:04:05"),
-			IsVip:        user.IsVip,
-			VipExpiresAt: vipEndAt,
-			AutoRenew:    user.AutoRenew,
-			Balance:      float32(user.Balance),
-			Inventory:    user.Inventory,
-			EquippedFrameId: user.EquippedFrameId,
-		},
+		User: modelUserToProto(&user),
 	}, nil
 }

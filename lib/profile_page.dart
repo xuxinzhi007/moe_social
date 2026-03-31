@@ -574,6 +574,28 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ],
                               ),
                             ),
+                            if ((_user?.moeNo ?? '').isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              FadeInUp(
+                                delay: const Duration(milliseconds: 175),
+                                child: Text(
+                                  'Moe 号 ${_user!.moeNo}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.white.withOpacity(0.92),
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.8,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withOpacity(0.15),
+                                        offset: const Offset(0, 1),
+                                        blurRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 6),
                             // 等级胶囊条 (Compact Level Indicator)
                             FadeInUp(
