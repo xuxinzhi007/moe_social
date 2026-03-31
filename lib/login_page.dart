@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
+import 'services/achievement_hooks.dart';
 import 'utils/validators.dart';
 import 'forgot_password_page.dart';
 import 'widgets/fade_in_up.dart';
@@ -44,6 +47,10 @@ class _LoginPageState extends State<LoginPage> {
         try {
           context.read<NotificationProvider>().init();
         } catch (_) {}
+        final uid = AuthService.currentUser;
+        if (uid != null) {
+          unawaited(AchievementHooks.ensureReady(uid));
+        }
         MoeToast.success(context, '欢迎回来！(｡♥♥｡)');
         Navigator.pushReplacementNamed(context, '/home');
       },

@@ -25,19 +25,17 @@ class _PersonalizedCardState extends State<PersonalizedCard> with SingleTickerPr
       duration: const Duration(seconds: 6),
     )..repeat(reverse: true);
     
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _tryUpdateLocation();
-      _loadWeatherData();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final provider =
+            Provider.of<DeviceInfoProvider>(context, listen: false);
+        await provider.refreshLocalDeviceContext(
+          requestLocationPermission: true,
+          includeNetworkAndBattery: false,
+        );
+      } catch (_) {}
+      if (mounted) await _loadWeatherData();
     });
-  }
-
-  void _tryUpdateLocation() {
-    try {
-      final provider = Provider.of<DeviceInfoProvider>(context, listen: false);
-      if (provider.locationText.isEmpty) {
-        provider.syncDeviceInfoToServer(requestLocationPermission: true);
-      }
-    } catch (_) {}
   }
 
   Future<void> _loadWeatherData() async {
@@ -230,7 +228,18 @@ class _PersonalizedCardState extends State<PersonalizedCard> with SingleTickerPr
                         ),
                       ),
                       GestureDetector(
-                        onTap: _loadWeatherData,
+                        onTap: () async {
+                          try {
+                            final p = Provider.of<DeviceInfoProvider>(
+                                context,
+                                listen: false);
+                            await p.refreshLocalDeviceContext(
+                              requestLocationPermission: true,
+                              includeNetworkAndBattery: false,
+                            );
+                          } catch (_) {}
+                          if (mounted) await _loadWeatherData();
+                        },
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(

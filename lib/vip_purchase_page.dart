@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'services/api_service.dart';
@@ -5,6 +7,7 @@ import 'models/vip_plan.dart';
 import 'recharge_page.dart';
 import 'widgets/fade_in_up.dart';
 import 'widgets/moe_toast.dart';
+import 'services/achievement_hooks.dart';
 
 class VipPurchasePage extends StatefulWidget {
   const VipPurchasePage({super.key});
@@ -132,6 +135,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
       if (mounted) {
         if (paid) {
           MoeToast.success(context, '开通成功，已从钱包扣款 ¥${order.amount.toStringAsFixed(2)}');
+          unawaited(AchievementHooks.recordVipPurchased(userId));
         } else {
           MoeToast.show(context, '订单已创建，请稍后查看订单状态',
               icon: Icons.info_outline_rounded,

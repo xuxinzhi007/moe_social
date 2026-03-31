@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
@@ -14,6 +14,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../auth_service.dart';
 import '../services/api_service.dart';
 
+/// 设备信息：服务端仅做「轻量上报」（版本/平台/匿名设备 id）；
+/// 定位、WiFi 名、电量等只在本地用于天气与设置页展示，不上传。
 class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
   String _version = '';
   String _deviceId = '';
@@ -27,10 +29,9 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
   int? _batteryLevel;
   Timer? _deviceInfoTimer;
   bool _isInitialized = false;
+  DateTime? _lastServerSyncAt;
 
-  // 限流：避免前台切换时频繁触发，相邻两次同步间隔最少 10 分钟
-  DateTime? _lastSyncAt;
-  static const Duration _minSyncInterval = Duration(minutes: 10);
+  static const Duration _serverSyncMinGap = Duration(minutes: 2);
 
   String get version => _version;
   String get deviceId => _deviceId;
@@ -53,27 +54,20 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
 
     WidgetsBinding.instance.addObserver(this);
 
-    // 启动时做一次轻量同步（不请求 GPS，只上报基本设备信息）
-    syncDeviceInfoToServer(requestLocationPermission: false);
+    notifyListeners();
 
-    // 定时同步改为 30 分钟一次，GPS 耗电由前台切换触发
+    unawaited(syncDeviceInfoToServer());
+
     _deviceInfoTimer?.cancel();
-    _deviceInfoTimer = Timer.periodic(const Duration(minutes: 30), (_) {
-      syncDeviceInfoToServer(requestLocationPermission: false);
+    _deviceInfoTimer = Timer.periodic(const Duration(hours: 1), (_) {
+      unawaited(syncDeviceInfoToServer());
     });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // App 从后台切回前台时，做一次含 GPS 的完整同步（节流：10 分钟内只跑一次）
     if (state == AppLifecycleState.resumed) {
-      final now = DateTime.now();
-      if (_lastSyncAt != null &&
-          now.difference(_lastSyncAt!) < _minSyncInterval) {
-        return;
-      }
-      _lastSyncAt = now;
-      syncDeviceInfoToServer(requestLocationPermission: true);
+      unawaited(syncDeviceInfoToServer());
     }
   }
 
@@ -104,14 +98,12 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
     }
     _deviceType = type;
     _osVersion = osVer;
-    notifyListeners();
   }
 
   Future<void> _loadVersion() async {
     try {
       final info = await PackageInfo.fromPlatform();
       _version = info.version;
-      notifyListeners();
     } catch (_) {}
   }
 
@@ -123,7 +115,6 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
       await prefs.setString('device_id', id);
     }
     _deviceId = id;
-    notifyListeners();
   }
 
   String _generateDeviceId() {
@@ -136,161 +127,39 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
     return buffer.toString();
   }
 
-  /// 请求所有必要权限（WiFi + 定位）
+  /// 申请定位（获取 WiFi 名称在 Android 10+ 亦依赖此权限）
   Future<bool> requestAllPermissions() async {
     if (kIsWeb) return true;
-    
+
     try {
-      // 请求定位权限（Android 10+ 获取 WiFi SSID 也需要定位权限）
       final locationStatus = await Permission.location.request();
-      debugPrint('📍 定位权限状态: $locationStatus');
-      
-      // 检查定位服务是否开启
+      if (kDebugMode) {
+        debugPrint('📍 定位权限状态: $locationStatus');
+      }
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
+      if (!serviceEnabled && kDebugMode) {
         debugPrint('⚠️ 定位服务未开启');
       }
-      
       return locationStatus.isGranted;
     } catch (e) {
-      debugPrint('❌ 请求权限出错: $e');
+      if (kDebugMode) debugPrint('❌ 请求权限出错: $e');
       return false;
     }
   }
 
-  Future<void> syncDeviceInfoToServer({bool requestLocationPermission = true}) async {
-    if (!AuthService.isLoggedIn) return;
+  /// 仅上报：设备标识、平台、系统版本、应用版本、最后活跃时间。
+  Future<void> syncDeviceInfoToServer() async {
+    if (!AuthService.isLoggedIn || _deviceId.isEmpty) return;
+
+    final now = DateTime.now();
+    if (_lastServerSyncAt != null &&
+        now.difference(_lastServerSyncAt!) < _serverSyncMinGap) {
+      return;
+    }
 
     try {
       final userId = await AuthService.getUserId();
-      String networkType = '';
-      String wifiName = '';
-      double? latitude;
-      double? longitude;
-      String locationText = '';
-      int? batteryLevel;
-
-      // Battery Status
-      try {
-        final battery = Battery();
-        batteryLevel = await battery.batteryLevel;
-        debugPrint('🔋 电量: $batteryLevel%');
-      } catch (e) {
-        debugPrint('❌ 获取电量失败: $e');
-      }
-
-      if (!kIsWeb) {
-        // 先请求权限
-        if (requestLocationPermission) {
-          await requestAllPermissions();
-        }
-        
-        // Network Info - 需要定位权限才能获取 WiFi SSID (Android 10+)
-        try {
-          final info = NetworkInfo();
-          final currentWifiName = await info.getWifiName();
-          final wifiBSSID = await info.getWifiBSSID();
-          final wifiIP = await info.getWifiIP();
-          
-          debugPrint('📶 WiFi 名称: $currentWifiName');
-          debugPrint('📶 WiFi BSSID: $wifiBSSID');
-          debugPrint('📶 WiFi IP: $wifiIP');
-          
-          if (currentWifiName != null && currentWifiName.isNotEmpty && currentWifiName != '<unknown ssid>') {
-            // 移除可能的引号
-            wifiName = currentWifiName.replaceAll('"', '');
-            networkType = 'WiFi';
-          } else if (wifiIP != null && wifiIP.isNotEmpty) {
-            // 有 IP 但没有 SSID，可能是权限问题
-            networkType = 'WiFi';
-            wifiName = '已连接 (需要定位权限获取名称)';
-          } else {
-            networkType = '移动数据/未连接';
-          }
-        } catch (e) {
-          debugPrint('❌ 获取网络信息失败: $e');
-          networkType = '获取失败';
-        }
-
-        // Location Info
-        try {
-          // 检查定位服务
-          bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-          if (!serviceEnabled) {
-            debugPrint('⚠️ 定位服务未开启');
-            locationText = '定位服务未开启';
-          } else {
-            LocationPermission permission = await Geolocator.checkPermission();
-            debugPrint('📍 当前定位权限: $permission');
-            
-            if (permission == LocationPermission.denied) {
-              if (requestLocationPermission) {
-                permission = await Geolocator.requestPermission();
-                debugPrint('📍 请求后定位权限: $permission');
-              }
-            }
-            
-            if (permission == LocationPermission.deniedForever) {
-              locationText = '定位权限被永久拒绝';
-            } else if (permission == LocationPermission.whileInUse ||
-                permission == LocationPermission.always) {
-              final position = await Geolocator.getCurrentPosition(
-                desiredAccuracy: LocationAccuracy.low,
-              ).timeout(const Duration(seconds: 10));
-              
-              latitude = position.latitude;
-              longitude = position.longitude;
-              debugPrint('📍 坐标: $latitude, $longitude');
-              
-              try {
-                final placemarks = await geocoding.placemarkFromCoordinates(
-                  latitude,
-                  longitude,
-                  localeIdentifier: 'zh_CN',
-                );
-                if (placemarks.isNotEmpty) {
-                  final p = placemarks.first;
-                  final parts = <String>[];
-                  if (p.administrativeArea != null && p.administrativeArea!.isNotEmpty) {
-                    parts.add(p.administrativeArea!);
-                  }
-                  if (p.subAdministrativeArea != null &&
-                      p.subAdministrativeArea!.isNotEmpty) {
-                    parts.add(p.subAdministrativeArea!);
-                  }
-                  if (p.locality != null && p.locality!.isNotEmpty) {
-                    parts.add(p.locality!);
-                  }
-                  if (p.subLocality != null && p.subLocality!.isNotEmpty) {
-                    parts.add(p.subLocality!);
-                  }
-                  if (p.thoroughfare != null && p.thoroughfare!.isNotEmpty) {
-                    parts.add(p.thoroughfare!);
-                  }
-                  locationText = parts.isEmpty ? '未知位置' : parts.join(' ');
-                  debugPrint('📍 地址: $locationText');
-                }
-              } catch (e) {
-                debugPrint('❌ 地理编码失败: $e');
-                locationText = '坐标: ${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}';
-              }
-            } else {
-              locationText = '需要定位权限';
-            }
-          }
-        } catch (e) {
-          debugPrint('❌ 获取定位失败: $e');
-          locationText = '获取失败';
-        }
-      }
-
-      _networkType = networkType;
-      _wifiName = wifiName;
-      _latitude = latitude;
-      _longitude = longitude;
-      _locationText = locationText;
-      _batteryLevel = batteryLevel;
-      notifyListeners();
+      if (userId.isEmpty) return;
 
       final info = {
         'device_id': _deviceId,
@@ -299,14 +168,8 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
         'app_version': _version,
         'device_name': _buildDeviceName(_deviceType, _deviceId),
         'last_seen': DateTime.now().toUtc().toIso8601String(),
-        'network_type': networkType,
-        'wifi_ssid': wifiName,
-        'location_lat': latitude,
-        'location_lng': longitude,
-        'location_text': locationText,
-        'battery_level': batteryLevel,
       };
-      
+
       await ApiService.post(
         '/api/user/$userId/memories',
         body: {
@@ -314,7 +177,145 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
           'value': json.encode(info),
         },
       );
+      _lastServerSyncAt = DateTime.now();
     } catch (_) {}
+  }
+
+  /// 更新内存中的网络/电量/定位，**不会**发往服务器。
+  Future<void> refreshLocalDeviceContext({
+    bool requestLocationPermission = true,
+    bool includeNetworkAndBattery = true,
+  }) async {
+    if (kIsWeb) return;
+
+    String networkType = _networkType;
+    String wifiName = _wifiName;
+    int? batteryLevel = _batteryLevel;
+
+    if (includeNetworkAndBattery) {
+      final batteryFuture = Future<int?>(() async {
+        try {
+          return await Battery().batteryLevel;
+        } catch (e) {
+          if (kDebugMode) debugPrint('❌ 获取电量失败: $e');
+          return null;
+        }
+      });
+
+      final networkFuture = Future<({String type, String ssid})>(() async {
+        if (requestLocationPermission) {
+          await requestAllPermissions();
+        }
+        try {
+          final info = NetworkInfo();
+          final currentWifiName = await info.getWifiName();
+          final wifiIP = await info.getWifiIP();
+
+          if (currentWifiName != null &&
+              currentWifiName.isNotEmpty &&
+              currentWifiName != '<unknown ssid>') {
+            return (
+              type: 'WiFi',
+              ssid: currentWifiName.replaceAll('"', ''),
+            );
+          }
+          if (wifiIP != null && wifiIP.isNotEmpty) {
+            return (
+              type: 'WiFi',
+              ssid: '已连接 (需定位权限显示名称)',
+            );
+          }
+          return (type: '移动数据/未连接', ssid: '');
+        } catch (e) {
+          if (kDebugMode) debugPrint('❌ 获取网络信息失败: $e');
+          return (type: '获取失败', ssid: '');
+        }
+      });
+
+      final results = await Future.wait([batteryFuture, networkFuture]);
+      final bat = results[0] as int?;
+      final net = results[1] as ({String type, String ssid});
+
+      if (bat != null) {
+        batteryLevel = bat;
+        if (kDebugMode) debugPrint('🔋 电量: $batteryLevel%');
+      }
+      networkType = net.type;
+      wifiName = net.ssid;
+    }
+
+    double? latitude = _latitude;
+    double? longitude = _longitude;
+    String locationText = _locationText;
+
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        locationText = '定位服务未开启';
+      } else {
+        var permission = await Geolocator.checkPermission();
+
+        if (permission == LocationPermission.denied) {
+          if (requestLocationPermission) {
+            permission = await Geolocator.requestPermission();
+          }
+        }
+
+        if (permission == LocationPermission.deniedForever) {
+          locationText = '定位权限被永久拒绝';
+        } else if (permission == LocationPermission.whileInUse ||
+            permission == LocationPermission.always) {
+          final position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.low,
+          ).timeout(const Duration(seconds: 10));
+
+          latitude = position.latitude;
+          longitude = position.longitude;
+
+          try {
+            final placemarks = await geocoding.placemarkFromCoordinates(
+              latitude,
+              longitude,
+              localeIdentifier: 'zh_CN',
+            );
+            if (placemarks.isNotEmpty) {
+              locationText = _formatPlacemark(placemarks.first);
+            }
+          } catch (e) {
+            if (kDebugMode) debugPrint('❌ 地理编码失败: $e');
+            locationText =
+                '坐标: ${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}';
+          }
+        } else {
+          locationText = '需要定位权限';
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ 获取定位失败: $e');
+      locationText = '获取失败';
+    }
+
+    _networkType = networkType;
+    _wifiName = wifiName;
+    _latitude = latitude;
+    _longitude = longitude;
+    _locationText = locationText;
+    _batteryLevel = batteryLevel;
+    notifyListeners();
+  }
+
+  static String _formatPlacemark(geocoding.Placemark p) {
+    final parts = <String>[];
+    void add(String? s) {
+      if (s != null && s.isNotEmpty) parts.add(s);
+    }
+
+    add(p.administrativeArea);
+    add(p.subAdministrativeArea);
+    add(p.locality);
+    add(p.subLocality);
+    add(p.thoroughfare);
+    return parts.isEmpty ? '未知位置' : parts.join(' ');
   }
 
   String _buildDeviceName(String platform, String deviceId) {

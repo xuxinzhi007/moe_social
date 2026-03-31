@@ -438,12 +438,14 @@ class BadgeGrid extends StatelessWidget {
   final List<AchievementBadge> badges;
   final double badgeSize;
   final int crossAxisCount;
+  final bool showProgress;
 
   const BadgeGrid({
     super.key,
     required this.badges,
     this.badgeSize = 80.0,
     this.crossAxisCount = 4,
+    this.showProgress = true,
   });
 
   void _showBadgeDetail(BuildContext context, AchievementBadge badge) {
@@ -470,6 +472,7 @@ class BadgeGrid extends StatelessWidget {
         return BadgeCard(
           badge: badge,
           size: badgeSize,
+          showProgress: showProgress,
           onTap: () => _showBadgeDetail(context, badge),
         );
       },

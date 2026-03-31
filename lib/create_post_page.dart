@@ -7,6 +7,7 @@ import '../models/post.dart';
 import '../models/topic_tag.dart';
 import '../services/api_service.dart';
 import '../services/post_service.dart';
+import '../services/achievement_hooks.dart';
 import '../providers/loading_provider.dart';
 import '../widgets/avatar_image.dart';
 import '../widgets/compact_topic_selector.dart';
@@ -145,6 +146,13 @@ class _CreatePostPageState extends State<CreatePostPage> {
         );
 
         await PostService.createPost(newPost);
+        try {
+          await AchievementHooks.recordPostPublished(
+            userId,
+            imageCount: imageUrls.length,
+            contentLength: newPost.content.length,
+          );
+        } catch (_) {}
       },
       onSuccess: (_) {
         loadingProvider.setSuccess('帖子发布成功！(≧∇≦)/');
