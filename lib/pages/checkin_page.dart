@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/checkin_provider.dart';
 import '../providers/user_level_provider.dart';
 import '../widgets/fade_in_up.dart';
 import '../widgets/moe_toast.dart';
+import '../services/achievement_hooks.dart';
 
 /// 签到主页面 - 遵循 Moe Social Design Language 梦幻风格
 class CheckInPage extends StatefulWidget {
@@ -577,6 +580,7 @@ class _CheckInPageState extends State<CheckInPage>
     if (success) {
       // 刷新用户等级信息
       levelProvider.loadUserLevel(widget.userId);
+      unawaited(AchievementHooks.recordDailyEngagement(widget.userId));
 
       // 显示成功消息
       if (checkInProvider.successMessage != null) {

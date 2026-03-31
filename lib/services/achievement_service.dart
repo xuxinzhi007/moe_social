@@ -175,13 +175,23 @@ class AchievementService {
         newlyUnlocked.addAll(await updateBadgeProgress(userId, 'first_post', 1));
         newlyUnlocked.addAll(await updateBadgeProgress(userId, 'post_master', 1));
 
-        // 检查是否是带图片的动态
         final hasImages = params?['hasImages'] as bool? ?? false;
-        if (hasImages) {
+        final imageCount = params?['imageCount'] as int? ?? 0;
+        if (hasImages && imageCount > 0) {
+          newlyUnlocked.addAll(
+            await updateBadgeProgress(userId, 'photographer', imageCount),
+          );
+        } else if (hasImages) {
           newlyUnlocked.addAll(await updateBadgeProgress(userId, 'photographer', 1));
         }
 
-        // 检查是否使用了情绪标签
+        final contentLength = params?['contentLength'] as int? ?? 0;
+        if (contentLength >= 500) {
+          newlyUnlocked.addAll(
+            await updateBadgeProgress(userId, 'storyteller', 1),
+          );
+        }
+
         final emotionTagId = params?['emotionTagId'] as String?;
         if (emotionTagId != null) {
           newlyUnlocked.addAll(await updateBadgeProgress(userId, 'emotion_expert', 1));

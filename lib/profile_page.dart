@@ -1,5 +1,4 @@
 import 'package:provider/provider.dart';
-import 'providers/device_info_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'autoglm/autoglm_page.dart';
@@ -66,6 +65,8 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       final user = await ApiService.getUserInfo(userId)
           .timeout(const Duration(seconds: 8));
+
+      await _achievementService.initializeUserBadges(userId);
 
       if (mounted) {
         setState(() {
@@ -146,7 +147,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<int> _getUserPostCount(String userId) async {
     try {
-      final result = await ApiService.getPosts(page: 1, pageSize: 20)
+      final result = await ApiService.getPosts(page: 1, pageSize: 100)
           .timeout(const Duration(seconds: 8));
       final posts = result['posts'] as List<Post>;
       return posts
@@ -251,10 +252,17 @@ class _ProfilePageState extends State<ProfilePage> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   children: [
-                    const SizedBox(height: 16),
-                    const SizedBox(height: 16),
-                    
-                    // 1. 我的足迹
+                    const SizedBox(height: 8),
+
+                    if (_user != null) ...[
+                      FadeInUp(
+                        delay: const Duration(milliseconds: 50),
+                        child: _buildAchievementPreviewCard(),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+
+                    // 云端图库（发动态 / 好友 / 签到等在首页快捷或底栏，避免此处再堆一层入口）
                     FadeInUp(
                       delay: const Duration(milliseconds: 100),
                       child: Column(
@@ -262,20 +270,16 @@ class _ProfilePageState extends State<ProfilePage> {
                         children: [
                           const Padding(
                             padding: EdgeInsets.only(left: 12, bottom: 10),
-                            child: Text('我的足迹', 
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
+                            child: Text(
+                              '云端与相册',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF333333),
+                              ),
+                            ),
                           ),
                           _buildMenuCard([
-                            _MenuItem(
-                              icon: Icons.military_tech_rounded,
-                              title: '成就徽章',
-                              subtitle: '已解锁 ${_userBadges.where((b) => b.isUnlocked).length} 个',
-                              color: const Color(0xFFFFB347),
-                              onTap: () {
-                                HapticFeedback.lightImpact();
-                                _showAllBadges();
-                              },
-                            ),
                             _MenuItem(
                               icon: Icons.cloud_queue_rounded,
                               title: '云端图库',
@@ -578,20 +582,49 @@ class _ProfilePageState extends State<ProfilePage> {
                               const SizedBox(height: 6),
                               FadeInUp(
                                 delay: const Duration(milliseconds: 175),
-                                child: Text(
-                                  'Moe 号 ${_user!.moeNo}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white.withOpacity(0.92),
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.8,
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.black.withOpacity(0.15),
-                                        offset: const Offset(0, 1),
-                                        blurRadius: 2,
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () {
+                                      Clipboard.setData(
+                                        ClipboardData(text: _user!.moeNo),
+                                      );
+                                      MoeToast.success(context, '已复制 Moe 号');
+                                    },
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 4,
+                                        horizontal: 2,
                                       ),
-                                    ],
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            'Moe 号 ${_user!.moeNo}',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.white.withOpacity(0.92),
+                                              fontWeight: FontWeight.w600,
+                                              letterSpacing: 0.8,
+                                              shadows: const [
+                                                Shadow(
+                                                  color: Colors.black26,
+                                                  offset: Offset(0, 1),
+                                                  blurRadius: 2,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Icon(
+                                            Icons.copy_rounded,
+                                            size: 16,
+                                            color: Colors.white.withOpacity(0.85),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -696,105 +729,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
 
-                const SizedBox(height: 20),
-                // 设备信息
-                FadeInUp(
-                  delay: const Duration(milliseconds: 300),
-                  child: Consumer<DeviceInfoProvider>(
-                    builder: (context, provider, child) {
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.white.withOpacity(0.3)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              offset: const Offset(0, 4),
-                              blurRadius: 8,
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(_getDeviceIcon(provider.deviceType),
-                                color: Colors.white, size: 16),
-                            const SizedBox(width: 8),
-                            Text(
-                              provider.deviceType.isNotEmpty ? provider.deviceType : '未知设备',
-                              style: const TextStyle(color: Colors.white, fontSize: 13),
-                            ),
-                            const SizedBox(width: 16),
-                            Container(width: 1, height: 16, color: Colors.white30),
-                            const SizedBox(width: 16),
-                            const Icon(Icons.location_on_outlined, color: Colors.white, size: 16),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                provider.locationText.isNotEmpty
-                                    ? provider.locationText
-                                    : '未知位置',
-                                style: const TextStyle(color: Colors.white, fontSize: 13),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-
-                // 移除原先的大块 UserLevelProvider Consumer Card
-
-                // 徽章展示区域
-                if (_userBadges.where((badge) => badge.isUnlocked).isNotEmpty) ...[
-                  const SizedBox(height: 20),
-                  FadeInUp(
-                    delay: const Duration(milliseconds: 350),
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 32),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.white.withOpacity(0.3)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            offset: const Offset(0, 4),
-                            blurRadius: 8,
-                          ),
-                        ],
-                      ),
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: _userBadges
-                              .where((badge) => badge.isUnlocked)
-                              .take(6)
-                              .map((badge) => Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                                    child: BadgeCard(
-                                      badge: badge,
-                                      size: 40, // 加大徽章尺寸
-                                      showProgress: false,
-                                      onTap: () {
-                                        HapticFeedback.lightImpact();
-                                        _showBadgeDetails(badge);
-                                      },
-                                    ),
-                                  ))
-                              .toList(),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                const SizedBox(height: 12),
               ],
             ),
           ),
@@ -803,23 +738,123 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  IconData _getDeviceIcon(String type) {
-    switch (type.toLowerCase()) {
-      case 'android':
-        return Icons.android;
-      case 'ios':
-        return Icons.phone_iphone;
-      case 'macos':
-        return Icons.desktop_mac;
-      case 'windows':
-        return Icons.window;
-      case 'linux':
-        return Icons.computer;
-      case 'web':
-        return Icons.web;
-      default:
-        return Icons.smartphone;
-    }
+  List<AchievementBadge> _badgesSortedForPreview() {
+    final list = List<AchievementBadge>.from(_userBadges);
+    list.sort((a, b) {
+      if (a.isUnlocked != b.isUnlocked) return a.isUnlocked ? -1 : 1;
+      return b.progress.compareTo(a.progress);
+    });
+    return list;
+  }
+
+  Widget _buildAchievementPreviewCard() {
+    final stats = _achievementService.getBadgeStatistics(_user!.id);
+    final sorted = _badgesSortedForPreview();
+    final showCount = sorted.length > 12 ? 12 : sorted.length;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF7F7FD5).withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text(
+                '成就徽章',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF333333),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFB347).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${stats.unlockedBadges}/${stats.totalBadges}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFE65100),
+                  ),
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  _showAllBadges();
+                },
+                child: const Text('全部'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: stats.totalBadges > 0
+                  ? stats.unlockedBadges / stats.totalBadges
+                  : 0,
+              minHeight: 6,
+              backgroundColor: const Color(0xFFF0F0F5),
+              color: const Color(0xFF7F7FD5),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 102,
+            child: showCount == 0
+                ? Center(
+                    child: Text(
+                      '暂无徽章数据',
+                      style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                    ),
+                  )
+                : ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: showCount,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, i) {
+                      final b = sorted[i];
+                      return BadgeCard(
+                        badge: b,
+                        size: 72,
+                        showProgress: true,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          _showBadgeDetails(b);
+                        },
+                      );
+                    },
+                  ),
+          ),
+          if (stats.unlockedBadges == 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                '发帖、评论、签到可积累进度并解锁成就',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _buildStatItemCompact(String label, String value, {VoidCallback? onTap}) {
@@ -1021,6 +1056,14 @@ class _ProfilePageState extends State<ProfilePage> {
                 height: 1.4,
               ),
             ),
+            if (!badge.isUnlocked && badge.progress > 0) ...[
+              const SizedBox(height: 12),
+              Text(
+                '进度 ${(badge.progress * 100).toStringAsFixed(0)}% · ${badge.condition}',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[600], fontSize: 13),
+              ),
+            ],
             if (badge.isUnlocked) ...[
               const SizedBox(height: 12),
               Container(
@@ -1111,6 +1154,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   badges: _userBadges,
                   badgeSize: 80,
                   crossAxisCount: 3,
+                  showProgress: true,
                 ),
               ),
             ),

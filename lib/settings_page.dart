@@ -42,6 +42,13 @@ class _SettingsPageState extends State<SettingsPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final p = Provider.of<DeviceInfoProvider>(context, listen: false);
+          p.refreshLocalDeviceContext(
+            requestLocationPermission: true,
+            includeNetworkAndBattery: true,
+          );
+        });
         return Consumer<DeviceInfoProvider>(
           builder: (context, provider, child) {
             final size = MediaQuery.of(context).size;
@@ -71,7 +78,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     }
                     return coord;
                   }
-                  return '未上报';
+                  return '未获取';
                 }(),
               ),
             ];
@@ -291,7 +298,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     if (devices.isEmpty) {
                       return const Center(
                         child: Text(
-                          '暂未上报任何设备',
+                          '暂无设备记录（登录后会自动记录基础信息）',
+                          textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.grey),
                         ),
                       );
@@ -586,7 +594,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 MoeMenuItem(
                   icon: Icons.devices_other_rounded,
                   title: '远程设备列表',
-                  subtitle: '查看已上报的其他设备及定位信息',
+                  subtitle: '查看登录过的设备（仅版本与平台等基础信息）',
                   color: Colors.cyan,
                   onTap: _showRemoteDevicesSheet,
                 ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'models/comment.dart';
 import 'services/post_service.dart';
+import 'services/achievement_hooks.dart';
 import 'services/api_service.dart';
 import 'auth_service.dart';
 import 'services/like_state_manager.dart';
@@ -105,7 +106,8 @@ class _CommentsPageState extends State<CommentsPage> {
       );
 
       await PostService.addComment(comment);
-      
+      await AchievementHooks.recordComment(userId);
+
       _commentController.clear();
       await _fetchComments();
 

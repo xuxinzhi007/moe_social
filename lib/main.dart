@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:ui';
+import 'services/achievement_hooks.dart';
 import 'auth_service.dart';
 import 'login_page.dart';
 import 'services/api_service.dart';
@@ -61,6 +62,10 @@ void main() async {
     if (AuthService.isLoggedIn) {
       PresenceService.start();
       ChatPushService.start();
+      final uid = AuthService.currentUser;
+      if (uid != null) {
+        unawaited(AchievementHooks.ensureReady(uid));
+      }
     }
     
     // 初始化无障碍悬浮窗监听
