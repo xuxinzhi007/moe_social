@@ -33,6 +33,8 @@ class FriendsPage extends StatefulWidget {
 class _FriendsPageState extends State<FriendsPage> {
   List<User> _friends = [];
   List<Map<String, dynamic>> _incomingRequests = [];
+  /// 当前用户资料（空状态 / 添加好友里展示「我的 Moe 号」）
+  User? _selfProfile;
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
@@ -110,11 +112,16 @@ class _FriendsPageState extends State<FriendsPage> {
       final friends = await ApiService.getFriends(currentUserId);
       final incoming =
           await ApiService.getIncomingFriendRequests(currentUserId);
+      User? self;
+      try {
+        self = await ApiService.getUserInfo(currentUserId);
+      } catch (_) {}
       friends.sort((a, b) => a.username.compareTo(b.username));
       if (!mounted) return;
       setState(() {
         _friends = friends;
         _incomingRequests = incoming;
+        _selfProfile = self;
         _isLoading = false;
         _hasError = false;
       });
@@ -128,6 +135,12 @@ class _FriendsPageState extends State<FriendsPage> {
         _errorMessage = e.toString();
       });
     }
+  }
+
+  void _copyToClipboard(BuildContext ctx, String text, String toast) {
+    if (text.isEmpty) return;
+    Clipboard.setData(ClipboardData(text: text));
+    if (ctx.mounted) MoeToast.success(ctx, toast);
   }
 
   Future<void> _ensureOnlineStatus() async {
@@ -237,11 +250,35 @@ class _FriendsPageState extends State<FriendsPage> {
                                       ),
                                     ),
                                     if (u.moeNo.isNotEmpty)
-                                      Text(
-                                        'Moe 号 ${u.moeNo}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey[600],
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 4),
+                                        child: InkWell(
+                                          onTap: () => _copyToClipboard(
+                                            context,
+                                            u.moeNo,
+                                            '已复制对方 Moe 号',
+                                          ),
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                u.moeNo,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w600,
+                                                  letterSpacing: 0.8,
+                                                  color: Colors.grey[800],
+                                                ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Icon(
+                                                Icons.copy_rounded,
+                                                size: 16,
+                                                color: Colors.grey[600],
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                   ],
@@ -307,126 +344,257 @@ class _FriendsPageState extends State<FriendsPage> {
   void _showAddFriendDialog() {
     final rootContext = context;
     final controller = TextEditingController();
-    showDialog(
+    showModalBottomSheet<void>(
       context: rootContext,
-      builder: (dialogContext) {
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
         bool isLoading = false;
         String? error;
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
-              title: const Text('添加好友'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: controller,
-                    keyboardType: TextInputType.text,
-                    decoration: InputDecoration(
-                      hintText: '对方邮箱或 10 位 Moe 号',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: StatefulBuilder(
+            builder: (context, setSheetState) {
+              final myMoe = _selfProfile?.moeNo ?? '';
+              return SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
                       ),
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (error != null)
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        error ?? '',
-                        style: const TextStyle(color: Colors.red, fontSize: 12),
+                      Text(
+                        '添加好友',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
                       ),
-                    ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('取消', style: TextStyle(color: Colors.grey)),
-                ),
-                ElevatedButton(
-                  onPressed: isLoading
-                      ? null
-                      : () async {
-                          final raw = controller.text.trim();
-                          if (raw.isEmpty) {
-                            setState(() {
-                              error = '请输入邮箱或 Moe 号';
-                            });
-                            return;
-                          }
-                          final currentUserId = AuthService.currentUser;
-                          if (currentUserId == null) {
-                            Navigator.of(dialogContext).pop();
-                            MoeToast.error(rootContext, '请先登录');
-                            return;
-                          }
-                          setState(() {
-                            isLoading = true;
-                            error = null;
-                          });
-                          try {
-                            if (raw.contains('@')) {
-                              final targetUser =
-                                  await ApiService.checkUserByEmail(raw);
-                              if (targetUser.id == currentUserId) {
-                                setState(() {
-                                  isLoading = false;
-                                  error = '不能添加自己为好友';
-                                });
-                                return;
-                              }
-                              await ApiService.sendFriendRequestByUserId(
-                                  currentUserId, targetUser.id);
-                            } else if (RegExp(r'^\d{10}$').hasMatch(raw)) {
-                              await ApiService.sendFriendRequestByMoeNo(
-                                  currentUserId, raw);
-                            } else {
-                              setState(() {
-                                isLoading = false;
-                                error = '请输入有效邮箱或 10 位 Moe 号';
-                              });
-                              return;
-                            }
-                            if (rootContext.mounted) {
-                              Navigator.of(dialogContext).pop();
-                              MoeToast.success(
-                                  rootContext, '好友申请已发送');
-                              _loadFriends();
-                            }
-                          } catch (e) {
-                            setState(() {
-                              isLoading = false;
-                              error = e.toString();
-                            });
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7F7FD5),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '输入对方的注册邮箱，或 10 位数字 Moe 号，我们会向对方发送好友申请。',
+                        style: TextStyle(
+                          fontSize: 14,
+                          height: 1.4,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: controller,
+                        keyboardType: TextInputType.text,
+                        textInputAction: TextInputAction.done,
+                        decoration: InputDecoration(
+                          labelText: '邮箱或 Moe 号',
+                          hintText: '例如 name@example.com 或 1234567890',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                      ),
+                      if (error != null) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          error!,
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      if (myMoe.isNotEmpty) ...[
+                        Text(
+                          '我的 Moe 号（可复制发给对方）',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Material(
+                          color: const Color(0xFFF0F2FF),
+                          borderRadius: BorderRadius.circular(12),
+                          child: InkWell(
+                            onTap: () => _copyToClipboard(
+                              sheetContext,
+                              myMoe,
+                              '已复制我的 Moe 号',
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      myMoe,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 1.2,
+                                        color: Color(0xFF5C6BC0),
+                                      ),
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.copy_rounded,
+                                    size: 20,
+                                    color: Colors.grey[700],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: isLoading
+                                  ? null
+                                  : () => Navigator.of(sheetContext).pop(),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: const Text('取消'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: FilledButton(
+                              onPressed: isLoading
+                                  ? null
+                                  : () async {
+                                      final raw = controller.text.trim();
+                                      if (raw.isEmpty) {
+                                        setSheetState(() {
+                                          error = '请输入邮箱或 Moe 号';
+                                        });
+                                        return;
+                                      }
+                                      final currentUserId =
+                                          AuthService.currentUser;
+                                      if (currentUserId == null) {
+                                        Navigator.of(sheetContext).pop();
+                                        MoeToast.error(
+                                            rootContext, '请先登录');
+                                        return;
+                                      }
+                                      setSheetState(() {
+                                        isLoading = true;
+                                        error = null;
+                                      });
+                                      try {
+                                        if (raw.contains('@')) {
+                                          final targetUser =
+                                              await ApiService.checkUserByEmail(
+                                                  raw);
+                                          if (targetUser.id ==
+                                              currentUserId) {
+                                            setSheetState(() {
+                                              isLoading = false;
+                                              error = '不能添加自己为好友';
+                                            });
+                                            return;
+                                          }
+                                          await ApiService
+                                              .sendFriendRequestByUserId(
+                                            currentUserId,
+                                            targetUser.id,
+                                          );
+                                        } else if (RegExp(r'^\d{10}$')
+                                            .hasMatch(raw)) {
+                                          await ApiService
+                                              .sendFriendRequestByMoeNo(
+                                            currentUserId,
+                                            raw,
+                                          );
+                                        } else {
+                                          setSheetState(() {
+                                            isLoading = false;
+                                            error =
+                                                '请输入有效邮箱或 10 位 Moe 号';
+                                          });
+                                          return;
+                                        }
+                                        if (rootContext.mounted) {
+                                          Navigator.of(sheetContext).pop();
+                                          MoeToast.success(
+                                            rootContext,
+                                            '好友申请已发送',
+                                          );
+                                          _loadFriends();
+                                        }
+                                      } catch (e) {
+                                        setSheetState(() {
+                                          isLoading = false;
+                                          error = e.toString();
+                                        });
+                                      }
+                                    },
+                              style: FilledButton.styleFrom(
+                                backgroundColor: const Color(0xFF7F7FD5),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: isLoading
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text('发送申请'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  child: isLoading
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('添加'),
                 ),
-              ],
-            );
-          },
+              );
+            },
+          ),
         );
       },
-    );
+    ).whenComplete(controller.dispose);
   }
 
   List<User> get _filteredFriends {
@@ -478,7 +646,9 @@ class _FriendsPageState extends State<FriendsPage> {
         ],
       ),
       body: _buildBody(),
-      floatingActionButton: _showFab ? _buildFloatingActionButton() : null,
+      floatingActionButton: _friends.isNotEmpty && _showFab
+          ? _buildFloatingActionButton()
+          : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
@@ -539,53 +709,261 @@ class _FriendsPageState extends State<FriendsPage> {
       );
     }
     if (_friends.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(40),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(color: const Color(0xFF7F7FD5).withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10)),
+      final myMoe = _selfProfile?.moeNo ?? '';
+      final myEmail = _selfProfile?.email ?? '';
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight - 40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_incomingRequests.isNotEmpty)
+                    Material(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      elevation: 0,
+                      shadowColor: Colors.transparent,
+                      child: InkWell(
+                        onTap: _showIncomingRequestsDialog,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFF7F7FD5).withOpacity(0.35),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.mail_outline_rounded,
+                                color: const Color(0xFF7F7FD5),
+                                size: 22,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  '${_incomingRequests.length} 条好友申请，点击查看',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                color: Colors.grey[500],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (_incomingRequests.isNotEmpty) const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.08),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF7F7FD5).withOpacity(0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.people_outline_rounded,
+                            size: 36,
+                            color: Color(0xFF7F7FD5),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        const Text(
+                          '还没有好友',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF333333),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '用对方的邮箱或 10 位 Moe 号发送申请；对方也可用你的信息搜索你。',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            height: 1.45,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        if (myMoe.isNotEmpty || myEmail.isNotEmpty) ...[
+                          const SizedBox(height: 20),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '我的账号',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          if (myMoe.isNotEmpty)
+                            Material(
+                              color: const Color(0xFFF5F7FF),
+                              borderRadius: BorderRadius.circular(12),
+                              child: InkWell(
+                                onTap: () => _copyToClipboard(
+                                  context,
+                                  myMoe,
+                                  '已复制我的 Moe 号',
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Moe 号',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.grey[600],
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              myMoe,
+                                              style: const TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w700,
+                                                letterSpacing: 1,
+                                                color: Color(0xFF5C6BC0),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.copy_rounded,
+                                        size: 20,
+                                        color: Colors.grey[700],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          if (myMoe.isNotEmpty && myEmail.isNotEmpty)
+                            const SizedBox(height: 8),
+                          if (myEmail.isNotEmpty)
+                            Material(
+                              color: Colors.grey[50],
+                              borderRadius: BorderRadius.circular(12),
+                              child: InkWell(
+                                onTap: () => _copyToClipboard(
+                                  context,
+                                  myEmail,
+                                  '已复制邮箱',
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              '邮箱',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.grey[600],
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              myEmail,
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: Colors.grey[800],
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.copy_rounded,
+                                        size: 20,
+                                        color: Colors.grey[700],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                        const SizedBox(height: 22),
+                        FilledButton.icon(
+                          onPressed: _showAddFriendDialog,
+                          icon: const Icon(Icons.person_add_rounded, size: 20),
+                          label: const Text('添加好友'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF7F7FD5),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
-              child: const Icon(Icons.people_outline_rounded, size: 80, color: Colors.white),
             ),
-            const SizedBox(height: 24),
-            Text(
-              '还没有好友，试着通过邮箱添加一个吧',
-              style: TextStyle(color: Colors.grey[600], fontSize: 16),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '添加好友后，可以实时聊天、互动',
-              style: TextStyle(color: Colors.grey[500], fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: _showAddFriendDialog,
-              icon: const Icon(Icons.person_add_rounded),
-              label: const Text('添加好友'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7F7FD5),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                elevation: 6,
-                shadowColor: const Color(0xFF7F7FD5).withOpacity(0.5),
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       );
     }
     
@@ -893,6 +1271,40 @@ class _FriendsPageState extends State<FriendsPage> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (user.moeNo.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        InkWell(
+                          onTap: () => _copyToClipboard(
+                            context,
+                            user.moeNo,
+                            '已复制 Moe 号',
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  user.moeNo,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.6,
+                                    color: Colors.grey[800],
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Icon(
+                                  Icons.copy_rounded,
+                                  size: 15,
+                                  color: Colors.grey[600],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
