@@ -154,43 +154,40 @@ class _PersonalizedCardState extends State<PersonalizedCard> with SingleTickerPr
           child: Stack(
             clipBehavior: Clip.antiAlias,
             children: [
-              RepaintBoundary(
-                child: AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, child) {
-                    return Positioned(
-                      right: -30 + math.sin(_controller.value * 2 * math.pi) * 15,
-                      top: -30 + math.cos(_controller.value * 2 * math.pi) * 15,
-                      child: child!,
-                    );
-                  },
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
+              // Positioned 必须是 Stack 的直接子节点，RepaintBoundary 只能放在 Positioned 内部。
+              AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return Positioned(
+                    right: -30 + math.sin(_controller.value * 2 * math.pi) * 15,
+                    top: -30 + math.cos(_controller.value * 2 * math.pi) * 15,
+                    child: RepaintBoundary(child: child!),
+                  );
+                },
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    shape: BoxShape.circle,
                   ),
                 ),
               ),
-              RepaintBoundary(
-                child: AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, child) {
-                    return Positioned(
-                      left: -40 + math.cos(_controller.value * 2 * math.pi) * 12,
-                      bottom: -40 + math.sin(_controller.value * 2 * math.pi) * 12,
-                      child: child!,
-                    );
-                  },
-                  child: Container(
-                    width: 160,
-                    height: 160,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.06),
-                      shape: BoxShape.circle,
-                    ),
+              AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return Positioned(
+                    left: -40 + math.cos(_controller.value * 2 * math.pi) * 12,
+                    bottom: -40 + math.sin(_controller.value * 2 * math.pi) * 12,
+                    child: RepaintBoundary(child: child!),
+                  );
+                },
+                child: Container(
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.06),
+                    shape: BoxShape.circle,
                   ),
                 ),
               ),

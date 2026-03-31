@@ -9,7 +9,6 @@ import 'services/api_service.dart';
 import 'services/presence_service.dart';
 import 'widgets/avatar_image.dart';
 import 'providers/notification_provider.dart';
-import 'widgets/fade_in_up.dart';
 import 'widgets/moe_toast.dart';
 import 'widgets/moe_loading.dart';
 
@@ -496,8 +495,8 @@ class _FriendsPageState extends State<FriendsPage> {
               itemCount: _getFilteredFriends().length,
               itemBuilder: (context, index) {
                 final user = _getFilteredFriends()[index];
-                return FadeInUp(
-                  delay: Duration(milliseconds: 30 * (index % 8)),
+                return KeyedSubtree(
+                  key: ValueKey('friend_${user.id}'),
                   child: _buildFriendCard(user),
                 );
               },

@@ -3,7 +3,6 @@ import './models/notification.dart';
 import './services/notification_service.dart';
 import './widgets/avatar_image.dart';
 import './utils/error_handler.dart';
-import './widgets/fade_in_up.dart';
 
 class NotificationCenterPage extends StatefulWidget {
   const NotificationCenterPage({super.key});
@@ -241,10 +240,8 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
       itemCount: _notifications.length,
       itemBuilder: (context, index) {
         final notification = _notifications[index];
-        return FadeInUp(
-          delay: Duration(milliseconds: 30 * (index % 8)),
-          child: Dismissible(
-            key: Key(notification.id),
+        return Dismissible(
+            key: ValueKey('notification_${notification.id}'),
             background: Container(
               margin: const EdgeInsets.symmetric(vertical: 6),
               decoration: BoxDecoration(
@@ -352,8 +349,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                 ),
               ),
             ),
-          ),
-        );
+          );
       },
     );
   }
