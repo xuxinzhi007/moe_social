@@ -5,7 +5,6 @@ import 'services/api_service.dart';
 import 'auth_service.dart';
 import 'services/like_state_manager.dart';
 import 'widgets/avatar_image.dart';
-import 'widgets/fade_in_up.dart';
 import 'widgets/like_button.dart';
 import 'widgets/moe_toast.dart';
 
@@ -23,6 +22,7 @@ class CommentsPage extends StatefulWidget {
 
 class _CommentsPageState extends State<CommentsPage> {
   final TextEditingController _commentController = TextEditingController();
+  final FocusNode _commentFocus = FocusNode();
   List<Comment> _comments = [];
   bool _isLoading = false;
   bool _isSubmitting = false;
@@ -147,14 +147,23 @@ class _CommentsPageState extends State<CommentsPage> {
   }
 
   @override
+  void dispose() {
+    _commentFocus.dispose();
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    final scheme = Theme.of(context).colorScheme;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
         Navigator.of(context).pop(_comments.length);
-        return false; // 阻止默认的 pop，因为我们自己已经 pop 了
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Container(
@@ -188,50 +197,81 @@ class _CommentsPageState extends State<CommentsPage> {
       ),
       body: Column(
         children: [
-          // 评论列表
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _comments.isEmpty
-                    ? Center(
+            child: RefreshIndicator(
+              color: _primaryColor,
+              onRefresh: _fetchComments,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                slivers: [
+                  if (_isLoading)
+                    const SliverFillRemaining(
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (_comments.isEmpty)
+                    SliverFillRemaining(
+                      child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF7F7FD5).withOpacity(0.1),
+                                color: _primaryColor.withOpacity(0.1),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.chat_bubble_outline_rounded, size: 48, color: Color(0xFF7F7FD5)),
+                              child: const Icon(Icons.chat_bubble_outline_rounded,
+                                  size: 48, color: Color(0xFF7F7FD5)),
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              '暂无评论，快来抢沙发吧！',
-                              style: TextStyle(color: Colors.grey[600], fontSize: 15),
+                              '暂无评论，下拉可刷新',
+                              style: TextStyle(
+                                color: scheme.onSurfaceVariant,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '快来抢沙发吧～',
+                              style: TextStyle(
+                                color: scheme.onSurfaceVariant.withOpacity(0.85),
+                                fontSize: 13,
+                              ),
                             ),
                           ],
                         ),
-                      )
-                    : ListView.builder(
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                        itemCount: _comments.length,
-                        itemBuilder: (context, index) {
-                          final comment = _comments[index];
-                          return FadeInUp(
-                            delay: Duration(milliseconds: 30 * (index % 8)),
-                            child: _buildBubbleCommentItem(comment)
-                          );
-                        },
                       ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 20),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final comment = _comments[index];
+                            return KeyedSubtree(
+                              key: ValueKey('comment_${comment.id}'),
+                              child: _buildBubbleCommentItem(comment),
+                            );
+                          },
+                          childCount: _comments.length,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
 
           // 底部悬浮输入区域
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24), // 适配全面屏底部
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: scheme.surface,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(24),
                 topRight: Radius.circular(24),
@@ -268,6 +308,7 @@ class _CommentsPageState extends State<CommentsPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: TextField(
                       controller: _commentController,
+                      focusNode: _commentFocus,
                       decoration: const InputDecoration(
                         hintText: '写下你的想法...',
                         border: InputBorder.none,
@@ -352,7 +393,7 @@ class _CommentsPageState extends State<CommentsPage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: const BorderRadius.only(
                       topRight: Radius.circular(20),
                       bottomLeft: Radius.circular(20),
@@ -369,10 +410,10 @@ class _CommentsPageState extends State<CommentsPage> {
                   ),
                   child: Text(
                     comment.content,
-                    style: const TextStyle(
+                    style: TextStyle(
                       height: 1.5,
                       fontSize: 14,
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -407,10 +448,9 @@ class _CommentsPageState extends State<CommentsPage> {
                     InkWell(
                       onTap: () {
                         _commentController.text = '@${comment.userName} ';
-                        FocusScope.of(context).requestFocus(FocusNode());
-                        Future.delayed(const Duration(milliseconds: 100), () {
-                          FocusScope.of(context).requestFocus(FocusNode());
-                        });
+                        _commentController.selection = TextSelection.collapsed(
+                            offset: _commentController.text.length);
+                        _commentFocus.requestFocus();
                       },
                       borderRadius: BorderRadius.circular(12),
                       child: Padding(
@@ -460,11 +500,5 @@ class _CommentsPageState extends State<CommentsPage> {
     } else {
       return '${time.month}月${time.day}日';
     }
-  }
-
-  @override
-  void dispose() {
-    _commentController.dispose();
-    super.dispose();
   }
 }

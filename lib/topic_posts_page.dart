@@ -4,7 +4,6 @@ import 'models/topic_tag.dart';
 import 'services/post_service.dart';
 import 'widgets/post_card.dart';
 import 'auth_service.dart';
-import 'widgets/fade_in_up.dart';
 import 'utils/error_handler.dart';
 
 /// 话题动态列表页面 - 显示指定话题下的所有动态
@@ -186,28 +185,27 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
                     itemCount: _posts.length,
                     itemBuilder: (context, index) {
                       final post = _posts[index];
-                      return FadeInUp(
-                        delay: Duration(milliseconds: 30 * (index % 8)),
-                        child: PostCard(
-                          post: post,
-                          onLike: () => _toggleLike(post.id),
-                          onComment: () async {
-                            await Navigator.pushNamed(context, '/comments', arguments: post.id);
-                          },
-                          onShare: () {},
-                          onAvatarTap: () {
-                            Navigator.pushNamed(
-                              context,
-                              '/user-profile',
-                              arguments: {
-                                'userId': post.userId,
-                                'userName': post.userName,
-                                'userAvatar': post.userAvatar,
-                                'heroTag': 'avatar_${post.id}',
-                              },
-                            );
-                          },
-                        ),
+                      return PostCard(
+                        key: ValueKey('topic_post_${post.id}'),
+                        post: post,
+                        onLike: () => _toggleLike(post.id),
+                        onComment: () async {
+                          await Navigator.pushNamed(
+                              context, '/comments', arguments: post.id);
+                        },
+                        onShare: () {},
+                        onAvatarTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/user-profile',
+                            arguments: {
+                              'userId': post.userId,
+                              'userName': post.userName,
+                              'userAvatar': post.userAvatar,
+                              'heroTag': 'avatar_${post.id}',
+                            },
+                          );
+                        },
                       );
                     },
                   ),

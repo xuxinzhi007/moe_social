@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'topic_tag.dart';
 
 class Post {
@@ -59,69 +60,48 @@ class Post {
   // 从JSON创建Post实例
   factory Post.fromJson(Map<String, dynamic> json) {
     try {
-      // 调试：打印原始JSON的关键字段
-      final contentStr = json['content']?.toString() ?? '';
-      final contentPreview = contentStr.length > 30 ? '${contentStr.substring(0, 30)}...' : contentStr;
-      print('📋 解析帖子 ID: ${json['id']}');
-      print('   内容: $contentPreview');
-      print('   images字段: ${json['images']} (类型: ${json['images']?.runtimeType})');
-      print('   topic_tags字段: ${json['topic_tags']} (类型: ${json['topic_tags']?.runtimeType})');
-      // 解析日期，支持多种格式
       DateTime createdAt;
       final createdAtStr = json['created_at'] as String;
       try {
         createdAt = DateTime.parse(createdAtStr);
       } catch (e) {
-        // 如果标准格式解析失败，尝试自定义格式
         try {
-          createdAt = DateTime.parse(createdAtStr.replaceAll(' ', 'T') + 'Z');
+          createdAt = DateTime.parse('${createdAtStr.replaceAll(' ', 'T')}Z');
         } catch (e2) {
-          // 如果还是失败，使用当前时间
-          print('⚠️ 日期解析失败: $createdAtStr, 使用当前时间');
+          if (kDebugMode) {
+            debugPrint('Post.fromJson: 日期解析失败，使用当前时间: $createdAtStr');
+          }
           createdAt = DateTime.now();
         }
       }
-      
-      // 解析话题标签
+
       List<TopicTag> topicTags = [];
       if (json['topic_tags'] != null) {
         try {
           final tagsList = json['topic_tags'];
-          print('📌 topic_tags字段类型: ${tagsList.runtimeType}');
-          print('📌 topic_tags值: $tagsList');
-          
           if (tagsList is List) {
-            print('📌 topic_tags是List，长度: ${tagsList.length}');
-            for (var i = 0; i < tagsList.length; i++) {
-              final tagJson = tagsList[i];
-              print('📌 解析第${i + 1}个标签: $tagJson');
-              
+            for (final tagJson in tagsList) {
               if (tagJson != null && tagJson is Map<String, dynamic>) {
                 try {
-                  final tag = TopicTag.fromJson(tagJson);
-                  topicTags.add(tag);
-                  print('✅ 成功添加标签: ${tag.name}');
+                  topicTags.add(TopicTag.fromJson(tagJson));
                 } catch (e) {
-                  print('❌ 解析单个标签失败: $e');
-                  print('   标签数据: $tagJson');
+                  if (kDebugMode) {
+                    debugPrint('Post.fromJson: 单个话题标签解析失败: $e, data=$tagJson');
+                  }
                 }
-              } else {
-                print('⚠️ 标签数据格式不正确: ${tagJson.runtimeType}');
               }
             }
-            print('📌 最终解析的话题标签数量: ${topicTags.length}');
-          } else {
-            print('⚠️ topic_tags不是List类型: ${tagsList.runtimeType}');
+          } else if (kDebugMode) {
+            debugPrint(
+                'Post.fromJson: topic_tags 类型异常: ${tagsList.runtimeType}');
           }
         } catch (e, stackTrace) {
-          print('❌ 解析话题标签失败: $e');
-          print('❌ 堆栈跟踪: $stackTrace');
+          if (kDebugMode) {
+            debugPrint('Post.fromJson: 解析话题标签失败: $e\n$stackTrace');
+          }
         }
-      } else {
-        print('⚠️ topic_tags 字段为 null');
       }
-      
-      // 处理images为null的情况
+
       final imagesData = json['images'];
       List<String> images = [];
       if (imagesData != null) {
@@ -130,19 +110,16 @@ class Post {
               .where((img) => img != null && img.toString().isNotEmpty)
               .map((img) => img.toString())
               .toList();
-          print('🖼️ 解析图片: ${images.length} 张');
         } else if (imagesData is String && imagesData.isNotEmpty) {
-          // 兼容字符串格式（虽然不应该出现）
           try {
             final decoded = jsonDecode(imagesData) as List;
             images = decoded.map((img) => img.toString()).toList();
-            print('🖼️ 从字符串解析图片: ${images.length} 张');
           } catch (e) {
-            print('⚠️ 图片字符串解析失败: $e');
+            if (kDebugMode) {
+              debugPrint('Post.fromJson: 图片字符串解析失败: $e');
+            }
           }
         }
-      } else {
-        print('⚠️ images 字段为 null');
       }
 
       return Post(
@@ -159,9 +136,9 @@ class Post {
         topicTags: topicTags,
       );
     } catch (e, stackTrace) {
-      print('❌ Post.fromJson错误: $e');
-      print('❌ JSON数据: $json');
-      print('❌ 堆栈跟踪: $stackTrace');
+      if (kDebugMode) {
+        debugPrint('Post.fromJson 错误: $e\nJSON: $json\n$stackTrace');
+      }
       rethrow;
     }
   }
