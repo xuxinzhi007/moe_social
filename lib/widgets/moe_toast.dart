@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'dart:async';
 
 /// 萌社风格轻量级 Toast 通知
@@ -14,33 +15,47 @@ class MoeToast {
     Color? backgroundColor,
     Color? textColor,
   }) {
-    // 移除之前的 Toast
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-    _timer?.cancel();
-
-    // 检查是否存在 Overlay
-    final overlay = Overlay.maybeOf(context);
-    if (overlay == null) {
-      print('MoeToast: No Overlay found, cannot show toast');
-      return;
-    }
-
-    _overlayEntry = OverlayEntry(
-      builder: (context) => _ToastWidget(
-        message: message,
-        icon: icon,
-        backgroundColor: backgroundColor,
-        textColor: textColor,
-      ),
-    );
-
-    overlay.insert(_overlayEntry!);
-
-    _timer = Timer(duration, () {
+    void mount() {
+      // 移除之前的 Toast
       _overlayEntry?.remove();
       _overlayEntry = null;
-    });
+      _timer?.cancel();
+
+      final overlay = Overlay.maybeOf(context);
+      if (overlay == null) {
+        print('MoeToast: No Overlay found, cannot show toast');
+        return;
+      }
+
+      _overlayEntry = OverlayEntry(
+        builder: (context) => _ToastWidget(
+          message: message,
+          icon: icon,
+          backgroundColor: backgroundColor,
+          textColor: textColor,
+        ),
+      );
+
+      overlay.insert(_overlayEntry!);
+
+      _timer = Timer(duration, () {
+        _overlayEntry?.remove();
+        _overlayEntry = null;
+      });
+    }
+
+    // 避免在 layout/build 阶段直接改 Overlay，与 setState 同帧时易触发
+    // Duplicate GlobalKeys / _OverlayEntryWidgetState 类问题。
+    final phase = WidgetsBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        mount();
+      });
+    } else {
+      mount();
+    }
   }
 
   /// 成功提示
