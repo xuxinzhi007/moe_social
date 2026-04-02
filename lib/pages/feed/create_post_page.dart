@@ -9,11 +9,12 @@ import '../../services/api_service.dart';
 import '../../services/post_service.dart';
 import '../../services/achievement_hooks.dart';
 import '../../providers/loading_provider.dart';
-import '../../widgets/avatar_image.dart';
 import '../../widgets/compact_topic_selector.dart';
 import '../../widgets/app_message_widget.dart';
 import '../gallery/cloud_gallery_page.dart';
-import '../../widgets/custom_button.dart';
+import '../../models/hand_draw_card.dart';
+import 'hand_draw_editor_page.dart';
+import '../../widgets/hand_draw/hand_draw_card_view.dart';
 
 class CreatePostPage extends StatefulWidget {
   const CreatePostPage({super.key});
@@ -26,11 +27,26 @@ class _CreatePostPageState extends State<CreatePostPage> {
   final TextEditingController _contentController = TextEditingController();
   final List<File> _selectedImages = [];
   final List<String> _selectedImageUrls = []; // 用于存储从云端图库选择的网络图片URL
-  bool _isLoadingUser = true;
   final ImagePicker _picker = ImagePicker();
   String? _userName;
   String? _userAvatar;
   List<TopicTag> _selectedTopicTags = []; // 话题标签列表
+  HandDrawCardData? _handDrawCard;
+
+  Future<void> _openHandDrawEditor() async {
+    final data = await Navigator.push<HandDrawCardData>(
+      context,
+      MaterialPageRoute(builder: (_) => const HandDrawEditorPage()),
+    );
+    if (data != null && mounted) {
+      setState(() => _handDrawCard = data);
+      context.read<LoadingProvider>().setSuccess('手绘卡片已添加 ✨');
+    }
+  }
+
+  void _removeHandDraw() {
+    setState(() => _handDrawCard = null);
+  }
 
   Future<void> _addImage() async {
     final XFile? pickedFile = await _picker.pickImage(
@@ -84,9 +100,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
   Future<void> _loadUserInfo() async {
     final userId = AuthService.currentUser;
     if (userId == null) {
-      setState(() {
-        _isLoadingUser = false;
-      });
       return;
     }
 
@@ -95,21 +108,22 @@ class _CreatePostPageState extends State<CreatePostPage> {
       setState(() {
         _userName = user.username;
         _userAvatar = user.avatar.isNotEmpty ? user.avatar : null;
-        _isLoadingUser = false;
       });
     } catch (e) {
       debugPrint('加载用户信息失败: $e');
-      setState(() {
-        _isLoadingUser = false;
-      });
     }
   }
 
   Future<void> _publishPost() async {
-    if (_contentController.text.trim().isEmpty) {
-      context.read<LoadingProvider>().setError('请输入帖子内容');
+    final caption = _contentController.text.trim();
+    if (caption.isEmpty && _handDrawCard == null) {
+      context.read<LoadingProvider>().setError('写点文字，或画一张手绘卡片再发布吧');
       return;
     }
+
+    final contentForApi = _handDrawCard != null
+        ? HandDrawCardCodec.mergeCaptionAndPayload(caption, _handDrawCard!)
+        : caption;
 
     final loadingProvider = context.read<LoadingProvider>();
     await loadingProvider.executeOperation<void>(
@@ -136,7 +150,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
           userId: userId,
           userName: _userName ?? '用户',
           userAvatar: _userAvatar ?? 'https://picsum.photos/150',
-          content: _contentController.text.trim(),
+          content: contentForApi,
           images: imageUrls,
           likes: 0,
           comments: 0,
@@ -150,7 +164,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
           await AchievementHooks.recordPostPublished(
             userId,
             imageCount: imageUrls.length,
-            contentLength: newPost.content.length,
+            contentLength: caption.length,
           );
         } catch (_) {}
       },
@@ -288,6 +302,41 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
                   const SizedBox(height: 24),
 
+                  if (_handDrawCard != null) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '手绘卡片',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: primaryColor,
+                            ),
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: _openHandDrawEditor,
+                          icon: const Icon(Icons.edit_rounded, size: 18),
+                          label: const Text('改画'),
+                        ),
+                        IconButton(
+                          onPressed: _removeHandDraw,
+                          icon: const Icon(Icons.delete_outline_rounded),
+                          color: Colors.red[300],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: AspectRatio(
+                        aspectRatio: 3 / 4,
+                        child: HandDrawCardStatic(data: _handDrawCard!),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
                   // 图片预览区域 - 拍立得风格
                   if (_selectedImages.isNotEmpty || _selectedImageUrls.isNotEmpty)
                     Wrap(
@@ -373,6 +422,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
+                  _buildToolIcon(Icons.brush_rounded, const Color(0xFF7F7FD5), _openHandDrawEditor),
                   _buildToolIcon(Icons.image_rounded, Colors.green, _addImage),
                   _buildToolIcon(Icons.cloud_upload_rounded, Colors.blue, _openCloudGallery),
                   _buildToolIcon(Icons.tag_rounded, Colors.purple, () {

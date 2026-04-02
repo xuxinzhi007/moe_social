@@ -9,6 +9,7 @@ import '../widgets/topic_tag_selector.dart';
 import '../widgets/like_button.dart';
 import '../widgets/moe_bouncing_button.dart';
 import '../widgets/post_image_viewer.dart';
+import '../widgets/hand_draw/hand_draw_card_view.dart';
 
 class PostCard extends StatelessWidget {
   final Post post;
@@ -176,11 +177,27 @@ class PostCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // 帖子内容
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: _renderContentWithEmojis(context, post.content),
-              ),
+              // 帖子正文（手绘数据已内嵌在 content 中，展示时剥离）
+              if (post.displayCaption.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: _renderContentWithEmojis(context, post.displayCaption),
+                ),
+
+              if (post.handDrawCard != null) ...[
+                if (post.displayCaption.isNotEmpty) const SizedBox(height: 4),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 340),
+                  child: HandDrawCardReplay(
+                    data: post.handDrawCard!,
+                    autoPlay: false,
+                    duration: Duration(
+                      milliseconds: (1600 + post.handDrawCard!.strokes.length * 35)
+                          .clamp(1200, 3800),
+                    ),
+                  ),
+                ),
+              ],
 
               // 话题标签
               if (post.topicTags.isNotEmpty) ...[
@@ -268,11 +285,14 @@ class PostCard extends StatelessWidget {
   }
 
   static void _handleShare(Post post) {
+    final body = post.displayCaption.isEmpty && post.handDrawCard != null
+        ? '[手绘卡片]'
+        : post.displayCaption;
     final shareText = '''${post.userName} 的动态：
 
-${post.content}
+$body
 
-#萌社 ${post.topicTags.isNotEmpty ? post.topicTags.map((t) => '#$t').join(' ') : ''}''';
+#萌社 ${post.topicTags.isNotEmpty ? post.topicTags.map((t) => '#${t.name}').join(' ') : ''}''';
 
     Share.share(
       shareText,
