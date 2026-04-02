@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
+import 'hand_draw_card.dart';
 import 'topic_tag.dart';
 
 class Post {
@@ -28,6 +29,12 @@ class Post {
     required this.createdAt,
     this.topicTags = const [],
   });
+
+  /// 展示用正文（去掉内嵌的手绘 JSON）
+  String get displayCaption => HandDrawCardCodec.stripForDisplay(content);
+
+  /// 若动态含手绘卡片则非空
+  HandDrawCardData? get handDrawCard => HandDrawCardCodec.tryDecode(content);
 
   Post copyWith({
     String? id,
