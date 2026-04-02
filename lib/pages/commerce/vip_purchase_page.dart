@@ -1,0 +1,570 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import '../../auth_service.dart';
+import '../../services/api_service.dart';
+import '../../models/vip_plan.dart';
+import 'recharge_page.dart';
+import '../../widgets/fade_in_up.dart';
+import '../../widgets/moe_toast.dart';
+import '../../services/achievement_hooks.dart';
+
+class VipPurchasePage extends StatefulWidget {
+  const VipPurchasePage({super.key});
+
+  @override
+  State<VipPurchasePage> createState() => _VipPurchasePageState();
+}
+
+class _VipPurchasePageState extends State<VipPurchasePage> {
+  List<VipPlan> _plans = [];
+  bool _isLoading = true;
+  String? _selectedPlanId;
+  bool _isPurchasing = false;
+  double _balance = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final userId = AuthService.currentUser;
+      final futures = <Future<dynamic>>[
+        ApiService.getVipPlans(),
+        if (userId != null) ApiService.getUserInfo(userId),
+      ];
+      final results = await Future.wait(futures);
+      final plans = results[0] as List<VipPlan>;
+
+      setState(() {
+        _plans = plans;
+        if (userId != null && results.length > 1) {
+          _balance = results[1].balance as double;
+        }
+        // 默认选中第一个
+        if (plans.isNotEmpty) {
+          _selectedPlanId = plans.first.id;
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        MoeToast.error(context, '加载VIP套餐失败，请稍后重试');
+      }
+    }
+  }
+
+  Future<void> _refreshBalance() async {
+    final userId = AuthService.currentUser;
+    if (userId == null) return;
+    final userInfo = await ApiService.getUserInfo(userId);
+    if (mounted) {
+      setState(() {
+        _balance = userInfo.balance;
+      });
+    }
+  }
+
+  Future<void> _purchaseVip() async {
+    if (_selectedPlanId == null) return;
+
+    final userId = AuthService.currentUser;
+    if (userId == null) {
+      MoeToast.error(context, '请先登录');
+      return;
+    }
+
+    final selectedPlan = _getSelectedPlan();
+    if (selectedPlan == null) return;
+
+    if (_balance < selectedPlan.price) {
+      final shouldRecharge = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('余额不足'),
+          content: Text(
+            '当前余额 ¥${_balance.toStringAsFixed(2)}，开通 ${selectedPlan.name} 需要 ¥${selectedPlan.price.toStringAsFixed(2)}。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('去充值'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldRecharge == true && mounted) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const RechargePage()),
+        );
+        await _refreshBalance();
+      }
+      return;
+    }
+
+    setState(() {
+      _isPurchasing = true;
+    });
+
+    try {
+      final order = await ApiService.createVipOrder(userId, _selectedPlanId!);
+      await _refreshBalance();
+      final vipStatus = await ApiService.syncUserVipStatus(userId);
+      final isVip = vipStatus['is_vip'] as bool? ?? false;
+      final paid = order.paidAt != null ||
+          order.status.toLowerCase() == 'paid' ||
+          order.status.toLowerCase() == 'completed' ||
+          isVip;
+
+      if (mounted) {
+        if (paid) {
+          MoeToast.success(context, '开通成功，已从钱包扣款 ¥${order.amount.toStringAsFixed(2)}');
+          unawaited(AchievementHooks.recordVipPurchased(userId));
+        } else {
+          MoeToast.show(context, '订单已创建，请稍后查看订单状态',
+              icon: Icons.info_outline_rounded,
+              backgroundColor: const Color(0xFFFFF8E1),
+              textColor: const Color(0xFF8B6914));
+        }
+        Navigator.pop(context, paid);
+      }
+    } catch (e) {
+      if (mounted) {
+        MoeToast.error(context, '购买失败，请稍后重试');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPurchasing = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Stack(
+        children: [
+          // 顶部背景
+          Container(
+            height: 320,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+            ),
+          ),
+          
+          SafeArea(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                : SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header
+                        Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                '开通 VIP 会员',
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.check_circle, color: Color(0xFFFFD700), size: 16),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '解锁尊贵身份标识',
+                                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w500),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.check_circle, color: Color(0xFFFFD700), size: 16),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '专享高级功能',
+                                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w500),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // 套餐列表 (横向滚动)
+                        if (_plans.isEmpty)
+                          SizedBox(
+                            height: 200,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.inbox_outlined, size: 64, color: Colors.white.withOpacity(0.5)),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    '暂无VIP套餐',
+                                    style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          SizedBox(
+                            height: 230,
+                            child: ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              scrollDirection: Axis.horizontal,
+                              itemCount: _plans.length,
+                              itemBuilder: (context, index) {
+                                final plan = _plans[index];
+                                return FadeInUp(
+                                  delay: Duration(milliseconds: 30 * (index % 8)),
+                                  child: _buildPlanCard(plan),
+                                );
+                              },
+                            ),
+                          ),
+
+                        const SizedBox(height: 30),
+                        
+                        // 权益说明区
+                        Container(
+                          width: double.infinity,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(30),
+                              topRight: Radius.circular(30),
+                            ),
+                          ),
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 4,
+                                    height: 18,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF7F7FD5),
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    '会员权益',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF333333),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                              _buildBenefitItem(Icons.color_lens_rounded, '专属主题色', '解锁更多个性化主题颜色', Colors.purpleAccent),
+                              _buildBenefitItem(Icons.hd_rounded, '高清画质', '上传/查看原图特权', Colors.blueAccent),
+                              _buildBenefitItem(Icons.speed_rounded, '极速体验', '专属线路加速', Colors.greenAccent),
+                              _buildBenefitItem(Icons.star_rounded, '身份铭牌', '尊贵 VIP 专属标识', Colors.orangeAccent),
+                              // 底部留白，防止被浮动按钮遮挡
+                              const SizedBox(height: 80),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+      ),
+      // 底部购买栏
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF7F7FD5).withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          child: Row(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('总计', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Text(
+                      '¥${_getSelectedPlanPrice()}',
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFFFF8F00),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text('钱包余额', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  Text(
+                    '¥${_balance.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF7F7FD5),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: SizedBox(
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed: (_isLoading || _isPurchasing || _plans.isEmpty) 
+                        ? null 
+                        : _purchaseVip,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF7F7FD5),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(27),
+                      ),
+                      elevation: 8,
+                      shadowColor: const Color(0xFF7F7FD5).withOpacity(0.4),
+                    ),
+                    child: _isPurchasing
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(Colors.white),
+                            ),
+                          )
+                        : const Text(
+                            '立即支付',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getSelectedPlanPrice() {
+    if (_plans.isEmpty || _selectedPlanId == null) return '0.00';
+    final plan = _plans.firstWhere((p) => p.id == _selectedPlanId, orElse: () => _plans.first);
+    return plan.price.toStringAsFixed(2);
+  }
+
+  VipPlan? _getSelectedPlan() {
+    if (_plans.isEmpty || _selectedPlanId == null) return null;
+    return _plans.firstWhere(
+      (p) => p.id == _selectedPlanId,
+      orElse: () => _plans.first,
+    );
+  }
+
+  Widget _buildPlanCard(VipPlan plan) {
+    final isSelected = _selectedPlanId == plan.id;
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedPlanId = plan.id;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 160,
+        margin: const EdgeInsets.only(right: 16, bottom: 20, top: 10), // 留出阴影空间
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.white.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isSelected ? const Color(0xFFFFD700) : Colors.transparent,
+            width: 2,
+          ),
+          boxShadow: [
+            if (isSelected)
+              BoxShadow(
+                color: const Color(0xFFFFD700).withOpacity(0.4),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              )
+            else
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              plan.name,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isSelected ? const Color(0xFF333333) : Colors.grey[700],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: '¥', 
+                    style: TextStyle(
+                      fontSize: 16, 
+                      color: isSelected ? const Color(0xFFFF8F00) : Colors.black87,
+                      fontWeight: FontWeight.bold
+                    )
+                  ),
+                  TextSpan(
+                    text: plan.price.toStringAsFixed(0), 
+                    style: TextStyle(
+                      fontSize: 32, 
+                      color: isSelected ? const Color(0xFFFF8F00) : Colors.black87,
+                      fontWeight: FontWeight.bold
+                    )
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFFFFD700) : Colors.grey[100],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '${plan.durationDays} 天',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: isSelected ? Colors.black87 : Colors.grey[600],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBenefitItem(IconData icon, String title, String subtitle, Color iconColor) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: iconColor, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF333333)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

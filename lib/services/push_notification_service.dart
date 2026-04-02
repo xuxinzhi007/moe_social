@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../voice_call_receiving_page.dart';
+import '../pages/chat/voice_call_receiving_page.dart';
 
 class PushNotificationService {
   static late GlobalKey<NavigatorState> navigatorKey;
