@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"backend/model"
-	"backend/rpc/internal/achievement"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -122,10 +121,7 @@ func (l *CreateCommentLogic) CreateComment(in *super.CreateCommentReq) (*super.C
 		CreatedAt:  comment.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 
-	newUnlocks := achievement.ApplyCommentCreated(l.svcCtx.DB, uint(userID))
-
 	return &super.CreateCommentResp{
-		Comment:               rpcComment,
-		NewlyUnlockedBadgeIds: newUnlocks,
+		Comment: rpcComment,
 	}, nil
 }

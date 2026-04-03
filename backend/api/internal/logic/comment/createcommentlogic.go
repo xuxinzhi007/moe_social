@@ -40,8 +40,7 @@ func (l *CreateCommentLogic) CreateComment(req *types.CreateCommentReq) (resp *t
 
 	// 转换为API响应格式
 	return &types.CreateCommentResp{
-		BaseResp:              common.HandleRPCError(nil, "创建评论成功"),
-		NewlyUnlockedBadgeIds: rpcResp.NewlyUnlockedBadgeIds,
+		BaseResp: common.HandleRPCError(nil, "创建评论成功"),
 		Data: types.Comment{
 			Id:         rpcResp.Comment.Id,
 			PostId:     rpcResp.Comment.PostId,

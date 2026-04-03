@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"backend/model"
-	"backend/rpc/internal/achievement"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
@@ -118,11 +117,6 @@ func (l *CreateVipOrderLogic) CreateVipOrder(in *super.CreateVipOrderReq) (*supe
 		return nil, err
 	}
 
-	var newUnlocks []string
-	if uid, perr := strconv.ParseUint(in.UserId, 10, 32); perr == nil {
-		newUnlocks = achievement.ApplyVipMember(l.svcCtx.DB, uint(uid))
-	}
-
 	return &super.CreateVipOrderResp{
 		Order: &super.VipOrder{
 			Id:        strconv.FormatUint(uint64(order.ID), 10),
@@ -134,6 +128,5 @@ func (l *CreateVipOrderLogic) CreateVipOrder(in *super.CreateVipOrderReq) (*supe
 			CreatedAt: order.CreatedAt.Format("2006-01-02 15:04:05"),
 			PaidAt:    order.UpdatedAt.Format("2006-01-02 15:04:05"),
 		},
-		NewlyUnlockedBadgeIds: newUnlocks,
 	}, nil
 }

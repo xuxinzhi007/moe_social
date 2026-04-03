@@ -137,7 +137,6 @@ message UpdateUserVipReq {
 // 更新用户VIP状态响应
 message UpdateUserVipResp {
   User user = 1;
-  repeated string newly_unlocked_badge_ids = 2;
 }
 
 message GetUsersReq {
@@ -217,7 +216,6 @@ message CreateVipOrderReq {
 
 message CreateVipOrderResp {
   VipOrder order = 1;
-  repeated string newly_unlocked_badge_ids = 2;
 }
 
 message GetVipOrdersReq {
@@ -423,7 +421,6 @@ message ReportPostResp {
 // 创建帖子响应
 message CreatePostResp {
   Post post = 1;
-  repeated string newly_unlocked_badge_ids = 2;
 }
 
 // 点赞帖子请求
@@ -474,7 +471,6 @@ message CreateCommentReq {
 // 创建评论响应
 message CreateCommentResp {
   Comment comment = 1;
-  repeated string newly_unlocked_badge_ids = 2;
 }
 
 // 点赞评论请求
@@ -668,7 +664,6 @@ service Super {
   rpc UpdateUserVip(UpdateUserVipReq) returns (UpdateUserVipResp);
   rpc GetUsers(GetUsersReq) returns (GetUsersResp);
   rpc GetUserCount(GetUserCountReq) returns (GetUserCountResp);
-  rpc GetUserAchievements(GetUserAchievementsReq) returns (GetUserAchievementsResp);
   rpc UpsertUserMemory(UpsertUserMemoryReq) returns (UpsertUserMemoryResp);
   rpc GetUserMemories(GetUserMemoriesReq) returns (GetUserMemoriesResp);
   rpc DeleteUserMemory(DeleteUserMemoryReq) returns (DeleteUserMemoryResp);
@@ -881,23 +876,6 @@ message CheckInResp {
   int32 consecutive_days = 3;
   bool level_up = 4;
   string special_reward = 5;
-  repeated string newly_unlocked_badge_ids = 6;
-}
-
-// 成就进度（与客户端 AchievementBadge 对齐，仅存储已产生进度的徽章）
-message UserBadgeProgressEntry {
-  string badge_id = 1;
-  int32 current_count = 2;
-  bool is_unlocked = 3;
-  string unlocked_at = 4;
-}
-
-message GetUserAchievementsReq {
-  string user_id = 1;
-}
-
-message GetUserAchievementsResp {
-  repeated UserBadgeProgressEntry entries = 1;
 }
 
 message GetUserLevelReq {
