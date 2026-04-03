@@ -431,6 +431,8 @@ class GiftRainPainter extends CustomPainter {
 class BadgeUnlockAnimation extends StatefulWidget {
   final String badgeName;
   final String badgeEmoji;
+  /// 若提供则优先显示矢量图标，否则显示 [badgeEmoji]
+  final IconData? badgeIcon;
   final Color badgeColor;
   final VoidCallback? onAnimationComplete;
 
@@ -438,6 +440,7 @@ class BadgeUnlockAnimation extends StatefulWidget {
     super.key,
     required this.badgeName,
     required this.badgeEmoji,
+    this.badgeIcon,
     required this.badgeColor,
     this.onAnimationComplete,
   });
@@ -527,10 +530,23 @@ class _BadgeUnlockAnimationState extends State<BadgeUnlockAnimation>
                     ],
                   ),
                   child: Center(
-                    child: Text(
-                      widget.badgeEmoji,
-                      style: const TextStyle(fontSize: 60),
-                    ),
+                    child: widget.badgeIcon != null
+                        ? Icon(
+                            widget.badgeIcon,
+                            size: 64,
+                            color: widget.badgeColor,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withValues(alpha: 0.12),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          )
+                        : Text(
+                            widget.badgeEmoji,
+                            style: const TextStyle(fontSize: 60),
+                          ),
                   ),
                 ),
               ),
