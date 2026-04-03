@@ -115,6 +115,12 @@ func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, er
 		Total: int32(total),
 	}
 
+	postIDs := make([]uint, 0, len(posts))
+	for _, p := range posts {
+		postIDs = append(postIDs, p.ID)
+	}
+	likedPosts := LikedTargetIDSet(l.svcCtx.DB, viewerUID, "post", postIDs)
+
 	for _, post := range posts {
 		var images []string
 		if post.Images != "" {
@@ -155,7 +161,7 @@ func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, er
 			TopicTags:          topicTags,
 			Likes:              int32(post.Likes),
 			Comments:           int32(post.Comments),
-			IsLiked:            false,
+			IsLiked:            likedPosts[post.ID],
 			CreatedAt:          post.CreatedAt.Format("2006-01-02 15:04:05"),
 			HandDrawCard:       post.HandDrawCard,
 			HandDrawThumbUrl:   post.HandDrawThumbURL,

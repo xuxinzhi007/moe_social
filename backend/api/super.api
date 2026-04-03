@@ -446,9 +446,10 @@ type LikePostReq {
 }
 
 type GetPostCommentsReq {
-	PostId   string `path:"post_id"`
-	Page     int    `form:"page,default=1"`
-	PageSize int    `form:"page_size,default=10"`
+	PostId       string `path:"post_id"`
+	Page         int    `form:"page,default=1"`
+	PageSize     int    `form:"page_size,default=10"`
+	ViewerUserId string `form:"viewer_user_id,optional"`
 }
 
 // 评论相关请求
