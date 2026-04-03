@@ -509,22 +509,6 @@ type GetUserResp {
 	Data User `json:"data"`
 }
 
-type UserBadgeProgressEntry {
-	BadgeId      string `json:"badge_id"`
-	CurrentCount int    `json:"current_count"`
-	IsUnlocked   bool   `json:"is_unlocked"`
-	UnlockedAt   string `json:"unlocked_at,optional"`
-}
-
-type GetUserAchievementsReq {
-	UserId string `path:"user_id"`
-}
-
-type GetUserAchievementsResp {
-	BaseResp
-	Data []UserBadgeProgressEntry `json:"data"`
-}
-
 type UpdateUserInfoResp {
 	BaseResp
 	Data User `json:"data"`
@@ -553,8 +537,7 @@ type DeleteUserResp {
 
 type UpdateUserVipResp {
 	BaseResp
-	Data                  User     `json:"data"`
-	NewlyUnlockedBadgeIds []string `json:"newly_unlocked_badge_ids,optional"`
+	Data User `json:"data"`
 }
 
 type GetUsersResp {
@@ -586,8 +569,7 @@ type GetVipPlansResp {
 
 type CreateVipOrderResp {
 	BaseResp
-	Data                  VipOrder `json:"data"`
-	NewlyUnlockedBadgeIds []string `json:"newly_unlocked_badge_ids,optional"`
+	Data VipOrder `json:"data"`
 }
 
 type GetVipOrdersResp {
@@ -680,8 +662,7 @@ type GetPostResp {
 
 type CreatePostResp {
 	BaseResp
-	Data                  Post     `json:"data"`
-	NewlyUnlockedBadgeIds []string `json:"newly_unlocked_badge_ids,optional"`
+	Data Post `json:"data"`
 }
 
 type LikePostResp {
@@ -698,8 +679,7 @@ type GetPostCommentsResp {
 // 评论相关响应
 type CreateCommentResp {
 	BaseResp
-	Data                  Comment  `json:"data"`
-	NewlyUnlockedBadgeIds []string `json:"newly_unlocked_badge_ids,optional"`
+	Data Comment `json:"data"`
 }
 
 type LikeCommentResp {
@@ -723,9 +703,6 @@ service Super {
 
 	@handler getUser
 	get /api/user/:user_id/detail (GetUserReq) returns (GetUserResp)
-
-	@handler getUserAchievements
-	get /api/user/:user_id/achievements (GetUserAchievementsReq) returns (GetUserAchievementsResp)
 
 	@handler updateUserInfo
 	put /api/user/:user_id (UpdateUserInfoReq) returns (UpdateUserInfoResp)
@@ -1424,12 +1401,11 @@ type GetExpLogsReq {
 
 // 签到等级相关响应
 type CheckInData {
-	ExpGained             int      `json:"exp_gained"`
-	NewLevel              int      `json:"new_level"`
-	ConsecutiveDays       int      `json:"consecutive_days"`
-	LevelUp               bool     `json:"level_up"`
-	SpecialReward         string   `json:"special_reward"`
-	NewlyUnlockedBadgeIds []string `json:"newly_unlocked_badge_ids,optional"`
+	ExpGained       int    `json:"exp_gained"`
+	NewLevel        int    `json:"new_level"`
+	ConsecutiveDays int    `json:"consecutive_days"`
+	LevelUp         bool   `json:"level_up"`
+	SpecialReward   string `json:"special_reward"`
 }
 
 type CheckInResp {

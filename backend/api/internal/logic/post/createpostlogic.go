@@ -63,8 +63,7 @@ func (l *CreatePostLogic) CreatePost(req *types.CreatePostReq) (resp *types.Crea
 
 	// 转换为API响应格式
 	return &types.CreatePostResp{
-		BaseResp:              common.HandleRPCError(nil, "创建帖子成功"),
-		NewlyUnlockedBadgeIds: rpcResp.NewlyUnlockedBadgeIds,
+		BaseResp: common.HandleRPCError(nil, "创建帖子成功"),
 		Data: types.Post{
 			Id:               rpcResp.Post.Id,
 			UserId:           rpcResp.Post.UserId,

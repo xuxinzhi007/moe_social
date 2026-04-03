@@ -572,18 +572,15 @@ class _CheckInPageState extends State<CheckInPage>
     // 播放涟漪动画
     _rippleController.repeat();
 
-    final checkInData = await checkInProvider.performCheckIn(widget.userId);
+    final success = await checkInProvider.performCheckIn(widget.userId);
 
     _rippleController.stop();
     _rippleController.reset();
 
-    if (checkInData != null) {
+    if (success) {
       // 刷新用户等级信息
       levelProvider.loadUserLevel(widget.userId);
-      unawaited(AchievementHooks.onServerNewUnlocks(
-        widget.userId,
-        checkInData.newlyUnlockedBadgeIds,
-      ));
+      unawaited(AchievementHooks.recordDailyEngagement(widget.userId));
 
       // 显示成功消息
       if (checkInProvider.successMessage != null) {

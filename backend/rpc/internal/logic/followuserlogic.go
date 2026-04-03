@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"backend/model"
-	"backend/rpc/internal/achievement"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -81,13 +80,6 @@ func (l *FollowUserLogic) FollowUser(in *super.FollowUserReq) (*super.FollowUser
 	// TODO: 实现关注通知逻辑
 
 	l.Debug("关注用户成功:", followerID, "关注了", followingID)
-
-	var followerCount int64
-	if err := l.svcCtx.DB.Model(&model.Follow{}).Where("following_id = ?", followingID).Count(&followerCount).Error; err != nil {
-		l.Error("统计粉丝数失败:", err)
-	} else {
-		achievement.ApplyFollowerMilestone(l.svcCtx.DB, uint(followingID), followerCount)
-	}
 
 	return &super.FollowUserResp{
 		Success: true,
