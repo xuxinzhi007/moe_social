@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../auth_service.dart';
-import '../../services/api_service.dart';
 import '../../models/topic_tag.dart';
 import '../../models/post.dart';
-import '../../models/user.dart';
 import '../../services/post_service.dart';
 import '../../widgets/post_skeleton.dart';
 import '../../utils/error_handler.dart';
@@ -32,8 +30,6 @@ class _HomePageState extends State<HomePage> {
 
   _HomeFeedMode _mode = _HomeFeedMode.hot;
   TopicTag? _activeTopic;
-  Set<String>? _followingUserIds;
-  bool _loadingFollowing = false;
   bool _showFeedRankingTip = true;
 
   // 添加滚动控制器和加载触发标志
@@ -164,10 +160,6 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       if (mounted) {
         ErrorHandler.handleException(context, e as Exception);
-        // 请求失败时，停止尝试加载更多，避免无限请求
-        setState(() {
-          _hasMore = false;
-        });
       }
     } finally {
       setState(() {
@@ -541,10 +533,6 @@ class _HomePageState extends State<HomePage> {
       }
     });
 
-    if (next == _HomeFeedMode.following) {
-      await _ensureFollowingIds();
-    }
-
     await _fetchPosts();
   }
 
@@ -640,97 +628,42 @@ class _HomePageState extends State<HomePage> {
   }
 
   List<Post> _computeDisplayPosts(List<Post> input) {
-    Iterable<Post> posts = input;
+    return List<Post>.from(input);
+  }
 
+  String _apiFeedMode() {
+    switch (_mode) {
+      case _HomeFeedMode.hot:
+        return 'hot';
+      case _HomeFeedMode.latest:
+        return 'latest';
+      case _HomeFeedMode.following:
+        return 'following';
+      case _HomeFeedMode.topic:
+        return 'latest';
+    }
+  }
+
+  String? _apiTopicTagId() {
     if (_mode == _HomeFeedMode.topic && _activeTopic != null) {
-      final tagId = _activeTopic!.id;
-      posts = posts.where((p) => p.topicTags.any((t) => t.id == tagId));
+      return _activeTopic!.id;
     }
-
-    if (_mode == _HomeFeedMode.following) {
-      final ids = _followingUserIds;
-      if (ids != null && ids.isNotEmpty) {
-        posts = posts.where((p) => ids.contains(p.userId));
-      } else {
-        posts = const Iterable<Post>.empty();
-      }
-    }
-
-    final list = posts.toList();
-    if (_mode == _HomeFeedMode.latest ||
-        _mode == _HomeFeedMode.topic ||
-        _mode == _HomeFeedMode.following) {
-      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      return list;
-    }
-
-    // hot
-    list.sort((a, b) {
-      final aScore = a.likes * 2 + a.comments;
-      final bScore = b.likes * 2 + b.comments;
-      final byScore = bScore.compareTo(aScore);
-      if (byScore != 0) return byScore;
-      return b.createdAt.compareTo(a.createdAt);
-    });
-    return list;
+    return null;
   }
 
   Future<_PostPageResult> _fetchPostsForMode({required int page}) async {
-    if (_mode == _HomeFeedMode.following) {
-      await _ensureFollowingIds();
-      if (_followingUserIds == null || _followingUserIds!.isEmpty) {
-        return const _PostPageResult(posts: [], total: 0);
-      }
-    }
-
-    // For filtered modes, fetch a bigger page size to reduce empty results.
-    final pageSize =
-        (_mode == _HomeFeedMode.following || _mode == _HomeFeedMode.topic)
-            ? 50
-            : _pageSize;
-    final result = await PostService.getPosts(page: page, pageSize: pageSize);
-    var posts = result['posts'] as List<Post>;
-    var total = result['total'] as int;
-
-    if (_mode == _HomeFeedMode.following) {
-      final ids = _followingUserIds;
-      if (ids != null && ids.isNotEmpty) {
-        posts = posts.where((p) => ids.contains(p.userId)).toList();
-        total = posts.length;
-      }
-    }
-
-    if (_mode == _HomeFeedMode.topic && _activeTopic != null) {
-      final tagId = _activeTopic!.id;
-      posts =
-          posts.where((p) => p.topicTags.any((t) => t.id == tagId)).toList();
-      total = posts.length;
-    }
-
+    final result = await PostService.getPosts(
+      page: page,
+      pageSize: _pageSize,
+      feedMode: _apiFeedMode(),
+      topicTagId: _apiTopicTagId(),
+    );
+    final posts = result['posts'] as List<Post>;
+    final totalRaw = result['total'];
+    final total = totalRaw is int
+        ? totalRaw
+        : (totalRaw is num ? totalRaw.toInt() : 0);
     return _PostPageResult(posts: posts, total: total);
-  }
-
-  Future<void> _ensureFollowingIds() async {
-    if (_followingUserIds != null) return;
-    if (_loadingFollowing) return;
-    final userId = AuthService.currentUser;
-    if (userId == null || userId.isEmpty) {
-      _followingUserIds = <String>{};
-      return;
-    }
-    _loadingFollowing = true;
-    try {
-      final result =
-          await ApiService.getFollowings(userId, page: 1, pageSize: 1000);
-      final users = (result['followings'] as List<dynamic>).cast<User>();
-      final ids = users.map((u) => u.id).toSet();
-      ids.add(userId);
-      _followingUserIds = ids;
-    } catch (_) {
-      _followingUserIds = <String>{};
-    } finally {
-      _loadingFollowing = false;
-    }
   }
 
   int _feedItemCount(List<Post> posts) {
@@ -1016,10 +949,9 @@ extension on _HomeFeedMode {
     switch (this) {
       case _HomeFeedMode.hot:
       case _HomeFeedMode.latest:
-        return true;
       case _HomeFeedMode.following:
       case _HomeFeedMode.topic:
-        return false;
+        return true;
     }
   }
 }

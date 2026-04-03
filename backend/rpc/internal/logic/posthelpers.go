@@ -6,17 +6,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const legacyHandDrawStart = "<<<MOE_HAND_DRAW_V1>>>"
-
-// stripLegacyHandDrawContent 去掉正文里旧版内嵌的手绘块，供列表摘要使用
-func stripLegacyHandDrawContent(s string) string {
-	i := strings.Index(s, legacyHandDrawStart)
-	if i < 0 {
-		return s
-	}
-	return strings.TrimRight(s[:i], " \n\t\r")
-}
-
 // moderationVisibleScope 列表可见：非 rejected；pending 仅作者可见
 func moderationVisibleScope(viewerUserID uint) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {

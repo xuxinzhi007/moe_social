@@ -1,5 +1,7 @@
 Name: super.rpc
 ListenOn: 0.0.0.0:8080
+# 手绘动态是否先发后审（true=moderation_status=pending，需 SQL 或管理端改为 ok）
+HandDrawRequireModeration: false
 Etcd:
   Hosts:
   - 127.0.0.1:2379

@@ -427,6 +427,8 @@ type GetPostsReq struct {
 	Page         int    `form:"page,default=1"`
 	PageSize     int    `form:"page_size,default=10"`
 	ViewerUserId string `form:"viewer_user_id,optional"`
+	FeedMode     string `form:"feed_mode,optional"`
+	TopicTagId   string `form:"topic_tag_id,optional"`
 }
 
 type GetPostsResp struct {

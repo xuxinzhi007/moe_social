@@ -55,9 +55,9 @@ func (l *CreatePostLogic) CreatePost(in *super.CreatePostReq) (*super.CreatePost
 		return nil, errorx.New(500, "服务器内部错误")
 	}
 	
-	// 4. 构建帖子数据
+	// 4. 构建帖子数据（手绘默认与图文一致直接公开；需人工审图时在 super.yaml 设 HandDrawRequireModeration: true）
 	modStatus := "ok"
-	if in.HandDrawCard != "" {
+	if in.HandDrawCard != "" && l.svcCtx.Config.HandDrawRequireModeration {
 		modStatus = "pending"
 	}
 	post := model.Post{

@@ -15,7 +15,7 @@ class Post {
   final bool isLiked;
   final DateTime createdAt;
   final List<TopicTag> topicTags;
-  /// 独立字段中的手绘 JSON（列表接口通常不下发，详情才有）
+  /// 独立字段中的手绘 JSON（列表与详情均可能下发；无缩略图时依赖此字段回放）
   final String handDrawCardJson;
   final String handDrawThumbUrl;
   /// ok | pending | rejected
