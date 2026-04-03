@@ -439,6 +439,7 @@ message GetPostCommentsReq {
   string post_id = 1;
   int32 page = 2;
   int32 page_size = 3;
+  string viewer_user_id = 4;
 }
 
 // 获取帖子评论响应

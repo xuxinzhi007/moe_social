@@ -18,6 +18,7 @@ import '../services/api_service.dart';
 /// 定位、WiFi 名、电量等只在本地用于天气与设置页展示，不上传。
 class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
   String _version = '';
+  String _buildNumber = '';
   String _deviceId = '';
   String _deviceType = '';
   String _osVersion = '';
