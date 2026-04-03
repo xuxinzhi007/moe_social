@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../direct_chat_page.dart';
+import '../pages/chat/direct_chat_page.dart';
 
 /// 消息通知组件 - 类似 iOS 的通知样式
 class MessageNotification {

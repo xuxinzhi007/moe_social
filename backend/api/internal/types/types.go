@@ -64,11 +64,12 @@ type CheckFollowResp struct {
 }
 
 type CheckInData struct {
-	ExpGained       int    `json:"exp_gained"`
-	NewLevel        int    `json:"new_level"`
-	ConsecutiveDays int    `json:"consecutive_days"`
-	LevelUp         bool   `json:"level_up"`
-	SpecialReward   string `json:"special_reward"`
+	ExpGained             int      `json:"exp_gained"`
+	NewLevel              int      `json:"new_level"`
+	ConsecutiveDays       int      `json:"consecutive_days"`
+	LevelUp               bool     `json:"level_up"`
+	SpecialReward         string   `json:"special_reward"`
+	NewlyUnlockedBadgeIds []string `json:"newly_unlocked_badge_ids,optional"`
 }
 
 type CheckInRecord struct {
@@ -125,19 +126,23 @@ type CreateCommentReq struct {
 
 type CreateCommentResp struct {
 	BaseResp
-	Data Comment `json:"data"`
+	Data                  Comment  `json:"data"`
+	NewlyUnlockedBadgeIds []string `json:"newly_unlocked_badge_ids,optional"`
 }
 
 type CreatePostReq struct {
-	UserId    string     `json:"user_id"`
-	Content   string     `json:"content"`
-	Images    []string   `json:"images,optional"`
-	TopicTags []TopicTag `json:"topic_tags,optional"`
+	UserId           string     `json:"user_id"`
+	Content          string     `json:"content"`
+	Images           []string   `json:"images,optional"`
+	TopicTags        []TopicTag `json:"topic_tags,optional"`
+	HandDrawCard     string     `json:"hand_draw_card,optional"`
+	HandDrawThumbUrl string     `json:"hand_draw_thumb_url,optional"`
 }
 
 type CreatePostResp struct {
 	BaseResp
-	Data Post `json:"data"`
+	Data                  Post     `json:"data"`
+	NewlyUnlockedBadgeIds []string `json:"newly_unlocked_badge_ids,optional"`
 }
 
 type CreateVipOrderReq struct {
@@ -147,7 +152,8 @@ type CreateVipOrderReq struct {
 
 type CreateVipOrderResp struct {
 	BaseResp
-	Data VipOrder `json:"data"`
+	Data                  VipOrder `json:"data"`
+	NewlyUnlockedBadgeIds []string `json:"newly_unlocked_badge_ids,optional"`
 }
 
 type CreateVipPlanReq struct {
@@ -238,6 +244,42 @@ type FollowUserReq struct {
 type FollowUserResp struct {
 	BaseResp
 	Data bool `json:"data"`
+}
+
+type FriendRelationData struct {
+	Relation string `json:"relation"`
+}
+
+type FriendRequestActionReq struct {
+	UserId    string `path:"user_id"`
+	RequestId string `path:"request_id"`
+}
+
+type FriendRequestActionResp struct {
+	BaseResp
+	Data bool `json:"data"`
+}
+
+type FriendRequestView struct {
+	Id        string `json:"id"`
+	FromUser  User   `json:"from_user"`
+	ToUser    User   `json:"to_user"`
+	Status    string `json:"status"`
+	CreatedAt string `json:"created_at"`
+}
+
+type FriendStatusPathReq struct {
+	UserId      string `path:"user_id"`
+	OtherUserId string `path:"other_user_id"`
+}
+
+type FriendStatusResp struct {
+	BaseResp
+	Data FriendRelationData `json:"data"`
+}
+
+type FriendUserPathReq struct {
+	UserId string `path:"user_id"`
 }
 
 type GetAvatarOutfitReq struct {
@@ -364,9 +406,10 @@ type GetNotificationsResp struct {
 }
 
 type GetPostCommentsReq struct {
-	PostId   string `path:"post_id"`
-	Page     int    `form:"page,default=1"`
-	PageSize int    `form:"page_size,default=10"`
+	PostId       string `path:"post_id"`
+	Page         int    `form:"page,default=1"`
+	PageSize     int    `form:"page_size,default=10"`
+	ViewerUserId string `form:"viewer_user_id,optional"`
 }
 
 type GetPostCommentsResp struct {
@@ -376,7 +419,8 @@ type GetPostCommentsResp struct {
 }
 
 type GetPostReq struct {
-	PostId string `path:"post_id"`
+	PostId       string `path:"post_id"`
+	ViewerUserId string `form:"viewer_user_id,optional"`
 }
 
 type GetPostResp struct {
@@ -385,8 +429,11 @@ type GetPostResp struct {
 }
 
 type GetPostsReq struct {
-	Page     int `form:"page,default=1"`
-	PageSize int `form:"page_size,default=10"`
+	Page         int    `form:"page,default=1"`
+	PageSize     int    `form:"page_size,default=10"`
+	ViewerUserId string `form:"viewer_user_id,optional"`
+	FeedMode     string `form:"feed_mode,optional"`
+	TopicTagId   string `form:"topic_tag_id,optional"`
 }
 
 type GetPostsResp struct {
@@ -435,6 +482,15 @@ type GetUnreadCountReq struct {
 type GetUnreadCountResp struct {
 	BaseResp
 	Data int `json:"data"`
+}
+
+type GetUserAchievementsReq struct {
+	UserId string `path:"user_id"`
+}
+
+type GetUserAchievementsResp struct {
+	BaseResp
+	Data []UserBadgeProgressEntry `json:"data"`
 }
 
 type GetUserActiveVipRecordReq struct {
@@ -596,6 +652,16 @@ type LikePostResp struct {
 	Data Post `json:"data"`
 }
 
+type ListFriendRequestsResp struct {
+	BaseResp
+	Data []FriendRequestView `json:"data"`
+}
+
+type ListFriendsResp struct {
+	BaseResp
+	Data []User `json:"data"`
+}
+
 type LlmChatReq struct {
 	Model    string       `json:"model"`
 	Messages []LlmMessage `json:"messages"`
@@ -666,17 +732,20 @@ type OutfitPart struct {
 }
 
 type Post struct {
-	Id         string     `json:"id"`
-	UserId     string     `json:"user_id"`
-	UserName   string     `json:"user_name"`
-	UserAvatar string     `json:"user_avatar"`
-	Content    string     `json:"content"`
-	Images     []string   `json:"images"`
-	TopicTags  []TopicTag `json:"topic_tags"`
-	Likes      int        `json:"likes"`
-	Comments   int        `json:"comments"`
-	IsLiked    bool       `json:"is_liked"`
-	CreatedAt  string     `json:"created_at"`
+	Id               string     `json:"id"`
+	UserId           string     `json:"user_id"`
+	UserName         string     `json:"user_name"`
+	UserAvatar       string     `json:"user_avatar"`
+	Content          string     `json:"content"`
+	Images           []string   `json:"images"`
+	TopicTags        []TopicTag `json:"topic_tags"`
+	Likes            int        `json:"likes"`
+	Comments         int        `json:"comments"`
+	IsLiked          bool       `json:"is_liked"`
+	CreatedAt        string     `json:"created_at"`
+	HandDrawCard     string     `json:"hand_draw_card,optional"`
+	HandDrawThumbUrl string     `json:"hand_draw_thumb_url,optional"`
+	ModerationStatus string     `json:"moderation_status,optional"`
 }
 
 type PurchaseAvatarOutfitReq struct {
@@ -730,6 +799,16 @@ type RegisterResp struct {
 	Data User `json:"data"`
 }
 
+type ReportPostReq struct {
+	PostId         string `path:"post_id"`
+	ReporterUserId string `json:"reporter_user_id"`
+	Reason         string `json:"reason"`
+}
+
+type ReportPostResp struct {
+	BaseResp
+}
+
 type ResetPasswordReq struct {
 	Email       string `json:"email"`
 	NewPassword string `json:"new_password"`
@@ -743,6 +822,17 @@ type SendBatchNotificationReq struct {
 	UserIDs []string    `json:"user_ids"`
 	Type    string      `json:"type"`
 	Data    interface{} `json:"data"`
+}
+
+type SendFriendRequestReq struct {
+	UserId   string `path:"user_id"`
+	ToUserId string `json:"to_user_id,optional"`
+	ToMoeNo  string `json:"to_moe_no,optional"`
+}
+
+type SendFriendRequestResp struct {
+	BaseResp
+	Data FriendRequestView `json:"data"`
 }
 
 type SendNotificationReq struct {
@@ -838,7 +928,8 @@ type UpdateUserVipReq struct {
 
 type UpdateUserVipResp struct {
 	BaseResp
-	Data User `json:"data"`
+	Data                  User     `json:"data"`
+	NewlyUnlockedBadgeIds []string `json:"newly_unlocked_badge_ids,optional"`
 }
 
 type UploadImageReq struct {
@@ -879,68 +970,18 @@ type User struct {
 	EquippedFrameId string  `json:"equipped_frame_id"`
 }
 
-type FriendRequestView struct {
-	Id        string `json:"id"`
-	FromUser  User   `json:"from_user"`
-	ToUser    User   `json:"to_user"`
-	Status    string `json:"status"`
-	CreatedAt string `json:"created_at"`
-}
-
-type SendFriendRequestReq struct {
-	UserId   string `path:"user_id"`
-	ToUserId string `json:"to_user_id,optional"`
-	ToMoeNo  string `json:"to_moe_no,optional"`
-}
-
-type SendFriendRequestResp struct {
-	BaseResp
-	Data FriendRequestView `json:"data"`
-}
-
-type ListFriendRequestsResp struct {
-	BaseResp
-	Data []FriendRequestView `json:"data"`
-}
-
-type FriendRequestActionReq struct {
-	UserId    string `path:"user_id"`
-	RequestId string `path:"request_id"`
-}
-
-type FriendRequestActionResp struct {
-	BaseResp
-	Data bool `json:"data"`
-}
-
-type ListFriendsResp struct {
-	BaseResp
-	Data []User `json:"data"`
-}
-
-type FriendRelationData struct {
-	Relation string `json:"relation"` // none | friend | pending_out | pending_in
-}
-
-type FriendStatusResp struct {
-	BaseResp
-	Data FriendRelationData `json:"data"`
-}
-
-type FriendUserPathReq struct {
-	UserId string `path:"user_id"`
-}
-
-type FriendStatusPathReq struct {
-	UserId      string `path:"user_id"`
-	OtherUserId string `path:"other_user_id"`
-}
-
 type UserAvatar struct {
 	UserId        string       `json:"user_id"`
 	BaseConfig    BaseConfig   `json:"base_config"`
 	CurrentOutfit OutfitConfig `json:"current_outfit"`
 	OwnedOutfits  []string     `json:"owned_outfits"`
+}
+
+type UserBadgeProgressEntry struct {
+	BadgeId      string `json:"badge_id"`
+	CurrentCount int    `json:"current_count"`
+	IsUnlocked   bool   `json:"is_unlocked"`
+	UnlockedAt   string `json:"unlocked_at,optional"`
 }
 
 type UserLevelInfo struct {

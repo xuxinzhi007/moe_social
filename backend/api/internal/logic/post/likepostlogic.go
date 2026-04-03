@@ -37,20 +37,32 @@ func (l *LikePostLogic) LikePost(req *types.LikePostReq) (resp *types.LikePostRe
 		}, nil
 	}
 
-	// 转换为API响应格式
+	apiTopicTags := make([]types.TopicTag, 0, len(rpcResp.Post.TopicTags))
+	for _, tag := range rpcResp.Post.TopicTags {
+		apiTopicTags = append(apiTopicTags, types.TopicTag{
+			Id:    tag.Id,
+			Name:  tag.Name,
+			Color: tag.Color,
+		})
+	}
+
 	return &types.LikePostResp{
 		BaseResp: common.HandleRPCError(nil, "操作成功"),
 		Data: types.Post{
-			Id:         rpcResp.Post.Id,
-			UserId:     rpcResp.Post.UserId,
-			UserName:   rpcResp.Post.UserName,
-			UserAvatar: rpcResp.Post.UserAvatar,
-			Content:    rpcResp.Post.Content,
-			Images:     rpcResp.Post.Images,
-			Likes:      int(rpcResp.Post.Likes),
-			Comments:   int(rpcResp.Post.Comments),
-			IsLiked:    rpcResp.Post.IsLiked,
-			CreatedAt:  rpcResp.Post.CreatedAt,
+			Id:               rpcResp.Post.Id,
+			UserId:           rpcResp.Post.UserId,
+			UserName:         rpcResp.Post.UserName,
+			UserAvatar:       rpcResp.Post.UserAvatar,
+			Content:          rpcResp.Post.Content,
+			Images:           rpcResp.Post.Images,
+			TopicTags:        apiTopicTags,
+			Likes:            int(rpcResp.Post.Likes),
+			Comments:         int(rpcResp.Post.Comments),
+			IsLiked:          rpcResp.Post.IsLiked,
+			CreatedAt:        rpcResp.Post.CreatedAt,
+			HandDrawCard:     rpcResp.Post.HandDrawCard,
+			HandDrawThumbUrl: rpcResp.Post.HandDrawThumbUrl,
+			ModerationStatus: rpcResp.Post.ModerationStatus,
 		},
 	}, nil
 }

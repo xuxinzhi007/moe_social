@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
+import 'hand_draw_card.dart';
 import 'topic_tag.dart';
 
 class Post {
@@ -13,7 +14,12 @@ class Post {
   final int comments;
   final bool isLiked;
   final DateTime createdAt;
-  final List<TopicTag> topicTags; // 话题标签列表
+  final List<TopicTag> topicTags;
+  /// 独立字段中的手绘 JSON（列表与详情均可能下发；无缩略图时依赖此字段回放）
+  final String handDrawCardJson;
+  final String handDrawThumbUrl;
+  /// ok | pending | rejected
+  final String moderationStatus;
 
   Post({
     required this.id,
@@ -27,7 +33,27 @@ class Post {
     this.isLiked = false,
     required this.createdAt,
     this.topicTags = const [],
+    this.handDrawCardJson = '',
+    this.handDrawThumbUrl = '',
+    this.moderationStatus = '',
   });
+
+  /// 展示用正文（独立手绘字段时 content 即为配文；旧数据则去掉内嵌块）
+  String get displayCaption {
+    if (handDrawCardJson.isNotEmpty) return content.trim();
+    return HandDrawCardCodec.stripForDisplay(content);
+  }
+
+  /// 解析手绘数据：优先独立字段，否则旧版 content 内嵌
+  HandDrawCardData? get handDrawCard {
+    if (handDrawCardJson.isNotEmpty) {
+      return HandDrawCardData.tryParseJsonString(handDrawCardJson);
+    }
+    return HandDrawCardCodec.tryDecode(content);
+  }
+
+  bool get isPendingModeration =>
+      moderationStatus.toLowerCase() == 'pending';
 
   Post copyWith({
     String? id,
@@ -41,6 +67,9 @@ class Post {
     bool? isLiked,
     DateTime? createdAt,
     List<TopicTag>? topicTags,
+    String? handDrawCardJson,
+    String? handDrawThumbUrl,
+    String? moderationStatus,
   }) {
     return Post(
       id: id ?? this.id,
@@ -54,10 +83,12 @@ class Post {
       isLiked: isLiked ?? this.isLiked,
       createdAt: createdAt ?? this.createdAt,
       topicTags: topicTags ?? this.topicTags,
+      handDrawCardJson: handDrawCardJson ?? this.handDrawCardJson,
+      handDrawThumbUrl: handDrawThumbUrl ?? this.handDrawThumbUrl,
+      moderationStatus: moderationStatus ?? this.moderationStatus,
     );
   }
 
-  // 从JSON创建Post实例
   factory Post.fromJson(Map<String, dynamic> json) {
     try {
       DateTime createdAt;
@@ -122,6 +153,15 @@ class Post {
         }
       }
 
+      final hd = json['hand_draw_card'];
+      final handDrawCardJson = hd == null ? '' : hd.toString();
+
+      final th = json['hand_draw_thumb_url'];
+      final handDrawThumbUrl = th == null ? '' : th.toString();
+
+      final ms = json['moderation_status'];
+      final moderationStatus = ms == null ? '' : ms.toString();
+
       return Post(
         id: (json['id'] ?? '').toString(),
         userId: (json['user_id'] ?? '').toString(),
@@ -129,11 +169,14 @@ class Post {
         userAvatar: (json['user_avatar'] ?? '').toString(),
         content: (json['content'] ?? '').toString(),
         images: images,
-        likes: (json['likes'] as int?) ?? 0,
-        comments: (json['comments'] as int?) ?? 0,
+        likes: (json['likes'] as num?)?.toInt() ?? 0,
+        comments: (json['comments'] as num?)?.toInt() ?? 0,
         isLiked: (json['is_liked'] as bool?) ?? false,
         createdAt: createdAt,
         topicTags: topicTags,
+        handDrawCardJson: handDrawCardJson,
+        handDrawThumbUrl: handDrawThumbUrl,
+        moderationStatus: moderationStatus,
       );
     } catch (e, stackTrace) {
       if (kDebugMode) {
@@ -143,17 +186,21 @@ class Post {
     }
   }
 
-  // 转换为JSON，注意使用下划线命名格式匹配后端期望
   Map<String, dynamic> toJson() {
-    final json = {
+    final json = <String, dynamic>{
       'user_id': userId,
       'content': content,
       'images': images,
     };
 
-    // 添加话题标签（如果存在）
     if (topicTags.isNotEmpty) {
       json['topic_tags'] = topicTags.map((tag) => tag.toJson()).toList();
+    }
+    if (handDrawCardJson.isNotEmpty) {
+      json['hand_draw_card'] = handDrawCardJson;
+    }
+    if (handDrawThumbUrl.isNotEmpty) {
+      json['hand_draw_thumb_url'] = handDrawThumbUrl;
     }
 
     return json;

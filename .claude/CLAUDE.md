@@ -14,6 +14,7 @@
 ### 目录与分层约定
 
 Flutter（默认约定）
+- `lib/pages/<domain>/`：按域划分的页面（如 `auth`、`feed`、`profile`）。
 - `lib/models/`：数据模型（`fromJson/toJson`）。
 - `lib/services/`：API/网络访问与数据源适配（避免写 UI 逻辑）。
 - `lib/providers/`：Provider 状态管理（复杂逻辑避免 `setState`）。
@@ -29,7 +30,7 @@ Go(go-zero)
 - 色板（默认）：主色 `#7F7FD5`，辅色 `#86A8E7`，点缀 `#91EAE4`，背景 `#F5F7FA`（避免纯白大底）。
 - 组件：按钮圆角（`StadiumBorder` 或 `BorderRadius.circular(20+)`）；卡片白底圆角（常用 `BorderRadius.circular(24)`）+ 轻阴影；输入框优先 filled + 圆角。
 - 动画：页面内容入场优先使用 `FadeInUp`（见 `lib/widgets/fade_in_up.dart`）。
-- 详细规范参考：`UI设计规范.md` 与 `.cursorrules`。
+- 详细规范参考：`docs/product/UI设计规范.md` 与 `.cursorrules`。
 
 ### 编码与命名
 

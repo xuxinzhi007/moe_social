@@ -8,7 +8,6 @@ import '../../models/ai_memory.dart';
 import '../../models/ai_memory_profile.dart';
 import '../../models/ai_memory_settings.dart';
 import '../../services/ai_db_service.dart';
-import '../../services/api_service.dart';
 import '../../services/llm_endpoint_config.dart';
 import '../../services/memory_agent_service.dart';
 

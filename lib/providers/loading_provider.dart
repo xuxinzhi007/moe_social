@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../models/post.dart';
 import '../services/api_service.dart';
 
 /// 统一加载状态管理Provider
@@ -151,7 +152,7 @@ class LoadingProvider extends ChangeNotifier {
   /// 执行创建帖子操作
   Future<dynamic> executeCreatePost(dynamic post) {
     return executeOperation(
-      operation: () => ApiService.createPost(post),
+      operation: () => ApiService.createPost(post as Post),
       key: 'createPost',
       successMessage: '发布成功',
     );

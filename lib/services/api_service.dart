@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'dart:io' show File, Platform, SocketException;
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart'
@@ -110,7 +111,7 @@ class ApiService {
   static const bool _verboseApiLog = true;
 
   // 生产环境地址（cpolar隧道）
-  static const String _productionUrl = 'http://5ab20a4c.r3.cpolar.top';
+  static const String _productionUrl = 'http://7ab91766.r3.cpolar.top';
 
   // 开发环境地址
   static const String _developmentUrl = 'http://localhost:8888';
@@ -129,10 +130,10 @@ class ApiService {
     } else if (Platform.isAndroid) {
       // Android真机需要使用电脑IP或生产环境地址
       // 如果本地连接有问题，可以临时使用生产环境地址
-      // return 'http://5ab20a4c.r3.cpolar.top'; // 使用生产环境
+      // return 'http://7ab91766.r3.cpolar.top'; // 使用生产环境
       // 或者使用电脑IP（需要根据实际情况修改）
       // return 'http://192.168.1.16:8888'; // 替换为你的电脑IP
-      return 'http://5ab20a4c.r3.cpolar.top'; // Android模拟器使用这个
+      return 'http://7ab91766.r3.cpolar.top'; // Android模拟器使用这个
     } else if (Platform.isIOS) {
       // iOS模拟器使用localhost，真机需要使用电脑IP
       return _developmentUrl; // iOS模拟器
@@ -460,9 +461,28 @@ class ApiService {
   }
 
   // 获取帖子列表（支持分页）
-  static Future<Map<String, dynamic>> getPosts(
-      {int page = 1, int pageSize = 10}) async {
-    final result = await _request('/api/posts?page=$page&page_size=$pageSize');
+  static Future<Map<String, dynamic>> getPosts({
+    int page = 1,
+    int pageSize = 10,
+    String? viewerUserId,
+    String? feedMode,
+    String? topicTagId,
+  }) async {
+    final parts = <String>[
+      'page=$page',
+      'page_size=$pageSize',
+    ];
+    if (viewerUserId != null && viewerUserId.isNotEmpty) {
+      parts.add(
+          'viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}');
+    }
+    if (feedMode != null && feedMode.isNotEmpty) {
+      parts.add('feed_mode=${Uri.encodeQueryComponent(feedMode)}');
+    }
+    if (topicTagId != null && topicTagId.isNotEmpty) {
+      parts.add('topic_tag_id=${Uri.encodeQueryComponent(topicTagId)}');
+    }
+    final result = await _request('/api/posts?${parts.join('&')}');
     // 始终输出total字段的值和postsJson的长度，不依赖于_verboseApiLog
     _log('📥 getPosts响应数据: ${_safeJsonForLog(result)}');
     _log('📥 data类型: ${result['data'].runtimeType}');
@@ -490,9 +510,13 @@ class ApiService {
       if (_verboseApiLog) {
         _log('📥 成功解析${posts.length}条帖子');
       }
+      final totalRaw = result['total'];
+      final total = totalRaw is int
+          ? totalRaw
+          : (totalRaw is num ? totalRaw.toInt() : 0);
       return {
         'posts': posts,
-        'total': result['total'] as int,
+        'total': total,
       };
     } catch (e, stackTrace) {
       _log('❌ 解析帖子失败: $e');
@@ -667,16 +691,46 @@ class ApiService {
   }
 
   // 获取单个帖子
-  static Future<Post> getPostById(String id) async {
-    final result = await _request('/api/posts/$id');
+  static Future<Post> getPostById(String id, {String? viewerUserId}) async {
+    var path = '/api/posts/$id';
+    if (viewerUserId != null && viewerUserId.isNotEmpty) {
+      path +=
+          '?viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}';
+    }
+    final result = await _request(path);
     return Post.fromJson(result['data']);
   }
 
-  // 创建帖子
-  static Future<Post> createPost(Post post) async {
-    await _request('/api/posts', method: 'POST', body: post.toJson());
-    // 这里不需要转换为Post对象，因为我们只需要知道创建成功即可
-    return post;
+  /// 举报动态
+  static Future<void> reportPost({
+    required String postId,
+    required String reporterUserId,
+    required String reason,
+  }) async {
+    await _request(
+      '/api/posts/$postId/report',
+      method: 'POST',
+      body: {
+        'reporter_user_id': reporterUserId,
+        'reason': reason,
+      },
+    );
+  }
+
+  static List<String> _parseNewlyUnlockedBadgeIds(Map<String, dynamic> result) {
+    final v = result['newly_unlocked_badge_ids'];
+    if (v is! List) return [];
+    return v.map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
+  }
+
+  /// 创建帖子；返回服务端帖子数据与本批新解锁成就 id（服务端为权威进度）
+  static Future<({Post post, List<String> newlyUnlockedBadgeIds})> createPost(
+      Post post) async {
+    final result =
+        await _request('/api/posts', method: 'POST', body: post.toJson());
+    final data = Post.fromJson(result['data'] as Map<String, dynamic>);
+    final ids = _parseNewlyUnlockedBadgeIds(result);
+    return (post: data, newlyUnlockedBadgeIds: ids);
   }
 
   // 点赞/取消点赞帖子
@@ -686,18 +740,30 @@ class ApiService {
     return Post.fromJson(result['data']);
   }
 
-  // 获取帖子评论
-  static Future<List<Comment>> getComments(String postId) async {
-    final result = await _request('/api/posts/$postId/comments');
+  // 获取帖子评论（传 viewer 才能返回准确的 is_liked）
+  static Future<List<Comment>> getComments(
+    String postId, {
+    String? viewerUserId,
+  }) async {
+    final parts = <String>[];
+    if (viewerUserId != null && viewerUserId.isNotEmpty) {
+      parts.add(
+          'viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}');
+    }
+    final q = parts.isEmpty ? '' : '?${parts.join('&')}';
+    final result = await _request('/api/posts/$postId/comments$q');
     final commentsJson = result['data'] as List;
     return commentsJson.map((json) => Comment.fromJson(json)).toList();
   }
 
   // 添加评论
-  static Future<Comment> addComment(Comment comment) async {
+  static Future<({Comment comment, List<String> newlyUnlockedBadgeIds})>
+      addComment(Comment comment) async {
     final result =
         await _request('/api/comments', method: 'POST', body: comment.toJson());
-    return Comment.fromJson(result['data']);
+    final c = Comment.fromJson(result['data'] as Map<String, dynamic>);
+    final ids = _parseNewlyUnlockedBadgeIds(result);
+    return (comment: c, newlyUnlockedBadgeIds: ids);
   }
 
   // 点赞/取消点赞评论
@@ -831,10 +897,22 @@ class ApiService {
   }
 
   // 创建VIP订单
-  static Future<VipOrder> createVipOrder(String userId, String planId) async {
+  static Future<({VipOrder order, List<String> newlyUnlockedBadgeIds})>
+      createVipOrder(String userId, String planId) async {
     final result = await _request('/api/user/$userId/vip/orders',
         method: 'POST', body: {'plan_id': planId});
-    return VipOrder.fromJson(result['data']);
+    final order = VipOrder.fromJson(result['data'] as Map<String, dynamic>);
+    final ids = _parseNewlyUnlockedBadgeIds(result);
+    return (order: order, newlyUnlockedBadgeIds: ids);
+  }
+
+  /// 成就进度（与后端 user_badge_progress 对齐）
+  static Future<List<Map<String, dynamic>>> getUserAchievements(
+      String userId) async {
+    final result = await _request('/api/user/$userId/achievements');
+    final data = result['data'];
+    if (data is! List) return [];
+    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
   // 获取VIP订单列表
@@ -955,6 +1033,70 @@ class ApiService {
   static Future<String> uploadImage(File image) async {
     final info = await uploadImageInfo(image);
     return info['url'] as String;
+  }
+
+  /// 上传内存中的图片字节（如手绘缩略图 PNG）
+  static Future<String> uploadImageBytes(
+    Uint8List bytes, {
+    String filename = 'upload.png',
+  }) async {
+    final info = await uploadImageBytesInfo(bytes, filename: filename);
+    return info['url'] as String;
+  }
+
+  static Future<Map<String, dynamic>> uploadImageBytesInfo(
+    Uint8List bytes, {
+    String filename = 'upload.png',
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/upload');
+
+    Future<Map<String, dynamic>> doUpload(http.Client client) async {
+      final request = http.MultipartRequest('POST', uri);
+      request.headers['Connection'] = 'close';
+      final token = _currentToken;
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: filename,
+        ),
+      );
+      _log('📤 Upload bytes: len=${bytes.length} uri=$uri');
+      final streamedResponse = await client
+          .send(request)
+          .timeout(const Duration(seconds: 90));
+      final response = await http.Response.fromStream(streamedResponse);
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body) as Map<String, dynamic>;
+        if (result['success'] == true) {
+          return result['data'] as Map<String, dynamic>;
+        }
+        throw ApiException(
+            result['message'] ?? '上传失败', result['code'] ?? response.statusCode);
+      }
+      if (response.statusCode == 413) {
+        throw ApiException('图片太大，上传被拒绝(413)', 413);
+      }
+      throw ApiException('上传失败，状态码：${response.statusCode}', response.statusCode);
+    }
+
+    try {
+      final client = http.Client();
+      try {
+        return await doUpload(client);
+      } on SocketException catch (e) {
+        _log('📤 upload bytes retry after: $e');
+        return await doUpload(client);
+      } finally {
+        client.close();
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(e.toString());
+    }
   }
 
   /// 上传图片并返回后端的 ImageInfo（包含 filename/url/size/created_at）

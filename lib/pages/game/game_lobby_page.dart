@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../auth_service.dart';
 import '../../widgets/moe_toast.dart';
-import '../../gacha_page.dart';
+import '../commerce/gacha_page.dart';
 import 'game_room_list_page.dart';
 import '../../widgets/fade_in_up.dart';
 

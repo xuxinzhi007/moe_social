@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/post.dart';
+import '../auth_service.dart';
+import '../services/api_service.dart';
 import '../services/like_state_manager.dart';
 import '../widgets/avatar_image.dart';
 import '../widgets/network_image.dart';
@@ -9,6 +11,7 @@ import '../widgets/topic_tag_selector.dart';
 import '../widgets/like_button.dart';
 import '../widgets/moe_bouncing_button.dart';
 import '../widgets/post_image_viewer.dart';
+import '../widgets/hand_draw/hand_draw_card_view.dart';
 
 class PostCard extends StatelessWidget {
   final Post post;
@@ -176,11 +179,58 @@ class PostCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // 帖子内容
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: _renderContentWithEmojis(context, post.content),
-              ),
+              // 帖子正文（手绘数据已内嵌在 content 中，展示时剥离）
+              if (post.isPendingModeration)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Chip(
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      avatar: Icon(Icons.hourglass_top_rounded,
+                          size: 16, color: Colors.amber[800]),
+                      label: const Text('审核中', style: TextStyle(fontSize: 12)),
+                      backgroundColor: Colors.amber.shade50,
+                    ),
+                  ),
+                ),
+
+              if (post.displayCaption.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: _renderContentWithEmojis(context, post.displayCaption),
+                ),
+
+              if (post.handDrawThumbUrl.isNotEmpty) ...[
+                if (post.displayCaption.isNotEmpty) const SizedBox(height: 4),
+                _HandDrawThumbnail(
+                  post: post,
+                  onOpenReplay: () =>
+                      _openHandDrawViewer(context, post),
+                ),
+              ] else if (post.handDrawCard != null) ...[
+                if (post.displayCaption.isNotEmpty) const SizedBox(height: 4),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 340),
+                  child: HandDrawCardReplay(
+                    data: post.handDrawCard!,
+                    autoPlay: false,
+                    duration: Duration(
+                      milliseconds: (1600 + post.handDrawCard!.strokes.length * 35)
+                          .clamp(1200, 3800),
+                    ),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.center,
+                  child: TextButton.icon(
+                    onPressed: () => _openHandDrawViewer(context, post),
+                    icon: const Icon(Icons.fullscreen_rounded, size: 20),
+                    label: const Text('全屏回放绘画过程'),
+                  ),
+                ),
+              ],
 
               // 话题标签
               if (post.topicTags.isNotEmpty) ...[
@@ -268,11 +318,14 @@ class PostCard extends StatelessWidget {
   }
 
   static void _handleShare(Post post) {
+    final body = post.displayCaption.isEmpty && post.handDrawCard != null
+        ? '[手绘卡片]'
+        : post.displayCaption;
     final shareText = '''${post.userName} 的动态：
 
-${post.content}
+$body
 
-#萌社 ${post.topicTags.isNotEmpty ? post.topicTags.map((t) => '#$t').join(' ') : ''}''';
+#萌社 ${post.topicTags.isNotEmpty ? post.topicTags.map((t) => '#${t.name}').join(' ') : ''}''';
 
     Share.share(
       shareText,
@@ -316,17 +369,49 @@ ${post.content}
     );
   }
 
-  static void _submitReport(BuildContext context, Post post, String reason) {
-    // TODO: 调用后端举报接口
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('已提交「$reason」举报，感谢反馈'),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+  static Future<void> _submitReport(
+      BuildContext context, Post post, String reason) async {
+    final uid = AuthService.currentUser;
+    if (uid == null || uid.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('请先登录后再举报'),
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+    try {
+      await ApiService.reportPost(
+        postId: post.id,
+        reporterUserId: uid,
+        reason: reason,
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('已提交「$reason」举报，感谢反馈'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('举报失败：$e'),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
   }
 
   Widget _buildActionButton(
@@ -518,6 +603,186 @@ ${post.content}
     return RichText(
       text: TextSpan(
         children: spans,
+      ),
+    );
+  }
+}
+
+/// 手绘缩略图：叠加播放按钮，点击全屏回放笔迹（有 JSON 时）或放大静图。
+class _HandDrawThumbnail extends StatelessWidget {
+  const _HandDrawThumbnail({
+    required this.post,
+    required this.onOpenReplay,
+  });
+
+  final Post post;
+  final VoidCallback onOpenReplay;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onOpenReplay,
+        borderRadius: BorderRadius.circular(20),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: AspectRatio(
+            aspectRatio: 3 / 4,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CachedNetworkImage(
+                  imageUrl: post.handDrawThumbUrl,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) =>
+                      Container(color: Colors.grey.shade100),
+                  errorWidget: (_, __, ___) => Container(
+                    color: Colors.grey.shade200,
+                    child: const Center(
+                        child: Icon(Icons.broken_image_outlined)),
+                  ),
+                ),
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.center,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.05),
+                          Colors.black.withOpacity(0.3),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Center(
+                  child: Icon(
+                    Icons.play_circle_fill_rounded,
+                    size: 68,
+                    color: Colors.white.withOpacity(0.94),
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.5),
+                        blurRadius: 14,
+                      ),
+                    ],
+                  ),
+                ),
+                if (post.handDrawCard == null)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 10,
+                    child: Text(
+                      '点击查看大图',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.92),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        shadows: const [
+                          Shadow(color: Colors.black54, blurRadius: 4),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+void _openHandDrawViewer(BuildContext context, Post post) {
+  final card = post.handDrawCard;
+  final thumb = post.handDrawThumbUrl;
+
+  if (card != null) {
+    final duration = Duration(
+      milliseconds: (1600 + card.strokes.length * 35).clamp(1200, 3800),
+    );
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.88),
+      builder: (ctx) {
+        final maxH = MediaQuery.sizeOf(context).height * 0.75;
+        final maxW = MediaQuery.sizeOf(context).width - 24;
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.close_rounded,
+                    color: Colors.white70, size: 28),
+                onPressed: () => Navigator.pop(ctx),
+              ),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: maxH, maxWidth: maxW),
+                child: HandDrawCardReplay(
+                  data: card,
+                  autoPlay: true,
+                  duration: duration,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    return;
+  }
+
+  if (thumb.isNotEmpty) {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: const EdgeInsets.all(12),
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.8,
+                maxScale: 4,
+                child: CachedNetworkImage(
+                  imageUrl: thumb,
+                  fit: BoxFit.contain,
+                  placeholder: (_, __) => const SizedBox(
+                    width: 200,
+                    height: 280,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                          color: Colors.white54),
+                    ),
+                  ),
+                  errorWidget: (_, __, ___) => const Icon(
+                    Icons.broken_image_outlined,
+                    color: Colors.white54,
+                    size: 64,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: IconButton(
+                icon: const Icon(Icons.close_rounded, color: Colors.white),
+                onPressed: () => Navigator.pop(ctx),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
