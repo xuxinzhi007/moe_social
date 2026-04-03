@@ -49,9 +49,10 @@ class PostService {
     }
   }
 
-  // 创建新帖子
-  static Future<Post> createPost(Post post) async {
-    return await ApiService.createPost(post);
+  // 创建新帖子（含服务端返回的新解锁成就）
+  static Future<({Post post, List<String> newlyUnlockedBadgeIds})> createPost(
+      Post post) async {
+    return ApiService.createPost(post);
   }
 
   // 点赞/取消点赞帖子
@@ -118,8 +119,9 @@ class PostService {
   }
 
   // 添加评论
-  static Future<Comment> addComment(Comment comment) async {
-    return await ApiService.addComment(comment);
+  static Future<({Comment comment, List<String> newlyUnlockedBadgeIds})>
+      addComment(Comment comment) async {
+    return ApiService.addComment(comment);
   }
 
   // 点赞/取消点赞评论

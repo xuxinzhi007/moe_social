@@ -64,11 +64,12 @@ type CheckFollowResp struct {
 }
 
 type CheckInData struct {
-	ExpGained       int    `json:"exp_gained"`
-	NewLevel        int    `json:"new_level"`
-	ConsecutiveDays int    `json:"consecutive_days"`
-	LevelUp         bool   `json:"level_up"`
-	SpecialReward   string `json:"special_reward"`
+	ExpGained             int      `json:"exp_gained"`
+	NewLevel              int      `json:"new_level"`
+	ConsecutiveDays       int      `json:"consecutive_days"`
+	LevelUp               bool     `json:"level_up"`
+	SpecialReward         string   `json:"special_reward"`
+	NewlyUnlockedBadgeIds []string `json:"newly_unlocked_badge_ids,optional"`
 }
 
 type CheckInRecord struct {
@@ -125,7 +126,8 @@ type CreateCommentReq struct {
 
 type CreateCommentResp struct {
 	BaseResp
-	Data Comment `json:"data"`
+	Data                  Comment  `json:"data"`
+	NewlyUnlockedBadgeIds []string `json:"newly_unlocked_badge_ids,optional"`
 }
 
 type CreatePostReq struct {
@@ -139,7 +141,8 @@ type CreatePostReq struct {
 
 type CreatePostResp struct {
 	BaseResp
-	Data Post `json:"data"`
+	Data                  Post     `json:"data"`
+	NewlyUnlockedBadgeIds []string `json:"newly_unlocked_badge_ids,optional"`
 }
 
 type CreateVipOrderReq struct {
@@ -149,7 +152,8 @@ type CreateVipOrderReq struct {
 
 type CreateVipOrderResp struct {
 	BaseResp
-	Data VipOrder `json:"data"`
+	Data                  VipOrder `json:"data"`
+	NewlyUnlockedBadgeIds []string `json:"newly_unlocked_badge_ids,optional"`
 }
 
 type CreateVipPlanReq struct {
@@ -478,6 +482,15 @@ type GetUnreadCountReq struct {
 type GetUnreadCountResp struct {
 	BaseResp
 	Data int `json:"data"`
+}
+
+type GetUserAchievementsReq struct {
+	UserId string `path:"user_id"`
+}
+
+type GetUserAchievementsResp struct {
+	BaseResp
+	Data []UserBadgeProgressEntry `json:"data"`
 }
 
 type GetUserActiveVipRecordReq struct {
@@ -915,7 +928,8 @@ type UpdateUserVipReq struct {
 
 type UpdateUserVipResp struct {
 	BaseResp
-	Data User `json:"data"`
+	Data                  User     `json:"data"`
+	NewlyUnlockedBadgeIds []string `json:"newly_unlocked_badge_ids,optional"`
 }
 
 type UploadImageReq struct {
@@ -961,6 +975,13 @@ type UserAvatar struct {
 	BaseConfig    BaseConfig   `json:"base_config"`
 	CurrentOutfit OutfitConfig `json:"current_outfit"`
 	OwnedOutfits  []string     `json:"owned_outfits"`
+}
+
+type UserBadgeProgressEntry struct {
+	BadgeId      string `json:"badge_id"`
+	CurrentCount int    `json:"current_count"`
+	IsUnlocked   bool   `json:"is_unlocked"`
+	UnlockedAt   string `json:"unlocked_at,optional"`
 }
 
 type UserLevelInfo struct {

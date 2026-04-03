@@ -316,6 +316,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
+				Path:    "/api/user/:user_id/achievements",
+				Handler: user.GetUserAchievementsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/user/:user_id/detail",
 				Handler: user.GetUserHandler(serverCtx),
 			},

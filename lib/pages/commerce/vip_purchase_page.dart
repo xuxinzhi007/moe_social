@@ -123,7 +123,9 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
     });
 
     try {
-      final order = await ApiService.createVipOrder(userId, _selectedPlanId!);
+      final orderResult =
+          await ApiService.createVipOrder(userId, _selectedPlanId!);
+      final order = orderResult.order;
       await _refreshBalance();
       final vipStatus = await ApiService.syncUserVipStatus(userId);
       final isVip = vipStatus['is_vip'] as bool? ?? false;
@@ -135,7 +137,10 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
       if (mounted) {
         if (paid) {
           MoeToast.success(context, '开通成功，已从钱包扣款 ¥${order.amount.toStringAsFixed(2)}');
-          unawaited(AchievementHooks.recordVipPurchased(userId));
+          unawaited(AchievementHooks.onServerNewUnlocks(
+            userId,
+            orderResult.newlyUnlockedBadgeIds,
+          ));
         } else {
           MoeToast.show(context, '订单已创建，请稍后查看订单状态',
               icon: Icons.info_outline_rounded,

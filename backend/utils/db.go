@@ -130,6 +130,7 @@ func autoMigrate() error {
 		&model.CheckInReward{}, // 签到奖励配置表
 		&model.ExpLog{},        // 经验日志表
 		&model.FriendRequest{}, // 好友申请
+		&model.UserBadgeProgress{}, // 成就进度
 	)
 }
 
