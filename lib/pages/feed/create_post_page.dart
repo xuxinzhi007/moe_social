@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'dart:convert';
 import 'dart:io';
 import '../../auth_service.dart';
 import '../../models/post.dart';
@@ -15,6 +16,7 @@ import '../gallery/cloud_gallery_page.dart';
 import '../../models/hand_draw_card.dart';
 import 'hand_draw_editor_page.dart';
 import '../../widgets/hand_draw/hand_draw_card_view.dart';
+import '../../utils/hand_draw_raster.dart';
 
 class CreatePostPage extends StatefulWidget {
   const CreatePostPage({super.key});
@@ -121,10 +123,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
       return;
     }
 
-    final contentForApi = _handDrawCard != null
-        ? HandDrawCardCodec.mergeCaptionAndPayload(caption, _handDrawCard!)
-        : caption;
-
     final loadingProvider = context.read<LoadingProvider>();
     await loadingProvider.executeOperation<void>(
       key: LoadingKeys.createPost,
@@ -145,18 +143,33 @@ class _CreatePostPageState extends State<CreatePostPage> {
           throw Exception('请先登录');
         }
 
+        String handJson = '';
+        String thumbUrl = '';
+        if (_handDrawCard != null) {
+          handJson = jsonEncode(_handDrawCard!.toJson());
+          final png = await handDrawCardToPngBytes(_handDrawCard!);
+          if (png != null && png.isNotEmpty) {
+            thumbUrl = await ApiService.uploadImageBytes(
+              png,
+              filename: 'hand_draw_thumb.png',
+            );
+          }
+        }
+
         final newPost = Post(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           userId: userId,
           userName: _userName ?? '用户',
           userAvatar: _userAvatar ?? 'https://picsum.photos/150',
-          content: contentForApi,
+          content: caption,
           images: imageUrls,
           likes: 0,
           comments: 0,
           isLiked: false,
           createdAt: DateTime.now(),
-          topicTags: _selectedTopicTags, // 添加话题标签
+          topicTags: _selectedTopicTags,
+          handDrawCardJson: handJson,
+          handDrawThumbUrl: thumbUrl,
         );
 
         await PostService.createPost(newPost);

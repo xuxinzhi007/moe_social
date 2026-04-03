@@ -28,8 +28,9 @@ func NewGetPostsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPosts
 func (l *GetPostsLogic) GetPosts(req *types.GetPostsReq) (resp *types.GetPostsResp, err error) {
 	// 调用RPC服务获取帖子列表
 	rpcResp, err := l.svcCtx.SuperRpcClient.GetPosts(l.ctx, &super.GetPostsReq{
-		Page:     int32(req.Page),
-		PageSize: int32(req.PageSize),
+		Page:           int32(req.Page),
+		PageSize:       int32(req.PageSize),
+		ViewerUserId:   req.ViewerUserId,
 	})
 	if err != nil {
 		l.Error("调用RPC服务失败:", err)
@@ -62,17 +63,20 @@ func (l *GetPostsLogic) GetPosts(req *types.GetPostsReq) (resp *types.GetPostsRe
 		}
 
 		respPosts = append(respPosts, types.Post{
-			Id:         post.Id,
-			UserId:     post.UserId,
-			UserName:   post.UserName,
-			UserAvatar: post.UserAvatar,
-			Content:    post.Content,
-			Images:     post.Images,
-			TopicTags:  apiTopicTags,
-			Likes:      int(post.Likes),
-			Comments:   int(post.Comments),
-			IsLiked:    post.IsLiked,
-			CreatedAt:  post.CreatedAt,
+			Id:               post.Id,
+			UserId:           post.UserId,
+			UserName:         post.UserName,
+			UserAvatar:       post.UserAvatar,
+			Content:          post.Content,
+			Images:           post.Images,
+			TopicTags:        apiTopicTags,
+			Likes:            int(post.Likes),
+			Comments:         int(post.Comments),
+			IsLiked:          post.IsLiked,
+			CreatedAt:        post.CreatedAt,
+			HandDrawCard:     post.HandDrawCard,
+			HandDrawThumbUrl: post.HandDrawThumbUrl,
+			ModerationStatus: post.ModerationStatus,
 		})
 	}
 

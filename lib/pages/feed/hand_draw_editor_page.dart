@@ -17,9 +17,11 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
   static const _bg = 0xFFF5F7FA;
 
   final List<HandDrawStroke> _strokes = [];
+  final List<HandDrawStroke> _redoStack = [];
   List<List<double>> _current = [];
   int _colorArgb = 0xFF7F7FD5;
   double _widthNorm = 0.012;
+  bool _eraserOn = false;
 
   static const _palette = <int>[
     0xFF7F7FD5,
@@ -45,8 +47,16 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
         return;
       }
       if (_strokes.isNotEmpty) {
-        _strokes.removeLast();
+        _redoStack.add(_strokes.removeLast());
       }
+    });
+    HapticFeedback.lightImpact();
+  }
+
+  void _redoLastStroke() {
+    setState(() {
+      if (_redoStack.isEmpty) return;
+      _strokes.add(_redoStack.removeLast());
     });
     HapticFeedback.lightImpact();
   }
@@ -55,6 +65,7 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
     setState(() {
       _strokes.clear();
       _current = [];
+      _redoStack.clear();
     });
     HapticFeedback.mediumImpact();
   }
@@ -90,10 +101,12 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
   void _onPanEnd() {
     if (_current.isEmpty) return;
     setState(() {
+      _redoStack.clear();
       _strokes.add(HandDrawStroke(
         colorArgb: _colorArgb,
         widthNorm: _widthNorm,
         points: List.from(_current),
+        erase: _eraserOn,
       ));
       _current = [];
     });
@@ -186,6 +199,10 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
         foregroundColor: Colors.black87,
         actions: [
           TextButton(
+            onPressed: _redoStack.isEmpty ? null : _redoLastStroke,
+            child: const Text('重做'),
+          ),
+          TextButton(
             onPressed: _undo,
             child: const Text('撤销'),
           ),
@@ -263,7 +280,10 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
                               padding: const EdgeInsets.only(right: 10),
                               child: GestureDetector(
                                 onTap: () {
-                                  setState(() => _colorArgb = c);
+                                  setState(() {
+                                    _colorArgb = c;
+                                    _eraserOn = false;
+                                  });
                                   HapticFeedback.selectionClick();
                                 },
                                 child: Container(
@@ -296,6 +316,31 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        FilterChip(
+                          label: const Text('橡皮'),
+                          selected: _eraserOn,
+                          onSelected: (v) => setState(() {
+                            _eraserOn = v;
+                            if (v) _current = [];
+                          }),
+                          avatar: Icon(
+                            Icons.auto_fix_high_rounded,
+                            size: 18,
+                            color: _eraserOn ? Colors.white : Colors.black54,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _eraserOn ? '擦除笔迹（撤销 / 重做仍可用）' : '普通画笔',
+                            style: TextStyle(fontSize: 13, color: Colors.black54),
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -307,7 +352,9 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
                             max: 0.028,
                             divisions: 10,
                             label: '线宽',
-                            onChanged: (v) => setState(() => _widthNorm = v),
+                            onChanged: _eraserOn
+                                ? null
+                                : (v) => setState(() => _widthNorm = v),
                           ),
                         ),
                       ],
@@ -340,8 +387,9 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
   HandDrawStroke _workingStroke() {
     return HandDrawStroke(
       colorArgb: _colorArgb,
-      widthNorm: _widthNorm,
+      widthNorm: _eraserOn ? (_widthNorm * 1.35).clamp(0.012, 0.04) : _widthNorm,
       points: List.from(_current),
+      erase: _eraserOn,
     );
   }
 }

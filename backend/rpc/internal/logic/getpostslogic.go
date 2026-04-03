@@ -10,6 +10,7 @@ import (
 	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 type GetPostsLogic struct {
@@ -46,18 +47,27 @@ func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, er
 		offset = 0
 	}
 
+	var viewerUID uint
+	if in.ViewerUserId != "" {
+		if v, err := strconv.ParseUint(in.ViewerUserId, 10, 32); err == nil {
+			viewerUID = uint(v)
+		}
+	}
+
+	listQuery := l.svcCtx.DB.Model(&model.Post{}).Scopes(moderationVisibleScope(viewerUID))
+
 	// 查询帖子列表
 	var posts []model.Post
 	var total int64
 
-	// 计算总数
-	if err := l.svcCtx.DB.Model(&model.Post{}).Count(&total).Error; err != nil {
+	// 计算总数（与列表同一可见性规则）
+	if err := listQuery.Session(&gorm.Session{}).Count(&total).Error; err != nil {
 		return nil, err
 	}
 
 	// 查询帖子，预加载话题标签
 	// 先按created_at倒序，再按ID倒序，确保最新的帖子显示在列表顶部
-	if err := l.svcCtx.DB.Preload("TopicTags").Order("created_at DESC, id DESC").Offset(int(offset)).Limit(int(pageSize)).Find(&posts).Error; err != nil {
+	if err := listQuery.Preload("TopicTags").Order("created_at DESC, id DESC").Offset(int(offset)).Limit(int(pageSize)).Find(&posts).Error; err != nil {
 		return nil, err
 	}
 
@@ -113,19 +123,27 @@ func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, er
 			})
 		}
 
-		// 构建Post对象
+		listContent := post.Content
+		if post.HandDrawCard == "" {
+			listContent = stripLegacyHandDrawContent(post.Content)
+		}
+
+		// 构建Post对象（列表不下发 hand_draw_card，仅缩略图与状态）
 		rpcPost := &super.Post{
-			Id:         strconv.FormatUint(uint64(post.ID), 10),
-			UserId:     strconv.FormatUint(uint64(post.UserID), 10),
-			UserName:   username,
-			UserAvatar: avatar,
-			Content:    post.Content,
-			Images:     images,
-			TopicTags:  topicTags,
-			Likes:      int32(post.Likes),
-			Comments:   int32(post.Comments),
-			IsLiked:    false,
-			CreatedAt:  post.CreatedAt.Format("2006-01-02 15:04:05"),
+			Id:                strconv.FormatUint(uint64(post.ID), 10),
+			UserId:            strconv.FormatUint(uint64(post.UserID), 10),
+			UserName:          username,
+			UserAvatar:        avatar,
+			Content:           listContent,
+			Images:              images,
+			TopicTags:           topicTags,
+			Likes:               int32(post.Likes),
+			Comments:            int32(post.Comments),
+			IsLiked:             false,
+			CreatedAt:           post.CreatedAt.Format("2006-01-02 15:04:05"),
+			HandDrawCard:        "",
+			HandDrawThumbUrl:    post.HandDrawThumbURL,
+			ModerationStatus:    moderationStatusOrDefault(post.ModerationStatus),
 		}
 
 		resp.Posts = append(resp.Posts, rpcPost)

@@ -135,16 +135,19 @@ func (l *LikePostLogic) LikePost(in *super.LikePostReq) (*super.LikePostResp, er
 
 	// 构建响应
 	rpcPost := &super.Post{
-		Id:         strconv.FormatUint(uint64(post.ID), 10),
-		UserId:     strconv.FormatUint(uint64(post.UserID), 10),
-		UserName:   username,
-		UserAvatar: avatar,
-		Content:    post.Content,
-		Images:     images,
-		Likes:      int32(post.Likes),
-		Comments:   int32(post.Comments),
-		IsLiked:    isLiked,
-		CreatedAt:  post.CreatedAt.Format("2006-01-02 15:04:05"),
+		Id:                strconv.FormatUint(uint64(post.ID), 10),
+		UserId:            strconv.FormatUint(uint64(post.UserID), 10),
+		UserName:          username,
+		UserAvatar:        avatar,
+		Content:           post.Content,
+		Images:            images,
+		Likes:             int32(post.Likes),
+		Comments:          int32(post.Comments),
+		IsLiked:           isLiked,
+		CreatedAt:         post.CreatedAt.Format("2006-01-02 15:04:05"),
+		HandDrawCard:      post.HandDrawCard,
+		HandDrawThumbUrl:  post.HandDrawThumbURL,
+		ModerationStatus:  moderationStatusOrDefault(post.ModerationStatus),
 	}
 
 	return &super.LikePostResp{

@@ -28,7 +28,8 @@ func NewGetPostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPostLo
 func (l *GetPostLogic) GetPost(req *types.GetPostReq) (resp *types.GetPostResp, err error) {
 	// 调用RPC服务获取帖子
 	rpcResp, err := l.svcCtx.SuperRpcClient.GetPost(l.ctx, &super.GetPostReq{
-		PostId: req.PostId,
+		PostId:       req.PostId,
+		ViewerUserId: req.ViewerUserId,
 	})
 	if err != nil {
 		return &types.GetPostResp{
@@ -50,17 +51,20 @@ func (l *GetPostLogic) GetPost(req *types.GetPostReq) (resp *types.GetPostResp, 
 	return &types.GetPostResp{
 		BaseResp: common.HandleRPCError(nil, "获取帖子成功"),
 		Data: types.Post{
-			Id:         rpcResp.Post.Id,
-			UserId:     rpcResp.Post.UserId,
-			UserName:   rpcResp.Post.UserName,
-			UserAvatar: rpcResp.Post.UserAvatar,
-			Content:    rpcResp.Post.Content,
-			Images:     rpcResp.Post.Images,
-			TopicTags:  apiTopicTags,
-			Likes:      int(rpcResp.Post.Likes),
-			Comments:   int(rpcResp.Post.Comments),
-			IsLiked:    rpcResp.Post.IsLiked,
-			CreatedAt:  rpcResp.Post.CreatedAt,
+			Id:               rpcResp.Post.Id,
+			UserId:           rpcResp.Post.UserId,
+			UserName:         rpcResp.Post.UserName,
+			UserAvatar:       rpcResp.Post.UserAvatar,
+			Content:          rpcResp.Post.Content,
+			Images:           rpcResp.Post.Images,
+			TopicTags:        apiTopicTags,
+			Likes:            int(rpcResp.Post.Likes),
+			Comments:         int(rpcResp.Post.Comments),
+			IsLiked:          rpcResp.Post.IsLiked,
+			CreatedAt:        rpcResp.Post.CreatedAt,
+			HandDrawCard:     rpcResp.Post.HandDrawCard,
+			HandDrawThumbUrl: rpcResp.Post.HandDrawThumbUrl,
+			ModerationStatus: rpcResp.Post.ModerationStatus,
 		},
 	}, nil
 }

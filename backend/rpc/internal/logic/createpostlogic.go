@@ -34,7 +34,7 @@ func (l *CreatePostLogic) CreatePost(in *super.CreatePostReq) (*super.CreatePost
 		return nil, errorx.New(400, "用户ID不能为空")
 	}
 	
-	if in.Content == "" {
+	if in.Content == "" && in.HandDrawCard == "" {
 		return nil, errorx.New(400, "帖子内容不能为空")
 	}
 	
@@ -56,9 +56,16 @@ func (l *CreatePostLogic) CreatePost(in *super.CreatePostReq) (*super.CreatePost
 	}
 	
 	// 4. 构建帖子数据
+	modStatus := "ok"
+	if in.HandDrawCard != "" {
+		modStatus = "pending"
+	}
 	post := model.Post{
-		UserID:  uint(userID),
-		Content: in.Content,
+		UserID:           uint(userID),
+		Content:          in.Content,
+		HandDrawCard:     in.HandDrawCard,
+		HandDrawThumbURL: in.HandDrawThumbUrl,
+		ModerationStatus: modStatus,
 	}
 	
 	// 5. 处理图片
@@ -130,17 +137,20 @@ func (l *CreatePostLogic) CreatePost(in *super.CreatePostReq) (*super.CreatePost
 	
 	return &super.CreatePostResp{
 		Post: &super.Post{
-			Id:         strconv.FormatUint(uint64(post.ID), 10),
-			UserId:     in.UserId,
-			UserName:   user.Username,
-			UserAvatar: user.Avatar,
-			Content:    post.Content,
-			Images:     in.Images,
-			TopicTags:  responseTopicTags,
-			Likes:      0,
-			Comments:   0,
-			IsLiked:    false,
-			CreatedAt:  post.CreatedAt.Format("2006-01-02 15:04:05"),
+			Id:                strconv.FormatUint(uint64(post.ID), 10),
+			UserId:            in.UserId,
+			UserName:          user.Username,
+			UserAvatar:        user.Avatar,
+			Content:           post.Content,
+			Images:            in.Images,
+			TopicTags:         responseTopicTags,
+			Likes:             0,
+			Comments:          0,
+			IsLiked:           false,
+			CreatedAt:         post.CreatedAt.Format("2006-01-02 15:04:05"),
+			HandDrawCard:      post.HandDrawCard,
+			HandDrawThumbUrl:  post.HandDrawThumbURL,
+			ModerationStatus:  moderationStatusOrDefault(post.ModerationStatus),
 		},
 	}, nil
 }

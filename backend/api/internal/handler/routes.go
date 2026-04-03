@@ -279,6 +279,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/api/posts/:post_id/like",
 				Handler: post.LikePostHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/posts/:post_id/report",
+				Handler: post.ReportPostHandler(serverCtx),
+			},
 		},
 	)
 
@@ -340,16 +345,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: user.SendFriendRequestHandler(serverCtx),
 			},
 			{
-				Method:  http.MethodGet,
-				Path:    "/api/user/:user_id/friend-requests/incoming",
-				Handler: user.ListIncomingFriendRequestsHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
-				Path:    "/api/user/:user_id/friend-requests/outgoing",
-				Handler: user.ListOutgoingFriendRequestsHandler(serverCtx),
-			},
-			{
 				Method:  http.MethodPost,
 				Path:    "/api/user/:user_id/friend-requests/:request_id/accept",
 				Handler: user.AcceptFriendRequestHandler(serverCtx),
@@ -361,13 +356,23 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
+				Path:    "/api/user/:user_id/friend-requests/incoming",
+				Handler: user.ListIncomingFriendRequestsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/user/:user_id/friend-requests/outgoing",
+				Handler: user.ListOutgoingFriendRequestsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/user/:user_id/friends",
 				Handler: user.ListFriendsHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
 				Path:    "/api/user/:user_id/friends/status/:other_user_id",
-				Handler: user.FriendStatusHandler(serverCtx),
+				Handler: user.GetFriendStatusHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodPost,

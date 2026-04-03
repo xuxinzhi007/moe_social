@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/post.dart';
+import '../auth_service.dart';
+import '../services/api_service.dart';
 import '../services/like_state_manager.dart';
 import '../widgets/avatar_image.dart';
 import '../widgets/network_image.dart';
@@ -178,13 +180,46 @@ class PostCard extends StatelessWidget {
               const SizedBox(height: 12),
 
               // 帖子正文（手绘数据已内嵌在 content 中，展示时剥离）
+              if (post.isPendingModeration)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Chip(
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      avatar: Icon(Icons.hourglass_top_rounded,
+                          size: 16, color: Colors.amber[800]),
+                      label: const Text('审核中', style: TextStyle(fontSize: 12)),
+                      backgroundColor: Colors.amber.shade50,
+                    ),
+                  ),
+                ),
+
               if (post.displayCaption.isNotEmpty)
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: _renderContentWithEmojis(context, post.displayCaption),
                 ),
 
-              if (post.handDrawCard != null) ...[
+              if (post.handDrawThumbUrl.isNotEmpty) ...[
+                if (post.displayCaption.isNotEmpty) const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: AspectRatio(
+                    aspectRatio: 3 / 4,
+                    child: CachedNetworkImage(
+                      imageUrl: post.handDrawThumbUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(color: Colors.grey.shade100),
+                      errorWidget: (_, __, ___) => Container(
+                        color: Colors.grey.shade200,
+                        child: const Center(child: Icon(Icons.broken_image_outlined)),
+                      ),
+                    ),
+                  ),
+                ),
+              ] else if (post.handDrawCard != null) ...[
                 if (post.displayCaption.isNotEmpty) const SizedBox(height: 4),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxHeight: 340),
@@ -336,17 +371,49 @@ $body
     );
   }
 
-  static void _submitReport(BuildContext context, Post post, String reason) {
-    // TODO: 调用后端举报接口
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('已提交「$reason」举报，感谢反馈'),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+  static Future<void> _submitReport(
+      BuildContext context, Post post, String reason) async {
+    final uid = AuthService.currentUser;
+    if (uid == null || uid.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('请先登录后再举报'),
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+    try {
+      await ApiService.reportPost(
+        postId: post.id,
+        reporterUserId: uid,
+        reason: reason,
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('已提交「$reason」举报，感谢反馈'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('举报失败：$e'),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
   }
 
   Widget _buildActionButton(
