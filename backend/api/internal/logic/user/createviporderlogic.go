@@ -38,8 +38,7 @@ func (l *CreateVipOrderLogic) CreateVipOrder(req *types.CreateVipOrderReq) (resp
 	}
 
 	return &types.CreateVipOrderResp{
-		BaseResp:              common.HandleRPCError(nil, "创建VIP订单成功"),
-		NewlyUnlockedBadgeIds: rpcResp.NewlyUnlockedBadgeIds,
+		BaseResp: common.HandleRPCError(nil, "创建VIP订单成功"),
 		Data: types.VipOrder{
 			Id:        rpcResp.Order.Id,
 			UserId:    rpcResp.Order.UserId,

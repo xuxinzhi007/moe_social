@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"backend/model"
-	"backend/rpc/internal/achievement"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
@@ -124,15 +123,7 @@ func (l *CreatePostLogic) CreatePost(in *super.CreatePostReq) (*super.CreatePost
 			}
 		}
 	}
-
-	newUnlocks := achievement.ApplyPostCreated(
-		l.svcCtx.DB,
-		uint(userID),
-		in.Content,
-		len(in.Images),
-		post.CreatedAt,
-	)
-
+	
 	// 8. 构建响应
 	// 转换话题标签为响应格式
 	responseTopicTags := make([]*super.TopicTag, 0, len(topicTags))
@@ -145,26 +136,21 @@ func (l *CreatePostLogic) CreatePost(in *super.CreatePostReq) (*super.CreatePost
 	}
 	
 	return &super.CreatePostResp{
-		Post:                     buildCreatePostRPCPost(post, in, user, responseTopicTags),
-		NewlyUnlockedBadgeIds:    newUnlocks,
+		Post: &super.Post{
+			Id:                strconv.FormatUint(uint64(post.ID), 10),
+			UserId:            in.UserId,
+			UserName:          user.Username,
+			UserAvatar:        user.Avatar,
+			Content:           post.Content,
+			Images:            in.Images,
+			TopicTags:         responseTopicTags,
+			Likes:             0,
+			Comments:          0,
+			IsLiked:           false,
+			CreatedAt:         post.CreatedAt.Format("2006-01-02 15:04:05"),
+			HandDrawCard:      post.HandDrawCard,
+			HandDrawThumbUrl:  post.HandDrawThumbURL,
+			ModerationStatus:  moderationStatusOrDefault(post.ModerationStatus),
+		},
 	}, nil
-}
-
-func buildCreatePostRPCPost(post model.Post, in *super.CreatePostReq, user model.User, tags []*super.TopicTag) *super.Post {
-	return &super.Post{
-		Id:               strconv.FormatUint(uint64(post.ID), 10),
-		UserId:           in.UserId,
-		UserName:         user.Username,
-		UserAvatar:       user.Avatar,
-		Content:          post.Content,
-		Images:           in.Images,
-		TopicTags:        tags,
-		Likes:            0,
-		Comments:         0,
-		IsLiked:          false,
-		CreatedAt:        post.CreatedAt.Format("2006-01-02 15:04:05"),
-		HandDrawCard:     post.HandDrawCard,
-		HandDrawThumbUrl: post.HandDrawThumbURL,
-		ModerationStatus: moderationStatusOrDefault(post.ModerationStatus),
-	}
 }

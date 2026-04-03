@@ -717,20 +717,11 @@ class ApiService {
     );
   }
 
-  static List<String> _parseNewlyUnlockedBadgeIds(Map<String, dynamic> result) {
-    final v = result['newly_unlocked_badge_ids'];
-    if (v is! List) return [];
-    return v.map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
-  }
-
-  /// 创建帖子；返回服务端帖子数据与本批新解锁成就 id（服务端为权威进度）
-  static Future<({Post post, List<String> newlyUnlockedBadgeIds})> createPost(
-      Post post) async {
-    final result =
-        await _request('/api/posts', method: 'POST', body: post.toJson());
-    final data = Post.fromJson(result['data'] as Map<String, dynamic>);
-    final ids = _parseNewlyUnlockedBadgeIds(result);
-    return (post: data, newlyUnlockedBadgeIds: ids);
+  // 创建帖子
+  static Future<Post> createPost(Post post) async {
+    await _request('/api/posts', method: 'POST', body: post.toJson());
+    // 这里不需要转换为Post对象，因为我们只需要知道创建成功即可
+    return post;
   }
 
   // 点赞/取消点赞帖子
@@ -757,13 +748,10 @@ class ApiService {
   }
 
   // 添加评论
-  static Future<({Comment comment, List<String> newlyUnlockedBadgeIds})>
-      addComment(Comment comment) async {
+  static Future<Comment> addComment(Comment comment) async {
     final result =
         await _request('/api/comments', method: 'POST', body: comment.toJson());
-    final c = Comment.fromJson(result['data'] as Map<String, dynamic>);
-    final ids = _parseNewlyUnlockedBadgeIds(result);
-    return (comment: c, newlyUnlockedBadgeIds: ids);
+    return Comment.fromJson(result['data']);
   }
 
   // 点赞/取消点赞评论
@@ -897,22 +885,10 @@ class ApiService {
   }
 
   // 创建VIP订单
-  static Future<({VipOrder order, List<String> newlyUnlockedBadgeIds})>
-      createVipOrder(String userId, String planId) async {
+  static Future<VipOrder> createVipOrder(String userId, String planId) async {
     final result = await _request('/api/user/$userId/vip/orders',
         method: 'POST', body: {'plan_id': planId});
-    final order = VipOrder.fromJson(result['data'] as Map<String, dynamic>);
-    final ids = _parseNewlyUnlockedBadgeIds(result);
-    return (order: order, newlyUnlockedBadgeIds: ids);
-  }
-
-  /// 成就进度（与后端 user_badge_progress 对齐）
-  static Future<List<Map<String, dynamic>>> getUserAchievements(
-      String userId) async {
-    final result = await _request('/api/user/$userId/achievements');
-    final data = result['data'];
-    if (data is! List) return [];
-    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    return VipOrder.fromJson(result['data']);
   }
 
   // 获取VIP订单列表

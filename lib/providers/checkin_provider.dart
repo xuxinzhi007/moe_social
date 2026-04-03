@@ -96,9 +96,9 @@ class CheckInProvider extends ChangeNotifier {
     }
   }
 
-  /// 执行签到操作；成功时返回签到数据（含服务端返回的新解锁成就 id）
-  Future<CheckInData?> performCheckIn(String userId) async {
-    if (_isCheckingIn || (_checkInStatus?.hasCheckedToday == true)) return null;
+  /// 执行签到操作
+  Future<bool> performCheckIn(String userId) async {
+    if (_isCheckingIn || (_checkInStatus?.hasCheckedToday == true)) return false;
 
     try {
       _isCheckingIn = true;
@@ -127,12 +127,12 @@ class CheckInProvider extends ChangeNotifier {
       _setSuccess(checkInData.successText);
       debugPrint('✅ 签到成功: ${checkInData.successText}');
 
-      return checkInData;
+      return true;
     } catch (e) {
       final message = e is ApiException ? e.message : '签到失败: $e';
       _setError(message);
       debugPrint('❌ 签到失败: $e');
-      return null;
+      return false;
     } finally {
       _isCheckingIn = false;
       notifyListeners();

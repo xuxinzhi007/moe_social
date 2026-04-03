@@ -40,8 +40,7 @@ func (l *UpdateUserVipLogic) UpdateUserVip(req *types.UpdateUserVipReq) (resp *t
 
 	// 转换为API响应
 	return &types.UpdateUserVipResp{
-		BaseResp:              common.HandleRPCError(nil, "更新用户VIP状态成功"),
-		NewlyUnlockedBadgeIds: rpcResp.NewlyUnlockedBadgeIds,
+		BaseResp: common.HandleRPCError(nil, "更新用户VIP状态成功"),
 		Data: types.User{
 			Id:           rpcResp.User.Id,
 			Username:     rpcResp.User.Username,

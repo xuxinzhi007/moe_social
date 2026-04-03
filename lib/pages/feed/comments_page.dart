@@ -105,13 +105,8 @@ class _CommentsPageState extends State<CommentsPage> {
         createdAt: DateTime.now(),
       );
 
-      final r = await PostService.addComment(comment);
-      try {
-        await AchievementHooks.onServerNewUnlocks(
-          userId,
-          r.newlyUnlockedBadgeIds,
-        );
-      } catch (_) {}
+      await PostService.addComment(comment);
+      await AchievementHooks.recordComment(userId);
 
       _commentController.clear();
       await _fetchComments();

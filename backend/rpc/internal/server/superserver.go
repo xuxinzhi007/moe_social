@@ -84,11 +84,6 @@ func (s *SuperServer) GetUserCount(ctx context.Context, in *super.GetUserCountRe
 	return l.GetUserCount(in)
 }
 
-func (s *SuperServer) GetUserAchievements(ctx context.Context, in *super.GetUserAchievementsReq) (*super.GetUserAchievementsResp, error) {
-	l := logic.NewGetUserAchievementsLogic(ctx, s.svcCtx)
-	return l.GetUserAchievements(in)
-}
-
 func (s *SuperServer) UpsertUserMemory(ctx context.Context, in *super.UpsertUserMemoryReq) (*super.UpsertUserMemoryResp, error) {
 	l := logic.NewUpsertUserMemoryLogic(ctx, s.svcCtx)
 	return l.UpsertUserMemory(in)
