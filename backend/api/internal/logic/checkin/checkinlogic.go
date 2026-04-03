@@ -47,11 +47,12 @@ func (l *CheckInLogic) CheckIn(req *types.CheckInReq) (resp *types.CheckInResp, 
 			Success: true,
 		},
 		Data: types.CheckInData{
-			ExpGained:       int(rpcResp.ExpGained),
-			NewLevel:        int(rpcResp.NewLevel),
-			ConsecutiveDays: int(rpcResp.ConsecutiveDays),
-			LevelUp:         rpcResp.LevelUp,
-			SpecialReward:   rpcResp.SpecialReward,
+			ExpGained:              int(rpcResp.ExpGained),
+			NewLevel:               int(rpcResp.NewLevel),
+			ConsecutiveDays:        int(rpcResp.ConsecutiveDays),
+			LevelUp:                rpcResp.LevelUp,
+			SpecialReward:          rpcResp.SpecialReward,
+			NewlyUnlockedBadgeIds:  rpcResp.NewlyUnlockedBadgeIds,
 		},
 	}, nil
 }

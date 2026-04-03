@@ -50,6 +50,20 @@ func (l *GetPostLogic) GetPost(in *super.GetPostReq) (*super.GetPostResp, error)
 		l.Error("查询帖子失败: ", err)
 		return nil, errorx.New(500, "服务器内部错误")
 	}
+
+	var viewerUID uint
+	if in.ViewerUserId != "" {
+		if v, e := strconv.ParseUint(in.ViewerUserId, 10, 32); e == nil {
+			viewerUID = uint(v)
+		}
+	}
+	ms := moderationStatusOrDefault(post.ModerationStatus)
+	if ms == "rejected" {
+		return nil, errorx.New(404, "帖子不存在")
+	}
+	if ms == "pending" && post.UserID != viewerUID {
+		return nil, errorx.New(404, "帖子不存在")
+	}
 	
 	// 查询用户信息
 	var user model.User
@@ -87,20 +101,29 @@ func (l *GetPostLogic) GetPost(in *super.GetPostReq) (*super.GetPostResp, error)
 		})
 	}
 	
+	isLiked := false
+	if viewerUID > 0 {
+		liked := LikedTargetIDSet(l.svcCtx.DB, viewerUID, "post", []uint{post.ID})
+		isLiked = liked[post.ID]
+	}
+
 	// 构建响应
 	return &super.GetPostResp{
 		Post: &super.Post{
-			Id:         in.PostId,
-			UserId:     strconv.FormatUint(uint64(post.UserID), 10),
-			UserName:   username,
-			UserAvatar: avatar,
-			Content:    post.Content,
-			Images:     images,
-			TopicTags:  topicTags,
-			Likes:      int32(post.Likes),
-			Comments:   int32(post.Comments),
-			IsLiked:    false,
-			CreatedAt:  post.CreatedAt.Format("2006-01-02 15:04:05"),
+			Id:                in.PostId,
+			UserId:            strconv.FormatUint(uint64(post.UserID), 10),
+			UserName:          username,
+			UserAvatar:        avatar,
+			Content:           post.Content,
+			Images:            images,
+			TopicTags:         topicTags,
+			Likes:             int32(post.Likes),
+			Comments:          int32(post.Comments),
+			IsLiked:           isLiked,
+			CreatedAt:         post.CreatedAt.Format("2006-01-02 15:04:05"),
+			HandDrawCard:      post.HandDrawCard,
+			HandDrawThumbUrl:  post.HandDrawThumbURL,
+			ModerationStatus:  ms,
 		},
 	}, nil
 }

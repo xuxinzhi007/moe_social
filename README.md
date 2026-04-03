@@ -81,6 +81,10 @@ flutter doctor
 2. 运行 `flutter pub get` 安装依赖
 3. 运行 `flutter run` 启动应用
 
+### 项目文档
+
+说明类 Markdown 已集中在 **`docs/`** 目录，并按主题分子文件夹；总索引见 **[docs/README.md](docs/README.md)**（开发环境、产品需求、测试记录、AutoGLM、后端旁注等）。后端实现说明仍在 **`backend/*.md`**，与 Go 代码同目录。
+
 ### 生产构建
 
 - Android: `flutter build apk`
@@ -180,13 +184,13 @@ App 支持应用内下载更新，特性包括：
 moe_social/
 ├── android/           # Android 平台特定代码
 ├── ios/               # iOS 平台特定代码
+├── docs/              # 项目文档索引与分类说明（见 docs/README.md）
+├── backend/           # Go + go-zero 后端（含 backend/*.md 说明）
 ├── lib/               # 主要 Dart 源代码
-│   ├── auth_service.dart   # 认证逻辑
-│   ├── login_page.dart     # 登录页面
 │   ├── main.dart           # 应用入口
-│   ├── profile_page.dart   # 用户个人资料页面
-│   ├── register_page.dart  # 注册页面
-│   └── settings_page.dart  # 设置页面
+│   ├── auth_service.dart   # 认证逻辑
+│   ├── pages/              # 按域划分的页面（auth、feed、profile、commerce 等）
+│   ├── models/、services/、widgets/、providers/ …
 ├── linux/             # Linux 平台特定代码
 ├── macos/             # macOS 平台特定代码
 ├── test/              # 单元测试和 widget 测试
@@ -282,6 +286,10 @@ A cute-style social networking application built with Flutter, designed to provi
 2. Run `flutter pub get` to install dependencies
 3. Run `flutter run` to start the application
 
+### Documentation
+
+Project Markdown lives under **`docs/`** with a table of contents in **[docs/README.md](docs/README.md)**. Backend notes remain next to the Go code in **`backend/*.md`**.
+
 ### Building for Production
 
 - Android: `flutter build apk`
@@ -297,13 +305,13 @@ A cute-style social networking application built with Flutter, designed to provi
 moe_social/
 ├── android/           # Android platform specific code
 ├── ios/               # iOS platform specific code
+├── docs/              # Documentation index (see docs/README.md)
+├── backend/           # Go + go-zero backend (includes backend/*.md)
 ├── lib/               # Main Dart source code
-│   ├── auth_service.dart   # Authentication logic
-│   ├── login_page.dart     # Login screen
 │   ├── main.dart           # App entry point
-│   ├── profile_page.dart   # User profile screen
-│   ├── register_page.dart  # Registration screen
-│   └── settings_page.dart  # Settings screen
+│   ├── auth_service.dart   # Authentication logic
+│   ├── pages/              # Screens by domain (auth, feed, profile, commerce, …)
+│   ├── models/, services/, widgets/, providers/, …
 ├── linux/             # Linux platform specific code
 ├── macos/             # macOS platform specific code
 ├── test/              # Unit and widget tests

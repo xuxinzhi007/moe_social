@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
+	"strings"
 
 	"backend/model"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 type GetPostsLogic struct {
@@ -28,7 +30,6 @@ func NewGetPostsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPosts
 
 // 帖子相关服务
 func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, error) {
-	// 设置默认分页参数
 	page := in.Page
 	pageSize := in.PageSize
 	if page <= 0 {
@@ -46,22 +47,56 @@ func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, er
 		offset = 0
 	}
 
-	// 查询帖子列表
+	var viewerUID uint
+	if in.ViewerUserId != "" {
+		if v, err := strconv.ParseUint(in.ViewerUserId, 10, 32); err == nil {
+			viewerUID = uint(v)
+		}
+	}
+
+	feedMode := strings.ToLower(strings.TrimSpace(in.FeedMode))
+
+	var topicTagID uint
+	if strings.TrimSpace(in.TopicTagId) != "" {
+		if v, err := strconv.ParseUint(strings.TrimSpace(in.TopicTagId), 10, 32); err == nil {
+			topicTagID = uint(v)
+		}
+	}
+
+	listQuery := l.svcCtx.DB.Model(&model.Post{}).Scopes(moderationVisibleScope(viewerUID))
+
+	if topicTagID > 0 {
+		sub := l.svcCtx.DB.Model(&model.PostTopic{}).Select("post_id").Where("topic_tag_id = ?", topicTagID)
+		listQuery = listQuery.Where("id IN (?)", sub)
+	}
+
+	if feedMode == "following" {
+		if viewerUID == 0 {
+			listQuery = listQuery.Where("1 = 0")
+		} else {
+			sub := l.svcCtx.DB.Model(&model.Follow{}).Select("following_id").Where("follower_id = ?", viewerUID)
+			listQuery = listQuery.Where("user_id = ? OR user_id IN (?)", viewerUID, sub)
+		}
+	}
+
+	switch feedMode {
+	case "hot":
+		listQuery = listQuery.Order("(likes * 2 + comments) DESC").Order("created_at DESC").Order("id DESC")
+	default:
+		listQuery = listQuery.Order("created_at DESC").Order("id DESC")
+	}
+
 	var posts []model.Post
 	var total int64
 
-	// 计算总数
-	if err := l.svcCtx.DB.Model(&model.Post{}).Count(&total).Error; err != nil {
+	if err := listQuery.Session(&gorm.Session{}).Count(&total).Error; err != nil {
 		return nil, err
 	}
 
-	// 查询帖子，预加载话题标签
-	// 先按created_at倒序，再按ID倒序，确保最新的帖子显示在列表顶部
-	if err := l.svcCtx.DB.Preload("TopicTags").Order("created_at DESC, id DESC").Offset(int(offset)).Limit(int(pageSize)).Find(&posts).Error; err != nil {
+	if err := listQuery.Preload("TopicTags").Offset(int(offset)).Limit(int(pageSize)).Find(&posts).Error; err != nil {
 		return nil, err
 	}
 
-	// 查询用户信息（批量查询）
 	userMap := make(map[uint]model.User)
 	if len(posts) > 0 {
 		userIDs := make([]uint, 0, len(posts))
@@ -75,21 +110,23 @@ func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, er
 		}
 	}
 
-	// 构建响应
 	resp := &super.GetPostsResp{
 		Posts: make([]*super.Post, 0, len(posts)),
 		Total: int32(total),
 	}
 
-	// 转换为rpc响应格式
+	postIDs := make([]uint, 0, len(posts))
+	for _, p := range posts {
+		postIDs = append(postIDs, p.ID)
+	}
+	likedPosts := LikedTargetIDSet(l.svcCtx.DB, viewerUID, "post", postIDs)
+
 	for _, post := range posts {
-		// 处理图片数组
 		var images []string
 		if post.Images != "" {
 			json.Unmarshal([]byte(post.Images), &images)
 		}
 
-		// 获取用户信息
 		username := "未知用户"
 		avatar := "https://picsum.photos/150"
 		if user, ok := userMap[post.UserID]; ok {
@@ -103,7 +140,6 @@ func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, er
 			}
 		}
 
-		// 转换话题标签为响应格式
 		topicTags := make([]*super.TopicTag, 0, len(post.TopicTags))
 		for _, tag := range post.TopicTags {
 			topicTags = append(topicTags, &super.TopicTag{
@@ -113,19 +149,23 @@ func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, er
 			})
 		}
 
-		// 构建Post对象
+		// 列表须下发完整 content：Flutter 用 HandDrawCardCodec.tryDecode 解析旧版内嵌手绘；
+		// 展示配文由客户端 strip。HandDrawCard 须下发：否则仅有缩略图 URL 时若加载失败则无手绘可看。
 		rpcPost := &super.Post{
-			Id:         strconv.FormatUint(uint64(post.ID), 10),
-			UserId:     strconv.FormatUint(uint64(post.UserID), 10),
-			UserName:   username,
-			UserAvatar: avatar,
-			Content:    post.Content,
-			Images:     images,
-			TopicTags:  topicTags,
-			Likes:      int32(post.Likes),
-			Comments:   int32(post.Comments),
-			IsLiked:    false,
-			CreatedAt:  post.CreatedAt.Format("2006-01-02 15:04:05"),
+			Id:                 strconv.FormatUint(uint64(post.ID), 10),
+			UserId:             strconv.FormatUint(uint64(post.UserID), 10),
+			UserName:           username,
+			UserAvatar:         avatar,
+			Content:            post.Content,
+			Images:             images,
+			TopicTags:          topicTags,
+			Likes:              int32(post.Likes),
+			Comments:           int32(post.Comments),
+			IsLiked:            likedPosts[post.ID],
+			CreatedAt:          post.CreatedAt.Format("2006-01-02 15:04:05"),
+			HandDrawCard:       post.HandDrawCard,
+			HandDrawThumbUrl:   post.HandDrawThumbURL,
+			ModerationStatus:   moderationStatusOrDefault(post.ModerationStatus),
 		}
 
 		resp.Posts = append(resp.Posts, rpcPost)

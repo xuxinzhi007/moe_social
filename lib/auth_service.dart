@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/user.dart';
 import 'services/api_service.dart';
+import 'services/achievement_service.dart';
 import 'services/chat_push_service.dart';
 import 'services/presence_service.dart';
 
@@ -115,8 +116,13 @@ class AuthService {
   }
 
   static void logout() {
+    final uid = _currentUser;
     _currentUser = null;
     _token = null;
+    unawaited(_purgeLegacyLocalLikeKeys(uid));
+    if (uid != null && uid.isNotEmpty) {
+      unawaited(AchievementService().clearUserData(uid));
+    }
     // 清除持久化存储
     _clearAuthData();
     // 清除ApiService的token
@@ -141,6 +147,20 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_userIdKey);
+  }
+
+  /// 历史版本在本地存过点赞状态；现已以服务端为准，登出时清掉避免误导。
+  static Future<void> _purgeLegacyLocalLikeKeys(String? userId) async {
+    if (userId == null || userId.isEmpty) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final prefix = 'like_status_${userId}_';
+      for (final k in prefs.getKeys().toList()) {
+        if (k.startsWith(prefix)) {
+          await prefs.remove(k);
+        }
+      }
+    } catch (_) {}
   }
 
   // 获取当前用户ID
@@ -185,49 +205,4 @@ class AuthService {
     ChatPushService.start();
   }
 
-  // 保存用户点赞状态到本地存储
-  static Future<void> saveLikeStatus(String postId, bool isLiked) async {
-    // 暂时禁用持久化，使用 LikeStateManager 内存缓存
-    // 原因是服务端 list 接口总是返回 false，如果这里持久化，会造成"Zombie"问题
-    // 但如果完全不持久化，切换页面又会丢失状态。
-    // 权衡：还是需要持久化，但是要依赖"用户主动操作"来覆盖。
-    // 现阶段重新启用，以解决"切换页面状态丢失"的问题。
-    final prefs = await SharedPreferences.getInstance();
-    // 确保有 userId，防止未登录状态写入脏数据
-    if (_currentUser == null) return;
-    
-    final key = 'like_status_${_currentUser}_$postId';
-    await prefs.setBool(key, isLiked);
-  }
-
-  // 从本地存储获取用户点赞状态
-  static Future<bool?> getLikeStatus(String postId) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (_currentUser == null) return null;
-    
-    final key = 'like_status_${_currentUser}_$postId';
-    // 必须精确判断 key 是否存在，区分"未操作"和"已点赞/取消"
-    if (!prefs.containsKey(key)) return null;
-    return prefs.getBool(key);
-  }
-
-  // 批量获取用户点赞状态
-  static Future<Map<String, bool>> getLikeStatuses(List<String> postIds) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (_currentUser == null) return {};
-    
-    final result = <String, bool>{};
-
-    for (final postId in postIds) {
-      final key = 'like_status_${_currentUser}_$postId';
-      if (prefs.containsKey(key)) {
-        final val = prefs.getBool(key);
-        if (val != null) {
-          result[postId] = val;
-        }
-      }
-    }
-
-    return result;
-  }
 }

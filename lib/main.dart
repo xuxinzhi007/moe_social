@@ -6,28 +6,28 @@ import 'dart:io' show Platform;
 import 'dart:ui';
 import 'services/achievement_hooks.dart';
 import 'auth_service.dart';
-import 'login_page.dart';
+import 'pages/auth/login_page.dart';
 import 'services/api_service.dart';
-import 'register_page.dart';
-import 'profile_page.dart';
-import 'settings_page.dart';
-import 'create_post_page.dart';
-import 'comments_page.dart';
-import 'topic_posts_page.dart';
+import 'pages/auth/register_page.dart';
+import 'pages/profile/profile_page.dart';
+import 'pages/settings/settings_page.dart';
+import 'pages/feed/create_post_page.dart';
+import 'pages/feed/comments_page.dart';
+import 'pages/feed/topic_posts_page.dart';
 import 'models/topic_tag.dart';
-import 'edit_profile_page.dart';
-import 'vip_center_page.dart';
-import 'vip_purchase_page.dart';
-import 'vip_orders_page.dart';
-import 'vip_history_page.dart';
-import 'forgot_password_page.dart';
-import 'verify_code_page.dart';
-import 'reset_password_page.dart';
-import 'notification_center_page.dart';
-import 'wallet_page.dart';
-import 'recharge_page.dart';
-import 'gacha_page.dart';
-import 'user_profile_page.dart';
+import 'pages/profile/edit_profile_page.dart';
+import 'pages/commerce/vip_center_page.dart';
+import 'pages/commerce/vip_purchase_page.dart';
+import 'pages/commerce/vip_orders_page.dart';
+import 'pages/commerce/vip_history_page.dart';
+import 'pages/auth/forgot_password_page.dart';
+import 'pages/auth/verify_code_page.dart';
+import 'pages/auth/reset_password_page.dart';
+import 'pages/notifications/notification_center_page.dart';
+import 'pages/commerce/wallet_page.dart';
+import 'pages/commerce/recharge_page.dart';
+import 'pages/commerce/gacha_page.dart';
+import 'pages/profile/user_profile_page.dart';
 import 'widgets/app_message_widget.dart';
 import 'widgets/moe_bottom_bar.dart';
 import 'services/notification_service.dart';
@@ -36,11 +36,11 @@ import 'services/presence_service.dart';
 import 'services/chat_push_service.dart';
 import 'services/accessibility_overlay_service.dart';
 import 'services/push_notification_service.dart';
-import 'gallery/cloud_gallery_page.dart';
-import 'friends_page.dart';
-import 'pages/discover_page.dart';
-import 'pages/match_page.dart';
-import 'direct_chat_page.dart';
+import 'pages/gallery/cloud_gallery_page.dart';
+import 'pages/profile/friends_page.dart';
+import 'pages/discover/discover_page.dart';
+import 'pages/discover/match_page.dart';
+import 'pages/chat/direct_chat_page.dart';
 import 'providers/theme_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/device_info_provider.dart';
@@ -48,7 +48,7 @@ import 'providers/loading_provider.dart';
 import 'providers/checkin_provider.dart';
 import 'providers/user_level_provider.dart';
 import 'providers/game_provider.dart';
-import 'pages/home_page.dart';
+import 'pages/feed/home_page.dart';
 
 void main() async {
   // 使用runZonedGuarded捕获所有未捕获的错误
@@ -256,7 +256,7 @@ class MyApp extends StatelessWidget {
         '/notifications': (context) => const NotificationCenterPage(),
         '/wallet': (context) => const WalletPage(),
         '/recharge': (context) => const RechargePage(),
-        '/gacha': (context) => GachaPage(), // 注册扭蛋页路由
+        '/gacha': (context) => const GachaPage(),
         '/user-profile': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
           if (args is! Map<String, dynamic>) {
@@ -307,10 +307,10 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
   late final List<Widget Function()> _pageBuilders = [
-    () => HomePage(),
-    () => FriendsPage(),
+    () => const HomePage(),
+    () => const FriendsPage(),
     () => const DiscoverPage(),
-    () => ProfilePage(),
+    () => const ProfilePage(),
   ];
   late final List<Widget?> _loadedPages =
       List<Widget?>.filled(_pageBuilders.length, null, growable: false);
