@@ -731,9 +731,18 @@ class ApiService {
     return Post.fromJson(result['data']);
   }
 
-  // 获取帖子评论
-  static Future<List<Comment>> getComments(String postId) async {
-    final result = await _request('/api/posts/$postId/comments');
+  // 获取帖子评论（传 viewer 才能返回准确的 is_liked）
+  static Future<List<Comment>> getComments(
+    String postId, {
+    String? viewerUserId,
+  }) async {
+    final parts = <String>[];
+    if (viewerUserId != null && viewerUserId.isNotEmpty) {
+      parts.add(
+          'viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}');
+    }
+    final q = parts.isEmpty ? '' : '?${parts.join('&')}';
+    final result = await _request('/api/posts/$postId/comments$q');
     final commentsJson = result['data'] as List;
     return commentsJson.map((json) => Comment.fromJson(json)).toList();
   }
