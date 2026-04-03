@@ -3,10 +3,9 @@ import '../../models/topic_tag.dart';
 import '../../models/gift.dart';
 import '../../models/achievement_badge.dart';
 import '../../widgets/topic_tag_selector.dart';
-import '../../widgets/gift_selector.dart';
 import '../../widgets/achievement_badge_display.dart';
+import '../../widgets/achievement/achievement_badge_visuals.dart';
 import '../../widgets/gift_animation.dart';
-import '../../services/achievement_service.dart';
 
 /// 新功能演示页面
 class DemoFeaturesPage extends StatefulWidget {
@@ -69,6 +68,7 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
       builder: (context) => BadgeUnlockAnimation(
         badgeName: badge.name,
         badgeEmoji: badge.emoji,
+        badgeIcon: achievementIconForId(badge.id),
         badgeColor: badge.color,
         onAnimationComplete: () {
           Navigator.of(context).pop();
@@ -302,8 +302,9 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
 
             // 成就徽章功能区
             _buildSectionCard(
-              title: '🏆 成就徽章系统',
+              title: '成就徽章',
               subtitle: '收集属于你的荣誉',
+              titleIcon: Icons.military_tech_rounded,
               child: Column(
                 children: [
                   Row(
@@ -427,6 +428,7 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
     required String title,
     required String subtitle,
     required Widget child,
+    IconData? titleIcon,
   }) {
     return Container(
       width: double.infinity,
@@ -445,12 +447,31 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              if (titleIcon != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFFD54F), Color(0xFFFF9100)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(titleIcon, color: Colors.white, size: 22),
+                ),
+                const SizedBox(width: 10),
+              ],
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 4),
           Text(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/achievement_badge.dart';
+import 'achievement/achievement_badge_medallion.dart';
+import 'achievement/achievement_badge_visuals.dart';
 
 /// 单个徽章展示组件
 class BadgeCard extends StatelessWidget {
@@ -8,164 +10,84 @@ class BadgeCard extends StatelessWidget {
   final bool showProgress;
   final VoidCallback? onTap;
 
+  /// 横向滑动条：固定 **正方形**，只展示奖章（不竖条挤压），点击查看详情。
+  final bool compact;
+
+  /// 个人中心等 **有高度上限** 的横向列表：收紧内边距与字号，避免 RenderFlex 溢出。
+  final bool dense;
+
   const BadgeCard({
     super.key,
     required this.badge,
     this.size = 80.0,
     this.showProgress = true,
     this.onTap,
+    this.compact = false,
+    this.dense = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (compact) {
+      return _buildCompact(context);
+    }
+    if (dense) {
+      return _buildDense(context);
+    }
+    return _buildFull(context);
+  }
+
+  Widget _buildCompact(BuildContext context) {
+    final medalD = (size * 0.74).clamp(28.0, size * 0.78);
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: SizedBox(
         width: size,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: badge.isUnlocked
-                  ? badge.rarity.color.withOpacity(0.3)
-                  : Colors.grey.withOpacity(0.1),
-              blurRadius: badge.isUnlocked ? 8 : 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
+        height: size,
         child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            // 背景卡片
-            Container(
-              padding: const EdgeInsets.all(8),
+            DecoratedBox(
               decoration: BoxDecoration(
-                color: badge.isUnlocked ? Colors.white : Colors.grey[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: badge.isUnlocked
-                      ? badge.rarity.color.withOpacity(0.5)
-                      : Colors.grey[300]!,
-                  width: badge.isUnlocked ? 2 : 1,
-                ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // 徽章图标
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // 稀有度背景
-                      Container(
-                        width: size * 0.6,
-                        height: size * 0.6,
-                        decoration: BoxDecoration(
-                          color: badge.isUnlocked
-                              ? badge.rarity.color.withOpacity(0.1)
-                              : Colors.grey[100],
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      // 表情符号
-                      Text(
-                        badge.emoji,
-                        style: TextStyle(
-                          fontSize: size * 0.3,
-                          color: badge.isUnlocked ? null : Colors.grey[400],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  // 徽章名称
-                  Text(
-                    badge.name,
-                    style: TextStyle(
-                      fontSize: size * 0.12,
-                      fontWeight: FontWeight.bold,
-                      color: badge.isUnlocked ? Colors.grey[800] : Colors.grey[400],
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-
-                  // 稀有度标识
-                  Container(
-                    margin: const EdgeInsets.only(top: 2),
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: badge.isUnlocked
-                          ? badge.rarity.color.withOpacity(0.1)
-                          : Colors.grey[200],
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      badge.rarity.displayName,
-                      style: TextStyle(
-                        fontSize: size * 0.08,
-                        fontWeight: FontWeight.w600,
-                        color: badge.isUnlocked
-                            ? badge.rarity.color
-                            : Colors.grey[400],
-                      ),
-                    ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: badge.isUnlocked
+                        ? badge.rarity.tierGradient.last.withOpacity(0.2)
+                        : Colors.black.withOpacity(0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: badge.isUnlocked
+                          ? [Colors.white, badge.color.withOpacity(0.08)]
+                          : [Colors.grey.shade50, Colors.grey.shade200],
+                    ),
+                    border: Border.all(
+                      color: badge.isUnlocked
+                          ? badge.rarity.tierGradient.first.withOpacity(0.4)
+                          : Colors.grey.shade300,
+                    ),
+                  ),
+                  padding: EdgeInsets.all(size * 0.06),
+                  child: Center(
+                    child: AchievementBadgeMedallion(
+                      badge: badge,
+                      diameter: medalD,
+                      unlocked: badge.isUnlocked,
+                    ),
+                  ),
+                ),
+              ),
             ),
-
-            // 进度条（如果显示且未解锁）
-            if (showProgress && !badge.isUnlocked && badge.progress > 0)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(12),
-                    ),
-                  ),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: badge.progress,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: badge.color,
-                        borderRadius: const BorderRadius.vertical(
-                          bottom: Radius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-            // 锁定遮罩
-            if (!badge.isUnlocked)
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.lock,
-                      color: Colors.grey,
-                      size: 16,
-                    ),
-                  ),
-                ),
-              ),
-
-            // 新徽章标识
             if (badge.isUnlocked &&
                 badge.unlockedAt != null &&
                 DateTime.now().difference(badge.unlockedAt!).inDays < 3)
@@ -173,22 +95,323 @@ class BadgeCard extends StatelessWidget {
                 top: -2,
                 right: -2,
                 child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
+                    ),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
                     'NEW',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 8,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDense(BuildContext context) {
+    final theme = Theme.of(context);
+    final medalSize = size * 0.5;
+    final nameFont = (size * 0.11).clamp(9.0, 11.0);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: size,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: badge.isUnlocked
+                  ? badge.rarity.tierGradient.last.withOpacity(0.18)
+                  : Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: badge.isUnlocked
+                        ? [Colors.white, badge.color.withOpacity(0.05)]
+                        : [Colors.grey.shade50, Colors.grey.shade100],
+                  ),
+                  border: Border.all(
+                    color: badge.isUnlocked
+                        ? badge.rarity.tierGradient.first.withOpacity(0.35)
+                        : Colors.grey.shade300,
+                  ),
+                ),
+                padding: const EdgeInsets.fromLTRB(5, 6, 5, 5),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AchievementBadgeMedallion(
+                      badge: badge,
+                      diameter: medalSize,
+                      unlocked: badge.isUnlocked,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      badge.name,
+                      style: TextStyle(
+                        fontSize: nameFont,
+                        fontWeight: FontWeight.w800,
+                        height: 1.1,
+                        color: badge.isUnlocked
+                            ? theme.textTheme.titleMedium?.color
+                            : Colors.grey.shade500,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    AchievementRarityChip(
+                      rarity: badge.rarity,
+                      fontSize: 8,
+                      unlocked: badge.isUnlocked,
+                      dense: true,
+                    ),
+                  ],
+                ),
+              ),
+              if (showProgress && !badge.isUnlocked && badge.progress > 0)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    height: 3,
+                    color: Colors.grey.shade200,
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: badge.progress.clamp(0.0, 1.0),
+                      child: Container(
+                        color: badge.color,
+                      ),
+                    ),
+                  ),
+                ),
+              if (!badge.isUnlocked)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+              if (badge.isUnlocked &&
+                  badge.unlockedAt != null &&
+                  DateTime.now().difference(badge.unlockedAt!).inDays < 3)
+                Positioned(
+                  top: 2,
+                  right: 2,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
+                      ),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      'NEW',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 7,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFull(BuildContext context) {
+    final theme = Theme.of(context);
+    final medalRatio = size < 80 ? 0.56 : 0.62;
+    final medalSize = size * medalRatio;
+    final verticalPad = size < 80
+        ? const EdgeInsets.fromLTRB(6, 8, 6, 6)
+        : const EdgeInsets.fromLTRB(8, 10, 8, 8);
+    final nameMaxLines = size < 80 ? 1 : 2;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: size,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: badge.isUnlocked
+                  ? badge.rarity.tierGradient.last.withOpacity(0.22)
+                  : Colors.black.withOpacity(0.05),
+              blurRadius: badge.isUnlocked ? 14 : 6,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: badge.isUnlocked
+                        ? [
+                            Colors.white,
+                            badge.color.withOpacity(0.06),
+                          ]
+                        : [
+                            Colors.grey.shade50,
+                            Colors.grey.shade100,
+                          ],
+                  ),
+                  border: Border.all(
+                    color: badge.isUnlocked
+                        ? badge.rarity.tierGradient.first.withOpacity(0.35)
+                        : Colors.grey.shade300,
+                    width: badge.isUnlocked ? 1.5 : 1,
+                  ),
+                ),
+                padding: verticalPad,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AchievementBadgeMedallion(
+                      badge: badge,
+                      diameter: medalSize,
+                      unlocked: badge.isUnlocked,
+                    ),
+                    SizedBox(height: size * 0.03),
+                    Text(
+                      badge.name,
+                      style: TextStyle(
+                        fontSize: (size * 0.125).clamp(11.0, 13.0),
+                        fontWeight: FontWeight.w800,
+                        height: 1.15,
+                        color: badge.isUnlocked
+                            ? theme.textTheme.titleMedium?.color
+                            : Colors.grey.shade500,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: nameMaxLines,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                    AchievementRarityChip(
+                      rarity: badge.rarity,
+                      fontSize: (size * 0.085).clamp(9.0, 10.0),
+                      unlocked: badge.isUnlocked,
+                    ),
+                  ],
+                ),
+              ),
+
+              if (showProgress && !badge.isUnlocked && badge.progress > 0)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                    ),
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: badge.progress.clamp(0.0, 1.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              badge.color,
+                              badge.color.withOpacity(0.65),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+              if (!badge.isUnlocked)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+
+              if (badge.isUnlocked &&
+                  badge.unlockedAt != null &&
+                  DateTime.now().difference(badge.unlockedAt!).inDays < 3)
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.35),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                    child: const Text(
+                      'NEW',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -206,224 +429,283 @@ class BadgeDetailDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final g = badge.rarity.tierGradient;
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        constraints: const BoxConstraints(maxWidth: 340),
         decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: [
-              badge.rarity.color.withOpacity(0.1),
+              g.first.withOpacity(0.14),
               Colors.white,
+              badge.color.withOpacity(0.06),
             ],
+            stops: const [0.0, 0.45, 1.0],
           ),
-          borderRadius: BorderRadius.circular(20),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            // 徽章图标
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: badge.rarity.color.withOpacity(0.2),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: badge.rarity.color,
-                  width: 3,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  badge.emoji,
-                  style: const TextStyle(fontSize: 48),
-                ),
+            Positioned(
+              top: 12,
+              right: 16,
+              child: Icon(
+                Icons.auto_awesome_rounded,
+                size: 22,
+                color: g.last.withOpacity(0.35),
               ),
             ),
-
-            const SizedBox(height: 16),
-
-            // 徽章名称和稀有度
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  badge.name,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: badge.rarity.color,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    badge.rarity.displayName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // 描述
-            Text(
-              badge.description,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
+            Positioned(
+              bottom: 80,
+              left: 14,
+              child: Icon(
+                Icons.stars_rounded,
+                size: 18,
+                color: g.first.withOpacity(0.25),
               ),
-              textAlign: TextAlign.center,
             ),
-
-            const SizedBox(height: 16),
-
-            // 达成条件
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
               child: Column(
-                children: [
-                  Text(
-                    '达成条件',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[700],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    badge.condition,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-
-            // 进度信息（如果未解锁）
-            if (!badge.isUnlocked) ...[
-              const SizedBox(height: 16),
-              Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        '进度',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[700],
-                        ),
+                      Icon(
+                        badge.category.categoryIcon,
+                        size: 18,
+                        color: badge.color.withOpacity(0.85),
                       ),
+                      const SizedBox(width: 6),
                       Text(
-                        '${(badge.progress * 100).toInt()}%',
+                        badge.category.displayName,
                         style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: badge.color,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  LinearProgressIndicator(
-                    value: badge.progress,
-                    backgroundColor: Colors.grey[200],
-                    valueColor: AlwaysStoppedAnimation<Color>(badge.color),
+                  const SizedBox(height: 16),
+                  AchievementBadgeMedallion(
+                    badge: badge,
+                    diameter: 112,
+                    unlocked: badge.isUnlocked,
+                    showLockBadge: false,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${(badge.progress * badge.requiredCount).toInt()} / ${badge.requiredCount}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-
-            // 解锁时间（如果已解锁）
-            if (badge.isUnlocked && badge.unlockedAt != null) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: badge.rarity.color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.celebration,
-                      color: badge.rarity.color,
-                      size: 24,
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      '已解锁',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
+                  if (!badge.isUnlocked)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.lock_outline_rounded,
+                              size: 16, color: Colors.grey.shade600),
+                          const SizedBox(width: 6),
+                          Text(
+                            '尚未解锁',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                  const SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          badge.name,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      AchievementRarityChip(
+                        rarity: badge.rarity,
+                        fontSize: 11,
+                        unlocked: badge.isUnlocked,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    badge.description,
+                    style: TextStyle(
+                      fontSize: 15,
+                      height: 1.45,
+                      color: Colors.grey.shade700,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.75),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          '达成条件',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.grey.shade800,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          badge.condition,
+                          style: TextStyle(
+                            fontSize: 14,
+                            height: 1.4,
+                            color: Colors.grey.shade600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!badge.isUnlocked) ...[
+                    const SizedBox(height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '进度',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                        Text(
+                          '${(badge.progress * 100).toInt()}%',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: badge.color,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        minHeight: 8,
+                        value: badge.progress.clamp(0.0, 1.0),
+                        backgroundColor: Colors.grey.shade200,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(badge.color),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
                     Text(
-                      '${badge.unlockedAt!.year}年${badge.unlockedAt!.month}月${badge.unlockedAt!.day}日',
+                      '${(badge.progress * badge.requiredCount).toInt()} / ${badge.requiredCount}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: Colors.grey.shade600,
                       ),
                     ),
                   ],
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 20),
-
-            // 关闭按钮
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: badge.rarity.color,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  if (badge.isUnlocked && badge.unlockedAt != null) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            badge.rarity.tierGradient.first.withOpacity(0.12),
+                            badge.rarity.tierGradient.last.withOpacity(0.08),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.celebration_rounded,
+                            color: badge.rarity.tierGradient.last,
+                            size: 28,
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            '已解锁',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                            ),
+                          ),
+                          Text(
+                            '${badge.unlockedAt!.year}年${badge.unlockedAt!.month}月${badge.unlockedAt!.day}日',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        gradient: LinearGradient(colors: g),
+                        boxShadow: [
+                          BoxShadow(
+                            color: g.last.withOpacity(0.35),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => Navigator.of(context).pop(),
+                          borderRadius: BorderRadius.circular(14),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            child: Center(
+                              child: Text(
+                                '关闭',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                child: const Text(
-                  '关闭',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                ],
               ),
             ),
           ],
@@ -462,7 +744,7 @@ class BadgeGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        childAspectRatio: 0.9,
+        childAspectRatio: 0.78,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
@@ -493,25 +775,31 @@ class MiniBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final g = badge.rarity.tierGradient;
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: badge.rarity.color,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
+        gradient: LinearGradient(colors: g),
         boxShadow: [
           BoxShadow(
-            color: badge.rarity.color.withOpacity(0.3),
+            color: g.last.withOpacity(0.4),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Center(
-        child: Text(
-          badge.emoji,
-          style: TextStyle(fontSize: size * 0.5),
+      padding: EdgeInsets.all(size * 0.1),
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white,
+        ),
+        child: Icon(
+          badge.badgeSymbol,
+          size: size * 0.48,
+          color: badge.color,
         ),
       ),
     );

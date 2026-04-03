@@ -21,11 +21,12 @@ class AchievementHooks {
     if (ctx == null || !ctx.mounted) return;
     if (unlocked.length == 1) {
       final b = unlocked.first;
-      MoeToast.success(ctx, '解锁成就 ${b.emoji} ${b.name}');
+      MoeToast.success(ctx, '解锁成就「${b.name}」');
       return;
     }
-    final preview = unlocked.take(4).map((b) => b.emoji).join(' ');
-    MoeToast.success(ctx, '解锁 ${unlocked.length} 个成就 $preview');
+    final names = unlocked.take(3).map((b) => b.name).join('、');
+    final more = unlocked.length > 3 ? '…' : '';
+    MoeToast.success(ctx, '解锁 ${unlocked.length} 个成就：$names$more');
   }
 
   /// 发布动态成功后调用（含图片张数、正文字数）。

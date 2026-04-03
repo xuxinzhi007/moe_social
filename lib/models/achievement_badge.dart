@@ -346,16 +346,16 @@ class AchievementBadge {
 
 /// 徽章分类枚举
 enum BadgeCategory {
-  social('社交', '👥'),
-  interaction('互动', '🤝'),
-  time('时间', '⏰'),
-  special('特殊', '⭐'),
-  creative('创意', '🎨');
+  social('社交', Icons.groups_rounded),
+  interaction('互动', Icons.volunteer_activism_rounded),
+  time('时间', Icons.schedule_rounded),
+  special('特殊', Icons.auto_awesome_rounded),
+  creative('创意', Icons.palette_rounded);
 
-  const BadgeCategory(this.displayName, this.icon);
+  const BadgeCategory(this.displayName, this.categoryIcon);
 
   final String displayName;
-  final String icon;
+  final IconData categoryIcon;
 }
 
 /// 徽章稀有度枚举
@@ -371,6 +371,22 @@ enum BadgeRarity {
   final String displayName;
   final Color color;
   final int level;
+
+  /// 外环渐变（用于徽章金属质感）
+  List<Color> get tierGradient {
+    switch (this) {
+      case BadgeRarity.common:
+        return const [Color(0xFFB0BEC5), Color(0xFF455A64)];
+      case BadgeRarity.uncommon:
+        return const [Color(0xFF81C784), Color(0xFF1B5E20)];
+      case BadgeRarity.rare:
+        return const [Color(0xFF64B5F6), Color(0xFF0D47A1)];
+      case BadgeRarity.epic:
+        return const [Color(0xFFCE93D8), Color(0xFF4A148C)];
+      case BadgeRarity.legendary:
+        return const [Color(0xFFFFE082), Color(0xFFFF9100), Color(0xFFE65100)];
+    }
+  }
 }
 
 /// 用户徽章进度模型
