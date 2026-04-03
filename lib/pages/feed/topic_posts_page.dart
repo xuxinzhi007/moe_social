@@ -25,6 +25,8 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
   bool _isLoadingMore = false;
   bool _hasMore = true;
   int _totalPosts = 0;
+  int _currentPage = 1;
+  static const int _pageSize = 10;
 
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingTriggered = false;
@@ -53,8 +55,8 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
     final maxScroll = position.maxScrollExtent;
     final currentScroll = position.pixels;
     final threshold = maxScroll > 0 ? maxScroll - 300 : 0;
-    final isNearBottom = currentScroll >= threshold || 
-                        (maxScroll > 0 && currentScroll >= maxScroll - 50);
+    final isNearBottom = currentScroll >= threshold ||
+        (maxScroll > 0 && currentScroll >= maxScroll - 50);
 
     if (isNearBottom) {
       _isLoadingTriggered = true;
@@ -66,23 +68,27 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
     setState(() {
       _isLoading = true;
       _hasMore = true;
+      _currentPage = 1;
+      _posts = [];
     });
 
     try {
-      // 获取所有帖子，然后在前端过滤（暂时方案）
-      // TODO: 后端支持按话题ID筛选
-      final result = await PostService.getPosts(page: 1, pageSize: 1000);
-      final allPosts = result['posts'] as List<Post>;
-      
-      // 过滤出包含当前话题的帖子
-      final filteredPosts = allPosts.where((post) {
-        return post.topicTags.any((tag) => tag.id == widget.topicTag.id);
-      }).toList();
+      final result = await PostService.getPosts(
+        page: 1,
+        pageSize: _pageSize,
+        feedMode: 'latest',
+        topicTagId: widget.topicTag.id,
+      );
+      final posts = result['posts'] as List<Post>;
+      final totalRaw = result['total'];
+      final total = totalRaw is int
+          ? totalRaw
+          : (totalRaw is num ? totalRaw.toInt() : 0);
 
       setState(() {
-        _posts = filteredPosts;
-        _totalPosts = filteredPosts.length;
-        _hasMore = false; // 暂时不支持分页
+        _posts = posts;
+        _totalPosts = total;
+        _hasMore = posts.length < total;
       });
     } catch (e) {
       if (mounted) {
@@ -96,10 +102,54 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
   }
 
   Future<void> _loadMorePosts() async {
-    // 暂时不支持分页
+    if (_isLoading || _isLoadingMore || !_hasMore) {
+      setState(() {
+        _isLoadingTriggered = false;
+      });
+      return;
+    }
+
     setState(() {
-      _isLoadingTriggered = false;
+      _isLoadingMore = true;
     });
+
+    try {
+      final nextPage = _currentPage + 1;
+      final result = await PostService.getPosts(
+        page: nextPage,
+        pageSize: _pageSize,
+        feedMode: 'latest',
+        topicTagId: widget.topicTag.id,
+      );
+      final morePosts = result['posts'] as List<Post>;
+      final totalRaw = result['total'];
+      final total = totalRaw is int
+          ? totalRaw
+          : (totalRaw is num ? totalRaw.toInt() : 0);
+
+      if (morePosts.isEmpty) {
+        setState(() {
+          _hasMore = false;
+        });
+        return;
+      }
+
+      setState(() {
+        _posts.addAll(morePosts);
+        _totalPosts = total;
+        _currentPage = nextPage;
+        _hasMore = _posts.length < total;
+      });
+    } catch (e) {
+      if (mounted) {
+        ErrorHandler.handleException(context, e as Exception);
+      }
+    } finally {
+      setState(() {
+        _isLoadingMore = false;
+        _isLoadingTriggered = false;
+      });
+    }
   }
 
   Future<void> _toggleLike(String postId) async {
@@ -113,10 +163,12 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
 
     try {
       final updatedPost = await PostService.toggleLike(postId, userId);
-      
+
       final postIndex = _posts.indexWhere((p) => p.id == postId);
-      if (postIndex != -1) {
-        _posts[postIndex] = updatedPost;
+      if (postIndex != -1 && mounted) {
+        setState(() {
+          _posts[postIndex] = updatedPost;
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -124,7 +176,6 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -182,8 +233,14 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
                   color: Theme.of(context).primaryColor,
                   child: ListView.builder(
                     controller: _scrollController,
-                    itemCount: _posts.length,
+                    itemCount: _posts.length + (_isLoadingMore ? 1 : 0),
                     itemBuilder: (context, index) {
+                      if (index >= _posts.length) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
                       final post = _posts[index];
                       return PostCard(
                         key: ValueKey('topic_post_${post.id}'),

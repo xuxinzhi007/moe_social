@@ -204,20 +204,10 @@ class PostCard extends StatelessWidget {
 
               if (post.handDrawThumbUrl.isNotEmpty) ...[
                 if (post.displayCaption.isNotEmpty) const SizedBox(height: 4),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: AspectRatio(
-                    aspectRatio: 3 / 4,
-                    child: CachedNetworkImage(
-                      imageUrl: post.handDrawThumbUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) => Container(color: Colors.grey.shade100),
-                      errorWidget: (_, __, ___) => Container(
-                        color: Colors.grey.shade200,
-                        child: const Center(child: Icon(Icons.broken_image_outlined)),
-                      ),
-                    ),
-                  ),
+                _HandDrawThumbnail(
+                  post: post,
+                  onOpenReplay: () =>
+                      _openHandDrawViewer(context, post),
                 ),
               ] else if (post.handDrawCard != null) ...[
                 if (post.displayCaption.isNotEmpty) const SizedBox(height: 4),
@@ -230,6 +220,14 @@ class PostCard extends StatelessWidget {
                       milliseconds: (1600 + post.handDrawCard!.strokes.length * 35)
                           .clamp(1200, 3800),
                     ),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.center,
+                  child: TextButton.icon(
+                    onPressed: () => _openHandDrawViewer(context, post),
+                    icon: const Icon(Icons.fullscreen_rounded, size: 20),
+                    label: const Text('全屏回放绘画过程'),
                   ),
                 ),
               ],
@@ -605,6 +603,186 @@ $body
     return RichText(
       text: TextSpan(
         children: spans,
+      ),
+    );
+  }
+}
+
+/// 手绘缩略图：叠加播放按钮，点击全屏回放笔迹（有 JSON 时）或放大静图。
+class _HandDrawThumbnail extends StatelessWidget {
+  const _HandDrawThumbnail({
+    required this.post,
+    required this.onOpenReplay,
+  });
+
+  final Post post;
+  final VoidCallback onOpenReplay;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onOpenReplay,
+        borderRadius: BorderRadius.circular(20),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: AspectRatio(
+            aspectRatio: 3 / 4,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CachedNetworkImage(
+                  imageUrl: post.handDrawThumbUrl,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) =>
+                      Container(color: Colors.grey.shade100),
+                  errorWidget: (_, __, ___) => Container(
+                    color: Colors.grey.shade200,
+                    child: const Center(
+                        child: Icon(Icons.broken_image_outlined)),
+                  ),
+                ),
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.center,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.05),
+                          Colors.black.withOpacity(0.3),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Center(
+                  child: Icon(
+                    Icons.play_circle_fill_rounded,
+                    size: 68,
+                    color: Colors.white.withOpacity(0.94),
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.5),
+                        blurRadius: 14,
+                      ),
+                    ],
+                  ),
+                ),
+                if (post.handDrawCard == null)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 10,
+                    child: Text(
+                      '点击查看大图',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.92),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        shadows: const [
+                          Shadow(color: Colors.black54, blurRadius: 4),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+void _openHandDrawViewer(BuildContext context, Post post) {
+  final card = post.handDrawCard;
+  final thumb = post.handDrawThumbUrl;
+
+  if (card != null) {
+    final duration = Duration(
+      milliseconds: (1600 + card.strokes.length * 35).clamp(1200, 3800),
+    );
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.88),
+      builder: (ctx) {
+        final maxH = MediaQuery.sizeOf(context).height * 0.75;
+        final maxW = MediaQuery.sizeOf(context).width - 24;
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.close_rounded,
+                    color: Colors.white70, size: 28),
+                onPressed: () => Navigator.pop(ctx),
+              ),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: maxH, maxWidth: maxW),
+                child: HandDrawCardReplay(
+                  data: card,
+                  autoPlay: true,
+                  duration: duration,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    return;
+  }
+
+  if (thumb.isNotEmpty) {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: const EdgeInsets.all(12),
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.8,
+                maxScale: 4,
+                child: CachedNetworkImage(
+                  imageUrl: thumb,
+                  fit: BoxFit.contain,
+                  placeholder: (_, __) => const SizedBox(
+                    width: 200,
+                    height: 280,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                          color: Colors.white54),
+                    ),
+                  ),
+                  errorWidget: (_, __, ___) => const Icon(
+                    Icons.broken_image_outlined,
+                    color: Colors.white54,
+                    size: 64,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: IconButton(
+                icon: const Icon(Icons.close_rounded, color: Colors.white),
+                onPressed: () => Navigator.pop(ctx),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

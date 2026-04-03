@@ -111,7 +111,7 @@ class ApiService {
   static const bool _verboseApiLog = true;
 
   // 生产环境地址（cpolar隧道）
-  static const String _productionUrl = 'http://5d80d7fa.r3.cpolar.top';
+  static const String _productionUrl = 'http://7ab91766.r3.cpolar.top';
 
   // 开发环境地址
   static const String _developmentUrl = 'http://localhost:8888';
@@ -130,10 +130,10 @@ class ApiService {
     } else if (Platform.isAndroid) {
       // Android真机需要使用电脑IP或生产环境地址
       // 如果本地连接有问题，可以临时使用生产环境地址
-      // return 'http://5d80d7fa.r3.cpolar.top'; // 使用生产环境
+      // return 'http://7ab91766.r3.cpolar.top'; // 使用生产环境
       // 或者使用电脑IP（需要根据实际情况修改）
       // return 'http://192.168.1.16:8888'; // 替换为你的电脑IP
-      return 'http://5d80d7fa.r3.cpolar.top'; // Android模拟器使用这个
+      return 'http://7ab91766.r3.cpolar.top'; // Android模拟器使用这个
     } else if (Platform.isIOS) {
       // iOS模拟器使用localhost，真机需要使用电脑IP
       return _developmentUrl; // iOS模拟器
@@ -465,6 +465,8 @@ class ApiService {
     int page = 1,
     int pageSize = 10,
     String? viewerUserId,
+    String? feedMode,
+    String? topicTagId,
   }) async {
     final parts = <String>[
       'page=$page',
@@ -473,6 +475,12 @@ class ApiService {
     if (viewerUserId != null && viewerUserId.isNotEmpty) {
       parts.add(
           'viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}');
+    }
+    if (feedMode != null && feedMode.isNotEmpty) {
+      parts.add('feed_mode=${Uri.encodeQueryComponent(feedMode)}');
+    }
+    if (topicTagId != null && topicTagId.isNotEmpty) {
+      parts.add('topic_tag_id=${Uri.encodeQueryComponent(topicTagId)}');
     }
     final result = await _request('/api/posts?${parts.join('&')}');
     // 始终输出total字段的值和postsJson的长度，不依赖于_verboseApiLog
@@ -502,9 +510,13 @@ class ApiService {
       if (_verboseApiLog) {
         _log('📥 成功解析${posts.length}条帖子');
       }
+      final totalRaw = result['total'];
+      final total = totalRaw is int
+          ? totalRaw
+          : (totalRaw is num ? totalRaw.toInt() : 0);
       return {
         'posts': posts,
-        'total': result['total'] as int,
+        'total': total,
       };
     } catch (e, stackTrace) {
       _log('❌ 解析帖子失败: $e');

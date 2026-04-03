@@ -375,6 +375,10 @@ message GetPostsReq {
   int32 page = 1;
   int32 page_size = 2;
   string viewer_user_id = 3;
+  // latest | hot | following（空则按 latest）
+  string feed_mode = 4;
+  // 按话题标签 ID 筛选（与 post_topics 关联）
+  string topic_tag_id = 5;
 }
 
 // 获取帖子列表响应

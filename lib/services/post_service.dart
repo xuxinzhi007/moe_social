@@ -7,13 +7,20 @@ import 'like_state_manager.dart';
 
 class PostService {
   // 获取所有帖子（支持分页），并同步全局状态
-  static Future<Map<String, dynamic>> getPosts({int page = 1, int pageSize = 10}) async {
+  static Future<Map<String, dynamic>> getPosts({
+    int page = 1,
+    int pageSize = 10,
+    String? feedMode,
+    String? topicTagId,
+  }) async {
     final viewer =
         AuthService.isLoggedIn ? (AuthService.currentUser ?? '') : '';
     final result = await ApiService.getPosts(
       page: page,
       pageSize: pageSize,
       viewerUserId: viewer.isEmpty ? null : viewer,
+      feedMode: feedMode,
+      topicTagId: topicTagId,
     );
     List<Post> posts = result['posts'];
 

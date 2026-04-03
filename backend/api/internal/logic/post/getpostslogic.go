@@ -31,6 +31,8 @@ func (l *GetPostsLogic) GetPosts(req *types.GetPostsReq) (resp *types.GetPostsRe
 		Page:           int32(req.Page),
 		PageSize:       int32(req.PageSize),
 		ViewerUserId:   req.ViewerUserId,
+		FeedMode:       req.FeedMode,
+		TopicTagId:     req.TopicTagId,
 	})
 	if err != nil {
 		l.Error("调用RPC服务失败:", err)
