@@ -28,10 +28,9 @@ func NewGetPostCommentsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 func (l *GetPostCommentsLogic) GetPostComments(req *types.GetPostCommentsReq) (resp *types.GetPostCommentsResp, err error) {
 	// 调用RPC服务获取帖子评论
 	rpcResp, err := l.svcCtx.SuperRpcClient.GetPostComments(l.ctx, &super.GetPostCommentsReq{
-		PostId:        req.PostId,
-		Page:          int32(req.Page),
-		PageSize:      int32(req.PageSize),
-		ViewerUserId:  req.ViewerUserId,
+		PostId:   req.PostId,
+		Page:     int32(req.Page),
+		PageSize: int32(req.PageSize),
 	})
 	if err != nil {
 		return &types.GetPostCommentsResp{

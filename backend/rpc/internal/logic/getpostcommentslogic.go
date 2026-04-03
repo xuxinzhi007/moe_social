@@ -85,18 +85,6 @@ func (l *GetPostCommentsLogic) GetPostComments(in *super.GetPostCommentsReq) (*s
 		}
 	}
 
-	var viewerUID uint
-	if in.ViewerUserId != "" {
-		if v, e := strconv.ParseUint(in.ViewerUserId, 10, 32); e == nil {
-			viewerUID = uint(v)
-		}
-	}
-	commentIDs := make([]uint, 0, len(comments))
-	for _, c := range comments {
-		commentIDs = append(commentIDs, c.ID)
-	}
-	likedComments := LikedTargetIDSet(l.svcCtx.DB, viewerUID, "comment", commentIDs)
-
 	// 构建响应
 	resp := &super.GetPostCommentsResp{
 		Comments: make([]*super.Comment, 0, len(comments)),
@@ -127,7 +115,7 @@ func (l *GetPostCommentsLogic) GetPostComments(in *super.GetPostCommentsReq) (*s
 			UserAvatar: avatar,
 			Content:    comment.Content,
 			Likes:      int32(comment.Likes),
-			IsLiked:    likedComments[comment.ID],
+			IsLiked:    false, // 这里需要根据当前用户是否点赞来设置，暂时设为false
 			CreatedAt:  comment.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 

@@ -402,10 +402,9 @@ type GetNotificationsResp struct {
 }
 
 type GetPostCommentsReq struct {
-	PostId       string `path:"post_id"`
-	Page         int    `form:"page,default=1"`
-	PageSize     int    `form:"page_size,default=10"`
-	ViewerUserId string `form:"viewer_user_id,optional"`
+	PostId   string `path:"post_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
 }
 
 type GetPostCommentsResp struct {
