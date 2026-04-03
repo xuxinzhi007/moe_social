@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"backend/model"
+	"backend/rpc/internal/achievement"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
@@ -92,7 +93,13 @@ func (l *UpdateUserVipLogic) UpdateUserVip(in *super.UpdateUserVipReq) (*super.U
 		return nil, errorx.Internal("更新VIP状态失败，请稍后重试")
 	}
 
+	var newUnlocks []string
+	if in.IsVip {
+		newUnlocks = achievement.ApplyVipMember(l.svcCtx.DB, user.ID)
+	}
+
 	return &super.UpdateUserVipResp{
-		User: modelUserToProto(&user),
+		User:                  modelUserToProto(&user),
+		NewlyUnlockedBadgeIds: newUnlocks,
 	}, nil
 }

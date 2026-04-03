@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/user.dart';
 import 'services/api_service.dart';
+import 'services/achievement_service.dart';
 import 'services/chat_push_service.dart';
 import 'services/presence_service.dart';
 
@@ -119,6 +120,9 @@ class AuthService {
     _currentUser = null;
     _token = null;
     unawaited(_purgeLegacyLocalLikeKeys(uid));
+    if (uid != null && uid.isNotEmpty) {
+      unawaited(AchievementService().clearUserData(uid));
+    }
     // 清除持久化存储
     _clearAuthData();
     // 清除ApiService的token

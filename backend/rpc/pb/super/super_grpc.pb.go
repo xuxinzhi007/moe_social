@@ -31,6 +31,7 @@ const (
 	Super_UpdateUserVip_FullMethodName              = "/super.Super/UpdateUserVip"
 	Super_GetUsers_FullMethodName                   = "/super.Super/GetUsers"
 	Super_GetUserCount_FullMethodName               = "/super.Super/GetUserCount"
+	Super_GetUserAchievements_FullMethodName        = "/super.Super/GetUserAchievements"
 	Super_UpsertUserMemory_FullMethodName           = "/super.Super/UpsertUserMemory"
 	Super_GetUserMemories_FullMethodName            = "/super.Super/GetUserMemories"
 	Super_DeleteUserMemory_FullMethodName           = "/super.Super/DeleteUserMemory"
@@ -101,6 +102,7 @@ type SuperClient interface {
 	UpdateUserVip(ctx context.Context, in *UpdateUserVipReq, opts ...grpc.CallOption) (*UpdateUserVipResp, error)
 	GetUsers(ctx context.Context, in *GetUsersReq, opts ...grpc.CallOption) (*GetUsersResp, error)
 	GetUserCount(ctx context.Context, in *GetUserCountReq, opts ...grpc.CallOption) (*GetUserCountResp, error)
+	GetUserAchievements(ctx context.Context, in *GetUserAchievementsReq, opts ...grpc.CallOption) (*GetUserAchievementsResp, error)
 	UpsertUserMemory(ctx context.Context, in *UpsertUserMemoryReq, opts ...grpc.CallOption) (*UpsertUserMemoryResp, error)
 	GetUserMemories(ctx context.Context, in *GetUserMemoriesReq, opts ...grpc.CallOption) (*GetUserMemoriesResp, error)
 	DeleteUserMemory(ctx context.Context, in *DeleteUserMemoryReq, opts ...grpc.CallOption) (*DeleteUserMemoryResp, error)
@@ -286,6 +288,16 @@ func (c *superClient) GetUserCount(ctx context.Context, in *GetUserCountReq, opt
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetUserCountResp)
 	err := c.cc.Invoke(ctx, Super_GetUserCount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) GetUserAchievements(ctx context.Context, in *GetUserAchievementsReq, opts ...grpc.CallOption) (*GetUserAchievementsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserAchievementsResp)
+	err := c.cc.Invoke(ctx, Super_GetUserAchievements_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -801,6 +813,7 @@ type SuperServer interface {
 	UpdateUserVip(context.Context, *UpdateUserVipReq) (*UpdateUserVipResp, error)
 	GetUsers(context.Context, *GetUsersReq) (*GetUsersResp, error)
 	GetUserCount(context.Context, *GetUserCountReq) (*GetUserCountResp, error)
+	GetUserAchievements(context.Context, *GetUserAchievementsReq) (*GetUserAchievementsResp, error)
 	UpsertUserMemory(context.Context, *UpsertUserMemoryReq) (*UpsertUserMemoryResp, error)
 	GetUserMemories(context.Context, *GetUserMemoriesReq) (*GetUserMemoriesResp, error)
 	DeleteUserMemory(context.Context, *DeleteUserMemoryReq) (*DeleteUserMemoryResp, error)
@@ -907,6 +920,9 @@ func (UnimplementedSuperServer) GetUsers(context.Context, *GetUsersReq) (*GetUse
 }
 func (UnimplementedSuperServer) GetUserCount(context.Context, *GetUserCountReq) (*GetUserCountResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUserCount not implemented")
+}
+func (UnimplementedSuperServer) GetUserAchievements(context.Context, *GetUserAchievementsReq) (*GetUserAchievementsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserAchievements not implemented")
 }
 func (UnimplementedSuperServer) UpsertUserMemory(context.Context, *UpsertUserMemoryReq) (*UpsertUserMemoryResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpsertUserMemory not implemented")
@@ -1288,6 +1304,24 @@ func _Super_GetUserCount_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SuperServer).GetUserCount(ctx, req.(*GetUserCountReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_GetUserAchievements_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserAchievementsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).GetUserAchievements(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_GetUserAchievements_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).GetUserAchievements(ctx, req.(*GetUserAchievementsReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2228,6 +2262,10 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserCount",
 			Handler:    _Super_GetUserCount_Handler,
+		},
+		{
+			MethodName: "GetUserAchievements",
+			Handler:    _Super_GetUserAchievements_Handler,
 		},
 		{
 			MethodName: "UpsertUserMemory",

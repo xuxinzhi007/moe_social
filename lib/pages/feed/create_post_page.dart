@@ -172,12 +172,11 @@ class _CreatePostPageState extends State<CreatePostPage> {
           handDrawThumbUrl: thumbUrl,
         );
 
-        await PostService.createPost(newPost);
+        final created = await PostService.createPost(newPost);
         try {
-          await AchievementHooks.recordPostPublished(
+          await AchievementHooks.onServerNewUnlocks(
             userId,
-            imageCount: imageUrls.length,
-            contentLength: caption.length,
+            created.newlyUnlockedBadgeIds,
           );
         } catch (_) {}
       },

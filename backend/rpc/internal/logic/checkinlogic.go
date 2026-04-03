@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"backend/model"
+	"backend/rpc/internal/achievement"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -163,12 +164,15 @@ func (l *CheckInLogic) CheckIn(in *super.CheckInReq) (*super.CheckInResp, error)
 		specialReward = fmt.Sprintf("连续签到%d天获得额外%d经验", consecutiveDays, extraExp)
 	}
 
+	newUnlocks := achievement.ApplyCheckIn(l.svcCtx.DB, uint(userID))
+
 	return &super.CheckInResp{
-		ExpGained:       int32(totalExp),
-		NewLevel:        int32(newLevel),
-		ConsecutiveDays: int32(consecutiveDays),
-		LevelUp:         newLevel > oldLevel,
-		SpecialReward:   specialReward,
+		ExpGained:             int32(totalExp),
+		NewLevel:              int32(newLevel),
+		ConsecutiveDays:       int32(consecutiveDays),
+		LevelUp:               newLevel > oldLevel,
+		SpecialReward:         specialReward,
+		NewlyUnlockedBadgeIds: newUnlocks,
 	}, nil
 }
 

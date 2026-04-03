@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"backend/model"
+	"backend/rpc/internal/achievement"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -98,6 +99,10 @@ func (l *LikePostLogic) LikePost(in *super.LikePostReq) (*super.LikePostResp, er
 	if err := tx.Commit().Error; err != nil {
 		l.Error("提交事务失败:", err)
 		return nil, err
+	}
+
+	if !hasLiked && post.Likes >= 100 {
+		achievement.ApplyPostLikedAsAuthor(l.svcCtx.DB, post.UserID, post.Likes)
 	}
 
 	// 重新查询帖子（获取最新数据）并加载用户信息
