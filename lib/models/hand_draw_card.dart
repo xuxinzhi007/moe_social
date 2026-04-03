@@ -7,6 +7,7 @@ class HandDrawStroke {
     required this.colorArgb,
     required this.widthNorm,
     required this.points,
+    this.erase = false,
   });
 
   /// 颜色 0xAARRGGBB
@@ -18,11 +19,18 @@ class HandDrawStroke {
   /// [[x,y], ...] 归一化坐标
   final List<List<double>> points;
 
-  Map<String, dynamic> toJson() => {
-        'c': colorArgb,
-        'w': widthNorm,
-        'p': points,
-      };
+  /// 橡皮笔迹（与背景合成时需 saveLayer + BlendMode.clear）
+  final bool erase;
+
+  Map<String, dynamic> toJson() {
+    final m = <String, dynamic>{
+      'c': colorArgb,
+      'w': widthNorm,
+      'p': points,
+    };
+    if (erase) m['e'] = 1;
+    return m;
+  }
 
   factory HandDrawStroke.fromJson(Map<String, dynamic> json) {
     final plist = <List<double>>[];
@@ -37,10 +45,13 @@ class HandDrawStroke {
         }
       }
     }
+    final e = json['e'];
+    final isErase = e == true || e == 1;
     return HandDrawStroke(
       colorArgb: (json['c'] as num?)?.toInt() ?? 0xFF7F7FD5,
       widthNorm: (json['w'] as num?)?.toDouble() ?? 0.01,
       points: plist,
+      erase: isErase,
     );
   }
 }

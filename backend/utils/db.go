@@ -110,6 +110,7 @@ func autoMigrate() error {
 		&model.VipRecord{},
 		&model.Transaction{},   // 交易记录表
 		&model.Post{},          // 帖子表
+		&model.PostReport{},    // 帖子举报
 		&model.Like{},          // 统一点赞表
 		&model.TopicTag{},      // 话题标签表
 		&model.PostTopic{},     // 帖子标签关联表

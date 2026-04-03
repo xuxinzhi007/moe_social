@@ -365,12 +365,16 @@ message Post {
   int32 comments = 9;
   bool is_liked = 10;
   string created_at = 11;
+  string hand_draw_card = 12;
+  string hand_draw_thumb_url = 13;
+  string moderation_status = 14;
 }
 
 // 获取帖子列表请求
 message GetPostsReq {
   int32 page = 1;
   int32 page_size = 2;
+  string viewer_user_id = 3;
 }
 
 // 获取帖子列表响应
@@ -382,6 +386,7 @@ message GetPostsResp {
 // 获取单个帖子请求
 message GetPostReq {
   string post_id = 1;
+  string viewer_user_id = 2;
 }
 
 // 获取单个帖子响应
@@ -395,6 +400,18 @@ message CreatePostReq {
   string content = 2;
   repeated string images = 3;
   repeated TopicTag topic_tags = 4;
+  string hand_draw_card = 5;
+  string hand_draw_thumb_url = 6;
+}
+
+// 举报帖子
+message ReportPostReq {
+  string post_id = 1;
+  string reporter_user_id = 2;
+  string reason = 3;
+}
+
+message ReportPostResp {
 }
 
 // 创建帖子响应
@@ -669,6 +686,7 @@ service Super {
   rpc GetPosts(GetPostsReq) returns (GetPostsResp);
   rpc GetPost(GetPostReq) returns (GetPostResp);
   rpc CreatePost(CreatePostReq) returns (CreatePostResp);
+  rpc ReportPost(ReportPostReq) returns (ReportPostResp);
   rpc LikePost(LikePostReq) returns (LikePostResp);
   rpc GetPostComments(GetPostCommentsReq) returns (GetPostCommentsResp);
   

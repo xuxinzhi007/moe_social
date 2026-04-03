@@ -14,7 +14,10 @@ class HandDrawCardPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final bg = Color(data.backgroundArgb);
-    canvas.drawRect(Offset.zero & size, Paint()..color = bg);
+    final rect = Offset.zero & size;
+    canvas.saveLayer(rect, Paint());
+
+    canvas.drawRect(rect, Paint()..color = bg);
 
     final shortSide = size.shortestSide;
     var total = _totalSegments(data);
@@ -24,36 +27,51 @@ class HandDrawCardPainter extends CustomPainter {
     var used = 0;
     for (final stroke in data.strokes) {
       if (stroke.points.isEmpty) continue;
+      final sw = (stroke.widthNorm * shortSide).clamp(1.5, 36.0);
       final strokePaint = Paint()
         ..color = Color(stroke.colorArgb)
-        ..strokeWidth = (stroke.widthNorm * shortSide).clamp(1.5, 24)
+        ..strokeWidth = sw
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
         ..style = PaintingStyle.stroke
         ..isAntiAlias = true;
 
+      if (stroke.erase) {
+        strokePaint
+          ..color = const Color(0x00000000)
+          ..blendMode = BlendMode.clear;
+      }
+
       final pts = stroke.points;
       if (pts.length == 1) {
         if (used < budget) {
           final o = HandDrawCardCodec.toPixel(pts[0], size);
-          canvas.drawCircle(
-            o,
-            strokePaint.strokeWidth / 2,
-            strokePaint..style = PaintingStyle.fill,
-          );
+          if (stroke.erase) {
+            canvas.drawCircle(o, sw / 2, strokePaint..style = PaintingStyle.fill);
+          } else {
+            canvas.drawCircle(
+              o,
+              strokePaint.strokeWidth / 2,
+              strokePaint..style = PaintingStyle.fill,
+            );
+          }
           used += 1;
         }
         continue;
       }
 
       for (var i = 0; i < pts.length - 1; i++) {
-        if (used >= budget) return;
+        if (used >= budget) {
+          canvas.restore();
+          return;
+        }
         final a = HandDrawCardCodec.toPixel(pts[i], size);
         final b = HandDrawCardCodec.toPixel(pts[i + 1], size);
         canvas.drawLine(a, b, strokePaint..style = PaintingStyle.stroke);
         used += 1;
       }
     }
+    canvas.restore();
   }
 
   int _totalSegments(HandDrawCardData d) {

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'dart:io' show File, Platform, SocketException;
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart'
@@ -460,9 +461,20 @@ class ApiService {
   }
 
   // 获取帖子列表（支持分页）
-  static Future<Map<String, dynamic>> getPosts(
-      {int page = 1, int pageSize = 10}) async {
-    final result = await _request('/api/posts?page=$page&page_size=$pageSize');
+  static Future<Map<String, dynamic>> getPosts({
+    int page = 1,
+    int pageSize = 10,
+    String? viewerUserId,
+  }) async {
+    final parts = <String>[
+      'page=$page',
+      'page_size=$pageSize',
+    ];
+    if (viewerUserId != null && viewerUserId.isNotEmpty) {
+      parts.add(
+          'viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}');
+    }
+    final result = await _request('/api/posts?${parts.join('&')}');
     // 始终输出total字段的值和postsJson的长度，不依赖于_verboseApiLog
     _log('📥 getPosts响应数据: ${_safeJsonForLog(result)}');
     _log('📥 data类型: ${result['data'].runtimeType}');
@@ -667,9 +679,30 @@ class ApiService {
   }
 
   // 获取单个帖子
-  static Future<Post> getPostById(String id) async {
-    final result = await _request('/api/posts/$id');
+  static Future<Post> getPostById(String id, {String? viewerUserId}) async {
+    var path = '/api/posts/$id';
+    if (viewerUserId != null && viewerUserId.isNotEmpty) {
+      path +=
+          '?viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}';
+    }
+    final result = await _request(path);
     return Post.fromJson(result['data']);
+  }
+
+  /// 举报动态
+  static Future<void> reportPost({
+    required String postId,
+    required String reporterUserId,
+    required String reason,
+  }) async {
+    await _request(
+      '/api/posts/$postId/report',
+      method: 'POST',
+      body: {
+        'reporter_user_id': reporterUserId,
+        'reason': reason,
+      },
+    );
   }
 
   // 创建帖子
@@ -955,6 +988,70 @@ class ApiService {
   static Future<String> uploadImage(File image) async {
     final info = await uploadImageInfo(image);
     return info['url'] as String;
+  }
+
+  /// 上传内存中的图片字节（如手绘缩略图 PNG）
+  static Future<String> uploadImageBytes(
+    Uint8List bytes, {
+    String filename = 'upload.png',
+  }) async {
+    final info = await uploadImageBytesInfo(bytes, filename: filename);
+    return info['url'] as String;
+  }
+
+  static Future<Map<String, dynamic>> uploadImageBytesInfo(
+    Uint8List bytes, {
+    String filename = 'upload.png',
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/upload');
+
+    Future<Map<String, dynamic>> doUpload(http.Client client) async {
+      final request = http.MultipartRequest('POST', uri);
+      request.headers['Connection'] = 'close';
+      final token = _currentToken;
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: filename,
+        ),
+      );
+      _log('📤 Upload bytes: len=${bytes.length} uri=$uri');
+      final streamedResponse = await client
+          .send(request)
+          .timeout(const Duration(seconds: 90));
+      final response = await http.Response.fromStream(streamedResponse);
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body) as Map<String, dynamic>;
+        if (result['success'] == true) {
+          return result['data'] as Map<String, dynamic>;
+        }
+        throw ApiException(
+            result['message'] ?? '上传失败', result['code'] ?? response.statusCode);
+      }
+      if (response.statusCode == 413) {
+        throw ApiException('图片太大，上传被拒绝(413)', 413);
+      }
+      throw ApiException('上传失败，状态码：${response.statusCode}', response.statusCode);
+    }
+
+    try {
+      final client = http.Client();
+      try {
+        return await doUpload(client);
+      } on SocketException catch (e) {
+        _log('📤 upload bytes retry after: $e');
+        return await doUpload(client);
+      } finally {
+        client.close();
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(e.toString());
+    }
   }
 
   /// 上传图片并返回后端的 ImageInfo（包含 filename/url/size/created_at）

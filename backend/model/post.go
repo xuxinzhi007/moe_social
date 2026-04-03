@@ -12,6 +12,12 @@ type Post struct {
 	UserID    uint           `gorm:"not null;index" json:"user_id"`     // 用户ID
 	Content   string         `gorm:"type:text;not null" json:"content"` // 帖子内容
 	Images    string         `gorm:"type:text" json:"images"`           // 图片URL列表，JSON格式
+	// 手绘卡片 JSON（列表接口不下发，仅详情/作者端需要）
+	HandDrawCard string `gorm:"type:longtext" json:"hand_draw_card"`
+	// 列表缩略图 URL（静态图，减轻列表体积）
+	HandDrawThumbURL string `gorm:"type:text" json:"hand_draw_thumb_url"`
+	// 审核状态：ok | pending | rejected；手绘帖创建时为 pending
+	ModerationStatus string `gorm:"size:32;default:ok;index" json:"moderation_status"`
 	Likes     int            `gorm:"default:0" json:"likes"`            // 点赞数
 	Comments  int            `gorm:"default:0" json:"comments"`         // 评论数
 	CreatedAt time.Time      `json:"created_at"`

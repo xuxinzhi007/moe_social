@@ -8,7 +8,13 @@ import 'like_state_manager.dart';
 class PostService {
   // 获取所有帖子（支持分页），并同步全局状态
   static Future<Map<String, dynamic>> getPosts({int page = 1, int pageSize = 10}) async {
-    final result = await ApiService.getPosts(page: page, pageSize: pageSize);
+    final viewer =
+        AuthService.isLoggedIn ? (AuthService.currentUser ?? '') : '';
+    final result = await ApiService.getPosts(
+      page: page,
+      pageSize: pageSize,
+      viewerUserId: viewer.isEmpty ? null : viewer,
+    );
     List<Post> posts = result['posts'];
 
     // 同步到全局状态管理器，确保 UI 实时响应
@@ -40,20 +46,22 @@ class PostService {
   // 获取单个帖子
   static Future<Post?> getPostById(String id) async {
     try {
-      var post = await ApiService.getPostById(id);
-      
-      if (post != null) {
-        if (AuthService.isLoggedIn) {
-          final localLiked = await AuthService.getLikeStatus(id);
-          if (localLiked != null) {
-             post = post.copyWith(isLiked: localLiked);
-             LikeStateManager().syncState(post.id, localLiked, post.likes);
-             return post;
-          }
+      final viewer =
+          AuthService.isLoggedIn ? (AuthService.currentUser ?? '') : '';
+      var post = await ApiService.getPostById(
+        id,
+        viewerUserId: viewer.isEmpty ? null : viewer,
+      );
+
+      if (AuthService.isLoggedIn) {
+        final localLiked = await AuthService.getLikeStatus(id);
+        if (localLiked != null) {
+          post = post.copyWith(isLiked: localLiked);
+          LikeStateManager().syncState(post.id, localLiked, post.likes);
+          return post;
         }
-        // 同步到全局状态管理器
-        LikeStateManager().syncState(post.id, post.isLiked, post.likes);
       }
+      LikeStateManager().syncState(post.id, post.isLiked, post.likes);
       return post;
     } catch (e) {
       print('Failed to get post: $e');
@@ -106,7 +114,12 @@ class PostService {
   static Future<Post> incrementComments(String postId) async {
     // 评论数会在添加评论时由后端自动更新
     // 这里不需要单独调用API
-    final post = await ApiService.getPostById(postId);
+    final viewer =
+        AuthService.isLoggedIn ? (AuthService.currentUser ?? '') : '';
+    final post = await ApiService.getPostById(
+      postId,
+      viewerUserId: viewer.isEmpty ? null : viewer,
+    );
     return post;
   }
 

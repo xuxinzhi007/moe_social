@@ -38,10 +38,12 @@ func (l *CreatePostLogic) CreatePost(req *types.CreatePostReq) (resp *types.Crea
 
 	// 调用RPC服务创建帖子
 	rpcResp, err := l.svcCtx.SuperRpcClient.CreatePost(l.ctx, &super.CreatePostReq{
-		UserId:    req.UserId,
-		Content:   req.Content,
-		Images:    req.Images,
-		TopicTags: rpcTopicTags,
+		UserId:           req.UserId,
+		Content:          req.Content,
+		Images:           req.Images,
+		TopicTags:        rpcTopicTags,
+		HandDrawCard:     req.HandDrawCard,
+		HandDrawThumbUrl: req.HandDrawThumbUrl,
 	})
 	if err != nil {
 		return &types.CreatePostResp{
@@ -63,17 +65,20 @@ func (l *CreatePostLogic) CreatePost(req *types.CreatePostReq) (resp *types.Crea
 	return &types.CreatePostResp{
 		BaseResp: common.HandleRPCError(nil, "创建帖子成功"),
 		Data: types.Post{
-			Id:         rpcResp.Post.Id,
-			UserId:     rpcResp.Post.UserId,
-			UserName:   rpcResp.Post.UserName,
-			UserAvatar: rpcResp.Post.UserAvatar,
-			Content:    rpcResp.Post.Content,
-			Images:     rpcResp.Post.Images,
-			TopicTags:  apiTopicTags,
-			Likes:      int(rpcResp.Post.Likes),
-			Comments:   int(rpcResp.Post.Comments),
-			IsLiked:    rpcResp.Post.IsLiked,
-			CreatedAt:  rpcResp.Post.CreatedAt,
+			Id:               rpcResp.Post.Id,
+			UserId:           rpcResp.Post.UserId,
+			UserName:         rpcResp.Post.UserName,
+			UserAvatar:       rpcResp.Post.UserAvatar,
+			Content:          rpcResp.Post.Content,
+			Images:           rpcResp.Post.Images,
+			TopicTags:        apiTopicTags,
+			Likes:            int(rpcResp.Post.Likes),
+			Comments:         int(rpcResp.Post.Comments),
+			IsLiked:          rpcResp.Post.IsLiked,
+			CreatedAt:        rpcResp.Post.CreatedAt,
+			HandDrawCard:     rpcResp.Post.HandDrawCard,
+			HandDrawThumbUrl: rpcResp.Post.HandDrawThumbUrl,
+			ModerationStatus: rpcResp.Post.ModerationStatus,
 		},
 	}, nil
 }

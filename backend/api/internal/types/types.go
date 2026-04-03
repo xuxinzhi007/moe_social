@@ -129,10 +129,12 @@ type CreateCommentResp struct {
 }
 
 type CreatePostReq struct {
-	UserId    string     `json:"user_id"`
-	Content   string     `json:"content"`
-	Images    []string   `json:"images,optional"`
-	TopicTags []TopicTag `json:"topic_tags,optional"`
+	UserId           string     `json:"user_id"`
+	Content          string     `json:"content"`
+	Images           []string   `json:"images,optional"`
+	TopicTags        []TopicTag `json:"topic_tags,optional"`
+	HandDrawCard     string     `json:"hand_draw_card,optional"`
+	HandDrawThumbUrl string     `json:"hand_draw_thumb_url,optional"`
 }
 
 type CreatePostResp struct {
@@ -238,6 +240,42 @@ type FollowUserReq struct {
 type FollowUserResp struct {
 	BaseResp
 	Data bool `json:"data"`
+}
+
+type FriendRelationData struct {
+	Relation string `json:"relation"`
+}
+
+type FriendRequestActionReq struct {
+	UserId    string `path:"user_id"`
+	RequestId string `path:"request_id"`
+}
+
+type FriendRequestActionResp struct {
+	BaseResp
+	Data bool `json:"data"`
+}
+
+type FriendRequestView struct {
+	Id        string `json:"id"`
+	FromUser  User   `json:"from_user"`
+	ToUser    User   `json:"to_user"`
+	Status    string `json:"status"`
+	CreatedAt string `json:"created_at"`
+}
+
+type FriendStatusPathReq struct {
+	UserId      string `path:"user_id"`
+	OtherUserId string `path:"other_user_id"`
+}
+
+type FriendStatusResp struct {
+	BaseResp
+	Data FriendRelationData `json:"data"`
+}
+
+type FriendUserPathReq struct {
+	UserId string `path:"user_id"`
 }
 
 type GetAvatarOutfitReq struct {
@@ -376,7 +414,8 @@ type GetPostCommentsResp struct {
 }
 
 type GetPostReq struct {
-	PostId string `path:"post_id"`
+	PostId       string `path:"post_id"`
+	ViewerUserId string `form:"viewer_user_id,optional"`
 }
 
 type GetPostResp struct {
@@ -385,8 +424,9 @@ type GetPostResp struct {
 }
 
 type GetPostsReq struct {
-	Page     int `form:"page,default=1"`
-	PageSize int `form:"page_size,default=10"`
+	Page         int    `form:"page,default=1"`
+	PageSize     int    `form:"page_size,default=10"`
+	ViewerUserId string `form:"viewer_user_id,optional"`
 }
 
 type GetPostsResp struct {
@@ -596,6 +636,16 @@ type LikePostResp struct {
 	Data Post `json:"data"`
 }
 
+type ListFriendRequestsResp struct {
+	BaseResp
+	Data []FriendRequestView `json:"data"`
+}
+
+type ListFriendsResp struct {
+	BaseResp
+	Data []User `json:"data"`
+}
+
 type LlmChatReq struct {
 	Model    string       `json:"model"`
 	Messages []LlmMessage `json:"messages"`
@@ -666,17 +716,20 @@ type OutfitPart struct {
 }
 
 type Post struct {
-	Id         string     `json:"id"`
-	UserId     string     `json:"user_id"`
-	UserName   string     `json:"user_name"`
-	UserAvatar string     `json:"user_avatar"`
-	Content    string     `json:"content"`
-	Images     []string   `json:"images"`
-	TopicTags  []TopicTag `json:"topic_tags"`
-	Likes      int        `json:"likes"`
-	Comments   int        `json:"comments"`
-	IsLiked    bool       `json:"is_liked"`
-	CreatedAt  string     `json:"created_at"`
+	Id               string     `json:"id"`
+	UserId           string     `json:"user_id"`
+	UserName         string     `json:"user_name"`
+	UserAvatar       string     `json:"user_avatar"`
+	Content          string     `json:"content"`
+	Images           []string   `json:"images"`
+	TopicTags        []TopicTag `json:"topic_tags"`
+	Likes            int        `json:"likes"`
+	Comments         int        `json:"comments"`
+	IsLiked          bool       `json:"is_liked"`
+	CreatedAt        string     `json:"created_at"`
+	HandDrawCard     string     `json:"hand_draw_card,optional"`
+	HandDrawThumbUrl string     `json:"hand_draw_thumb_url,optional"`
+	ModerationStatus string     `json:"moderation_status,optional"`
 }
 
 type PurchaseAvatarOutfitReq struct {
@@ -730,6 +783,16 @@ type RegisterResp struct {
 	Data User `json:"data"`
 }
 
+type ReportPostReq struct {
+	PostId         string `path:"post_id"`
+	ReporterUserId string `json:"reporter_user_id"`
+	Reason         string `json:"reason"`
+}
+
+type ReportPostResp struct {
+	BaseResp
+}
+
 type ResetPasswordReq struct {
 	Email       string `json:"email"`
 	NewPassword string `json:"new_password"`
@@ -743,6 +806,17 @@ type SendBatchNotificationReq struct {
 	UserIDs []string    `json:"user_ids"`
 	Type    string      `json:"type"`
 	Data    interface{} `json:"data"`
+}
+
+type SendFriendRequestReq struct {
+	UserId   string `path:"user_id"`
+	ToUserId string `json:"to_user_id,optional"`
+	ToMoeNo  string `json:"to_moe_no,optional"`
+}
+
+type SendFriendRequestResp struct {
+	BaseResp
+	Data FriendRequestView `json:"data"`
 }
 
 type SendNotificationReq struct {
@@ -877,63 +951,6 @@ type User struct {
 	Balance         float64 `json:"balance"`
 	Inventory       string  `json:"inventory"`
 	EquippedFrameId string  `json:"equipped_frame_id"`
-}
-
-type FriendRequestView struct {
-	Id        string `json:"id"`
-	FromUser  User   `json:"from_user"`
-	ToUser    User   `json:"to_user"`
-	Status    string `json:"status"`
-	CreatedAt string `json:"created_at"`
-}
-
-type SendFriendRequestReq struct {
-	UserId   string `path:"user_id"`
-	ToUserId string `json:"to_user_id,optional"`
-	ToMoeNo  string `json:"to_moe_no,optional"`
-}
-
-type SendFriendRequestResp struct {
-	BaseResp
-	Data FriendRequestView `json:"data"`
-}
-
-type ListFriendRequestsResp struct {
-	BaseResp
-	Data []FriendRequestView `json:"data"`
-}
-
-type FriendRequestActionReq struct {
-	UserId    string `path:"user_id"`
-	RequestId string `path:"request_id"`
-}
-
-type FriendRequestActionResp struct {
-	BaseResp
-	Data bool `json:"data"`
-}
-
-type ListFriendsResp struct {
-	BaseResp
-	Data []User `json:"data"`
-}
-
-type FriendRelationData struct {
-	Relation string `json:"relation"` // none | friend | pending_out | pending_in
-}
-
-type FriendStatusResp struct {
-	BaseResp
-	Data FriendRelationData `json:"data"`
-}
-
-type FriendUserPathReq struct {
-	UserId string `path:"user_id"`
-}
-
-type FriendStatusPathReq struct {
-	UserId      string `path:"user_id"`
-	OtherUserId string `path:"other_user_id"`
 }
 
 type UserAvatar struct {
