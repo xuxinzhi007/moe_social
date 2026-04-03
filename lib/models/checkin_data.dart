@@ -7,7 +7,6 @@ class CheckInData {
   final int consecutiveDays;
   final bool levelUp;
   final String specialReward;
-  final List<String> newlyUnlockedBadgeIds;
 
   CheckInData({
     required this.expGained,
@@ -15,23 +14,16 @@ class CheckInData {
     required this.consecutiveDays,
     this.levelUp = false,
     this.specialReward = '',
-    this.newlyUnlockedBadgeIds = const [],
   });
 
   /// 从JSON创建CheckInData对象
   factory CheckInData.fromJson(Map<String, dynamic> json) {
-    final raw = json['newly_unlocked_badge_ids'];
-    List<String> ids = const [];
-    if (raw is List) {
-      ids = raw.map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
-    }
     return CheckInData(
       expGained: json['exp_gained'] ?? 0,
       newLevel: json['new_level'] ?? 1,
       consecutiveDays: json['consecutive_days'] ?? 1,
       levelUp: json['level_up'] ?? false,
       specialReward: json['special_reward'] ?? '',
-      newlyUnlockedBadgeIds: ids,
     );
   }
 
@@ -43,7 +35,6 @@ class CheckInData {
       'consecutive_days': consecutiveDays,
       'level_up': levelUp,
       'special_reward': specialReward,
-      'newly_unlocked_badge_ids': newlyUnlockedBadgeIds,
     };
   }
 
@@ -64,7 +55,6 @@ class CheckInData {
     int? consecutiveDays,
     bool? levelUp,
     String? specialReward,
-    List<String>? newlyUnlockedBadgeIds,
   }) {
     return CheckInData(
       expGained: expGained ?? this.expGained,
@@ -72,8 +62,6 @@ class CheckInData {
       consecutiveDays: consecutiveDays ?? this.consecutiveDays,
       levelUp: levelUp ?? this.levelUp,
       specialReward: specialReward ?? this.specialReward,
-      newlyUnlockedBadgeIds:
-          newlyUnlockedBadgeIds ?? this.newlyUnlockedBadgeIds,
     );
   }
 
@@ -104,8 +92,7 @@ class CheckInData {
   @override
   String toString() {
     return 'CheckInData(expGained: $expGained, newLevel: $newLevel, '
-           'consecutiveDays: $consecutiveDays, levelUp: $levelUp, specialReward: $specialReward, '
-           'newlyUnlockedBadgeIds: $newlyUnlockedBadgeIds)';
+           'consecutiveDays: $consecutiveDays, levelUp: $levelUp, specialReward: $specialReward)';
   }
 
   @override
@@ -116,8 +103,7 @@ class CheckInData {
         other.newLevel == newLevel &&
         other.consecutiveDays == consecutiveDays &&
         other.levelUp == levelUp &&
-        other.specialReward == specialReward &&
-        _listEq(other.newlyUnlockedBadgeIds, newlyUnlockedBadgeIds);
+        other.specialReward == specialReward;
   }
 
   @override
@@ -126,15 +112,6 @@ class CheckInData {
         newLevel.hashCode ^
         consecutiveDays.hashCode ^
         levelUp.hashCode ^
-        specialReward.hashCode ^
-        Object.hashAll(newlyUnlockedBadgeIds);
+        specialReward.hashCode;
   }
-}
-
-bool _listEq(List<String> a, List<String> b) {
-  if (a.length != b.length) return false;
-  for (var i = 0; i < a.length; i++) {
-    if (a[i] != b[i]) return false;
-  }
-  return true;
 }
