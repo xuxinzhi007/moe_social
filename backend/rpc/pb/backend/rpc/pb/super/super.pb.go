@@ -3944,7 +3944,6 @@ type GetPostCommentsReq struct {
 	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
 	Page          int32                  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
 	PageSize      int32                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	ViewerUserId  string                 `protobuf:"bytes,4,opt,name=viewer_user_id,json=viewerUserId,proto3" json:"viewer_user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3998,13 +3997,6 @@ func (x *GetPostCommentsReq) GetPageSize() int32 {
 		return x.PageSize
 	}
 	return 0
-}
-
-func (x *GetPostCommentsReq) GetViewerUserId() string {
-	if x != nil {
-		return x.ViewerUserId
-	}
-	return ""
 }
 
 // 获取帖子评论响应
@@ -8057,12 +8049,11 @@ const file_super_proto_rawDesc = "" +
 	"\apost_id\x18\x01 \x01(\tR\x06postId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\"/\n" +
 	"\fLikePostResp\x12\x1f\n" +
-	"\x04post\x18\x01 \x01(\v2\v.super.PostR\x04post\"\x84\x01\n" +
+	"\x04post\x18\x01 \x01(\v2\v.super.PostR\x04post\"^\n" +
 	"\x12GetPostCommentsReq\x12\x17\n" +
 	"\apost_id\x18\x01 \x01(\tR\x06postId\x12\x12\n" +
 	"\x04page\x18\x02 \x01(\x05R\x04page\x12\x1b\n" +
-	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12$\n" +
-	"\x0eviewer_user_id\x18\x04 \x01(\tR\fviewerUserId\"W\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"W\n" +
 	"\x13GetPostCommentsResp\x12*\n" +
 	"\bcomments\x18\x01 \x03(\v2\x0e.super.CommentR\bcomments\x12\x14\n" +
 	"\x05total\x18\x02 \x01(\x05R\x05total\"\xf3\x01\n" +

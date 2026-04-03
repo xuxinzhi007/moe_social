@@ -101,12 +101,6 @@ func (l *GetPostLogic) GetPost(in *super.GetPostReq) (*super.GetPostResp, error)
 		})
 	}
 	
-	isLiked := false
-	if viewerUID > 0 {
-		liked := LikedTargetIDSet(l.svcCtx.DB, viewerUID, "post", []uint{post.ID})
-		isLiked = liked[post.ID]
-	}
-
 	// 构建响应
 	return &super.GetPostResp{
 		Post: &super.Post{
@@ -119,7 +113,7 @@ func (l *GetPostLogic) GetPost(in *super.GetPostReq) (*super.GetPostResp, error)
 			TopicTags:         topicTags,
 			Likes:             int32(post.Likes),
 			Comments:          int32(post.Comments),
-			IsLiked:           isLiked,
+			IsLiked:           false,
 			CreatedAt:         post.CreatedAt.Format("2006-01-02 15:04:05"),
 			HandDrawCard:      post.HandDrawCard,
 			HandDrawThumbUrl:  post.HandDrawThumbURL,
