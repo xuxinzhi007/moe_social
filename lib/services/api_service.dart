@@ -15,6 +15,7 @@ import '../models/checkin_status.dart';
 import '../models/checkin_record.dart';
 import '../models/checkin_data.dart';
 import '../models/exp_log.dart';
+import 'remote_api_config_service.dart';
 
 // 自定义异常类，用于传递错误信息
 class ApiException implements Exception {
@@ -110,17 +111,33 @@ class ApiService {
   /// 是否输出“超详细”日志（会非常吵；默认关闭）
   static const bool _verboseApiLog = true;
 
-  // 生产环境地址（cpolar隧道）
+  // 生产环境地址（cpolar隧道）——仅作兜底；正式包可在启动时从远端 JSON 覆盖，见 [initRemoteProductionBaseUrl]。
   static const String _productionUrl = 'http://7da36c26.r3.cpolar.top';
 
   // 开发环境地址
   static const String _developmentUrl = 'http://localhost:8888';
 
+  /// 生产环境下由 [initRemoteProductionBaseUrl] 写入；未初始化前为 null，[baseUrl] 用 [_productionUrl]。
+  static String? _runtimeProductionBaseUrl;
+
+  /// 在 [main] 里 `WidgetsFlutterBinding` 之后、`AuthService.init` 之前调用一次。
+  /// 仅当 [_isProduction] 为 true 时会请求 [RemoteApiConfigService]；失败则用本地缓存或 [_productionUrl]。
+  static Future<void> initRemoteProductionBaseUrl() async {
+    if (!_isProduction) {
+      _runtimeProductionBaseUrl = null;
+      return;
+    }
+    _runtimeProductionBaseUrl =
+        await RemoteApiConfigService.resolveProductionBaseUrl(
+      fallbackBakedUrl: _productionUrl,
+    );
+  }
+
   // 根据环境和平台自动选择API地址
   static String get baseUrl {
     // 如果设置为生产环境，直接返回生产地址
     if (_isProduction) {
-      return _productionUrl;
+      return _runtimeProductionBaseUrl ?? _productionUrl;
     }
 
     // 开发环境根据平台选择

@@ -56,6 +56,9 @@ void main() async {
     // 确保Flutter绑定已初始化（必须在zone内部）
     WidgetsFlutterBinding.ensureInitialized();
 
+    // 生产包：从稳定托管的 JSON 拉取当前 API 域名（隧道变更无需重打包）
+    await ApiService.initRemoteProductionBaseUrl();
+
     // 初始化认证服务，从持久化存储加载登录状态
     await AuthService.init();
     // 登录态已恢复后，立即启动 WebSocket（在线/私信）
