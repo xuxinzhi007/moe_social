@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../pages/chat/direct_chat_page.dart';
+import '../utils/media_url.dart';
 
 /// 消息通知组件 - 类似 iOS 的通知样式
 class MessageNotification {
@@ -27,11 +28,12 @@ class MessageNotification {
       return;
     }
 
+    final resolvedAvatar = resolveMediaUrl(avatarUrl);
     _overlayEntry = OverlayEntry(
       builder: (context) => _MessageNotificationWidget(
         senderName: senderName,
         message: message,
-        avatarUrl: avatarUrl,
+        avatarUrl: resolvedAvatar,
         senderId: senderId,
       ),
     );

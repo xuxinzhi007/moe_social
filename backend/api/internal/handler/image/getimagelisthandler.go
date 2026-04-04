@@ -49,15 +49,6 @@ func GetImageListHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		base := strings.TrimRight(strings.TrimSpace(svcCtx.Config.Image.PublicBaseUrl), "/")
-		if base == "" {
-			scheme := "http"
-			if r.TLS != nil {
-				scheme = "https"
-			}
-			base = fmt.Sprintf("%s://%s", scheme, r.Host)
-		}
-
 		imageInfos := make([]types.ImageInfo, 0, len(files))
 		for _, f := range files {
 			if f.IsDir() {
@@ -72,7 +63,7 @@ func GetImageListHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			imageInfos = append(imageInfos, types.ImageInfo{
 				Id:        key,
 				Filename:  key,
-				Url:       fmt.Sprintf("%s/api/images/%s", base, key),
+				Url:       fmt.Sprintf("/api/images/%s", key),
 				Size:      info.Size(),
 				CreatedAt: info.ModTime().Format("2006-01-02 15:04:05"),
 			})

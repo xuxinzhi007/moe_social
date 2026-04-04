@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
+import '../../utils/media_url.dart';
 
 class VoiceCallInitiationPage extends StatefulWidget {
   final String receiverId;
@@ -98,7 +99,9 @@ class _VoiceCallInitiationPageState extends State<VoiceCallInitiationPage> {
           const SizedBox(height: 32),
           CircleAvatar(
             radius: 80,
-            backgroundImage: NetworkImage(widget.receiverAvatar),
+            backgroundImage: widget.receiverAvatar.isNotEmpty
+                ? NetworkImage(resolveMediaUrl(widget.receiverAvatar))
+                : null,
             onBackgroundImageError: (_, __) {},
             child: widget.receiverAvatar.isEmpty
                 ? const Icon(Icons.person, size: 80, color: Colors.white)

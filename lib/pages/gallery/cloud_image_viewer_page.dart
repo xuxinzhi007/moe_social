@@ -10,6 +10,7 @@ import 'package:photo_view/photo_view_gallery.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../utils/error_handler.dart';
+import '../../utils/media_url.dart';
 
 class CloudImageViewerPage extends StatefulWidget {
   const CloudImageViewerPage({
@@ -70,6 +71,7 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
     final url = image['url']?.toString() ?? '';
     final filename = image['filename']?.toString() ?? 'image_$_index.jpg';
     if (url.isEmpty) return;
+    final resolvedUrl = resolveMediaUrl(url);
 
     setState(() => _downloading = true);
     try {
@@ -79,7 +81,7 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
 
       final dio = Dio();
       await dio.download(
-        url,
+        resolvedUrl,
         path,
         options: Options(
           receiveTimeout: const Duration(seconds: 60),
@@ -134,11 +136,12 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
               builder: (context, i) {
                 final image = widget.images[i] as Map;
                 final url = image['url']?.toString() ?? '';
+                final displayUrl = resolveMediaUrl(url);
                 final heroTag = 'cloud_image_$i';
 
                 return PhotoViewGalleryPageOptions(
                   heroAttributes: PhotoViewHeroAttributes(tag: heroTag),
-                  imageProvider: CachedNetworkImageProvider(url),
+                  imageProvider: CachedNetworkImageProvider(displayUrl),
                   minScale: PhotoViewComputedScale.contained,
                   maxScale: PhotoViewComputedScale.covered * 4.0,
                   errorBuilder: (context, error, stackTrace) {

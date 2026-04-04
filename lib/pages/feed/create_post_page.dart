@@ -17,6 +17,7 @@ import '../../models/hand_draw_card.dart';
 import 'hand_draw_editor_page.dart';
 import '../../widgets/hand_draw/hand_draw_card_view.dart';
 import '../../utils/hand_draw_raster.dart';
+import '../../utils/media_url.dart';
 
 class CreatePostPage extends StatefulWidget {
   const CreatePostPage({super.key});
@@ -365,7 +366,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
                         ...List.generate(_selectedImageUrls.length, (index) {
                           final urlIndex = index + _selectedImages.length;
                           return _buildPolaroidImage(
-                            imageProvider: NetworkImage(_selectedImageUrls[index]),
+                            imageProvider: NetworkImage(
+                              resolveMediaUrl(_selectedImageUrls[index]),
+                            ),
                             onRemove: () => _removeImage(urlIndex),
                           );
                         }),
