@@ -45,6 +45,9 @@ func applyUnifiedConfigOverrides(c *config.Config) {
 		// go-zero RestConf 的 Timeout 通常为毫秒单位的 int64
 		c.Timeout = timeoutMs
 	}
+	if u := v.GetString("app_client.public_api_base_url"); u != "" {
+		c.AppClient.PublicApiBaseUrl = u
+	}
 }
 
 func main() {

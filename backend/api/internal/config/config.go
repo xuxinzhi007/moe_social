@@ -25,6 +25,14 @@ type Config struct {
 
 	// 本地“云空间”配置（图片上传落盘）
 	Image ImageConf `json:"Image" yaml:"Image"`
+
+	// 客户端拉取的「公网 API 根地址」（由 backend/config/config.yaml 的 app_client 注入）
+	AppClient AppClientConf `json:"AppClient" yaml:"AppClient"`
+}
+
+type AppClientConf struct {
+	// PublicApiBaseUrl 例如 http://xxx.r3.cpolar.top（不要尾斜杠）
+	PublicApiBaseUrl string `json:"PublicApiBaseUrl" yaml:"PublicApiBaseUrl"`
 }
 
 type OllamaConf struct {
