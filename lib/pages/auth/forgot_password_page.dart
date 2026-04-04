@@ -4,6 +4,7 @@ import '../../services/api_service.dart';
 import '../../utils/validators.dart';
 import '../../models/user.dart';
 import '../../widgets/fade_in_up.dart';
+import '../../utils/media_url.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -80,10 +81,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   child: CircleAvatar(
                     radius: 36,
                     backgroundColor: Colors.grey[200],
-                    backgroundImage: user.avatar != null && user.avatar!.isNotEmpty
-                        ? NetworkImage(user.avatar!)
+                    backgroundImage: user.avatar.isNotEmpty
+                        ? NetworkImage(resolveMediaUrl(user.avatar))
                         : null,
-                    child: user.avatar == null || user.avatar!.isEmpty
+                    child: user.avatar.isEmpty
                         ? Text(
                             user.username.substring(0, 1).toUpperCase(),
                             style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF7F7FD5)),

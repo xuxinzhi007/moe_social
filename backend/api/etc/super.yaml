@@ -6,7 +6,8 @@ Timeout: 600000
 
 Auth:
   AccessSecret: "u8K9x2L1n4Q7v5Z0m3P6r9Y2b5X8j1W4"
-  AccessExpire: 86400
+  # 与 backend/utils/jwt.go 中 jwtExpireTime 一致：5 天（秒）
+  AccessExpire: 432000
 
 Agora:
   AppId: "40f005107bf94a8fb09a17aabdcdf329"

@@ -15,6 +15,8 @@ import '../models/checkin_status.dart';
 import '../models/checkin_record.dart';
 import '../models/checkin_data.dart';
 import '../models/exp_log.dart';
+import 'remote_api_config_service.dart';
+import '../utils/jwt_exp.dart';
 
 // 自定义异常类，用于传递错误信息
 class ApiException implements Exception {
@@ -110,17 +112,33 @@ class ApiService {
   /// 是否输出“超详细”日志（会非常吵；默认关闭）
   static const bool _verboseApiLog = true;
 
-  // 生产环境地址（cpolar隧道）
-  static const String _productionUrl = 'http://7ab91766.r3.cpolar.top';
+  // 生产环境地址（cpolar隧道）——仅作兜底；正式包可在启动时从远端 JSON 覆盖，见 [initRemoteProductionBaseUrl]。
+  static const String _productionUrl = 'http://7da36c26.r3.cpolar.top';
 
   // 开发环境地址
   static const String _developmentUrl = 'http://localhost:8888';
+
+  /// 生产环境下由 [initRemoteProductionBaseUrl] 写入；未初始化前为 null，[baseUrl] 用 [_productionUrl]。
+  static String? _runtimeProductionBaseUrl;
+
+  /// 在 [main] 里 `WidgetsFlutterBinding` 之后、`AuthService.init` 之前调用一次。
+  /// 仅当 [_isProduction] 为 true 时会请求 [RemoteApiConfigService]；失败则用本地缓存或 [_productionUrl]。
+  static Future<void> initRemoteProductionBaseUrl() async {
+    if (!_isProduction) {
+      _runtimeProductionBaseUrl = null;
+      return;
+    }
+    _runtimeProductionBaseUrl =
+        await RemoteApiConfigService.resolveProductionBaseUrl(
+      fallbackBakedUrl: _productionUrl,
+    );
+  }
 
   // 根据环境和平台自动选择API地址
   static String get baseUrl {
     // 如果设置为生产环境，直接返回生产地址
     if (_isProduction) {
-      return _productionUrl;
+      return _runtimeProductionBaseUrl ?? _productionUrl;
     }
 
     // 开发环境根据平台选择
@@ -130,10 +148,10 @@ class ApiService {
     } else if (Platform.isAndroid) {
       // Android真机需要使用电脑IP或生产环境地址
       // 如果本地连接有问题，可以临时使用生产环境地址
-      // return 'http://7ab91766.r3.cpolar.top'; // 使用生产环境
+      // return 'http://7da36c26.r3.cpolar.top'; // 使用生产环境
       // 或者使用电脑IP（需要根据实际情况修改）
       // return 'http://192.168.1.16:8888'; // 替换为你的电脑IP
-      return 'http://7ab91766.r3.cpolar.top'; // Android模拟器使用这个
+      return 'http://7da36c26.r3.cpolar.top'; // Android模拟器使用这个
     } else if (Platform.isIOS) {
       // iOS模拟器使用localhost，真机需要使用电脑IP
       return _developmentUrl; // iOS模拟器
@@ -144,6 +162,9 @@ class ApiService {
   // 刷新token的端点
   static const String _refreshTokenEndpoint = '/api/user/refresh-token';
 
+  /// 距离过期不足此时长则先发制人调用刷新（当前 token 仍须有效，后端才会签发新 token）
+  static const Duration _proactiveRefreshThreshold = Duration(hours: 6);
+
   // 防止并发刷新token
   static bool _isRefreshing = false;
   // 等待刷新token的请求队列（当前实现未使用，先移除避免日志/分析噪音）
@@ -152,10 +173,16 @@ class ApiService {
   static Future<Map<String, dynamic>> _request(String path,
       {String method = 'GET', dynamic body}) async {
     try {
+      if (path != '/api/user/login' &&
+          path != _refreshTokenEndpoint &&
+          _currentToken != null &&
+          _currentToken!.isNotEmpty) {
+        await _proactiveRefreshIfNeeded();
+      }
       final result = await _performRequest(path, method, body);
       return result;
     } on ApiException catch (e) {
-      if (path == '/api/user/login') {
+      if (path == '/api/user/login' || path == _refreshTokenEndpoint) {
         rethrow;
       }
 
@@ -356,6 +383,21 @@ class ApiService {
     }
   }
 
+  /// 在 token 仍有效、且剩余时间不足 [_proactiveRefreshThreshold] 时刷新，减少用到一半突然 401 的概率。
+  static Future<void> _proactiveRefreshIfNeeded() async {
+    if (_isRefreshing) return;
+    final token = _currentToken;
+    if (token == null || token.isEmpty) return;
+    final exp = decodeJwtExpUnixSeconds(token);
+    if (exp == null) return;
+    final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final remaining = exp - nowSec;
+    if (remaining > _proactiveRefreshThreshold.inSeconds) return;
+    if (remaining <= 0) return;
+    _log('⏰ Token 剩余 ${remaining}s，尝试主动刷新');
+    await _refreshToken();
+  }
+
   // 刷新token
   static Future<String?> _refreshToken() async {
     // 如果正在刷新token，等待刷新完成
@@ -382,9 +424,10 @@ class ApiService {
       }
 
       final response = await http.post(uri, headers: headers);
+      final bodyText = _decodeUtf8Body(response);
 
       if (response.statusCode == 200) {
-        final result = json.decode(response.body) as Map<String, dynamic>;
+        final result = json.decode(bodyText) as Map<String, dynamic>;
         final success = result['success'] as bool? ?? true;
         if (!success) {
           final code = result['code'];

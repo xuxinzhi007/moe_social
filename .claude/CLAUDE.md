@@ -40,9 +40,7 @@ Go(go-zero)
 
 ### 生成代码与一致性
 
-- 修改 `backend/api/super.api` 或 `backend/rpc/super.proto` 后，必须运行 goctl/脚本重新生成，保证生成代码与定义一致：
-  - RPC：`cd backend && bash generate_rpc.sh`
-  - API：`cd backend/api && bash generate_api.sh`
+- 修改 `backend/api/super.api` 或 `backend/rpc/super.proto` 后，必须重新生成代码，保证生成代码与定义一致：在 `backend` 下执行 `make gen`（或 `make gen-rpc` / `make gen-api`）。
 
 ### 安全与仓库卫生（强制）
 
@@ -60,5 +58,6 @@ Flutter
 
 Backend
 - 下载依赖：`cd backend && go mod download`
+- 生成代码（改 `super.api` / `super.proto` 后）：`cd backend && make gen`
 - 运行 RPC：`cd backend/rpc && go run super.go -f etc/super.yaml`
 - 运行 API：`cd backend/api && go run super.go -f etc/super.yaml`

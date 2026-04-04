@@ -56,7 +56,7 @@ class _SettingsPageState extends State<SettingsPage> {
               MapEntry('设备ID', provider.deviceId.isEmpty ? '未生成' : provider.deviceId),
               MapEntry('设备类型', provider.deviceType.isEmpty ? '未知' : provider.deviceType),
               MapEntry('系统版本', provider.osVersion.isEmpty ? '未知' : provider.osVersion),
-              MapEntry('应用版本', provider.version.isEmpty ? '未知' : 'v${provider.version}'),
+              MapEntry('应用版本', provider.versionDisplayLabel),
               MapEntry(
                 '屏幕分辨率',
                 '${size.width.toStringAsFixed(0)} x ${size.height.toStringAsFixed(0)}',
@@ -773,7 +773,10 @@ class _SettingsPageState extends State<SettingsPage> {
                   onTap: () {
                     UpdateService.checkUpdate(context, showNoUpdateToast: true);
                   },
-                  trailing: Text('v${deviceInfo.version}', style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                  trailing: Text(
+                    deviceInfo.versionDisplayLabel,
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
                 ),
                 MoeMenuItem(
                   icon: Icons.feedback_outlined,

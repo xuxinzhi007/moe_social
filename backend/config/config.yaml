@@ -16,6 +16,11 @@ ollama:
   # 后端请求 Ollama 的超时（秒）
   timeout_seconds: 300
 
+# 移动端 / 生产包拉取的 API 根地址（与 cpolar 公网一致即可）
+# 修改后重启 backend/api 进程即生效；客户端下次冷启动会请求 GET /api/public/client-config
+app_client:
+  public_api_base_url: "http://7da36c26.r3.cpolar.top"
+
 database:
   host: "127.0.0.1"
   port: 3306

@@ -28,6 +28,19 @@ class _LoginPageState extends State<LoginPage> {
 
   final Color _primaryColor = const Color(0xFF7F7FD5);
 
+  @override
+  void initState() {
+    super.initState();
+    _prefillLastAccount();
+  }
+
+  /// 仅预填「上次登录成功」保存的账号，失败登录不会写入本地
+  Future<void> _prefillLastAccount() async {
+    final acc = await AuthService.getLastLoginAccount();
+    if (!mounted || acc == null || acc.isEmpty) return;
+    _emailController.text = acc;
+  }
+
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 

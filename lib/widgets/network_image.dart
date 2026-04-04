@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import '../utils/media_url.dart';
+
 /// 统一的网络图片组件
 /// 自动处理加载状态、错误处理和占位图
 class NetworkImageWidget extends StatelessWidget {
@@ -25,8 +27,11 @@ class NetworkImageWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolved =
+        imageUrl.isEmpty ? '' : resolveMediaUrl(imageUrl);
+    final effective = resolved.isEmpty ? imageUrl : resolved;
     Widget imageWidget = CachedNetworkImage(
-      imageUrl: imageUrl,
+      imageUrl: effective,
       width: width,
       height: height,
       fit: fit,
