@@ -24,7 +24,5 @@ func NewRejectFriendRequestLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *RejectFriendRequestLogic) RejectFriendRequest(in *super.RejectFriendRequestReq) (*super.RejectFriendRequestResp, error) {
-	// todo: add your logic here and delete this line
-
-	return &super.RejectFriendRequestResp{}, nil
+	return NewFriendRelationLogic(l.ctx, l.svcCtx).RejectFriendRequest(in)
 }

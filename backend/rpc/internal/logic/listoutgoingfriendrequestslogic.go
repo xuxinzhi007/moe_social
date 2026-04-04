@@ -24,7 +24,5 @@ func NewListOutgoingFriendRequestsLogic(ctx context.Context, svcCtx *svc.Service
 }
 
 func (l *ListOutgoingFriendRequestsLogic) ListOutgoingFriendRequests(in *super.ListOutgoingFriendRequestsReq) (*super.ListOutgoingFriendRequestsResp, error) {
-	// todo: add your logic here and delete this line
-
-	return &super.ListOutgoingFriendRequestsResp{}, nil
+	return NewFriendRelationLogic(l.ctx, l.svcCtx).ListOutgoingFriendRequests(in)
 }

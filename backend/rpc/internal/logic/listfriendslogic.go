@@ -24,7 +24,5 @@ func NewListFriendsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ListF
 }
 
 func (l *ListFriendsLogic) ListFriends(in *super.ListFriendsReq) (*super.ListFriendsResp, error) {
-	// todo: add your logic here and delete this line
-
-	return &super.ListFriendsResp{}, nil
+	return NewFriendRelationLogic(l.ctx, l.svcCtx).ListFriends(in)
 }
