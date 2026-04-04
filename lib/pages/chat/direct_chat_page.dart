@@ -15,6 +15,7 @@ import '../../services/chat_push_service.dart';
 import '../../services/presence_service.dart';
 import '../../services/notification_service.dart';
 import '../../models/notification.dart';
+import '../../utils/media_url.dart';
 class DirectChatPage extends StatefulWidget {
   final String userId;
   final String username;
@@ -376,8 +377,9 @@ class _DirectChatPageState extends State<DirectChatPage> {
   bool _isImageContent(String content) =>
       content.startsWith(_imgPrefix) && content.length > _imgPrefix.length;
 
-  String _getImageUrl(String content) =>
-      content.substring(_imgPrefix.length).trim();
+  String _getImageUrl(String content) => resolveMediaUrl(
+        content.substring(_imgPrefix.length).trim(),
+      );
 
   Future<void> _pickAndSendImage() async {
     if (_isSending) return;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'voice_call_page.dart';
 import '../../services/api_service.dart';
+import '../../utils/media_url.dart';
 
 class VoiceCallReceivingPage extends StatelessWidget {
   final String callerId;
@@ -73,7 +74,9 @@ class VoiceCallReceivingPage extends StatelessWidget {
           const SizedBox(height: 32),
           CircleAvatar(
             radius: 100,
-            backgroundImage: NetworkImage(callerAvatar),
+            backgroundImage: callerAvatar.isNotEmpty
+                ? NetworkImage(resolveMediaUrl(callerAvatar))
+                : null,
             onBackgroundImageError: (_, __) {},
             child: callerAvatar.isEmpty
                 ? const Icon(Icons.person, size: 100, color: Colors.white)

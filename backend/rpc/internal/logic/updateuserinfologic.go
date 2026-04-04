@@ -8,6 +8,7 @@ import (
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
+	"backend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -42,9 +43,9 @@ func (l *UpdateUserInfoLogic) UpdateUserInfo(in *super.UpdateUserInfoReq) (*supe
 	if in.Email != "" {
 		user.Email = in.Email
 	}
-	// 更新头像：仅当传入非空字符串时才更新，避免意外清空
+	// 更新头像：仅当传入非空字符串时才更新；去掉 host，只存 /api/images/... 或外链
 	if in.Avatar != "" {
-		user.Avatar = in.Avatar
+		user.Avatar = utils.NormalizeAvatarForStorage(in.Avatar)
 	}
 
 	// 更新个性签名

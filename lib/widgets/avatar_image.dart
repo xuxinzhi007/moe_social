@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import '../utils/media_url.dart';
+
 /// 简化的网络头像组件
 /// 使用Flutter内置组件，自动处理错误和加载状态
 class NetworkAvatarImage extends StatelessWidget {
@@ -27,15 +29,21 @@ class NetworkAvatarImage extends StatelessWidget {
       return _buildPlaceholder();
     }
 
+    final resolved = resolveMediaUrl(imageUrl);
+
     // 检查是否是base64 data URI
-    if (imageUrl!.startsWith('data:image')) {
-      return _buildDataUriAvatar();
+    if (resolved.startsWith('data:image')) {
+      return _buildDataUriAvatarFrom(resolved);
+    }
+
+    if (resolved.isEmpty) {
+      return _buildPlaceholder();
     }
 
     // 使用CachedNetworkImage加载图片，自动缓存
     return ClipOval(
       child: CachedNetworkImage(
-        imageUrl: imageUrl!,
+        imageUrl: resolved,
         width: radius * 2,
         height: radius * 2,
         fit: BoxFit.cover,
@@ -59,9 +67,9 @@ class NetworkAvatarImage extends StatelessWidget {
   }
 
   /// 构建base64图片
-  Widget _buildDataUriAvatar() {
+  Widget _buildDataUriAvatarFrom(String dataUri) {
     try {
-      final base64String = imageUrl!.split(',')[1];
+      final base64String = dataUri.split(',')[1];
       final bytes = base64Decode(base64String);
       
       return ClipOval(

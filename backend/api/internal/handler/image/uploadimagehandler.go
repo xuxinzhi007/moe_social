@@ -76,18 +76,9 @@ func UploadImageHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		// 生成图片访问URL
-		base := strings.TrimRight(strings.TrimSpace(svcCtx.Config.Image.PublicBaseUrl), "/")
-		if base == "" {
-			scheme := "http"
-			if r.TLS != nil {
-				scheme = "https"
-			}
-			base = fmt.Sprintf("%s://%s", scheme, r.Host)
-		}
-		// key = "{userFolder}__{filename}"，前端用 key 作为 filename 进行删除/访问
+		// 仅返回路径（无 host），客户端用当前 Api base 拼接，避免隧道域名写入业务数据
 		key := fmt.Sprintf("%s__%s", userFolder, filename)
-		imgUrl := fmt.Sprintf("%s/api/images/%s", base, key)
+		imgUrl := fmt.Sprintf("/api/images/%s", key)
 
 		// 构建响应
 		imageInfo := types.ImageInfo{

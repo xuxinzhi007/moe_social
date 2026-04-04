@@ -4,6 +4,8 @@ import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import '../utils/media_url.dart';
+
 /// 帖子图片全屏查看器
 /// - 支持多图翻页、双指缩放
 /// - 支持下拉手势退出（背景跟随透明度渐变）
@@ -33,12 +35,14 @@ class PostImageViewer extends StatefulWidget {
       imageUrls.length,
       (i) => '${heroTagPrefix}post_img_${postId}_$i',
     );
+    final resolved =
+        imageUrls.map((u) => resolveMediaUrl(u)).toList(growable: false);
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
         barrierColor: Colors.transparent,
         pageBuilder: (_, __, ___) => PostImageViewer(
-          imageUrls: imageUrls,
+          imageUrls: resolved,
           heroTags: tags,
           initialIndex: initialIndex,
         ),
