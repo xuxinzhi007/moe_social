@@ -17,7 +17,7 @@ import (
 var configFile = flag.String("f", "etc/super.yaml", "the config file")
 
 // applyUnifiedConfigOverrides 尝试从 backend/config/config.yaml 读取统一配置并覆盖部分字段。
-// 这样做的好处是：你可以在一个地方管理 “Ollama 地址/超时” 等参数，而不必每次都改 etc/super*.yaml。
+// 例如 Ollama、REST 超时、以及客户端用的 app_client.public_api_base_url（不必写进 etc/super.yaml）。
 // 注意：如果找不到/读取失败，会静默跳过，保持原有 go-zero 配置行为不变。
 func applyUnifiedConfigOverrides(c *config.Config) {
 	v := viper.New()
@@ -46,7 +46,7 @@ func applyUnifiedConfigOverrides(c *config.Config) {
 		c.Timeout = timeoutMs
 	}
 	if u := v.GetString("app_client.public_api_base_url"); u != "" {
-		c.AppClient.PublicApiBaseUrl = u
+		c.ClientPublicApiBaseUrl = u
 	}
 }
 

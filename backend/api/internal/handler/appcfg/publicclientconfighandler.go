@@ -15,7 +15,7 @@ type publicClientConfigResp struct {
 // PublicClientConfigHandler 无鉴权；内容由 backend/config/config.yaml 的 app_client.public_api_base_url 提供。
 func PublicClientConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		url := strings.TrimSpace(svcCtx.Config.AppClient.PublicApiBaseUrl)
+		url := strings.TrimSpace(svcCtx.Config.ClientPublicApiBaseUrl)
 		if url == "" {
 			w.WriteHeader(http.StatusNotFound)
 			return
