@@ -4,16 +4,63 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:open_filex/open_filex.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+/// 与已安装应用对比 APK 签名的结果（仅 Android 原生通道有效）。
+class ApkSignatureCompareResult {
+  ApkSignatureCompareResult({
+    required this.match,
+    this.skippedPlatform = false,
+    this.errorCode,
+    this.message,
+    this.installedSha256,
+    this.apkSha256,
+    this.apkPackage,
+    this.installedPackage,
+  });
+
+  final bool match;
+  /// 非 Android，未做检测，按原流程安装。
+  final bool skippedPlatform;
+  final String? errorCode;
+  final String? message;
+  final String? installedSha256;
+  final String? apkSha256;
+  final String? apkPackage;
+  final String? installedPackage;
+
+  bool get canInstallInPlace => skippedPlatform || match;
+
+  factory ApkSignatureCompareResult.fromMap(Map<dynamic, dynamic>? raw) {
+    if (raw == null) {
+      return ApkSignatureCompareResult(match: false, errorCode: 'null_response');
+    }
+    return ApkSignatureCompareResult(
+      match: raw['match'] == true,
+      errorCode: raw['error'] as String?,
+      message: raw['message'] as String?,
+      installedSha256: raw['installedSha256'] as String?,
+      apkSha256: raw['apkSha256'] as String?,
+      apkPackage: raw['apkPackage'] as String?,
+      installedPackage: raw['installedPackage'] as String?,
+    );
+  }
+}
 
 /// App 内更新服务
 /// 支持 GitHub 加速镜像和 App 内下载安装
 class UpdateService {
+  static const MethodChannel _androidUpdateChannel =
+      MethodChannel('com.moe_social/app_update');
+
   static const String _owner = 'xuxinzhi007';
   static const String _repo = 'moe_social';
   
@@ -40,8 +87,95 @@ class UpdateService {
   /// 测速：至少收到这么多字节才认为线路可用。
   static const int _probeMinBytes = 2048;
 
+  /// 认为 APK 有效的最小体积（避免缓存/HTML 错误页被当成安装包）。
+  static const int _apkMinBytes = 64 * 1024;
+
   // 当前下载取消令牌
   static CancelToken? _cancelToken;
+
+  /// 生成稳定、安全的本地文件名（含版本便于卸载后辨认）。
+  static String _safeApkFileName(String versionLabel, String originalFileName) {
+    final base = p.basename(originalFileName);
+    final safe =
+        base.replaceAll(RegExp(r'[^A-Za-z0-9\.\-_+()]'), '_').replaceAll('__', '_');
+    final v = versionLabel.replaceAll(RegExp(r'[^0-9A-Za-z\.\+]'), '_');
+    return 'MoeSocial_v${v}_$safe';
+  }
+
+  /// 优先保存到系统「下载/MoeSocial」目录（卸载应用后仍可保留）；不可用时退回应用专属目录。
+  static Future<String> resolveApkSavePath({
+    required String versionLabel,
+    required String originalFileName,
+  }) async {
+    final name = _safeApkFileName(versionLabel, originalFileName);
+    try {
+      final downloads = await getDownloadsDirectory();
+      if (downloads != null && downloads.path.isNotEmpty) {
+        final dir = Directory(p.join(downloads.path, 'MoeSocial'));
+        await dir.create(recursive: true);
+        return p.join(dir.path, name);
+      }
+    } catch (e) {
+      debugPrint('使用系统下载目录失败，改用应用目录: $e');
+    }
+    final fallback =
+        await getExternalStorageDirectory() ?? await getTemporaryDirectory();
+    final sub = Directory(p.join(fallback.path, 'updates'));
+    await sub.create(recursive: true);
+    return p.join(sub.path, name);
+  }
+
+  /// 校验下载是否完整且像 ZIP/APK（APK 实为 ZIP，文件头 PK\x03\x04）。
+  static Future<bool> validateDownloadedApk(
+    String path,
+    int? expectedContentLength,
+  ) async {
+    final f = File(path);
+    if (!await f.exists()) {
+      return false;
+    }
+    final len = await f.length();
+    if (len < _apkMinBytes) {
+      debugPrint('UpdateService: APK 过小 ($len)，可能未下完或是错误页');
+      return false;
+    }
+    if (expectedContentLength != null &&
+        expectedContentLength > 0 &&
+        len != expectedContentLength) {
+      debugPrint(
+        'UpdateService: 大小不符 本地=$len 预期=$expectedContentLength',
+      );
+      return false;
+    }
+    RandomAccessFile? raf;
+    try {
+      raf = await f.open(mode: FileMode.read);
+      final h = await raf.read(4);
+      if (h.length < 4) {
+        return false;
+      }
+      if (h[0] != 0x50 || h[1] != 0x4B || h[2] != 0x03 || h[3] != 0x04) {
+        debugPrint('UpdateService: 不是有效的 ZIP/APK 文件头');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('UpdateService: 读取文件头失败 $e');
+      return false;
+    } finally {
+      await raf?.close();
+    }
+    return true;
+  }
+
+  /// 人类可读：保存位置说明（用于 UI）。
+  static String humanReadableSaveHint(String fullPath) {
+    final lower = fullPath.toLowerCase();
+    if (lower.contains('moesocial') &&
+        (lower.contains('/download/') || lower.contains('\\download\\'))) {
+      return '已保存到系统「下载 → MoeSocial」文件夹，卸载本应用后仍可在此找到安装包。';
+    }
+    return '已保存到应用目录；卸载本应用后此文件可能被系统删除，建议立即安装或点「分享」另存。';
+  }
   
   /// 检查更新
   static Future<void> checkUpdate(BuildContext context, {bool showNoUpdateToast = false}) async {
@@ -77,14 +211,21 @@ class UpdateService {
         final String body = data['body'] ?? '暂无更新日志';
         final List assets = data['assets'] ?? [];
         
-        // 寻找 APK 下载链接
+        // 寻找 APK 下载链接（GitHub assets[].size 为字节数，用于校验本地已下载包是否完整）
         String? downloadUrl;
         String? fileName;
+        int? apkAssetSize;
         for (var asset in assets) {
           final String name = asset['name'] ?? '';
           if (name.endsWith('.apk')) {
             downloadUrl = asset['browser_download_url'];
             fileName = name;
+            final rawSize = asset['size'];
+            if (rawSize is int) {
+              apkAssetSize = rawSize;
+            } else if (rawSize != null) {
+              apkAssetSize = int.tryParse(rawSize.toString());
+            }
             break;
           }
         }
@@ -93,11 +234,12 @@ class UpdateService {
         if (_hasNewVersion(currentVersion, remoteVersion)) {
           if (context.mounted && downloadUrl != null) {
             _showUpdateDialog(
-              context, 
-              remoteVersion, 
-              body, 
+              context,
+              remoteVersion,
+              body,
               downloadUrl,
               fileName ?? 'app-release.apk',
+              expectedAssetBytes: apkAssetSize,
             );
           }
         } else {
@@ -152,6 +294,157 @@ class UpdateService {
     }
   }
 
+  /// 对比 [apkPath] 与当前已安装应用的签名（仅 Android）。
+  static Future<ApkSignatureCompareResult> compareApkSignatureWithInstalled(
+    String apkPath,
+  ) async {
+    if (!Platform.isAndroid) {
+      return ApkSignatureCompareResult(match: true, skippedPlatform: true);
+    }
+    try {
+      final dynamic raw = await _androidUpdateChannel.invokeMethod<dynamic>(
+        'compareApkSignatureWithInstalled',
+        <String, dynamic>{'apkPath': apkPath},
+      );
+      if (raw is Map) {
+        return ApkSignatureCompareResult.fromMap(
+          Map<dynamic, dynamic>.from(raw),
+        );
+      }
+      return ApkSignatureCompareResult(match: false, errorCode: 'bad_response');
+    } on PlatformException catch (e) {
+      return ApkSignatureCompareResult(
+        match: false,
+        errorCode: e.code.toLowerCase(),
+        message: e.message,
+      );
+    } catch (e) {
+      return ApkSignatureCompareResult(
+        match: false,
+        errorCode: 'unknown',
+        message: '$e',
+      );
+    }
+  }
+
+  /// 打开系统卸载当前应用的界面（用户必须在系统对话框中确认；无法静默卸载）。
+  static Future<void> requestUninstallCurrentApp() async {
+    if (!Platform.isAndroid) return;
+    await _androidUpdateChannel.invokeMethod<void>('requestUninstallCurrentApp');
+  }
+
+  /// App 内安装：先比对签名；不一致时引导卸载（无法自动卸载后自动安装）。
+  static Future<void> runAndroidInAppInstallWithSignatureCheck(
+    BuildContext context,
+    String apkPath,
+    VoidCallback closeDownloadDialog,
+  ) async {
+    if (!Platform.isAndroid) {
+      await installApk(context, apkPath);
+      closeDownloadDialog();
+      return;
+    }
+
+    final r = await compareApkSignatureWithInstalled(apkPath);
+    if (!context.mounted) return;
+
+    if (r.skippedPlatform || r.match) {
+      await installApk(context, apkPath);
+      closeDownloadDialog();
+      return;
+    }
+
+    if (r.errorCode == 'package_name_mismatch') {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('安装包不匹配'),
+          content: Text(
+            'APK 包名与当前应用不一致，无法安装。\n'
+            '当前：${r.installedPackage ?? "?"}\n'
+            'APK：${r.apkPackage ?? "?"}',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('知道了'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    if (r.errorCode == 'signing_mismatch') {
+      final choice = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('签名不一致'),
+          content: const SingleChildScrollView(
+            child: Text(
+              '新安装包与当前应用的签名不同（例如当前是调试版、新包是正式版），'
+              'Android 不允许直接覆盖安装。\n\n'
+              '系统不允许应用在后台静默卸载，也不能在卸载后由本应用自动完成安装，'
+              '需要你在系统界面确认卸载，再到「下载 → MoeSocial」打开已保存的 APK 安装。',
+              style: TextStyle(height: 1.4),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'try'),
+              child: const Text('仍尝试安装'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, 'uninstall'),
+              child: const Text('打开卸载界面'),
+            ),
+          ],
+        ),
+      );
+      if (!context.mounted) return;
+      if (choice == 'uninstall') {
+        await requestUninstallCurrentApp();
+        closeDownloadDialog();
+        return;
+      }
+      if (choice == 'try') {
+        await installApk(context, apkPath);
+        closeDownloadDialog();
+      }
+      return;
+    }
+
+    final tryAnyway = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('无法确认签名'),
+        content: Text(
+          '签名检测未成功（${r.errorCode ?? "未知"}），无法判断能否覆盖安装。\n'
+          '可尝试直接安装，或改用「浏览器下载」。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('尝试安装'),
+          ),
+        ],
+      ),
+    );
+    if (!context.mounted) return;
+    if (tryAnyway == true) {
+      await installApk(context, apkPath);
+      closeDownloadDialog();
+    }
+  }
+
   /// 在系统浏览器中打开 APK 直链（由系统/浏览器负责下载）。
   static Future<void> openApkUrlInBrowser(
     BuildContext context,
@@ -191,8 +484,9 @@ class UpdateService {
     String version,
     String note,
     String downloadUrl,
-    String fileName,
-  ) {
+    String fileName, {
+    int? expectedAssetBytes,
+  }) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -225,6 +519,27 @@ class UpdateService {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (kDebugMode) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: Text(
+                    '当前是调试版（debug 签名）。GitHub 上的 APK 多为正式签名，'
+                    '不能直接覆盖安装，需先卸载再装；与「是否下载完整」无关。',
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.35,
+                      color: Colors.orange.shade900,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -289,7 +604,13 @@ class UpdateService {
               FilledButton.icon(
                 onPressed: () {
                   Navigator.pop(dialogContext);
-                  _startDownload(context, downloadUrl, fileName, version);
+                  _startDownload(
+                    context,
+                    downloadUrl,
+                    fileName,
+                    version,
+                    expectedAssetBytes: expectedAssetBytes,
+                  );
                 },
                 icon: const Icon(Icons.download_rounded, size: 20),
                 label: const Text('App 内下载'),
@@ -337,8 +658,9 @@ class UpdateService {
     BuildContext context,
     String originalUrl,
     String fileName,
-    String version,
-  ) async {
+    String version, {
+    int? expectedAssetBytes,
+  }) async {
     // 检查安装权限（Android）
     if (Platform.isAndroid) {
       final status = await Permission.requestInstallPackages.request();
@@ -361,6 +683,7 @@ class UpdateService {
           originalUrl: originalUrl,
           fileName: fileName,
           version: version,
+          expectedAssetBytes: expectedAssetBytes,
         ),
       );
     }
@@ -641,12 +964,18 @@ class UpdateService {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            '若系统提示与已安装应用冲突：debug 与 release 签名不同需先卸载；'
-            '或新版 versionCode 必须高于当前安装。',
+        SnackBar(
+          duration: const Duration(seconds: 10),
+          content: const Text(
+            '已唤起安装。若失败：① debug/正式签名不同需先卸载；② 新版 versionCode 须更高；'
+            '③ 可到「下载 → MoeSocial」手动点 APK。点右侧可复制完整路径。',
           ),
-          duration: Duration(seconds: 6),
+          action: SnackBarAction(
+            label: '复制路径',
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: filePath));
+            },
+          ),
         ),
       );
     } catch (e) {
@@ -671,11 +1000,14 @@ class _DownloadProgressDialog extends StatefulWidget {
   final String originalUrl;
   final String fileName;
   final String version;
+  /// GitHub Release 资源声明的大小（字节），用于与本地已存在文件比对。
+  final int? expectedAssetBytes;
 
   const _DownloadProgressDialog({
     required this.originalUrl,
     required this.fileName,
     required this.version,
+    this.expectedAssetBytes,
   });
 
   @override
@@ -685,43 +1017,116 @@ class _DownloadProgressDialog extends StatefulWidget {
 class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
   /// null 表示未知总大小（走不确定进度条），0~1 为确定比例。
   double? _progress;
-  String _status = '准备下载...';
+  String _status = '正在检查本地安装包…';
   String _currentMirror = '';
   String _speedText = '';
   bool _isDownloading = true;
   bool _downloadComplete = false;
   String? _filePath;
-  
+  /// 本地文件复用（未重新走网络下载）。
+  bool _reusedLocal = false;
+  /// 服务端声明的 Content-Length（若已知），用于校验是否下完。
+  int? _expectedTotalBytes;
+
   // 用于计算下载速度
   int _lastReceived = 0;
   DateTime _lastTime = DateTime.now();
-  
+
   late CancelToken _cancelToken;
 
   @override
   void initState() {
     super.initState();
     _cancelToken = CancelToken();
-    _startDownload();
+    _bootstrap();
   }
 
-  Future<void> _startDownload() async {
+  /// 若目标路径已有同版本 APK 且校验通过则直接展示「使用已下载」；否则删损坏包后下载。
+  Future<void> _bootstrap() async {
     try {
-      // 获取下载目录
-      final dir = await getExternalStorageDirectory() ?? await getTemporaryDirectory();
-      final savePath = '${dir.path}/${widget.fileName}';
-      
-      // 删除旧文件（如果存在）
-      final oldFile = File(savePath);
-      if (await oldFile.exists()) {
-        await oldFile.delete();
+      final savePath = await UpdateService.resolveApkSavePath(
+        versionLabel: widget.version,
+        originalFileName: widget.fileName,
+      );
+      if (!mounted) return;
+      final existing = File(savePath);
+      if (await existing.exists()) {
+        if (!mounted) return;
+        final ok = await UpdateService.validateDownloadedApk(
+          savePath,
+          widget.expectedAssetBytes,
+        );
+        if (ok && mounted) {
+          setState(() {
+            _isDownloading = false;
+            _downloadComplete = true;
+            _reusedLocal = true;
+            _filePath = savePath;
+            _status = '本地已有本版本安装包，大小与 ZIP 头校验通过，可直接安装';
+            _progress = 1;
+          });
+          return;
+        }
+        if (!mounted) return;
+        try {
+          await existing.delete();
+        } catch (_) {}
       }
-
+      if (!mounted) return;
+      await _runFreshDownload();
+    } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _status = '正在测速各条下载线路（小流量并行）…';
-        _progress = null;
-        _currentMirror = '';
+        _isDownloading = false;
+        _status = '检查本地文件出错: $e';
       });
+    }
+  }
+
+  Future<void> _onRedownloadPressed() async {
+    if (!_downloadComplete || _isDownloading) return;
+    setState(() {
+      _isDownloading = true;
+      _downloadComplete = false;
+      _filePath = null;
+      _reusedLocal = false;
+      _progress = null;
+      _status = '正在准备重新下载…';
+    });
+    final savePath = await UpdateService.resolveApkSavePath(
+      versionLabel: widget.version,
+      originalFileName: widget.fileName,
+    );
+    try {
+      final f = File(savePath);
+      if (await f.exists()) {
+        await f.delete();
+      }
+    } catch (_) {}
+    if (!mounted) return;
+    await _runFreshDownload();
+  }
+
+  Future<void> _runFreshDownload() async {
+    if (!mounted) return;
+    _cancelToken = CancelToken();
+    setState(() {
+      _isDownloading = true;
+      _downloadComplete = false;
+      _filePath = null;
+      _reusedLocal = false;
+      _progress = null;
+      _expectedTotalBytes = null;
+      _currentMirror = '';
+      _speedText = '';
+      _status = '正在测速各条下载线路（小流量并行）…';
+    });
+
+    try {
+      final savePath = await UpdateService.resolveApkSavePath(
+        versionLabel: widget.version,
+        originalFileName: widget.fileName,
+      );
 
       final ranked = await UpdateService.rankMirrorPrefixes(
         widget.originalUrl,
@@ -747,17 +1152,20 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
         savePath,
         (received, total, mirror) {
           if (!mounted) return;
-          
-          // 计算下载速度
+
+          if (total > 0) {
+            _expectedTotalBytes = total;
+          }
+
           final now = DateTime.now();
           final duration = now.difference(_lastTime).inMilliseconds;
-          if (duration > 500) { // 每500ms更新一次速度
+          if (duration > 500) {
             final speed = (received - _lastReceived) / (duration / 1000);
             _lastReceived = received;
             _lastTime = now;
             _speedText = _formatSpeed(speed);
           }
-          
+
           setState(() {
             _progress = total > 0 ? received / total : null;
             _currentMirror = mirror;
@@ -776,11 +1184,29 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
       if (!mounted) return;
 
       if (result != null) {
+        final ok = await UpdateService.validateDownloadedApk(
+          result,
+          _expectedTotalBytes,
+        );
+        if (!ok) {
+          try {
+            await File(result).delete();
+          } catch (_) {}
+          setState(() {
+            _isDownloading = false;
+            _downloadComplete = false;
+            _filePath = null;
+            _status = '安装包校验未通过（可能未下完或是网页错误页），请重试或改用浏览器下载';
+            _progress = null;
+          });
+          return;
+        }
+
         setState(() {
           _isDownloading = false;
           _downloadComplete = true;
           _filePath = result;
-          _status = '下载完成！';
+          _status = '下载完成并已校验';
           _progress = 1;
         });
       } else {
@@ -830,108 +1256,168 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              _downloadComplete ? '下载完成' : '正在更新 v${widget.version}',
+              _downloadComplete
+                  ? (_reusedLocal ? '使用已下载的安装包' : '下载完成')
+                  : '正在更新 v${widget.version}',
               style: const TextStyle(fontSize: 16),
             ),
           ),
         ],
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 进度条
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: _progress,
-              minHeight: 12,
-              backgroundColor: Colors.grey[200],
-              valueColor: AlwaysStoppedAnimation<Color>(
-                _downloadComplete ? Colors.green : const Color(0xFF7F7FD5),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                value: _progress,
+                minHeight: 12,
+                backgroundColor: Colors.grey[200],
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  _downloadComplete ? Colors.green : const Color(0xFF7F7FD5),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          
-          // 状态信息
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  _status,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ),
-              Text(
-                _progress != null
-                    ? '${(_progress! * 100).toStringAsFixed(1)}%'
-                    : '—',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF7F7FD5),
-                ),
-              ),
-            ],
-          ),
-          
-          // 下载速度和镜像信息
-          if (_isDownloading && _currentMirror.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Row(
-                    children: [
-                      Icon(Icons.speed, size: 14, color: Colors.grey[500]),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          _speedText.isEmpty ? '计算中...' : _speedText,
-                          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    _status,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Icon(Icons.cloud_download, size: 14, color: Colors.green[400]),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          _currentMirror,
-                          style: TextStyle(fontSize: 12, color: Colors.green[600]),
-                          textAlign: TextAlign.end,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                Text(
+                  _progress != null
+                      ? '${(_progress! * 100).toStringAsFixed(1)}%'
+                      : '—',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF7F7FD5),
                   ),
                 ),
               ],
             ),
+            if (_isDownloading && _currentMirror.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(Icons.speed, size: 14, color: Colors.grey[500]),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            _speedText.isEmpty ? '计算中...' : _speedText,
+                            style:
+                                TextStyle(fontSize: 12, color: Colors.grey[500]),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Icon(Icons.cloud_download,
+                            size: 14, color: Colors.green[400]),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            _currentMirror,
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.green[600]),
+                            textAlign: TextAlign.end,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (_downloadComplete && _filePath != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                UpdateService.humanReadableSaveHint(_filePath!),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.blueGrey.shade700,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 8),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: SelectableText(
+                    _filePath!,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade800,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: _filePath!));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('已复制完整路径')),
+                        );
+                      },
+                      icon: const Icon(Icons.copy_rounded, size: 18),
+                      label: const Text('复制路径'),
+                    ),
+                    TextButton.icon(
+                      onPressed: () async {
+                        await Share.shareXFiles(
+                          [XFile(_filePath!)],
+                          subject: 'Moe Social 更新包',
+                        );
+                      },
+                      icon: const Icon(Icons.share_rounded, size: 18),
+                      label: const Text('分享 / 另存'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '安装失败若提示「与已安装应用冲突」：debug 与 Release 签名不同需先卸载；'
+                '或新版 versionCode（pubspec + 后数字）须高于已安装。',
+                style: TextStyle(
+                    fontSize: 11, color: Colors.grey[600], height: 1.35),
+              ),
+            ],
           ],
-          if (_downloadComplete) ...[
-            const SizedBox(height: 12),
-            Text(
-              '安装失败若提示「与已安装应用冲突」：本地 debug 包与 Release APK 签名不同，需先卸载；'
-              '或确认 pubspec 中 + 号后的数字（versionCode）大于已安装版本。',
-              style: TextStyle(fontSize: 11, color: Colors.grey[600], height: 1.35),
-            ),
-          ],
-        ],
+        ),
       ),
       actions: [
         if (_isDownloading)
@@ -947,14 +1433,23 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
             onPressed: () => Navigator.pop(context),
             child: const Text('稍后安装'),
           ),
+          TextButton(
+            onPressed: () => _onRedownloadPressed(),
+            child: const Text('重新下载'),
+          ),
           ElevatedButton(
             onPressed: () async {
               if (_filePath == null) return;
               final path = _filePath!;
-              await UpdateService.installApk(context, path);
-              if (context.mounted) {
-                Navigator.of(context).pop();
-              }
+              await UpdateService.runAndroidInAppInstallWithSignatureCheck(
+                context,
+                path,
+                () {
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+                },
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,

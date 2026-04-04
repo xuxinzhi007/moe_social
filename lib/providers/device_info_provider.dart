@@ -38,11 +38,11 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
   /// 构建号（Android versionCode / iOS CFBundleVersion），与 [version] 同源来自 PackageInfo。
   String get buildNumber => _buildNumber;
 
-  /// 设置页等展示用：与系统「关于应用」一致，含版本名与构建号；未取到则「未知」（避免只显示一个 `v`）。
+  /// 设置页等展示用：仅展示软件版本号（如 v1.0.0），不含构建号括号。
+  /// [buildNumber] 仍可用于调试或上报。
   String get versionDisplayLabel {
     if (_version.isEmpty) return '未知';
-    if (_buildNumber.isEmpty) return 'v$_version';
-    return 'v$_version ($_buildNumber)';
+    return 'v$_version';
   }
   String get deviceId => _deviceId;
   String get deviceType => _deviceType;
