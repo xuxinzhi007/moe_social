@@ -21,8 +21,10 @@ class RemoteApiConfigService {
 
   static const String _prefsKey = 'moe_remote_api_base_url_v1';
 
-  /// 可选：在代码里写死 raw 地址（改隧道时只改远端 JSON，不必改这里）。
-  static const String kRemoteApiConfigJsonUrl = '';
+  /// 与仓库内 `lib/config/moe_api.json` 对应：GitHub 打开该文件 → Raw → 复制地址栏。
+  /// 若默认分支不是 main，把 URL 里的 `main` 改成你的分支名。
+  static const String kRemoteApiConfigJsonUrl =
+      'https://raw.githubusercontent.com/xuxinzhi007/moe_social/main/lib/config/moe_api.json';
 
   static String get _effectiveConfigUrl {
     const fromEnv = String.fromEnvironment(
