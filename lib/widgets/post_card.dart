@@ -12,6 +12,7 @@ import '../widgets/like_button.dart';
 import '../widgets/moe_bouncing_button.dart';
 import '../widgets/post_image_viewer.dart';
 import '../widgets/hand_draw/hand_draw_card_view.dart';
+import '../utils/media_url.dart';
 
 class PostCard extends StatelessWidget {
   final Post post;
@@ -633,7 +634,7 @@ class _HandDrawThumbnail extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 CachedNetworkImage(
-                  imageUrl: post.handDrawThumbUrl,
+                  imageUrl: resolveMediaUrl(post.handDrawThumbUrl),
                   fit: BoxFit.cover,
                   placeholder: (_, __) =>
                       Container(color: Colors.grey.shade100),
@@ -742,6 +743,7 @@ void _openHandDrawViewer(BuildContext context, Post post) {
   }
 
   if (thumb.isNotEmpty) {
+    final thumbResolved = resolveMediaUrl(thumb);
     showDialog<void>(
       context: context,
       barrierColor: Colors.black87,
@@ -755,7 +757,7 @@ void _openHandDrawViewer(BuildContext context, Post post) {
                 minScale: 0.8,
                 maxScale: 4,
                 child: CachedNetworkImage(
-                  imageUrl: thumb,
+                  imageUrl: thumbResolved,
                   fit: BoxFit.contain,
                   placeholder: (_, __) => const SizedBox(
                     width: 200,

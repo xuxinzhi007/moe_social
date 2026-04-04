@@ -735,6 +735,10 @@ type Post struct {
 	ModerationStatus string     `json:"moderation_status,optional"`
 }
 
+type PublicClientConfigResp struct {
+	ApiBaseUrl string `json:"api_base_url"`
+}
+
 type PurchaseAvatarOutfitReq struct {
 	OutfitId string `path:"outfit_id"`
 	UserId   string `json:"user_id"`
@@ -773,6 +777,15 @@ type RechargeReq struct {
 type RechargeResp struct {
 	BaseResp
 	Data Transaction `json:"data"`
+}
+
+type RefreshTokenData struct {
+	Token string `json:"token"`
+}
+
+type RefreshTokenResp struct {
+	BaseResp
+	Data RefreshTokenData `json:"data"`
 }
 
 type RegisterReq struct {

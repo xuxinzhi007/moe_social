@@ -8391,7 +8391,7 @@ const file_super_proto_rawDesc = "" +
 	"\x10GetCheckInStatus\x12\x1a.super.GetCheckInStatusReq\x1a\x1b.super.GetCheckInStatusResp\x12N\n" +
 	"\x11GetCheckInHistory\x12\x1b.super.GetCheckInHistoryReq\x1a\x1c.super.GetCheckInHistoryResp\x129\n" +
 	"\n" +
-	"GetExpLogs\x12\x14.super.GetExpLogsReq\x1a\x15.super.GetExpLogsRespB\x1cZ\x1abackend/rpc/pb/super;superb\x06proto3"
+	"GetExpLogs\x12\x14.super.GetExpLogsReq\x1a\x15.super.GetExpLogsRespB\x16Z\x14backend/rpc/pb/superb\x06proto3"
 
 var (
 	file_super_proto_rawDescOnce sync.Once

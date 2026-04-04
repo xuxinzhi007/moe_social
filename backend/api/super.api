@@ -499,6 +499,15 @@ type LoginResp {
 	Data LoginData `json:"data"`
 }
 
+type RefreshTokenData {
+	Token string `json:"token"`
+}
+
+type RefreshTokenResp {
+	BaseResp
+	Data RefreshTokenData `json:"data"`
+}
+
 type GetUserInfoResp {
 	BaseResp
 	Data User `json:"data"`
@@ -697,6 +706,9 @@ service Super {
 
 	@handler login
 	post /api/user/login (LoginReq) returns (LoginResp)
+
+	@handler refreshToken
+	post /api/user/refresh-token (EmptyReq) returns (RefreshTokenResp)
 
 	@handler getUserInfo
 	get /api/user/:user_id (GetUserInfoReq) returns (GetUserInfoResp)
@@ -1337,6 +1349,19 @@ service Super {
 	// 批量查询用户在线状态
 	@handler chatOnlineBatch
 	get /api/chat/online/batch (ChatOnlineBatchReq) returns (ChatOnlineBatchResp)
+}
+
+// 客户端公网 API 基址（无鉴权；JSON 与 Flutter RemoteApiConfigService 一致：仅顶层 api_base_url）
+type PublicClientConfigResp {
+	ApiBaseUrl string `json:"api_base_url"`
+}
+
+@server (
+	group: appcfg
+)
+service Super {
+	@handler publicClientConfig
+	get /api/public/client-config (EmptyReq) returns (PublicClientConfigResp)
 }
 
 // 签到等级相关结构

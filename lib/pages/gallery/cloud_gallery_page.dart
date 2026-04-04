@@ -11,6 +11,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../services/api_service.dart';
 import '../../auth_service.dart';
 import '../../utils/error_handler.dart';
+import '../../utils/media_url.dart';
 import 'cloud_image_viewer_page.dart';
 
 class CloudGalleryPage extends StatefulWidget {
@@ -245,11 +246,12 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
         final url = image['url']?.toString() ?? '';
         final filename = image['filename']?.toString() ?? 'image_$i';
         if (url.isEmpty) continue;
+        final resolvedUrl = resolveMediaUrl(url);
 
         final safeName = filename.replaceAll('/', '_').replaceAll('\\', '_');
         final path = '${dir.path}${Platform.pathSeparator}$safeName';
         await dio.download(
-          url,
+          resolvedUrl,
           path,
           options: Options(
             receiveTimeout: const Duration(seconds: 60),
@@ -579,6 +581,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
 
                           final image = _images[index];
                           final imageUrl = image['url'] as String;
+                          final displayUrl = resolveMediaUrl(imageUrl);
                           final heroTag = 'cloud_image_$index';
                           final isSelected = _selected.contains(index);
 
@@ -624,7 +627,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                                     ),
                                     clipBehavior: Clip.antiAlias,
                                     child: CachedNetworkImage(
-                                      imageUrl: imageUrl,
+                                      imageUrl: displayUrl,
                                       fit: BoxFit.cover,
                                       memCacheWidth: 400,
                                       placeholder: (context, _) => Shimmer.fromColors(

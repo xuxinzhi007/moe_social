@@ -24,7 +24,5 @@ func NewGetFriendRelationLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *GetFriendRelationLogic) GetFriendRelation(in *super.GetFriendRelationReq) (*super.GetFriendRelationResp, error) {
-	// todo: add your logic here and delete this line
-
-	return &super.GetFriendRelationResp{}, nil
+	return NewFriendRelationLogic(l.ctx, l.svcCtx).GetFriendRelation(in)
 }

@@ -181,7 +181,7 @@ goctl api go -api super.api -dir . -style gozero
    - 在 Windows 环境下，`.sh` 脚本无法直接运行
    - 可以使用 Git Bash 或 WSL (Windows Subsystem for Linux) 运行 shell 脚本
    - 或者直接执行脚本中的 `goctl` 命令来生成代码，因为 goctl 已经配置好了环境变量
-   - 例如：直接运行 `goctl api go -api super.api -dir ./` 来替代运行 `bash generate_api.sh`
+   - 例如：在 `backend` 下运行 `make gen-api`，或直接运行 `goctl api go -api super.api -dir ./`
 
 3. **API 定义语法**：
    - goctl 不支持内嵌的匿名结构体语法

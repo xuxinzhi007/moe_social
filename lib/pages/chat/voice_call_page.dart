@@ -3,6 +3,7 @@ import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../auth_service.dart';
 import '../../services/api_service.dart';
+import '../../utils/media_url.dart';
 
 class VoiceCallPage extends StatefulWidget {
   final String channelName;
@@ -201,7 +202,9 @@ class _VoiceCallPageState extends State<VoiceCallPage> {
                 children: [
                    CircleAvatar(
                     radius: 60,
-                    backgroundImage: NetworkImage(widget.userAvatar),
+                    backgroundImage: widget.userAvatar.isNotEmpty
+                        ? NetworkImage(resolveMediaUrl(widget.userAvatar))
+                        : null,
                     onBackgroundImageError: (_, __) {},
                     child: widget.userAvatar.isEmpty
                         ? const Icon(Icons.person, size: 60)

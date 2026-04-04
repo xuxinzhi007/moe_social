@@ -3,7 +3,8 @@ syntax = "proto3";
 
 package super;
 
-option go_package = "backend/rpc/pb/super;super";
+// 勿用 "path;super"：goctl 会把包前缀算成 super_super。只写路径，Go 包名仍为 super。
+option go_package = "backend/rpc/pb/super";
 
 // 用户相关消息
 message User {

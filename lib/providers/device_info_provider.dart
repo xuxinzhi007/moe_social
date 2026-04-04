@@ -35,6 +35,15 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
   static const Duration _serverSyncMinGap = Duration(minutes: 2);
 
   String get version => _version;
+  /// 构建号（Android versionCode / iOS CFBundleVersion），与 [version] 同源来自 PackageInfo。
+  String get buildNumber => _buildNumber;
+
+  /// 设置页等展示用：仅展示软件版本号（如 v1.0.0），不含构建号括号。
+  /// [buildNumber] 仍可用于调试或上报。
+  String get versionDisplayLabel {
+    if (_version.isEmpty) return '未知';
+    return 'v$_version';
+  }
   String get deviceId => _deviceId;
   String get deviceType => _deviceType;
   String get osVersion => _osVersion;
@@ -105,6 +114,7 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
     try {
       final info = await PackageInfo.fromPlatform();
       _version = info.version;
+      _buildNumber = info.buildNumber;
     } catch (_) {}
   }
 
@@ -166,7 +176,9 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
         'device_id': _deviceId,
         'platform': _deviceType,
         'os_version': _osVersion,
-        'app_version': _version,
+        'app_version': _version.isEmpty
+            ? ''
+            : (_buildNumber.isEmpty ? _version : '$_version+$_buildNumber'),
         'device_name': _buildDeviceName(_deviceType, _deviceId),
         'last_seen': DateTime.now().toUtc().toIso8601String(),
       };
