@@ -16,6 +16,7 @@ import '../models/checkin_record.dart';
 import '../models/checkin_data.dart';
 import '../models/exp_log.dart';
 import 'remote_api_config_service.dart';
+import '../utils/jwt_exp.dart';
 
 // 自定义异常类，用于传递错误信息
 class ApiException implements Exception {
@@ -161,6 +162,9 @@ class ApiService {
   // 刷新token的端点
   static const String _refreshTokenEndpoint = '/api/user/refresh-token';
 
+  /// 距离过期不足此时长则先发制人调用刷新（当前 token 仍须有效，后端才会签发新 token）
+  static const Duration _proactiveRefreshThreshold = Duration(hours: 6);
+
   // 防止并发刷新token
   static bool _isRefreshing = false;
   // 等待刷新token的请求队列（当前实现未使用，先移除避免日志/分析噪音）
@@ -169,10 +173,16 @@ class ApiService {
   static Future<Map<String, dynamic>> _request(String path,
       {String method = 'GET', dynamic body}) async {
     try {
+      if (path != '/api/user/login' &&
+          path != _refreshTokenEndpoint &&
+          _currentToken != null &&
+          _currentToken!.isNotEmpty) {
+        await _proactiveRefreshIfNeeded();
+      }
       final result = await _performRequest(path, method, body);
       return result;
     } on ApiException catch (e) {
-      if (path == '/api/user/login') {
+      if (path == '/api/user/login' || path == _refreshTokenEndpoint) {
         rethrow;
       }
 
@@ -373,6 +383,21 @@ class ApiService {
     }
   }
 
+  /// 在 token 仍有效、且剩余时间不足 [_proactiveRefreshThreshold] 时刷新，减少用到一半突然 401 的概率。
+  static Future<void> _proactiveRefreshIfNeeded() async {
+    if (_isRefreshing) return;
+    final token = _currentToken;
+    if (token == null || token.isEmpty) return;
+    final exp = decodeJwtExpUnixSeconds(token);
+    if (exp == null) return;
+    final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final remaining = exp - nowSec;
+    if (remaining > _proactiveRefreshThreshold.inSeconds) return;
+    if (remaining <= 0) return;
+    _log('⏰ Token 剩余 ${remaining}s，尝试主动刷新');
+    await _refreshToken();
+  }
+
   // 刷新token
   static Future<String?> _refreshToken() async {
     // 如果正在刷新token，等待刷新完成
@@ -399,9 +424,10 @@ class ApiService {
       }
 
       final response = await http.post(uri, headers: headers);
+      final bodyText = _decodeUtf8Body(response);
 
       if (response.statusCode == 200) {
-        final result = json.decode(response.body) as Map<String, dynamic>;
+        final result = json.decode(bodyText) as Map<String, dynamic>;
         final success = result['success'] as bool? ?? true;
         if (!success) {
           final code = result['code'];

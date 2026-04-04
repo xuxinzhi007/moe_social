@@ -26,6 +26,8 @@ class AuthService {
   // 存储键名
   static const String _tokenKey = 'auth_token';
   static const String _userIdKey = 'user_id';
+  /// 上次登录成功的账号（邮箱 / Moe 号 / 用户名），仅成功登录后写入，不存密码
+  static const String _lastLoginAccountKey = 'last_login_account';
   
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -37,6 +39,15 @@ class AuthService {
       _currentUser != null && _token != null && _token!.isNotEmpty;
   static String? get currentUser => _currentUser;
   static String? get token => _token;
+
+  /// 读取上次登录成功时保存的账号，供登录页预填（无则 null）
+  static Future<String?> getLastLoginAccount() async {
+    final prefs = await SharedPreferences.getInstance();
+    final s = prefs.getString(_lastLoginAccountKey);
+    if (s == null) return null;
+    final t = s.trim();
+    return t.isEmpty ? null : t;
+  }
 
   // 初始化方法，从持久化存储加载登录状态
   static Future<void> init() async {
@@ -82,6 +93,12 @@ class AuthService {
 
       // 持久化存储登录状态
       await _saveAuthData();
+
+      final trimmedAccount = account.trim();
+      if (trimmedAccount.isNotEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_lastLoginAccountKey, trimmedAccount);
+      }
 
       // 设置ApiService的token
       ApiService.setToken(_token);

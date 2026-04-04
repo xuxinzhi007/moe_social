@@ -9,7 +9,8 @@ import (
 
 var jwtSecret = []byte("u8K9x2L1n4Q7v5Z0m3P6r9Y2b5X8j1W4")
 
-var jwtExpireTime = 24 * time.Hour
+// 访问令牌有效期（与 api/etc/super.yaml 中 Auth.AccessExpire 保持一致，单位：秒应对齐为 5 天）
+var jwtExpireTime = 5 * 24 * time.Hour
 
 // CustomClaims 自定义JWT声明结构体
 type CustomClaims struct {
