@@ -25,7 +25,7 @@ var upgrader = websocket.Upgrader{
 
 // 全局用户连接映射
 var (
-	userConnections = make(map[string]*websocket.Conn)
+	userConnections  = make(map[string]*websocket.Conn)
 	connectionsMutex sync.RWMutex
 )
 
@@ -44,8 +44,8 @@ type SendNotificationReq struct {
 
 // 批量发送通知请求结构
 type SendBatchNotificationReq struct {
-	UserIDs []string   `json:"user_ids"`
-	Type    string     `json:"type"`
+	UserIDs []string    `json:"user_ids"`
+	Type    string      `json:"type"`
 	Data    interface{} `json:"data"`
 }
 
@@ -82,16 +82,18 @@ func (l *RemoteWsLogic) RemoteWs() error {
 		return nil
 	}
 
-	// 验证 token
+	// 验证 token（与 Chat/Presence WS 一致：Header 优先，其次 query token，兼容穿透层剥离 Authorization）
 	token := r.Header.Get("Authorization")
 	if token == "" {
-		http.Error(*w, "Unauthorized", http.StatusUnauthorized)
-		return nil
-	}
-
-	// 处理 Bearer token
-	if strings.HasPrefix(token, "Bearer ") {
-		token = strings.TrimPrefix(token, "Bearer ")
+		token = r.URL.Query().Get("token")
+		if token == "" {
+			http.Error(*w, "Unauthorized", http.StatusUnauthorized)
+			return nil
+		}
+	} else {
+		if strings.HasPrefix(token, "Bearer ") {
+			token = strings.TrimPrefix(token, "Bearer ")
+		}
 	}
 
 	// 验证 token

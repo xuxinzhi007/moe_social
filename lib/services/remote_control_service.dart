@@ -69,16 +69,36 @@ class RemoteControlService {
     return buf.toString();
   }
 
+  static String? _rawToken() {
+    var token = ApiService.token?.trim();
+    if (token == null || token.isEmpty) {
+      token = AuthService.token?.trim();
+    }
+    if (token == null || token.isEmpty) return null;
+    if (token.startsWith('Bearer ')) {
+      token = token.substring('Bearer '.length).trim();
+    }
+    return token.isEmpty ? null : token;
+  }
+
   static Uri _buildWebSocketUri() {
     final base = ApiService.baseUrl;
     final uri = Uri.parse(base);
     final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
+    final defaultPort = uri.scheme == 'https' ? 443 : 80;
+
+    final rawToken = _rawToken();
+    final query = <String, String>{};
+    if (rawToken != null && rawToken.isNotEmpty) {
+      query['token'] = rawToken;
+    }
 
     return Uri(
       scheme: scheme,
       host: uri.host,
-      port: uri.hasPort ? uri.port : null,
+      port: uri.hasPort ? uri.port : defaultPort,
       path: '/ws/remote',
+      queryParameters: query.isEmpty ? null : query,
     );
   }
 
