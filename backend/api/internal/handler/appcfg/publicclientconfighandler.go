@@ -1,29 +1,35 @@
 package appcfg
 
 import (
-	"encoding/json"
+	"errors"
 	"net/http"
-	"strings"
 
+	appcfglogic "backend/api/internal/logic/appcfg"
 	"backend/api/internal/svc"
+	"backend/api/internal/types"
+
+	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-type publicClientConfigResp struct {
-	ApiBaseUrl string `json:"api_base_url"`
-}
-
-// PublicClientConfigHandler 无鉴权；内容由 backend/config/config.yaml 的 app_client.public_api_base_url 提供。
+// PublicClientConfigHandler 无鉴权；业务在 logic，404 与 JSON 形状与历史实现一致。
 func PublicClientConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		url := strings.TrimSpace(svcCtx.Config.ClientPublicApiBaseUrl)
-		if url == "" {
-			w.WriteHeader(http.StatusNotFound)
+		var req types.EmptyReq
+		if err := httpx.Parse(r, &req); err != nil {
+			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
-		for strings.HasSuffix(url, "/") {
-			url = strings.TrimSuffix(url, "/")
+
+		l := appcfglogic.NewPublicClientConfigLogic(r.Context(), svcCtx)
+		resp, err := l.PublicClientConfig(&req)
+		if err != nil {
+			if errors.Is(err, appcfglogic.ErrNoPublicAPIBaseURL) {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+			httpx.ErrorCtx(r.Context(), w, err)
+			return
 		}
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		_ = json.NewEncoder(w).Encode(publicClientConfigResp{ApiBaseUrl: url})
+		httpx.OkJsonCtx(r.Context(), w, resp)
 	}
 }
