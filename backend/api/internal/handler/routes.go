@@ -6,7 +6,6 @@ package handler
 import (
 	"net/http"
 
-	appcfg "backend/api/internal/handler/appcfg"
 	avatar "backend/api/internal/handler/avatar"
 	chat "backend/api/internal/handler/chat"
 	checkin "backend/api/internal/handler/checkin"
@@ -25,16 +24,6 @@ import (
 )
 
 func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
-	server.AddRoutes(
-		[]rest.Route{
-			{
-				Method:  http.MethodGet,
-				Path:    "/api/public/client-config",
-				Handler: appcfg.PublicClientConfigHandler(serverCtx),
-			},
-		},
-	)
-
 	server.AddRoutes(
 		[]rest.Route{
 			{

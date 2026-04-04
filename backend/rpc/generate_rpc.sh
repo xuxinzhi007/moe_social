@@ -1,1 +1,0 @@
-goctl rpc protoc super.proto --go_out=./pb --go-grpc_out=./pb --zrpc_out=.

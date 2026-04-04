@@ -29,7 +29,6 @@ backend/
 │   │   └── svc/            # 服务上下文
 │   ├── super.api           # API 定义文件
 │   ├── super.go            # API 服务入口
-│   └── generate_api.sh     # API 代码生成脚本
 ├── rpc/                    # RPC 服务层
 │   ├── internal/
 │   │   ├── config/         # 配置
@@ -50,7 +49,7 @@ backend/
 │   └── config.yaml        # 应用配置
 ├── go.mod                  # Go 模块依赖
 ├── go.sum                  # 依赖校验和
-└── generate_rpc.sh         # RPC 代码生成脚本
+└── Makefile                # make gen / make gen-rpc / make gen-api
 ```
 
 ## 🚀 快速开始
@@ -101,30 +100,28 @@ go mod download
 
 ### 生成代码
 
-#### 生成 RPC 代码
+#### 生成 RPC / API 代码
+
+在 **`backend` 目录**执行（需已安装 GNU Make 与 goctl）：
 
 ```bash
-# 在项目根目录执行
-bash generate_rpc.sh
+cd backend
+make gen
 ```
 
-或者手动执行：
+仅 RPC：`make gen-rpc`；仅 API：`make gen-api`。参数与注释见根目录 `Makefile`。
+
+手动执行 RPC（与 Makefile 中 `gen-rpc` 一致）：
 
 ```bash
-goctl rpc protoc rpc/super.proto --go_out=./rpc/pb --go-grpc_out=./rpc/pb --zrpc_out=./rpc
+cd backend
+goctl rpc protoc rpc/super.proto --go_out=. --go-grpc_out=. --zrpc_out=./rpc -I rpc --go_opt=module=backend --go-grpc_opt=module=backend --client=false
 ```
 
-#### 生成 API 代码
+手动执行 API：
 
 ```bash
-# 进入 api 目录
-cd api
-bash generate_api.sh
-```
-
-或者手动执行：
-
-```bash
+cd backend/api
 goctl api go -api super.api -dir ./
 ```
 
@@ -325,13 +322,13 @@ JWT 密钥和过期时间在 `utils/jwt.go` 中配置，默认过期时间为 24
 ### 添加新的 API
 
 1. 在 `api/super.api` 中定义新的 API 接口
-2. 运行 `bash api/generate_api.sh` 生成代码
+2. 在 `backend` 下运行 `make gen-api`（或 `make gen`）生成代码
 3. 在 `api/internal/logic` 中实现业务逻辑
 
 ### 添加新的 RPC 方法
 
 1. 在 `rpc/super.proto` 中定义新的 RPC 方法
-2. 运行 `bash generate_rpc.sh` 生成代码
+2. 在 `backend` 下运行 `make gen-rpc`（或 `make gen`）生成代码
 3. 在 `rpc/internal/logic` 中实现业务逻辑
 
 ## 🐛 常见问题
