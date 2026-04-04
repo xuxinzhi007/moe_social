@@ -33,7 +33,7 @@ func (l *LoginLogic) Login(req *types.LoginReq) (resp *types.LoginResp, err erro
 		Email:    req.Email,
 	})
 	if err != nil {
-		l.Errorf("调用RPC服务失败: %v", err)
+		l.Errorf("[认证] 登录：调用用户服务失败 错误=%v", err)
 		return &types.LoginResp{
 			BaseResp: common.HandleRPCError(err, ""),
 		}, nil

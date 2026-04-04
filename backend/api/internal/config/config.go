@@ -26,13 +26,10 @@ type Config struct {
 	// 本地“云空间”配置（图片上传落盘）
 	Image ImageConf `json:"Image" yaml:"Image"`
 
-	// 客户端拉取的「公网 API 根地址」（由 backend/config/config.yaml 的 app_client 注入）
-	AppClient AppClientConf `json:"AppClient" yaml:"AppClient"`
-}
-
-type AppClientConf struct {
-	// PublicApiBaseUrl 例如 http://xxx.r3.cpolar.top（不要尾斜杠）
-	PublicApiBaseUrl string `json:"PublicApiBaseUrl" yaml:"PublicApiBaseUrl"`
+	// 客户端 GET /api/public/client-config 使用的公网 API 根地址。
+	// 仅由 super.go 的 applyUnifiedConfigOverrides 从 backend/config/config.yaml 写入；
+	// yaml:"-" 表示不参与 etc/super.yaml 解析，不必在 go-zero 主配置里重复配置。
+	ClientPublicApiBaseUrl string `json:"-" yaml:"-"`
 }
 
 type OllamaConf struct {
