@@ -102,8 +102,9 @@ class ApiService {
   }
 
   // 环境配置
-  // 设置为 true 使用生产环境，false 使用开发环境
-  static const bool _isProduction = false; // 修改这里切换环境
+  // true：走公网/隧道（会调 initRemoteProductionBaseUrl，读 backend/config/config.yaml 经 /api/public/client-config 下发）。
+  // false：本机调试（Web/iOS 用 localhost:8888；Android 用下方 dev 分支，需自行改 IP/隧道）。
+  static const bool _isProduction = true;
 
   /// API 调试日志开关（只在 Debug 模式生效）
   /// - 你提到的 “user_avatar/图片信息刷屏” 就是这里控制的
@@ -112,8 +113,9 @@ class ApiService {
   /// 是否输出“超详细”日志（会非常吵；默认关闭）
   static const bool _verboseApiLog = true;
 
-  // 生产环境地址（cpolar隧道）——仅作兜底；正式包可在启动时从远端 JSON 覆盖，见 [initRemoteProductionBaseUrl]。
-  static const String _productionUrl = 'http://7da36c26.r3.cpolar.top';
+  // 首装无缓存时的备用入口（问 client-config）；日常只需维护 yaml + GitHub，此处可长期不改。
+  static const String _productionUrl =
+      'https://karan-unsedate-unsimultaneously.ngrok-free.dev';
 
   // 开发环境地址
   static const String _developmentUrl = 'http://localhost:8888';
@@ -157,6 +159,20 @@ class ApiService {
       return _developmentUrl; // iOS模拟器
     }
     return _developmentUrl;
+  }
+
+  /// ngrok 免费域名可能返回 HTML 拦截页；REST/WS 握手需带此头才能稳定拿到 JSON。
+  static Map<String, String> tunnelBypassHeadersForUrl(String url) {
+    final uri = Uri.tryParse(url.trim());
+    if (uri == null || !uri.hasScheme) return const {};
+    final h = uri.host.toLowerCase();
+    if (h.contains('ngrok-free.app') ||
+        h.contains('ngrok-free.dev') ||
+        h.endsWith('.ngrok.io') ||
+        h.contains('ngrok.app')) {
+      return const {'ngrok-skip-browser-warning': 'true'};
+    }
+    return const {};
   }
 
   // 刷新token的端点
@@ -239,6 +255,7 @@ class ApiService {
       // 构建请求头
       final headers = <String, String>{
         'Content-Type': 'application/json',
+        ...tunnelBypassHeadersForUrl(baseUrl),
       };
 
       // 添加认证令牌
@@ -294,6 +311,11 @@ class ApiService {
         if (response.statusCode == 404) {
           if (baseUrl.contains('cpolar.top')) {
             errorMessage = 'cpolar隧道可能已断开或地址已变更，请检查隧道状态或更新API地址';
+          } else if (baseUrl.contains('ngrok-free.') ||
+              baseUrl.contains('ngrok.app') ||
+              baseUrl.contains('ngrok.io')) {
+            errorMessage =
+                'ngrok 隧道可能已变更或返回了拦截页；请核对域名、config.yaml，并确认请求已带 ngrok 跳过页头';
           } else {
             errorMessage = 'API端点不存在，请检查后端服务是否正常运行';
           }
@@ -334,6 +356,10 @@ class ApiService {
           String errorMessage = '服务器返回了HTML页面而不是JSON数据';
           if (response.statusCode == 404 && baseUrl.contains('cpolar.top')) {
             errorMessage = 'cpolar隧道可能已断开，请检查隧道状态或切换到本地开发环境';
+          } else if (baseUrl.contains('ngrok-free.') ||
+              baseUrl.contains('ngrok.app')) {
+            errorMessage =
+                'ngrok 返回了 HTML 页面；请检查域名是否与控制台一致，或隧道是否指向 8888';
           }
           throw ApiException(errorMessage, response.statusCode);
         }
@@ -415,6 +441,7 @@ class ApiService {
       final uri = Uri.parse('$baseUrl$_refreshTokenEndpoint');
       final headers = <String, String>{
         'Content-Type': 'application/json',
+        ...tunnelBypassHeadersForUrl(baseUrl),
       };
 
       // 使用当前token请求刷新
@@ -1072,6 +1099,7 @@ class ApiService {
     Future<Map<String, dynamic>> doUpload(http.Client client) async {
       final request = http.MultipartRequest('POST', uri);
       request.headers['Connection'] = 'close';
+      request.headers.addAll(tunnelBypassHeadersForUrl(baseUrl));
       final token = _currentToken;
       if (token != null && token.isNotEmpty) {
         request.headers['Authorization'] = 'Bearer $token';
@@ -1128,6 +1156,7 @@ class ApiService {
 
       // 避免某些隧道/代理对 keep-alive 连接的复用导致 Broken pipe
       request.headers['Connection'] = 'close';
+      request.headers.addAll(tunnelBypassHeadersForUrl(baseUrl));
 
       // 添加认证令牌
       final token = _currentToken;

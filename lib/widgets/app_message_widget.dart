@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/loading_provider.dart';
+import '../services/remote_api_config_service.dart';
 import 'moe_toast.dart';
 import 'moe_loading.dart';
 
 /// 全局消息显示组件
 /// 监听 LoadingProvider 并自动用 MoeToast 弹出通知
-class AppMessageWidget extends StatelessWidget {
+class AppMessageWidget extends StatefulWidget {
   final Widget child;
 
   const AppMessageWidget({
@@ -15,29 +16,48 @@ class AppMessageWidget extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<AppMessageWidget> createState() => _AppMessageWidgetState();
+}
+
+class _AppMessageWidgetState extends State<AppMessageWidget> {
+  bool _apiConfigHintShown = false;
+
+  @override
   Widget build(BuildContext context) {
     return Consumer<LoadingProvider>(
       builder: (context, loadingProvider, _) {
-        // 监听到新的 success/error 消息时，弹出 MoeToast
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!context.mounted) return;
-          // 检查是否存在 Overlay
           final overlay = Overlay.maybeOf(context);
-          if (overlay != null) {
-            if (loadingProvider.successMessage != null) {
-              MoeToast.success(context, loadingProvider.successMessage!);
-              loadingProvider.clearMessages();
-            } else if (loadingProvider.errorMessage != null) {
-              MoeToast.error(context, loadingProvider.errorMessage!);
-              loadingProvider.clearMessages();
+          if (overlay == null) return;
+
+          if (!_apiConfigHintShown) {
+            final hint = RemoteApiConfigService.takeStartupConfigHint();
+            if (hint != null) {
+              _apiConfigHintShown = true;
+              MoeToast.show(
+                context,
+                hint,
+                duration: const Duration(seconds: 6),
+                icon: Icons.info_outline_rounded,
+                backgroundColor: const Color(0xFFFFFBEB),
+                textColor: const Color(0xFFB45309),
+              );
             }
+          }
+
+          if (loadingProvider.successMessage != null) {
+            MoeToast.success(context, loadingProvider.successMessage!);
+            loadingProvider.clearMessages();
+          } else if (loadingProvider.errorMessage != null) {
+            MoeToast.error(context, loadingProvider.errorMessage!);
+            loadingProvider.clearMessages();
           }
         });
 
         return Stack(
           children: [
-            child,
-            // 全局加载指示器（半透明遮罩 + MoeLoading）
+            widget.child,
             if (loadingProvider.isLoading)
               Container(
                 color: Colors.black.withOpacity(0.15),
