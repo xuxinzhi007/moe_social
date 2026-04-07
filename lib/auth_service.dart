@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/user.dart';
@@ -83,35 +84,54 @@ class AuthService {
     }
   }
 
+  /// 网络/隧道偶发抖动时自动重试一次（与「过一会再点就成功」现象一致）；业务错误不重试。
   static Future<AuthResult> login(String account, String password) async {
-    try {
-      final result = await ApiService.login(account, password);
-      // 后端返回格式: {data: {user: {...}, token: "..."}}
-      final userData = result['data']['user'] as Map<String, dynamic>;
-      _currentUser = userData['id'] as String;
-      _token = result['data']['token'] as String;
+    const maxAttempts = 2;
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        final result = await ApiService.login(account, password);
+        final userData = result['data']['user'] as Map<String, dynamic>;
+        _currentUser = userData['id'] as String;
+        _token = result['data']['token'] as String;
 
-      // 持久化存储登录状态
-      await _saveAuthData();
+        await _saveAuthData();
 
-      final trimmedAccount = account.trim();
-      if (trimmedAccount.isNotEmpty) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(_lastLoginAccountKey, trimmedAccount);
+        final trimmedAccount = account.trim();
+        if (trimmedAccount.isNotEmpty) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_lastLoginAccountKey, trimmedAccount);
+        }
+
+        ApiService.setToken(_token);
+        PresenceService.start();
+        ChatPushService.start();
+
+        return AuthResult.success();
+      } on ApiException catch (e) {
+        final transient = e.code == 503 ||
+            e.code == 502 ||
+            e.code == 504 ||
+            (e.message.contains('无法连接')) ||
+            (e.message.contains('网络请求')) ||
+            (e.message.contains('服务器暂时不可用'));
+        if (transient && attempt < maxAttempts - 1) {
+          await Future<void>.delayed(const Duration(milliseconds: 800));
+          continue;
+        }
+        if (kDebugMode) {
+          debugPrint(
+            'AuthService.login 失败: ${e.message} (code=${e.code}) baseUrl=${ApiService.baseUrl}',
+          );
+        }
+        return AuthResult.failure(e.message);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('AuthService.login 异常: $e baseUrl=${ApiService.baseUrl}');
+        }
+        return AuthResult.failure('登录失败: ${e.toString()}');
       }
-
-      // 设置ApiService的token
-      ApiService.setToken(_token);
-      // Start websocket-based services after login.
-      PresenceService.start();
-      ChatPushService.start();
-
-      return AuthResult.success();
-    } on ApiException catch (e) {
-      return AuthResult.failure(e.message);
-    } catch (e) {
-      return AuthResult.failure('登录失败: ${e.toString()}');
     }
+    return AuthResult.failure('登录失败，请稍后重试');
   }
 
   static Future<AuthResult> register(
