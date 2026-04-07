@@ -49,11 +49,6 @@ class PostService {
     }
   }
 
-  // 创建新帖子
-  static Future<Post> createPost(Post post) async {
-    return await ApiService.createPost(post);
-  }
-
   // 点赞/取消点赞帖子
   static Future<Post> toggleLike(String postId, String userId) async {
     // 1. 乐观更新全局状态管理器（立即更新 UI）

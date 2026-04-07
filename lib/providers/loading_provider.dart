@@ -148,15 +148,6 @@ class LoadingProvider extends ChangeNotifier {
     );
   }
 
-  /// 执行创建帖子操作
-  Future<dynamic> executeCreatePost(dynamic post) {
-    return executeOperation(
-      operation: () => ApiService.createPost(post),
-      key: 'createPost',
-      successMessage: '发布成功',
-    );
-  }
-
   /// 执行图片上传操作
   Future<String?> executeUploadImage(dynamic image) {
     return executeOperation(
