@@ -102,8 +102,9 @@ class ApiService {
   }
 
   // 环境配置
-  // true：走公网/隧道（会调 initRemoteProductionBaseUrl，读 backend/config/config.yaml 经 /api/public/client-config 下发）。
-  // false：本机调试（Web/iOS 用 localhost:8888；Android 用下方 dev 分支，需自行改 IP/隧道）。
+  // true：非 Web 平台走公网/隧道（initRemoteProductionBaseUrl）。
+  // false：本机调试（iOS 模拟器等用 localhost:8888；Android 见下方分支）。
+  // 注意：Flutter Web 在 Chrome 里始终用 [_developmentUrl]，因跨域访问 ngrok 常出现 Failed to fetch。
   static const bool _isProduction = true;
 
   /// API 调试日志开关（只在 Debug 模式生效）
@@ -124,8 +125,12 @@ class ApiService {
   static String? _runtimeProductionBaseUrl;
 
   /// 在 [main] 里 `WidgetsFlutterBinding` 之后、`AuthService.init` 之前调用一次。
-  /// 仅当 [_isProduction] 为 true 时会请求 [RemoteApiConfigService]；失败则用本地缓存或 [_productionUrl]。
+  /// Web 平台不解析远程配置；其它平台在 [_isProduction] 时走 [RemoteApiConfigService]。
   static Future<void> initRemoteProductionBaseUrl() async {
+    if (kIsWeb) {
+      _runtimeProductionBaseUrl = null;
+      return;
+    }
     if (!_isProduction) {
       _runtimeProductionBaseUrl = null;
       return;
@@ -138,16 +143,17 @@ class ApiService {
 
   // 根据环境和平台自动选择API地址
   static String get baseUrl {
-    // 如果设置为生产环境，直接返回生产地址
+    // Web：页面源是 localhost:随机端口，请求 https ngrok 会跨域；ngrok 免费版对浏览器还可能返回无 CORS 的拦截页 → Failed to fetch
+    if (kIsWeb) {
+      return _developmentUrl;
+    }
+
     if (_isProduction) {
       return _runtimeProductionBaseUrl ?? _productionUrl;
     }
 
     // 开发环境根据平台选择
-    if (kIsWeb) {
-      // Web平台使用localhost
-      return _developmentUrl;
-    } else if (Platform.isAndroid) {
+    if (Platform.isAndroid) {
       // Android真机需要使用电脑IP或生产环境地址
       // 如果本地连接有问题，可以临时使用生产环境地址
       // return 'http://7da36c26.r3.cpolar.top'; // 使用生产环境
@@ -787,10 +793,14 @@ class ApiService {
     );
   }
 
-  // 创建帖子
+  /// 创建帖子；成功时返回服务端 [Post]（含真实 id、时间等），与列表/详情解析一致。
   static Future<Post> createPost(Post post) async {
-    await _request('/api/posts', method: 'POST', body: post.toJson());
-    // 这里不需要转换为Post对象，因为我们只需要知道创建成功即可
+    final result =
+        await _request('/api/posts', method: 'POST', body: post.toJson());
+    final data = result['data'];
+    if (data is Map<String, dynamic>) {
+      return Post.fromJson(data);
+    }
     return post;
   }
 

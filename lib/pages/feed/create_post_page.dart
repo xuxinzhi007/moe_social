@@ -7,7 +7,6 @@ import '../../auth_service.dart';
 import '../../models/post.dart';
 import '../../models/topic_tag.dart';
 import '../../services/api_service.dart';
-import '../../services/post_service.dart';
 import '../../services/achievement_hooks.dart';
 import '../../providers/loading_provider.dart';
 import '../../widgets/compact_topic_selector.dart';
@@ -119,8 +118,15 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   Future<void> _publishPost() async {
     final caption = _contentController.text.trim();
-    if (caption.isEmpty && _handDrawCard == null) {
-      context.read<LoadingProvider>().setError('写点文字，或画一张手绘卡片再发布吧');
+    final hasLocalImages = _selectedImages.isNotEmpty;
+    final hasCloudImages = _selectedImageUrls.isNotEmpty;
+    if (caption.isEmpty &&
+        _handDrawCard == null &&
+        !hasLocalImages &&
+        !hasCloudImages) {
+      context.read<LoadingProvider>().setError(
+            '写点文字、选几张图，或画一张手绘卡片再发布吧',
+          );
       return;
     }
 
@@ -141,7 +147,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
         final userId = AuthService.currentUser;
         if (userId == null) {
-          throw Exception('请先登录');
+          throw ApiException('请先登录', 401);
         }
 
         String handJson = '';
@@ -173,7 +179,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
           handDrawThumbUrl: thumbUrl,
         );
 
-        await PostService.createPost(newPost);
+        await ApiService.createPost(newPost);
         try {
           await AchievementHooks.recordPostPublished(
             userId,

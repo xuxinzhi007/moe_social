@@ -34,8 +34,8 @@ func (l *CreatePostLogic) CreatePost(in *super.CreatePostReq) (*super.CreatePost
 		return nil, errorx.New(400, "用户ID不能为空")
 	}
 	
-	if in.Content == "" && in.HandDrawCard == "" {
-		return nil, errorx.New(400, "帖子内容不能为空")
+	if in.Content == "" && in.HandDrawCard == "" && len(in.Images) == 0 {
+		return nil, errorx.New(400, "请填写文字、上传图片或添加手绘卡片")
 	}
 	
 	// 2. 转换用户ID
