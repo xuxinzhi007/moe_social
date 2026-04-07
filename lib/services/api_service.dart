@@ -493,7 +493,7 @@ class ApiService {
     final t = account.trim();
     final body = <String, dynamic>{'password': password};
     if (t.contains('@')) {
-      body['email'] = t;
+      body['email'] = t.toLowerCase();
     } else {
       body['username'] = t;
     }

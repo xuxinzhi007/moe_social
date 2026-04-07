@@ -52,7 +52,9 @@ func (l *LoginLogic) Login(in *super.LoginReq) (*super.LoginResp, error) {
 	username := strings.TrimSpace(in.Username)
 
 	if email != "" {
-		err = query.Where("email = ?", email).First(&user).Error
+		// 与客户端统一：忽略首尾空格；邮箱按小写匹配，避免大小写/输入法导致的「有时找不到账号」
+		emailNorm := strings.ToLower(strings.TrimSpace(email))
+		err = query.Where("LOWER(TRIM(email)) = ?", emailNorm).First(&user).Error
 	} else if username != "" {
 		if isTenDigitMoe(username) {
 			err = query.Where("moe_no = ?", username).First(&user).Error
@@ -78,7 +80,6 @@ func (l *LoginLogic) Login(in *super.LoginReq) (*super.LoginResp, error) {
 		return nil, errorx.New(401, "用户名或密码错误")
 	}
 
-	// 2. 验证密码
 	if !user.CheckPassword(in.Password) {
 		l.Infof("[认证] 登录失败：密码不正确 用户ID=%d 用户名=%s Moe号=%s %s",
 			user.ID, user.Username, user.MoeNo, attempt)
