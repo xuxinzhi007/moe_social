@@ -215,7 +215,8 @@ class SkillEnhancementSystem {
   }
 
   async performCodeReview() {
-    // 执行代码审核
+    // TODO: 实现实际的代码审核逻辑
+    console.warn('代码审核功能待实现，当前返回示例结果');
     console.log('Performing code review...');
     
     // 这里可以添加具体的代码审核逻辑
