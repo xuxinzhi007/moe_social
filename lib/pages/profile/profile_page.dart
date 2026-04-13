@@ -6,7 +6,6 @@ import '../../autoglm/autoglm_service.dart'; // 恢复导入
 import '../../auth_service.dart';
 import '../../services/api_service.dart';
 import '../../models/user.dart';
-import '../../models/post.dart';
 import '../../models/achievement_badge.dart';
 import '../../services/achievement_service.dart';
 import '../../widgets/dynamic_avatar.dart';
@@ -147,12 +146,18 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<int> _getUserPostCount(String userId) async {
     try {
-      final result = await ApiService.getPosts(page: 1, pageSize: 100)
-          .timeout(const Duration(seconds: 8));
-      final posts = result['posts'] as List<Post>;
-      return posts
-          .where((p) => p.userId.toString() == userId.toString())
-          .length;
+      final viewer =
+          AuthService.isLoggedIn ? (AuthService.currentUser ?? '') : '';
+      final result = await ApiService.getPosts(
+        page: 1,
+        pageSize: 1,
+        viewerUserId: viewer.isEmpty ? null : viewer,
+        authorUserId: userId,
+      ).timeout(const Duration(seconds: 8));
+      final total = result['total'];
+      if (total is int) return total;
+      if (total is num) return total.toInt();
+      return 0;
     } catch (e) {
       return 0;
     }
@@ -684,7 +689,26 @@ class _ProfilePageState extends State<ProfilePage> {
                               delay: const Duration(milliseconds: 250),
                               child: Row(
                                 children: [
-                                  _buildStatItemCompact('动态', '$_postCount'),
+                                  _buildStatItemCompact(
+                                    '动态',
+                                    '$_postCount',
+                                    onTap: _user != null
+                                        ? () {
+                                            HapticFeedback.lightImpact();
+                                            Navigator.pushNamed(
+                                              context,
+                                              '/user-profile',
+                                              arguments: {
+                                                'userId': _user!.id,
+                                                'userName': _user!.username,
+                                                'userAvatar': _user!.avatar,
+                                                'heroTag':
+                                                    'profile_self_${_user!.id}',
+                                              },
+                                            );
+                                          }
+                                        : null,
+                                  ),
                                   const SizedBox(width: 20),
                                   _buildStatItemCompact(
                                     '关注',

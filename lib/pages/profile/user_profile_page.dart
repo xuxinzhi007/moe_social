@@ -133,16 +133,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   Future<void> _loadUserPosts() async {
     try {
-      // 临时方案：获取最新帖子并在前端过滤
-      // 扩大获取范围到100条，以增加匹配几率
-      final result = await PostService.getPosts(page: 1, pageSize: 100);
-      final allPosts = result['posts'] as List<Post>;
-
-      final myPosts = allPosts.where((p) => p.userId.toString() == widget.userId.toString()).toList();
+      final result = await PostService.getPosts(
+        page: 1,
+        pageSize: 50,
+        authorUserId: widget.userId,
+      );
+      final list = result['posts'] as List<Post>;
 
       if (mounted) {
         setState(() {
-          _userPosts = myPosts;
+          _userPosts = list;
           _isLoadingPosts = false;
         });
       }

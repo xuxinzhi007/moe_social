@@ -29,6 +29,7 @@ import 'pages/commerce/recharge_page.dart';
 import 'pages/commerce/gacha_page.dart';
 import 'pages/profile/user_profile_page.dart';
 import 'widgets/app_message_widget.dart';
+import 'widgets/notification_popup_host.dart';
 import 'widgets/moe_bottom_bar.dart';
 import 'services/notification_service.dart';
 import 'services/remote_control_service.dart';
@@ -241,7 +242,11 @@ class _MyAppState extends State<MyApp> {
       theme: themeProvider.currentTheme,
       initialRoute: AuthService.isLoggedIn ? '/home' : '/login',
       builder: (context, child) {
-        return AppMessageWidget(child: child ?? Container());
+        return AppMessageWidget(
+          child: NotificationPopupHost(
+            child: child ?? const SizedBox.shrink(),
+          ),
+        );
       },
       routes: {
         '/login': (context) => const LoginPage(),

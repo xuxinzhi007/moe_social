@@ -12,6 +12,7 @@ class PostService {
     int pageSize = 10,
     String? feedMode,
     String? topicTagId,
+    String? authorUserId,
   }) async {
     final viewer =
         AuthService.isLoggedIn ? (AuthService.currentUser ?? '') : '';
@@ -21,6 +22,7 @@ class PostService {
       viewerUserId: viewer.isEmpty ? null : viewer,
       feedMode: feedMode,
       topicTagId: topicTagId,
+      authorUserId: authorUserId,
     );
     List<Post> posts = result['posts'];
 
