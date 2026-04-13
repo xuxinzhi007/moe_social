@@ -5,6 +5,13 @@ import 'services/llm_endpoint_config.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+/// 悬浮窗 AI 功能类型（必须顶层声明，不能写在 State 类里）
+enum AssistType {
+  reply,
+  polish,
+  translate,
+}
+
 // 配置管理类
 class OverlayConfig {
   // 默认模型配置
@@ -74,16 +81,18 @@ class _OverlayWidgetState extends State<OverlayWidget> with SingleTickerProvider
   }
 
   Future<void> _expand() async {
+    final screenW = MediaQuery.sizeOf(context).width;
     await _animationController.forward();
     // 读取剪贴板
     final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (!mounted) return;
     setState(() {
       _clipboardContent = data?.text;
       _isExpanded = true;
     });
     // 调整窗口大小以显示面板
     await FlutterOverlayWindow.resizeOverlay(
-      (MediaQuery.of(context).size.width * 0.9).toInt(),
+      (screenW * 0.9).toInt(),
       500,
       true,
     );
@@ -96,13 +105,6 @@ class _OverlayWidgetState extends State<OverlayWidget> with SingleTickerProvider
       _response = '';
     });
     await FlutterOverlayWindow.resizeOverlay(150, 150, false);
-  }
-
-  // 功能类型
-  enum AssistType {
-    reply, // 生成回复
-    polish, // 润色文本
-    translate, // 翻译
   }
 
   AssistType _currentAssistType = AssistType.reply;
@@ -209,7 +211,11 @@ class _OverlayWidgetState extends State<OverlayWidget> with SingleTickerProvider
                 ),
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 12, offset: const Offset(0, 4)),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
                 ],
               ),
               child: const Center(
@@ -231,7 +237,11 @@ class _OverlayWidgetState extends State<OverlayWidget> with SingleTickerProvider
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 20, offset: const Offset(0, 8)),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
             ],
           ),
           child: Column(
@@ -285,7 +295,9 @@ class _OverlayWidgetState extends State<OverlayWidget> with SingleTickerProvider
                       },
                       selectedColor: const Color(0xFF7F7FD5),
                       labelStyle: TextStyle(
-                        color: _currentAssistType == AssistType.reply ? Colors.white : Colors.grey[700],
+                        color: _currentAssistType == AssistType.reply
+                            ? Colors.white
+                            : Colors.grey.shade700,
                       ),
                     ),
                     ChoiceChip(
@@ -300,7 +312,9 @@ class _OverlayWidgetState extends State<OverlayWidget> with SingleTickerProvider
                       },
                       selectedColor: const Color(0xFF7F7FD5),
                       labelStyle: TextStyle(
-                        color: _currentAssistType == AssistType.polish ? Colors.white : Colors.grey[700],
+                        color: _currentAssistType == AssistType.polish
+                            ? Colors.white
+                            : Colors.grey.shade700,
                       ),
                     ),
                     ChoiceChip(
@@ -315,7 +329,9 @@ class _OverlayWidgetState extends State<OverlayWidget> with SingleTickerProvider
                       },
                       selectedColor: const Color(0xFF7F7FD5),
                       labelStyle: TextStyle(
-                        color: _currentAssistType == AssistType.translate ? Colors.white : Colors.grey[700],
+                        color: _currentAssistType == AssistType.translate
+                            ? Colors.white
+                            : Colors.grey.shade700,
                       ),
                     ),
                   ],
@@ -327,7 +343,7 @@ class _OverlayWidgetState extends State<OverlayWidget> with SingleTickerProvider
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: DropdownButtonFormField<String>(
-                    value: _targetLanguage,
+                    initialValue: _targetLanguage,
                     decoration: InputDecoration(
                       labelText: '目标语言',
                       border: OutlineInputBorder(
@@ -357,14 +373,21 @@ class _OverlayWidgetState extends State<OverlayWidget> with SingleTickerProvider
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("输入内容:", style: TextStyle(color: Colors.grey[600], fontSize: 14, fontWeight: FontWeight.w500)),
+                      Text(
+                        "输入内容:",
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.grey[50],
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[200]),
+                          border: Border.all(color: Colors.grey.shade200),
                         ),
                         child: Text(
                           _clipboardContent ?? "（剪贴板为空）",
@@ -375,9 +398,18 @@ class _OverlayWidgetState extends State<OverlayWidget> with SingleTickerProvider
                       ),
                       const SizedBox(height: 20),
                       if (_response.isNotEmpty) ...[
-                        Text(_currentAssistType == AssistType.reply ? "AI 回复:" : 
-                             _currentAssistType == AssistType.polish ? "润色结果:" : "翻译结果:", 
-                             style: TextStyle(color: Colors.grey[600], fontSize: 14, fontWeight: FontWeight.w500)),
+                        Text(
+                          _currentAssistType == AssistType.reply
+                              ? "AI 回复:"
+                              : _currentAssistType == AssistType.polish
+                                  ? "润色结果:"
+                                  : "翻译结果:",
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         Expanded(
                           child: Container(
@@ -388,15 +420,29 @@ class _OverlayWidgetState extends State<OverlayWidget> with SingleTickerProvider
                               border: Border.all(color: const Color(0xFFE1E5EB)),
                             ),
                             child: SingleChildScrollView(
-                              child: Text(_response, style: const TextStyle(fontSize: 16, lineHeight: 1.5)),
+                              child: Text(
+                                _response,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  height: 1.5,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ] else if (_isLoading)
                         const Expanded(child: Center(child: CircularProgressIndicator(color: Color(0xFF7F7FD5))))
                       else
-                        const Expanded(child: Center(child: Text("点击生成获取结果", style: TextStyle(color: Colors.grey)))),
-                  ],
+                        const Expanded(
+                          child: Center(
+                            child: Text(
+                              "点击生成获取结果",
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
               // Actions
@@ -409,12 +455,24 @@ class _OverlayWidgetState extends State<OverlayWidget> with SingleTickerProvider
                         onPressed: _isLoading ? null : _generate,
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          borderRadius: BorderRadius.circular(12),
                           side: const BorderSide(color: Color(0xFF7F7FD5)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                        child: _isLoading 
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Color(0xFF7F7FD5), strokeWidth: 2))
-                          : const Text("生成回复", style: TextStyle(color: Color(0xFF7F7FD5))),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFF7F7FD5),
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                "生成",
+                                style: TextStyle(color: Color(0xFF7F7FD5)),
+                              ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -423,9 +481,11 @@ class _OverlayWidgetState extends State<OverlayWidget> with SingleTickerProvider
                         onPressed: _response.isEmpty ? null : _paste,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          borderRadius: BorderRadius.circular(12),
                           backgroundColor: const Color(0xFF7F7FD5),
                           foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         child: const Text("复制并关闭"),
                       ),
