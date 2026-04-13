@@ -216,9 +216,14 @@ class _ProfilePageState extends State<ProfilePage> {
               title: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('个人中心',
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                  const Text(
+                    '我的',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
                   if (_isLoadingDetails) ...[
                     const SizedBox(width: 8),
                     const SizedBox(
@@ -866,10 +871,18 @@ class _ProfilePageState extends State<ProfilePage> {
     return list;
   }
 
+  /// 徽章横条高度：随系统字号缩放，避免固定像素导致 dense [BadgeCard] 纵向溢出。
+  double _achievementBadgeStripHeight(BuildContext context) {
+    final scaled = MediaQuery.of(context).textScaler.scale(130.0);
+    return scaled.clamp(108.0, 248.0);
+  }
+
   Widget _buildAchievementPreviewCard() {
     final stats = _achievementService.getBadgeStatistics(_user!.id);
     final sorted = _badgesSortedForPreview();
     final showCount = sorted.length > 12 ? 12 : sorted.length;
+    final stripH = _achievementBadgeStripHeight(context);
+    const cardW = 72.0;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
@@ -886,18 +899,23 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
-              const Text(
-                '成就徽章',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF333333),
+              Expanded(
+                child: Text(
+                  '成就徽章',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF333333),
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
@@ -913,8 +931,13 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
               ),
-              const Spacer(),
               TextButton(
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                 onPressed: () {
                   HapticFeedback.lightImpact();
                   _showAllBadges();
@@ -937,7 +960,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 118,
+            height: stripH,
             child: showCount == 0
                 ? Center(
                     child: Text(
@@ -947,22 +970,34 @@ class _ProfilePageState extends State<ProfilePage> {
                   )
                 : ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.only(bottom: 4),
+                    padding: const EdgeInsets.only(bottom: 2),
+                    clipBehavior: Clip.hardEdge,
                     itemCount: showCount,
                     separatorBuilder: (_, __) => const SizedBox(width: 8),
                     itemBuilder: (context, i) {
                       final b = sorted[i];
                       return Align(
                         alignment: Alignment.topCenter,
-                        child: BadgeCard(
-                          badge: b,
-                          size: 72,
-                          dense: true,
-                          showProgress: true,
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            _showBadgeDetails(b);
-                          },
+                        child: SizedBox(
+                          width: cardW,
+                          height: stripH,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.topCenter,
+                            child: SizedBox(
+                              width: cardW,
+                              child: BadgeCard(
+                                badge: b,
+                                size: cardW,
+                                dense: true,
+                                showProgress: true,
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  _showBadgeDetails(b);
+                                },
+                              ),
+                            ),
+                          ),
                         ),
                       );
                     },
