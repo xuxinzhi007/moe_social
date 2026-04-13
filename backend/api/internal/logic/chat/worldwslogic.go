@@ -23,11 +23,47 @@ var (
 )
 
 type worldMember struct {
-	conn *websocket.Conn
-	x, y float64
+	writeMu sync.Mutex // gorilla/websocket：同一 Conn 禁止并发 WriteMessage
+	conn    *websocket.Conn
+	x, y    float64
+	username string
+	// lastMoveBroadcast：节流对外广播；m.x/m.y 仍每次更新供新加入者读快照
+	lastMoveBroadcast time.Time
+}
+
+// writeJSON 必须在任意可能与其他 goroutine 并发写入时调用（唯一写入口）。
+func (m *worldMember) writeJSON(msg interface{}) bool {
+	if m == nil {
+		return false
+	}
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return false
+	}
+	return m.writeText(data)
+}
+
+func (m *worldMember) writeText(data []byte) bool {
+	if m == nil {
+		return false
+	}
+	m.writeMu.Lock()
+	defer m.writeMu.Unlock()
+	if m.conn == nil {
+		return false
+	}
+	_ = m.conn.SetWriteDeadline(time.Now().Add(8 * time.Second))
+	if err := m.conn.WriteMessage(websocket.TextMessage, data); err != nil {
+		logx.Errorf("world ws write: %v", err)
+		return false
+	}
+	return true
 }
 
 var worldRoomPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,48}$`)
+
+// 单人 world_move 广播最小间隔：合并突发包，降低 fan-out 写压力（坐标仍每次更新）
+const worldMoveBroadcastMinInterval = 40 * time.Millisecond
 
 // WorldWsLogic 大世界同步：同 room 内广播位置，供 Godot 等客户端走 wss 远程联机。
 type WorldWsLogic struct {
@@ -55,6 +91,26 @@ func worldPickSpawn(userID string) (float64, float64) {
 	return 640.0 + dx, 360.0 + dy
 }
 
+func sanitizeWorldUsername(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return ""
+	}
+	var b strings.Builder
+	n := 0
+	for _, r := range s {
+		if n >= 24 {
+			break
+		}
+		if r < 32 || r == 127 {
+			continue
+		}
+		b.WriteRune(r)
+		n++
+	}
+	return strings.TrimSpace(b.String())
+}
+
 func worldBroadcast(roomID string, excludeUserID string, msg interface{}) {
 	data, err := json.Marshal(msg)
 	if err != nil {
@@ -66,29 +122,28 @@ func worldBroadcast(roomID string, excludeUserID string, msg interface{}) {
 		worldRoomsMutex.RUnlock()
 		return
 	}
-	recipients := make([]*websocket.Conn, 0, len(room))
+	recipients := make([]*worldMember, 0, len(room))
 	for uid, m := range room {
-		if uid != excludeUserID && m != nil && m.conn != nil {
-			recipients = append(recipients, m.conn)
+		if excludeUserID != "" && uid == excludeUserID {
+			continue
+		}
+		if m != nil && m.conn != nil {
+			recipients = append(recipients, m)
 		}
 	}
 	worldRoomsMutex.RUnlock()
-	deadline := time.Now().Add(8 * time.Second)
-	for _, c := range recipients {
-		_ = c.SetWriteDeadline(deadline)
-		if err := c.WriteMessage(websocket.TextMessage, data); err != nil {
-			logx.Errorf("world ws broadcast write: %v", err)
-		}
+	for _, m := range recipients {
+		_ = m.writeText(data)
 	}
 }
 
-func worldSendJSON(conn *websocket.Conn, msg interface{}) bool {
-	data, err := json.Marshal(msg)
-	if err != nil {
-		return false
+func worldMemberLookup(roomID, userID string) *worldMember {
+	worldRoomsMutex.RLock()
+	defer worldRoomsMutex.RUnlock()
+	if room, ok := worldRooms[roomID]; ok {
+		return room[userID]
 	}
-	_ = conn.SetWriteDeadline(time.Now().Add(8 * time.Second))
-	return conn.WriteMessage(websocket.TextMessage, data) == nil
+	return nil
 }
 
 func worldLeaveRoom(roomID, userID string) {
@@ -98,9 +153,16 @@ func worldLeaveRoom(roomID, userID string) {
 	if !ok {
 		return
 	}
+	m := room[userID]
 	delete(room, userID)
 	if len(room) == 0 {
 		delete(worldRooms, roomID)
+	}
+	if m != nil && m.conn != nil {
+		m.writeMu.Lock()
+		_ = m.conn.Close()
+		m.conn = nil
+		m.writeMu.Unlock()
 	}
 }
 
@@ -157,9 +219,13 @@ func (l *WorldWsLogic) WorldWs() error {
 		worldRooms[roomID] = room
 	}
 	if old, exists := room[userID]; exists && old != nil && old.conn != nil {
+		old.writeMu.Lock()
 		_ = old.conn.Close()
+		old.conn = nil
+		old.writeMu.Unlock()
 	}
-	room[userID] = &worldMember{conn: conn, x: sx, y: sy}
+	member := &worldMember{conn: conn, x: sx, y: sy, username: ""}
+	room[userID] = member
 	worldRoomsMutex.Unlock()
 
 	peers := make([]map[string]interface{}, 0)
@@ -170,15 +236,16 @@ func (l *WorldWsLogic) WorldWs() error {
 				continue
 			}
 			peers = append(peers, map[string]interface{}{
-				"user_id": uid,
-				"x":       m.x,
-				"y":       m.y,
+				"user_id":  uid,
+				"x":        m.x,
+				"y":        m.y,
+				"username": m.username,
 			})
 		}
 	}
 	worldRoomsMutex.RUnlock()
 
-	if !worldSendJSON(conn, map[string]interface{}{
+	if !member.writeJSON(map[string]interface{}{
 		"type":    "world_welcome",
 		"user_id": userID,
 		"room":    roomID,
@@ -187,15 +254,15 @@ func (l *WorldWsLogic) WorldWs() error {
 		"peers":   peers,
 	}) {
 		worldLeaveRoom(roomID, userID)
-		_ = conn.Close()
 		return nil
 	}
 
 	worldBroadcast(roomID, userID, map[string]interface{}{
-		"type":    "world_peer_joined",
-		"user_id": userID,
-		"x":       sx,
-		"y":       sy,
+		"type":     "world_peer_joined",
+		"user_id":  userID,
+		"x":        sx,
+		"y":        sy,
+		"username": "",
 	})
 
 	go l.handleConnection(roomID, userID, conn)
@@ -206,7 +273,6 @@ func (l *WorldWsLogic) WorldWs() error {
 func (l *WorldWsLogic) handleConnection(roomID, userID string, conn *websocket.Conn) {
 	defer func() {
 		worldLeaveRoom(roomID, userID)
-		_ = conn.Close()
 		l.Logger.Infof("World ws user %s left room %s", userID, roomID)
 		worldBroadcast(roomID, "", map[string]interface{}{
 			"type":    "world_peer_left",
@@ -229,11 +295,11 @@ func (l *WorldWsLogic) handleConnection(roomID, userID string, conn *websocket.C
 			break
 		}
 		conn.SetReadDeadline(time.Now().Add(75 * time.Second))
-		l.handleMessage(roomID, userID, conn, message)
+		l.handleMessage(roomID, userID, message)
 	}
 }
 
-func (l *WorldWsLogic) handleMessage(roomID, userID string, conn *websocket.Conn, message []byte) {
+func (l *WorldWsLogic) handleMessage(roomID, userID string, message []byte) {
 	var msg map[string]interface{}
 	if err := json.Unmarshal(message, &msg); err != nil {
 		return
@@ -244,25 +310,48 @@ func (l *WorldWsLogic) handleMessage(roomID, userID string, conn *websocket.Conn
 	}
 	switch msgType {
 	case "ping":
-		worldSendJSON(conn, map[string]interface{}{"type": "pong"})
+		if m := worldMemberLookup(roomID, userID); m != nil {
+			m.writeJSON(map[string]interface{}{"type": "pong"})
+		}
 	case "world_move":
 		x, xok := toFloat(msg["x"])
 		y, yok := toFloat(msg["y"])
 		if !xok || !yok {
 			return
 		}
+		var shouldBroadcast bool
 		worldRoomsMutex.Lock()
 		if room, ok := worldRooms[roomID]; ok {
 			if m, ok := room[userID]; ok && m != nil {
 				m.x, m.y = x, y
+				if time.Since(m.lastMoveBroadcast) >= worldMoveBroadcastMinInterval {
+					m.lastMoveBroadcast = time.Now()
+					shouldBroadcast = true
+				}
 			}
 		}
 		worldRoomsMutex.Unlock()
-		worldBroadcast(roomID, userID, map[string]interface{}{
-			"type":    "world_move",
-			"user_id": userID,
-			"x":       x,
-			"y":       y,
+		if shouldBroadcast {
+			worldBroadcast(roomID, userID, map[string]interface{}{
+				"type":    "world_move",
+				"user_id": userID,
+				"x":       x,
+				"y":       y,
+			})
+		}
+	case "world_profile":
+		uname := sanitizeWorldUsername(fmt.Sprint(msg["username"]))
+		worldRoomsMutex.Lock()
+		if room, ok := worldRooms[roomID]; ok {
+			if m, ok := room[userID]; ok && m != nil {
+				m.username = uname
+			}
+		}
+		worldRoomsMutex.Unlock()
+		worldBroadcast(roomID, "", map[string]interface{}{
+			"type":     "world_peer_profile",
+			"user_id":  userID,
+			"username": uname,
 		})
 	default:
 		l.Logger.Infof("World ws unknown type from %s: %s", userID, msgType)
