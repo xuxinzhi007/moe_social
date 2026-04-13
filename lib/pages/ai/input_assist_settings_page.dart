@@ -69,19 +69,17 @@ class _InputAssistSettingsPageState extends State<InputAssistSettingsPage> {
             ),
             TextButton(
               onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
                 Navigator.pop(context);
                 await _channel.invokeMethod('requestOverlayPermission');
-                // 权限申请后检查状态
-                final granted = await _channel.invokeMethod<bool>('checkOverlayPermission') ?? false;
-                if (granted) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('权限已授予，悬浮窗已开启')),
-                    );
-                    // 重新加载状态
-                    await _load();
-                  }
-                }
+                final granted =
+                    await _channel.invokeMethod<bool>('checkOverlayPermission') ??
+                        false;
+                if (!granted || !mounted) return;
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('权限已授予，悬浮窗已开启')),
+                );
+                await _load();
               },
               child: const Text('去授权'),
             ),
@@ -107,17 +105,7 @@ class _InputAssistSettingsPageState extends State<InputAssistSettingsPage> {
         );
         return;
       }
-      
-      // 检查悬浮窗服务是否可用
-      final serviceAvailable = await FlutterOverlayWindow.isPermissionGranted();
-      if (!serviceAvailable) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('悬浮窗服务不可用，请检查系统设置')),
-        );
-        return;
-      }
-      
+
       await FlutterOverlayWindow.showOverlay(
         enableDrag: true,
         overlayTitle: "Moe AI",
@@ -205,7 +193,7 @@ class _InputAssistSettingsPageState extends State<InputAssistSettingsPage> {
                         trailing: TextButton(
                           onPressed: () async {
                             await FlutterOverlayWindow.closeOverlay();
-                            if (!mounted) return;
+                            if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('已关闭悬浮球')),
                             );

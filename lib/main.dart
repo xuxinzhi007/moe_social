@@ -51,6 +51,8 @@ import 'providers/checkin_provider.dart';
 import 'providers/user_level_provider.dart';
 import 'providers/game_provider.dart';
 import 'pages/feed/home_page.dart';
+// 必须进入 main 的依赖图，否则 release AOT 不包含 overlay_entry，原生 OverlayService 无法启动 overlayMain。
+import 'overlay_entry.dart'; // ignore: unused_import
 
 void main() async {
   // 使用runZonedGuarded捕获所有未捕获的错误
