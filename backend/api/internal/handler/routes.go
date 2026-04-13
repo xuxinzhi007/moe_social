@@ -100,6 +100,12 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/ws/remote",
 				Handler: chat.RemoteWsHandler(serverCtx),
 			},
+			{
+				// WebSocket大世界同步（房间广播，JSON）
+				Method:  http.MethodGet,
+				Path:    "/ws/world",
+				Handler: chat.WorldWsHandler(serverCtx),
+			},
 		},
 	)
 

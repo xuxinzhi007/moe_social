@@ -1498,5 +1498,9 @@ service Super {
 	@doc "WebSocket在线状态服务"
 	@handler PresenceWs
 	get /ws/presence
+
+	@doc "WebSocket大世界同步（房间广播，JSON）"
+	@handler WorldWs
+	get /ws/world
 }
 
