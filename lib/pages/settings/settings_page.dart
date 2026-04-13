@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -7,6 +8,7 @@ import '../../auth_service.dart';
 import '../../services/api_service.dart';
 import '../../services/memory_service.dart';
 import '../../services/update_service.dart';
+import '../../services/startup_update_preferences.dart';
 import '../ai/llm_terminal_mode_settings_page.dart';
 import '../ai/input_assist_settings_page.dart';
 import '../../providers/theme_provider.dart';
@@ -27,13 +29,22 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _notificationsEnabled = true;
+  bool _autoUpdateOnLaunch = true;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<DeviceInfoProvider>(context, listen: false).init();
+      unawaited(_loadStartupUpdatePref());
     });
+  }
+
+  Future<void> _loadStartupUpdatePref() async {
+    final v = await StartupUpdatePreferences.getAutoCheckOnLaunch();
+    if (mounted) {
+      setState(() => _autoUpdateOnLaunch = v);
+    }
   }
 
   void _showDeviceInfoSheet() {
@@ -584,6 +595,21 @@ class _SettingsPageState extends State<SettingsPage> {
             delay: const Duration(milliseconds: 200),
             child: MoeMenuCard(
               items: [
+                MoeMenuItem(
+                  icon: Icons.system_security_update_rounded,
+                  title: '启动时检查更新',
+                  subtitle: '发现新版本时提醒；无更新不提示。仅 Android 侧载包有效',
+                  color: const Color(0xFF7F7FD5),
+                  onTap: () {},
+                  trailing: Switch.adaptive(
+                    value: _autoUpdateOnLaunch,
+                    activeColor: const Color(0xFF7F7FD5),
+                    onChanged: (bool value) async {
+                      setState(() => _autoUpdateOnLaunch = value);
+                      await StartupUpdatePreferences.setAutoCheckOnLaunch(value);
+                    },
+                  ),
+                ),
                 MoeMenuItem(
                   icon: Icons.phone_iphone_rounded,
                   title: '本机设备信息',
