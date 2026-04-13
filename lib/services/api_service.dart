@@ -543,6 +543,7 @@ class ApiService {
     String? viewerUserId,
     String? feedMode,
     String? topicTagId,
+    String? authorUserId,
   }) async {
     final parts = <String>[
       'page=$page',
@@ -557,6 +558,10 @@ class ApiService {
     }
     if (topicTagId != null && topicTagId.isNotEmpty) {
       parts.add('topic_tag_id=${Uri.encodeQueryComponent(topicTagId)}');
+    }
+    if (authorUserId != null && authorUserId.isNotEmpty) {
+      parts.add(
+          'author_user_id=${Uri.encodeQueryComponent(authorUserId)}');
     }
     final result = await _request('/api/posts?${parts.join('&')}');
     // 始终输出total字段的值和postsJson的长度，不依赖于_verboseApiLog
