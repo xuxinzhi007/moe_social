@@ -1,9 +1,24 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart';
-import 'package:flutter/services.dart';
-import 'services/llm_endpoint_config.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:ui' show PlatformDispatcher;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import 'package:http/http.dart' as http;
+
+import 'services/llm_endpoint_config.dart';
+
+/// 悬浮窗内 [MediaQuery] 反映的是窗口自身尺寸，resize 必须用真实屏幕逻辑宽度。
+double _logicalDisplayWidthPx() {
+  final views = PlatformDispatcher.instance.views;
+  if (views.isEmpty) return 360;
+  double maxW = 0;
+  for (final v in views) {
+    final w = v.physicalSize.width / v.devicePixelRatio;
+    if (w > maxW) maxW = w;
+  }
+  return maxW > 0 ? maxW : 360;
+}
 
 /// 悬浮窗 AI 功能类型（必须顶层声明，不能写在 State 类里）
 enum AssistType {
@@ -81,7 +96,7 @@ class _OverlayWidgetState extends State<OverlayWidget> with SingleTickerProvider
   }
 
   Future<void> _expand() async {
-    final screenW = MediaQuery.sizeOf(context).width;
+    final screenW = _logicalDisplayWidthPx();
     await _animationController.forward();
     // 读取剪贴板
     final data = await Clipboard.getData(Clipboard.kTextPlain);
@@ -104,7 +119,7 @@ class _OverlayWidgetState extends State<OverlayWidget> with SingleTickerProvider
       _isExpanded = false;
       _response = '';
     });
-    await FlutterOverlayWindow.resizeOverlay(150, 150, false);
+    await FlutterOverlayWindow.resizeOverlay(140, 140, false);
   }
 
   AssistType _currentAssistType = AssistType.reply;
