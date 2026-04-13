@@ -36,6 +36,7 @@ import 'services/presence_service.dart';
 import 'services/chat_push_service.dart';
 import 'services/accessibility_overlay_service.dart';
 import 'services/push_notification_service.dart';
+import 'services/startup_update_service.dart';
 import 'pages/gallery/cloud_gallery_page.dart';
 import 'pages/profile/friends_page.dart';
 import 'pages/discover/discover_page.dart';
@@ -211,8 +212,23 @@ void main() async {
   });
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(const Duration(milliseconds: 650), () {
+        unawaited(StartupUpdateService.tryLaunchUpdateCheck());
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
