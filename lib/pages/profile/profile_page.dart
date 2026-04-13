@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -163,6 +165,15 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  void _openEditProfile() {
+    HapticFeedback.lightImpact();
+    final u = _user;
+    if (u == null) return;
+    Navigator.pushNamed(context, '/edit-profile', arguments: u).then((_) {
+      if (mounted) _loadUserInfo();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading && _user == null) {
@@ -196,10 +207,11 @@ class _ProfilePageState extends State<ProfilePage> {
           physics: const BouncingScrollPhysics(),
           slivers: [
             SliverAppBar(
-              expandedHeight: 380.0,
+              expandedHeight: 352,
               pinned: true,
               stretch: true,
               backgroundColor: const Color(0xFF7F7FD5),
+              surfaceTintColor: Colors.transparent,
               elevation: 0,
               title: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -234,14 +246,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, color: Colors.white),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    if (_user != null) {
-                      Navigator.pushNamed(context, '/edit-profile', arguments: _user).then((_) {
-                        _loadUserInfo();
-                      });
-                    }
-                  },
+                  onPressed: _openEditProfile,
                 ),
               ],
               flexibleSpace: FlexibleSpaceBar(
@@ -273,17 +278,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Padding(
-                            padding: EdgeInsets.only(left: 12, bottom: 10),
-                            child: Text(
-                              '云端与相册',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF333333),
-                              ),
-                            ),
-                          ),
+                          _buildProfileSectionTitle('云端与相册'),
                           _buildMenuCard([
                             _MenuItem(
                               icon: Icons.cloud_queue_rounded,
@@ -312,11 +307,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Padding(
-                            padding: EdgeInsets.only(left: 12, bottom: 10),
-                            child: Text('每日福利', 
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
-                          ),
+                          _buildProfileSectionTitle('每日福利'),
                           _buildMenuCard([
                             _MenuItem(
                               icon: Icons.calendar_today_rounded,
@@ -368,11 +359,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Padding(
-                            padding: EdgeInsets.only(left: 12, bottom: 10),
-                            child: Text('实验室与系统', 
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
-                          ),
+                          _buildProfileSectionTitle('实验室与系统'),
                           _buildMenuCard([
                               _MenuItem(
                                 icon: Icons.smart_toy_rounded,
@@ -450,315 +437,423 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildHeader() {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // 背景图
-        const Positioned.fill(
-          child: ProfileBg(),
-        ),
+    const primaryGlow = Color(0xFF7F7FD5);
+    final sig = (_user?.signature ?? '').trim();
 
-        // 渐变覆盖层
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const Positioned.fill(child: ProfileBg()),
         Positioned.fill(
-          child: Container(
-            decoration: const BoxDecoration(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0xFF7F7FD5),
-                  Color(0xFF86A8E7),
-                  Color(0xFF91EAE4),
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.14),
                 ],
+                stops: const [0.45, 1.0],
               ),
             ),
           ),
         ),
-
-        // 用户信息内容
         SafeArea(
-          child: Center(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 36, 20, 14),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 15),
-                // 用户头像和基本信息
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    children: [
-                      FadeInUp(
-                        delay: const Duration(milliseconds: 100),
+                FadeInUp(
+                  delay: const Duration(milliseconds: 80),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: _openEditProfile,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: primaryGlow.withValues(alpha: 0.38),
+                              blurRadius: 28,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
                         child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                            ),
+                          padding: const EdgeInsets.all(3.5),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
                             shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 15,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
                           ),
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: DynamicAvatar(
-                              avatarUrl: _user?.avatar ?? '',
-                              size: 80,
-                              frameId: _user?.equippedFrameId,
-                            ),
+                          child: DynamicAvatar(
+                            avatarUrl: _user?.avatar ?? '',
+                            size: 82,
+                            frameId: _user?.equippedFrameId,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            FadeInUp(
-                              delay: const Duration(milliseconds: 150),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                FadeInUp(
+                  delay: const Duration(milliseconds: 120),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          _user?.username ?? '未知用户',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: 0.3,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (_isVip) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: const Color(0xFFFFE082).withValues(alpha: 0.95),
+                            ),
+                          ),
+                          child: const Text(
+                            'VIP',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFFFFF8E1),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                FadeInUp(
+                  delay: const Duration(milliseconds: 140),
+                  child: GestureDetector(
+                    onTap: _openEditProfile,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        sig.isEmpty ? '点击添加个性签名' : sig,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.35,
+                          color: Colors.white.withValues(
+                            alpha: sig.isEmpty ? 0.58 : 0.9,
+                          ),
+                          fontStyle:
+                              sig.isEmpty ? FontStyle.italic : FontStyle.normal,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                FadeInUp(
+                  delay: const Duration(milliseconds: 160),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if ((_user?.moeNo ?? '').isNotEmpty)
+                        Material(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(999),
+                          child: InkWell(
+                            onTap: () {
+                              Clipboard.setData(
+                                ClipboardData(text: _user!.moeNo),
+                              );
+                              MoeToast.success(context, '已复制 Moe 号');
+                            },
+                            borderRadius: BorderRadius.circular(999),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Flexible(
-                                    child: Text(
-                                      _user?.username ?? '未知用户',
-                                      style: TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                        shadows: [
-                                          Shadow(
-                                            color: Colors.black.withOpacity(0.2),
-                                            offset: const Offset(0, 2),
-                                            blurRadius: 4,
-                                          ),
-                                        ],
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
+                                  Icon(
+                                    Icons.badge_outlined,
+                                    size: 15,
+                                    color: Colors.white.withValues(alpha: 0.95),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _user!.moeNo,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.6,
                                     ),
                                   ),
-                                  if (_isVip) ...[
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 4,
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.copy_rounded,
+                                    size: 14,
+                                    color: Colors.white.withValues(alpha: 0.85),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      Consumer<UserLevelProvider>(
+                        builder: (context, levelProvider, child) {
+                          final userLevel = levelProvider.userLevel;
+                          if (userLevel == null) {
+                            return const SizedBox.shrink();
+                          }
+                          return Material(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(999),
+                            child: InkWell(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                _navigateToUserLevel();
+                              },
+                              borderRadius: BorderRadius.circular(999),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.stars_rounded,
+                                      size: 15,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Lv.${userLevel.level} ${userLevel.levelTitle}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
                                       ),
-                                      decoration: BoxDecoration(
-                                        gradient: const LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                                        ),
-                                        borderRadius: BorderRadius.circular(999),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(0.2),
-                                            offset: const Offset(0, 2),
-                                            blurRadius: 4,
-                                          ),
-                                        ],
-                                      ),
-                                      child: const Text(
-                                        'VIP',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w800,
-                                          color: Color(0xFF7A4F00),
-                                        ),
-                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Icon(
+                                      Icons.chevron_right_rounded,
+                                      size: 18,
+                                      color: Colors.white.withValues(alpha: 0.75),
                                     ),
                                   ],
-                                ],
-                              ),
-                            ),
-                            if ((_user?.moeNo ?? '').isNotEmpty) ...[
-                              const SizedBox(height: 6),
-                              FadeInUp(
-                                delay: const Duration(milliseconds: 175),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () {
-                                      Clipboard.setData(
-                                        ClipboardData(text: _user!.moeNo),
-                                      );
-                                      MoeToast.success(context, '已复制 Moe 号');
-                                    },
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 4,
-                                        horizontal: 2,
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            'Moe 号 ${_user!.moeNo}',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.white.withOpacity(0.92),
-                                              fontWeight: FontWeight.w600,
-                                              letterSpacing: 0.8,
-                                              shadows: const [
-                                                Shadow(
-                                                  color: Colors.black26,
-                                                  offset: Offset(0, 1),
-                                                  blurRadius: 2,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Icon(
-                                            Icons.copy_rounded,
-                                            size: 16,
-                                            color: Colors.white.withOpacity(0.85),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
                                 ),
                               ),
-                            ],
-                            const SizedBox(height: 6),
-                            // 等级胶囊条 (Compact Level Indicator)
-                            FadeInUp(
-                              delay: const Duration(milliseconds: 200),
-                              child: Consumer<UserLevelProvider>(
-                                builder: (context, levelProvider, child) {
-                                  final userLevel = levelProvider.userLevel;
-                                  if (userLevel == null) return const SizedBox.shrink();
-                                  return GestureDetector(
-                                    onTap: () {
-                                      HapticFeedback.lightImpact();
-                                      _navigateToUserLevel();
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(color: Colors.white.withOpacity(0.4)),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(0.1),
-                                            offset: const Offset(0, 2),
-                                            blurRadius: 4,
-                                          ),
-                                        ],
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(Icons.stars_rounded, size: 16, color: Colors.white),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            'Lv.${userLevel.level} ${userLevel.levelTitle}',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.white70),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                FadeInUp(
+                  delay: const Duration(milliseconds: 200),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(22),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                          horizontal: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.26),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.42),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildHeaderStatItem(
+                                '动态',
+                                '$_postCount',
+                                onTap: _user != null
+                                    ? () {
+                                        HapticFeedback.lightImpact();
+                                        Navigator.pushNamed(
+                                          context,
+                                          '/user-profile',
+                                          arguments: {
+                                            'userId': _user!.id,
+                                            'userName': _user!.username,
+                                            'userAvatar': _user!.avatar,
+                                            'heroTag':
+                                                'profile_self_${_user!.id}',
+                                          },
+                                        );
+                                      }
+                                    : null,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            // 统计数据
-                            FadeInUp(
-                              delay: const Duration(milliseconds: 250),
-                              child: Row(
-                                children: [
-                                  _buildStatItemCompact(
-                                    '动态',
-                                    '$_postCount',
-                                    onTap: _user != null
-                                        ? () {
-                                            HapticFeedback.lightImpact();
-                                            Navigator.pushNamed(
-                                              context,
-                                              '/user-profile',
-                                              arguments: {
-                                                'userId': _user!.id,
-                                                'userName': _user!.username,
-                                                'userAvatar': _user!.avatar,
-                                                'heroTag':
-                                                    'profile_self_${_user!.id}',
-                                              },
-                                            );
-                                          }
-                                        : null,
-                                  ),
-                                  const SizedBox(width: 20),
-                                  _buildStatItemCompact(
-                                    '关注',
-                                    '$_followingCount',
-                                    onTap: _user != null
-                                        ? () {
-                                            HapticFeedback.lightImpact();
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    FollowingPage(userId: _user!.id),
-                                              ),
-                                            );
-                                          }
-                                        : null,
-                                  ),
-                                  const SizedBox(width: 20),
-                                  _buildStatItemCompact(
-                                    '粉丝',
-                                    '$_followerCount',
-                                    onTap: _user != null
-                                        ? () {
-                                            HapticFeedback.lightImpact();
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    FollowersPage(userId: _user!.id),
-                                              ),
-                                            );
-                                          }
-                                        : null,
-                                  ),
-                                ],
+                            Container(
+                              width: 1,
+                              height: 34,
+                              color: Colors.white.withValues(alpha: 0.35),
+                            ),
+                            Expanded(
+                              child: _buildHeaderStatItem(
+                                '关注',
+                                '$_followingCount',
+                                onTap: _user != null
+                                    ? () {
+                                        HapticFeedback.lightImpact();
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute<void>(
+                                            builder: (context) => FollowingPage(
+                                              userId: _user!.id,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    : null,
+                              ),
+                            ),
+                            Container(
+                              width: 1,
+                              height: 34,
+                              color: Colors.white.withValues(alpha: 0.35),
+                            ),
+                            Expanded(
+                              child: _buildHeaderStatItem(
+                                '粉丝',
+                                '$_followerCount',
+                                onTap: _user != null
+                                    ? () {
+                                        HapticFeedback.lightImpact();
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute<void>(
+                                            builder: (context) => FollowersPage(
+                                              userId: _user!.id,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    : null,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
-
-                const SizedBox(height: 12),
               ],
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildHeaderStatItem(
+    String label,
+    String value, {
+    VoidCallback? onTap,
+  }) {
+    const valueStyle = TextStyle(
+      fontSize: 19,
+      fontWeight: FontWeight.w800,
+      color: Color(0xFF1E1E2E),
+      height: 1.05,
+    );
+    final labelStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+      color: const Color(0xFF1E1E2E).withValues(alpha: 0.52),
+    );
+    final col = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(value, style: valueStyle),
+        const SizedBox(height: 4),
+        Text(label, style: labelStyle),
+      ],
+    );
+    if (onTap != null) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: col,
+          ),
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: col,
+    );
+  }
+
+  Widget _buildProfileSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 16,
+            decoration: BoxDecoration(
+              color: const Color(0xFF7F7FD5),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF2D2D3D),
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -884,41 +979,6 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
     );
-  }
-
-  Widget _buildStatItemCompact(String label, String value, {VoidCallback? onTap}) {
-    final child = Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-            color: Colors.white,
-            height: 1.1,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-    if (onTap != null) {
-      return GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: child,
-      );
-    }
-    return child;
   }
 
   Future<void> _openVipCenter() async {
