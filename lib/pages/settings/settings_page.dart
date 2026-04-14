@@ -10,7 +10,6 @@ import '../../services/memory_service.dart';
 import '../../services/update_service.dart';
 import '../../services/startup_update_preferences.dart';
 import '../ai/llm_terminal_mode_settings_page.dart';
-import '../ai/input_assist_settings_page.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/device_info_provider.dart';
 import '../profile/memory_timeline_page.dart';
@@ -672,46 +671,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     },
                   ),
                 ),
-                MoeMenuItem(
-                  icon: Icons.bubble_chart_rounded,
-                  title: '输入辅助悬浮球',
-                  subtitle: '在 QQ/微信 输入框旁一键生成回复',
-                  color: Colors.pinkAccent,
-                  onTap: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const InputAssistSettingsPage(),
-                      ),
-                    );
-                    if (mounted) setState(() {});
-                  },
-                  trailing: FutureBuilder<bool>(
-                    future: const MethodChannel('com.moe_social/autoglm')
-                        .invokeMethod<bool>('getInputAssistEnabled')
-                        .then((v) => v ?? false),
-                    builder: (context, snapshot) {
-                      final enabled = snapshot.data == true;
-                      return Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: (enabled ? Colors.green : Colors.grey)
-                              .withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          enabled ? '已开启' : '未开启',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: enabled ? Colors.green : Colors.grey[700],
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+
                 MoeMenuItem(
                   icon: Icons.psychology_rounded,
                   title: '模型记忆线',
@@ -1071,15 +1031,9 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
       icon: Icons.location_on_rounded,
       permission: Permission.location,
     ),
-    _PrivacyPermissionItem(
-      title: '悬浮窗',
-      description: 'AutoGLM 助手需要此权限显示悬浮控制窗口',
-      icon: Icons.picture_in_picture_rounded,
-      permission: Permission.systemAlertWindow,
-    ),
+
   ];
 
-  bool _accessibilityEnabled = false;
   bool _loading = false;
 
   @override
@@ -1097,9 +1051,6 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
         final status = await item.permission.status;
         item.status = status;
       }
-      if (!kIsWeb) {
-        _accessibilityEnabled = await _checkAccessibilityEnabled();
-      }
       if (mounted) {
         setState(() {});
       }
@@ -1108,29 +1059,6 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
         setState(() {
           _loading = false;
         });
-      }
-    }
-  }
-
-  Future<bool> _checkAccessibilityEnabled() async {
-    try {
-      return false; 
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<void> _openAccessibilitySettings() async {
-    try {
-      await openAppSettings();
-      if (mounted) {
-        MoeToast.show(context, '请在无障碍设置中找到「Moe Social 助手」并启用',
-            icon: Icons.info_outline_rounded,
-            duration: const Duration(seconds: 4));
-      }
-    } catch (e) {
-      if (mounted) {
-        MoeToast.error(context, '无法打开设置');
       }
     }
   }
@@ -1342,33 +1270,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
             ),
           ),
           
-          MoeMenuCard(
-            items: [
-              MoeMenuItem(
-                icon: Icons.accessibility_new_rounded,
-                title: '无障碍服务',
-                subtitle: 'AutoGLM 助手需要此权限实现自动化操作',
-                color: Colors.deepPurple,
-                onTap: _openAccessibilitySettings,
-                trailing: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: (_accessibilityEnabled ? Colors.green : Colors.orange)
-                        .withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    _accessibilityEnabled ? '已开启' : '需手动开启',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: _accessibilityEnabled ? Colors.green : Colors.orange,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+
           
           const SizedBox(height: 20),
         ],
