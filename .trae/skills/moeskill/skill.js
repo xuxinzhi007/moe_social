@@ -14,15 +14,19 @@ class MoeSkill {
 
   async initialize() {
     console.log('Initializing Moe Social Skill...');
-    // 解析docs目录
-    await this.parseDocs();
-    // 分析项目结构
-    this.analyzeProjectStructure();
-    // 加载学习数据
-    this.loadLearningData();
-    // 启动文档和代码变化监控
-    this.startMonitoring();
-    console.log('Moe Social Skill initialized successfully!');
+    try {
+      // 解析docs目录
+      await this.parseDocs();
+      // 分析项目结构
+      this.analyzeProjectStructure();
+      // 加载学习数据
+      this.loadLearningData();
+      // 启动文档和代码变化监控
+      this.startMonitoring();
+      console.log('Moe Social Skill initialized successfully!');
+    } catch (error) {
+      console.error('Error initializing Moe Social Skill:', error);
+    }
   }
 
   startMonitoring() {
@@ -296,58 +300,66 @@ class MoeSkill {
   async processQuery(query) {
     console.log(`Processing query: ${query}`);
     
-    // 分析查询意图
-    const intent = this.analyzeIntent(query);
-    
-    // 学习用户查询模式
-    this.learnFromQuery(query, intent);
-    
-    // 运行技能提升系统分析
-    await this.enhancementSystem.runFullAnalysis();
-    const suggestions = this.enhancementSystem.getSuggestions();
-    
-    // 根据意图处理
-    let response;
-    switch (intent) {
-      case 'project_overview':
-        response = this.getProjectOverview();
-        break;
-      case 'document_retrieval':
-        response = this.retrieveDocuments(query);
-        break;
-      case 'code_analysis':
-        response = this.analyzeCode(query);
-        // 添加技能提升系统的建议
-        if (suggestions.length > 0) {
-          response.content += '\n\n## 技能提升建议\n';
-          suggestions.forEach((suggestion, index) => {
-            response.content += `${index + 1}. **${suggestion.type}**: ${suggestion.message}\n`;
-            response.content += `   ${suggestion.details}\n`;
-          });
-        }
-        break;
-      case 'feature_implementation':
-        response = this.getFeatureImplementation(query);
-        break;
-      case 'bug_fix':
-        response = this.getBugFix(query);
-        // 添加技能提升系统的建议
-        if (suggestions.length > 0) {
-          response.content += '\n\n## 技能提升建议\n';
-          suggestions.forEach((suggestion, index) => {
-            response.content += `${index + 1}. **${suggestion.type}**: ${suggestion.message}\n`;
-            response.content += `   ${suggestion.details}\n`;
-          });
-        }
-        break;
-      default:
-        response = this.getDefaultResponse();
+    try {
+      // 分析查询意图
+      const intent = this.analyzeIntent(query);
+      
+      // 学习用户查询模式
+      this.learnFromQuery(query, intent);
+      
+      // 运行技能提升系统分析
+      await this.enhancementSystem.runFullAnalysis();
+      const suggestions = this.enhancementSystem.getSuggestions();
+      
+      // 根据意图处理
+      let response;
+      switch (intent) {
+        case 'project_overview':
+          response = this.getProjectOverview();
+          break;
+        case 'document_retrieval':
+          response = this.retrieveDocuments(query);
+          break;
+        case 'code_analysis':
+          response = this.analyzeCode(query);
+          // 添加技能提升系统的建议
+          if (suggestions.length > 0) {
+            response.content += '\n\n## 技能提升建议\n';
+            suggestions.forEach((suggestion, index) => {
+              response.content += `${index + 1}. **${suggestion.type}**: ${suggestion.message}\n`;
+              response.content += `   ${suggestion.details}\n`;
+            });
+          }
+          break;
+        case 'feature_implementation':
+          response = this.getFeatureImplementation(query);
+          break;
+        case 'bug_fix':
+          response = this.getBugFix(query);
+          // 添加技能提升系统的建议
+          if (suggestions.length > 0) {
+            response.content += '\n\n## 技能提升建议\n';
+            suggestions.forEach((suggestion, index) => {
+              response.content += `${index + 1}. **${suggestion.type}**: ${suggestion.message}\n`;
+              response.content += `   ${suggestion.details}\n`;
+            });
+          }
+          break;
+        default:
+          response = this.getDefaultResponse();
+      }
+      
+      // 保存学习数据
+      this.saveLearningData();
+      
+      return response;
+    } catch (error) {
+      console.error('Error processing query:', error);
+      return {
+        type: 'error',
+        content: '处理查询时发生错误，请稍后再试。'
+      };
     }
-    
-    // 保存学习数据
-    this.saveLearningData();
-    
-    return response;
   }
 
   analyzeIntent(query) {
@@ -468,6 +480,38 @@ class MoeSkill {
       type: 'default',
       content: '我是Moe Social项目的智能开发助手，有什么可以帮助您的吗？\n\n您可以询问以下类型的问题：\n- 项目结构和概览\n- 功能实现指南\n- 代码分析和建议\n- Bug修复方案\n- 相关文档查询'
     };
+  }
+
+  // 技能唤醒方法，用于判断是否应该触发技能
+  shouldTrigger(query) {
+    const lowerQuery = query.toLowerCase();
+    
+    // 检查是否包含与项目相关的关键词
+    const projectKeywords = ['moe', 'social', '项目', '代码', '功能', 'bug', '修复', '文档', '实现'];
+    
+    // 检查是否包含与技能功能相关的关键词
+    const skillKeywords = ['开发', '助手', '智能', '分析', '建议', '指南', '实现', '修复'];
+    
+    // 检查是否包含项目名称或相关术语
+    const projectSpecificTerms = ['autoglm', 'flutter', 'go-zero', 'websocket', 'avatar', 'emoji'];
+    
+    // 计算匹配的关键词数量
+    let matchCount = 0;
+    
+    projectKeywords.forEach(keyword => {
+      if (lowerQuery.includes(keyword)) matchCount++;
+    });
+    
+    skillKeywords.forEach(keyword => {
+      if (lowerQuery.includes(keyword)) matchCount++;
+    });
+    
+    projectSpecificTerms.forEach(term => {
+      if (lowerQuery.includes(term)) matchCount++;
+    });
+    
+    // 如果匹配的关键词数量大于等于2，或者包含项目名称，则触发技能
+    return matchCount >= 2 || lowerQuery.includes('moe social') || lowerQuery.includes('moesocial');
   }
 }
 
