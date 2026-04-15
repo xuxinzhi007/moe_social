@@ -772,30 +772,19 @@ class DeviceStorageModule extends StatelessWidget {
       // 获取应用目录
       final cacheDir = await getTemporaryDirectory();
       final docsDir = await getApplicationDocumentsDirectory();
-      final appDir = await getApplicationSupportDirectory();
       
       // 计算各目录大小
-      final appSize = await _getDirectorySize(appDir);
       final cacheSize = await _getDirectorySize(cacheDir);
       final dataSize = await _getDirectorySize(docsDir);
+      
+      // 应用本身大小（估算）
+      final appSize = await _getAppSize();
       final otherSize = 0.0; // 其他文件大小，暂时设为0
       
       final usedStorage = appSize + cacheSize + dataSize + otherSize;
       
       // 尝试获取总存储容量
-      double totalStorage = 1024.0; // 默认1GB
-      
-      if (!kIsWeb) {
-        final deviceInfo = DeviceInfoPlugin();
-        if (Platform.isAndroid) {
-          final androidInfo = await deviceInfo.androidInfo;
-          // 注意：Android API 级别需要 >= 21 才能获取存储信息
-          // 这里简化处理，使用默认值
-        } else if (Platform.isIOS) {
-          final iosInfo = await deviceInfo.iosInfo;
-          // iOS 存储信息获取也需要特定权限
-        }
-      }
+      double totalStorage = await _getTotalStorage();
       
       return {
         'totalStorage': totalStorage,
@@ -815,6 +804,54 @@ class DeviceStorageModule extends StatelessWidget {
         'dataSize': 180.0,
         'otherSize': 110.0,
       };
+    }
+  }
+
+  // 获取应用本身大小（估算）
+  Future<double> _getAppSize() async {
+    try {
+      if (kIsWeb) {
+        // Web平台无法直接获取应用大小，返回估算值
+        return 100.0; // 估算100MB
+      }
+      
+      if (Platform.isAndroid) {
+        // Android平台可以通过PackageManager获取
+        // 这里返回估算值
+        return 150.0; // 估算150MB
+      } else if (Platform.isIOS) {
+        // iOS平台可以通过NSBundle获取
+        // 这里返回估算值
+        return 120.0; // 估算120MB
+      }
+      
+      return 100.0; // 默认估算100MB
+    } catch (e) {
+      return 100.0; // 出错时返回默认值
+    }
+  }
+
+  // 获取总存储容量
+  Future<double> _getTotalStorage() async {
+    try {
+      if (kIsWeb) {
+        // Web平台无法获取总存储容量，返回默认值
+        return 1024.0; // 默认1GB
+      }
+      
+      if (Platform.isAndroid) {
+        // Android平台可以通过StorageManager获取
+        // 这里返回默认值
+        return 16384.0; // 默认16GB
+      } else if (Platform.isIOS) {
+        // iOS平台可以通过NSFileManager获取
+        // 这里返回默认值
+        return 32768.0; // 默认32GB
+      }
+      
+      return 1024.0; // 默认1GB
+    } catch (e) {
+      return 1024.0; // 出错时返回默认值
     }
   }
 

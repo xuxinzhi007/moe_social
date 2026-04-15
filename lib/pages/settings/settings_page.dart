@@ -67,6 +67,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final deviceInfo = Provider.of<DeviceInfoProvider>(context);
     final isWeb = kIsWeb;
     final isMobile = !isWeb;
+    final theme = Theme.of(context);
     
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -122,6 +123,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           Expanded(
             child: ListView(
+              controller: _scrollController,
               physics: isMobile ? const BouncingScrollPhysics() : null,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               children: [
@@ -430,28 +432,57 @@ class _SettingsPageState extends State<SettingsPage> {
     _scrollToModule('关于');
   }
 
+  // 滚动控制器
+  final ScrollController _scrollController = ScrollController();
+
+  // 模块滚动位置映射
+  final Map<String, GlobalKey> _moduleKeys = {
+    '账户与安全': GlobalKey(),
+    '外观': GlobalKey(),
+    '常规设置': GlobalKey(),
+    '设备与存储': GlobalKey(),
+    'AI 模型': GlobalKey(),
+    '关于': GlobalKey(),
+  };
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   void _scrollToModule(String moduleName) {
-    // 这里可以实现滚动逻辑，将指定模块滚动到视图中
-    // 由于当前实现中没有使用滚动控制器，我们可以通过重置搜索状态并让用户手动滚动
     _onClearSearch();
-    // 实际应用中，应该使用 ScrollController 来实现精确滚动
+    
+    // 使用 ScrollController 实现精确滚动
+    final key = _moduleKeys[moduleName];
+    if (key != null) {
+      final context = key.currentContext;
+      if (context != null) {
+        Scrollable.ensureVisible(
+          context,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
+    }
   }
 
   List<Widget> _buildNormalSettings() {
     return [
-      _buildSectionTitle('账户与安全'),
+      _buildSectionTitle('账户与安全', key: _moduleKeys['账户与安全']),
       LazyLoadWidget(
         child: const AccountSecurityModule(),
       ),
 
       const SizedBox(height: 24),
-      _buildSectionTitle('外观'),
+      _buildSectionTitle('外观', key: _moduleKeys['外观']),
       LazyLoadWidget(
         child: const AppearanceModule(),
       ),
 
       const SizedBox(height: 24),
-      _buildSectionTitle('常规设置'),
+      _buildSectionTitle('常规设置', key: _moduleKeys['常规设置']),
       FadeInUp(
         delay: const Duration(milliseconds: 100),
         child: Container(
@@ -507,7 +538,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
 
       const SizedBox(height: 24),
-      _buildSectionTitle('设备与存储'),
+      _buildSectionTitle('设备与存储', key: _moduleKeys['设备与存储']),
       LazyLoadWidget(
         child: DeviceStorageModule(
           autoUpdateOnLaunch: _autoUpdateOnLaunch,
@@ -519,21 +550,22 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       
       const SizedBox(height: 24),
-      _buildSectionTitle('AI 模型'),
+      _buildSectionTitle('AI 模型', key: _moduleKeys['AI 模型']),
       LazyLoadWidget(
         child: const AiSettingsModule(),
       ),
 
       const SizedBox(height: 24),
-      _buildSectionTitle('关于'),
+      _buildSectionTitle('关于', key: _moduleKeys['关于']),
       LazyLoadWidget(
         child: const AboutModule(),
       ),
     ];
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, {Key? key}) {
     return Padding(
+      key: key,
       padding: const EdgeInsets.only(left: 12, bottom: 10),
       child: Text(
         title,
