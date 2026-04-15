@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../auth_service.dart';
 import '../../services/api_service.dart';
 import '../../models/user.dart';
@@ -86,6 +88,208 @@ class _EditProfilePageState extends State<EditProfilePage> {
               _hasUnsavedChanges = _checkHasChanges();
             });
           },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAvatarFromCamera() async {
+    try {
+      final pickedFile = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        imageQuality: 70, // 降低图片质量以减小大小
+        maxWidth: 1024, // 限制图片宽度
+        maxHeight: 1024, // 限制图片高度
+      );
+      if (pickedFile != null) {
+        // 上传图片到云端
+        MoeToast.info(context, '正在上传头像...');
+        try {
+          final file = File(pickedFile.path);
+          final imageUrl = await ApiService.uploadImage(file);
+          // 为了避免缓存问题，添加时间戳参数
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final imageUrlWithTimestamp = '$imageUrl?t=$timestamp';
+          setState(() {
+            _avatarController.text = imageUrlWithTimestamp;
+            _hasUnsavedChanges = _checkHasChanges();
+          });
+          MoeToast.success(context, '头像已更新');
+        } catch (uploadError) {
+          if (uploadError.toString().contains('413')) {
+            MoeToast.error(context, '图片太大，请降低拍照分辨率');
+          } else if (uploadError.toString().contains('Broken pipe') || uploadError.toString().contains('SocketException')) {
+            MoeToast.error(context, '网络连接中断，请检查网络后重试');
+          } else {
+            MoeToast.error(context, '上传失败: $uploadError');
+          }
+        }
+      }
+    } catch (e) {
+      MoeToast.error(context, '选择图片失败: $e');
+    }
+  }
+
+  Future<void> _pickAvatarFromGallery() async {
+    try {
+      final pickedFile = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70, // 降低图片质量以减小大小
+        maxWidth: 1024, // 限制图片宽度
+        maxHeight: 1024, // 限制图片高度
+      );
+      if (pickedFile != null) {
+        // 上传图片到云端
+        MoeToast.info(context, '正在上传头像...');
+        try {
+          final file = File(pickedFile.path);
+          final imageUrl = await ApiService.uploadImage(file);
+          // 为了避免缓存问题，添加时间戳参数
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final imageUrlWithTimestamp = '$imageUrl?t=$timestamp';
+          setState(() {
+            _avatarController.text = imageUrlWithTimestamp;
+            _hasUnsavedChanges = _checkHasChanges();
+          });
+          MoeToast.success(context, '头像已更新');
+        } catch (uploadError) {
+          if (uploadError.toString().contains('413')) {
+            MoeToast.error(context, '图片太大，请选择较小的图片');
+          } else if (uploadError.toString().contains('Broken pipe') || uploadError.toString().contains('SocketException')) {
+            MoeToast.error(context, '网络连接中断，请检查网络后重试');
+          } else {
+            MoeToast.error(context, '上传失败: $uploadError');
+          }
+        }
+      }
+    } catch (e) {
+      MoeToast.error(context, '选择图片失败: $e');
+    }
+  }
+
+  Future<void> _showAvatarOptions() async {
+    await showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              '选择头像',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickAvatarFromCamera();
+                  },
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F7FA),
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          size: 40,
+                          color: Color(0xFF7F7FD5),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text('拍照'),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickAvatarFromGallery();
+                  },
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F7FA),
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        child: const Icon(
+                          Icons.photo_library,
+                          size: 40,
+                          color: Color(0xFF7F7FD5),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text('相册'),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickAvatarFromCloud();
+                  },
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F7FA),
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        child: const Icon(
+                          Icons.cloud_upload,
+                          size: 40,
+                          color: Color(0xFF7F7FD5),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text('云端'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[100],
+                foregroundColor: Colors.grey[800],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              child: const Text('取消'),
+            ),
+          ],
         ),
       ),
     );
@@ -273,6 +477,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
                                 ),
                                 shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
                               child: NetworkAvatarImage(
                                 imageUrl: _avatarController.text.isNotEmpty
@@ -289,7 +500,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               child: GestureDetector(
                                 onTap: _isSaving ? null : () {
                                   HapticFeedback.lightImpact();
-                                  _pickAvatarFromCloud();
+                                  _showAvatarOptions();
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.all(10),
@@ -298,14 +509,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
+                                        color: Colors.black.withOpacity(0.15),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 3),
                                       ),
                                     ],
+                                    border: Border.all(
+                                      color: const Color(0xFF7F7FD5),
+                                      width: 2,
+                                    ),
                                   ),
                                   child: const Icon(
-                                    Icons.cloud_upload_outlined,
+                                    Icons.camera_alt_outlined,
                                     color: Color(0xFF7F7FD5),
                                     size: 24,
                                   ),
@@ -325,25 +540,39 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.grey.withOpacity(0.08),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
+                              color: Colors.grey.withOpacity(0.1),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
                             ),
                           ],
+                          border: Border.all(
+                            color: Colors.grey[100]!, 
+                            width: 1,
+                          ),
                         ),
                         padding: const EdgeInsets.all(20),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              '基本信息',
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF333333),
-                              ),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.person_outline,
+                                  color: Color(0xFF7F7FD5),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  '基本信息',
+                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF333333),
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 20),
 
@@ -363,6 +592,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 ),
                                 hintText: '3-20个字符，支持字母、数字、下划线',
                                 hintStyle: TextStyle(color: Colors.grey[400]),
+                                filled: true,
+                                fillColor: Colors.grey[50],
                               ),
                               validator: Validators.username,
                               onChanged: (_) => _onFieldChanged(),
@@ -386,6 +617,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 ),
                                 hintText: 'example@email.com',
                                 hintStyle: TextStyle(color: Colors.grey[400]),
+                                filled: true,
+                                fillColor: Colors.grey[50],
                               ),
                               keyboardType: TextInputType.emailAddress,
                               validator: Validators.email,
@@ -410,13 +643,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 ),
                                 helperText: '输入头像图片的URL地址',
                                 helperStyle: TextStyle(color: Colors.grey[400]),
+                                filled: true,
+                                fillColor: Colors.grey[50],
                                 suffixIcon: IconButton(
-                                  tooltip: '从云端图库选择',
+                                  tooltip: '选择头像',
                                   onPressed: _isSaving ? null : () {
                                     HapticFeedback.lightImpact();
-                                    _pickAvatarFromCloud();
+                                    _showAvatarOptions();
                                   },
-                                  icon: const Icon(Icons.cloud_outlined, color: Color(0xFF7F7FD5)),
+                                  icon: const Icon(Icons.camera_alt_outlined, color: Color(0xFF7F7FD5)),
                                 ),
                               ),
                               keyboardType: TextInputType.url,
@@ -430,7 +665,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
 
                     // 个人资料卡片
                     FadeInUp(
@@ -438,25 +673,39 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.grey.withOpacity(0.08),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
+                              color: Colors.grey.withOpacity(0.1),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
                             ),
                           ],
+                          border: Border.all(
+                            color: Colors.grey[100]!, 
+                            width: 1,
+                          ),
                         ),
                         padding: const EdgeInsets.all(20),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              '个人资料',
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF333333),
-                              ),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.info_outline,
+                                  color: Color(0xFF7F7FD5),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  '个人资料',
+                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF333333),
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 20),
 
@@ -501,7 +750,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
 
                     // 账户信息卡片
                     FadeInUp(
@@ -509,29 +758,43 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.grey.withOpacity(0.08),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
+                              color: Colors.grey.withOpacity(0.1),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
                             ),
                           ],
+                          border: Border.all(
+                            color: Colors.grey[100]!, 
+                            width: 1,
+                          ),
                         ),
                         padding: const EdgeInsets.all(20),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              '账户信息',
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF333333),
-                              ),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.account_balance_outlined,
+                                  color: Color(0xFF7F7FD5),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  '账户信息',
+                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF333333),
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 16),
                             _buildInfoRow('用户ID', widget.user.id),
-                            const Divider(height: 24, thickness: 1, color: Color(0xFFF0F0F0)),
+                            const Divider(height: 20, thickness: 1, color: Color(0xFFF0F0F0)),
                             _buildInfoRow(
                               'Moe 号',
                               widget.user.moeNo.isNotEmpty
@@ -541,26 +804,26 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   ? const Color(0xFF7F7FD5)
                                   : null,
                             ),
-                            const Divider(height: 24, thickness: 1, color: Color(0xFFF0F0F0)),
+                            const Divider(height: 20, thickness: 1, color: Color(0xFFF0F0F0)),
                             _buildInfoRow(
                               'VIP状态',
                               widget.user.isVip ? 'VIP会员' : '普通用户',
                               widget.user.isVip ? const Color(0xFFFFD700) : null,
                             ),
                             if (widget.user.vipExpiresAt != null) ...[
-                              const Divider(height: 24, thickness: 1, color: Color(0xFFF0F0F0)),
+                              const Divider(height: 20, thickness: 1, color: Color(0xFFF0F0F0)),
                               _buildInfoRow(
                                 'VIP到期时间',
                                 widget.user.vipExpiresAt!,
                               ),
                             ],
-                            const Divider(height: 24, thickness: 1, color: Color(0xFFF0F0F0)),
+                            const Divider(height: 20, thickness: 1, color: Color(0xFFF0F0F0)),
                             _buildInfoRow(
                               '钱包余额',
                               '¥${widget.user.balance.toStringAsFixed(2)}',
                               const Color(0xFF4CAF50),
                             ),
-                            const Divider(height: 24, thickness: 1, color: Color(0xFFF0F0F0)),
+                            const Divider(height: 20, thickness: 1, color: Color(0xFFF0F0F0)),
                             _buildInfoRow(
                               '注册时间',
                               widget.user.createdAt,
@@ -589,8 +852,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            elevation: _hasUnsavedChanges ? 6 : 0,
-                            shadowColor: _hasUnsavedChanges ? const Color(0xFF7F7FD5).withOpacity(0.5) : Colors.transparent,
+                            elevation: _hasUnsavedChanges ? 8 : 0,
+                            shadowColor: _hasUnsavedChanges ? const Color(0xFF7F7FD5).withOpacity(0.6) : Colors.transparent,
+                            animationDuration: const Duration(milliseconds: 300),
                           ),
                           child: _isSaving
                               ? const MoeLoading(size: 24, color: Colors.white)
