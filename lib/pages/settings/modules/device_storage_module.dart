@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import '../../../auth_service.dart';
 import '../../../services/memory_service.dart';
@@ -21,6 +22,8 @@ class DeviceStorageModule extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isWeb = kIsWeb;
+    
     return FadeInUp(
       delay: const Duration(milliseconds: 200),
       child: MoeMenuCard(
@@ -51,13 +54,14 @@ class DeviceStorageModule extends StatelessWidget {
             color: Colors.cyan,
             onTap: () => _showRemoteDevicesSheet(context),
           ),
-          MoeMenuItem(
-            icon: Icons.storage_rounded,
-            title: '存储空间管理',
-            subtitle: '查看应用存储使用情况，清理缓存',
-            color: Colors.amber,
-            onTap: () => _showStorageInfoSheet(context),
-          ),
+          if (!isWeb) // 在Web端可能不需要存储空间管理功能
+            MoeMenuItem(
+              icon: Icons.storage_rounded,
+              title: '存储空间管理',
+              subtitle: '查看应用存储使用情况，清理缓存',
+              color: Colors.amber,
+              onTap: () => _showStorageInfoSheet(context),
+            ),
         ],
       ),
     );
@@ -468,13 +472,25 @@ class DeviceStorageModule extends StatelessWidget {
   }
 
   void _showStorageInfoSheet(BuildContext context) {
+    // 模拟存储空间数据
+    final totalStorage = 1024.0; // 1GB
+    final usedStorage = 640.0; // 640MB
+    final freeStorage = totalStorage - usedStorage;
+    
+    final storageDetails = [
+      {'name': '应用本身', 'size': 150.0, 'color': const Color(0xFF7F7FD5)},
+      {'name': '缓存文件', 'size': 200.0, 'color': const Color(0xFF86A8E7)},
+      {'name': '用户数据', 'size': 180.0, 'color': const Color(0xFF91EAE4)},
+      {'name': '其他文件', 'size': 110.0, 'color': const Color(0xFFF7797D)},
+    ];
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
-          height: MediaQuery.of(context).size.height * 0.5,
+          height: MediaQuery.of(context).size.height * 0.75,
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -501,40 +517,221 @@ class DeviceStorageModule extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.storage_rounded, size: 64, color: Color(0xFF7F7FD5)),
-                      const SizedBox(height: 20),
+                      // 总存储容量信息
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F7FA),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          children: [
+                            const Text(
+                              '总存储容量',
+                              style: TextStyle(fontSize: 14, color: Colors.grey),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${totalStorage.toStringAsFixed(0)} MB',
+                              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 16),
+                            // 存储使用进度条
+                            Container(
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Stack(
+                                children: [
+                                  Container(
+                                    width: (usedStorage / totalStorage) * 100,
+                                    height: 12,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          const Color(0xFF7F7FD5),
+                                          const Color(0xFF86A8E7),
+                                        ],
+                                        begin: Alignment.centerLeft,
+                                        end: Alignment.centerRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '已使用: ${usedStorage.toStringAsFixed(0)} MB',
+                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                ),
+                                Text(
+                                  '可用: ${freeStorage.toStringAsFixed(0)} MB',
+                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // 存储使用详情
                       const Text(
-                        '存储空间使用情况',
+                        '存储使用详情',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                       ),
-                      const SizedBox(height: 10),
-                      Text(
-                        '应用大小: 约 150MB',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                      Text(
-                        '缓存大小: 约 20MB',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                      const SizedBox(height: 30),
-                      ElevatedButton(
-                        onPressed: () {
-                          // 清理缓存逻辑
-                          // 这里只是模拟，实际需要实现缓存清理
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('缓存已清理')),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF7F7FD5),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                      const SizedBox(height: 16),
+                      
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: storageDetails.length,
+                          itemBuilder: (context, index) {
+                            final item = storageDetails[index];
+                            final percentage = (item['size'] as double / totalStorage) * 100;
+                            
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        item['name'] as String,
+                                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                                      ),
+                                      Text(
+                                        '${(item['size'] as double).toStringAsFixed(0)} MB',
+                                        style: const TextStyle(fontSize: 14, color: Colors.grey),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[200],
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Container(
+                                      width: percentage,
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        color: item['color'] as Color,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
-                        child: const Text('清理缓存'),
+                      ),
+                      
+                      const SizedBox(height: 20),
+                      
+                      // 清理按钮
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                // 清理缓存逻辑
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                    title: const Text('确认操作'),
+                                    content: const Text('确定要清理缓存吗？这将删除临时文件，但不会影响您的个人数据。'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('取消', style: TextStyle(color: Colors.grey)),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          Navigator.pop(context);
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('缓存已清理')),
+                                          );
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF7F7FD5),
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        ),
+                                        child: const Text('确定'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF7F7FD5),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                              child: const Text('清理缓存'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                // 清理所有数据逻辑
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                    title: const Text('警告'),
+                                    content: const Text('确定要清理所有数据吗？这将删除所有应用数据，包括您的设置和缓存。'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('取消', style: TextStyle(color: Colors.grey)),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          Navigator.pop(context);
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('所有数据已清理')),
+                                          );
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        ),
+                                        child: const Text('确定'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: Colors.red),
+                                foregroundColor: Colors.red,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                              child: const Text('清理所有数据'),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
