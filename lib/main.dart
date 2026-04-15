@@ -29,6 +29,7 @@ import 'pages/commerce/recharge_page.dart';
 import 'pages/commerce/gacha_page.dart';
 import 'pages/profile/user_profile_page.dart';
 import 'widgets/app_message_widget.dart';
+import 'widgets/notification_popup_host.dart';
 import 'widgets/moe_bottom_bar.dart';
 import 'services/notification_service.dart';
 import 'services/remote_control_service.dart';
@@ -36,6 +37,7 @@ import 'services/presence_service.dart';
 import 'services/chat_push_service.dart';
 import 'services/accessibility_overlay_service.dart';
 import 'services/push_notification_service.dart';
+import 'services/startup_update_service.dart';
 import 'pages/gallery/cloud_gallery_page.dart';
 import 'pages/profile/friends_page.dart';
 import 'pages/discover/discover_page.dart';
@@ -49,6 +51,8 @@ import 'providers/checkin_provider.dart';
 import 'providers/user_level_provider.dart';
 import 'providers/game_provider.dart';
 import 'pages/feed/home_page.dart';
+// 必须进入 main 的依赖图，否则 release AOT 不包含 overlay_entry，原生 OverlayService 无法启动 overlayMain。
+import 'overlay_entry.dart'; // ignore: unused_import
 
 void main() async {
   // 使用runZonedGuarded捕获所有未捕获的错误
@@ -211,8 +215,23 @@ void main() async {
   });
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(const Duration(milliseconds: 650), () {
+        unawaited(StartupUpdateService.tryLaunchUpdateCheck());
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -225,7 +244,11 @@ class MyApp extends StatelessWidget {
       theme: themeProvider.currentTheme,
       initialRoute: AuthService.isLoggedIn ? '/home' : '/login',
       builder: (context, child) {
-        return AppMessageWidget(child: child ?? Container());
+        return AppMessageWidget(
+          child: NotificationPopupHost(
+            child: child ?? const SizedBox.shrink(),
+          ),
+        );
       },
       routes: {
         '/login': (context) => const LoginPage(),

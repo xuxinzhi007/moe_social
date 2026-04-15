@@ -380,6 +380,8 @@ message GetPostsReq {
   string feed_mode = 4;
   // 按话题标签 ID 筛选（与 post_topics 关联）
   string topic_tag_id = 5;
+  // 仅返回该作者发布的动态（与 feed_mode=following 互斥，优先按作者筛选）
+  string author_user_id = 6;
 }
 
 // 获取帖子列表响应

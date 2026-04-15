@@ -430,6 +430,7 @@ type GetPostsReq struct {
 	ViewerUserId string `form:"viewer_user_id,optional"`
 	FeedMode     string `form:"feed_mode,optional"`
 	TopicTagId   string `form:"topic_tag_id,optional"`
+	AuthorUserId string `form:"author_user_id,optional"`
 }
 
 type GetPostsResp struct {

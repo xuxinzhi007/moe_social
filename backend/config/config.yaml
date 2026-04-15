@@ -16,10 +16,11 @@ ollama:
   # 后端请求 Ollama 的超时（秒）
   timeout_seconds: 300
 
-# 移动端 / 生产包拉取的 API 根地址（与 cpolar 公网一致即可）
-# 修改后重启 backend/api 进程即生效；客户端下次冷启动会请求 GET /api/public/client-config
+# 当前公网 API 根（ngrok 等）。须与 App 能访问到的隧道一致。
+# 重启 API 后生效；客户端会 GET /api/public/client-config 读取本字段（权威）。
+# 换 ngrok 域名时：改此处 + 更新 GitHub 上 lib/config/moe_api.json（或 MOE_API_CONFIG_URL），通常无需改 Dart。
 app_client:
-  public_api_base_url: "http://7da36c26.r3.cpolar.top"
+  public_api_base_url: "https://karan-unsedate-unsimultaneously.ngrok-free.dev"
 
 database:
   host: "127.0.0.1"

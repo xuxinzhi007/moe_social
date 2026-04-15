@@ -12,6 +12,7 @@ class PostService {
     int pageSize = 10,
     String? feedMode,
     String? topicTagId,
+    String? authorUserId,
   }) async {
     final viewer =
         AuthService.isLoggedIn ? (AuthService.currentUser ?? '') : '';
@@ -21,6 +22,7 @@ class PostService {
       viewerUserId: viewer.isEmpty ? null : viewer,
       feedMode: feedMode,
       topicTagId: topicTagId,
+      authorUserId: authorUserId,
     );
     List<Post> posts = result['posts'];
 
@@ -47,11 +49,6 @@ class PostService {
       print('Failed to get post: $e');
       return null;
     }
-  }
-
-  // 创建新帖子
-  static Future<Post> createPost(Post post) async {
-    return await ApiService.createPost(post);
   }
 
   // 点赞/取消点赞帖子

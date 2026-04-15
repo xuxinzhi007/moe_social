@@ -414,6 +414,7 @@ type GetPostsReq {
 	ViewerUserId string `form:"viewer_user_id,optional"`
 	FeedMode     string `form:"feed_mode,optional"`
 	TopicTagId   string `form:"topic_tag_id,optional"`
+	AuthorUserId string `form:"author_user_id,optional"`
 }
 
 type GetPostReq {
@@ -1497,5 +1498,9 @@ service Super {
 	@doc "WebSocket在线状态服务"
 	@handler PresenceWs
 	get /ws/presence
+
+	@doc "WebSocket大世界同步（房间广播，JSON）"
+	@handler WorldWs
+	get /ws/world
 }
 
