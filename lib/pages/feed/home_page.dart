@@ -107,15 +107,13 @@ class _HomePageState extends State<HomePage> {
 
       setState(() {
         _allPosts = posts;
-        _displayPosts = _computeDisplayPosts(posts);
+        _displayPosts = List<Post>.from(posts); // 直接使用原始列表
         _currentPage = 1; // 确保页码正确
         // 修复_hasMore判断逻辑：如果已加载数据小于总数，则还有更多
         _hasMore = _mode.supportsPagination ? posts.length < total : false;
       });
     } catch (e) {
-      if (mounted) {
-        ErrorHandler.handleException(context, e as Exception);
-      }
+      _handleError(e);
     } finally {
       setState(() {
         _isLoading = false;
@@ -152,21 +150,30 @@ class _HomePageState extends State<HomePage> {
 
       setState(() {
         _allPosts.addAll(morePosts);
-        _displayPosts = _computeDisplayPosts(_allPosts);
+        _displayPosts = List<Post>.from(_allPosts); // 直接使用原始列表
         _currentPage = nextPage;
         // 修复_hasMore判断逻辑：如果已加载数据小于总数，则还有更多
         _hasMore = _mode.supportsPagination ? _allPosts.length < total : false;
       });
     } catch (e) {
-      if (mounted) {
-        ErrorHandler.handleException(context, e as Exception);
-      }
+      _handleError(e);
     } finally {
       setState(() {
         _isLoadingMore = false;
       });
       // 重置触发标志，允许下次触发
       _isLoadingTriggered = false;
+    }
+  }
+
+  // 通用错误处理方法
+  void _handleError(dynamic error) {
+    if (mounted) {
+      if (error is Exception) {
+        ErrorHandler.handleException(context, error);
+      } else {
+        ErrorHandler.showError(context, '发生未知错误');
+      }
     }
   }
 
@@ -192,9 +199,7 @@ class _HomePageState extends State<HomePage> {
         // 但不需要 setState，避免列表重排导致跳动
       }
     } catch (e) {
-      if (mounted) {
-        ErrorHandler.handleException(context, e as Exception);
-      }
+      _handleError(e);
     }
   }
 
@@ -627,9 +632,7 @@ class _HomePageState extends State<HomePage> {
     return tags.take(20).toList();
   }
 
-  List<Post> _computeDisplayPosts(List<Post> input) {
-    return List<Post>.from(input);
-  }
+  // 注意：_computeDisplayPosts 方法已移除，直接使用原始列表
 
   String _apiFeedMode() {
     switch (_mode) {
