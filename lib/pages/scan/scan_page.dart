@@ -83,24 +83,28 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
       );
 
       if (pickedFile != null) {
-        final file = File(pickedFile.path);
-        // 暂时使用模拟数据来测试相册功能
-        // 实际项目中需要使用正确的图片扫描库
-        MoeToast.info(context, '图片选择成功，正在处理...');
-        // 模拟扫描结果
-        await Future.delayed(const Duration(seconds: 1));
-        // 模拟二维码数据
-        const mockQrData = '''
-        {
-          "type": "contact",
-          "userId": "user_123",
-          "username": "测试用户",
-          "avatar": "https://example.com/avatar.jpg",
-          "moeNo": "123456",
-          "timestamp": 1234567890
+        MoeToast.info(context, '图片选择成功，正在识别二维码...');
+        
+        // 使用 mobile_scanner 库的 analyzeImage 方法识别二维码
+        try {
+          if (_controller != null) {
+            // 注意：mobile_scanner 3.2.0 版本的 analyzeImage 方法返回 bool
+            // 它会通过 onDetect 回调来传递扫描结果
+            // 所以我们需要临时设置一个回调来处理扫描结果
+            final bool success = await _controller!.analyzeImage(
+              pickedFile.path,
+            );
+
+            if (!success) {
+              MoeToast.error(context, '未识别到二维码');
+            }
+            // 成功的话会通过 onDetect 回调处理
+          } else {
+            MoeToast.error(context, '扫码控制器未初始化');
+          }
+        } catch (e) {
+          MoeToast.error(context, '识别二维码失败: $e');
         }
-        ''';
-        await _processScanResult(mockQrData);
       }
     } catch (e) {
       MoeToast.error(context, '选择图片失败: $e');
