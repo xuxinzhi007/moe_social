@@ -172,16 +172,16 @@ class AccountSecurityModule extends StatelessWidget {
                       oldPasswordController.text,
                       newPasswordController.text,
                     );
-                    if (mounted) {
+                    if (context.mounted) {
                       Navigator.pop(context);
                       MoeToast.success(context, '密码修改成功');
                     }
                   } catch (e) {
-                    if (mounted) {
+                    if (context.mounted) {
                       MoeToast.error(context, '密码修改失败，请检查原密码是否正确');
                     }
                   } finally {
-                    if (mounted) {
+                    if (context.mounted) {
                       setState(() => isLoading = false);
                     }
                   }
@@ -280,7 +280,7 @@ class AccountSecurityModule extends StatelessWidget {
                             color: Colors.orange.withOpacity(0.1),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.two_factor_authentication_rounded, color: Colors.orange, size: 20),
+                          child: const Icon(Icons.security_rounded, color: Colors.orange, size: 20),
                         ),
                         title: const Text('两步验证', style: TextStyle(fontWeight: FontWeight.w500)),
                         subtitle: const Text('开启两步验证提高账号安全性', style: TextStyle(fontSize: 12, color: Colors.grey)),

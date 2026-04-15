@@ -90,7 +90,7 @@ class AboutModule extends StatelessWidget {
               await Clipboard.setData(
                 const ClipboardData(text: _feedbackEmail),
               );
-              if (!mounted) return;
+              if (!ctx.mounted) return;
               Navigator.pop(ctx);
               MoeToast.success(context, '已复制反馈邮箱');
             },
