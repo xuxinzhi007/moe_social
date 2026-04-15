@@ -665,13 +665,20 @@ class DeviceStorageModule extends StatelessWidget {
                                       ),
                                       ElevatedButton(
                                         onPressed: () async {
-                                          // 清理缓存
-                                          await _clearCache();
-                                          Navigator.pop(context);
-                                          Navigator.pop(context);
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('缓存已清理')),
-                                          );
+                                          try {
+                                            // 清理缓存
+                                            await _clearCache();
+                                            Navigator.pop(context);
+                                            Navigator.pop(context);
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('缓存清理成功')),
+                                            );
+                                          } catch (e) {
+                                            Navigator.pop(context);
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('缓存清理失败：${e.toString()}')),
+                                            );
+                                          }
                                         },
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: const Color(0xFF7F7FD5),
@@ -711,13 +718,20 @@ class DeviceStorageModule extends StatelessWidget {
                                       ),
                                       ElevatedButton(
                                         onPressed: () async {
-                                          // 清理所有数据
-                                          await _clearAllData();
-                                          Navigator.pop(context);
-                                          Navigator.pop(context);
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('所有数据已清理')),
-                                          );
+                                          try {
+                                            // 清理所有数据
+                                            await _clearAllData();
+                                            Navigator.pop(context);
+                                            Navigator.pop(context);
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('所有数据清理成功')),
+                                            );
+                                          } catch (e) {
+                                            Navigator.pop(context);
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('数据清理失败：${e.toString()}')),
+                                            );
+                                          }
                                         },
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.red,
