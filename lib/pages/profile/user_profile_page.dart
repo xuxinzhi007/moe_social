@@ -1,4 +1,7 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../models/user.dart';
 import '../../models/post.dart';
 import '../../models/achievement_badge.dart';
@@ -8,6 +11,7 @@ import '../../services/api_service.dart';
 import '../../services/achievement_service.dart';
 import '../../widgets/avatar_image.dart';
 import '../../widgets/dynamic_avatar.dart';
+import '../../widgets/profile_bg.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/achievement_badge_display.dart';
 import '../../widgets/post_card.dart';
@@ -41,7 +45,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
   User? _user;
   bool _isFollowing = false;
   List<Post> _userPosts = [];
+  int _postTotal = 0;
   bool _isLoadingPosts = true;
+  final GlobalKey _postsSectionKey = GlobalKey();
   List<AchievementBadge> _userBadges = [];
   final AchievementService _achievementService = AchievementService();
 
@@ -133,16 +139,21 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   Future<void> _loadUserPosts() async {
     try {
-      // 临时方案：获取最新帖子并在前端过滤
-      // 扩大获取范围到100条，以增加匹配几率
-      final result = await PostService.getPosts(page: 1, pageSize: 100);
-      final allPosts = result['posts'] as List<Post>;
-
-      final myPosts = allPosts.where((p) => p.userId.toString() == widget.userId.toString()).toList();
+      final result = await PostService.getPosts(
+        page: 1,
+        pageSize: 50,
+        authorUserId: widget.userId,
+      );
+      final list = result['posts'] as List<Post>;
+      final totalRaw = result['total'];
+      final total = totalRaw is int
+          ? totalRaw
+          : (totalRaw is num ? totalRaw.toInt() : list.length);
 
       if (mounted) {
         setState(() {
-          _userPosts = myPosts;
+          _userPosts = list;
+          _postTotal = total;
           _isLoadingPosts = false;
         });
       }
@@ -212,6 +223,361 @@ class _UserProfilePageState extends State<UserProfilePage> {
       default:
         return '发好友申请';
     }
+  }
+
+  bool get _isSelf =>
+      AuthService.isLoggedIn &&
+      AuthService.currentUser != null &&
+      AuthService.currentUser == widget.userId;
+
+  void _scrollToPosts() {
+    final ctx = _postsSectionKey.currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 380),
+        curve: Curves.easeOutCubic,
+        alignment: 0.08,
+      );
+    }
+  }
+
+  /// 头部最小总高度 = 顶栏留白 + 底边距 + 主体（头像/昵称/统计条等）最小高度。
+  /// 之前用整体 scale(272) 未扣掉 [Padding] 的 top，内部 Column 只有 ~169px 易溢出。
+  double _userProfileHeaderMinHeight(BuildContext context) {
+    final topPad = MediaQuery.paddingOf(context).top + kToolbarHeight + 2;
+    const bottomPad = 14.0;
+    final ts = MediaQuery.textScalerOf(context);
+    final bodyMin = ts.scale(205.0).clamp(178.0, 360.0);
+    return (topPad + bottomPad + bodyMin).clamp(300.0, 580.0);
+  }
+
+  Widget _buildFrostedStatsStrip() {
+    Widget stat(String label, String value, {VoidCallback? onTap}) {
+      final ts = MediaQuery.textScalerOf(context);
+      final valueSize = ts.scale(18.0).clamp(14.0, 24.0);
+      final labelSize = ts.scale(11.0).clamp(10.0, 15.0);
+      final valueStyle = TextStyle(
+        fontSize: valueSize,
+        fontWeight: FontWeight.w800,
+        color: const Color(0xFF1E1E2E),
+        height: 1.05,
+      );
+      final labelStyle = TextStyle(
+        fontSize: labelSize,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFF1E1E2E).withValues(alpha: 0.52),
+      );
+      final col = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: valueStyle,
+          ),
+          SizedBox(height: ts.scale(4.0).clamp(2.0, 8.0)),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: labelStyle,
+          ),
+        ],
+      );
+      if (onTap != null) {
+        return Expanded(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(14),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: Center(child: col),
+              ),
+            ),
+          ),
+        );
+      }
+      return Expanded(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          child: Center(child: col),
+        ),
+      );
+    }
+
+    final postsLabel = _isLoadingPosts && _userPosts.isEmpty ? '…' : '$_postTotal';
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(
+            vertical: MediaQuery.textScalerOf(context).scale(12.0).clamp(8.0, 18.0),
+            horizontal: 2,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.26),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.42)),
+          ),
+          child: Row(
+            children: [
+              stat('动态', postsLabel, onTap: _scrollToPosts),
+              Container(
+                width: 1,
+                height: MediaQuery.textScalerOf(context).scale(32.0).clamp(24.0, 44.0),
+                color: Colors.white.withValues(alpha: 0.35),
+              ),
+              stat(
+                '关注',
+                _isLoadingStats ? '…' : '$_followingCount',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (context) => FollowingPage(userId: widget.userId),
+                    ),
+                  );
+                },
+              ),
+              Container(
+                width: 1,
+                height: MediaQuery.textScalerOf(context).scale(32.0).clamp(24.0, 44.0),
+                color: Colors.white.withValues(alpha: 0.35),
+              ),
+              stat(
+                '粉丝',
+                _isLoadingStats ? '…' : '$_followersCount',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (context) => FollowersPage(userId: widget.userId),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopHeader(String name, String? avatar) {
+    final sig = (_user?.signature ?? '').trim();
+    final moe = _user?.moeNo ?? '';
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minWidth: double.infinity,
+        minHeight: _userProfileHeaderMinHeight(context),
+      ),
+      child: IntrinsicHeight(
+        child: Stack(
+          clipBehavior: Clip.none,
+          fit: StackFit.loose,
+          alignment: Alignment.bottomCenter,
+          children: [
+            const Positioned.fill(child: ProfileBg()),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.14),
+                    ],
+                    stops: const [0.4, 1.0],
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                MediaQuery.of(context).padding.top + kToolbarHeight + 2,
+                20,
+                14,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                Hero(
+                  tag: widget.heroTag ?? 'user_avatar_${widget.userId}',
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF7F7FD5).withValues(alpha: 0.35),
+                          blurRadius: 22,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: _user != null
+                          ? DynamicAvatar(
+                              avatarUrl: avatar ?? '',
+                              size: 76,
+                              frameId: _user!.equippedFrameId,
+                            )
+                          : NetworkAvatarImage(
+                              imageUrl: avatar ?? '',
+                              radius: 38,
+                              placeholderIcon: Icons.person,
+                            ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 21,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    if (_user?.isVip == true) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.22),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color:
+                                const Color(0xFFFFE082).withValues(alpha: 0.9),
+                          ),
+                        ),
+                        child: const Text(
+                          'VIP',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFFFFF8E1),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                if (_isSelf && (_user?.email ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    _user!.email,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.78),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                if (sig.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      sig,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.3,
+                        color: Colors.white.withValues(alpha: 0.92),
+                      ),
+                    ),
+                  ),
+                ],
+                if (moe.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Material(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(999),
+                    child: InkWell(
+                      onTap: _isSelf
+                          ? () {
+                              Clipboard.setData(ClipboardData(text: moe));
+                              MoeToast.success(context, '已复制 Moe 号');
+                            }
+                          : null,
+                      borderRadius: BorderRadius.circular(999),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 5,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.badge_outlined,
+                              size: 14,
+                              color: Colors.white.withValues(alpha: 0.95),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              moe,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (_isSelf) ...[
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.copy_rounded,
+                                size: 13,
+                                color: Colors.white.withValues(alpha: 0.85),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 10),
+                _buildFrostedStatsStrip(),
+              ],
+            ),
+          ),
+        ],
+        ),
+      ),
+    );
   }
 
   Future<void> _onSendFriendRequest() async {
@@ -294,348 +660,290 @@ class _UserProfilePageState extends State<UserProfilePage> {
     if (avatar == null || avatar.isEmpty) {
       avatar = widget.userAvatar;
     }
-    final email = _user?.email ?? '';
+    final showMidCard = !_isSelf ||
+        _userBadges.where((badge) => badge.isUnlocked).isNotEmpty;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA), // 浅灰背景
+      backgroundColor: const Color(0xFFF5F7FA),
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('个人主页'),
+        title: Text(_isSelf ? '我的主页' : '个人主页'),
         elevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // 顶部头部区域 (Moe 风格)
-            Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  height: 260,
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                         Color(0xFF7F7FD5),
-                         Color(0xFF86A8E7),
-                         Color(0xFF91EAE4),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(40),
-                      bottomRight: Radius.circular(40),
-                    ),
-                  ),
-                ),
-                // 装饰圆
-                Positioned(
-                  top: -60,
-                  left: -40,
+            _buildTopHeader(name, avatar),
+            if (showMidCard)
+              Transform.translate(
+                offset: const Offset(0, -22),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Container(
-                    width: 200,
-                    height: 200,
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.07),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
-                  ),
-                ),
-
-                Container(
-                  margin: const EdgeInsets.fromLTRB(16, 140, 16, 0),
-                  padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 15,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        name,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      if (email.isNotEmpty)
-                        Text(
-                          email,
-                          style: TextStyle(color: Colors.grey[500]),
-                        ),
-                      if ((_user?.moeNo ?? '').isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          'Moe 号 ${_user!.moeNo}',
-                          style: TextStyle(
-                            color: Colors.grey[700],
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.6,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _StatItem(label: '动态', value: '${_userPosts.length}'),
-                          _StatItem(
-                            label: '关注',
-                            value: _isLoadingStats ? '...' : '$_followingCount',
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => FollowingPage(userId: widget.userId),
-                                ),
-                              );
-                            },
-                          ),
-                          _StatItem(
-                            label: '粉丝',
-                            value: _isLoadingStats ? '...' : '$_followersCount',
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => FollowersPage(userId: widget.userId),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-
-                      // 用户徽章展示
-                      if (_userBadges.where((badge) => badge.isUnlocked).isNotEmpty) ...[
-                        const SizedBox(height: 20),
-                        const Divider(),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            const Icon(Icons.military_tech, size: 16, color: Colors.amber),
-                            const SizedBox(width: 6),
-                            const Text(
-                              '成就徽章',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              '${_userBadges.where((b) => b.isUnlocked).length} 个',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[500],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: _userBadges
-                                .where((badge) => badge.isUnlocked)
-                                .take(8)
-                                .map((badge) => Padding(
-                                      padding: const EdgeInsets.only(right: 10),
-                                      child: BadgeCard(
-                                        badge: badge,
-                                        size: 58,
-                                        compact: true,
-                                        showProgress: false,
-                                        onTap: () => _showBadgeDetails(badge),
-                                      ),
-                                    ))
-                                .toList(),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-
-                      const SizedBox(height: 24),
-                      if (AuthService.isLoggedIn &&
-                          AuthService.currentUser != widget.userId) ...[
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: _friendRelation == 'none'
-                                ? _onSendFriendRequest
-                                : null,
-                            icon: const Icon(Icons.how_to_reg_rounded, size: 18),
-                            label: Text(_friendRelationLabel()),
-                          ),
-                        ),
-                      ],
-                      Row(
-                        children: [
-                          Flexible(
-                            flex: 1,
-                            child: ElevatedButton(
-                              onPressed: _toggleFollow,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: _isFollowing ? Colors.grey[200] : const Color(0xFF7F7FD5),
-                                foregroundColor: _isFollowing ? Colors.black87 : Colors.white,
-                                elevation: _isFollowing ? 0 : 4,
-                                shadowColor: const Color(0xFF7F7FD5).withOpacity(0.4),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                              ),
-                              child: Text(_isFollowing ? '已关注' : '关注', style: const TextStyle(fontWeight: FontWeight.w500)),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            flex: 1,
-                            child: OutlinedButton(
-                              onPressed: () {
-                                if (_user == null) return;
-                                
-                                // 生成一个唯一的频道名称，例如按照 userIds 排序拼接
-                                // 这里简化处理，直接使用对方的 userId 作为频道名，或者双方 id 组合
-                                final currentUserId = AuthService.currentUser;
-                                if (currentUserId == null) {
-                                  MoeToast.error(context, '请先登录');
-                                  return;
-                                }
-                                
-                                // 简单的频道名生成策略：
-                                 // 使用双方ID排序拼接，确保两人进入同一频道
-                                 final ids = [currentUserId, widget.userId];
-                                 ids.sort();
-                                 final channelName = 'voice_call_${ids.join('_')}';
-                                 
-                                 Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => VoiceCallPage(
-                                      channelName: channelName,
-                                      userName: widget.userName ?? 'User',
-                                      userAvatar: widget.userAvatar ?? '',
-                                    ),
+                    child: Column(
+                      children: [
+                        if (_userBadges
+                            .where((badge) => badge.isUnlocked)
+                            .isNotEmpty) ...[
+                          Row(
+                            children: [
+                              const Icon(Icons.military_tech,
+                                  size: 16, color: Colors.amber),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  '成就徽章',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
                                   ),
-                                );
-                              },
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF7F7FD5),
-                                side: const BorderSide(color: Color(0xFF7F7FD5)),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
                               ),
-                              child: const Icon(Icons.phone, size: 20),
-                            ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${_userBadges.where((b) => b.isUnlocked).length} 个',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            flex: 1,
-                            child: OutlinedButton(
-                              onPressed: () {
-                                if (_user == null) return;
-                                final target = _user!;
-                                Navigator.pushNamed(
-                                  context,
-                                  '/direct-chat',
-                                  arguments: {
-                                    'userId': target.id,
-                                    'username': target.username,
-                                    'avatar': target.avatar,
+                          const SizedBox(height: 12),
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final h = MediaQuery.of(context)
+                                  .textScaler
+                                  .scale(64.0)
+                                  .clamp(56.0, 96.0);
+                              return SizedBox(
+                                height: h,
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  clipBehavior: Clip.hardEdge,
+                                  itemCount: _userBadges
+                                      .where((b) => b.isUnlocked)
+                                      .take(8)
+                                      .length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(width: 10),
+                                  itemBuilder: (context, index) {
+                                    final badge = _userBadges
+                                        .where((b) => b.isUnlocked)
+                                        .take(8)
+                                        .elementAt(index);
+                                    return Align(
+                                      alignment: Alignment.topCenter,
+                                      child: SizedBox(
+                                        height: h,
+                                        width: h,
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          alignment: Alignment.center,
+                                          child: BadgeCard(
+                                            badge: badge,
+                                            size: h,
+                                            compact: true,
+                                            showProgress: false,
+                                            onTap: () =>
+                                                _showBadgeDetails(badge),
+                                          ),
+                                        ),
+                                      ),
+                                    );
                                   },
-                                );
-                              },
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF7F7FD5),
-                                side: const BorderSide(color: Color(0xFF7F7FD5)),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                              ),
-                              child: const Text('私信', style: const TextStyle(fontWeight: FontWeight.w500)),
-                            ),
+                              );
+                            },
                           ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            flex: 1,
-                            child: ElevatedButton.icon(
-                              onPressed: _showGiftSelector,
-                              icon: const Icon(Icons.card_giftcard, size: 16),
-                              label: const Text('送礼', style: const TextStyle(fontWeight: FontWeight.w500)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.pink[400],
-                                foregroundColor: Colors.white,
-                                elevation: 4,
-                                shadowColor: Colors.pink.withOpacity(0.4),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                              ),
+                          const SizedBox(height: 8),
+                        ],
+                        if (AuthService.isLoggedIn &&
+                            AuthService.currentUser != widget.userId) ...[
+                          if (_userBadges
+                              .where((b) => b.isUnlocked)
+                              .isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            const Divider(height: 1),
+                            const SizedBox(height: 12),
+                          ],
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _friendRelation == 'none'
+                                  ? _onSendFriendRequest
+                                  : null,
+                              icon: const Icon(Icons.how_to_reg_rounded,
+                                  size: 18),
+                              label: Text(_friendRelationLabel()),
                             ),
                           ),
                         ],
-                      ),
-                    ],
-                  ),
-                ),
-                Positioned(
-                  top: 90,
-                  child: Hero(
-                    tag: widget.heroTag ?? 'user_avatar_${widget.userId}',
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 4),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
+                        if (!_isSelf) ...[
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Flexible(
+                                flex: 1,
+                                child: ElevatedButton(
+                                  onPressed: _toggleFollow,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: _isFollowing
+                                        ? Colors.grey[200]
+                                        : const Color(0xFF7F7FD5),
+                                    foregroundColor: _isFollowing
+                                        ? Colors.black87
+                                        : Colors.white,
+                                    elevation: _isFollowing ? 0 : 4,
+                                    shadowColor: const Color(0xFF7F7FD5)
+                                        .withValues(alpha: 0.35),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
+                                  ),
+                                  child: Text(
+                                    _isFollowing ? '已关注' : '关注',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w500),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                flex: 1,
+                                child: OutlinedButton(
+                                  onPressed: () {
+                                    if (_user == null) return;
+                                    final currentUserId =
+                                        AuthService.currentUser;
+                                    if (currentUserId == null) {
+                                      MoeToast.error(context, '请先登录');
+                                      return;
+                                    }
+                                    final ids = [currentUserId, widget.userId]
+                                      ..sort();
+                                    final channelName =
+                                        'voice_call_${ids.join('_')}';
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute<void>(
+                                        builder: (context) => VoiceCallPage(
+                                          channelName: channelName,
+                                          userName:
+                                              widget.userName ?? 'User',
+                                          userAvatar:
+                                              widget.userAvatar ?? '',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: const Color(0xFF7F7FD5),
+                                    side: const BorderSide(
+                                        color: Color(0xFF7F7FD5)),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
+                                  ),
+                                  child: const Icon(Icons.phone, size: 20),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                flex: 1,
+                                child: OutlinedButton(
+                                  onPressed: () {
+                                    if (_user == null) return;
+                                    final target = _user!;
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/direct-chat',
+                                      arguments: {
+                                        'userId': target.id,
+                                        'username': target.username,
+                                        'avatar': target.avatar,
+                                      },
+                                    );
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: const Color(0xFF7F7FD5),
+                                    side: const BorderSide(
+                                        color: Color(0xFF7F7FD5)),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
+                                  ),
+                                  child: const Text(
+                                    '私信',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.w500),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                flex: 1,
+                                child: ElevatedButton.icon(
+                                  onPressed: _showGiftSelector,
+                                  icon: const Icon(Icons.card_giftcard,
+                                      size: 16),
+                                  label: const Text(
+                                    '送礼',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w500),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.pink[400],
+                                    foregroundColor: Colors.white,
+                                    elevation: 4,
+                                    shadowColor:
+                                        Colors.pink.withValues(alpha: 0.35),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
-                      ),
-                      child: _user != null
-                          ? DynamicAvatar(
-                              avatarUrl: avatar ?? '',
-                              size: 88,
-                              frameId: _user!.equippedFrameId,
-                            )
-                          : NetworkAvatarImage(
-                              imageUrl: avatar,
-                              radius: 44,
-                              placeholderIcon: Icons.person,
-                            ),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // 动态列表区域
+              )
+            else
+              const SizedBox(height: 4),
             FadeInUp(
               delay: const Duration(milliseconds: 300),
               child: Container(
+                key: _postsSectionKey,
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -665,10 +973,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text(
-                            '个人动态',
-                            style: TextStyle(
-                              fontSize: 18, 
+                          Text(
+                            _isSelf ? '我的动态' : 'TA 的动态',
+                            style: const TextStyle(
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -951,38 +1259,4 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
-}
-
-// 简单的统计组件
-class _StatItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final VoidCallback? onTap;
-
-  const _StatItem({required this.value, required this.label, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-            ),
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[500],
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

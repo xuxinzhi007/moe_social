@@ -3392,7 +3392,9 @@ type GetPostsReq struct {
 	// latest | hot | following（空则按 latest）
 	FeedMode string `protobuf:"bytes,4,opt,name=feed_mode,json=feedMode,proto3" json:"feed_mode,omitempty"`
 	// 按话题标签 ID 筛选（与 post_topics 关联）
-	TopicTagId    string `protobuf:"bytes,5,opt,name=topic_tag_id,json=topicTagId,proto3" json:"topic_tag_id,omitempty"`
+	TopicTagId string `protobuf:"bytes,5,opt,name=topic_tag_id,json=topicTagId,proto3" json:"topic_tag_id,omitempty"`
+	// 仅返回该作者发布的动态（与 feed_mode=following 互斥，优先按作者筛选）
+	AuthorUserId  string `protobuf:"bytes,6,opt,name=author_user_id,json=authorUserId,proto3" json:"author_user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3458,6 +3460,13 @@ func (x *GetPostsReq) GetFeedMode() string {
 func (x *GetPostsReq) GetTopicTagId() string {
 	if x != nil {
 		return x.TopicTagId
+	}
+	return ""
+}
+
+func (x *GetPostsReq) GetAuthorUserId() string {
+	if x != nil {
+		return x.AuthorUserId
 	}
 	return ""
 }
@@ -8021,14 +8030,15 @@ const file_super_proto_rawDesc = "" +
 	"created_at\x18\v \x01(\tR\tcreatedAt\x12$\n" +
 	"\x0ehand_draw_card\x18\f \x01(\tR\fhandDrawCard\x12-\n" +
 	"\x13hand_draw_thumb_url\x18\r \x01(\tR\x10handDrawThumbUrl\x12+\n" +
-	"\x11moderation_status\x18\x0e \x01(\tR\x10moderationStatus\"\xa3\x01\n" +
+	"\x11moderation_status\x18\x0e \x01(\tR\x10moderationStatus\"\xc9\x01\n" +
 	"\vGetPostsReq\x12\x12\n" +
 	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12$\n" +
 	"\x0eviewer_user_id\x18\x03 \x01(\tR\fviewerUserId\x12\x1b\n" +
 	"\tfeed_mode\x18\x04 \x01(\tR\bfeedMode\x12 \n" +
 	"\ftopic_tag_id\x18\x05 \x01(\tR\n" +
-	"topicTagId\"G\n" +
+	"topicTagId\x12$\n" +
+	"\x0eauthor_user_id\x18\x06 \x01(\tR\fauthorUserId\"G\n" +
 	"\fGetPostsResp\x12!\n" +
 	"\x05posts\x18\x01 \x03(\v2\v.super.PostR\x05posts\x12\x14\n" +
 	"\x05total\x18\x02 \x01(\x05R\x05total\"K\n" +

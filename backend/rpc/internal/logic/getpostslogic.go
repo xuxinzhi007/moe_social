@@ -63,6 +63,13 @@ func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, er
 		}
 	}
 
+	var authorUID uint
+	if strings.TrimSpace(in.AuthorUserId) != "" {
+		if v, err := strconv.ParseUint(strings.TrimSpace(in.AuthorUserId), 10, 32); err == nil {
+			authorUID = uint(v)
+		}
+	}
+
 	listQuery := l.svcCtx.DB.Model(&model.Post{}).Scopes(moderationVisibleScope(viewerUID))
 
 	if topicTagID > 0 {
@@ -70,7 +77,9 @@ func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, er
 		listQuery = listQuery.Where("id IN (?)", sub)
 	}
 
-	if feedMode == "following" {
+	if authorUID > 0 {
+		listQuery = listQuery.Where("user_id = ?", authorUID)
+	} else if feedMode == "following" {
 		if viewerUID == 0 {
 			listQuery = listQuery.Where("1 = 0")
 		} else {

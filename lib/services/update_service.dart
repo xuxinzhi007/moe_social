@@ -55,6 +55,46 @@ class ApkSignatureCompareResult {
   }
 }
 
+/// GitHub Release 最新一条的解析结果（手动检查与启动静默检测共用）。
+class UpdateReleaseInfo {
+  UpdateReleaseInfo({
+    required this.version,
+    required this.body,
+    this.downloadUrl,
+    this.fileName = 'app-release.apk',
+    this.expectedAssetBytes,
+  });
+
+  final String version;
+  final String body;
+  final String? downloadUrl;
+  final String fileName;
+  final int? expectedAssetBytes;
+}
+
+enum UpdateFetchStatus {
+  ok,
+  empty,
+  rateLimited,
+  notFound,
+  badStatus,
+  error,
+}
+
+class UpdateFetchResult {
+  UpdateFetchResult({
+    required this.status,
+    this.info,
+    this.httpStatus,
+    this.error,
+  });
+
+  final UpdateFetchStatus status;
+  final UpdateReleaseInfo? info;
+  final int? httpStatus;
+  final Object? error;
+}
+
 /// App 内更新服务
 /// 支持 GitHub 加速镜像和 App 内下载安装
 class UpdateService {
@@ -177,14 +217,9 @@ class UpdateService {
     return '已保存到应用目录；卸载本应用后此文件可能被系统删除，建议立即安装或点「分享」另存。';
   }
   
-  /// 检查更新
-  static Future<void> checkUpdate(BuildContext context, {bool showNoUpdateToast = false}) async {
+  /// 拉取 GitHub 上最新 Release 元数据（不弹 UI）。
+  static Future<UpdateFetchResult> fetchLatestRelease() async {
     try {
-      // 1. 获取当前 App 版本
-      final packageInfo = await PackageInfo.fromPlatform();
-      final currentVersion = packageInfo.version;
-
-      // 2. 获取 GitHub 最新 Release
       final url = Uri.parse('https://api.github.com/repos/$_owner/$_repo/releases');
       final response = await http.get(
         url,
@@ -195,30 +230,31 @@ class UpdateService {
       );
 
       if (response.statusCode == 200) {
-        final List releases = jsonDecode(response.body);
-        if (releases.isEmpty) {
-          if (showNoUpdateToast && context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('未发现任何发布版本')),
-            );
-          }
-          return;
+        final dynamic decoded = jsonDecode(response.body);
+        if (decoded is! List || decoded.isEmpty) {
+          return UpdateFetchResult(status: UpdateFetchStatus.empty);
         }
 
-        final data = releases.first;
-        final String tagName = data['tag_name'] ?? '';
+        final Object? first = decoded.first;
+        if (first is! Map) {
+          return UpdateFetchResult(status: UpdateFetchStatus.error);
+        }
+        final Map<String, dynamic> data = Map<String, dynamic>.from(first);
+
+        final String tagName = data['tag_name'] as String? ?? '';
         final String remoteVersion = tagName.replaceAll('v', '');
-        final String body = data['body'] ?? '暂无更新日志';
-        final List assets = data['assets'] ?? [];
-        
-        // 寻找 APK 下载链接（GitHub assets[].size 为字节数，用于校验本地已下载包是否完整）
+        final String body = data['body'] as String? ?? '暂无更新日志';
+        final List<dynamic> assets =
+            data['assets'] as List<dynamic>? ?? const <dynamic>[];
+
         String? downloadUrl;
-        String? fileName;
+        String fileName = 'app-release.apk';
         int? apkAssetSize;
-        for (var asset in assets) {
-          final String name = asset['name'] ?? '';
+        for (final asset in assets) {
+          if (asset is! Map<String, dynamic>) continue;
+          final String name = asset['name'] as String? ?? '';
           if (name.endsWith('.apk')) {
-            downloadUrl = asset['browser_download_url'];
+            downloadUrl = asset['browser_download_url'] as String?;
             fileName = name;
             final rawSize = asset['size'];
             if (rawSize is int) {
@@ -230,43 +266,106 @@ class UpdateService {
           }
         }
 
-        // 3. 比较版本
-        if (_hasNewVersion(currentVersion, remoteVersion)) {
-          if (context.mounted && downloadUrl != null) {
-            _showUpdateDialog(
-              context,
-              remoteVersion,
-              body,
-              downloadUrl,
-              fileName ?? 'app-release.apk',
-              expectedAssetBytes: apkAssetSize,
-            );
+        return UpdateFetchResult(
+          status: UpdateFetchStatus.ok,
+          info: UpdateReleaseInfo(
+            version: remoteVersion,
+            body: body,
+            downloadUrl: downloadUrl,
+            fileName: fileName,
+            expectedAssetBytes: apkAssetSize,
+          ),
+        );
+      }
+
+      if (response.statusCode == 403) {
+        return UpdateFetchResult(
+          status: UpdateFetchStatus.rateLimited,
+          httpStatus: 403,
+        );
+      }
+      if (response.statusCode == 404) {
+        return UpdateFetchResult(
+          status: UpdateFetchStatus.notFound,
+          httpStatus: 404,
+        );
+      }
+      return UpdateFetchResult(
+        status: UpdateFetchStatus.badStatus,
+        httpStatus: response.statusCode,
+      );
+    } catch (e) {
+      return UpdateFetchResult(status: UpdateFetchStatus.error, error: e);
+    }
+  }
+
+  /// 检查更新
+  static Future<void> checkUpdate(BuildContext context, {bool showNoUpdateToast = false}) async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final currentVersion = packageInfo.version;
+      final result = await fetchLatestRelease();
+
+      switch (result.status) {
+        case UpdateFetchStatus.ok:
+          final info = result.info;
+          if (info == null) {
+            if (showNoUpdateToast && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('未发现任何发布版本')),
+              );
+            }
+            return;
           }
-        } else {
+          if (_hasNewVersion(currentVersion, info.version)) {
+            if (context.mounted && info.downloadUrl != null) {
+              presentUpdateDialog(context, info);
+            }
+          } else {
+            if (showNoUpdateToast && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('当前已是最新版本')),
+              );
+            }
+          }
+          return;
+        case UpdateFetchStatus.empty:
           if (showNoUpdateToast && context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('当前已是最新版本')),
+              const SnackBar(content: Text('未发现任何发布版本')),
             );
           }
-        }
-      } else if (response.statusCode == 403) {
-        if (showNoUpdateToast && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('检查更新过于频繁，请稍后再试')),
-          );
-        }
-      } else if (response.statusCode == 404) {
-        if (showNoUpdateToast && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('仓库不存在或为私有仓库')),
-          );
-        }
-      } else {
-        if (showNoUpdateToast && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('检查更新失败: ${response.statusCode}')),
-          );
-        }
+          return;
+        case UpdateFetchStatus.rateLimited:
+          if (showNoUpdateToast && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('检查更新过于频繁，请稍后再试')),
+            );
+          }
+          return;
+        case UpdateFetchStatus.notFound:
+          if (showNoUpdateToast && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('仓库不存在或为私有仓库')),
+            );
+          }
+          return;
+        case UpdateFetchStatus.badStatus:
+          if (showNoUpdateToast && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('检查更新失败: ${result.httpStatus ?? "?"}'),
+              ),
+            );
+          }
+          return;
+        case UpdateFetchStatus.error:
+          if (showNoUpdateToast && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('检查更新出错: ${result.error}')),
+            );
+          }
+          return;
       }
     } catch (e) {
       if (showNoUpdateToast && context.mounted) {
@@ -275,6 +374,22 @@ class UpdateService {
         );
       }
     }
+  }
+
+  /// 远端版本是否高于本地（与 [checkUpdate] 比较逻辑一致）。
+  static bool isRemoteNewerThanLocal(String localVersion, String remoteVersion) {
+    return _hasNewVersion(localVersion, remoteVersion);
+  }
+
+  /// 展示更新对话框（需 [UpdateReleaseInfo.downloadUrl] 非空）。
+  static void presentUpdateDialog(
+    BuildContext context,
+    UpdateReleaseInfo info, {
+    VoidCallback? onRemindLater,
+  }) {
+    final url = info.downloadUrl;
+    if (url == null || url.isEmpty) return;
+    _showUpdateDialog(context, info, onRemindLater: onRemindLater);
   }
 
   /// 版本比较
@@ -481,12 +596,15 @@ class UpdateService {
   /// 显示更新对话框
   static void _showUpdateDialog(
     BuildContext context,
-    String version,
-    String note,
-    String downloadUrl,
-    String fileName, {
-    int? expectedAssetBytes,
+    UpdateReleaseInfo info, {
+    VoidCallback? onRemindLater,
   }) {
+    final downloadUrl = info.downloadUrl!;
+    final version = info.version;
+    final note = info.body;
+    final fileName = info.fileName;
+    final expectedAssetBytes = info.expectedAssetBytes;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -645,7 +763,10 @@ class UpdateService {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () {
+              onRemindLater?.call();
+              Navigator.pop(dialogContext);
+            },
             child: const Text('稍后更新'),
           ),
         ],

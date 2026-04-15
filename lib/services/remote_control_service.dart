@@ -114,7 +114,9 @@ class RemoteControlService {
       final uri = _buildWebSocketUri();
 
       // 准备headers，包含Authorization token
-      final headers = <String, String>{};
+      final headers = <String, String>{
+        ...ApiService.tunnelBypassHeadersForUrl(ApiService.baseUrl),
+      };
       var rawToken = ApiService.token?.trim();
       if (rawToken != null && rawToken.startsWith('Bearer ')) {
         rawToken = rawToken.substring('Bearer '.length).trim();

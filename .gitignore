@@ -23,7 +23,8 @@ backend/rpc/rpc.exe
 *.ipr
 *.iws
 .idea/
-.kiro
+.kiro/
+.claude/
 # .trae/
 
 # The .vscode folder contains launch configuration and tasks you configure in

@@ -94,7 +94,9 @@ class PresenceService {
       final uri = _buildWebSocketUri();
 
       // 准备headers，包含Authorization token
-      final headers = <String, String>{};
+      final headers = <String, String>{
+        ...ApiService.tunnelBypassHeadersForUrl(ApiService.baseUrl),
+      };
       if (!kIsWeb) {
         headers['Authorization'] = 'Bearer $rawToken';
       }

@@ -56,14 +56,48 @@ class _InputAssistSettingsPageState extends State<InputAssistSettingsPage> {
 
   Future<void> _requestOverlay() async {
     try {
-      await _channel.invokeMethod('requestOverlayPermission');
-    } catch (_) {}
+      // 显示详细的权限申请引导
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('需要悬浮窗权限'),
+          content: const Text('Moe Social 需要悬浮窗权限来显示AI助手，帮助您更好地聊天。\n\n请在系统设置中允许「显示在其他应用上层」权限。'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                Navigator.pop(context);
+                await _channel.invokeMethod('requestOverlayPermission');
+                final granted =
+                    await _channel.invokeMethod<bool>('checkOverlayPermission') ??
+                        false;
+                if (!granted || !mounted) return;
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('权限已授予，悬浮窗已开启')),
+                );
+                await _load();
+              },
+              child: const Text('去授权'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('权限申请失败: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _showBubble() async {
     try {
-      final overlay =
-          await _channel.invokeMethod<bool>('checkOverlayPermission') ?? false;
+      final overlay = await _channel.invokeMethod<bool>('checkOverlayPermission') ?? false;
       if (!overlay) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -71,6 +105,7 @@ class _InputAssistSettingsPageState extends State<InputAssistSettingsPage> {
         );
         return;
       }
+
       await FlutterOverlayWindow.showOverlay(
         enableDrag: true,
         overlayTitle: "Moe AI",
@@ -83,6 +118,7 @@ class _InputAssistSettingsPageState extends State<InputAssistSettingsPage> {
         height: 140,
         width: 140,
       );
+      
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('悬浮球已开启（去 QQ/桌面右侧看看）')),
@@ -157,7 +193,7 @@ class _InputAssistSettingsPageState extends State<InputAssistSettingsPage> {
                         trailing: TextButton(
                           onPressed: () async {
                             await FlutterOverlayWindow.closeOverlay();
-                            if (!mounted) return;
+                            if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('已关闭悬浮球')),
                             );
