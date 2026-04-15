@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:io' show File, Platform, SocketException;
@@ -187,6 +188,9 @@ class ApiService {
   /// 距离过期不足此时长则先发制人调用刷新（当前 token 仍须有效，后端才会签发新 token）
   static const Duration _proactiveRefreshThreshold = Duration(hours: 6);
 
+  /// 单次 HTTP 超时（原 http 包无默认超时，隧道/弱网下会长时间挂起，表现为「间歇性刷不出」）
+  static const Duration _httpTimeout = Duration(seconds: 18);
+
   // 防止并发刷新token
   static bool _isRefreshing = false;
   // 等待刷新token的请求队列（当前实现未使用，先移除避免日志/分析噪音）
@@ -246,6 +250,18 @@ class ApiService {
     return await _request(path, method: 'DELETE');
   }
 
+  static Future<http.Response> _httpWithTimeout(
+    Future<http.Response> inner,
+  ) {
+    return inner.timeout(
+      _httpTimeout,
+      onTimeout: () => throw ApiException(
+        '请求超时（${_httpTimeout.inSeconds}秒），请检查网络或稍后重试',
+        504,
+      ),
+    );
+  }
+
   // 执行实际的HTTP请求
   static Future<Map<String, dynamic>> _performRequest(
       String path, String method, dynamic body) async {
@@ -273,25 +289,25 @@ class ApiService {
       // 发送请求
       http.Response response;
       if (method == 'GET') {
-        response = await http.get(uri, headers: headers);
+        response = await _httpWithTimeout(http.get(uri, headers: headers));
       } else if (method == 'POST') {
-        response = await http.post(
+        response = await _httpWithTimeout(http.post(
           uri,
           headers: headers,
           body: body != null ? json.encode(body) : null,
-        );
+        ));
       } else if (method == 'PUT') {
-        response = await http.put(
+        response = await _httpWithTimeout(http.put(
           uri,
           headers: headers,
           body: body != null ? json.encode(body) : null,
-        );
+        ));
       } else if (method == 'DELETE') {
-        response = await http.delete(
+        response = await _httpWithTimeout(http.delete(
           uri,
           headers: headers,
           body: body != null ? json.encode(body) : null,
-        );
+        ));
       } else {
         throw ApiException('不支持的HTTP方法: $method', null);
       }
@@ -392,6 +408,9 @@ class ApiService {
       }
 
       return result;
+    } on TimeoutException catch (e) {
+      _log('❌ 请求超时: $e');
+      throw ApiException('请求超时，请检查网络或稍后重试', 504);
     } on SocketException catch (e) {
       _log('❌ 网络连接错误: $e');
       throw ApiException('无法连接到服务器，请检查网络设置或服务器是否开启', 503);
@@ -456,7 +475,7 @@ class ApiService {
         headers['Authorization'] = 'Bearer $currentToken';
       }
 
-      final response = await http.post(uri, headers: headers);
+      final response = await _httpWithTimeout(http.post(uri, headers: headers));
       final bodyText = _decodeUtf8Body(response);
 
       if (response.statusCode == 200) {
@@ -849,10 +868,59 @@ class ApiService {
 
   // ========== 用户信息管理相关API ==========
 
-  // 获取用户信息
+  static bool _isTransientUserInfoFailure(Object e) {
+    if (e is SocketException) return true;
+    if (e is http.ClientException) return true;
+    if (e is TimeoutException) return true;
+    if (e is! ApiException) return false;
+    final c = e.code;
+    if (c == 502 || c == 503 || c == 504) return true;
+    if (c == 500) return true;
+    final m = e.message;
+    if (m.contains('无法连接') ||
+        m.contains('服务器暂时') ||
+        m.contains('空响应') ||
+        m.contains('超时') ||
+        m.contains('网络请求')) {
+      return true;
+    }
+    if (c == 401 ||
+        m.contains('登录已过期') ||
+        m.contains('重新登录')) {
+      return false;
+    }
+    return false;
+  }
+
+  // 获取用户信息（带短暂失败重试，减轻隧道/弱网间歇性失败）
   static Future<User> getUserInfo(String userId) async {
-    final result = await _request('/api/user/$userId');
-    return User.fromJson(result['data']);
+    if (userId.isEmpty) {
+      throw ApiException('用户 ID 无效', 400);
+    }
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        final result = await _request('/api/user/$userId');
+        final data = result['data'];
+        if (data is! Map<String, dynamic>) {
+          throw ApiException('用户信息格式异常', 500);
+        }
+        return User.fromJson(data);
+      } catch (e, st) {
+        if (kDebugMode) {
+          debugPrint('getUserInfo attempt ${attempt + 1}/3 failed: $e\n$st');
+        }
+        if (attempt < 2 && _isTransientUserInfoFailure(e)) {
+          _log('⚠️ getUserInfo 短暂失败，${attempt + 2}/3 次重试…');
+          await Future<void>.delayed(
+            Duration(milliseconds: 400 * (attempt + 1)),
+          );
+          continue;
+        }
+        rethrow;
+      }
+    }
+    // 不可达：循环内要么 return 要么 rethrow；保留以满足静态返回类型
+    throw ApiException('获取用户信息失败', 503);
   }
 
   // 更新用户信息

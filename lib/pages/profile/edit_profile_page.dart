@@ -169,7 +169,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     try {
       final avatarText = _avatarController.text.trim();
-      await ApiService.updateUserInfo(
+      final updated = await ApiService.updateUserInfo(
         userId,
         username: _usernameController.text.trim(),
         email: _emailController.text.trim(),
@@ -178,6 +178,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         gender: _gender,
         birthday: _birthday != null ? _birthday!.toIso8601String().substring(0, 10) : null,
       );
+      await AuthService.replaceUserProfileCache(updated);
 
       if (mounted) {
         _hasUnsavedChanges = false;

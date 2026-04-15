@@ -42,13 +42,31 @@ class _ProfilePageState extends State<ProfilePage> {
   List<AchievementBadge> _userBadges = [];
   final AchievementService _achievementService = AchievementService();
 
+  /// 合并同时触发的刷新（下拉、从子页返回等），避免同一套接口被并行打两遍。
+  Future<void>? _ongoingProfileLoad;
+
   @override
   void initState() {
     super.initState();
     _loadUserInfo();
   }
 
-  Future<void> _loadUserInfo() async {
+  Future<void> _loadUserInfo() {
+    if (_ongoingProfileLoad != null) {
+      return _ongoingProfileLoad!;
+    }
+    final f = _loadUserInfoImpl();
+    _ongoingProfileLoad = f;
+    f.whenComplete(() {
+      if (identical(_ongoingProfileLoad, f)) {
+        _ongoingProfileLoad = null;
+      }
+    });
+    return f;
+  }
+
+  Future<void> _loadUserInfoImpl() async {
+    await AuthService.init();
     final userId = AuthService.currentUser;
     if (userId == null) {
       if (mounted) {
@@ -64,8 +82,8 @@ class _ProfilePageState extends State<ProfilePage> {
     });
 
     try {
-      final user = await ApiService.getUserInfo(userId)
-          .timeout(const Duration(seconds: 8));
+      // 超时与重试由 ApiService.getUserInfo / _httpWithTimeout 统一处理，避免外层 8s 截断重试链
+      final user = await ApiService.getUserInfo(userId);
 
       await _achievementService.initializeUserBadges(userId);
 

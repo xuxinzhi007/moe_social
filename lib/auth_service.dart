@@ -29,6 +29,8 @@ class AuthService {
   static const String _userIdKey = 'user_id';
   /// 上次登录成功的账号（邮箱 / Moe 号 / 用户名），仅成功登录后写入，不存密码
   static const String _lastLoginAccountKey = 'last_login_account';
+  /// 本地缓存的用户资料（按用户 ID 分键，避免换号后读到上一账号）
+  static String _userInfoPrefsKey(String userId) => 'user_info_$userId';
   
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -96,9 +98,11 @@ class AuthService {
 
         await _saveAuthData();
 
+        final prefs = await SharedPreferences.getInstance();
+        await _purgeAllUserInfoCaches(prefs);
+
         final trimmedAccount = account.trim();
         if (trimmedAccount.isNotEmpty) {
-          final prefs = await SharedPreferences.getInstance();
           await prefs.setString(_lastLoginAccountKey, trimmedAccount);
         }
 
@@ -180,6 +184,24 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_userIdKey);
+    await _purgeAllUserInfoCaches(prefs);
+  }
+
+  static Future<void> _purgeAllUserInfoCaches(SharedPreferences prefs) async {
+    for (final k in prefs.getKeys().toList()) {
+      if (k == 'user_info' || k.startsWith('user_info_')) {
+        await prefs.remove(k);
+      }
+    }
+  }
+
+  /// 编辑资料等场景写入最新 [User]，与 [getUserInfo] 磁盘缓存一致。
+  static Future<void> replaceUserProfileCache(User user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _userInfoPrefsKey(user.id),
+      json.encode(user.toJson()),
+    );
   }
 
   /// 历史版本在本地存过点赞状态；现已以服务端为准，登出时清掉避免误导。
@@ -211,19 +233,49 @@ class AuthService {
     throw Exception('用户未登录');
   }
 
-  // 获取用户信息
-  static Future<User> getUserInfo() async {
+  // 获取用户信息（优先读与当前账号 ID 匹配的本地缓存）
+  static Future<User> getUserInfo({bool forceRefresh = false}) async {
     final userId = await getUserId();
     final prefs = await SharedPreferences.getInstance();
-    final userInfoJson = prefs.getString('user_info');
-    if (userInfoJson != null) {
-      final userInfoMap = json.decode(userInfoJson) as Map<String, dynamic>;
-      return User.fromJson(userInfoMap);
+
+    await _migrateLegacyUserInfoIfNeeded(prefs, userId);
+
+    if (!forceRefresh) {
+      final cached = prefs.getString(_userInfoPrefsKey(userId));
+      if (cached != null && cached.isNotEmpty) {
+        try {
+          final map = json.decode(cached) as Map<String, dynamic>;
+          final u = User.fromJson(map);
+          if (u.id == userId) return u;
+        } catch (_) {
+          await prefs.remove(_userInfoPrefsKey(userId));
+        }
+      }
     }
-    // 如果本地没有用户信息，从服务器获取
+
     final userInfo = await ApiService.getUserInfo(userId);
-    await prefs.setString('user_info', json.encode(userInfo.toJson()));
+    await prefs.setString(
+      _userInfoPrefsKey(userId),
+      json.encode(userInfo.toJson()),
+    );
     return userInfo;
+  }
+
+  /// 旧版单键 `user_info` 与当前用户一致则迁到分键并删除旧键。
+  static Future<void> _migrateLegacyUserInfoIfNeeded(
+    SharedPreferences prefs,
+    String userId,
+  ) async {
+    final legacy = prefs.getString('user_info');
+    if (legacy == null || legacy.isEmpty) return;
+    try {
+      final map = json.decode(legacy) as Map<String, dynamic>;
+      final id = map['id'] as String?;
+      if (id == userId) {
+        await prefs.setString(_userInfoPrefsKey(userId), legacy);
+      }
+    } catch (_) {}
+    await prefs.remove('user_info');
   }
 
   // 更新token
