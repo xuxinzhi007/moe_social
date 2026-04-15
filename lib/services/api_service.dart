@@ -1473,4 +1473,79 @@ class ApiService {
       'total': result['total'] as int,
     };
   }
+
+  // ========== 登录历史和设备管理相关API ==========
+
+  // 获取登录历史
+  static Future<List<Map<String, dynamic>>> getLoginHistory(String userId,
+      {int page = 1, int pageSize = 10}) async {
+    final result = await _request(
+        '/api/user/$userId/login-history?page=$page&page_size=$pageSize');
+    final historyJson = result['data'] as List;
+    return historyJson.map((json) => json as Map<String, dynamic>).toList();
+  }
+
+  // 获取登录设备列表
+  static Future<List<Map<String, dynamic>>> getLoginDevices(String userId) async {
+    final result = await _request('/api/user/$userId/devices');
+    final devicesJson = result['data'] as List;
+    return devicesJson.map((json) => json as Map<String, dynamic>).toList();
+  }
+
+  // 登出指定设备
+  static Future<void> logoutDevice(String userId, String deviceId) async {
+    await _request('/api/user/$userId/devices/$deviceId/logout', method: 'POST');
+  }
+
+  // 更新设备信息
+  static Future<Map<String, dynamic>> updateDeviceInfo(String userId, {
+    String? deviceName,
+    String? deviceType,
+  }) async {
+    final body = <String, dynamic>{};
+    if (deviceName != null) body['device_name'] = deviceName;
+    if (deviceType != null) body['device_type'] = deviceType;
+    
+    final result = await _request('/api/user/$userId/device-info', 
+        method: 'PUT', 
+        body: body);
+    return result['data'] as Map<String, dynamic>;
+  }
+
+  // ========== 两步验证相关API ==========
+
+  // 启用两步验证
+  static Future<Map<String, dynamic>> enableTwoFactorAuth(String userId) async {
+    final result = await _request('/api/user/$userId/2fa/enable', method: 'POST');
+    return result['data'] as Map<String, dynamic>;
+  }
+
+  // 验证两步验证码
+  static Future<Map<String, dynamic>> verifyTwoFactorCode(String userId, String code) async {
+    final result = await _request('/api/user/$userId/2fa/verify', 
+        method: 'POST', 
+        body: {'code': code});
+    return result['data'] as Map<String, dynamic>;
+  }
+
+  // 禁用两步验证
+  static Future<void> disableTwoFactorAuth(String userId, String code) async {
+    await _request('/api/user/$userId/2fa/disable', 
+        method: 'POST', 
+        body: {'code': code});
+  }
+
+  // 获取两步验证状态
+  static Future<Map<String, dynamic>> getTwoFactorStatus(String userId) async {
+    final result = await _request('/api/user/$userId/2fa/status');
+    return result['data'] as Map<String, dynamic>;
+  }
+
+  // 重新生成两步验证密钥
+  static Future<Map<String, dynamic>> regenerateTwoFactorKey(String userId, String code) async {
+    final result = await _request('/api/user/$userId/2fa/regenerate', 
+        method: 'POST', 
+        body: {'code': code});
+    return result['data'] as Map<String, dynamic>;
+  }
 }

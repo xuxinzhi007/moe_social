@@ -325,6 +325,13 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.qr_code_scanner_rounded),
+          onPressed: () {
+            Navigator.pushNamed(context, '/scan');
+          },
+          tooltip: '扫码添加好友',
+        ),
         Stack(
           children: [
             IconButton(

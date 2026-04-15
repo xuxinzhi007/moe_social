@@ -318,6 +318,16 @@ class _ProfilePageState extends State<ProfilePage> {
                                 );
                               },
                             ),
+                            _MenuItem(
+                              icon: Icons.qr_code_rounded,
+                              title: '我的二维码',
+                              subtitle: '让其他用户扫描添加你为好友',
+                              color: const Color(0xFF4ECDC4),
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                Navigator.pushNamed(context, '/user-qr-code');
+                              },
+                            ),
                           ]),
                         ],
                       ),

@@ -28,6 +28,8 @@ import 'pages/commerce/wallet_page.dart';
 import 'pages/commerce/recharge_page.dart';
 import 'pages/commerce/gacha_page.dart';
 import 'pages/profile/user_profile_page.dart';
+import 'pages/profile/user_qr_code_page.dart';
+import 'pages/scan/scan_page.dart';
 import 'widgets/app_message_widget.dart';
 import 'widgets/notification_popup_host.dart';
 import 'widgets/moe_bottom_bar.dart';
@@ -316,6 +318,8 @@ class _MyAppState extends State<MyApp> {
             avatar: args['avatar'] as String,
           );
         },
+        '/scan': (context) => const ScanPage(),
+        '/user-qr-code': (context) => const UserQrCodePage(),
       },
     );
   }
