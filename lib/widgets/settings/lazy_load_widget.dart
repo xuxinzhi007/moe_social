@@ -1,49 +1,71 @@
 import 'package:flutter/material.dart';
 
-/// 延迟加载组件，当组件进入视口时才会构建
+/// 进入视口附近再构建子组件，减轻首屏压力。
+/// 必须挂在 [Scrollable]（如 [ListView]）子树内，并监听父级 [ScrollPosition]；
+/// 不能使用未 attach 的 [ScrollController]，否则永远不会触发加载。
 class LazyLoadWidget extends StatefulWidget {
   final Widget child;
-  final double offset; // 预加载偏移量
-  final bool once; // 是否只加载一次
+  final double offset;
+  final bool once;
 
   const LazyLoadWidget({
-    Key? key,
+    super.key,
     required this.child,
     this.offset = 100.0,
     this.once = true,
-  }) : super(key: key);
+  });
 
   @override
-  _LazyLoadWidgetState createState() => _LazyLoadWidgetState();
+  State<LazyLoadWidget> createState() => _LazyLoadWidgetState();
 }
 
 class _LazyLoadWidgetState extends State<LazyLoadWidget> {
-  late final ScrollController _scrollController;
+  ScrollPosition? _scrollPosition;
   bool _isVisible = false;
   bool _hasLoaded = false;
 
   @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-    _scrollController.addListener(_onScroll);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final scrollable = Scrollable.maybeOf(context);
+    final pos = scrollable?.position;
+    if (identical(pos, _scrollPosition)) return;
+
+    _scrollPosition?.removeListener(_onScrollPosition);
+    _scrollPosition = pos;
+    _scrollPosition?.addListener(_onScrollPosition);
+
+    if (_scrollPosition == null) {
+      // 不在可滚动区域内时直接展示，避免空白
+      if (!_isVisible) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          setState(() {
+            _isVisible = true;
+            _hasLoaded = true;
+          });
+        });
+      }
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _onScrollPosition());
+    }
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
+    _scrollPosition?.removeListener(_onScrollPosition);
     super.dispose();
   }
 
-  void _onScroll() {
+  void _onScrollPosition() {
+    if (!mounted) return;
     if (_hasLoaded && widget.once) return;
 
     final renderObject = context.findRenderObject() as RenderBox?;
-    if (renderObject == null) return;
+    if (renderObject == null || !renderObject.hasSize) return;
 
     final position = renderObject.localToGlobal(Offset.zero);
-    final screenHeight = MediaQuery.of(context).size.height;
+    final screenHeight = MediaQuery.sizeOf(context).height;
 
     if (position.dy < screenHeight + widget.offset) {
       if (!_isVisible) {

@@ -125,11 +125,10 @@ class _SettingsPageState extends State<SettingsPage> {
               physics: isMobile ? const BouncingScrollPhysics() : null,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               children: [
-                if (_isSearching) {
+                if (_isSearching)
                   _buildSearchResults()
-                } else {
-                  ..._buildNormalSettings()
-                },
+                else
+                  ..._buildNormalSettings(),
                 const SizedBox(height: 40),
               ],
             ),

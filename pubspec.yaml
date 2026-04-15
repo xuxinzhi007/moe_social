@@ -91,14 +91,10 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
+  # 只保留 assets/ 即可包含子目录；勿再并列声明子路径，否则同一文件会被打包两次，
+  # Windows 上复制到 flutter_assets 会报 errno 183（文件已存在）。
   assets:
     - assets/
-    - assets/frames/
-    - assets/avatars/faces/
-    - assets/avatars/hairs/
-    - assets/avatars/eyes/
-    - assets/avatars/clothes/
-    - assets/avatars/accessories/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

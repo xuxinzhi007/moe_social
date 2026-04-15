@@ -600,7 +600,7 @@ class DeviceStorageModule extends StatelessWidget {
                           itemCount: storageDetails.length,
                           itemBuilder: (context, index) {
                             final item = storageDetails[index];
-                            final percentage = (item['size'] as double / totalStorage) * 100;
+                            final percentage = ((item['size'] as double) / totalStorage) * 100;
                             
                             return Container(
                               margin: const EdgeInsets.only(bottom: 12),
