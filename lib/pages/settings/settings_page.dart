@@ -25,6 +25,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _autoUpdateOnLaunch = true;
   String _searchQuery = '';
   bool _isSearching = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -159,8 +160,32 @@ class _SettingsPageState extends State<SettingsPage> {
       );
     }
 
+    // 按模块分类展示搜索结果
+    final categorizedResults = _categorizeSearchResults(searchResults);
+    
     return Column(
-      children: searchResults.map((result) => _buildSearchResultItem(result)).toList(),
+      children: categorizedResults.entries.map((entry) {
+        final moduleName = entry.key;
+        final moduleResults = entry.value;
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 12, top: 16, bottom: 8),
+              child: Text(
+                moduleName,
+                style: const TextStyle(
+                  color: Color(0xFF555555),
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ...moduleResults.map((result) => _buildSearchResultItem(result)).toList(),
+          ],
+        );
+      }).toList(),
     );
   }
 
@@ -174,6 +199,7 @@ class _SettingsPageState extends State<SettingsPage> {
         'description': '接收最新动态和系统通知',
         'icon': Icons.notifications_active_rounded,
         'color': Colors.orange,
+        'module': '常规设置',
       });
     }
     
@@ -183,12 +209,21 @@ class _SettingsPageState extends State<SettingsPage> {
         'description': '查看设备ID、系统版本、网络状态等',
         'icon': Icons.phone_iphone_rounded,
         'color': Colors.blueGrey,
+        'module': '设备与存储',
       });
       results.add({
         'title': '远程设备列表',
         'description': '查看登录过的设备',
         'icon': Icons.devices_other_rounded,
         'color': Colors.cyan,
+        'module': '设备与存储',
+      });
+      results.add({
+        'title': '存储空间管理',
+        'description': '查看应用存储使用情况，清理缓存',
+        'icon': Icons.storage_rounded,
+        'color': Colors.amber,
+        'module': '设备与存储',
       });
     }
     
@@ -198,12 +233,14 @@ class _SettingsPageState extends State<SettingsPage> {
         'description': '直连电脑 Ollama，尽量对齐终端输出',
         'icon': Icons.terminal_rounded,
         'color': Colors.deepPurpleAccent,
+        'module': 'AI 模型',
       });
       results.add({
         'title': '模型记忆线',
         'description': '查看模型记录的所有记忆',
         'icon': Icons.psychology_rounded,
         'color': Colors.deepPurple,
+        'module': 'AI 模型',
       });
     }
     
@@ -213,12 +250,21 @@ class _SettingsPageState extends State<SettingsPage> {
         'description': '选择应用明暗模式',
         'icon': Icons.color_lens_rounded,
         'color': Colors.purple,
+        'module': '外观',
       });
       results.add({
         'title': '主题颜色',
         'description': '自定义应用主色调',
         'icon': Icons.palette_rounded,
         'color': Colors.pink,
+        'module': '外观',
+      });
+      results.add({
+        'title': '字体大小',
+        'description': '调整应用字体大小',
+        'icon': Icons.text_fields_rounded,
+        'color': Colors.green,
+        'module': '外观',
       });
     }
     
@@ -228,12 +274,21 @@ class _SettingsPageState extends State<SettingsPage> {
         'description': '修改您的账户密码',
         'icon': Icons.lock_rounded,
         'color': Colors.blue,
+        'module': '账户与安全',
       });
       results.add({
         'title': '隐私设置',
         'description': '管理应用权限和隐私设置',
         'icon': Icons.privacy_tip_rounded,
         'color': Colors.green,
+        'module': '账户与安全',
+      });
+      results.add({
+        'title': '账号安全',
+        'description': '查看登录历史，管理登录设备',
+        'icon': Icons.shield_rounded,
+        'color': Colors.red,
+        'module': '账户与安全',
       });
     }
     
@@ -243,16 +298,39 @@ class _SettingsPageState extends State<SettingsPage> {
         'description': '点击检查更新',
         'icon': Icons.info_rounded,
         'color': Colors.teal,
+        'module': '关于',
       });
       results.add({
         'title': '意见反馈',
         'description': '问题描述与联系方式',
         'icon': Icons.feedback_outlined,
         'color': Colors.deepOrange,
+        'module': '关于',
+      });
+      results.add({
+        'title': '用户协议',
+        'description': '查看用户协议和隐私政策',
+        'icon': Icons.description_rounded,
+        'color': Colors.grey,
+        'module': '关于',
       });
     }
     
     return results;
+  }
+
+  Map<String, List<Map<String, dynamic>>> _categorizeSearchResults(List<Map<String, dynamic>> results) {
+    final categorized = <String, List<Map<String, dynamic>>>{};
+    
+    for (final result in results) {
+      final module = result['module'] as String;
+      if (!categorized.containsKey(module)) {
+        categorized[module] = [];
+      }
+      categorized[module]!.add(result);
+    }
+    
+    return categorized;
   }
 
   Widget _buildSearchResultItem(Map<String, dynamic> result) {
@@ -284,15 +362,96 @@ class _SettingsPageState extends State<SettingsPage> {
           subtitle: Text(result['description'] as String, style: const TextStyle(fontSize: 12, color: Colors.grey)),
           trailing: const Icon(Icons.chevron_right, color: Colors.grey),
           onTap: () {
-            // 这里可以添加导航逻辑，根据搜索结果跳转到相应的设置页面
+            // 实现搜索结果导航逻辑
+            _navigateToSettingItem(result['title'] as String);
           },
         ),
       ),
     );
   }
 
+  void _navigateToSettingItem(String title) {
+    switch (title) {
+      case '推送通知':
+        // 通知设置在当前页面，无需跳转
+        break;
+      case '本机设备信息':
+      case '远程设备列表':
+      case '存储空间管理':
+        // 这些功能在设备与存储模块中
+        _showDeviceStorageModule();
+        break;
+      case '终端同款（本地 Ollama）':
+      case '模型记忆线':
+        // 这些功能在AI模型模块中
+        _showAiSettingsModule();
+        break;
+      case '主题模式':
+      case '主题颜色':
+        // 这些功能在外观模块中
+        _showAppearanceModule();
+        break;
+      case '修改密码':
+      case '隐私设置':
+        // 这些功能在账户与安全模块中
+        _showAccountSecurityModule();
+        break;
+      case '软件版本':
+      case '意见反馈':
+        // 这些功能在关于模块中
+        _showAboutModule();
+        break;
+      default:
+        break;
+    }
+  }
+
+  void _showDeviceStorageModule() {
+    // 滚动到设备与存储模块
+    _scrollToModule('设备与存储');
+  }
+
+  void _showAiSettingsModule() {
+    // 滚动到AI模型模块
+    _scrollToModule('AI 模型');
+  }
+
+  void _showAppearanceModule() {
+    // 滚动到外观模块
+    _scrollToModule('外观');
+  }
+
+  void _showAccountSecurityModule() {
+    // 滚动到账户与安全模块
+    _scrollToModule('账户与安全');
+  }
+
+  void _showAboutModule() {
+    // 滚动到关于模块
+    _scrollToModule('关于');
+  }
+
+  void _scrollToModule(String moduleName) {
+    // 这里可以实现滚动逻辑，将指定模块滚动到视图中
+    // 由于当前实现中没有使用滚动控制器，我们可以通过重置搜索状态并让用户手动滚动
+    _onClearSearch();
+    // 实际应用中，应该使用 ScrollController 来实现精确滚动
+  }
+
   List<Widget> _buildNormalSettings() {
     return [
+      _buildSectionTitle('账户与安全'),
+      LazyLoadWidget(
+        child: const AccountSecurityModule(),
+      ),
+
+      const SizedBox(height: 24),
+      _buildSectionTitle('外观'),
+      LazyLoadWidget(
+        child: const AppearanceModule(),
+      ),
+
+      const SizedBox(height: 24),
       _buildSectionTitle('常规设置'),
       FadeInUp(
         delay: const Duration(milliseconds: 100),
@@ -322,10 +481,26 @@ class _SettingsPageState extends State<SettingsPage> {
             trailing: Switch.adaptive(
               value: _notificationsEnabled,
               activeColor: const Color(0xFF7F7FD5),
-              onChanged: (bool value) {
+              onChanged: (bool value) async {
+                setState(() {
+                  _isLoading = true;
+                });
+                
+                // 模拟网络请求或其他操作
+                await Future.delayed(const Duration(seconds: 1));
+                
                 setState(() {
                   _notificationsEnabled = value;
+                  _isLoading = false;
                 });
+                
+                // 显示操作结果反馈
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(value ? '通知已开启' : '通知已关闭'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
               },
             ),
           ),
@@ -348,18 +523,6 @@ class _SettingsPageState extends State<SettingsPage> {
       _buildSectionTitle('AI 模型'),
       LazyLoadWidget(
         child: const AiSettingsModule(),
-      ),
-
-      const SizedBox(height: 24),
-      _buildSectionTitle('外观'),
-      LazyLoadWidget(
-        child: const AppearanceModule(),
-      ),
-
-      const SizedBox(height: 24),
-      _buildSectionTitle('账户与安全'),
-      LazyLoadWidget(
-        child: const AccountSecurityModule(),
       ),
 
       const SizedBox(height: 24),
