@@ -59,13 +59,16 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
   // 渲染纯文本内容
   Widget _renderTextContent() {
     final textColor = widget.isUser ? Colors.white : Colors.black87;
-    final maxLines = _isExpanded ? null : 5;
     final text = widget.content;
+    // 助手长文默认全文展示（由外层 ListView 滚动）；仅用户侧保留「多行折叠 + 展开」省屏。
+    final collapseUserLongText =
+        widget.isUser && !_isExpanded && text.length > 200;
+    final maxLines = collapseUserLongText ? 5 : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        SelectableText(
           text,
           style: TextStyle(
             color: textColor,
@@ -73,9 +76,8 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
             height: 1.5,
           ),
           maxLines: maxLines,
-          overflow: maxLines != null ? TextOverflow.ellipsis : null,
         ),
-        if (text.length > 200 && maxLines != null)
+        if (collapseUserLongText)
           GestureDetector(
             onTap: _toggleExpanded,
             child: Padding(
@@ -83,7 +85,26 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
               child: Text(
                 '展开',
                 style: TextStyle(
-                  color: widget.isUser ? Colors.white.withOpacity(0.8) : Colors.blue,
+                  color: widget.isUser
+                      ? Colors.white.withOpacity(0.8)
+                      : Colors.blue,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        if (widget.isUser && _isExpanded && text.length > 200)
+          GestureDetector(
+            onTap: _toggleExpanded,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                '收起',
+                style: TextStyle(
+                  color: widget.isUser
+                      ? Colors.white.withOpacity(0.8)
+                      : Colors.blue,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
@@ -173,7 +194,6 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
   @override
   Widget build(BuildContext context) {
     final isUser = widget.isUser;
-    final textColor = isUser ? Colors.white : Colors.black87;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 12),
