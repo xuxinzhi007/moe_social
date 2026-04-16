@@ -11,6 +11,7 @@ import '../../widgets/avatar_image.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_loading.dart';
+import '../../widgets/fade_in_up.dart';
 
 // 筛选类型
 enum _FilterType { all, online, recent }
@@ -788,7 +789,7 @@ class _FriendsPageState extends State<FriendsPage> {
                 final user = _getFilteredFriends()[index];
                 return KeyedSubtree(
                   key: ValueKey('friend_${user.id}'),
-                  child: _buildFriendCard(user),
+                  child: _buildFriendCard(user, index),
                 );
               },
             ),
@@ -906,13 +907,17 @@ class _FriendsPageState extends State<FriendsPage> {
     return friends;
   }
 
-  Widget _buildFriendCard(User user) {
+  Widget _buildFriendCard(User user, int index) {
     final isOnline = _onlineStatus[user.id] ?? false;
     final dmUnread =
         context.watch<NotificationProvider>().unreadDmBySender[user.id] ?? 0;
     final isFavorite = _favoriteFriends.contains(user.id);
         
-    return Container(
+    return FadeInUp(
+      key: ValueKey('friend_${user.id}'),
+      duration: const Duration(milliseconds: 200),
+      delay: Duration(milliseconds: 50 * (index % 5)),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1180,6 +1185,7 @@ class _FriendsPageState extends State<FriendsPage> {
             ),
           ),
         ),
+      ),
       ),
     );
   }
