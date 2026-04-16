@@ -226,6 +226,22 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/api/llm/models",
 				Handler: llm.ModelsHandler(serverCtx),
 			},
+			// 终端同款：原样转发到本机 Ollama（与 LlmEndpointConfig * /raw 一致）
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/llm/models/raw",
+				Handler: llm.ModelsRawHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/llm/chat/raw",
+				Handler: llm.ChatRawHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/llm/show/raw",
+				Handler: llm.ShowRawHandler(serverCtx),
+			},
 		},
 	)
 

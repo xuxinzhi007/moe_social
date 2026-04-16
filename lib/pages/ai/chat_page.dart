@@ -92,7 +92,7 @@ class _ChatPageState extends State<ChatPage> {
     _searchController.dispose();
     _speech.stop();
     _tts.stop();
-    _tts.setCompletionHandler(null); // 清理监听器，防止内存泄漏
+    _tts.setCompletionHandler(() {}); // 解除业务回调（API 要求非 null 的 void Function()）
     super.dispose();
   }
 
@@ -481,16 +481,11 @@ class _ChatPageState extends State<ChatPage> {
             }
           }
         },
-        onError: (error) {
-          if (mounted) {
-            setState(() => _isListening = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('语音识别失败：${error.errorMsg}')),
-            );
-          }
-        },
         localeId: 'zh_CN',
-        partialResults: true,
+        listenOptions: stt.SpeechListenOptions(
+          partialResults: true,
+          cancelOnError: true,
+        ),
       );
     } catch (e) {
       if (mounted) {
@@ -613,7 +608,7 @@ class _ChatPageState extends State<ChatPage> {
                       color: Colors.green.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.quote_rounded, color: Colors.green),
+                    child: const Icon(Icons.format_quote_rounded, color: Colors.green),
                   ),
                   title: const Text('引用消息', style: TextStyle(fontWeight: FontWeight.bold)),
                   onTap: () {
@@ -674,15 +669,14 @@ class _ChatPageState extends State<ChatPage> {
     });
   }
 
-  void _editMessage(AiChatMessage message) {
+  Future<void> _editMessage(AiChatMessage message) async {
+    await AiDbService().deleteMessage(message.id);
+    if (!mounted) return;
     setState(() {
       _controller.text = message.content;
       _focusNode.requestFocus();
-      // 保存原消息ID，用于新消息
       _editingMessageId = message.id;
-      // 从消息列表中移除原消息
       _messages.removeWhere((msg) => msg.id == message.id);
-      _saveMessages();
     });
   }
 
@@ -722,15 +716,17 @@ class _ChatPageState extends State<ChatPage> {
             child: const Text('取消', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
+              await AiDbService().deleteMessage(message.id);
+              if (!mounted) return;
               setState(() {
                 _messages.removeWhere((msg) => msg.id == message.id);
-                _saveMessages();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('消息已撤回')),
-                );
               });
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('消息已撤回')),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF7F7FD5),
@@ -882,7 +878,9 @@ class _ChatPageState extends State<ChatPage> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderTop: Border.all(color: Colors.grey.shade200),
+          border: Border(
+            top: BorderSide(color: Colors.grey.shade200),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1149,31 +1147,45 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.agent.name, style: const TextStyle(fontSize: 16)),
+            Text(
+              widget.agent.name,
+              style: const TextStyle(fontSize: 16),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            // AppBar 中间槽位宽度很窄（多颗 actions 时尤甚），必须对长文案 ellipsis
             Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                FutureBuilder<bool>(
-                  future: LlmEndpointConfig.isTerminalModeEnabled(),
-                  builder: (context, snapshot) {
-                    final terminal = snapshot.data == true;
-                    final sessionTitle = _currentSession?.title ?? '加载中...';
-                    final suffix = terminal ? ' · 终端同款' : '';
-                    return Text(
-                      '$sessionTitle$suffix',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    );
-                  },
+                Expanded(
+                  child: FutureBuilder<bool>(
+                    future: LlmEndpointConfig.isTerminalModeEnabled(),
+                    builder: (context, snapshot) {
+                      final terminal = snapshot.data == true;
+                      final sessionTitle =
+                          _currentSession?.title ?? '加载中...';
+                      final suffix = terminal ? ' · 终端同款' : '';
+                      return Text(
+                        '$sessionTitle$suffix',
+                        style: const TextStyle(
+                            fontSize: 12, color: Colors.grey),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    },
+                  ),
                 ),
                 if (_memories.isNotEmpty) ...[
                   const SizedBox(width: 4),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 5, vertical: 1),
                     decoration: BoxDecoration(
                       color: Colors.purple.shade100,
                       borderRadius: BorderRadius.circular(8),
@@ -1282,6 +1294,8 @@ class _ChatPageState extends State<ChatPage> {
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
                     controller: _scrollController,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 20),
                     itemCount: _messages.length + (_isSending ? 1 : 0),
@@ -1293,7 +1307,15 @@ class _ChatPageState extends State<ChatPage> {
                     },
                   ),
           ),
-          _buildInputArea(),
+          // flex:0 仅占内容高度；键盘收起时由 Expanded 占满余量。键盘弹出且余量不足时在此区域内滚动，避免底部溢出。
+          Flexible(
+            flex: 0,
+            fit: FlexFit.loose,
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: _buildInputArea(),
+            ),
+          ),
         ],
       ),
     );
@@ -1433,7 +1455,7 @@ class _ChatPageState extends State<ChatPage> {
                   child: TextField(
                     controller: _controller,
                     focusNode: _focusNode,
-                    maxLines: 5,
+                    maxLines: 4,
                     minLines: 1,
                     textInputAction: TextInputAction.send,
                     decoration: InputDecoration(
