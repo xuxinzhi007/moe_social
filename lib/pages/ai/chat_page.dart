@@ -17,6 +17,7 @@ import '../../models/ai_memory.dart';
 import '../../models/ai_memory_profile.dart';
 import '../../models/ai_memory_settings.dart';
 import '../../widgets/fade_in_up.dart';
+import '../../widgets/ai/message_bubble.dart';
 import 'memory_manager_page.dart';
 
 class ChatPage extends StatefulWidget {
@@ -71,6 +72,9 @@ class _ChatPageState extends State<ChatPage> {
 
   // Message Marking
   Set<String> _markedMessages = {};
+  
+  // Edit Message
+  String? _editingMessageId;
 
   @override
   void initState() {
@@ -88,6 +92,7 @@ class _ChatPageState extends State<ChatPage> {
     _searchController.dispose();
     _speech.stop();
     _tts.stop();
+    _tts.setCompletionHandler(null); // 清理监听器，防止内存泄漏
     super.dispose();
   }
 
@@ -182,12 +187,14 @@ class _ChatPageState extends State<ChatPage> {
 
     final now = DateTime.now();
     final userMsg = AiChatMessage(
-      id: now.millisecondsSinceEpoch.toString(),
+      id: _editingMessageId ?? now.millisecondsSinceEpoch.toString(),
       sessionId: _currentSession!.id,
       role: 'user',
       content: text,
       createdAt: now,
     );
+    // 重置编辑消息ID
+    _editingMessageId = null;
 
     setState(() {
       _messages.add(userMsg);
@@ -378,6 +385,27 @@ class _ChatPageState extends State<ChatPage> {
         );
       }
     });
+  }
+
+  void _scrollToMessage(String messageId) {
+    // 找到消息在列表中的索引
+    final index = _messages.indexWhere((msg) => msg.id == messageId);
+    if (index != -1) {
+      // 计算滚动位置并滚动到该消息
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          // 估算每个消息的高度，实际应用中可能需要更精确的计算
+          const double estimatedMessageHeight = 100.0;
+          final double scrollPosition = index * estimatedMessageHeight;
+          
+          _scrollController.animateTo(
+            scrollPosition,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
   }
 
   Future<void> _playTts(String text, String msgId) async {
@@ -650,6 +678,8 @@ class _ChatPageState extends State<ChatPage> {
     setState(() {
       _controller.text = message.content;
       _focusNode.requestFocus();
+      // 保存原消息ID，用于新消息
+      _editingMessageId = message.id;
       // 从消息列表中移除原消息
       _messages.removeWhere((msg) => msg.id == message.id);
       _saveMessages();
@@ -771,7 +801,8 @@ class _ChatPageState extends State<ChatPage> {
           onTap: () {
             // 点击搜索结果，滚动到对应消息
             _toggleSearch();
-            // 这里可以添加滚动到对应消息的逻辑
+            // 滚动到对应消息
+            _scrollToMessage(message.id);
           },
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),
@@ -1270,180 +1301,85 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _buildMessageBubble(AiChatMessage message) {
     final isUser = message.role == 'user';
-    final textColor = isUser ? Colors.white : Colors.black87;
     final timeStr = "${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}";
+
+    // 检测内容类型
+    MessageContentType contentType = MessageContentType.text;
+    String? language;
+
+    // 简单的内容类型检测逻辑
+    if (message.content.startsWith('```')) {
+      // 代码块
+      contentType = MessageContentType.code;
+      // 提取语言
+      final lines = message.content.split('\n');
+      if (lines.length > 1) {
+        final firstLine = lines[0].trim();
+        if (firstLine.length > 3) {
+          language = firstLine.substring(3).trim();
+        }
+      }
+    } else if (message.content == 'AI is thinking...') {
+      // 思考状态
+      contentType = MessageContentType.thinking;
+    }
 
     return FadeInUp(
       key: ValueKey(message.id),
       duration: const Duration(milliseconds: 200),
       delay: const Duration(milliseconds: 50),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Row(
-          mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            if (!isUser) ...[
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                child: Icon(Icons.smart_toy_rounded, size: 18, color: Theme.of(context).primaryColor),
+      child: Column(
+        crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          AiMessageBubble(
+            content: message.content,
+            contentType: contentType,
+            language: language,
+            isUser: isUser,
+            onContentExpanded: _scrollToBottom,
+          ),
+          if (isUser)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, right: 4),
+              child: Text(
+                timeStr,
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
               ),
-              const SizedBox(width: 8),
-            ],
-            Flexible(
-              child: Column(
-                crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            ),
+          if (!isUser)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 48),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      gradient: isUser
-                          ? const LinearGradient(
-                              colors: [Color(0xFF8A2387), Color(0xFFE94057)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
-                          : null,
-                      color: isUser ? null : Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(20),
-                        topRight: const Radius.circular(20),
-                        bottomLeft: isUser ? const Radius.circular(20) : const Radius.circular(4),
-                        bottomRight: isUser ? const Radius.circular(4) : const Radius.circular(20),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (isUser ? const Color(0xFFE94057) : Colors.black).withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: GestureDetector(
-                                  onLongPress: () async {
-                                    final text = message.content.trim();
-                                    if (text.isEmpty) return;
-                                    _showMessageActions(message);
-                                  },
-                                  child: SelectableText(
-                                    message.content,
-                                    style: TextStyle(
-                                      color: textColor,
-                                      fontSize: 15,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              if (_markedMessages.contains(message.id))
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 8),
-                                  child: Icon(
-                                    Icons.star_rounded,
-                                    color: isUser ? Colors.white : Colors.yellow,
-                                    size: 16,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                        if (!isUser) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                timeStr,
-                                style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
-                              ),
-                              const SizedBox(width: 12),
-                              InkWell(
-                                onTap: () => _playTts(message.content, message.id),
-                                child: Icon(
-                                  _isSpeaking && _speakingMessageId == message.id
-                                      ? Icons.volume_off_rounded
-                                      : Icons.volume_up_rounded,
-                                  size: 16,
-                                  color: Colors.grey.shade400,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ]
-                      ],
+                  Text(
+                    timeStr,
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+                  ),
+                  const SizedBox(width: 12),
+                  InkWell(
+                    onTap: () => _playTts(message.content, message.id),
+                    child: Icon(
+                      _isSpeaking && _speakingMessageId == message.id
+                          ? Icons.volume_off_rounded
+                          : Icons.volume_up_rounded,
+                      size: 16,
+                      color: Colors.grey.shade400,
                     ),
                   ),
-                  if (isUser)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4, right: 4),
-                      child: Text(
-                        timeStr,
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                      ),
-                    ),
                 ],
               ),
             ),
-            if (isUser) ...[
-              const SizedBox(width: 8),
-              const CircleAvatar(
-                radius: 16,
-                backgroundColor: Color(0xFFE94057),
-                child: Icon(Icons.person_rounded, size: 18, color: Colors.white),
-              ),
-            ],
-          ],
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildTypingBubble() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-            child: Icon(Icons.smart_toy_rounded, size: 18, color: Theme.of(context).primaryColor),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-                bottomLeft: Radius.circular(4),
-                bottomRight: Radius.circular(20),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: const _TypingDotsIndicator(),
-          ),
-        ],
-      ),
+    return AiMessageBubble(
+      content: 'AI is thinking...',
+      contentType: MessageContentType.thinking,
+      isUser: false,
     );
   }
 
