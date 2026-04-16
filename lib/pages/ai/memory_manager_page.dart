@@ -252,14 +252,19 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
     final settings = _settings;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('记忆库', style: TextStyle(fontSize: 16)),
             Text(
               widget.agent.name,
               style: const TextStyle(fontSize: 12, color: Colors.grey),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -274,60 +279,71 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
       ),
       body: _isLoading || settings == null
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: _buildProfilesCard(),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: _buildSettingsCard(settings),
-                ),
-                // ── 分类筛选标签 ──────────────────────────────────
-                SizedBox(
-                  height: 48,
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    scrollDirection: Axis.horizontal,
-                    children: _categories.map((c) {
-                      final (id, label, emoji) = c;
-                      final count = id == 'all'
-                          ? _memories.length
-                          : _memories
-                              .where((m) => m.category == id)
-                              .length;
-                      if (count == 0 && id != 'all') {
-                        return const SizedBox.shrink();
-                      }
-                      final selected = _filterCategory == id;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text('$emoji $label ($count)'),
-                          selected: selected,
-                          onSelected: (_) =>
-                              setState(() => _filterCategory = id),
-                          selectedColor: Theme.of(context)
-                              .primaryColor
-                              .withOpacity(0.2),
-                        ),
-                      );
-                    }).toList(),
+          : CustomScrollView(
+              keyboardDismissBehavior:
+                  ScrollViewKeyboardDismissBehavior.onDrag,
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: _buildProfilesCard(),
                   ),
                 ),
-                // ── 记忆列表 ──────────────────────────────────────
-                Expanded(
-                  child: filtered.isEmpty
-                      ? _buildEmpty()
-                      : ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
-                          itemCount: filtered.length,
-                          itemBuilder: (_, i) =>
-                              _buildMemoryCard(filtered[i]),
-                        ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: _buildSettingsCard(settings),
+                  ),
                 ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 48,
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      scrollDirection: Axis.horizontal,
+                      children: _categories.map((c) {
+                        final (id, label, emoji) = c;
+                        final count = id == 'all'
+                            ? _memories.length
+                            : _memories
+                                .where((m) => m.category == id)
+                                .length;
+                        if (count == 0 && id != 'all') {
+                          return const SizedBox.shrink();
+                        }
+                        final selected = _filterCategory == id;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: FilterChip(
+                            label: Text('$emoji $label ($count)'),
+                            selected: selected,
+                            onSelected: (_) =>
+                                setState(() => _filterCategory = id),
+                            selectedColor: Theme.of(context)
+                                .primaryColor
+                                .withOpacity(0.2),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+                if (filtered.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _buildEmpty(),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, i) => _buildMemoryCard(filtered[i]),
+                        childCount: filtered.length,
+                      ),
+                    ),
+                  ),
               ],
             ),
       floatingActionButton: FloatingActionButton.extended(

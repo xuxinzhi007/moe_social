@@ -262,6 +262,11 @@ class AiDbService {
     );
   }
 
+  Future<void> deleteMessage(String messageId) async {
+    final db = await database;
+    await db.delete('messages', where: 'id = ?', whereArgs: [messageId]);
+  }
+
   Future<void> clearMessages(String sessionId) async {
     final db = await database;
     await db.delete('messages', where: 'session_id = ?', whereArgs: [sessionId]);
