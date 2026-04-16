@@ -18,6 +18,7 @@ import '../../models/ai_memory_profile.dart';
 import '../../models/ai_memory_settings.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/ai/message_bubble.dart';
+import '../../widgets/moe_toast.dart';
 import 'memory_manager_page.dart';
 
 class ChatPage extends StatefulWidget {
@@ -356,22 +357,9 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _showMemorySnackBar(int count) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-        content: Row(
-          children: [
-            const Text('🧠', style: TextStyle(fontSize: 16)),
-            const SizedBox(width: 8),
-            Text('已记住 $count 条新信息'),
-          ],
-        ),
-        action: SnackBarAction(
-          label: '查看',
-          onPressed: () => _openMemoryManager(),
-        ),
-      ),
+    MoeToast.info(
+      context,
+      '🧠 已记住 $count 条新信息',
     );
   }
 
