@@ -108,7 +108,6 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
   // 渲染代码块
   Widget _renderCodeContent() {
     final textColor = Colors.white;
-    final backgroundColor = const Color(0xFF1E1E1E);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,26 +202,7 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           )
-                        : widget.contentType == MessageContentType.code
-                            ? null
-                            : BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.only(
-                                  topLeft: const Radius.circular(20),
-                                  topRight: const Radius.circular(20),
-                                  bottomLeft: isUser ? const Radius.circular(20) : const Radius.circular(4),
-                                  bottomRight: isUser ? const Radius.circular(4) : const Radius.circular(20),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: (isUser ? const Color(0xFFE94057) : Colors.black).withOpacity(0.1),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
-                              ).color != null
-                            ? null
-                            : null,
+                        : null,
                     color: isUser
                         ? null
                         : widget.contentType == MessageContentType.code
