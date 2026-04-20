@@ -8,6 +8,7 @@ import '../../services/ai_db_service.dart';
 import '../../models/ai_agent.dart';
 import 'agent_editor_page.dart';
 import 'chat_page.dart';
+import 'content_generation_page.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
@@ -999,6 +1000,27 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                     if (result == true) {
                       _loadAgents();
                     }
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.create_rounded, color: Colors.blue),
+                  ),
+                  title: const Text('内容生成', style: TextStyle(fontWeight: FontWeight.bold)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    HapticFeedback.lightImpact();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ContentGenerationPage(agent: agent),
+                      ),
+                    );
                   },
                 ),
                 ListTile(

@@ -741,6 +741,23 @@ service Super {
   rpc GetCheckInStatus(GetCheckInStatusReq) returns (GetCheckInStatusResp);
   rpc GetCheckInHistory(GetCheckInHistoryReq) returns (GetCheckInHistoryResp);
   rpc GetExpLogs(GetExpLogsReq) returns (GetExpLogsResp);
+
+  // 群组相关服务
+  rpc CreateGroup(CreateGroupReq) returns (CreateGroupResp);
+  rpc GetGroup(GetGroupReq) returns (GetGroupResp);
+  rpc GetGroups(GetGroupsReq) returns (GetGroupsResp);
+  rpc UpdateGroup(UpdateGroupReq) returns (UpdateGroupResp);
+  rpc DeleteGroup(DeleteGroupReq) returns (DeleteGroupResp);
+  rpc JoinGroup(JoinGroupReq) returns (JoinGroupResp);
+  rpc LeaveGroup(LeaveGroupReq) returns (LeaveGroupResp);
+  rpc GetGroupMembers(GetGroupMembersReq) returns (GetGroupMembersResp);
+  rpc GetUserGroups(GetUserGroupsReq) returns (GetUserGroupsResp);
+
+  // 礼物相关服务
+  rpc GetGifts(GetGiftsReq) returns (GetGiftsResp);
+  rpc GetGift(GetGiftReq) returns (GetGiftResp);
+  rpc SendGift(SendGiftReq) returns (SendGiftResp);
+  rpc GetGiftRecords(GetGiftRecordsReq) returns (GetGiftRecordsResp);
 }
 
 // 关注相关消息
@@ -916,5 +933,208 @@ message GetExpLogsReq {
 
 message GetExpLogsResp {
   repeated ExpLogRecord logs = 1;
+  int32 total = 2;
+}
+
+// ==================== 群组相关消息 ====================
+
+message Group {
+  uint64 id = 1;
+  string name = 2;
+  string description = 3;
+  string avatar = 4;
+  string cover = 5;
+  uint64 creator_id = 6;
+  string creator_name = 7;
+  int32 member_count = 8;
+  bool is_public = 9;
+  string status = 10;
+  string created_at = 11;
+  bool is_joined = 12;
+  string user_role = 13;
+}
+
+message GroupMember {
+  uint64 id = 1;
+  uint64 group_id = 2;
+  uint64 user_id = 3;
+  string user_name = 4;
+  string user_avatar = 5;
+  string role = 6;
+  string join_at = 7;
+  string created_at = 8;
+}
+
+message CreateGroupReq {
+  string name = 1;
+  string description = 2;
+  string avatar = 3;
+  string cover = 4;
+  string user_id = 5;
+  bool is_public = 6;
+}
+
+message CreateGroupResp {
+  bool success = 1;
+  string message = 2;
+  Group group = 3;
+}
+
+message GetGroupReq {
+  string group_id = 1;
+  string user_id = 2;
+}
+
+message GetGroupResp {
+  bool success = 1;
+  string message = 2;
+  Group group = 3;
+}
+
+message GetGroupsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  bool is_public = 4;
+  string user_id = 5;
+}
+
+message GetGroupsResp {
+  repeated Group groups = 1;
+  int32 total = 2;
+}
+
+message UpdateGroupReq {
+  string group_id = 1;
+  string name = 2;
+  string description = 3;
+  string avatar = 4;
+  string cover = 5;
+  bool is_public = 6;
+}
+
+message UpdateGroupResp {
+  bool success = 1;
+  string message = 2;
+  Group group = 3;
+}
+
+message DeleteGroupReq {
+  string group_id = 1;
+  string user_id = 2;
+}
+
+message DeleteGroupResp {
+  bool success = 1;
+  string message = 2;
+}
+
+message JoinGroupReq {
+  string group_id = 1;
+  string user_id = 2;
+}
+
+message JoinGroupResp {
+  bool success = 1;
+  string message = 2;
+}
+
+message LeaveGroupReq {
+  string group_id = 1;
+  string user_id = 2;
+}
+
+message LeaveGroupResp {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetGroupMembersReq {
+  string group_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetGroupMembersResp {
+  repeated GroupMember members = 1;
+  int32 total = 2;
+}
+
+message GetUserGroupsReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetUserGroupsResp {
+  repeated Group groups = 1;
+  int32 total = 2;
+}
+
+// ==================== 礼物相关消息 ====================
+
+message Gift {
+  uint64 id = 1;
+  string name = 2;
+  int32 price = 3;
+  string icon = 4;
+  string description = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+message GiftRecord {
+  uint64 id = 1;
+  uint64 from_user_id = 2;
+  string from_user_name = 3;
+  uint64 to_user_id = 4;
+  string to_user_name = 5;
+  uint64 gift_id = 6;
+  Gift gift = 7;
+  int32 quantity = 8;
+  string created_at = 9;
+}
+
+message GetGiftsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message GetGiftsResp {
+  repeated Gift gifts = 1;
+  int32 total = 2;
+}
+
+message GetGiftReq {
+  string gift_id = 1;
+}
+
+message GetGiftResp {
+  bool success = 1;
+  string message = 2;
+  Gift gift = 3;
+}
+
+message SendGiftReq {
+  string from_user_id = 1;
+  string to_user_id = 2;
+  string gift_id = 3;
+  int32 quantity = 4;
+}
+
+message SendGiftResp {
+  bool success = 1;
+  string message = 2;
+  GiftRecord record = 3;
+}
+
+message GetGiftRecordsReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetGiftRecordsResp {
+  repeated GiftRecord records = 1;
   int32 total = 2;
 }

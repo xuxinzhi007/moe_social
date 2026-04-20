@@ -1482,6 +1482,364 @@ service Super {
 	get /api/user/:user_id/exp/logs (GetExpLogsReq) returns (GetExpLogsResp)
 }
 
+// 内容生成相关结构
+type ContentGenerationReq {
+	UserId  string                 `json:"user_id"`
+	Type    string                 `json:"type"` // text, image, video
+	Prompt  string                 `json:"prompt"`
+	Options map[string]interface{} `json:"options,optional"`
+}
+
+type ContentGenerationData {
+	Id        string `json:"id"`
+	Type      string `json:"type"`
+	Url       string `json:"url,optional"`
+	Content   string `json:"content,optional"`
+	CreatedAt string `json:"created_at"`
+}
+
+type ContentGenerationResp {
+	BaseResp
+	Data ContentGenerationData `json:"data"`
+}
+
+type ContentListReq {
+	UserId   string `path:"user_id"`
+	Type     string `form:"type,optional"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type ContentItem {
+	Id        string `json:"id"`
+	UserId    string `json:"user_id"`
+	Type      string `json:"type"`
+	Prompt    string `json:"prompt"`
+	Url       string `json:"url,optional"`
+	Content   string `json:"content,optional"`
+	CreatedAt string `json:"created_at"`
+}
+
+type ContentListResp {
+	BaseResp
+	Data  []ContentItem `json:"data"`
+	Total int           `json:"total"`
+}
+
+// 内容生成相关API服务
+@server (
+	group: content
+)
+service Super {
+	// 生成内容
+	@handler generateContent
+	post /api/content/generate (ContentGenerationReq) returns (ContentGenerationResp)
+
+	// 获取用户生成的内容列表
+	@handler getContentList
+	get /api/user/:user_id/content (ContentListReq) returns (ContentListResp)
+}
+
+// 礼物相关结构
+type Gift {
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Price       int    `json:"price"`
+	Icon        string `json:"icon"`
+	Description string `json:"description"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
+}
+
+type GiftRecord {
+	Id         string `json:"id"`
+	FromUserID string `json:"from_user_id"`
+	ToUserID   string `json:"to_user_id"`
+	GiftID     string `json:"gift_id"`
+	Quantity   int    `json:"quantity"`
+	Message    string `json:"message"`
+	CreatedAt  string `json:"created_at"`
+	Gift       Gift   `json:"gift,omitempty"`
+}
+
+// 礼物相关请求
+type GetGiftsReq {
+	Page     int `form:"page,default=1"`
+	PageSize int `form:"page_size,default=10"`
+}
+
+type GetGiftReq {
+	GiftId string `path:"gift_id"`
+}
+
+type SendGiftReq {
+	UserId   string `path:"user_id"`
+	ToUserId string `json:"to_user_id"`
+	GiftId   string `json:"gift_id"`
+	Quantity int    `json:"quantity,default=1"`
+	Message  string `json:"message,optional"`
+}
+
+type GetGiftRecordsReq {
+	UserId   string `path:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+// 礼物相关响应
+type GetGiftsResp {
+	BaseResp
+	Data  []Gift `json:"data"`
+	Total int    `json:"total"`
+}
+
+type GetGiftResp {
+	BaseResp
+	Data Gift `json:"data"`
+}
+
+type SendGiftResp {
+	BaseResp
+	Data GiftRecord `json:"data"`
+}
+
+type GetGiftRecordsResp {
+	BaseResp
+	Data  []GiftRecord `json:"data"`
+	Total int          `json:"total"`
+}
+
+// 礼物相关API服务
+@server (
+	group: gift
+)
+service Super {
+	// 获取礼物列表
+	@handler getGifts
+	get /api/gifts (GetGiftsReq) returns (GetGiftsResp)
+
+	// 获取礼物详情
+	@handler getGift
+	get /api/gifts/:gift_id (GetGiftReq) returns (GetGiftResp)
+
+	// 发送礼物
+	@handler sendGift
+	post /api/user/:user_id/gifts/send (SendGiftReq) returns (SendGiftResp)
+
+	// 获取用户礼物记录
+	@handler getGiftRecords
+	get /api/user/:user_id/gifts/records (GetGiftRecordsReq) returns (GetGiftRecordsResp)
+}
+
+// 社区服务相关结构
+// 兴趣群组结构
+type Group {
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Avatar      string `json:"avatar"`
+	Cover       string `json:"cover"`
+	CreatorId   string `json:"creator_id"`
+	CreatorName string `json:"creator_name"`
+	MemberCount int    `json:"member_count"`
+	IsPublic    bool   `json:"is_public"`
+	Status      string `json:"status"`
+	CreatedAt   string `json:"created_at"`
+	IsJoined    bool   `json:"is_joined,optional"`
+	UserRole    string `json:"user_role,optional"`
+}
+
+// 群组成员结构
+type GroupMember {
+	Id         string `json:"id"`
+	GroupId    string `json:"group_id"`
+	UserId     string `json:"user_id"`
+	UserName   string `json:"user_name"`
+	UserAvatar string `json:"user_avatar"`
+	Role       string `json:"role"`
+	JoinAt     string `json:"join_at"`
+	CreatedAt  string `json:"created_at"`
+}
+
+// 群组帖子结构
+type GroupPost {
+	Id        string `json:"id"`
+	GroupId   string `json:"group_id"`
+	PostId    string `json:"post_id"`
+	Post      Post   `json:"post"`
+	CreatedAt string `json:"created_at"`
+}
+
+// 社区服务相关请求
+// 群组相关请求
+type GetGroupsReq {
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+	UserId   string `form:"user_id,optional"`
+	Keyword  string `form:"keyword,optional"`
+	IsPublic bool   `form:"is_public,optional"`
+}
+
+type GetGroupReq {
+	GroupId string `path:"group_id"`
+	UserId  string `form:"user_id,optional"`
+}
+
+type CreateGroupReq {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Avatar      string `json:"avatar,optional"`
+	Cover       string `json:"cover,optional"`
+	IsPublic    bool   `json:"is_public,optional"`
+	UserId      string `json:"user_id"`
+}
+
+type UpdateGroupReq {
+	GroupId     string `path:"group_id"`
+	Name        string `json:"name,optional"`
+	Description string `json:"description,optional"`
+	Avatar      string `json:"avatar,optional"`
+	Cover       string `json:"cover,optional"`
+	IsPublic    bool   `json:"is_public,optional"`
+	UserId      string `json:"user_id"`
+}
+
+type DeleteGroupReq {
+	GroupId string `path:"group_id"`
+	UserId  string `json:"user_id"`
+}
+
+type JoinGroupReq {
+	GroupId string `path:"group_id"`
+	UserId  string `json:"user_id"`
+}
+
+type LeaveGroupReq {
+	GroupId string `path:"group_id"`
+	UserId  string `json:"user_id"`
+}
+
+type GetGroupMembersReq {
+	GroupId  string `path:"group_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type GetUserGroupsReq {
+	UserId   string `path:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type CreateGroupPostReq {
+	GroupId string `path:"group_id"`
+	PostId  string `json:"post_id"`
+	UserId  string `json:"user_id"`
+}
+
+type GetGroupPostsReq {
+	GroupId  string `path:"group_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+	UserId   string `form:"user_id,optional"`
+}
+
+// 社区服务相关响应
+// 群组相关响应
+type GetGroupsResp {
+	BaseResp
+	Data  []Group `json:"data"`
+	Total int     `json:"total"`
+}
+
+type GetGroupResp {
+	BaseResp
+	Data Group `json:"data"`
+}
+
+type CreateGroupResp {
+	BaseResp
+	Data Group `json:"data"`
+}
+
+type UpdateGroupResp {
+	BaseResp
+	Data Group `json:"data"`
+}
+
+type GetGroupMembersResp {
+	BaseResp
+	Data  []GroupMember `json:"data"`
+	Total int           `json:"total"`
+}
+
+type GetUserGroupsResp {
+	BaseResp
+	Data  []Group `json:"data"`
+	Total int     `json:"total"`
+}
+
+type CreateGroupPostResp {
+	BaseResp
+	Data GroupPost `json:"data"`
+}
+
+type GetGroupPostsResp {
+	BaseResp
+	Data  []GroupPost `json:"data"`
+	Total int         `json:"total"`
+}
+
+// 社区服务相关API服务
+@server (
+	group: community
+)
+service Super {
+	// 获取群组列表
+	@handler getGroups
+	get /api/community/groups (GetGroupsReq) returns (GetGroupsResp)
+
+	// 获取群详情
+	@handler getGroup
+	get /api/community/groups/:group_id (GetGroupReq) returns (GetGroupResp)
+
+	// 创建群组
+	@handler createGroup
+	post /api/community/groups (CreateGroupReq) returns (CreateGroupResp)
+
+	// 更新群组信息
+	@handler updateGroup
+	put /api/community/groups/:group_id (UpdateGroupReq) returns (UpdateGroupResp)
+
+	// 删除群组
+	@handler deleteGroup
+	delete /api/community/groups/:group_id (DeleteGroupReq) returns (BaseResp)
+
+	// 加入群组
+	@handler joinGroup
+	post /api/community/groups/:group_id/join (JoinGroupReq) returns (BaseResp)
+
+	// 退出群组
+	@handler leaveGroup
+	post /api/community/groups/:group_id/leave (LeaveGroupReq) returns (BaseResp)
+
+	// 获取群组成员列表
+	@handler getGroupMembers
+	get /api/community/groups/:group_id/members (GetGroupMembersReq) returns (GetGroupMembersResp)
+
+	// 获取用户加入的群组
+	@handler getUserGroups
+	get /api/user/:user_id/community/groups (GetUserGroupsReq) returns (GetUserGroupsResp)
+
+	// 发布群组帖子
+	@handler createGroupPost
+	post /api/community/groups/:group_id/posts (CreateGroupPostReq) returns (CreateGroupPostResp)
+
+	// 获取群组帖子列表
+	@handler getGroupPosts
+	get /api/community/groups/:group_id/posts (GetGroupPostsReq) returns (GetGroupPostsResp)
+}
+
 // WebSocket 服务组 (不使用JWT middleware，在handler内部验证token)
 @server (
 	group: chat

@@ -72,6 +72,12 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   int? _speakingIndex;
   double _ttsRate = 0.4;
   double _ttsPitch = 1.0;
+  
+  // 模型配置参数
+  double _temperature = 0.7;
+  double _topP = 0.9;
+  int _maxTokens = 1024;
+  double _repeatPenalty = 1.1;
 
   bool _isLocalErrorAssistantMessage(_ChatMessage m) {
     if (m.role != 'assistant') return false;
@@ -389,6 +395,237 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     }
   }
 
+  // 解析模型信息
+  String _parseModelInfo(String modelName) {
+    // 从模型名称中提取信息
+    // 例如：llama3:8b-instruct -> 8B 参数，指令微调
+    // 例如：qwen2.5:0.5b-instruct -> 0.5B 参数，指令微调
+    
+    List<String> parts = modelName.split(':');
+    if (parts.length < 2) return '';
+    
+    String modelType = parts[1];
+    
+    // 提取模型大小
+    RegExp sizeRegex = RegExp(r'(\d+\.?\d*)([bB])');
+    Match? sizeMatch = sizeRegex.firstMatch(modelType);
+    String size = '';
+    if (sizeMatch != null) {
+      size = '${sizeMatch.group(1)}${sizeMatch.group(2)?.toUpperCase()}';
+    }
+    
+    // 提取模型类型
+    String type = '';
+    if (modelType.contains('instruct')) {
+      type = '指令微调';
+    } else if (modelType.contains('chat')) {
+      type = '对话模型';
+    } else if (modelType.contains('base')) {
+      type = '基础模型';
+    }
+    
+    List<String> infoParts = [];
+    if (size.isNotEmpty) infoParts.add(size);
+    if (type.isNotEmpty) infoParts.add(type);
+    
+    return infoParts.join(' · ');
+  }
+
+  // 打开模型选择对话框
+  Future<void> _openModelSelector() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        TextEditingController searchController = TextEditingController();
+        List<String> filteredModels = _models;
+        
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Container(
+                width: MediaQuery.of(context).size.width * (MediaQuery.of(context).size.width > 600 ? 0.7 : 0.9),
+                height: MediaQuery.of(context).size.height * 0.6,
+                child: Column(
+                  children: [
+                    // 头部
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                        color: const Color(0xFFF5F7FA),
+                      ),
+                      child: Row(
+                        children: [
+                          const Text(
+                            '选择模型',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // 搜索框
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: TextField(
+                        controller: searchController,
+                        decoration: InputDecoration(
+                          hintText: '搜索模型...',
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            if (value.isEmpty) {
+                              filteredModels = _models;
+                            } else {
+                              filteredModels = _models.where((model) => 
+                                model.toLowerCase().contains(value.toLowerCase())
+                              ).toList();
+                            }
+                          });
+                        },
+                      ),
+                    ),
+                    
+                    // 模型列表
+                    Expanded(
+                      child: ListView.builder(
+                        padding: EdgeInsets.zero,
+                        itemCount: filteredModels.length,
+                        itemBuilder: (context, index) {
+                          final model = filteredModels[index];
+                          final isSelected = model == _modelName;
+                          
+                          // 解析模型信息
+                          final modelInfo = _parseModelInfo(model);
+                          
+                          return ListTile(
+                            title: Text(
+                              model,
+                              style: TextStyle(
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                color: isSelected ? const Color(0xFF7F7FD5) : Colors.black87,
+                              ),
+                            ),
+                            subtitle: Text(
+                              modelInfo,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            leading: Radio(
+                              value: model,
+                              groupValue: _modelName,
+                              onChanged: (value) {
+                                Navigator.pop(context, model);
+                              },
+                              activeColor: const Color(0xFF7F7FD5),
+                            ),
+                            onTap: () {
+                              Navigator.pop(context, model);
+                            },
+                            onLongPress: () {
+                              _showDeleteModelDialog(context, model);
+                            },
+                            trailing: isSelected
+                                ? IconButton(
+                                    icon: const Icon(Icons.settings),
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      _showModelConfigDialog();
+                                    },
+                                  )
+                                : null,
+                          );
+                        },
+                      ),
+                    ),
+                    
+                    // 底部操作
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                      ),
+                      child: Row(
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              _loadModels();
+                              setState(() {});
+                            },
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('刷新'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey.shade100,
+                              foregroundColor: Colors.black87,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          ElevatedButton.icon(
+                            onPressed: () => _showDownloadModelDialog(context),
+                            icon: const Icon(Icons.download),
+                            label: const Text('下载模型'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF7F7FD5),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('取消'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey.shade200,
+                              foregroundColor: Colors.black87,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+    
+    if (result != null) {
+      setState(() {
+        _modelName = result;
+        _modelController.text = result;
+      });
+      _showModelChanged(result);
+    }
+  }
+
   Future<void> _callOllama() async {
     if (_currentSession.messages.isEmpty) return;
     setState(() {
@@ -413,7 +650,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
 
     final assistantIndex = _currentSession.messages.length;
     setState(() {
-      _currentSession.messages.add(_ChatMessage(role: 'assistant', content: '', time: DateTime.now()));
+      _currentSession.messages.add(_ChatMessage(role: 'assistant', content: '正在生成...', time: DateTime.now()));
       _currentSession.updatedAt = DateTime.now();
     });
     _saveState();
@@ -434,7 +671,11 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
             body: jsonEncode({
               'model': _modelName,
               'messages': apiMessages,
-              if (terminalMode) 'stream': false,
+              'temperature': _temperature,
+              'top_p': _topP,
+              'max_tokens': _maxTokens,
+              'repeat_penalty': _repeatPenalty,
+              'stream': true,
             }),
           )
           // LLM 生成首包可能较慢（尤其是首次加载模型时），这里给更宽裕的超时
@@ -445,7 +686,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
           return;
         }
         final body = response.body;
-        final errorText =
+        final errorText = 
             '请求失败 (${response.statusCode})${body.isNotEmpty ? '\n$body' : ''}';
         setState(() {
           _currentSession.messages[assistantIndex] = _ChatMessage(
@@ -634,45 +875,9 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                       title: const Text('选择模型'),
                       subtitle: Text(_modelName),
                       trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () async {
-                        final result = await showDialog<String>(
-                          context: context,
-                          builder: (context) {
-                            return SimpleDialog(
-                              title: const Text('选择模型'),
-                              children: _models.map((m) {
-                                return SimpleDialogOption(
-                                  onPressed: () {
-                                    Navigator.pop(context, m);
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 4),
-                                    child: Text(
-                                      m,
-                                      style: TextStyle(
-                                        color: m == _modelName
-                                            ? const Color(0xFF7F7FD5)
-                                            : Colors.black87,
-                                        fontWeight: m == _modelName
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            );
-                          },
-                        );
-                        if (result != null) {
-                          setModalState(() {
-                            setState(() {
-                              _modelName = result;
-                              _modelController.text = result;
-                            });
-                            _showModelChanged(result);
-                          });
-                        }
+                      onTap: () {
+                        Navigator.pop(context);
+                        _openModelSelector();
                       },
                     )
                   else
@@ -744,7 +949,161 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          '预设配置',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  _buildPresetButton('创意模式', 0.9, 0.95, 2048, 1.0),
+                                  _buildPresetButton('精确模式', 0.2, 0.7, 1024, 1.2),
+                                  _buildPresetButton('平衡模式', 0.7, 0.9, 1536, 1.1),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          '模型参数',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        // 温度
+                        Row(
+                          children: [
+                            const Text(
+                              '温度',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            Expanded(
+                              child: Slider(
+                                value: _temperature,
+                                min: 0.1,
+                                max: 2.0,
+                                divisions: 19,
+                                label: _temperature.toStringAsFixed(1),
+                                onChanged: (v) {
+                                  setModalState(() {
+                                    _temperature = v;
+                                  });
+                                  setState(() {});
+                                },
+                              ),
+                            ),
+                            Text(
+                              _temperature.toStringAsFixed(1),
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                        ),
+                        
+                        // Top P
+                        Row(
+                          children: [
+                            const Text(
+                              'Top P',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            Expanded(
+                              child: Slider(
+                                value: _topP,
+                                min: 0.1,
+                                max: 1.0,
+                                divisions: 9,
+                                label: _topP.toStringAsFixed(1),
+                                onChanged: (v) {
+                                  setModalState(() {
+                                    _topP = v;
+                                  });
+                                  setState(() {});
+                                },
+                              ),
+                            ),
+                            Text(
+                              _topP.toStringAsFixed(1),
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                        ),
+                        
+                        // Max Tokens
+                        Row(
+                          children: [
+                            const Text(
+                              '最大 token',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            Expanded(
+                              child: Slider(
+                                value: _maxTokens.toDouble(),
+                                min: 256,
+                                max: 4096,
+                                divisions: 15,
+                                label: _maxTokens.toString(),
+                                onChanged: (v) {
+                                  setModalState(() {
+                                    _maxTokens = v.toInt();
+                                  });
+                                  setState(() {});
+                                },
+                              ),
+                            ),
+                            Text(
+                              _maxTokens.toString(),
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                        ),
+                        
+                        // Repeat Penalty
+                        Row(
+                          children: [
+                            const Text(
+                              '重复惩罚',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            Expanded(
+                              child: Slider(
+                                value: _repeatPenalty,
+                                min: 0.8,
+                                max: 2.0,
+                                divisions: 12,
+                                label: _repeatPenalty.toStringAsFixed(1),
+                                onChanged: (v) {
+                                  setModalState(() {
+                                    _repeatPenalty = v;
+                                  });
+                                  setState(() {});
+                                },
+                              ),
+                            ),
+                            Text(
+                              _repeatPenalty.toStringAsFixed(1),
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                        ),
+                        
+                        const SizedBox(height: 16),
                         const Text(
                           '自定义提示词',
                           style: TextStyle(
@@ -858,16 +1217,137 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     );
   }
 
+  void _showMessageActions(_ChatMessage message) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7F7FD5).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.reply_rounded, color: Color(0xFF7F7FD5)),
+                  ),
+                  title: const Text('回复消息', style: TextStyle(fontWeight: FontWeight.bold)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _replyToMessage(message);
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.copy_rounded, color: Colors.blue),
+                  ),
+                  title: const Text('复制内容', style: TextStyle(fontWeight: FontWeight.bold)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _copyMessage(message.content);
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.format_quote_rounded, color: Colors.green),
+                  ),
+                  title: const Text('引用消息', style: TextStyle(fontWeight: FontWeight.bold)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _quoteMessage(message);
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _replyToMessage(_ChatMessage message) {
+    setState(() {
+      _controller.text = "@AI " + message.content.substring(0, message.content.length > 50 ? 50 : message.content.length) + "...\n";
+      _focusNode.requestFocus();
+    });
+  }
+
+  void _quoteMessage(_ChatMessage message) {
+    setState(() {
+      _controller.text = "> ${message.content.substring(0, message.content.length > 100 ? 100 : message.content.length)}${message.content.length > 100 ? '...' : ''}\n\n";
+      _focusNode.requestFocus();
+    });
+  }
+
+  // 构建预设配置按钮
+  Widget _buildPresetButton(String name, double temp, double topP, int maxTokens, double repeatPenalty) {
+    return ElevatedButton(
+      onPressed: () {
+        setState(() {
+          _temperature = temp;
+          _topP = topP;
+          _maxTokens = maxTokens;
+          _repeatPenalty = repeatPenalty;
+        });
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFFF5F7FA),
+        foregroundColor: const Color(0xFF7F7FD5),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      ),
+      child: Text(name),
+    );
+  }
+
   Widget _buildMessageBubble(_ChatMessage message, int index) {
     if (message.role == 'system') {
       return Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
+        margin: const EdgeInsets.symmetric(vertical: 12),
         alignment: Alignment.center,
-        child: SelectableText(
-          message.content,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 12,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: SelectableText(
+            message.content,
+            style: const TextStyle(
+              color: Colors.grey,
+              fontSize: 12,
+            ),
           ),
         ),
       );
@@ -884,82 +1364,115 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
-            const CircleAvatar(
-              radius: 16,
-              backgroundColor: Color(0xFFE0E0E0),
-              child: Icon(Icons.smart_toy_rounded, size: 18, color: Colors.black54),
+            Container(
+              margin: const EdgeInsets.only(top: 4),
+              child: const CircleAvatar(
+                radius: 16,
+                backgroundColor: Color(0xFFE0E0E0),
+                child: Icon(Icons.smart_toy_rounded, size: 18, color: Colors.black54),
+              ),
             ),
             const SizedBox(width: 8),
           ],
           Flexible(
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.75,
+                maxWidth: MediaQuery.of(context).size.width * (MediaQuery.of(context).size.width > 600 ? 0.65 : 0.75),
               ),
               child: GestureDetector(
-                onLongPress: () => _copyMessage(message.content),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: borderRadius,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 5,
-                          offset: const Offset(0, 2),
+                onLongPress: () => _showMessageActions(message),
+                onTap: () {
+                  // 点击消息可以进行回复
+                  _replyToMessage(message);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: borderRadius,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SelectableText(
+                        message.content.isEmpty ? '...' : message.content,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 15,
+                          height: 1.5,
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SelectableText(
-                          message.content.isEmpty ? '...' : message.content,
-                          style: TextStyle(
-                            color: textColor,
-                            fontSize: 15,
-                            height: 1.5,
+                      ),
+                      if (!isUser && message.content.trim().isNotEmpty)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                iconSize: 18,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 32,
+                                ),
+                                icon: Icon(
+                                  _isSpeaking && _speakingIndex == index
+                                      ? Icons.volume_off_rounded
+                                      : Icons.volume_up_rounded,
+                                  color: textColor.withOpacity(0.8),
+                                ),
+                                onPressed: () => _playMessageTts(message.content, index),
+                              ),
+                              Text(
+                                _formatTime(message.time),
+                                style: TextStyle(
+                                  color: textColor.withOpacity(0.6),
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        if (!isUser && message.content.trim().isNotEmpty)
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: IconButton(
-                              iconSize: 18,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                minWidth: 32,
-                                minHeight: 32,
-                              ),
-                              icon: Icon(
-                                _isSpeaking && _speakingIndex == index
-                                    ? Icons.volume_off_rounded
-                                    : Icons.volume_up_rounded,
-                                color: textColor.withOpacity(0.8),
-                              ),
-                              onPressed: () => _playMessageTts(message.content, index),
+                      if (isUser)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            _formatTime(message.time),
+                            style: TextStyle(
+                              color: textColor.withOpacity(0.6),
+                              fontSize: 11,
                             ),
                           ),
-                      ],
-                    ),
+                        ),
+                    ],
                   ),
+                ),
               ),
             ),
           ),
           if (isUser) ...[
             const SizedBox(width: 8),
-            const CircleAvatar(
-              radius: 16,
-              backgroundColor: Color(0xFF7F7FD5),
-              child: Icon(Icons.person_rounded, size: 18, color: Colors.white),
+            Container(
+              margin: const EdgeInsets.only(top: 4),
+              child: const CircleAvatar(
+                radius: 16,
+                backgroundColor: Color(0xFF7F7FD5),
+                child: Icon(Icons.person_rounded, size: 18, color: Colors.white),
+              ),
             ),
           ],
         ],
@@ -1071,7 +1584,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
       appBar: AppBar(
         centerTitle: true,
         title: GestureDetector(
-          onTap: _models.isNotEmpty ? _openSettings : null,
+          onTap: _models.isNotEmpty ? _openModelSelector : null,
           child: Column(
             children: [
               const Text(
@@ -1079,9 +1592,22 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
               if (_models.isNotEmpty)
-                Text(
-                  _modelName,
-                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _modelName,
+                      style: const TextStyle(fontSize: 12, color: Colors.black54),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 14,
+                      color: Colors.black54,
+                    ),
+                  ],
                 ),
             ],
           ),
@@ -1205,6 +1731,426 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
           _buildInputArea(),
         ],
       ),
+    );
+  }
+
+  // 显示下载模型对话框
+  Future<void> _showDownloadModelDialog(BuildContext context) async {
+    TextEditingController modelController = TextEditingController();
+    bool isLoading = false;
+    String? errorMessage;
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      '下载模型',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: modelController,
+                      decoration: InputDecoration(
+                        hintText: '输入模型名称，例如：llama3:8b-instruct',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    if (errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          errorMessage,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('取消'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey.shade200,
+                            foregroundColor: Colors.black87,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        ElevatedButton(
+                          onPressed: isLoading
+                              ? null
+                              : () async {
+                                  final model = modelController.text.trim();
+                                  if (model.isEmpty) {
+                                    setState(() {
+                                      errorMessage = '请输入模型名称';
+                                    });
+                                    return;
+                                  }
+
+                                  setState(() {
+                                    isLoading = true;
+                                    errorMessage = null;
+                                  });
+
+                                  try {
+                                    final uri = Uri.parse('${ApiService.baseUrl}/api/llm/models/download');
+                                    final response = await http.post(
+                                      uri,
+                                      headers: {
+                                        'Content-Type': 'application/json',
+                                        if (ApiService.token != null)
+                                          'Authorization': 'Bearer ${ApiService.token}',
+                                      },
+                                      body: jsonEncode({'model': model}),
+                                    ).timeout(const Duration(minutes: 5));
+
+                                    if (response.statusCode == 200) {
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('模型下载成功')),
+                                      );
+                                      // 重新加载模型列表
+                                      _loadModels();
+                                    } else {
+                                      final data = jsonDecode(response.body);
+                                      setState(() {
+                                        errorMessage = data['message'] ?? '下载失败';
+                                      });
+                                    }
+                                  } catch (e) {
+                                    setState(() {
+                                      errorMessage = '下载出错: $e';
+                                    });
+                                  } finally {
+                                    setState(() {
+                                      isLoading = false;
+                                    });
+                                  }
+                                },
+                          child: isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : const Text('下载'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF7F7FD5),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // 显示删除模型对话框
+  Future<void> _showDeleteModelDialog(BuildContext context, String model) async {
+    bool isLoading = false;
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      '删除模型',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('确定要删除模型 "$model" 吗？'),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        ElevatedButton(
+                          onPressed: isLoading ? null : () => Navigator.pop(context),
+                          child: const Text('取消'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey.shade200,
+                            foregroundColor: Colors.black87,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        ElevatedButton(
+                          onPressed: isLoading
+                              ? null
+                              : () async {
+                                  setState(() {
+                                    isLoading = true;
+                                  });
+
+                                  try {
+                                    final uri = Uri.parse('${ApiService.baseUrl}/api/llm/models/delete');
+                                    final response = await http.post(
+                                      uri,
+                                      headers: {
+                                        'Content-Type': 'application/json',
+                                        if (ApiService.token != null)
+                                          'Authorization': 'Bearer ${ApiService.token}',
+                                      },
+                                      body: jsonEncode({'model': model}),
+                                    );
+
+                                    if (response.statusCode == 200) {
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('模型删除成功')),
+                                      );
+                                      // 重新加载模型列表
+                                      _loadModels();
+                                    } else {
+                                      final data = jsonDecode(response.body);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text(data['message'] ?? '删除失败')),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('删除出错: $e')),
+                                    );
+                                  } finally {
+                                    setState(() {
+                                      isLoading = false;
+                                    });
+                                  }
+                                },
+                          child: isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : const Text('删除'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // 显示模型配置对话框
+  Future<void> _showModelConfigDialog() async {
+    double temperature = _temperature;
+    double topP = _topP;
+    int maxTokens = _maxTokens;
+    double repeatPenalty = _repeatPenalty;
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                width: MediaQuery.of(context).size.width * 0.8,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      '模型配置',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // 温度
+                    Row(
+                      children: [
+                        const Text('温度:'),
+                        const Spacer(),
+                        Text(temperature.toStringAsFixed(2)),
+                      ],
+                    ),
+                    Slider(
+                      value: temperature,
+                      min: 0.0,
+                      max: 2.0,
+                      step: 0.1,
+                      onChanged: (value) {
+                        setState(() {
+                          temperature = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Top P
+                    Row(
+                      children: [
+                        const Text('Top P:'),
+                        const Spacer(),
+                        Text(topP.toStringAsFixed(2)),
+                      ],
+                    ),
+                    Slider(
+                      value: topP,
+                      min: 0.0,
+                      max: 1.0,
+                      step: 0.05,
+                      onChanged: (value) {
+                        setState(() {
+                          topP = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Max Tokens
+                    Row(
+                      children: [
+                        const Text('最大 tokens:'),
+                        const Spacer(),
+                        Text(maxTokens.toString()),
+                      ],
+                    ),
+                    Slider(
+                      value: maxTokens.toDouble(),
+                      min: 128,
+                      max: 4096,
+                      step: 128,
+                      onChanged: (value) {
+                        setState(() {
+                          maxTokens = value.toInt();
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Repeat Penalty
+                    Row(
+                      children: [
+                        const Text('重复惩罚:'),
+                        const Spacer(),
+                        Text(repeatPenalty.toStringAsFixed(2)),
+                      ],
+                    ),
+                    Slider(
+                      value: repeatPenalty,
+                      min: 0.5,
+                      max: 2.0,
+                      step: 0.1,
+                      onChanged: (value) {
+                        setState(() {
+                          repeatPenalty = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 20),
+
+                    Row(
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('取消'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey.shade200,
+                            foregroundColor: Colors.black87,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _temperature = temperature;
+                              _topP = topP;
+                              _maxTokens = maxTokens;
+                              _repeatPenalty = repeatPenalty;
+                            });
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('模型配置已更新')),
+                            );
+                          },
+                          child: const Text('保存'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF7F7FD5),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
