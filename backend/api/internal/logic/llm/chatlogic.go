@@ -14,6 +14,7 @@ import (
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 	"backend/rpc/pb/super"
+	"backend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -32,9 +33,13 @@ type ollamaMessage struct {
 }
 
 type ollamaRequest struct {
-	Model    string          `json:"model"`
-	Messages []ollamaMessage `json:"messages"`
-	Stream   bool            `json:"stream"`
+	Model         string          `json:"model"`
+	Messages      []ollamaMessage `json:"messages"`
+	Stream        bool            `json:"stream"`
+	Temperature   float64         `json:"temperature,omitempty"`
+	TopP          float64         `json:"top_p,omitempty"`
+	MaxTokens     int             `json:"max_tokens,omitempty"`
+	RepeatPenalty float64         `json:"repeat_penalty,omitempty"`
 }
 
 type ollamaResponse struct {
@@ -141,9 +146,7 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		baseUrl = "http://127.0.0.1:11434"
 	}
 
-	client := &http.Client{
-		Timeout: time.Duration(timeoutSeconds) * time.Second,
-	}
+	client := utils.NewHTTPClient(timeoutSeconds)
 
 	memoryModel := strings.TrimSpace(l.svcCtx.Config.Ollama.MemoryModel)
 	if memoryModel == "" {
@@ -260,17 +263,34 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		}
 	}
 
-	body, err := json.Marshal(ollamaRequest{
+	// 构建请求参数
+	request := ollamaRequest{
 		Model:    req.Model,
 		Messages: messages,
-		Stream:   false,
-	})
+		Stream:   req.Stream,
+	}
+
+	// 设置可选参数
+	if req.Temperature > 0 {
+		request.Temperature = req.Temperature
+	}
+	if req.TopP > 0 {
+		request.TopP = req.TopP
+	}
+	if req.MaxTokens > 0 {
+		request.MaxTokens = req.MaxTokens
+	}
+	if req.RepeatPenalty > 0 {
+		request.RepeatPenalty = req.RepeatPenalty
+	}
+
+	body, err := json.Marshal(request)
 	if err != nil {
 		return &types.LlmChatResp{
-			BaseResp:        common.HandleError(err),
-			Content:         "",
-			RemainingRatio:  1,
-			Summarized:      false,
+			BaseResp:       common.HandleError(err),
+			Content:        "",
+			RemainingRatio: 1,
+			Summarized:     false,
 		}, nil
 	}
 
@@ -290,10 +310,28 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	httpResp, err := client.Do(httpReq)
-	if err != nil {
+	var httpResp *http.Response
+	var retryErr error
+	for i := 0; i <= utils.DefaultRetryConfig.MaxRetries; i++ {
+		httpResp, retryErr = client.Do(httpReq)
+		if retryErr == nil && httpResp.StatusCode == http.StatusOK {
+			break
+		}
+		if retryErr == nil && !utils.IsRetryableStatus(httpResp.StatusCode) {
+			break
+		}
+		if i < utils.DefaultRetryConfig.MaxRetries {
+			delay := time.Duration(float64(utils.DefaultRetryConfig.InitialDelay) * (utils.DefaultRetryConfig.BackoffFactor * float64(i)))
+			if delay > utils.DefaultRetryConfig.MaxDelay {
+				delay = utils.DefaultRetryConfig.MaxDelay
+			}
+			time.Sleep(delay)
+		}
+	}
+
+	if retryErr != nil {
 		return &types.LlmChatResp{
-			BaseResp:       common.HandleError(err),
+			BaseResp:       common.HandleError(retryErr),
 			Content:        "",
 			RemainingRatio: 1,
 			Summarized:     summarized,
@@ -312,13 +350,48 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 	}
 
 	var oResp ollamaResponse
-	if err := json.NewDecoder(httpResp.Body).Decode(&oResp); err != nil {
-		return &types.LlmChatResp{
-			BaseResp:       common.HandleError(err),
-			Content:        "",
-			RemainingRatio: 1,
-			Summarized:     summarized,
-		}, nil
+
+	// 处理流式响应
+	if req.Stream {
+		// 这里应该返回流式响应，但由于当前接口设计，我们先收集所有内容
+		// 实际生产环境中，应该使用Server-Sent Events或WebSocket
+		reader := httpResp.Body
+		decoder := json.NewDecoder(reader)
+		var fullContent strings.Builder
+
+		for {
+			var chunk map[string]interface{}
+			if err := decoder.Decode(&chunk); err != nil {
+				if err == io.EOF {
+					break
+				}
+				l.Errorf("decode stream chunk failed: %v", err)
+				continue
+			}
+
+			if message, ok := chunk["message"].(map[string]interface{}); ok {
+				if content, ok := message["content"].(string); ok {
+					fullContent.WriteString(content)
+				}
+			}
+
+			// 检查是否结束
+			if done, ok := chunk["done"].(bool); ok && done {
+				break
+			}
+		}
+
+		oResp.Message.Content = fullContent.String()
+	} else {
+		// 处理非流式响应
+		if err := json.NewDecoder(httpResp.Body).Decode(&oResp); err != nil {
+			return &types.LlmChatResp{
+				BaseResp:       common.HandleError(err),
+				Content:        "",
+				RemainingRatio: 1,
+				Summarized:     summarized,
+			}, nil
+		}
 	}
 
 	// Async memory extraction
@@ -418,9 +491,27 @@ func (l *ChatLogic) summarizeMessages(model, baseUrl string, timeoutSeconds int,
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	httpResp, err := client.Do(httpReq)
-	if err != nil {
-		return "", err
+	var httpResp *http.Response
+	var retryErr error
+	for i := 0; i <= utils.DefaultRetryConfig.MaxRetries; i++ {
+		httpResp, retryErr = client.Do(httpReq)
+		if retryErr == nil && httpResp.StatusCode == http.StatusOK {
+			break
+		}
+		if retryErr == nil && !utils.IsRetryableStatus(httpResp.StatusCode) {
+			break
+		}
+		if i < utils.DefaultRetryConfig.MaxRetries {
+			delay := time.Duration(float64(utils.DefaultRetryConfig.InitialDelay) * (utils.DefaultRetryConfig.BackoffFactor * float64(i)))
+			if delay > utils.DefaultRetryConfig.MaxDelay {
+				delay = utils.DefaultRetryConfig.MaxDelay
+			}
+			time.Sleep(delay)
+		}
+	}
+
+	if retryErr != nil {
+		return "", retryErr
 	}
 	defer httpResp.Body.Close()
 
@@ -511,10 +602,28 @@ func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, b
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: time.Duration(timeoutSeconds) * time.Second}
-	httpResp, err := client.Do(httpReq)
-	if err != nil {
-		logger.Errorf("extract memory http request failed: %v", err)
+	client := utils.NewHTTPClient(timeoutSeconds)
+	var httpResp *http.Response
+	var retryErr error
+	for i := 0; i <= utils.DefaultRetryConfig.MaxRetries; i++ {
+		httpResp, retryErr = client.Do(httpReq)
+		if retryErr == nil && httpResp.StatusCode == http.StatusOK {
+			break
+		}
+		if retryErr == nil && !utils.IsRetryableStatus(httpResp.StatusCode) {
+			break
+		}
+		if i < utils.DefaultRetryConfig.MaxRetries {
+			delay := time.Duration(float64(utils.DefaultRetryConfig.InitialDelay) * (utils.DefaultRetryConfig.BackoffFactor * float64(i)))
+			if delay > utils.DefaultRetryConfig.MaxDelay {
+				delay = utils.DefaultRetryConfig.MaxDelay
+			}
+			time.Sleep(delay)
+		}
+	}
+
+	if retryErr != nil {
+		logger.Errorf("extract memory http request failed: %v", retryErr)
 		return
 	}
 	defer httpResp.Body.Close()

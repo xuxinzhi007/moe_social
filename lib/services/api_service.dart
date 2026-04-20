@@ -102,6 +102,16 @@ class ApiService {
     return response;
   }
 
+  // 发起语音通话
+  static Future<Map<String, dynamic>> voiceCall(String receiverId, String channelName) async {
+    final response = await _request(
+      '/api/voice/call',
+      method: 'POST',
+      body: {'receiver_id': receiverId, 'channel_name': channelName},
+    );
+    return response;
+  }
+
   // 环境配置
   // true：非 Web 平台走公网/隧道（initRemoteProductionBaseUrl）。
   // false：本机调试（iOS 模拟器等用 localhost:8888；Android 见下方分支）。

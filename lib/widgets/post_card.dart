@@ -289,9 +289,13 @@ class PostCard extends StatelessWidget {
                         ),
                         builder: (context, likeCount, _) {
                           return LikeButton(
+                            postId: post.id,
+                            userId: AuthService.currentUser ?? '',
                             isLiked: isLiked,
                             likeCount: likeCount,
-                            onTap: onLike ?? () {},
+                            onLikeChanged: (liked, count) {
+                              onLike?.call();
+                            },
                           );
                         },
                       );

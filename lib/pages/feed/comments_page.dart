@@ -435,12 +435,26 @@ class _CommentsPageState extends State<CommentsPage> {
                             initialValue: comment.likes,
                           ),
                           builder: (context, likeCount, _) {
-                            return LikeButton(
-                              isLiked: isLiked,
-                              likeCount: likeCount,
+                            return GestureDetector(
                               onTap: () => _toggleCommentLike(comment.id),
-                              size: 18,
-                              showCount: true,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    isLiked ? Icons.favorite : Icons.favorite_border,
+                                    color: isLiked ? Colors.red : Colors.grey,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  if (likeCount > 0)
+                                    Text(
+                                      likeCount.toString(),
+                                      style: TextStyle(
+                                        color: isLiked ? Colors.red : Colors.grey,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                ],
+                              ),
                             );
                           },
                         );
