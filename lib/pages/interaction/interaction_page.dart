@@ -240,7 +240,7 @@ class _InteractionPageState extends State<InteractionPage> with SingleTickerProv
     final popularGifts = Gift.getPopularGifts();
     final categories = GiftCategory.values;
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,6 +249,7 @@ class _InteractionPageState extends State<InteractionPage> with SingleTickerProv
           const SizedBox(height: 16),
           GridView.builder(
             shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 4,
               crossAxisSpacing: 10,
@@ -357,6 +358,7 @@ class _InteractionPageState extends State<InteractionPage> with SingleTickerProv
               );
             }).toList(),
           ),
+          const SizedBox(height: 32),
         ],
       ),
     );
