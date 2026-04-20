@@ -24,6 +24,8 @@ func New(httpCode int, message string) error {
 		code = codes.AlreadyExists
 	case errorcode.E_INTERNAL_ERROR:
 		code = codes.Internal
+	case errorcode.E_SERVICE_UNAVAILABLE:
+		code = codes.Unavailable
 	default:
 		code = codes.Unknown
 	}
