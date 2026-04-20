@@ -5,8 +5,6 @@ import 'package:moe_social/models/gift.dart';
 import 'package:moe_social/widgets/avatar_image.dart';
 import 'package:moe_social/widgets/moe_toast.dart';
 import 'package:moe_social/widgets/gift_selector.dart';
-import 'package:moe_social/widgets/like_button.dart';
-
 class InteractionPage extends StatefulWidget {
   final String currentUserId;
 
@@ -18,6 +16,7 @@ class InteractionPage extends StatefulWidget {
 
 class _InteractionPageState extends State<InteractionPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final TextEditingController _moeNoController = TextEditingController();
   List<User> _friends = [];
   List<Map<String, dynamic>> _friendRequests = [];
   bool _isLoading = false;
@@ -32,62 +31,69 @@ class _InteractionPageState extends State<InteractionPage> with SingleTickerProv
 
   @override
   void dispose() {
+    _moeNoController.dispose();
     _tabController.dispose();
     super.dispose();
   }
 
   Future<void> _loadFriends() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final friends = await ApiService.getFriends(widget.currentUserId);
+      if (!mounted) return;
       setState(() => _friends = friends);
     } catch (e) {
-      MoeToast.show(context, '获取好友列表失败');
+      if (mounted) MoeToast.show(context, '获取好友列表失败');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _loadFriendRequests() async {
     try {
       final requests = await ApiService.getIncomingFriendRequests(widget.currentUserId);
+      if (!mounted) return;
       setState(() => _friendRequests = requests);
     } catch (e) {
-      MoeToast.show(context, '获取好友请求失败');
+      if (mounted) MoeToast.show(context, '获取好友请求失败');
     }
   }
 
   Future<void> _acceptFriendRequest(String requestId) async {
     try {
       await ApiService.acceptFriendRequest(widget.currentUserId, requestId);
-      MoeToast.show(context, '已接受好友请求');
-      _loadFriendRequests();
-      _loadFriends();
+      if (mounted) MoeToast.show(context, '已接受好友请求');
+      await _loadFriendRequests();
+      await _loadFriends();
     } catch (e) {
-      MoeToast.show(context, '接受好友请求失败');
+      if (mounted) MoeToast.show(context, '接受好友请求失败');
     }
   }
 
   Future<void> _rejectFriendRequest(String requestId) async {
     try {
       await ApiService.rejectFriendRequest(widget.currentUserId, requestId);
-      MoeToast.show(context, '已拒绝好友请求');
-      _loadFriendRequests();
+      if (mounted) MoeToast.show(context, '已拒绝好友请求');
+      await _loadFriendRequests();
     } catch (e) {
-      MoeToast.show(context, '拒绝好友请求失败');
+      if (mounted) MoeToast.show(context, '拒绝好友请求失败');
     }
   }
 
   Future<void> _sendFriendRequest(String moeNo) async {
     if (moeNo.isEmpty) {
-      MoeToast.show(context, '请输入Moe号');
+      if (mounted) MoeToast.show(context, '请输入Moe号');
       return;
     }
     try {
       await ApiService.sendFriendRequestByMoeNo(widget.currentUserId, moeNo);
-      MoeToast.show(context, '好友请求已发送');
+      if (mounted) {
+        MoeToast.show(context, '好友请求已发送');
+        _moeNoController.clear();
+      }
     } catch (e) {
-      MoeToast.show(context, '发送好友请求失败');
+      if (mounted) MoeToast.show(context, '发送好友请求失败');
     }
   }
 
@@ -101,7 +107,9 @@ class _InteractionPageState extends State<InteractionPage> with SingleTickerProv
         targetType: 'user',
         receiverId: user.id,
         onGiftSent: (gift) {
-          MoeToast.show(context, '已向 ${user.username} 赠送了 ${gift.name}');
+          if (mounted) {
+            MoeToast.show(context, '已向 ${user.username} 赠送了 ${gift.name}');
+          }
         },
       ),
     );
@@ -138,6 +146,7 @@ class _InteractionPageState extends State<InteractionPage> with SingleTickerProv
     }
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
           padding: const EdgeInsets.all(16.0),
@@ -147,27 +156,40 @@ class _InteractionPageState extends State<InteractionPage> with SingleTickerProv
           child: _friends.isEmpty
               ? const Center(child: Text('暂无好友'))
               : ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: _friends.length,
                   itemBuilder: (context, index) {
                     final friend = _friends[index];
                     return ListTile(
-                      leading: NetworkAvatarImage(imageUrl: friend.avatar, radius: 25),
+                      leading: NetworkAvatarImage(
+                          imageUrl: friend.avatar, radius: 25),
                       title: Text(friend.username),
                       subtitle: Text('Moe号: ${friend.moeNo}'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.favorite_border),
-                            onPressed: () => _showGiftSelector(friend),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.chat),
-                            onPressed: () {
-                              // 跳转到聊天页面
-                            },
-                          ),
-                        ],
+                      trailing: SizedBox(
+                        width: 112,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.favorite_border),
+                              onPressed: () => _showGiftSelector(friend),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.chat),
+                              onPressed: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  '/direct-chat',
+                                  arguments: {
+                                    'userId': friend.id,
+                                    'username': friend.username,
+                                    'avatar': friend.avatar,
+                                  },
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -178,8 +200,6 @@ class _InteractionPageState extends State<InteractionPage> with SingleTickerProv
   }
 
   Widget _buildAddFriendForm() {
-    final TextEditingController _moeNoController = TextEditingController();
-
     return Row(
       children: [
         Expanded(
@@ -194,7 +214,7 @@ class _InteractionPageState extends State<InteractionPage> with SingleTickerProv
         ),
         const SizedBox(width: 10),
         ElevatedButton(
-          onPressed: () => _sendFriendRequest(_moeNoController.text),
+          onPressed: () => _sendFriendRequest(_moeNoController.text.trim()),
           child: const Text('添加'),
         ),
       ],
@@ -207,29 +227,45 @@ class _InteractionPageState extends State<InteractionPage> with SingleTickerProv
     }
 
     return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       itemCount: _friendRequests.length,
       itemBuilder: (context, index) {
         final request = _friendRequests[index];
-        final userMap = request['user'] as Map<String, dynamic>;
+        final userMap = request['from_user'] as Map<String, dynamic>? ??
+            request['user'] as Map<String, dynamic>? ??
+            <String, dynamic>{};
+        if (userMap.isEmpty) {
+          return const ListTile(
+            title: Text('数据异常'),
+            subtitle: Text('缺少申请人字段'),
+          );
+        }
         final user = User.fromJson(userMap);
-        final requestId = request['id'] as String;
+        final requestId = request['id']?.toString() ?? '';
 
         return ListTile(
           leading: NetworkAvatarImage(imageUrl: user.avatar, radius: 25),
           title: Text(user.username),
           subtitle: Text('Moe号: ${user.moeNo}'),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextButton(
-                onPressed: () => _acceptFriendRequest(requestId),
-                child: const Text('接受'),
-              ),
-              TextButton(
-                onPressed: () => _rejectFriendRequest(requestId),
-                child: const Text('拒绝'),
-              ),
-            ],
+          trailing: SizedBox(
+            width: 160,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: requestId.isEmpty
+                      ? null
+                      : () => _acceptFriendRequest(requestId),
+                  child: const Text('接受'),
+                ),
+                TextButton(
+                  onPressed: requestId.isEmpty
+                      ? null
+                      : () => _rejectFriendRequest(requestId),
+                  child: const Text('拒绝'),
+                ),
+              ],
+            ),
           ),
         );
       },

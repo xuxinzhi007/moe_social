@@ -107,12 +107,26 @@ void main() async {
     ChatPushService.initialize(AuthService.navigatorKey);
 
     // 捕获Flutter框架错误
+    int errorCount = 0;
+    String? lastError;
     FlutterError.onError = (FlutterErrorDetails details) {
-      FlutterError.presentError(details);
-      // 输出详细错误信息
+      final errorString = details.exceptionAsString();
+      // 过滤掉重复的parentDataDirty错误，避免日志刷屏
+      if (errorString.contains('parentDataDirty')) {
+        errorCount++;
+        if (errorCount <= 3) {
+          debugPrint('Flutter Error [${errorCount}]: $errorString');
+        } else if (errorCount == 4) {
+          debugPrint('... (重复错误已省略，修复后刷新即可)');
+        }
+        return; // 不输出到控制台
+      }
+      // 输出其他错误信息
+      errorCount = 0;
+      lastError = errorString;
       debugPrint('═══════════════════════════════════════');
       debugPrint('Flutter Error:');
-      debugPrint('Exception: ${details.exception}');
+      debugPrint('Exception: $errorString');
       debugPrint('Stack: ${details.stack}');
       debugPrint('Library: ${details.library}');
       debugPrint('═══════════════════════════════════════');

@@ -194,11 +194,27 @@ class _InterestGroupsPageState extends State<InterestGroupsPage> {
         children: [
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Image.network(
-              group.coverImage,
+            child: SizedBox(
               height: 160,
               width: double.infinity,
-              fit: BoxFit.cover,
+              child: Image.network(
+                group.coverImage,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: Icon(Icons.image_not_supported, color: Colors.grey),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
           Container(

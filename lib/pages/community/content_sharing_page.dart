@@ -262,11 +262,27 @@ class _ContentSharingPageState extends State<ContentSharingPage> {
           if (content.imageUrl != null)
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: Image.network(
-                content.imageUrl!,
+              child: SizedBox(
                 height: 200,
                 width: double.infinity,
-                fit: BoxFit.cover,
+                child: Image.network(
+                  content.imageUrl!,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey[200],
+                      child: const Center(
+                        child: Icon(Icons.image_not_supported, color: Colors.grey),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           if (content.videoUrl != null)
