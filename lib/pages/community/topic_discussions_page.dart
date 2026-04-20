@@ -249,9 +249,30 @@ class _TopicDiscussionsPageState extends State<TopicDiscussionsPage> {
                 height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  image: DecorationImage(
-                    image: NetworkImage(discussion.authorAvatar),
-                    fit: BoxFit.cover,
+                  color: Colors.grey[200],
+                ),
+                child: ClipOval(
+                  child: SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: Image.network(
+                      discussion.authorAvatar,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[200],
+                          child: const Center(
+                            child: Icon(Icons.person, color: Colors.grey),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),

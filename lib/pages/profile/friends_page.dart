@@ -123,6 +123,7 @@ class _FriendsPageState extends State<FriendsPage> {
       } catch (_) {}
       friends.sort((a, b) => a.username.compareTo(b.username));
       if (!mounted) return;
+      debugPrint('=== FriendsPage: Setting friends data, count: ${friends.length} ===');
       setState(() {
         _friends = friends;
         _incomingRequests = incoming;
@@ -130,6 +131,7 @@ class _FriendsPageState extends State<FriendsPage> {
         _isLoading = false;
         _hasError = false;
       });
+      debugPrint('=== FriendsPage: setState completed ===');
 
       await _ensureOnlineStatus();
     } catch (e) {
@@ -787,10 +789,7 @@ class _FriendsPageState extends State<FriendsPage> {
               itemCount: _getFilteredFriends().length,
               itemBuilder: (context, index) {
                 final user = _getFilteredFriends()[index];
-                return KeyedSubtree(
-                  key: ValueKey('friend_${user.id}'),
-                  child: _buildFriendCard(user, index),
-                );
+                return _buildFriendCard(user, index);
               },
             ),
           ),
@@ -912,7 +911,8 @@ class _FriendsPageState extends State<FriendsPage> {
     final dmUnread =
         context.watch<NotificationProvider>().unreadDmBySender[user.id] ?? 0;
     final isFavorite = _favoriteFriends.contains(user.id);
-        
+    debugPrint('=== Building friend card: ${user.username} (index: $index, online: $isOnline, favorite: $isFavorite) ===');
+
     return FadeInUp(
       key: ValueKey('friend_${user.id}'),
       duration: const Duration(milliseconds: 200),
