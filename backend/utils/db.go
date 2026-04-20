@@ -132,6 +132,10 @@ func autoMigrate() error {
 		&model.FriendRequest{}, // 好友申请
 		&model.Gift{},          // 礼物表
 		&model.GiftRecord{},    // 礼物赠送记录表
+		// 社区相关模型
+		&model.Group{},          // 兴趣群组表
+		&model.GroupMember{},    // 群组成员关系表
+		&model.GroupPost{},      // 群组帖子关联表
 	)
 }
 

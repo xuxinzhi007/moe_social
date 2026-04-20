@@ -1,6 +1,8 @@
 package errorx
 
 import (
+	"backend/common/errorcode"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -10,17 +12,17 @@ func New(httpCode int, message string) error {
 	var code codes.Code
 	
 	switch httpCode {
-	case 400:
+	case errorcode.E_INVALID_PARAM:
 		code = codes.InvalidArgument
-	case 401:
+	case errorcode.E_UNAUTHORIZED:
 		code = codes.Unauthenticated
-	case 403:
+	case errorcode.E_FORBIDDEN:
 		code = codes.PermissionDenied
-	case 404:
+	case errorcode.E_NOT_FOUND:
 		code = codes.NotFound
-	case 409:
+	case errorcode.E_CONFLICT:
 		code = codes.AlreadyExists
-	case 500:
+	case errorcode.E_INTERNAL_ERROR:
 		code = codes.Internal
 	default:
 		code = codes.Unknown

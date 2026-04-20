@@ -2,6 +2,7 @@ package common
 
 import (
 	"backend/api/internal/types"
+	"backend/common/errorcode"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -13,7 +14,7 @@ import (
 func HandleRPCError(err error, successMessage string) types.BaseResp {
 	if err == nil {
 		return types.BaseResp{
-			Code:    200,
+			Code:    errorcode.E_SUCCESS,
 			Message: successMessage,
 			Success: true,
 		}
@@ -24,7 +25,7 @@ func HandleRPCError(err error, successMessage string) types.BaseResp {
 	if !ok {
 		// 不是 gRPC 错误，返回通用错误
 		return types.BaseResp{
-			Code:    500,
+			Code:    errorcode.E_INTERNAL_ERROR,
 			Message: "服务调用失败: " + err.Error(),
 			Success: false,
 		}
@@ -34,21 +35,21 @@ func HandleRPCError(err error, successMessage string) types.BaseResp {
 	var httpCode int
 	switch st.Code() {
 	case codes.OK:
-		httpCode = 200
+		httpCode = errorcode.E_SUCCESS
 	case codes.InvalidArgument:
-		httpCode = 400
+		httpCode = errorcode.E_INVALID_PARAM
 	case codes.Unauthenticated:
-		httpCode = 401
+		httpCode = errorcode.E_UNAUTHORIZED
 	case codes.PermissionDenied:
-		httpCode = 403
+		httpCode = errorcode.E_FORBIDDEN
 	case codes.NotFound:
-		httpCode = 404
+		httpCode = errorcode.E_NOT_FOUND
 	case codes.AlreadyExists:
-		httpCode = 409
+		httpCode = errorcode.E_CONFLICT
 	case codes.Internal:
-		httpCode = 500
+		httpCode = errorcode.E_INTERNAL_ERROR
 	default:
-		httpCode = 500
+		httpCode = errorcode.E_INTERNAL_ERROR
 	}
 
 	return types.BaseResp{
@@ -62,14 +63,14 @@ func HandleRPCError(err error, successMessage string) types.BaseResp {
 func HandleError(err error) types.BaseResp {
 	if err == nil {
 		return types.BaseResp{
-			Code:    200,
+			Code:    errorcode.E_SUCCESS,
 			Message: "操作成功",
 			Success: true,
 		}
 	}
 
 	return types.BaseResp{
-		Code:    500,
+		Code:    errorcode.E_INTERNAL_ERROR,
 		Message: err.Error(),
 		Success: false,
 	}
