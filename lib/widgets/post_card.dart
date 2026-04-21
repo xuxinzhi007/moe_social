@@ -12,6 +12,7 @@ import '../widgets/like_button.dart';
 import '../widgets/moe_bouncing_button.dart';
 import '../widgets/post_image_viewer.dart';
 import '../widgets/hand_draw/hand_draw_card_view.dart';
+import 'moe_loading.dart';
 import '../utils/media_url.dart';
 
 class PostCard extends StatelessWidget {
@@ -767,8 +768,10 @@ void _openHandDrawViewer(BuildContext context, Post post) {
                     width: 200,
                     height: 280,
                     child: Center(
-                      child: CircularProgressIndicator(
-                          color: Colors.white54),
+                      child: MoeSmallLoading(
+                        color: Colors.white70,
+                        size: 28,
+                      ),
                     ),
                   ),
                   errorWidget: (_, __, ___) => const Icon(
