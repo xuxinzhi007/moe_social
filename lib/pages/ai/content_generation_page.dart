@@ -140,10 +140,12 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
 
   Future<String> _callContentGenerationAPI(String prompt, ContentType contentType) async {
     final uri = await LlmEndpointConfig.chatUri();
-    final headers = <String, String>{'Content-Type': 'application/json'};
-    if (ApiService.token != null) {
-      headers['Authorization'] = 'Bearer ${ApiService.token}';
-    }
+    ApiService.logDirectHttp('POST', uri);
+    final token = ApiService.token;
+    final headers = ApiService.mergeTunnelHeaders(uri, headers: {
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    });
 
     // 构建系统提示词
     String systemPrompt = '';

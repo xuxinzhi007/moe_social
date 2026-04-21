@@ -52,7 +52,10 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     setState(() => _isLoadingModels = true);
     try {
       final uri = await LlmEndpointConfig.modelsUri();
-      final response = await http.get(uri).timeout(const Duration(seconds: 10));
+      ApiService.logDirectHttp('GET', uri);
+      final response = await http
+          .get(uri, headers: ApiService.mergeTunnelHeaders(uri))
+          .timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final decodedBody = utf8.decode(response.bodyBytes);
         final data = jsonDecode(decodedBody);
@@ -89,11 +92,12 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   Future<String> _fetchOllamaSystemPrompt(String modelName) async {
     try {
       final uri = LlmEndpointConfig.showUri();
-      final headers = <String, String>{'Content-Type': 'application/json'};
+      ApiService.logDirectHttp('POST', uri);
       final token = ApiService.token;
-      if (token != null && token.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $token';
-      }
+      final headers = ApiService.mergeTunnelHeaders(uri, headers: {
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      });
       final response = await http
           .post(uri, headers: headers, body: jsonEncode({'name': modelName}))
           .timeout(const Duration(seconds: 15));

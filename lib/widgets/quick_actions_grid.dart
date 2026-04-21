@@ -117,8 +117,9 @@ class QuickActionsGrid extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
+          // 每项约 52+6+文字行高+竖向 padding，90 在部分字体缩放下会溢出
           SizedBox(
-            height: 90,
+            height: 100,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 4),

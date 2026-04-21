@@ -71,27 +71,34 @@ class MoeBottomBar extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           // 图标动画
-                          TweenAnimationBuilder<double>(
-                            tween: Tween(
-                              begin: 1.0, 
-                              end: isSelected ? 1.2 : 1.0
-                            ),
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.elasticOut,
-                            builder: (context, scale, child) {
-                              return Transform.scale(
-                                scale: scale,
-                                child: Icon(
-                                  isSelected 
-                                      ? (destination.selectedIcon as Icon).icon 
-                                      : (destination.icon as Icon).icon,
-                                  color: isSelected 
-                                      ? primaryColor 
-                                      : Colors.grey[400],
-                                  size: 24,
+                          // 固定占位避免 Transform.scale 在 Row 里撑破布局（小屏约 4~5px 溢出）
+                          SizedBox(
+                            width: 30,
+                            height: 30,
+                            child: Center(
+                              child: TweenAnimationBuilder<double>(
+                                tween: Tween(
+                                  begin: 1.0,
+                                  end: isSelected ? 1.15 : 1.0,
                                 ),
-                              );
-                            },
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.elasticOut,
+                                builder: (context, scale, child) {
+                                  return Transform.scale(
+                                    scale: scale,
+                                    child: Icon(
+                                      isSelected
+                                          ? (destination.selectedIcon as Icon).icon
+                                          : (destination.icon as Icon).icon,
+                                      color: isSelected
+                                          ? primaryColor
+                                          : Colors.grey[400],
+                                      size: 24,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
                           ),
                           // 文字标签动画
                           AnimatedSize(

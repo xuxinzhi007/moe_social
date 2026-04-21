@@ -189,7 +189,9 @@ class _PersonalizedCardState extends State<PersonalizedCard> with SingleTickerPr
                   ),
                 ),
               ),
-              Column(
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final column = Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -340,6 +342,19 @@ class _PersonalizedCardState extends State<PersonalizedCard> with SingleTickerPr
                     ),
                   ),
                 ],
+                  );
+                  final maxH = constraints.maxHeight;
+                  if (maxH.isFinite && maxH > 0) {
+                    return SizedBox(
+                      height: maxH,
+                      child: SingleChildScrollView(
+                        physics: const ClampingScrollPhysics(),
+                        child: column,
+                      ),
+                    );
+                  }
+                  return column;
+                },
               ),
             ],
           ),

@@ -220,8 +220,9 @@ class _HomePageState extends State<HomePage> {
             SliverPersistentHeader(
               pinned: true,
               delegate: _HomeHeaderDelegate(
-                minExtent: _showComposerBar ? 120 : 64,
-                maxExtent: _showComposerBar ? 120 : 64,
+                // 与 _buildPinnedHeader 实际高度一致：padding 8+10 + 模式行 42 = 60（原先写 64 会触发 SliverGeometry 断言）
+                minExtent: _showComposerBar ? 120 : 60,
+                maxExtent: _showComposerBar ? 120 : 60,
                 showComposerBar: _showComposerBar,
                 mode: _mode,
                 activeTopicId: _activeTopic?.id,
