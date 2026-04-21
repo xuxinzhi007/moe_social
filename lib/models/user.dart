@@ -41,10 +41,16 @@ class User {
     required this.updatedAt,
   });
 
+  static String _coerceId(dynamic v) {
+    if (v == null) return '';
+    if (v is String) return v;
+    return v.toString();
+  }
+
   // 从JSON创建User实例（后端返回格式）
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'] as String? ?? '',
+      id: _coerceId(json['id']),
       username: json['username'] as String? ?? '',
       email: json['email'] as String? ?? '',
       moeNo: json['moe_no'] as String? ?? '',

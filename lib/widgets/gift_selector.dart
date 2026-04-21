@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
 import '../models/gift.dart';
 import '../auth_service.dart';
 import '../services/api_service.dart';
 import '../utils/error_handler.dart';
+import 'moe_loading.dart';
 
 /// 礼物选择器组件
 class GiftSelector extends StatefulWidget {
@@ -30,12 +30,33 @@ class _GiftSelectorState extends State<GiftSelector>
   bool _isLoading = false;
   double _userBalance = 0.0;
   Gift? _selectedGift;
+  /// 后端 `/api/gifts`；非空时「热门」Tab 优先展示商城数据
+  List<Gift> _serverGifts = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: GiftCategory.values.length + 1, vsync: this);
     _loadUserBalance();
+    _loadGiftCatalog();
+  }
+
+  Future<void> _loadGiftCatalog() async {
+    try {
+      final rows = await ApiService.getGifts(page: 1, pageSize: 80);
+      if (!mounted) return;
+      final parsed = rows.map(Gift.fromCatalogApi).toList();
+      if (parsed.isNotEmpty) {
+        setState(() => _serverGifts = parsed);
+      }
+    } catch (_) {
+      // 保持内置礼物列表，避免打断选礼流程
+    }
+  }
+
+  List<Gift> _popularTabGifts() {
+    if (_serverGifts.isNotEmpty) return _serverGifts;
+    return Gift.getPopularGifts(limit: 12);
   }
 
   @override
@@ -76,18 +97,18 @@ class _GiftSelectorState extends State<GiftSelector>
     });
 
     try {
-      // 这里应该调用发送礼物的API
-      // await ApiService.sendGift(gift.id, widget.receiverId, widget.targetType, widget.targetId);
+      await ApiService.sendGift(
+        fromUserId: userId,
+        toUserId: widget.receiverId,
+        giftId: gift.id,
+        quantity: 1,
+      );
 
-      // 模拟API调用
-      await Future.delayed(const Duration(seconds: 1));
-
-      // 扣除余额
-      setState(() {
-        _userBalance -= gift.price;
-      });
-
+      final refreshed = await ApiService.getUserInfo(userId);
       if (mounted) {
+        setState(() {
+          _userBalance = refreshed.balance;
+        });
         ErrorHandler.showSuccess(context, '礼物发送成功！🎁');
         widget.onGiftSent?.call(gift);
         Navigator.of(context).pop();
@@ -161,6 +182,7 @@ class _GiftSelectorState extends State<GiftSelector>
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.close),
+                  tooltip: '关闭',
                 ),
               ],
             ),
@@ -201,7 +223,7 @@ class _GiftSelectorState extends State<GiftSelector>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildGiftGrid(Gift.getPopularGifts(limit: 12)),
+                _buildGiftGrid(_popularTabGifts()),
                 ...GiftCategory.values.map((category) =>
                     _buildGiftGrid(Gift.getGiftsByCategory(category))),
               ],
@@ -215,7 +237,7 @@ class _GiftSelectorState extends State<GiftSelector>
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
+                  MoeSmallLoading(size: 22),
                   SizedBox(width: 12),
                   Text('正在发送礼物...'),
                 ],
@@ -242,9 +264,14 @@ class _GiftSelectorState extends State<GiftSelector>
         final isSelected = _selectedGift?.id == gift.id;
 
         return GestureDetector(
-          onTap: canAfford && !_isLoading
-              ? () => _sendGift(gift)
-              : () => ErrorHandler.showError(context, '余额不足'),
+          onTap: () {
+            if (_isLoading) return;
+            if (!canAfford) {
+              ErrorHandler.showError(context, '余额不足，可先充值');
+              return;
+            }
+            _sendGift(gift);
+          },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
@@ -343,11 +370,7 @@ class _GiftSelectorState extends State<GiftSelector>
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
+                        child: MoeSmallLoading(size: 20),
                       ),
                     ),
                   ),

@@ -181,6 +181,26 @@ class Gift {
     ),
   ];
 
+  /// 后端 `/api/gifts` 返回的条目（无 emoji 字段，用 [icon] 或占位）
+  factory Gift.fromCatalogApi(Map<String, dynamic> json) {
+    final rawIcon = json['icon'] as String? ?? '';
+    final emoji =
+        rawIcon.startsWith('http') || rawIcon.isEmpty ? '🎁' : rawIcon;
+    final price = (json['price'] as num?)?.toDouble() ?? 0;
+    return Gift(
+      id: json['id']?.toString() ?? '',
+      name: (json['name'] as String?)?.trim().isNotEmpty == true
+          ? json['name'] as String
+          : '礼物',
+      emoji: emoji,
+      description: json['description'] as String? ?? '',
+      price: price,
+      color: const Color(0xFFFFB347),
+      category: GiftCategory.special,
+      popularity: 0,
+    );
+  }
+
   // 从JSON创建实例
   factory Gift.fromJson(Map<String, dynamic> json) {
     return Gift(
@@ -206,7 +226,7 @@ class Gift {
       'emoji': emoji,
       'description': description,
       'price': price,
-      'color': color.value,
+      'color': color.toARGB32(),
       'category': category.name,
       'popularity': popularity,
     };

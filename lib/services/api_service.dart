@@ -1399,10 +1399,49 @@ class ApiService {
 
   static Future<List<User>> getFriends(String userId) async {
     final result = await _request('/api/user/$userId/friends');
-    final list = result['data'] as List<dynamic>;
-    return list
-        .map((e) => User.fromJson(e as Map<String, dynamic>))
+    final raw = result['data'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((e) => User.fromJson(Map<String, dynamic>.from(e)))
         .toList();
+  }
+
+  /// GET `/api/gifts` — 礼物商城（互动中心 / 礼物选择器用）
+  static Future<List<Map<String, dynamic>>> getGifts({
+    int page = 1,
+    int pageSize = 50,
+  }) async {
+    final result = await _request(
+      '/api/gifts?page=$page&page_size=$pageSize',
+      method: 'GET',
+    );
+    final raw = result['data'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  /// POST `/api/user/:user_id/gifts/send`
+  static Future<void> sendGift({
+    required String fromUserId,
+    required String toUserId,
+    required String giftId,
+    int quantity = 1,
+    String message = '',
+  }) async {
+    await _request(
+      '/api/user/$fromUserId/gifts/send',
+      method: 'POST',
+      body: {
+        'to_user_id': toUserId,
+        'gift_id': giftId,
+        'quantity': quantity,
+        if (message.trim().isNotEmpty) 'message': message.trim(),
+      },
+    );
   }
 
   static Future<void> sendFriendRequestByMoeNo(
@@ -1421,8 +1460,12 @@ class ApiService {
       String userId) async {
     final result =
         await _request('/api/user/$userId/friend-requests/incoming');
-    final list = result['data'] as List<dynamic>;
-    return list.map((e) => e as Map<String, dynamic>).toList();
+    final raw = result['data'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
   }
 
   static Future<void> acceptFriendRequest(
