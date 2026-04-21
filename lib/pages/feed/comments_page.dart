@@ -1,21 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../models/comment.dart';
+import '../../models/post.dart';
 import '../../services/post_service.dart';
 import '../../services/achievement_hooks.dart';
 import '../../services/api_service.dart';
 import '../../auth_service.dart';
 import '../../services/like_state_manager.dart';
 import '../../widgets/avatar_image.dart';
-import '../../widgets/like_button.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_loading.dart';
+import '../../widgets/post_card.dart';
 
 class CommentsPage extends StatefulWidget {
   final String postId;
+  /// 非空时：顶部展示完整动态（与首页 [PostCard] 一致，含手绘/多图），下方为评论区，用于社区详情闭环。
+  final Post? embeddedPost;
+  /// 下拉刷新时先于拉评论执行（例如重新拉帖子详情）。
+  final Future<void> Function()? onRefreshPreamble;
 
   const CommentsPage({
     Key? key,
     required this.postId,
+    this.embeddedPost,
+    this.onRefreshPreamble,
   }) : super(key: key);
 
   @override
@@ -188,7 +196,16 @@ class _CommentsPageState extends State<CommentsPage> {
             child: AppBar(
               backgroundColor: Colors.transparent,
               elevation: 0,
-              title: Text('评论 (${_comments.length})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white)),
+              title: Text(
+                widget.embeddedPost != null
+                    ? '动态详情'
+                    : '评论 (${_comments.length})',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
+                  color: Colors.white,
+                ),
+              ),
               centerTitle: true,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
@@ -203,53 +220,100 @@ class _CommentsPageState extends State<CommentsPage> {
           Expanded(
             child: RefreshIndicator(
               color: _primaryColor,
-              onRefresh: _fetchComments,
+              onRefresh: () async {
+                if (widget.onRefreshPreamble != null) {
+                  await widget.onRefreshPreamble!();
+                }
+                await _fetchComments();
+              },
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(
                   parent: BouncingScrollPhysics(),
                 ),
                 slivers: [
-                  if (_isLoading)
-                    const SliverFillRemaining(
-                      child: Center(child: MoeLoading()),
-                    )
-                  else if (_comments.isEmpty)
-                    SliverFillRemaining(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color: _primaryColor.withOpacity(0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.chat_bubble_outline_rounded,
-                                  size: 48, color: Color(0xFF7F7FD5)),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              '暂无评论，下拉可刷新',
-                              style: TextStyle(
-                                color: scheme.onSurfaceVariant,
-                                fontSize: 15,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '快来抢沙发吧～',
-                              style: TextStyle(
-                                color: scheme.onSurfaceVariant.withOpacity(0.85),
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
+                  if (widget.embeddedPost != null)
+                    SliverToBoxAdapter(
+                      child: PostCard(
+                        post: widget.embeddedPost!,
+                        heroTagPrefix: 'cdetail_',
+                        onComment: () {},
+                        onShare: () => Share.share(
+                          widget.embeddedPost!.displayCaption.trim().isEmpty
+                              ? '分享了一条动态'
+                              : widget.embeddedPost!.displayCaption.trim(),
                         ),
                       ),
+                    ),
+                  if (_isLoading)
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: widget.embeddedPost != null ? 140 : 400,
+                        child: const Center(child: MoeLoading()),
+                      ),
                     )
-                  else
-                    SliverPadding(
+                  else ...[
+                    if (widget.embeddedPost != null)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                          child: Row(
+                            children: [
+                              Icon(Icons.chat_bubble_rounded,
+                                  size: 18, color: scheme.primary),
+                              const SizedBox(width: 8),
+                              Text(
+                                '全部评论 · ${_comments.length} 条',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                  color: scheme.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    if (_comments.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: _primaryColor.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                    Icons.chat_bubble_outline_rounded,
+                                    size: 48,
+                                    color: Color(0xFF7F7FD5)),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                '暂无评论，下拉可刷新',
+                                style: TextStyle(
+                                  color: scheme.onSurfaceVariant,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '快来抢沙发吧～',
+                                style: TextStyle(
+                                  color: scheme.onSurfaceVariant
+                                      .withOpacity(0.85),
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      SliverPadding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 20),
                       sliver: SliverList(
@@ -265,6 +329,7 @@ class _CommentsPageState extends State<CommentsPage> {
                         ),
                       ),
                     ),
+                  ],
                 ],
               ),
             ),

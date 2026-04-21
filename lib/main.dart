@@ -14,6 +14,7 @@ import 'pages/settings/settings_page.dart';
 import 'pages/feed/create_post_page.dart';
 import 'pages/feed/comments_page.dart';
 import 'pages/feed/topic_posts_page.dart';
+import 'models/post.dart';
 import 'models/topic_tag.dart';
 import 'pages/profile/edit_profile_page.dart';
 import 'pages/commerce/vip_center_page.dart';
@@ -54,6 +55,7 @@ import 'providers/user_level_provider.dart';
 import 'providers/game_provider.dart';
 import 'pages/feed/home_page.dart';
 import 'pages/community/community_home_page.dart';
+import 'pages/community/community_post_detail_page.dart';
 
 
 void main() async {
@@ -107,7 +109,6 @@ void main() async {
 
     // 捕获Flutter框架错误
     int errorCount = 0;
-    String? lastError;
     FlutterError.onError = (FlutterErrorDetails details) {
       final errorString = details.exceptionAsString();
       // 过滤掉重复的parentDataDirty错误，避免日志刷屏
@@ -122,7 +123,6 @@ void main() async {
       }
       // 输出其他错误信息
       errorCount = 0;
-      lastError = errorString;
       debugPrint('═══════════════════════════════════════');
       debugPrint('Flutter Error:');
       debugPrint('Exception: $errorString');
@@ -319,6 +319,26 @@ class _MyAppState extends State<MyApp> {
           return TopicPostsPage(topicTag: tag);
         },
         '/friends': (context) => const FriendsPage(),
+        '/community': (context) => const CommunityHomePage(),
+        '/post-detail': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args is! Map) {
+            return const Scaffold(
+              body: Center(child: Text('缺少动态参数')),
+            );
+          }
+          final postId = args['postId'] as String?;
+          if (postId == null || postId.isEmpty) {
+            return const Scaffold(
+              body: Center(child: Text('无效的动态 ID')),
+            );
+          }
+          final initial = args['post'] is Post ? args['post'] as Post : null;
+          return CommunityPostDetailPage(
+            postId: postId,
+            initialPost: initial,
+          );
+        },
         '/match': (context) => const MatchPage(),
         '/direct-chat': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
