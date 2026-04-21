@@ -6,6 +6,7 @@ import '../../models/post.dart';
 import '../../services/post_service.dart';
 import '../../widgets/post_skeleton.dart';
 import '../../utils/error_handler.dart';
+import '../../utils/post_navigation.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/post_card.dart';
 import '../../widgets/personalized_card.dart';
@@ -916,7 +917,7 @@ class _HomePageState extends State<HomePage> {
       post: post,
       onLike: () => _toggleLike(post.id),
       onComment: () async {
-        final result = await Navigator.pushNamed(context, '/comments', arguments: post.id);
+        final result = await openPostDetail<int>(context, post);
         if (result != null && result is int) {
           // 返回值是新的评论数，同时更新源数据和当前展示列表
           setState(() {

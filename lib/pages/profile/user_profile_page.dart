@@ -19,6 +19,7 @@ import '../../widgets/moe_toast.dart';
 import '../../widgets/gift_animation.dart';
 import '../../services/post_service.dart';
 import '../../utils/error_handler.dart';
+import '../../utils/post_navigation.dart';
 import 'following_page.dart';
 import 'followers_page.dart';
 import '../chat/voice_call_page.dart';
@@ -1016,8 +1017,19 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             heroTagPrefix: 'up_',
                             onLike: () => _toggleLike(post.id),
                             onComment: () async {
-                            await Navigator.pushNamed(context, '/comments', arguments: post.id);
-                          },
+                              final result = await openPostDetail<int>(
+                                  context, post);
+                              if (result != null && mounted) {
+                                setState(() {
+                                  final i = _userPosts
+                                      .indexWhere((p) => p.id == post.id);
+                                  if (i != -1) {
+                                    _userPosts[i] = _userPosts[i]
+                                        .copyWith(comments: result);
+                                  }
+                                });
+                              }
+                            },
                           onShare: () {},
                           onAvatarTap: () {},
                         ),

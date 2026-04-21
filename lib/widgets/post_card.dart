@@ -14,6 +14,7 @@ import '../widgets/post_image_viewer.dart';
 import '../widgets/hand_draw/hand_draw_card_view.dart';
 import 'moe_loading.dart';
 import '../utils/media_url.dart';
+import '../utils/post_navigation.dart';
 
 class PostCard extends StatelessWidget {
   final Post post;
@@ -306,7 +307,10 @@ class PostCard extends StatelessWidget {
                       context,
                       icon: Icons.chat_bubble_outline_rounded,
                       count: post.comments,
-                      onTap: onComment ?? () {}),
+                      onTap: onComment ??
+                          () {
+                            openPostDetail(context, post);
+                          }),
                   _buildActionButton(
                       context,
                       icon: Icons.share_rounded,

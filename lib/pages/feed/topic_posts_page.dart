@@ -6,6 +6,7 @@ import '../../widgets/post_card.dart';
 import '../../widgets/moe_loading.dart';
 import '../../auth_service.dart';
 import '../../utils/error_handler.dart';
+import '../../utils/post_navigation.dart';
 
 /// 话题动态列表页面 - 显示指定话题下的所有动态
 class TopicPostsPage extends StatefulWidget {
@@ -263,8 +264,18 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
                         post: post,
                         onLike: () => _toggleLike(post.id),
                         onComment: () async {
-                          await Navigator.pushNamed(
-                              context, '/comments', arguments: post.id);
+                          final result =
+                              await openPostDetail<int>(context, post);
+                          if (result != null && mounted) {
+                            setState(() {
+                              final i =
+                                  _posts.indexWhere((p) => p.id == post.id);
+                              if (i != -1) {
+                                _posts[i] = _posts[i]
+                                    .copyWith(comments: result);
+                              }
+                            });
+                          }
                         },
                         onShare: () {},
                         onAvatarTap: () {

@@ -861,6 +861,86 @@ class ApiService {
     return Post.fromJson(result['data']);
   }
 
+  // ========== 社区 / 兴趣群组 ==========
+
+  /// GET `/api/community/groups` — 分页列表，可选关键词与 viewer（影响 is_joined）。
+  static Future<Map<String, dynamic>> getCommunityGroups({
+    int page = 1,
+    int pageSize = 20,
+    String? keyword,
+    String? userId,
+    bool? isPublic,
+  }) async {
+    final parts = <String>['page=$page', 'page_size=$pageSize'];
+    if (keyword != null && keyword.trim().isNotEmpty) {
+      parts.add('keyword=${Uri.encodeQueryComponent(keyword.trim())}');
+    }
+    if (userId != null && userId.isNotEmpty) {
+      parts.add('user_id=${Uri.encodeQueryComponent(userId)}');
+    }
+    if (isPublic != null) {
+      parts.add('is_public=$isPublic');
+    }
+    final result = await _request('/api/community/groups?${parts.join('&')}');
+    final raw = result['data'];
+    final list = raw is List
+        ? raw
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList()
+        : <Map<String, dynamic>>[];
+    final totalRaw = result['total'];
+    final total = totalRaw is int
+        ? totalRaw
+        : (totalRaw is num ? totalRaw.toInt() : list.length);
+    return {'groups': list, 'total': total};
+  }
+
+  static Future<Map<String, dynamic>> createCommunityGroup({
+    required String userId,
+    required String name,
+    required String description,
+    bool isPublic = true,
+    String avatar = '',
+    String cover = '',
+  }) async {
+    final body = <String, dynamic>{
+      'user_id': userId,
+      'name': name,
+      'description': description,
+      'is_public': isPublic,
+    };
+    if (avatar.isNotEmpty) body['avatar'] = avatar;
+    if (cover.isNotEmpty) body['cover'] = cover;
+    final result =
+        await _request('/api/community/groups', method: 'POST', body: body);
+    final data = result['data'];
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return <String, dynamic>{};
+  }
+
+  static Future<void> joinCommunityGroup({
+    required String groupId,
+    required String userId,
+  }) async {
+    await _request(
+      '/api/community/groups/$groupId/join',
+      method: 'POST',
+      body: {'user_id': userId},
+    );
+  }
+
+  static Future<void> leaveCommunityGroup({
+    required String groupId,
+    required String userId,
+  }) async {
+    await _request(
+      '/api/community/groups/$groupId/leave',
+      method: 'POST',
+      body: {'user_id': userId},
+    );
+  }
+
   // 获取帖子评论（传 viewer 才能返回准确的 is_liked）
   static Future<List<Comment>> getComments(
     String postId, {
