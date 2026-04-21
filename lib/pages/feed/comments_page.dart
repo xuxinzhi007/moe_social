@@ -8,6 +8,7 @@ import '../../services/like_state_manager.dart';
 import '../../widgets/avatar_image.dart';
 import '../../widgets/like_button.dart';
 import '../../widgets/moe_toast.dart';
+import '../../widgets/moe_loading.dart';
 
 class CommentsPage extends StatefulWidget {
   final String postId;
@@ -210,7 +211,7 @@ class _CommentsPageState extends State<CommentsPage> {
                 slivers: [
                   if (_isLoading)
                     const SliverFillRemaining(
-                      child: Center(child: CircularProgressIndicator()),
+                      child: Center(child: MoeLoading()),
                     )
                   else if (_comments.isEmpty)
                     SliverFillRemaining(
@@ -325,10 +326,9 @@ class _CommentsPageState extends State<CommentsPage> {
                 ),
                 const SizedBox(width: 12),
                 _isSubmitting
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF7F7FD5)),
+                    ? const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: MoeSmallLoading(size: 22),
                       )
                     : InkWell(
                         onTap: _addComment,

@@ -3,6 +3,7 @@ import '../../models/post.dart';
 import '../../models/topic_tag.dart';
 import '../../services/post_service.dart';
 import '../../widgets/post_card.dart';
+import '../../widgets/moe_loading.dart';
 import '../../auth_service.dart';
 import '../../utils/error_handler.dart';
 
@@ -210,7 +211,7 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
         ),
       ),
       body: _isLoading && _posts.isEmpty
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: MoeLoading())
           : _posts.isEmpty
               ? Center(
                   child: Column(
@@ -236,9 +237,24 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
                     itemCount: _posts.length + (_isLoadingMore ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index >= _posts.length) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          child: Center(child: CircularProgressIndicator()),
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                MoeSmallLoading(),
+                                SizedBox(height: 8),
+                                Text(
+                                  '加载中...',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         );
                       }
                       final post = _posts[index];

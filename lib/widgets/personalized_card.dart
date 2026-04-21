@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'dart:math' as math;
 import 'daily_quote_widget.dart';
 import '../providers/device_info_provider.dart';
+import 'moe_loading.dart';
 import '../services/weather_service.dart';
 
 class PersonalizedCard extends StatefulWidget {
@@ -253,13 +254,9 @@ class _PersonalizedCardState extends State<PersonalizedCard> with SingleTickerPr
                                   width: 80,
                                   height: 40,
                                   child: Center(
-                                    child: SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                      ),
+                                    child: MoeSmallLoading(
+                                      color: Colors.white,
+                                      size: 20,
                                     ),
                                   ),
                                 )
