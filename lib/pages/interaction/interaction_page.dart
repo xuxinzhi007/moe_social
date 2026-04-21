@@ -231,16 +231,33 @@ class _InteractionPageState extends State<InteractionPage> with SingleTickerProv
       itemCount: _friendRequests.length,
       itemBuilder: (context, index) {
         final request = _friendRequests[index];
-        final userMap = request['from_user'] as Map<String, dynamic>? ??
-            request['user'] as Map<String, dynamic>? ??
-            <String, dynamic>{};
-        if (userMap.isEmpty) {
+        
+        // 安全获取用户数据
+        Map<String, dynamic>? userMap;
+        if (request.containsKey('from_user') && request['from_user'] is Map) {
+          userMap = request['from_user'] as Map<String, dynamic>?;
+        } else if (request.containsKey('user') && request['user'] is Map) {
+          userMap = request['user'] as Map<String, dynamic>?;
+        }
+        
+        if (userMap == null || userMap.isEmpty) {
           return const ListTile(
             title: Text('数据异常'),
             subtitle: Text('缺少申请人字段'),
           );
         }
-        final user = User.fromJson(userMap);
+        
+        // 安全创建User对象
+        User? user;
+        try {
+          user = User.fromJson(userMap);
+        } catch (e) {
+          return ListTile(
+            title: const Text('数据异常'),
+            subtitle: Text('用户数据格式错误: ${e.toString()}'),
+          );
+        }
+        
         final requestId = request['id']?.toString() ?? '';
 
         return ListTile(
