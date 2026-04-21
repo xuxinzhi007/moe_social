@@ -326,82 +326,163 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
                       ),
                     ],
                   ),
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: _settings.cols,
-                      childAspectRatio: 1.0,
-                      crossAxisSpacing: 2,
-                      mainAxisSpacing: 2,
-                    ),
-                    itemCount: _settings.rows * _settings.cols,
-                    itemBuilder: (context, index) {
-                      final row = index ~/ _settings.cols;
-                      final col = index % _settings.cols;
-                      final cell = _board[row][col];
+                  child: Stack(
+                    children: [
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: _settings.cols,
+                          childAspectRatio: 1.0,
+                          crossAxisSpacing: 2,
+                          mainAxisSpacing: 2,
+                        ),
+                        itemCount: _settings.rows * _settings.cols,
+                        itemBuilder: (context, index) {
+                          final row = index ~/ _settings.cols;
+                          final col = index % _settings.cols;
+                          final cell = _board[row][col];
 
-                      return GestureDetector(
-                        onTap: () => _revealCell(row, col),
-                        onLongPress: () {
-                          HapticFeedback.mediumImpact();
-                          _toggleFlag(row, col);
+                          return GestureDetector(
+                            onTap: () => _revealCell(row, col),
+                            onLongPress: () {
+                              HapticFeedback.mediumImpact();
+                              _toggleFlag(row, col);
+                            },
+                            child: _buildCell(cell),
+                          );
                         },
-                        child: _buildCell(cell),
-                      );
-                    },
+                      ),
+                      // 游戏结束覆盖层
+                      if (_gameOver || _gameWon) ...[
+                        Container(
+                          width: double.infinity,
+                          height: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.all(24),
+                              margin: const EdgeInsets.symmetric(horizontal: 32, vertical: 64),
+                              constraints: const BoxConstraints(
+                                maxWidth: 400,
+                                maxHeight: 500,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _gameWon ? Colors.green.shade100 : Colors.red.shade100,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: _gameWon ? Colors.green : Colors.red,
+                                  width: 3,
+                                ),
+                              ),
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      _gameWon ? Icons.check_circle_rounded : Icons.error_rounded,
+                                      size: 64,
+                                      color: _gameWon ? Colors.green : Colors.red,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      _gameWon ? '恭喜你获胜！' : '游戏结束！',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: _gameWon ? Colors.green : Colors.red,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _gameWon 
+                                        ? '用时: ${_formatTime(_elapsedSeconds)}' 
+                                        : '踩到地雷了！',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: Color(0xFF2D3748),
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '难度: ${_settings.name}',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Color(0xFF718096),
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 24),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        Expanded(
+                                          child: ElevatedButton.icon(
+                                            onPressed: _restartGame,
+                                            icon: const Icon(Icons.refresh_rounded),
+                                            label: const Text('再玩一次'),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.white,
+                                              foregroundColor: const Color(0xFF4CAF50),
+                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: ElevatedButton.icon(
+                                            onPressed: _showScoreboard,
+                                            icon: const Icon(Icons.leaderboard_rounded),
+                                            label: const Text('排行榜'),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(0xFF4CAF50),
+                                              foregroundColor: Colors.white,
+                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                      },
+                                      icon: const Icon(Icons.arrow_back_rounded),
+                                      label: const Text('返回难度选择'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.grey.shade200,
+                                        foregroundColor: const Color(0xFF2D3748),
+                                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),
             ),
           ),
-
-          // 游戏控制
-          if (_gameOver || _gameWon) ...[
-            Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: _gameWon ? Colors.green.shade100 : Colors.red.shade100,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _gameWon ? Colors.green : Colors.red,
-                  width: 2,
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: _restartGame,
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('重新开始'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF4CAF50),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: _showScoreboard,
-                    icon: const Icon(Icons.leaderboard_rounded),
-                    label: const Text('查看排行榜'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4CAF50),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ],
       ),
     );
