@@ -38,15 +38,18 @@ class NotificationService {
       await initLocalNotifications();
     }
 
+    // 新 channel id：已装过旧版的用户会拿到带自定义铃声的新通道（Android 8+ 通道属性不可变）
     const androidDetails = AndroidNotificationDetails(
-      'direct_message_channel',
+      'direct_message_channel_v2',
       '私信消息',
       channelDescription: '私信消息通知',
       importance: Importance.max,
       priority: Priority.high,
       playSound: true,
+      sound: RawResourceAndroidNotificationSound('moe_notify'),
     );
-    const iosDetails = DarwinNotificationDetails();
+    // iOS 自定义 wav 需加入 Xcode Runner 资源；此处先保证系统提示音可靠触发
+    const iosDetails = DarwinNotificationDetails(presentSound: true);
     const details =
         NotificationDetails(android: androidDetails, iOS: iosDetails);
 

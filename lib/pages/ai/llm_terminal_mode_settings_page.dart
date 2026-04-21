@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../../services/api_service.dart';
 import '../../services/llm_endpoint_config.dart';
 
 class LlmTerminalModeSettingsPage extends StatefulWidget {
@@ -51,7 +52,10 @@ class _LlmTerminalModeSettingsPageState
       _testResult = null;
     });
     try {
-      final resp = await http.get(uri).timeout(const Duration(seconds: 8));
+      ApiService.logDirectHttp('GET', uri);
+      final resp = await http
+          .get(uri, headers: ApiService.mergeTunnelHeaders(uri))
+          .timeout(const Duration(seconds: 8));
       final text = utf8.decode(resp.bodyBytes);
       if (resp.statusCode != 200) {
         setState(() => _testResult = '连接失败：${resp.statusCode}\n$text');

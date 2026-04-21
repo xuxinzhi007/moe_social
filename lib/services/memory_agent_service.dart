@@ -228,10 +228,12 @@ class MemoryAgentService {
   }) async {
     final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
     final uri = await LlmEndpointConfig.chatUri();
-    final headers = <String, String>{'Content-Type': 'application/json'};
-    if (ApiService.token != null) {
-      headers['Authorization'] = 'Bearer ${ApiService.token}';
-    }
+    ApiService.logDirectHttp('POST', uri);
+    final token = ApiService.token;
+    final headers = ApiService.mergeTunnelHeaders(uri, headers: {
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    });
 
     final response = await http
         .post(

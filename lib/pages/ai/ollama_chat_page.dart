@@ -347,7 +347,10 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
 
     try {
       final uri = await LlmEndpointConfig.modelsUri();
-      final response = await http.get(uri).timeout(const Duration(seconds: 10));
+      ApiService.logDirectHttp('GET', uri);
+      final response = await http
+          .get(uri, headers: ApiService.mergeTunnelHeaders(uri))
+          .timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final decodedBody = utf8.decode(response.bodyBytes);
         final data = jsonDecode(decodedBody);
@@ -659,11 +662,13 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
     try {
       final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
       final uri = await LlmEndpointConfig.chatUri();
-      final headers = <String, String>{'Content-Type': 'application/json'};
+      ApiService.logDirectHttp('POST', uri);
       final token = ApiService.token;
-      if (token != null) {
-        headers['Authorization'] = 'Bearer $token';
-      }
+      final headers = ApiService.mergeTunnelHeaders(uri, headers: {
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty)
+          'Authorization': 'Bearer $token',
+      });
       final response = await _httpClient
           .post(
             uri,
@@ -1775,7 +1780,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
-                          errorMessage,
+                          errorMessage!,
                           style: const TextStyle(color: Colors.red),
                         ),
                       ),
@@ -1813,13 +1818,14 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
 
                                   try {
                                     final uri = Uri.parse('${ApiService.baseUrl}/api/llm/models/download');
+                                    ApiService.logDirectHttp('POST', uri);
                                     final response = await http.post(
                                       uri,
-                                      headers: {
+                                      headers: ApiService.mergeTunnelHeaders(uri, headers: {
                                         'Content-Type': 'application/json',
-                                        if (ApiService.token != null)
-                                          'Authorization': 'Bearer ${ApiService.token}',
-                                      },
+                                        if (ApiService.token case final t?)
+                                          'Authorization': 'Bearer $t',
+                                      }),
                                       body: jsonEncode({'model': model}),
                                     ).timeout(const Duration(minutes: 5));
 
@@ -1928,13 +1934,14 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
 
                                   try {
                                     final uri = Uri.parse('${ApiService.baseUrl}/api/llm/models/delete');
+                                    ApiService.logDirectHttp('POST', uri);
                                     final response = await http.post(
                                       uri,
-                                      headers: {
+                                      headers: ApiService.mergeTunnelHeaders(uri, headers: {
                                         'Content-Type': 'application/json',
-                                        if (ApiService.token != null)
-                                          'Authorization': 'Bearer ${ApiService.token}',
-                                      },
+                                        if (ApiService.token case final t?)
+                                          'Authorization': 'Bearer $t',
+                                      }),
                                       body: jsonEncode({'model': model}),
                                     );
 
@@ -2034,7 +2041,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                       value: temperature,
                       min: 0.0,
                       max: 2.0,
-                      step: 0.1,
+                      divisions: 20,
                       onChanged: (value) {
                         setState(() {
                           temperature = value;
@@ -2055,7 +2062,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                       value: topP,
                       min: 0.0,
                       max: 1.0,
-                      step: 0.05,
+                      divisions: 20,
                       onChanged: (value) {
                         setState(() {
                           topP = value;
@@ -2076,7 +2083,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                       value: maxTokens.toDouble(),
                       min: 128,
                       max: 4096,
-                      step: 128,
+                      divisions: 31,
                       onChanged: (value) {
                         setState(() {
                           maxTokens = value.toInt();
@@ -2097,7 +2104,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                       value: repeatPenalty,
                       min: 0.5,
                       max: 2.0,
-                      step: 0.1,
+                      divisions: 15,
                       onChanged: (value) {
                         setState(() {
                           repeatPenalty = value;

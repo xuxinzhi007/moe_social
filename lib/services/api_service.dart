@@ -178,6 +178,22 @@ class ApiService {
     return _developmentUrl;
   }
 
+  /// 与 [_performRequest] 相同：给任意 `Uri`（含 LLM 页里 `package:http` 直连）合并 ngrok 跳过页头。
+  static Map<String, String> mergeTunnelHeaders(
+    Uri uri, {
+    Map<String, String>? headers,
+  }) {
+    return {
+      ...tunnelBypassHeadersForUrl(uri.toString()),
+      if (headers != null) ...headers,
+    };
+  }
+
+  /// LLM 等使用 `http.get`/`http.post` 全路径 URL 时不会经过 [_performRequest]，默认没有「📡 API Request」日志。
+  static void logDirectHttp(String method, Uri uri) {
+    _log('📡 API Request: $method $uri');
+  }
+
   /// ngrok 免费域名可能返回 HTML 拦截页；REST/WS 握手需带此头才能稳定拿到 JSON。
   static Map<String, String> tunnelBypassHeadersForUrl(String url) {
     final uri = Uri.tryParse(url.trim());

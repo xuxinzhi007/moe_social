@@ -8,6 +8,7 @@ import '../../models/ai_memory.dart';
 import '../../models/ai_memory_profile.dart';
 import '../../models/ai_memory_settings.dart';
 import '../../services/ai_db_service.dart';
+import '../../services/api_service.dart';
 import '../../services/llm_endpoint_config.dart';
 import '../../services/memory_agent_service.dart';
 
@@ -67,7 +68,10 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
   Future<List<String>> _loadModels() async {
     try {
       final uri = await LlmEndpointConfig.modelsUri();
-      final response = await http.get(uri).timeout(const Duration(seconds: 10));
+      ApiService.logDirectHttp('GET', uri);
+      final response = await http
+          .get(uri, headers: ApiService.mergeTunnelHeaders(uri))
+          .timeout(const Duration(seconds: 10));
       if (response.statusCode != 200) return [widget.agent.modelName];
       final data = jsonDecode(utf8.decode(response.bodyBytes));
       if (data is Map && data['models'] is List) {
