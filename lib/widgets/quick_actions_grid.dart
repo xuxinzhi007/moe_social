@@ -25,8 +25,8 @@ class QuickActionsGrid extends StatelessWidget {
         'onTap': () => Navigator.pushNamed(context, '/cloud-gallery'),
       },
       {
-        'icon': Icons.people,
-        'label': '好友',
+        'icon': Icons.contacts_rounded,
+        'label': '联系人',
         'color': const Color(0xFFFF6B6B),
         'onTap': () => Navigator.pushNamed(context, '/friends'),
       },
