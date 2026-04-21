@@ -219,7 +219,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       case 'pending_out':
         return '好友申请已发送';
       case 'pending_in':
-        return '对方向你发了申请（在好友页处理）';
+        return '对方向你发了申请（在联系人页处理）';
       default:
         return '发好友申请';
     }

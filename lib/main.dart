@@ -53,7 +53,6 @@ import 'providers/checkin_provider.dart';
 import 'providers/user_level_provider.dart';
 import 'providers/game_provider.dart';
 import 'pages/feed/home_page.dart';
-import 'pages/interaction/interaction_page.dart';
 import 'pages/community/community_home_page.dart';
 
 
@@ -336,7 +335,14 @@ class _MyAppState extends State<MyApp> {
         },
         '/scan': (context) => const ScanPage(),
         '/user-qr-code': (context) => const UserQrCodePage(),
-        '/interaction': (context) => InteractionPage(currentUserId: AuthService.currentUser ?? ''),
+        '/interaction': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          var tab = 0;
+          if (args is Map && args['tab'] is int) {
+            tab = (args['tab'] as int).clamp(0, 2);
+          }
+          return FriendsPage(initialHubTabIndex: tab);
+        },
       },
     );
   }
@@ -354,7 +360,6 @@ class _MainPageState extends State<MainPage> {
   late final List<Widget Function()> _pageBuilders = [
     () => const HomePage(),
     () => const FriendsPage(),
-    () => InteractionPage(currentUserId: AuthService.currentUser ?? ''),
     () => const CommunityHomePage(),
     () => const DiscoverPage(),
     () => const ProfilePage(),
@@ -396,18 +401,13 @@ class _MainPageState extends State<MainPage> {
             label: '首页',
           ),
           NavigationDestination(
-            icon: Icon(Icons.people_outline_rounded),
-            selectedIcon: Icon(Icons.people_rounded),
-            label: '好友',
+            icon: Icon(Icons.contacts_outlined),
+            selectedIcon: Icon(Icons.contacts_rounded),
+            label: '联系人',
           ),
           NavigationDestination(
-            icon: Icon(Icons.favorite_outline),
-            selectedIcon: Icon(Icons.favorite),
-            label: '互动',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.people_alt_outlined),
-            selectedIcon: Icon(Icons.people_alt_rounded),
+            icon: Icon(Icons.forum_outlined),
+            selectedIcon: Icon(Icons.forum_rounded),
             label: '社区',
           ),
           NavigationDestination(
