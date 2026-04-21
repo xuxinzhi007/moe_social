@@ -44,9 +44,9 @@ class User {
   // 从JSON创建User实例（后端返回格式）
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'] as String,
-      username: json['username'] as String,
-      email: json['email'] as String,
+      id: json['id'] as String? ?? '',
+      username: json['username'] as String? ?? '',
+      email: json['email'] as String? ?? '',
       moeNo: json['moe_no'] as String? ?? '',
       avatar: json['avatar'] as String? ?? '',
       signature: json['signature'] as String? ?? '',
@@ -59,8 +59,8 @@ class User {
       balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
       inventory: _parseInventory(json['inventory']),
       equippedFrameId: json['equipped_frame_id'] as String?,
-      createdAt: json['created_at'] as String,
-      updatedAt: json['updated_at'] as String,
+      createdAt: json['created_at'] as String? ?? '',
+      updatedAt: json['updated_at'] as String? ?? '',
     );
   }
 
