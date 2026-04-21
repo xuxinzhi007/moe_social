@@ -1,13 +1,14 @@
+// 扫雷游戏主页面
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../auth_service.dart';
 import '../../widgets/moe_toast.dart';
-import '../commerce/gacha_page.dart';
-import 'minesweeper_lobby_page.dart';
+import 'minesweeper_game_page.dart';
+import 'minesweeper_config.dart';
 import '../../widgets/fade_in_up.dart';
 
-class GameLobbyPage extends StatelessWidget {
-  const GameLobbyPage({super.key});
+class MinesweeperLobbyPage extends StatelessWidget {
+  const MinesweeperLobbyPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +25,7 @@ class GameLobbyPage extends StatelessWidget {
               width: 300,
               height: 300,
               decoration: BoxDecoration(
-                color: const Color(0xFF7F7FD5).withOpacity(0.1),
+                color: const Color(0xFF4CAF50).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
             ),
@@ -36,7 +37,7 @@ class GameLobbyPage extends StatelessWidget {
               width: 250,
               height: 250,
               decoration: BoxDecoration(
-                color: const Color(0xFFFF9A9E).withOpacity(0.1),
+                color: const Color(0xFF2196F3).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
             ),
@@ -50,47 +51,55 @@ class GameLobbyPage extends StatelessWidget {
                   delegate: SliverChildListDelegate([
                     FadeInUp(
                       delay: const Duration(milliseconds: 100),
-                      child: _buildSectionTitle('热门娱乐'),
+                      child: _buildSectionTitle('扫雷游戏'),
                     ),
                     const SizedBox(height: 12),
                     FadeInUp(
                       delay: const Duration(milliseconds: 200),
-                      child: _buildGameCard(
+                      child: _buildDifficultyCard(
                         context,
-                        title: '扫雷游戏',
-                        subtitle: '经典益智 · 三个难度等级',
-                        description: '挑战你的逻辑思维，在不同难度下找出所有地雷',
-                        icon: Icons.games_rounded,
+                        title: '初级',
+                        subtitle: '9x9 网格 · 10 个地雷',
+                        description: '适合初学者的难度，上手简单',
+                        icon: Icons.star_outline_rounded,
                         gradient: const [Color(0xFF4CAF50), Color(0xFF81C784)],
-                        onTap: () => _enterMinesweeperGame(context),
+                        difficulty: GameDifficulty.easy,
                       ),
                     ),
                     const SizedBox(height: 12),
                     FadeInUp(
                       delay: const Duration(milliseconds: 300),
-                      child: _buildGameCard(
+                      child: _buildDifficultyCard(
                         context,
-                        title: '扭蛋机',
-                        subtitle: '5元/次 · 随机获得限定道具',
-                        description: '碰碰运气，说不定出 SSR！',
-                        icon: Icons.egg_alt_rounded,
-                        gradient: const [Color(0xFFFF9A9E), Color(0xFFA18CD1)],
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => GachaPage()),
-                          );
-                        },
+                        title: '中级',
+                        subtitle: '16x16 网格 · 40 个地雷',
+                        description: '适合有一定经验的玩家',
+                        icon: Icons.star_half_rounded,
+                        gradient: const [Color(0xFF2196F3), Color(0xFF64B5F6)],
+                        difficulty: GameDifficulty.medium,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    FadeInUp(
+                      delay: const Duration(milliseconds: 400),
+                      child: _buildDifficultyCard(
+                        context,
+                        title: '高级',
+                        subtitle: '30x16 网格 · 99 个地雷',
+                        description: '挑战你的极限，适合高手',
+                        icon: Icons.star_rounded,
+                        gradient: const [Color(0xFFFF9800), Color(0xFFFFB74D)],
+                        difficulty: GameDifficulty.hard,
                       ),
                     ),
                     const SizedBox(height: 20),
                     FadeInUp(
-                      delay: const Duration(milliseconds: 400),
+                      delay: const Duration(milliseconds: 500),
                       child: _buildSectionTitle('游戏规则'),
                     ),
                     const SizedBox(height: 12),
                     FadeInUp(
-                      delay: const Duration(milliseconds: 500),
+                      delay: const Duration(milliseconds: 600),
                       child: _buildRulesCard(),
                     ),
                   ]),
@@ -115,13 +124,13 @@ class GameLobbyPage extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+            colors: [Color(0xFF4CAF50), Color(0xFF81C784)],
           ),
         ),
         child: const SafeArea(
           child: Center(
             child: Text(
-              '娱乐大厅',
+              '扫雷游戏',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -145,19 +154,21 @@ class GameLobbyPage extends StatelessWidget {
     );
   }
 
-  Widget _buildGameCard(
-    BuildContext context, {
-    required String title,
-    required String subtitle,
-    required String description,
-    required IconData icon,
-    required List<Color> gradient,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildDifficultyCard(
+    BuildContext context,
+    {
+      required String title,
+      required String subtitle,
+      required String description,
+      required IconData icon,
+      required List<Color> gradient,
+      required GameDifficulty difficulty
+    }
+  ) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        onTap();
+        _enterGame(context, difficulty);
       },
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -281,10 +292,10 @@ class GameLobbyPage extends StatelessWidget {
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: const Color(0xFF7F7FD5).withOpacity(0.1),
+              color: const Color(0xFF4CAF50).withOpacity(0.1),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, size: 16, color: const Color(0xFF7F7FD5)),
+            child: Icon(icon, size: 16, color: const Color(0xFF4CAF50)),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -296,7 +307,7 @@ class GameLobbyPage extends StatelessWidget {
     );
   }
 
-  void _enterMinesweeperGame(BuildContext context) {
+  void _enterGame(BuildContext context, GameDifficulty difficulty) {
     if (AuthService.currentUser == null) {
       MoeToast.error(context, '请先登录后再进入游戏');
       return;
@@ -304,7 +315,7 @@ class GameLobbyPage extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const MinesweeperLobbyPage(),
+        builder: (context) => MinesweeperGamePage(difficulty: difficulty),
       ),
     );
   }
