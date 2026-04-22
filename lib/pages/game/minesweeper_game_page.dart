@@ -28,6 +28,12 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
   late Timer _timer;
   late int _elapsedSeconds;
   late bool _firstClick;
+  late bool _isLongPressing;
+  late Cell? _longPressCell;
+  late bool _isTapping;
+  late Cell? _tappedCell;
+  late Cell? _explodingCell;
+  late bool _showWinAnimation;
 
   @override
   void initState() {
@@ -52,6 +58,12 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
     _stopwatch = Stopwatch();
     _elapsedSeconds = 0;
     _firstClick = true;
+    _isLongPressing = false;
+    _longPressCell = null;
+    _isTapping = false;
+    _tappedCell = null;
+    _explodingCell = null;
+    _showWinAnimation = false;
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_stopwatch.isRunning && !_gameOver && !_gameWon) {
@@ -140,6 +152,8 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
         _gameOver = true;
         _stopwatch.stop();
         _revealAllMines();
+        // 地雷引爆动画
+        _playMineExplosionAnimation(row, col);
         MoeToast.error(context, '游戏结束！踩到地雷了');
       } else if (_board[row][col].neighborMines! == 0) {
         // 自动展开空白格子
@@ -192,9 +206,54 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
     if (_cellsRevealed == _totalCells - _settings.mines) {
       _gameWon = true;
       _stopwatch.stop();
+      // 游戏胜利动画
+      _playWinAnimation();
       MoeToast.success(context, '恭喜你获胜！');
       _saveScore();
     }
+  }
+
+  void _playMineExplosionAnimation(int row, int col) {
+    // 这里可以实现地雷引爆的动画效果
+    // 例如：震动效果、闪烁效果、粒子效果等
+    // 由于Flutter的动画系统限制，这里使用简单的视觉反馈
+    setState(() {
+      // 可以添加一个爆炸效果的状态
+      _explodingCell = cellAt(row, col);
+    });
+    
+    // 短暂延迟后清除爆炸状态
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        setState(() {
+          _explodingCell = null;
+        });
+      }
+    });
+  }
+
+  void _playWinAnimation() {
+    // 这里可以实现游戏胜利的动画效果
+    // 例如：庆祝动画、闪烁效果、粒子效果等
+    setState(() {
+      _showWinAnimation = true;
+    });
+    
+    // 短暂延迟后清除胜利动画状态
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _showWinAnimation = false;
+        });
+      }
+    });
+  }
+
+  Cell? cellAt(int row, int col) {
+    if (_isValidCell(row, col)) {
+      return _board[row][col];
+    }
+    return null;
   }
 
   void _saveScore() {
@@ -236,17 +295,17 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: _getBackgroundColor(),
       appBar: AppBar(
         title: Text('扫雷 - ${_settings.name}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF4CAF50), Color(0xFF81C784)],
+              colors: _getAppBarGradient(),
             ),
           ),
         ),
@@ -344,10 +403,40 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
                           final cell = _board[row][col];
 
                           return GestureDetector(
-                            onTap: () => _revealCell(row, col),
+                            onTap: () {
+                              // 点击时的视觉反馈
+                              setState(() {
+                                _isTapping = true;
+                                _tappedCell = cell;
+                              });
+                              // 短暂延迟后执行操作
+                              Future.delayed(const Duration(milliseconds: 100), () {
+                                if (mounted) {
+                                  setState(() {
+                                    _isTapping = false;
+                                    _tappedCell = null;
+                                  });
+                                  _revealCell(row, col);
+                                }
+                              });
+                            },
                             onLongPress: () {
                               HapticFeedback.mediumImpact();
                               _toggleFlag(row, col);
+                            },
+                            onLongPressStart: (_) {
+                              // 长按开始时的视觉反馈
+                              setState(() {
+                                _isLongPressing = true;
+                                _longPressCell = cell;
+                              });
+                            },
+                            onLongPressEnd: (_) {
+                              // 长按结束时的视觉反馈
+                              setState(() {
+                                _isLongPressing = false;
+                                _longPressCell = null;
+                              });
                             },
                             child: _buildCell(cell),
                           );
@@ -489,83 +578,186 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
   }
 
   Widget _statusItem(IconData icon, String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
+    // 为倒计时添加紧迫感动画
+    bool isTimer = icon == Icons.timer_rounded;
+    Color? dynamicColor = color;
+    double scale = 1.0;
+    
+    if (isTimer && _elapsedSeconds > 60) {
+      // 超过1分钟时开始添加紧迫感动画
+      int remainingTime = 300 - _elapsedSeconds; // 5分钟倒计时
+      if (remainingTime < 60) {
+        // 最后1分钟，颜色变为红色
+        dynamicColor = Colors.red;
+        // 添加脉动效果
+        scale = 1.0 + (0.1 * (1 - remainingTime / 60));
+      } else if (remainingTime < 120) {
+        // 最后2分钟，颜色变为橙色
+        dynamicColor = Colors.orange;
+      }
+    }
+    
+    return Transform.scale(
+      scale: isTimer ? scale : 1.0,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: dynamicColor!.withOpacity(0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
+          ],
+          border: Border.all(
+            color: dynamicColor.withOpacity(0.3),
+            width: 1,
           ),
-        ],
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: dynamicColor),
+            const SizedBox(width: 8),
+            Text(
+              text,
+              style: TextStyle(
+                color: dynamicColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildCell(Cell cell) {
     if (cell.isRevealed!) {
-      if (cell.isMine!) {
-        return _cellContainer(
-          color: Colors.red.shade200,
-          child: Icon(
-            Icons.error,
-            color: Colors.red.shade600,
-            size: 20,
-          ),
-        );
-      } else if (cell.neighborMines! > 0) {
-        return _cellContainer(
-          color: Colors.grey.shade100,
-          child: Text(
-            '${cell.neighborMines}',
-            style: TextStyle(
-              color: _getNumberColor(cell.neighborMines!),
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+      return FadeTransition(
+        opacity: AlwaysStoppedAnimation(1.0),
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: _getAnimationDuration()),
+          decoration: BoxDecoration(
+            color: cell.isMine! ? Colors.red.shade200 : (cell.neighborMines! > 0 ? Colors.grey.shade100 : Colors.grey.shade200),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: Colors.grey.shade400,
+              width: 1,
             ),
           ),
-        );
-      } else {
-        return _cellContainer(
-          color: Colors.grey.shade200,
-          child: const SizedBox(),
-        );
-      }
+          child: Center(
+            child: cell.isMine! ?
+              Icon(
+                Icons.error,
+                color: Colors.red.shade600,
+                size: _getIconSize(),
+              ) :
+              cell.neighborMines! > 0 ?
+                Text(
+                  '${cell.neighborMines}',
+                  style: TextStyle(
+                    color: _getNumberColor(cell.neighborMines!),
+                    fontWeight: FontWeight.bold,
+                    fontSize: _getNumberFontSize(),
+                  ),
+                ) :
+                const SizedBox(),
+          ),
+        ),
+      );
     } else if (cell.isFlagged!) {
       return _cellContainer(
         color: Colors.yellow.shade100,
         child: Icon(
           Icons.flag_rounded,
           color: Colors.red,
-          size: 20,
+          size: _getIconSize(),
         ),
+      );
+    } else if (_isLongPressing && _longPressCell == cell) {
+      // 长按状态的视觉反馈
+      return _cellContainer(
+        color: Colors.yellow.shade200,
+        child: Icon(
+          Icons.flag_rounded,
+          color: Colors.red.withOpacity(0.5),
+          size: _getIconSize(),
+        ),
+      );
+    } else if (_isTapping && _tappedCell == cell) {
+      // 点击状态的视觉反馈
+      return _cellContainer(
+        color: Colors.grey.shade400,
+        child: const SizedBox(),
       );
     } else {
       return _cellContainer(
         color: Colors.grey.shade300,
         child: const SizedBox(),
       );
+    }
+  }
+
+  double _getNumberFontSize() {
+    // 根据难度模式和屏幕尺寸自适应调整字体大小
+    switch (widget.difficulty) {
+      case GameDifficulty.easy:
+        return 16.0;
+      case GameDifficulty.medium:
+        return 14.0;
+      case GameDifficulty.hard:
+        return 12.0;
+    }
+  }
+
+  double _getIconSize() {
+    // 根据难度模式和屏幕尺寸自适应调整图标大小
+    switch (widget.difficulty) {
+      case GameDifficulty.easy:
+        return 20.0;
+      case GameDifficulty.medium:
+        return 18.0;
+      case GameDifficulty.hard:
+        return 16.0;
+    }
+  }
+
+  Color _getBackgroundColor() {
+    // 根据难度模式返回不同的背景颜色
+    switch (widget.difficulty) {
+      case GameDifficulty.easy:
+        return const Color(0xFFF5F7FA); // 轻松的浅蓝色
+      case GameDifficulty.medium:
+        return const Color(0xFFF0F2F5); // 适中的灰色
+      case GameDifficulty.hard:
+        return const Color(0xFFE8EAED); // 紧张的深灰色
+    }
+  }
+
+  List<Color> _getAppBarGradient() {
+    // 根据难度模式返回不同的AppBar渐变
+    switch (widget.difficulty) {
+      case GameDifficulty.easy:
+        return const [Color(0xFF4CAF50), Color(0xFF81C784)]; // 绿色渐变
+      case GameDifficulty.medium:
+        return const [Color(0xFF2196F3), Color(0xFF64B5F6)]; // 蓝色渐变
+      case GameDifficulty.hard:
+        return const [Color(0xFFF44336), Color(0xFFE57373)]; // 红色渐变
+    }
+  }
+
+  int _getAnimationDuration() {
+    // 根据难度模式返回不同的动画持续时间
+    switch (widget.difficulty) {
+      case GameDifficulty.easy:
+        return 300; // 简单模式，动画较慢
+      case GameDifficulty.medium:
+        return 200; // 中等模式，动画适中
+      case GameDifficulty.hard:
+        return 100; // 困难模式，动画较快，增加紧张感
     }
   }
 
