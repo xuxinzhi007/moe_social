@@ -214,38 +214,14 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
   }
 
   void _playMineExplosionAnimation(int row, int col) {
-    // 这里可以实现地雷引爆的动画效果
-    // 例如：震动效果、闪烁效果、粒子效果等
-    // 由于Flutter的动画系统限制，这里使用简单的视觉反馈
     setState(() {
-      // 可以添加一个爆炸效果的状态
       _explodingCell = cellAt(row, col);
-    });
-    
-    // 短暂延迟后清除爆炸状态
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        setState(() {
-          _explodingCell = null;
-        });
-      }
     });
   }
 
   void _playWinAnimation() {
-    // 这里可以实现游戏胜利的动画效果
-    // 例如：庆祝动画、闪烁效果、粒子效果等
     setState(() {
       _showWinAnimation = true;
-    });
-    
-    // 短暂延迟后清除胜利动画状态
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _showWinAnimation = false;
-        });
-      }
     });
   }
 
