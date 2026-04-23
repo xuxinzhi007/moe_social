@@ -34,6 +34,8 @@ class _GiftSelectorState extends State<GiftSelector>
   Gift? _selectedGift;
   /// 后端 `/api/gifts`；非空时「热门」Tab 优先展示商城数据
   List<Gift> _serverGifts = [];
+  /// 已结束一次拉取（成功或失败），用于提示「无商城数据」
+  bool _giftCatalogResolved = false;
 
   @override
   void initState() {
@@ -45,20 +47,65 @@ class _GiftSelectorState extends State<GiftSelector>
 
   Future<void> _loadGiftCatalog() async {
     try {
-      final rows = await ApiService.getGifts(page: 1, pageSize: 80);
+      final uid = AuthService.currentUser;
+      final rows = await ApiService.getGifts(
+        page: 1,
+        pageSize: 80,
+        viewerUserId: uid,
+      );
       if (!mounted) return;
       final parsed = rows.map(Gift.fromCatalogApi).toList();
       if (parsed.isNotEmpty) {
-        setState(() => _serverGifts = parsed);
+        setState(() {
+          _serverGifts = parsed;
+          _giftCatalogResolved = true;
+        });
+      } else {
+        setState(() => _giftCatalogResolved = true);
       }
     } catch (_) {
-      // 保持内置礼物列表，避免打断选礼流程
+      if (mounted) {
+        setState(() => _giftCatalogResolved = true);
+      }
     }
   }
 
   List<Gift> _popularTabGifts() {
     if (_serverGifts.isNotEmpty) return _serverGifts;
     return Gift.getPopularGifts(limit: 12);
+  }
+
+  Future<void> _purchaseGift(Gift gift) async {
+    final userId = AuthService.currentUser;
+    if (userId == null) {
+      ErrorHandler.showError(context, '请先登录');
+      return;
+    }
+    if (!gift.canSendViaBackendApi) return;
+    if (_userBalance < gift.price) {
+      ErrorHandler.showError(context, '余额不足，请先充值');
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      await ApiService.purchaseGift(
+        userId: userId,
+        giftId: gift.id,
+        quantity: 1,
+      );
+      await _loadGiftCatalog();
+      final u = await ApiService.getUserInfo(userId);
+      if (mounted) {
+        setState(() => _userBalance = u.balance);
+        ErrorHandler.showSuccess(context, '已购买 ${gift.name} ×1');
+      }
+    } catch (e) {
+      if (mounted) {
+        ErrorHandler.handleException(context, e as Exception);
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -88,8 +135,20 @@ class _GiftSelectorState extends State<GiftSelector>
       return;
     }
 
-    if (_userBalance < gift.price) {
-      ErrorHandler.showError(context, '余额不足，请先充值');
+    if (!gift.canSendViaBackendApi) {
+      ErrorHandler.showError(
+        context,
+        '该礼物是客户端演示数据，服务端没有对应商品（礼物 id 须为数字）。'
+        '请确认「热门」里已加载商城礼物后再送；或让管理员在库里配置 /api/gifts。',
+      );
+      return;
+    }
+
+    if (gift.ownedQuantity < 1) {
+      ErrorHandler.showError(
+        context,
+        '背包里没有该礼物。请先在「心意」用余额购买，或点格子右下角 + 购买。',
+      );
       return;
     }
 
@@ -241,6 +300,19 @@ class _GiftSelectorState extends State<GiftSelector>
             ),
           ),
 
+          if (_giftCatalogResolved && _serverGifts.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+              child: Text(
+                '未从服务器加载到礼物列表，当前「热门」为演示样式；上架后请先在「心意」或右下角 + 购买再赠送。',
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.35,
+                  color: Colors.orange.shade900,
+                ),
+              ),
+            ),
+
           // 礼物网格
           Expanded(
             child: TabBarView(
@@ -283,14 +355,27 @@ class _GiftSelectorState extends State<GiftSelector>
       itemCount: gifts.length,
       itemBuilder: (context, index) {
         final gift = gifts[index];
-        final canAfford = _userBalance >= gift.price;
+        final canBuyOne = _userBalance >= gift.price;
+        final canSendOut =
+            gift.canSendViaBackendApi && gift.ownedQuantity >= 1;
         final isSelected = _selectedGift?.id == gift.id;
+        final backendOk = gift.canSendViaBackendApi;
 
         return GestureDetector(
           onTap: () {
             if (_isLoading) return;
-            if (!canAfford) {
-              ErrorHandler.showError(context, '余额不足，可先充值');
+            if (!backendOk) {
+              ErrorHandler.showError(
+                context,
+                '该礼物未在服务端登记，无法赠送。请使用「热门」里带数字编号的商城礼物。',
+              );
+              return;
+            }
+            if (!canSendOut) {
+              ErrorHandler.showError(
+                context,
+                '背包数量为 0，无法赠送。请点右下角 + 用心意余额购买后再送。',
+              );
               return;
             }
             GiftHapticFeedback.forGiftSelection(gift);
@@ -301,12 +386,14 @@ class _GiftSelectorState extends State<GiftSelector>
             decoration: BoxDecoration(
               color: isSelected
                   ? gift.color.withValues(alpha: 0.2)
-                  : (canAfford ? Colors.white : Colors.grey[100]),
+                  : (canSendOut ? Colors.white : Colors.grey[100]),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
                     ? gift.color
-                    : (canAfford ? Colors.grey[300]! : Colors.grey[200]!),
+                    : (canSendOut
+                        ? Colors.grey[300]!
+                        : Colors.grey[200]!),
                 width: isSelected ? 2 : 1,
               ),
               boxShadow: isSelected
@@ -340,7 +427,7 @@ class _GiftSelectorState extends State<GiftSelector>
                           gift.emoji,
                           style: TextStyle(
                             fontSize: 28,
-                            color: canAfford ? null : Colors.grey[400],
+                            color: canSendOut ? null : Colors.grey[400],
                           ),
                         ),
                       ),
@@ -352,7 +439,8 @@ class _GiftSelectorState extends State<GiftSelector>
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: canAfford ? Colors.grey[800] : Colors.grey[400],
+                          color:
+                              canSendOut ? Colors.grey[800] : Colors.grey[400],
                         ),
                         textAlign: TextAlign.center,
                         maxLines: 1,
@@ -367,7 +455,7 @@ class _GiftSelectorState extends State<GiftSelector>
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: canAfford
+                          color: canBuyOne
                               ? gift.color.withValues(alpha: 0.1)
                               : Colors.grey[200],
                           borderRadius: BorderRadius.circular(8),
@@ -377,13 +465,75 @@ class _GiftSelectorState extends State<GiftSelector>
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: canAfford ? gift.color : Colors.grey[400],
+                            color: canBuyOne ? gift.color : Colors.grey[400],
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
+
+                if (backendOk)
+                  Positioned(
+                    top: 2,
+                    left: 2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.deepPurple.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                            color: Colors.deepPurple.shade100, width: 0.5),
+                      ),
+                      child: Text(
+                        '×${gift.ownedQuantity}',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.deepPurple.shade800,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                if (backendOk)
+                  Positioned(
+                    right: 2,
+                    bottom: 2,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _isLoading
+                            ? null
+                            : () {
+                                if (!canBuyOne) {
+                                  ErrorHandler.showError(
+                                      context, '余额不足，请先充值');
+                                  return;
+                                }
+                                _purchaseGift(gift);
+                              },
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: canBuyOne
+                                ? const Color(0xFF7F7FD5).withValues(alpha: 0.15)
+                                : Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            Icons.add_rounded,
+                            size: 16,
+                            color: canBuyOne
+                                ? const Color(0xFF7F7FD5)
+                                : Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
 
                 // 加载指示器
                 if (isSelected && _isLoading)
@@ -399,19 +549,14 @@ class _GiftSelectorState extends State<GiftSelector>
                     ),
                   ),
 
-                // 买不起的遮罩
-                if (!canAfford)
+                // 背包为 0 时的弱提示（仍可点 + 购买）
+                if (backendOk && !canSendOut)
                   Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.lock,
-                          color: Colors.grey,
-                          size: 16,
+                    child: IgnorePointer(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                     ),

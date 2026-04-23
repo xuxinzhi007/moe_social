@@ -131,7 +131,12 @@ class _FriendsPageState extends State<FriendsPage>
       _catalogError = null;
     });
     try {
-      final rows = await ApiService.getGifts(page: 1, pageSize: 60);
+      final me = AuthService.currentUser;
+      final rows = await ApiService.getGifts(
+        page: 1,
+        pageSize: 60,
+        viewerUserId: me,
+      );
       if (!mounted) return;
       setState(() {
         _catalogGifts = rows.map(Gift.fromCatalogApi).toList();
@@ -143,6 +148,25 @@ class _FriendsPageState extends State<FriendsPage>
         _catalogLoading = false;
         _catalogError = _apiErr(e);
       });
+    }
+  }
+
+  Future<void> _purchaseCatalogGift(Gift gift) async {
+    final me = AuthService.currentUser;
+    if (me == null) {
+      MoeToast.error(context, '请先登录');
+      return;
+    }
+    if (!gift.canSendViaBackendApi) {
+      MoeToast.show(context, '请等待商城礼物加载完成后再购买');
+      return;
+    }
+    try {
+      await ApiService.purchaseGift(userId: me, giftId: gift.id, quantity: 1);
+      if (mounted) MoeToast.success(context, '已购买 ${gift.name} ×1');
+      await _loadGiftCatalog();
+    } catch (e) {
+      if (mounted) MoeToast.error(context, _apiErr(e));
     }
   }
 
@@ -793,36 +817,92 @@ class _FriendsPageState extends State<FriendsPage>
                             onTap: () {
                               MoeToast.show(
                                 context,
-                                '${gift.name} · ¥${gift.price.toStringAsFixed(2)}',
+                                '${gift.name} · ¥${gift.price.toStringAsFixed(2)} · 拥有×${gift.ownedQuantity}',
                               );
                             },
                             child: Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                              padding: const EdgeInsets.all(6),
+                              child: Stack(
+                                clipBehavior: Clip.none,
                                 children: [
-                                  Text(
-                                    gift.emoji,
-                                    style: const TextStyle(fontSize: 28),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    gift.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        top: 10, bottom: 14),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          gift.emoji,
+                                          style:
+                                              const TextStyle(fontSize: 26),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          gift.name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        Text(
+                                          '¥${gift.price.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    textAlign: TextAlign.center,
                                   ),
-                                  Text(
-                                    '¥${gift.price.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.grey[600],
+                                  if (gift.canSendViaBackendApi)
+                                    Positioned(
+                                      top: 0,
+                                      left: 0,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 4, vertical: 1),
+                                        decoration: BoxDecoration(
+                                          color: Colors.deepPurple.shade50,
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          '×${gift.ownedQuantity}',
+                                          style: TextStyle(
+                                            fontSize: 8,
+                                            fontWeight: FontWeight.w800,
+                                            color:
+                                                Colors.deepPurple.shade800,
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                  if (gift.canSendViaBackendApi)
+                                    Positioned(
+                                      top: -2,
+                                      right: -2,
+                                      child: IconButton(
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(
+                                            minWidth: 28, minHeight: 28),
+                                        style: IconButton.styleFrom(
+                                          backgroundColor:
+                                              const Color(0xFF7F7FD5)
+                                                  .withValues(alpha: 0.12),
+                                          foregroundColor:
+                                              const Color(0xFF7F7FD5),
+                                        ),
+                                        icon: const Icon(Icons.add_rounded,
+                                            size: 16),
+                                        tooltip: '用心意余额购买 1 个',
+                                        onPressed: () =>
+                                            _purchaseCatalogGift(gift),
+                                      ),
+                                    ),
                                 ],
                               ),
                             ),

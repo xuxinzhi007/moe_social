@@ -10,6 +10,8 @@ class Gift {
   final Color color;
   final GiftCategory category;
   final int popularity; // 人气值，用于排序
+  /// 当前用户在背包中拥有数量（来自 `/api/gifts?user_id=`）
+  final int ownedQuantity;
 
   const Gift({
     required this.id,
@@ -20,6 +22,7 @@ class Gift {
     required this.color,
     required this.category,
     this.popularity = 0,
+    this.ownedQuantity = 0,
   });
 
   // 预定义的礼物列表
@@ -181,6 +184,12 @@ class Gift {
     ),
   ];
 
+  /// 后端送礼接口按 **数据库 uint 主键** 解析 [id]；内置 [defaultGifts] 使用英文 slug，不能用于扣费送礼。
+  bool get canSendViaBackendApi {
+    final n = int.tryParse(id);
+    return n != null && n > 0;
+  }
+
   /// 后端 `/api/gifts` 返回的条目（无 emoji 字段，用 [icon] 或占位）
   factory Gift.fromCatalogApi(Map<String, dynamic> json) {
     final rawIcon = json['icon'] as String? ?? '';
@@ -198,6 +207,7 @@ class Gift {
       color: const Color(0xFFFFB347),
       category: GiftCategory.special,
       popularity: 0,
+      ownedQuantity: (json['owned_quantity'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -215,6 +225,7 @@ class Gift {
         orElse: () => GiftCategory.emotion,
       ),
       popularity: json['popularity'] as int? ?? 0,
+      ownedQuantity: (json['owned_quantity'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -229,6 +240,7 @@ class Gift {
       'color': color.toARGB32(),
       'category': category.name,
       'popularity': popularity,
+      'owned_quantity': ownedQuantity,
     };
   }
 
@@ -277,10 +289,13 @@ class Gift {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is Gift && runtimeType == other.runtimeType && id == other.id;
+      other is Gift &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          ownedQuantity == other.ownedQuantity;
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => Object.hash(id, ownedQuantity);
 
   GiftLevel get level {
     if (price < 1.0) return GiftLevel.basic;

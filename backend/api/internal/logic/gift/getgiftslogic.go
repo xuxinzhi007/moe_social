@@ -27,8 +27,9 @@ func NewGetGiftsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetGifts
 
 func (l *GetGiftsLogic) GetGifts(req *types.GetGiftsReq) (resp *types.GetGiftsResp, err error) {
 	rpcResp, err := l.svcCtx.SuperRpcClient.GetGifts(l.ctx, &super.GetGiftsReq{
-		Page:     int32(req.Page),
-		PageSize: int32(req.PageSize),
+		Page:          int32(req.Page),
+		PageSize:      int32(req.PageSize),
+		ViewerUserId:  req.UserId,
 	})
 	if err != nil {
 		return nil, err
@@ -37,13 +38,14 @@ func (l *GetGiftsLogic) GetGifts(req *types.GetGiftsReq) (resp *types.GetGiftsRe
 	gifts := make([]types.Gift, len(rpcResp.Gifts))
 	for i, g := range rpcResp.Gifts {
 		gifts[i] = types.Gift{
-			Id:          strconv.FormatUint(g.Id, 10),
-			Name:        g.Name,
-			Price:       int(g.Price),
-			Icon:        g.Icon,
-			Description: g.Description,
-			CreatedAt:   g.CreatedAt,
-			UpdatedAt:   g.UpdatedAt,
+			Id:              strconv.FormatUint(g.Id, 10),
+			Name:            g.Name,
+			Price:           int(g.Price),
+			Icon:            g.Icon,
+			Description:     g.Description,
+			CreatedAt:       g.CreatedAt,
+			UpdatedAt:       g.UpdatedAt,
+			OwnedQuantity:   int(g.OwnedQuantity),
 		}
 	}
 
