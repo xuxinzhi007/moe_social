@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../auth_service.dart';
-import '../../models/gift.dart';
 import '../../models/user.dart';
 import '../../services/api_service.dart';
 import '../../widgets/gift_selector.dart';
@@ -27,7 +25,7 @@ enum _FriendGroup {
 }
 
 class FriendsPage extends StatefulWidget {
-  /// 底部「联系人」内子分区：0 好友 · 1 申请 · 2 心意（礼物目录）。
+  /// 底部「联系人」内子分区：0 好友 · 1 申请。
   final int initialHubTabIndex;
 
   const FriendsPage({super.key, this.initialHubTabIndex = 0});
@@ -60,10 +58,6 @@ class _FriendsPageState extends State<FriendsPage>
   final Object _fabHeroTag = Object();
 
   late final TabController _hubTabController;
-  List<Gift> _catalogGifts = [];
-  bool _catalogLoading = false;
-  String? _catalogError;
-  bool _giftCatalogTouched = false;
 
   @override
   void didChangeDependencies() {
@@ -77,30 +71,20 @@ class _FriendsPageState extends State<FriendsPage>
   @override
   void initState() {
     super.initState();
-    final initialTab = widget.initialHubTabIndex.clamp(0, 2);
+    final initialTab = widget.initialHubTabIndex.clamp(0, 1);
     _hubTabController = TabController(
-      length: 3,
+      length: 2,
       vsync: this,
       initialIndex: initialTab,
     );
     _hubTabController.addListener(_onHubTabChanged);
     _loadFriends();
-    if (initialTab == 2) {
-      _giftCatalogTouched = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _loadGiftCatalog();
-      });
-    }
   }
 
   void _onHubTabChanged() {
     if (!mounted) return;
     if (_hubTabController.indexIsChanging) return;
     setState(() {});
-    if (_hubTabController.index == 2 && !_giftCatalogTouched) {
-      _giftCatalogTouched = true;
-      _loadGiftCatalog();
-    }
   }
 
   @override
@@ -123,51 +107,6 @@ class _FriendsPageState extends State<FriendsPage>
   String _apiErr(Object e) {
     if (e is ApiException) return e.message;
     return '网络异常，请稍后重试';
-  }
-
-  Future<void> _loadGiftCatalog() async {
-    setState(() {
-      _catalogLoading = true;
-      _catalogError = null;
-    });
-    try {
-      final me = AuthService.currentUser;
-      final rows = await ApiService.getGifts(
-        page: 1,
-        pageSize: 60,
-        viewerUserId: me,
-      );
-      if (!mounted) return;
-      setState(() {
-        _catalogGifts = rows.map(Gift.fromCatalogApi).toList();
-        _catalogLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _catalogLoading = false;
-        _catalogError = _apiErr(e);
-      });
-    }
-  }
-
-  Future<void> _purchaseCatalogGift(Gift gift) async {
-    final me = AuthService.currentUser;
-    if (me == null) {
-      MoeToast.error(context, '请先登录');
-      return;
-    }
-    if (!gift.canSendViaBackendApi) {
-      MoeToast.show(context, '请等待商城礼物加载完成后再购买');
-      return;
-    }
-    try {
-      await ApiService.purchaseGift(userId: me, giftId: gift.id, quantity: 1);
-      if (mounted) MoeToast.success(context, '已购买 ${gift.name} ×1');
-      await _loadGiftCatalog();
-    } catch (e) {
-      if (mounted) MoeToast.error(context, _apiErr(e));
-    }
   }
 
   Future<void> _acceptIncomingRequest(String requestId) async {
@@ -523,7 +462,6 @@ class _FriendsPageState extends State<FriendsPage>
                   ],
                 ),
               ),
-              const Tab(text: '心意'),
             ],
           ),
         ),
@@ -697,242 +635,6 @@ class _FriendsPageState extends State<FriendsPage>
     );
   }
 
-  Widget _buildGiftsCatalogTab() {
-    return RefreshIndicator(
-      color: const Color(0xFF7F7FD5),
-      onRefresh: _loadGiftCatalog,
-      child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '礼物与余额',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '在「好友」列表中点礼物图标，即可向好友赠送（从钱包扣款）。此处为商城目录预览。',
-                    style: TextStyle(
-                      color: Colors.grey[700],
-                      height: 1.45,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ActionChip(
-                    avatar: const Icon(
-                      Icons.account_balance_wallet_outlined,
-                      size: 18,
-                    ),
-                    label: const Text('钱包与充值'),
-                    onPressed: () => Navigator.pushNamed(context, '/wallet'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_catalogLoading && _catalogGifts.isEmpty)
-            const SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(child: MoeLoading()),
-            )
-          else if (_catalogError != null && _catalogGifts.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _catalogError!,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton(
-                        onPressed: _loadGiftCatalog,
-                        child: const Text('重试'),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '礼物列表来自服务器，请检查网络或稍后重试',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            )
-          else ...[
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-              sliver: SliverToBoxAdapter(
-                child: Text(
-                  '礼物商城',
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final displayGifts = _catalogGifts;
-                    final w = constraints.maxWidth;
-                    if (w < 32) {
-                      return const SizedBox(height: 120);
-                    }
-                    if (displayGifts.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 32),
-                        child: Center(
-                          child: Text(
-                            '暂无礼物数据，请下拉刷新或重启应用以同步服务器礼物',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-                    return GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        childAspectRatio: 0.82,
-                      ),
-                      itemCount: displayGifts.length,
-                      itemBuilder: (context, index) {
-                        final gift = displayGifts[index];
-                        return Material(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
-                            onTap: () {
-                              MoeToast.show(
-                                context,
-                                '${gift.name} · ¥${gift.price.toStringAsFixed(2)} · 拥有×${gift.ownedQuantity}',
-                              );
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(6),
-                              child: Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        top: 10, bottom: 14),
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          gift.emoji,
-                                          style:
-                                              const TextStyle(fontSize: 26),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          gift.name,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        Text(
-                                          '¥${gift.price.toStringAsFixed(2)}',
-                                          style: TextStyle(
-                                            fontSize: 9,
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (gift.canSendViaBackendApi)
-                                    Positioned(
-                                      top: 0,
-                                      left: 0,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 4, vertical: 1),
-                                        decoration: BoxDecoration(
-                                          color: Colors.deepPurple.shade50,
-                                          borderRadius:
-                                              BorderRadius.circular(6),
-                                        ),
-                                        child: Text(
-                                          '×${gift.ownedQuantity}',
-                                          style: TextStyle(
-                                            fontSize: 8,
-                                            fontWeight: FontWeight.w800,
-                                            color:
-                                                Colors.deepPurple.shade800,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  if (gift.canSendViaBackendApi)
-                                    Positioned(
-                                      top: -2,
-                                      right: -2,
-                                      child: IconButton(
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(
-                                            minWidth: 28, minHeight: 28),
-                                        style: IconButton.styleFrom(
-                                          backgroundColor:
-                                              const Color(0xFF7F7FD5)
-                                                  .withValues(alpha: 0.12),
-                                          foregroundColor:
-                                              const Color(0xFF7F7FD5),
-                                        ),
-                                        icon: const Icon(Icons.add_rounded,
-                                            size: 16),
-                                        tooltip: '用心意余额购买 1 个',
-                                        onPressed: () =>
-                                            _purchaseCatalogGift(gift),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     if (AuthService.currentUser == null) {
@@ -1011,7 +713,6 @@ class _FriendsPageState extends State<FriendsPage>
               children: [
                 _buildFriendsListTab(),
                 _buildIncomingRequestsTab(),
-                _buildGiftsCatalogTab(),
               ],
             ),
           ),

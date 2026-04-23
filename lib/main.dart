@@ -361,7 +361,7 @@ class _MyAppState extends State<MyApp> {
           final args = ModalRoute.of(context)?.settings.arguments;
           var tab = 0;
           if (args is Map && args['tab'] is int) {
-            tab = (args['tab'] as int).clamp(0, 2);
+            tab = (args['tab'] as int).clamp(0, 1);
           }
           return FriendsPage(initialHubTabIndex: tab);
         },
