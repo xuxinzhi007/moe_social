@@ -1487,13 +1487,21 @@ class ApiService {
         .toList();
   }
 
-  /// GET `/api/gifts` — 礼物商城（互动中心 / 礼物选择器用）
+  /// GET `/api/gifts` — 礼物商城（可选 [viewerUserId] 带上背包 `owned_quantity`）
   static Future<List<Map<String, dynamic>>> getGifts({
     int page = 1,
     int pageSize = 50,
+    String? viewerUserId,
   }) async {
+    final q = <String>[
+      'page=$page',
+      'page_size=$pageSize',
+    ];
+    if (viewerUserId != null && viewerUserId.isNotEmpty) {
+      q.add('user_id=${Uri.encodeQueryComponent(viewerUserId)}');
+    }
     final result = await _request(
-      '/api/gifts?page=$page&page_size=$pageSize',
+      '/api/gifts?${q.join('&')}',
       method: 'GET',
     );
     final raw = result['data'];
@@ -1520,6 +1528,22 @@ class ApiService {
         'gift_id': giftId,
         'quantity': quantity,
         if (message.trim().isNotEmpty) 'message': message.trim(),
+      },
+    );
+  }
+
+  /// POST `/api/user/:user_id/gifts/purchase` — 用心意（余额）购买，增加背包数量
+  static Future<Map<String, dynamic>> purchaseGift({
+    required String userId,
+    required String giftId,
+    int quantity = 1,
+  }) async {
+    return await _request(
+      '/api/user/$userId/gifts/purchase',
+      method: 'POST',
+      body: {
+        'gift_id': giftId,
+        'quantity': quantity,
       },
     );
   }

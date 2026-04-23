@@ -130,8 +130,9 @@ func autoMigrate() error {
 		&model.CheckInReward{}, // 签到奖励配置表
 		&model.ExpLog{},        // 经验日志表
 		&model.FriendRequest{}, // 好友申请
-		&model.Gift{},          // 礼物表
-		&model.GiftRecord{},    // 礼物赠送记录表
+		&model.Gift{},            // 礼物表
+		&model.GiftRecord{},      // 礼物赠送记录表
+		&model.UserGiftStock{},   // 用户礼物背包
 		// 社区相关模型
 		&model.Group{},          // 兴趣群组表
 		&model.GroupMember{},    // 群组成员关系表
@@ -142,6 +143,7 @@ func autoMigrate() error {
 // After auto-migrate hooks for legacy rows.
 func postMigrate(db *gorm.DB) {
 	BackfillAllUserMoeNos(db)
+	SeedDefaultGifts(db)
 }
 
 // GetDB 获取数据库实例，并确保连接有效

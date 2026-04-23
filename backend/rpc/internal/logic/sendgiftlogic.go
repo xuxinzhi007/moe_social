@@ -2,6 +2,7 @@ package logic
 
 import (
 	"context"
+	"errors"
 	"strconv"
 
 	"backend/model"
@@ -82,17 +83,20 @@ func (l *SendGiftLogic) SendGift(in *super.SendGiftReq) (*super.SendGiftResp, er
 		}, nil
 	}
 
-	totalCost := float64(gift.Price * int(quantity))
-	if sender.Balance < totalCost {
-		return &super.SendGiftResp{
-			Success: false,
-			Message: "insufficient balance",
-		}, nil
-	}
-
 	var record model.GiftRecord
 	err = db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&sender).Update("balance", sender.Balance-totalCost).Error; err != nil {
+		var stock model.UserGiftStock
+		err := tx.Where("user_id = ? AND gift_id = ?", fromUserID, giftID).First(&stock).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("insufficient gift stock")
+		}
+		if err != nil {
+			return err
+		}
+		if stock.Quantity < int(quantity) {
+			return errors.New("insufficient gift stock")
+		}
+		if err := tx.Model(&stock).Update("quantity", stock.Quantity-int(quantity)).Error; err != nil {
 			return err
 		}
 
@@ -105,14 +109,20 @@ func (l *SendGiftLogic) SendGift(in *super.SendGiftReq) (*super.SendGiftResp, er
 		if err := tx.Create(&record).Error; err != nil {
 			return err
 		}
-
 		return nil
 	})
 
 	if err != nil {
+		msg := err.Error()
+		if msg == "insufficient gift stock" {
+			return &super.SendGiftResp{
+				Success: false,
+				Message: "insufficient gift stock",
+			}, nil
+		}
 		return &super.SendGiftResp{
 			Success: false,
-			Message: "failed to send gift: " + err.Error(),
+			Message: "failed to send gift: " + msg,
 		}, nil
 	}
 
@@ -120,12 +130,12 @@ func (l *SendGiftLogic) SendGift(in *super.SendGiftReq) (*super.SendGiftResp, er
 		Success: true,
 		Message: "gift sent successfully",
 		Record: &super.GiftRecord{
-			Id:            uint64(record.ID),
-			FromUserId:    uint64(record.FromUserID),
-			FromUserName:  sender.Username,
-			ToUserId:      uint64(record.ToUserID),
-			ToUserName:    receiver.Username,
-			GiftId:        uint64(record.GiftID),
+			Id:           uint64(record.ID),
+			FromUserId:   uint64(record.FromUserID),
+			FromUserName: sender.Username,
+			ToUserId:     uint64(record.ToUserID),
+			ToUserName:   receiver.Username,
+			GiftId:       uint64(record.GiftID),
 			Gift: &super.Gift{
 				Id:          uint64(gift.ID),
 				Name:        gift.Name,

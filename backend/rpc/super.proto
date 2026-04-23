@@ -758,6 +758,8 @@ service Super {
   rpc GetGift(GetGiftReq) returns (GetGiftResp);
   rpc SendGift(SendGiftReq) returns (SendGiftResp);
   rpc GetGiftRecords(GetGiftRecordsReq) returns (GetGiftRecordsResp);
+  // 用心意（余额）购买礼物，增加背包数量
+  rpc PurchaseGift(PurchaseGiftReq) returns (PurchaseGiftResp);
 }
 
 // 关注相关消息
@@ -1081,6 +1083,8 @@ message Gift {
   string description = 5;
   string created_at = 6;
   string updated_at = 7;
+  // 当 GetGiftsReq.viewer_user_id 传入时，为该用户在本礼物的背包数量
+  int32 owned_quantity = 8;
 }
 
 message GiftRecord {
@@ -1098,6 +1102,8 @@ message GiftRecord {
 message GetGiftsReq {
   int32 page = 1;
   int32 page_size = 2;
+  // 可选：传入则在每个 Gift 上填充 owned_quantity（背包）
+  string viewer_user_id = 3;
 }
 
 message GetGiftsResp {
@@ -1137,4 +1143,17 @@ message GetGiftRecordsReq {
 message GetGiftRecordsResp {
   repeated GiftRecord records = 1;
   int32 total = 2;
+}
+
+message PurchaseGiftReq {
+  string user_id = 1;
+  string gift_id = 2;
+  int32 quantity = 3;
+}
+
+message PurchaseGiftResp {
+  bool success = 1;
+  string message = 2;
+  double new_balance = 3;
+  int32 owned_quantity = 4;
 }

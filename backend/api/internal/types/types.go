@@ -473,8 +473,9 @@ type GetGiftResp struct {
 }
 
 type GetGiftsReq struct {
-	Page     int `form:"page,default=1"`
-	PageSize int `form:"page_size,default=10"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+	UserId   string `form:"user_id,optional"` // 传入则每个礼物带 owned_quantity（背包）
 }
 
 type GetGiftsResp struct {
@@ -779,13 +780,14 @@ type GetVipPlansResp struct {
 }
 
 type Gift struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Price       int    `json:"price"`
-	Icon        string `json:"icon"`
-	Description string `json:"description"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	Id             string `json:"id"`
+	Name           string `json:"name"`
+	Price          int    `json:"price"`
+	Icon           string `json:"icon"`
+	Description    string `json:"description"`
+	CreatedAt      string `json:"created_at"`
+	UpdatedAt      string `json:"updated_at"`
+	OwnedQuantity  int    `json:"owned_quantity,optional"` // 当前用户背包数量
 }
 
 type GiftRecord struct {
@@ -1087,6 +1089,22 @@ type SendGiftReq struct {
 	GiftId   string `json:"gift_id"`
 	Quantity int    `json:"quantity,default=1"`
 	Message  string `json:"message,optional"`
+}
+
+type PurchaseGiftReq struct {
+	UserId   string `path:"user_id"`
+	GiftId   string `json:"gift_id"`
+	Quantity int    `json:"quantity,default=1"`
+}
+
+type PurchaseGiftResp struct {
+	BaseResp
+	Data PurchaseGiftData `json:"data"`
+}
+
+type PurchaseGiftData struct {
+	NewBalance    float64 `json:"new_balance"`
+	OwnedQuantity int     `json:"owned_quantity"`
 }
 
 type SendGiftResp struct {
