@@ -25,6 +25,30 @@ class Gift {
     this.ownedQuantity = 0,
   });
 
+  Gift copyWith({
+    String? id,
+    String? name,
+    String? emoji,
+    String? description,
+    double? price,
+    Color? color,
+    GiftCategory? category,
+    int? popularity,
+    int? ownedQuantity,
+  }) {
+    return Gift(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      emoji: emoji ?? this.emoji,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      color: color ?? this.color,
+      category: category ?? this.category,
+      popularity: popularity ?? this.popularity,
+      ownedQuantity: ownedQuantity ?? this.ownedQuantity,
+    );
+  }
+
   // 预定义的礼物列表
   static const List<Gift> defaultGifts = [
     // 基础礼物 (0.1 - 1.0)

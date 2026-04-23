@@ -51,8 +51,11 @@ class ErrorHandler {
       userFriendlyMessage = '网络连接失败，请检查网络设置';
     } else if (e.message.contains('timeout') || e.message.contains('Timeout')) {
       userFriendlyMessage = '请求超时，请稍后重试';
+    } else if (e.message.toLowerCase().contains('insufficient balance') ||
+        e.message.contains('余额不足')) {
+      userFriendlyMessage = '余额不足，请前往钱包充值后再试';
     }
-    
+
     showError(context, userFriendlyMessage);
   }
 
