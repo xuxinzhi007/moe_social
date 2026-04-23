@@ -4,6 +4,8 @@ import '../auth_service.dart';
 import '../services/api_service.dart';
 import '../utils/error_handler.dart';
 import 'moe_loading.dart';
+import 'gift_haptic.dart';
+import 'gift_animation.dart';
 
 /// 礼物选择器组件
 class GiftSelector extends StatefulWidget {
@@ -91,6 +93,8 @@ class _GiftSelectorState extends State<GiftSelector>
       return;
     }
 
+    await GiftHapticFeedback.forGiftConfirmation(gift);
+
     setState(() {
       _isLoading = true;
       _selectedGift = gift;
@@ -104,14 +108,14 @@ class _GiftSelectorState extends State<GiftSelector>
         quantity: 1,
       );
 
+      await GiftHapticFeedback.forGiftSuccess(gift);
+
       final refreshed = await ApiService.getUserInfo(userId);
       if (mounted) {
         setState(() {
           _userBalance = refreshed.balance;
         });
-        ErrorHandler.showSuccess(context, '礼物发送成功！🎁');
-        widget.onGiftSent?.call(gift);
-        Navigator.of(context).pop();
+        _showGiftSuccessAnimation(gift);
       }
     } catch (e) {
       if (mounted) {
@@ -125,6 +129,25 @@ class _GiftSelectorState extends State<GiftSelector>
         });
       }
     }
+  }
+
+  void _showGiftSuccessAnimation(Gift gift) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      barrierDismissible: true,
+      builder: (context) => Center(
+        child: GiftSendAnimation(
+          gift: gift,
+          onAnimationComplete: () {
+            Navigator.of(context).pop();
+            ErrorHandler.showSuccess(context, '礼物发送成功！🎁');
+            widget.onGiftSent?.call(gift);
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -270,6 +293,7 @@ class _GiftSelectorState extends State<GiftSelector>
               ErrorHandler.showError(context, '余额不足，可先充值');
               return;
             }
+            GiftHapticFeedback.forGiftSelection(gift);
             _sendGift(gift);
           },
           child: AnimatedContainer(
@@ -402,7 +426,7 @@ class _GiftSelectorState extends State<GiftSelector>
 }
 
 /// 礼物按钮组件（用于在帖子或评论中显示）
-class GiftButton extends StatelessWidget {
+class GiftButton extends StatefulWidget {
   final String targetId;
   final String targetType;
   final String receiverId;
@@ -418,37 +442,114 @@ class GiftButton extends StatelessWidget {
     this.size = 32.0,
   });
 
+  @override
+  State<GiftButton> createState() => _GiftButtonState();
+}
+
+class _GiftButtonState extends State<GiftButton>
+    with SingleTickerProviderStateMixin {
+  bool _isPressed = false;
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   void _showGiftSelector(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => GiftSelector(
-        targetId: targetId,
-        targetType: targetType,
-        receiverId: receiverId,
-        onGiftSent: onGiftSent,
+        targetId: widget.targetId,
+        targetType: widget.targetType,
+        receiverId: widget.receiverId,
+        onGiftSent: widget.onGiftSent,
       ),
     );
+  }
+
+  void _onTapDown(TapDownDetails details) {
+    setState(() => _isPressed = true);
+    _controller.forward();
+    GiftHapticFeedback.light();
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    setState(() => _isPressed = false);
+    _controller.reverse();
+  }
+
+  void _onTapCancel() {
+    setState(() => _isPressed = false);
+    _controller.reverse();
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
       onTap: () => _showGiftSelector(context),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: Colors.pink[50],
-          borderRadius: BorderRadius.circular(size / 2),
-          border: Border.all(color: Colors.pink[200]!, width: 1),
-        ),
-        child: Icon(
-          Icons.card_giftcard,
-          size: size * 0.5,
-          color: Colors.pink[400],
-        ),
+      onLongPress: () {
+        GiftHapticFeedback.medium();
+        _showGiftSelector(context);
+      },
+      child: AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: Container(
+              width: widget.size,
+              height: widget.size,
+              decoration: BoxDecoration(
+                color: _isPressed
+                    ? Colors.pink[100]
+                    : Colors.pink[50],
+                borderRadius: BorderRadius.circular(widget.size / 2),
+                border: Border.all(
+                  color: _isPressed
+                      ? Colors.pink[400]!
+                      : Colors.pink[200]!,
+                  width: 1,
+                ),
+                boxShadow: _isPressed
+                    ? []
+                    : [
+                        BoxShadow(
+                          color: Colors.pink.withValues(alpha: 0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+              ),
+              child: Icon(
+                Icons.card_giftcard,
+                size: widget.size * 0.5,
+                color: _isPressed
+                    ? Colors.pink[600]
+                    : Colors.pink[400],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

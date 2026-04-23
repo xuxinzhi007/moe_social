@@ -281,6 +281,78 @@ class Gift {
 
   @override
   int get hashCode => id.hashCode;
+
+  GiftLevel get level {
+    if (price < 1.0) return GiftLevel.basic;
+    if (price < 10.0) return GiftLevel.medium;
+    if (price < 50.0) return GiftLevel.advanced;
+    return GiftLevel.luxury;
+  }
+
+  Duration get animationDuration {
+    switch (level) {
+      case GiftLevel.basic:
+        return const Duration(milliseconds: 1500);
+      case GiftLevel.medium:
+        return const Duration(milliseconds: 2000);
+      case GiftLevel.advanced:
+        return const Duration(milliseconds: 2500);
+      case GiftLevel.luxury:
+        return const Duration(milliseconds: 3500);
+    }
+  }
+
+  int get particleCount {
+    switch (level) {
+      case GiftLevel.basic:
+        return 8;
+      case GiftLevel.medium:
+        return 15;
+      case GiftLevel.advanced:
+        return 25;
+      case GiftLevel.luxury:
+        return 40;
+    }
+  }
+
+  double get iconSize {
+    switch (level) {
+      case GiftLevel.basic:
+        return 60;
+      case GiftLevel.medium:
+        return 80;
+      case GiftLevel.advanced:
+        return 100;
+      case GiftLevel.luxury:
+        return 120;
+    }
+  }
+
+  double get glowRadius {
+    switch (level) {
+      case GiftLevel.basic:
+        return 10;
+      case GiftLevel.medium:
+        return 20;
+      case GiftLevel.advanced:
+        return 30;
+      case GiftLevel.luxury:
+        return 50;
+    }
+  }
+}
+
+/// 礼物等级枚举
+enum GiftLevel {
+  basic('基础', 0),
+  medium('中等', 1),
+  advanced('高级', 2),
+  luxury('奢华', 3);
+
+  const GiftLevel(this.displayName, this.priority);
+
+  final String displayName;
+  final int priority;
 }
 
 /// 礼物分类枚举
