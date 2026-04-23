@@ -56,6 +56,7 @@ func (l *PurchaseGiftLogic) PurchaseGift(req *types.PurchaseGiftReq) (resp *type
 		Data: types.PurchaseGiftData{
 			NewBalance:    rpcResp.NewBalance,
 			OwnedQuantity: int(rpcResp.OwnedQuantity),
+			OrderNo:       rpcResp.OrderNo,
 		},
 	}, nil
 }

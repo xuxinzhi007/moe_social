@@ -26,21 +26,18 @@ class GiftSelector extends StatefulWidget {
   State<GiftSelector> createState() => _GiftSelectorState();
 }
 
-class _GiftSelectorState extends State<GiftSelector>
-    with TickerProviderStateMixin {
-  late TabController _tabController;
+class _GiftSelectorState extends State<GiftSelector> {
   bool _isLoading = false;
   double _userBalance = 0.0;
   Gift? _selectedGift;
-  /// 后端 `/api/gifts`；非空时「热门」Tab 优先展示商城数据
+  /// 后端 `/api/gifts` 全量列表（唯一数据源）
   List<Gift> _serverGifts = [];
-  /// 已结束一次拉取（成功或失败），用于提示「无商城数据」
+  /// 已结束一次拉取（成功或失败）
   bool _giftCatalogResolved = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: GiftCategory.values.length + 1, vsync: this);
     _loadUserBalance();
     _loadGiftCatalog();
   }
@@ -61,18 +58,19 @@ class _GiftSelectorState extends State<GiftSelector>
           _giftCatalogResolved = true;
         });
       } else {
-        setState(() => _giftCatalogResolved = true);
+        setState(() {
+          _serverGifts = [];
+          _giftCatalogResolved = true;
+        });
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _giftCatalogResolved = true);
+        setState(() {
+          _serverGifts = [];
+          _giftCatalogResolved = true;
+        });
       }
     }
-  }
-
-  List<Gift> _popularTabGifts() {
-    if (_serverGifts.isNotEmpty) return _serverGifts;
-    return Gift.getPopularGifts(limit: 12);
   }
 
   Future<void> _purchaseGift(Gift gift) async {
@@ -108,12 +106,6 @@ class _GiftSelectorState extends State<GiftSelector>
     }
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
   Future<void> _loadUserBalance() async {
     final userId = AuthService.currentUser;
     if (userId == null) return;
@@ -136,11 +128,7 @@ class _GiftSelectorState extends State<GiftSelector>
     }
 
     if (!gift.canSendViaBackendApi) {
-      ErrorHandler.showError(
-        context,
-        '该礼物是客户端演示数据，服务端没有对应商品（礼物 id 须为数字）。'
-        '请确认「热门」里已加载商城礼物后再送；或让管理员在库里配置 /api/gifts。',
-      );
+      ErrorHandler.showError(context, '礼物数据异常，请下拉刷新礼物列表后重试。');
       return;
     }
 
@@ -270,59 +258,55 @@ class _GiftSelectorState extends State<GiftSelector>
             ),
           ),
 
-          // 分类标签栏
-          Container(
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Colors.grey[200]!, width: 1),
-              ),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              labelColor: Colors.blue[600],
-              unselectedLabelColor: Colors.grey[600],
-              indicatorColor: Colors.blue[600],
-              indicatorWeight: 3,
-              tabs: [
-                const Tab(text: '热门'),
-                ...GiftCategory.values.map((category) => Tab(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(category.icon),
-                      const SizedBox(width: 4),
-                      Text(category.displayName),
-                    ],
-                  ),
-                )),
-              ],
-            ),
-          ),
-
-          if (_giftCatalogResolved && _serverGifts.isEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
-              child: Text(
-                '未从服务器加载到礼物列表，当前「热门」为演示样式；上架后请先在「心意」或右下角 + 购买再赠送。',
-                style: TextStyle(
-                  fontSize: 12,
-                  height: 1.35,
-                  color: Colors.orange.shade900,
-                ),
-              ),
-            ),
-
-          // 礼物网格
+          // 礼物列表（仅服务端 /api/gifts）
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildGiftGrid(_popularTabGifts()),
-                ...GiftCategory.values.map((category) =>
-                    _buildGiftGrid(Gift.getGiftsByCategory(category))),
-              ],
-            ),
+            child: !_giftCatalogResolved
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        MoeSmallLoading(size: 28),
+                        SizedBox(height: 12),
+                        Text('正在加载礼物…'),
+                      ],
+                    ),
+                  )
+                : _serverGifts.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.cloud_off_outlined,
+                                  size: 48, color: Colors.grey[400]),
+                              const SizedBox(height: 12),
+                              const Text(
+                                '未获取到礼物列表',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w600, fontSize: 16),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '请确认后端已启动且已同步礼物数据，然后重试。',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    fontSize: 13, color: Colors.grey[600]),
+                              ),
+                              const SizedBox(height: 16),
+                              FilledButton.icon(
+                                onPressed: () {
+                                  setState(() => _giftCatalogResolved = false);
+                                  _loadGiftCatalog();
+                                },
+                                icon: const Icon(Icons.refresh_rounded),
+                                label: const Text('重新加载'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : _buildGiftGrid(_serverGifts),
           ),
 
           // 底部操作栏
@@ -365,10 +349,7 @@ class _GiftSelectorState extends State<GiftSelector>
           onTap: () {
             if (_isLoading) return;
             if (!backendOk) {
-              ErrorHandler.showError(
-                context,
-                '该礼物未在服务端登记，无法赠送。请使用「热门」里带数字编号的商城礼物。',
-              );
+              ErrorHandler.showError(context, '礼物数据异常，请重新打开礼物面板。');
               return;
             }
             if (!canSendOut) {

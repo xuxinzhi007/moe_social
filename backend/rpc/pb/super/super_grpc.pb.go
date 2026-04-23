@@ -94,6 +94,7 @@ const (
 	Super_SendGift_FullMethodName                   = "/super.Super/SendGift"
 	Super_GetGiftRecords_FullMethodName             = "/super.Super/GetGiftRecords"
 	Super_PurchaseGift_FullMethodName               = "/super.Super/PurchaseGift"
+	Super_GetGiftPurchaseOrders_FullMethodName      = "/super.Super/GetGiftPurchaseOrders"
 )
 
 // SuperClient is the client API for Super service.
@@ -193,6 +194,8 @@ type SuperClient interface {
 	GetGiftRecords(ctx context.Context, in *GetGiftRecordsReq, opts ...grpc.CallOption) (*GetGiftRecordsResp, error)
 	// 用心意（余额）购买礼物，增加背包数量
 	PurchaseGift(ctx context.Context, in *PurchaseGiftReq, opts ...grpc.CallOption) (*PurchaseGiftResp, error)
+	// 礼物购买订单列表
+	GetGiftPurchaseOrders(ctx context.Context, in *GetGiftPurchaseOrdersReq, opts ...grpc.CallOption) (*GetGiftPurchaseOrdersResp, error)
 }
 
 type superClient struct {
@@ -953,6 +956,16 @@ func (c *superClient) PurchaseGift(ctx context.Context, in *PurchaseGiftReq, opt
 	return out, nil
 }
 
+func (c *superClient) GetGiftPurchaseOrders(ctx context.Context, in *GetGiftPurchaseOrdersReq, opts ...grpc.CallOption) (*GetGiftPurchaseOrdersResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetGiftPurchaseOrdersResp)
+	err := c.cc.Invoke(ctx, Super_GetGiftPurchaseOrders_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SuperServer is the server API for Super service.
 // All implementations must embed UnimplementedSuperServer
 // for forward compatibility.
@@ -1050,6 +1063,8 @@ type SuperServer interface {
 	GetGiftRecords(context.Context, *GetGiftRecordsReq) (*GetGiftRecordsResp, error)
 	// 用心意（余额）购买礼物，增加背包数量
 	PurchaseGift(context.Context, *PurchaseGiftReq) (*PurchaseGiftResp, error)
+	// 礼物购买订单列表
+	GetGiftPurchaseOrders(context.Context, *GetGiftPurchaseOrdersReq) (*GetGiftPurchaseOrdersResp, error)
 	mustEmbedUnimplementedSuperServer()
 }
 
@@ -1284,6 +1299,9 @@ func (UnimplementedSuperServer) GetGiftRecords(context.Context, *GetGiftRecordsR
 }
 func (UnimplementedSuperServer) PurchaseGift(context.Context, *PurchaseGiftReq) (*PurchaseGiftResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PurchaseGift not implemented")
+}
+func (UnimplementedSuperServer) GetGiftPurchaseOrders(context.Context, *GetGiftPurchaseOrdersReq) (*GetGiftPurchaseOrdersResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGiftPurchaseOrders not implemented")
 }
 func (UnimplementedSuperServer) mustEmbedUnimplementedSuperServer() {}
 func (UnimplementedSuperServer) testEmbeddedByValue()               {}
@@ -2656,6 +2674,24 @@ func _Super_PurchaseGift_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Super_GetGiftPurchaseOrders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGiftPurchaseOrdersReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).GetGiftPurchaseOrders(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_GetGiftPurchaseOrders_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).GetGiftPurchaseOrders(ctx, req.(*GetGiftPurchaseOrdersReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Super_ServiceDesc is the grpc.ServiceDesc for Super service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2962,6 +2998,10 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PurchaseGift",
 			Handler:    _Super_PurchaseGift_Handler,
+		},
+		{
+			MethodName: "GetGiftPurchaseOrders",
+			Handler:    _Super_GetGiftPurchaseOrders_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

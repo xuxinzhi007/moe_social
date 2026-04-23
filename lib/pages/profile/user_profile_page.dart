@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import '../../models/user.dart';
 import '../../models/post.dart';
 import '../../models/achievement_badge.dart';
-import '../../models/gift.dart';
 import '../../auth_service.dart';
 import '../../services/api_service.dart';
 import '../../services/achievement_service.dart';
@@ -16,7 +15,7 @@ import '../../widgets/fade_in_up.dart';
 import '../../widgets/achievement_badge_display.dart';
 import '../../widgets/post_card.dart';
 import '../../widgets/moe_toast.dart';
-import '../../widgets/gift_animation.dart';
+import '../../widgets/gift_selector.dart';
 import '../../services/post_service.dart';
 import '../../utils/error_handler.dart';
 import '../../utils/post_navigation.dart';
@@ -249,8 +248,20 @@ class _UserProfilePageState extends State<UserProfilePage> {
     final topPad = MediaQuery.paddingOf(context).top + kToolbarHeight + 2;
     const bottomPad = 14.0;
     final ts = MediaQuery.textScalerOf(context);
-    final bodyMin = ts.scale(205.0).clamp(178.0, 360.0);
+    // 统计条为两行（动态/关注/粉丝 + 魅力/收礼），略增高避免挤压。
+    final bodyMin = ts.scale(238.0).clamp(200.0, 400.0);
     return (topPad + bottomPad + bodyMin).clamp(300.0, 580.0);
+  }
+
+  String _formatReceivedGiftValue(double v) {
+    if (v >= 10000) {
+      final w = v / 10000;
+      return '${w.toStringAsFixed(v >= 100000 ? 0 : 1)}万';
+    }
+    if (v == v.roundToDouble()) {
+      return v.toInt().toString();
+    }
+    return v.toStringAsFixed(1);
   }
 
   Widget _buildFrostedStatsStrip() {
@@ -313,6 +324,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
 
     final postsLabel = _isLoadingPosts && _userPosts.isEmpty ? '…' : '$_postTotal';
+    final charmLabel = _user == null ? '…' : '${_user!.giftCharm}';
+    final giftValueLabel =
+        _user == null ? '…' : _formatReceivedGiftValue(_user!.receivedGiftValue);
+    final sepH = MediaQuery.textScalerOf(context).scale(32.0).clamp(24.0, 44.0);
+
+    Widget vDivider() => Container(
+          width: 1,
+          height: sepH,
+          color: Colors.white.withValues(alpha: 0.35),
+        );
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -329,42 +350,59 @@ class _UserProfilePageState extends State<UserProfilePage> {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: Colors.white.withValues(alpha: 0.42)),
           ),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              stat('动态', postsLabel, onTap: _scrollToPosts),
-              Container(
-                width: 1,
-                height: MediaQuery.textScalerOf(context).scale(32.0).clamp(24.0, 44.0),
-                color: Colors.white.withValues(alpha: 0.35),
+              Row(
+                children: [
+                  stat('动态', postsLabel, onTap: _scrollToPosts),
+                  vDivider(),
+                  stat(
+                    '关注',
+                    _isLoadingStats ? '…' : '$_followingCount',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (context) => FollowingPage(userId: widget.userId),
+                        ),
+                      );
+                    },
+                  ),
+                  vDivider(),
+                  stat(
+                    '粉丝',
+                    _isLoadingStats ? '…' : '$_followersCount',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (context) => FollowersPage(userId: widget.userId),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
-              stat(
-                '关注',
-                _isLoadingStats ? '…' : '$_followingCount',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (context) => FollowingPage(userId: widget.userId),
-                    ),
-                  );
-                },
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  8,
+                  MediaQuery.textScalerOf(context).scale(6.0).clamp(4.0, 10.0),
+                  8,
+                  0,
+                ),
+                child: Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Colors.white.withValues(alpha: 0.35),
+                ),
               ),
-              Container(
-                width: 1,
-                height: MediaQuery.textScalerOf(context).scale(32.0).clamp(24.0, 44.0),
-                color: Colors.white.withValues(alpha: 0.35),
-              ),
-              stat(
-                '粉丝',
-                _isLoadingStats ? '…' : '$_followersCount',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (context) => FollowersPage(userId: widget.userId),
-                    ),
-                  );
-                },
+              Row(
+                children: [
+                  stat('魅力', charmLabel),
+                  vDivider(),
+                  stat('收礼', giftValueLabel),
+                ],
               ),
             ],
           ),
@@ -1050,148 +1088,23 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
 
   void _showGiftSelector() {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.75,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        child: Column(
-          children: [
-            // 顶部拖拽指示器
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            // 标题
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                children: [
-                  const Icon(Icons.card_giftcard, color: Colors.pink),
-                  const SizedBox(width: 8),
-                  Text(
-                    '送礼给 ${_user?.username ?? widget.userName ?? '用户'}',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('取消'),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            // 礼物选择器
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: _buildGiftGrid(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGiftGrid() {
-    final gifts = Gift.getPopularGifts(limit: 12);
-    return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 0.8,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemCount: gifts.length,
-      itemBuilder: (context, index) {
-        final gift = gifts[index];
-        return GestureDetector(
-          onTap: () {
-            Navigator.pop(context);
-            _sendGift(gift);
-          },
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: gift.color.withOpacity(0.3)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(gift.emoji, style: const TextStyle(fontSize: 32)),
-                const SizedBox(height: 8),
-                Text(
-                  gift.name,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '¥${gift.price.toStringAsFixed(gift.price == gift.price.roundToDouble() ? 0 : 1)}',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: gift.color,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _sendGift(Gift gift) {
-    // 显示礼物发送动画
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black54,
-      builder: (context) => GiftSendAnimation(
-        gift: gift,
-        onAnimationComplete: () {
-          Navigator.of(context).pop();
-          // 显示发送成功提示
+      builder: (context) => GiftSelector(
+        targetId: widget.userId,
+        targetType: 'user',
+        receiverId: widget.userId,
+        onGiftSent: (gift) {
+          if (!mounted) return;
           MoeToast.show(
             context,
-            '${gift.emoji} 已送出${gift.name}给 ${_user?.username ?? widget.userName ?? '用户'}',
+            '已向 ${_user?.username ?? widget.userName ?? '用户'} 赠送 ${gift.name}',
             icon: Icons.favorite_rounded,
             backgroundColor: const Color(0xFFF0FDF4),
             textColor: const Color(0xFF16A34A),
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 2),
           );
         },
       ),

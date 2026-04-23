@@ -3,7 +3,9 @@ package logic
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
+	"time"
 
 	"backend/model"
 	"backend/rpc/internal/svc"
@@ -59,6 +61,7 @@ func (l *PurchaseGiftLogic) PurchaseGift(in *super.PurchaseGiftReq) (*super.Purc
 	cost := float64(gift.Price) * float64(qty)
 	var newBal float64
 	var owned int32
+	var orderNo string
 
 	err = db.Transaction(func(tx *gorm.DB) error {
 		res := tx.Model(&model.User{}).Where("id = ? AND balance >= ?", userID, cost).
@@ -87,6 +90,31 @@ func (l *PurchaseGiftLogic) PurchaseGift(in *super.PurchaseGiftReq) (*super.Purc
 				return err
 			}
 			owned = int32(st.Quantity)
+			orderNo = "GFP" + strconv.FormatInt(time.Now().UnixNano(), 10)
+			po := model.GiftPurchaseOrder{
+				UserID:      uint(userID),
+				OrderNo:     orderNo,
+				GiftID:      uint(giftID),
+				GiftName:    gift.Name,
+				Quantity:    int(qty),
+				UnitPrice:   float64(gift.Price),
+				TotalAmount: cost,
+				PayMethod:   "wallet",
+				Status:      "paid",
+			}
+			if err := tx.Create(&po).Error; err != nil {
+				return err
+			}
+			tr := model.Transaction{
+				UserID:      uint(userID),
+				Amount:      cost,
+				Type:        "consume",
+				Status:      "success",
+				Description: fmt.Sprintf("购买礼物「%s」×%d（订单号 %s）", gift.Name, qty, orderNo),
+			}
+			if err := tx.Create(&tr).Error; err != nil {
+				return err
+			}
 			return nil
 		}
 		if err != nil {
@@ -97,6 +125,32 @@ func (l *PurchaseGiftLogic) PurchaseGift(in *super.PurchaseGiftReq) (*super.Purc
 			return err
 		}
 		owned = int32(st.Quantity)
+
+		orderNo = "GFP" + strconv.FormatInt(time.Now().UnixNano(), 10)
+		po := model.GiftPurchaseOrder{
+			UserID:      uint(userID),
+			OrderNo:     orderNo,
+			GiftID:      uint(giftID),
+			GiftName:    gift.Name,
+			Quantity:    int(qty),
+			UnitPrice:   float64(gift.Price),
+			TotalAmount: cost,
+			PayMethod:   "wallet",
+			Status:      "paid",
+		}
+		if err := tx.Create(&po).Error; err != nil {
+			return err
+		}
+		tr := model.Transaction{
+			UserID:      uint(userID),
+			Amount:      cost,
+			Type:        "consume",
+			Status:      "success",
+			Description: fmt.Sprintf("购买礼物「%s」×%d（订单号 %s）", gift.Name, qty, orderNo),
+		}
+		if err := tx.Create(&tr).Error; err != nil {
+			return err
+		}
 		return nil
 	})
 
@@ -118,5 +172,6 @@ func (l *PurchaseGiftLogic) PurchaseGift(in *super.PurchaseGiftReq) (*super.Purc
 		Message:        "ok",
 		NewBalance:     newBal,
 		OwnedQuantity:  owned,
+		OrderNo:        orderNo,
 	}, nil
 }

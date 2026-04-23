@@ -40,8 +40,11 @@ type User struct {
 	Inventory       string                 `protobuf:"bytes,14,opt,name=inventory,proto3" json:"inventory,omitempty"`
 	EquippedFrameId string                 `protobuf:"bytes,15,opt,name=equipped_frame_id,json=equippedFrameId,proto3" json:"equipped_frame_id,omitempty"`
 	MoeNo           string                 `protobuf:"bytes,16,opt,name=moe_no,json=moeNo,proto3" json:"moe_no,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// 收到他人赠送礼物累计：魅力点（与礼物标价挂钩）与面值总和（展示用）
+	GiftCharm         int32   `protobuf:"varint,17,opt,name=gift_charm,json=giftCharm,proto3" json:"gift_charm,omitempty"`
+	ReceivedGiftValue float64 `protobuf:"fixed64,18,opt,name=received_gift_value,json=receivedGiftValue,proto3" json:"received_gift_value,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *User) Reset() {
@@ -184,6 +187,20 @@ func (x *User) GetMoeNo() string {
 		return x.MoeNo
 	}
 	return ""
+}
+
+func (x *User) GetGiftCharm() int32 {
+	if x != nil {
+		return x.GiftCharm
+	}
+	return 0
+}
+
+func (x *User) GetReceivedGiftValue() float64 {
+	if x != nil {
+		return x.ReceivedGiftValue
+	}
+	return 0
 }
 
 // 用户注册请求
@@ -1784,6 +1801,7 @@ type VipOrder struct {
 	Status        string                 `protobuf:"bytes,6,opt,name=status,proto3" json:"status,omitempty"`
 	CreatedAt     string                 `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	PaidAt        string                 `protobuf:"bytes,8,opt,name=paid_at,json=paidAt,proto3" json:"paid_at,omitempty"`
+	OrderNo       string                 `protobuf:"bytes,9,opt,name=order_no,json=orderNo,proto3" json:"order_no,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1870,6 +1888,13 @@ func (x *VipOrder) GetCreatedAt() string {
 func (x *VipOrder) GetPaidAt() string {
 	if x != nil {
 		return x.PaidAt
+	}
+	return ""
+}
+
+func (x *VipOrder) GetOrderNo() string {
+	if x != nil {
+		return x.OrderNo
 	}
 	return ""
 }
@@ -9832,6 +9857,7 @@ type PurchaseGiftResp struct {
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 	NewBalance    float64                `protobuf:"fixed64,3,opt,name=new_balance,json=newBalance,proto3" json:"new_balance,omitempty"`
 	OwnedQuantity int32                  `protobuf:"varint,4,opt,name=owned_quantity,json=ownedQuantity,proto3" json:"owned_quantity,omitempty"`
+	OrderNo       string                 `protobuf:"bytes,5,opt,name=order_no,json=orderNo,proto3" json:"order_no,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9894,11 +9920,254 @@ func (x *PurchaseGiftResp) GetOwnedQuantity() int32 {
 	return 0
 }
 
+func (x *PurchaseGiftResp) GetOrderNo() string {
+	if x != nil {
+		return x.OrderNo
+	}
+	return ""
+}
+
+type GiftPurchaseOrder struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	OrderNo       string                 `protobuf:"bytes,3,opt,name=order_no,json=orderNo,proto3" json:"order_no,omitempty"`
+	GiftId        string                 `protobuf:"bytes,4,opt,name=gift_id,json=giftId,proto3" json:"gift_id,omitempty"`
+	GiftName      string                 `protobuf:"bytes,5,opt,name=gift_name,json=giftName,proto3" json:"gift_name,omitempty"`
+	Quantity      int32                  `protobuf:"varint,6,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	UnitPrice     float64                `protobuf:"fixed64,7,opt,name=unit_price,json=unitPrice,proto3" json:"unit_price,omitempty"`
+	TotalAmount   float64                `protobuf:"fixed64,8,opt,name=total_amount,json=totalAmount,proto3" json:"total_amount,omitempty"`
+	PayMethod     string                 `protobuf:"bytes,9,opt,name=pay_method,json=payMethod,proto3" json:"pay_method,omitempty"`
+	Status        string                 `protobuf:"bytes,10,opt,name=status,proto3" json:"status,omitempty"`
+	CreatedAt     string                 `protobuf:"bytes,11,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GiftPurchaseOrder) Reset() {
+	*x = GiftPurchaseOrder{}
+	mi := &file_super_proto_msgTypes[171]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GiftPurchaseOrder) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GiftPurchaseOrder) ProtoMessage() {}
+
+func (x *GiftPurchaseOrder) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[171]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GiftPurchaseOrder.ProtoReflect.Descriptor instead.
+func (*GiftPurchaseOrder) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{171}
+}
+
+func (x *GiftPurchaseOrder) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *GiftPurchaseOrder) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *GiftPurchaseOrder) GetOrderNo() string {
+	if x != nil {
+		return x.OrderNo
+	}
+	return ""
+}
+
+func (x *GiftPurchaseOrder) GetGiftId() string {
+	if x != nil {
+		return x.GiftId
+	}
+	return ""
+}
+
+func (x *GiftPurchaseOrder) GetGiftName() string {
+	if x != nil {
+		return x.GiftName
+	}
+	return ""
+}
+
+func (x *GiftPurchaseOrder) GetQuantity() int32 {
+	if x != nil {
+		return x.Quantity
+	}
+	return 0
+}
+
+func (x *GiftPurchaseOrder) GetUnitPrice() float64 {
+	if x != nil {
+		return x.UnitPrice
+	}
+	return 0
+}
+
+func (x *GiftPurchaseOrder) GetTotalAmount() float64 {
+	if x != nil {
+		return x.TotalAmount
+	}
+	return 0
+}
+
+func (x *GiftPurchaseOrder) GetPayMethod() string {
+	if x != nil {
+		return x.PayMethod
+	}
+	return ""
+}
+
+func (x *GiftPurchaseOrder) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *GiftPurchaseOrder) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+type GetGiftPurchaseOrdersReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Page          int32                  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetGiftPurchaseOrdersReq) Reset() {
+	*x = GetGiftPurchaseOrdersReq{}
+	mi := &file_super_proto_msgTypes[172]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetGiftPurchaseOrdersReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetGiftPurchaseOrdersReq) ProtoMessage() {}
+
+func (x *GetGiftPurchaseOrdersReq) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[172]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetGiftPurchaseOrdersReq.ProtoReflect.Descriptor instead.
+func (*GetGiftPurchaseOrdersReq) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{172}
+}
+
+func (x *GetGiftPurchaseOrdersReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *GetGiftPurchaseOrdersReq) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *GetGiftPurchaseOrdersReq) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type GetGiftPurchaseOrdersResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Orders        []*GiftPurchaseOrder   `protobuf:"bytes,1,rep,name=orders,proto3" json:"orders,omitempty"`
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetGiftPurchaseOrdersResp) Reset() {
+	*x = GetGiftPurchaseOrdersResp{}
+	mi := &file_super_proto_msgTypes[173]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetGiftPurchaseOrdersResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetGiftPurchaseOrdersResp) ProtoMessage() {}
+
+func (x *GetGiftPurchaseOrdersResp) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[173]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetGiftPurchaseOrdersResp.ProtoReflect.Descriptor instead.
+func (*GetGiftPurchaseOrdersResp) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{173}
+}
+
+func (x *GetGiftPurchaseOrdersResp) GetOrders() []*GiftPurchaseOrder {
+	if x != nil {
+		return x.Orders
+	}
+	return nil
+}
+
+func (x *GetGiftPurchaseOrdersResp) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
 var File_super_proto protoreflect.FileDescriptor
 
 const file_super_proto_rawDesc = "" +
 	"\n" +
-	"\vsuper.proto\x12\x05super\"\xc7\x03\n" +
+	"\vsuper.proto\x12\x05super\"\x96\x04\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
@@ -9919,7 +10188,10 @@ const file_super_proto_rawDesc = "" +
 	"\abalance\x18\r \x01(\x02R\abalance\x12\x1c\n" +
 	"\tinventory\x18\x0e \x01(\tR\tinventory\x12*\n" +
 	"\x11equipped_frame_id\x18\x0f \x01(\tR\x0fequippedFrameId\x12\x15\n" +
-	"\x06moe_no\x18\x10 \x01(\tR\x05moeNo\"[\n" +
+	"\x06moe_no\x18\x10 \x01(\tR\x05moeNo\x12\x1d\n" +
+	"\n" +
+	"gift_charm\x18\x11 \x01(\x05R\tgiftCharm\x12.\n" +
+	"\x13received_gift_value\x18\x12 \x01(\x01R\x11receivedGiftValue\"[\n" +
 	"\vRegisterReq\x12\x1a\n" +
 	"\busername\x18\x01 \x01(\tR\busername\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x14\n" +
@@ -10011,7 +10283,7 @@ const file_super_proto_rawDesc = "" +
 	"\x04plan\x18\x01 \x01(\v2\x0e.super.VipPlanR\x04plan\"\x10\n" +
 	"\x0eGetVipPlansReq\"7\n" +
 	"\x0fGetVipPlansResp\x12$\n" +
-	"\x05plans\x18\x01 \x03(\v2\x0e.super.VipPlanR\x05plans\"\xd1\x01\n" +
+	"\x05plans\x18\x01 \x03(\v2\x0e.super.VipPlanR\x05plans\"\xec\x01\n" +
 	"\bVipOrder\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x17\n" +
@@ -10021,7 +10293,8 @@ const file_super_proto_rawDesc = "" +
 	"\x06status\x18\x06 \x01(\tR\x06status\x12\x1d\n" +
 	"\n" +
 	"created_at\x18\a \x01(\tR\tcreatedAt\x12\x17\n" +
-	"\apaid_at\x18\b \x01(\tR\x06paidAt\"E\n" +
+	"\apaid_at\x18\b \x01(\tR\x06paidAt\x12\x19\n" +
+	"\border_no\x18\t \x01(\tR\aorderNo\"E\n" +
 	"\x11CreateVipOrderReq\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x17\n" +
 	"\aplan_id\x18\x02 \x01(\tR\x06planId\";\n" +
@@ -10591,13 +10864,37 @@ const file_super_proto_rawDesc = "" +
 	"\x0fPurchaseGiftReq\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x17\n" +
 	"\agift_id\x18\x02 \x01(\tR\x06giftId\x12\x1a\n" +
-	"\bquantity\x18\x03 \x01(\x05R\bquantity\"\x8e\x01\n" +
+	"\bquantity\x18\x03 \x01(\x05R\bquantity\"\xa9\x01\n" +
 	"\x10PurchaseGiftResp\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1f\n" +
 	"\vnew_balance\x18\x03 \x01(\x01R\n" +
 	"newBalance\x12%\n" +
-	"\x0eowned_quantity\x18\x04 \x01(\x05R\rownedQuantity2\xdc'\n" +
+	"\x0eowned_quantity\x18\x04 \x01(\x05R\rownedQuantity\x12\x19\n" +
+	"\border_no\x18\x05 \x01(\tR\aorderNo\"\xc1\x02\n" +
+	"\x11GiftPurchaseOrder\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x19\n" +
+	"\border_no\x18\x03 \x01(\tR\aorderNo\x12\x17\n" +
+	"\agift_id\x18\x04 \x01(\tR\x06giftId\x12\x1b\n" +
+	"\tgift_name\x18\x05 \x01(\tR\bgiftName\x12\x1a\n" +
+	"\bquantity\x18\x06 \x01(\x05R\bquantity\x12\x1d\n" +
+	"\n" +
+	"unit_price\x18\a \x01(\x01R\tunitPrice\x12!\n" +
+	"\ftotal_amount\x18\b \x01(\x01R\vtotalAmount\x12\x1d\n" +
+	"\n" +
+	"pay_method\x18\t \x01(\tR\tpayMethod\x12\x16\n" +
+	"\x06status\x18\n" +
+	" \x01(\tR\x06status\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\v \x01(\tR\tcreatedAt\"d\n" +
+	"\x18GetGiftPurchaseOrdersReq\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x12\n" +
+	"\x04page\x18\x02 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"c\n" +
+	"\x19GetGiftPurchaseOrdersResp\x120\n" +
+	"\x06orders\x18\x01 \x03(\v2\x18.super.GiftPurchaseOrderR\x06orders\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total2\xb8(\n" +
 	"\x05Super\x123\n" +
 	"\bRegister\x12\x12.super.RegisterReq\x1a\x13.super.RegisterResp\x12*\n" +
 	"\x05Login\x12\x0f.super.LoginReq\x1a\x10.super.LoginResp\x12<\n" +
@@ -10680,7 +10977,8 @@ const file_super_proto_rawDesc = "" +
 	"\aGetGift\x12\x11.super.GetGiftReq\x1a\x12.super.GetGiftResp\x123\n" +
 	"\bSendGift\x12\x12.super.SendGiftReq\x1a\x13.super.SendGiftResp\x12E\n" +
 	"\x0eGetGiftRecords\x12\x18.super.GetGiftRecordsReq\x1a\x19.super.GetGiftRecordsResp\x12?\n" +
-	"\fPurchaseGift\x12\x16.super.PurchaseGiftReq\x1a\x17.super.PurchaseGiftRespB\x16Z\x14backend/rpc/pb/superb\x06proto3"
+	"\fPurchaseGift\x12\x16.super.PurchaseGiftReq\x1a\x17.super.PurchaseGiftResp\x12Z\n" +
+	"\x15GetGiftPurchaseOrders\x12\x1f.super.GetGiftPurchaseOrdersReq\x1a .super.GetGiftPurchaseOrdersRespB\x16Z\x14backend/rpc/pb/superb\x06proto3"
 
 var (
 	file_super_proto_rawDescOnce sync.Once
@@ -10694,7 +10992,7 @@ func file_super_proto_rawDescGZIP() []byte {
 	return file_super_proto_rawDescData
 }
 
-var file_super_proto_msgTypes = make([]protoimpl.MessageInfo, 171)
+var file_super_proto_msgTypes = make([]protoimpl.MessageInfo, 174)
 var file_super_proto_goTypes = []any{
 	(*User)(nil),                           // 0: super.User
 	(*RegisterReq)(nil),                    // 1: super.RegisterReq
@@ -10867,6 +11165,9 @@ var file_super_proto_goTypes = []any{
 	(*GetGiftRecordsResp)(nil),             // 168: super.GetGiftRecordsResp
 	(*PurchaseGiftReq)(nil),                // 169: super.PurchaseGiftReq
 	(*PurchaseGiftResp)(nil),               // 170: super.PurchaseGiftResp
+	(*GiftPurchaseOrder)(nil),              // 171: super.GiftPurchaseOrder
+	(*GetGiftPurchaseOrdersReq)(nil),       // 172: super.GetGiftPurchaseOrdersReq
+	(*GetGiftPurchaseOrdersResp)(nil),      // 173: super.GetGiftPurchaseOrdersResp
 }
 var file_super_proto_depIdxs = []int32{
 	0,   // 0: super.RegisterResp.user:type_name -> super.User
@@ -10928,161 +11229,164 @@ var file_super_proto_depIdxs = []int32{
 	159, // 56: super.GetGiftResp.gift:type_name -> super.Gift
 	160, // 57: super.SendGiftResp.record:type_name -> super.GiftRecord
 	160, // 58: super.GetGiftRecordsResp.records:type_name -> super.GiftRecord
-	1,   // 59: super.Super.Register:input_type -> super.RegisterReq
-	3,   // 60: super.Super.Login:input_type -> super.LoginReq
-	5,   // 61: super.Super.GetUserInfo:input_type -> super.GetUserInfoReq
-	7,   // 62: super.Super.GetUser:input_type -> super.GetUserReq
-	9,   // 63: super.Super.GetUserByEmail:input_type -> super.GetUserByEmailReq
-	11,  // 64: super.Super.UpdateUserInfo:input_type -> super.UpdateUserInfoReq
-	13,  // 65: super.Super.UpdateUserPassword:input_type -> super.UpdateUserPasswordReq
-	15,  // 66: super.Super.ResetPassword:input_type -> super.ResetPasswordReq
-	17,  // 67: super.Super.DeleteUser:input_type -> super.DeleteUserReq
-	19,  // 68: super.Super.UpdateUserVip:input_type -> super.UpdateUserVipReq
-	21,  // 69: super.Super.GetUsers:input_type -> super.GetUsersReq
-	23,  // 70: super.Super.GetUserCount:input_type -> super.GetUserCountReq
-	88,  // 71: super.Super.UpsertUserMemory:input_type -> super.UpsertUserMemoryReq
-	90,  // 72: super.Super.GetUserMemories:input_type -> super.GetUserMemoriesReq
-	92,  // 73: super.Super.DeleteUserMemory:input_type -> super.DeleteUserMemoryReq
-	30,  // 74: super.Super.GetVipPlans:input_type -> super.GetVipPlansReq
-	26,  // 75: super.Super.GetVipPlan:input_type -> super.GetVipPlanReq
-	28,  // 76: super.Super.CreateVipPlan:input_type -> super.CreateVipPlanReq
-	33,  // 77: super.Super.CreateVipOrder:input_type -> super.CreateVipOrderReq
-	35,  // 78: super.Super.GetVipOrders:input_type -> super.GetVipOrdersReq
-	38,  // 79: super.Super.GetVipRecords:input_type -> super.GetVipRecordsReq
-	40,  // 80: super.Super.GetUserActiveVipRecord:input_type -> super.GetUserActiveVipRecordReq
-	42,  // 81: super.Super.GetUserVipStatus:input_type -> super.GetUserVipStatusReq
-	44,  // 82: super.Super.CheckUserVip:input_type -> super.CheckUserVipReq
-	46,  // 83: super.Super.UpdateAutoRenew:input_type -> super.UpdateAutoRenewReq
-	48,  // 84: super.Super.SyncUserVipStatus:input_type -> super.SyncUserVipStatusReq
-	59,  // 85: super.Super.GetPosts:input_type -> super.GetPostsReq
-	61,  // 86: super.Super.GetPost:input_type -> super.GetPostReq
-	63,  // 87: super.Super.CreatePost:input_type -> super.CreatePostReq
-	64,  // 88: super.Super.ReportPost:input_type -> super.ReportPostReq
-	67,  // 89: super.Super.LikePost:input_type -> super.LikePostReq
-	69,  // 90: super.Super.GetPostComments:input_type -> super.GetPostCommentsReq
-	72,  // 91: super.Super.CreateComment:input_type -> super.CreateCommentReq
-	74,  // 92: super.Super.LikeComment:input_type -> super.LikeCommentReq
-	77,  // 93: super.Super.GetNotifications:input_type -> super.GetNotificationsReq
-	79,  // 94: super.Super.GetUnreadCount:input_type -> super.GetUnreadCountReq
-	81,  // 95: super.Super.ReadNotification:input_type -> super.ReadNotificationReq
-	83,  // 96: super.Super.ReadAllNotifications:input_type -> super.ReadAllNotificationsReq
-	85,  // 97: super.Super.CreateNotification:input_type -> super.CreateNotificationReq
-	50,  // 98: super.Super.Recharge:input_type -> super.RechargeReq
-	52,  // 99: super.Super.GetTransactions:input_type -> super.GetTransactionsReq
-	55,  // 100: super.Super.GetTransaction:input_type -> super.GetTransactionReq
-	109, // 101: super.Super.FollowUser:input_type -> super.FollowUserReq
-	111, // 102: super.Super.UnfollowUser:input_type -> super.UnfollowUserReq
-	112, // 103: super.Super.GetFollowings:input_type -> super.GetFollowingsReq
-	114, // 104: super.Super.GetFollowers:input_type -> super.GetFollowersReq
-	116, // 105: super.Super.CheckFollow:input_type -> super.CheckFollowReq
-	95,  // 106: super.Super.SendFriendRequest:input_type -> super.SendFriendRequestReq
-	97,  // 107: super.Super.ListIncomingFriendRequests:input_type -> super.ListIncomingFriendRequestsReq
-	99,  // 108: super.Super.ListOutgoingFriendRequests:input_type -> super.ListOutgoingFriendRequestsReq
-	101, // 109: super.Super.AcceptFriendRequest:input_type -> super.AcceptFriendRequestReq
-	103, // 110: super.Super.RejectFriendRequest:input_type -> super.RejectFriendRequestReq
-	105, // 111: super.Super.ListFriends:input_type -> super.ListFriendsReq
-	107, // 112: super.Super.GetFriendRelation:input_type -> super.GetFriendRelationReq
-	121, // 113: super.Super.GetUserAvatar:input_type -> super.GetUserAvatarReq
-	123, // 114: super.Super.UpdateUserAvatar:input_type -> super.UpdateUserAvatarReq
-	129, // 115: super.Super.CheckIn:input_type -> super.CheckInReq
-	131, // 116: super.Super.GetUserLevel:input_type -> super.GetUserLevelReq
-	133, // 117: super.Super.GetCheckInStatus:input_type -> super.GetCheckInStatusReq
-	135, // 118: super.Super.GetCheckInHistory:input_type -> super.GetCheckInHistoryReq
-	137, // 119: super.Super.GetExpLogs:input_type -> super.GetExpLogsReq
-	141, // 120: super.Super.CreateGroup:input_type -> super.CreateGroupReq
-	143, // 121: super.Super.GetGroup:input_type -> super.GetGroupReq
-	145, // 122: super.Super.GetGroups:input_type -> super.GetGroupsReq
-	147, // 123: super.Super.UpdateGroup:input_type -> super.UpdateGroupReq
-	149, // 124: super.Super.DeleteGroup:input_type -> super.DeleteGroupReq
-	151, // 125: super.Super.JoinGroup:input_type -> super.JoinGroupReq
-	153, // 126: super.Super.LeaveGroup:input_type -> super.LeaveGroupReq
-	155, // 127: super.Super.GetGroupMembers:input_type -> super.GetGroupMembersReq
-	157, // 128: super.Super.GetUserGroups:input_type -> super.GetUserGroupsReq
-	161, // 129: super.Super.GetGifts:input_type -> super.GetGiftsReq
-	163, // 130: super.Super.GetGift:input_type -> super.GetGiftReq
-	165, // 131: super.Super.SendGift:input_type -> super.SendGiftReq
-	167, // 132: super.Super.GetGiftRecords:input_type -> super.GetGiftRecordsReq
-	169, // 133: super.Super.PurchaseGift:input_type -> super.PurchaseGiftReq
-	2,   // 134: super.Super.Register:output_type -> super.RegisterResp
-	4,   // 135: super.Super.Login:output_type -> super.LoginResp
-	6,   // 136: super.Super.GetUserInfo:output_type -> super.GetUserInfoResp
-	8,   // 137: super.Super.GetUser:output_type -> super.GetUserResp
-	10,  // 138: super.Super.GetUserByEmail:output_type -> super.GetUserByEmailResp
-	12,  // 139: super.Super.UpdateUserInfo:output_type -> super.UpdateUserInfoResp
-	14,  // 140: super.Super.UpdateUserPassword:output_type -> super.UpdateUserPasswordResp
-	16,  // 141: super.Super.ResetPassword:output_type -> super.ResetPasswordResp
-	18,  // 142: super.Super.DeleteUser:output_type -> super.DeleteUserResp
-	20,  // 143: super.Super.UpdateUserVip:output_type -> super.UpdateUserVipResp
-	22,  // 144: super.Super.GetUsers:output_type -> super.GetUsersResp
-	24,  // 145: super.Super.GetUserCount:output_type -> super.GetUserCountResp
-	89,  // 146: super.Super.UpsertUserMemory:output_type -> super.UpsertUserMemoryResp
-	91,  // 147: super.Super.GetUserMemories:output_type -> super.GetUserMemoriesResp
-	93,  // 148: super.Super.DeleteUserMemory:output_type -> super.DeleteUserMemoryResp
-	31,  // 149: super.Super.GetVipPlans:output_type -> super.GetVipPlansResp
-	27,  // 150: super.Super.GetVipPlan:output_type -> super.GetVipPlanResp
-	29,  // 151: super.Super.CreateVipPlan:output_type -> super.CreateVipPlanResp
-	34,  // 152: super.Super.CreateVipOrder:output_type -> super.CreateVipOrderResp
-	36,  // 153: super.Super.GetVipOrders:output_type -> super.GetVipOrdersResp
-	39,  // 154: super.Super.GetVipRecords:output_type -> super.GetVipRecordsResp
-	41,  // 155: super.Super.GetUserActiveVipRecord:output_type -> super.GetUserActiveVipRecordResp
-	43,  // 156: super.Super.GetUserVipStatus:output_type -> super.GetUserVipStatusResp
-	45,  // 157: super.Super.CheckUserVip:output_type -> super.CheckUserVipResp
-	47,  // 158: super.Super.UpdateAutoRenew:output_type -> super.UpdateAutoRenewResp
-	49,  // 159: super.Super.SyncUserVipStatus:output_type -> super.SyncUserVipStatusResp
-	60,  // 160: super.Super.GetPosts:output_type -> super.GetPostsResp
-	62,  // 161: super.Super.GetPost:output_type -> super.GetPostResp
-	66,  // 162: super.Super.CreatePost:output_type -> super.CreatePostResp
-	65,  // 163: super.Super.ReportPost:output_type -> super.ReportPostResp
-	68,  // 164: super.Super.LikePost:output_type -> super.LikePostResp
-	70,  // 165: super.Super.GetPostComments:output_type -> super.GetPostCommentsResp
-	73,  // 166: super.Super.CreateComment:output_type -> super.CreateCommentResp
-	75,  // 167: super.Super.LikeComment:output_type -> super.LikeCommentResp
-	78,  // 168: super.Super.GetNotifications:output_type -> super.GetNotificationsResp
-	80,  // 169: super.Super.GetUnreadCount:output_type -> super.GetUnreadCountResp
-	82,  // 170: super.Super.ReadNotification:output_type -> super.ReadNotificationResp
-	84,  // 171: super.Super.ReadAllNotifications:output_type -> super.ReadAllNotificationsResp
-	86,  // 172: super.Super.CreateNotification:output_type -> super.CreateNotificationResp
-	51,  // 173: super.Super.Recharge:output_type -> super.RechargeResp
-	54,  // 174: super.Super.GetTransactions:output_type -> super.GetTransactionsResp
-	56,  // 175: super.Super.GetTransaction:output_type -> super.GetTransactionResp
-	110, // 176: super.Super.FollowUser:output_type -> super.FollowUserResp
-	110, // 177: super.Super.UnfollowUser:output_type -> super.FollowUserResp
-	113, // 178: super.Super.GetFollowings:output_type -> super.GetFollowingsResp
-	115, // 179: super.Super.GetFollowers:output_type -> super.GetFollowersResp
-	117, // 180: super.Super.CheckFollow:output_type -> super.CheckFollowResp
-	96,  // 181: super.Super.SendFriendRequest:output_type -> super.SendFriendRequestResp
-	98,  // 182: super.Super.ListIncomingFriendRequests:output_type -> super.ListIncomingFriendRequestsResp
-	100, // 183: super.Super.ListOutgoingFriendRequests:output_type -> super.ListOutgoingFriendRequestsResp
-	102, // 184: super.Super.AcceptFriendRequest:output_type -> super.AcceptFriendRequestResp
-	104, // 185: super.Super.RejectFriendRequest:output_type -> super.RejectFriendRequestResp
-	106, // 186: super.Super.ListFriends:output_type -> super.ListFriendsResp
-	108, // 187: super.Super.GetFriendRelation:output_type -> super.GetFriendRelationResp
-	122, // 188: super.Super.GetUserAvatar:output_type -> super.GetUserAvatarResp
-	124, // 189: super.Super.UpdateUserAvatar:output_type -> super.UpdateUserAvatarResp
-	130, // 190: super.Super.CheckIn:output_type -> super.CheckInResp
-	132, // 191: super.Super.GetUserLevel:output_type -> super.GetUserLevelResp
-	134, // 192: super.Super.GetCheckInStatus:output_type -> super.GetCheckInStatusResp
-	136, // 193: super.Super.GetCheckInHistory:output_type -> super.GetCheckInHistoryResp
-	138, // 194: super.Super.GetExpLogs:output_type -> super.GetExpLogsResp
-	142, // 195: super.Super.CreateGroup:output_type -> super.CreateGroupResp
-	144, // 196: super.Super.GetGroup:output_type -> super.GetGroupResp
-	146, // 197: super.Super.GetGroups:output_type -> super.GetGroupsResp
-	148, // 198: super.Super.UpdateGroup:output_type -> super.UpdateGroupResp
-	150, // 199: super.Super.DeleteGroup:output_type -> super.DeleteGroupResp
-	152, // 200: super.Super.JoinGroup:output_type -> super.JoinGroupResp
-	154, // 201: super.Super.LeaveGroup:output_type -> super.LeaveGroupResp
-	156, // 202: super.Super.GetGroupMembers:output_type -> super.GetGroupMembersResp
-	158, // 203: super.Super.GetUserGroups:output_type -> super.GetUserGroupsResp
-	162, // 204: super.Super.GetGifts:output_type -> super.GetGiftsResp
-	164, // 205: super.Super.GetGift:output_type -> super.GetGiftResp
-	166, // 206: super.Super.SendGift:output_type -> super.SendGiftResp
-	168, // 207: super.Super.GetGiftRecords:output_type -> super.GetGiftRecordsResp
-	170, // 208: super.Super.PurchaseGift:output_type -> super.PurchaseGiftResp
-	134, // [134:209] is the sub-list for method output_type
-	59,  // [59:134] is the sub-list for method input_type
-	59,  // [59:59] is the sub-list for extension type_name
-	59,  // [59:59] is the sub-list for extension extendee
-	0,   // [0:59] is the sub-list for field type_name
+	171, // 59: super.GetGiftPurchaseOrdersResp.orders:type_name -> super.GiftPurchaseOrder
+	1,   // 60: super.Super.Register:input_type -> super.RegisterReq
+	3,   // 61: super.Super.Login:input_type -> super.LoginReq
+	5,   // 62: super.Super.GetUserInfo:input_type -> super.GetUserInfoReq
+	7,   // 63: super.Super.GetUser:input_type -> super.GetUserReq
+	9,   // 64: super.Super.GetUserByEmail:input_type -> super.GetUserByEmailReq
+	11,  // 65: super.Super.UpdateUserInfo:input_type -> super.UpdateUserInfoReq
+	13,  // 66: super.Super.UpdateUserPassword:input_type -> super.UpdateUserPasswordReq
+	15,  // 67: super.Super.ResetPassword:input_type -> super.ResetPasswordReq
+	17,  // 68: super.Super.DeleteUser:input_type -> super.DeleteUserReq
+	19,  // 69: super.Super.UpdateUserVip:input_type -> super.UpdateUserVipReq
+	21,  // 70: super.Super.GetUsers:input_type -> super.GetUsersReq
+	23,  // 71: super.Super.GetUserCount:input_type -> super.GetUserCountReq
+	88,  // 72: super.Super.UpsertUserMemory:input_type -> super.UpsertUserMemoryReq
+	90,  // 73: super.Super.GetUserMemories:input_type -> super.GetUserMemoriesReq
+	92,  // 74: super.Super.DeleteUserMemory:input_type -> super.DeleteUserMemoryReq
+	30,  // 75: super.Super.GetVipPlans:input_type -> super.GetVipPlansReq
+	26,  // 76: super.Super.GetVipPlan:input_type -> super.GetVipPlanReq
+	28,  // 77: super.Super.CreateVipPlan:input_type -> super.CreateVipPlanReq
+	33,  // 78: super.Super.CreateVipOrder:input_type -> super.CreateVipOrderReq
+	35,  // 79: super.Super.GetVipOrders:input_type -> super.GetVipOrdersReq
+	38,  // 80: super.Super.GetVipRecords:input_type -> super.GetVipRecordsReq
+	40,  // 81: super.Super.GetUserActiveVipRecord:input_type -> super.GetUserActiveVipRecordReq
+	42,  // 82: super.Super.GetUserVipStatus:input_type -> super.GetUserVipStatusReq
+	44,  // 83: super.Super.CheckUserVip:input_type -> super.CheckUserVipReq
+	46,  // 84: super.Super.UpdateAutoRenew:input_type -> super.UpdateAutoRenewReq
+	48,  // 85: super.Super.SyncUserVipStatus:input_type -> super.SyncUserVipStatusReq
+	59,  // 86: super.Super.GetPosts:input_type -> super.GetPostsReq
+	61,  // 87: super.Super.GetPost:input_type -> super.GetPostReq
+	63,  // 88: super.Super.CreatePost:input_type -> super.CreatePostReq
+	64,  // 89: super.Super.ReportPost:input_type -> super.ReportPostReq
+	67,  // 90: super.Super.LikePost:input_type -> super.LikePostReq
+	69,  // 91: super.Super.GetPostComments:input_type -> super.GetPostCommentsReq
+	72,  // 92: super.Super.CreateComment:input_type -> super.CreateCommentReq
+	74,  // 93: super.Super.LikeComment:input_type -> super.LikeCommentReq
+	77,  // 94: super.Super.GetNotifications:input_type -> super.GetNotificationsReq
+	79,  // 95: super.Super.GetUnreadCount:input_type -> super.GetUnreadCountReq
+	81,  // 96: super.Super.ReadNotification:input_type -> super.ReadNotificationReq
+	83,  // 97: super.Super.ReadAllNotifications:input_type -> super.ReadAllNotificationsReq
+	85,  // 98: super.Super.CreateNotification:input_type -> super.CreateNotificationReq
+	50,  // 99: super.Super.Recharge:input_type -> super.RechargeReq
+	52,  // 100: super.Super.GetTransactions:input_type -> super.GetTransactionsReq
+	55,  // 101: super.Super.GetTransaction:input_type -> super.GetTransactionReq
+	109, // 102: super.Super.FollowUser:input_type -> super.FollowUserReq
+	111, // 103: super.Super.UnfollowUser:input_type -> super.UnfollowUserReq
+	112, // 104: super.Super.GetFollowings:input_type -> super.GetFollowingsReq
+	114, // 105: super.Super.GetFollowers:input_type -> super.GetFollowersReq
+	116, // 106: super.Super.CheckFollow:input_type -> super.CheckFollowReq
+	95,  // 107: super.Super.SendFriendRequest:input_type -> super.SendFriendRequestReq
+	97,  // 108: super.Super.ListIncomingFriendRequests:input_type -> super.ListIncomingFriendRequestsReq
+	99,  // 109: super.Super.ListOutgoingFriendRequests:input_type -> super.ListOutgoingFriendRequestsReq
+	101, // 110: super.Super.AcceptFriendRequest:input_type -> super.AcceptFriendRequestReq
+	103, // 111: super.Super.RejectFriendRequest:input_type -> super.RejectFriendRequestReq
+	105, // 112: super.Super.ListFriends:input_type -> super.ListFriendsReq
+	107, // 113: super.Super.GetFriendRelation:input_type -> super.GetFriendRelationReq
+	121, // 114: super.Super.GetUserAvatar:input_type -> super.GetUserAvatarReq
+	123, // 115: super.Super.UpdateUserAvatar:input_type -> super.UpdateUserAvatarReq
+	129, // 116: super.Super.CheckIn:input_type -> super.CheckInReq
+	131, // 117: super.Super.GetUserLevel:input_type -> super.GetUserLevelReq
+	133, // 118: super.Super.GetCheckInStatus:input_type -> super.GetCheckInStatusReq
+	135, // 119: super.Super.GetCheckInHistory:input_type -> super.GetCheckInHistoryReq
+	137, // 120: super.Super.GetExpLogs:input_type -> super.GetExpLogsReq
+	141, // 121: super.Super.CreateGroup:input_type -> super.CreateGroupReq
+	143, // 122: super.Super.GetGroup:input_type -> super.GetGroupReq
+	145, // 123: super.Super.GetGroups:input_type -> super.GetGroupsReq
+	147, // 124: super.Super.UpdateGroup:input_type -> super.UpdateGroupReq
+	149, // 125: super.Super.DeleteGroup:input_type -> super.DeleteGroupReq
+	151, // 126: super.Super.JoinGroup:input_type -> super.JoinGroupReq
+	153, // 127: super.Super.LeaveGroup:input_type -> super.LeaveGroupReq
+	155, // 128: super.Super.GetGroupMembers:input_type -> super.GetGroupMembersReq
+	157, // 129: super.Super.GetUserGroups:input_type -> super.GetUserGroupsReq
+	161, // 130: super.Super.GetGifts:input_type -> super.GetGiftsReq
+	163, // 131: super.Super.GetGift:input_type -> super.GetGiftReq
+	165, // 132: super.Super.SendGift:input_type -> super.SendGiftReq
+	167, // 133: super.Super.GetGiftRecords:input_type -> super.GetGiftRecordsReq
+	169, // 134: super.Super.PurchaseGift:input_type -> super.PurchaseGiftReq
+	172, // 135: super.Super.GetGiftPurchaseOrders:input_type -> super.GetGiftPurchaseOrdersReq
+	2,   // 136: super.Super.Register:output_type -> super.RegisterResp
+	4,   // 137: super.Super.Login:output_type -> super.LoginResp
+	6,   // 138: super.Super.GetUserInfo:output_type -> super.GetUserInfoResp
+	8,   // 139: super.Super.GetUser:output_type -> super.GetUserResp
+	10,  // 140: super.Super.GetUserByEmail:output_type -> super.GetUserByEmailResp
+	12,  // 141: super.Super.UpdateUserInfo:output_type -> super.UpdateUserInfoResp
+	14,  // 142: super.Super.UpdateUserPassword:output_type -> super.UpdateUserPasswordResp
+	16,  // 143: super.Super.ResetPassword:output_type -> super.ResetPasswordResp
+	18,  // 144: super.Super.DeleteUser:output_type -> super.DeleteUserResp
+	20,  // 145: super.Super.UpdateUserVip:output_type -> super.UpdateUserVipResp
+	22,  // 146: super.Super.GetUsers:output_type -> super.GetUsersResp
+	24,  // 147: super.Super.GetUserCount:output_type -> super.GetUserCountResp
+	89,  // 148: super.Super.UpsertUserMemory:output_type -> super.UpsertUserMemoryResp
+	91,  // 149: super.Super.GetUserMemories:output_type -> super.GetUserMemoriesResp
+	93,  // 150: super.Super.DeleteUserMemory:output_type -> super.DeleteUserMemoryResp
+	31,  // 151: super.Super.GetVipPlans:output_type -> super.GetVipPlansResp
+	27,  // 152: super.Super.GetVipPlan:output_type -> super.GetVipPlanResp
+	29,  // 153: super.Super.CreateVipPlan:output_type -> super.CreateVipPlanResp
+	34,  // 154: super.Super.CreateVipOrder:output_type -> super.CreateVipOrderResp
+	36,  // 155: super.Super.GetVipOrders:output_type -> super.GetVipOrdersResp
+	39,  // 156: super.Super.GetVipRecords:output_type -> super.GetVipRecordsResp
+	41,  // 157: super.Super.GetUserActiveVipRecord:output_type -> super.GetUserActiveVipRecordResp
+	43,  // 158: super.Super.GetUserVipStatus:output_type -> super.GetUserVipStatusResp
+	45,  // 159: super.Super.CheckUserVip:output_type -> super.CheckUserVipResp
+	47,  // 160: super.Super.UpdateAutoRenew:output_type -> super.UpdateAutoRenewResp
+	49,  // 161: super.Super.SyncUserVipStatus:output_type -> super.SyncUserVipStatusResp
+	60,  // 162: super.Super.GetPosts:output_type -> super.GetPostsResp
+	62,  // 163: super.Super.GetPost:output_type -> super.GetPostResp
+	66,  // 164: super.Super.CreatePost:output_type -> super.CreatePostResp
+	65,  // 165: super.Super.ReportPost:output_type -> super.ReportPostResp
+	68,  // 166: super.Super.LikePost:output_type -> super.LikePostResp
+	70,  // 167: super.Super.GetPostComments:output_type -> super.GetPostCommentsResp
+	73,  // 168: super.Super.CreateComment:output_type -> super.CreateCommentResp
+	75,  // 169: super.Super.LikeComment:output_type -> super.LikeCommentResp
+	78,  // 170: super.Super.GetNotifications:output_type -> super.GetNotificationsResp
+	80,  // 171: super.Super.GetUnreadCount:output_type -> super.GetUnreadCountResp
+	82,  // 172: super.Super.ReadNotification:output_type -> super.ReadNotificationResp
+	84,  // 173: super.Super.ReadAllNotifications:output_type -> super.ReadAllNotificationsResp
+	86,  // 174: super.Super.CreateNotification:output_type -> super.CreateNotificationResp
+	51,  // 175: super.Super.Recharge:output_type -> super.RechargeResp
+	54,  // 176: super.Super.GetTransactions:output_type -> super.GetTransactionsResp
+	56,  // 177: super.Super.GetTransaction:output_type -> super.GetTransactionResp
+	110, // 178: super.Super.FollowUser:output_type -> super.FollowUserResp
+	110, // 179: super.Super.UnfollowUser:output_type -> super.FollowUserResp
+	113, // 180: super.Super.GetFollowings:output_type -> super.GetFollowingsResp
+	115, // 181: super.Super.GetFollowers:output_type -> super.GetFollowersResp
+	117, // 182: super.Super.CheckFollow:output_type -> super.CheckFollowResp
+	96,  // 183: super.Super.SendFriendRequest:output_type -> super.SendFriendRequestResp
+	98,  // 184: super.Super.ListIncomingFriendRequests:output_type -> super.ListIncomingFriendRequestsResp
+	100, // 185: super.Super.ListOutgoingFriendRequests:output_type -> super.ListOutgoingFriendRequestsResp
+	102, // 186: super.Super.AcceptFriendRequest:output_type -> super.AcceptFriendRequestResp
+	104, // 187: super.Super.RejectFriendRequest:output_type -> super.RejectFriendRequestResp
+	106, // 188: super.Super.ListFriends:output_type -> super.ListFriendsResp
+	108, // 189: super.Super.GetFriendRelation:output_type -> super.GetFriendRelationResp
+	122, // 190: super.Super.GetUserAvatar:output_type -> super.GetUserAvatarResp
+	124, // 191: super.Super.UpdateUserAvatar:output_type -> super.UpdateUserAvatarResp
+	130, // 192: super.Super.CheckIn:output_type -> super.CheckInResp
+	132, // 193: super.Super.GetUserLevel:output_type -> super.GetUserLevelResp
+	134, // 194: super.Super.GetCheckInStatus:output_type -> super.GetCheckInStatusResp
+	136, // 195: super.Super.GetCheckInHistory:output_type -> super.GetCheckInHistoryResp
+	138, // 196: super.Super.GetExpLogs:output_type -> super.GetExpLogsResp
+	142, // 197: super.Super.CreateGroup:output_type -> super.CreateGroupResp
+	144, // 198: super.Super.GetGroup:output_type -> super.GetGroupResp
+	146, // 199: super.Super.GetGroups:output_type -> super.GetGroupsResp
+	148, // 200: super.Super.UpdateGroup:output_type -> super.UpdateGroupResp
+	150, // 201: super.Super.DeleteGroup:output_type -> super.DeleteGroupResp
+	152, // 202: super.Super.JoinGroup:output_type -> super.JoinGroupResp
+	154, // 203: super.Super.LeaveGroup:output_type -> super.LeaveGroupResp
+	156, // 204: super.Super.GetGroupMembers:output_type -> super.GetGroupMembersResp
+	158, // 205: super.Super.GetUserGroups:output_type -> super.GetUserGroupsResp
+	162, // 206: super.Super.GetGifts:output_type -> super.GetGiftsResp
+	164, // 207: super.Super.GetGift:output_type -> super.GetGiftResp
+	166, // 208: super.Super.SendGift:output_type -> super.SendGiftResp
+	168, // 209: super.Super.GetGiftRecords:output_type -> super.GetGiftRecordsResp
+	170, // 210: super.Super.PurchaseGift:output_type -> super.PurchaseGiftResp
+	173, // 211: super.Super.GetGiftPurchaseOrders:output_type -> super.GetGiftPurchaseOrdersResp
+	136, // [136:212] is the sub-list for method output_type
+	60,  // [60:136] is the sub-list for method input_type
+	60,  // [60:60] is the sub-list for extension type_name
+	60,  // [60:60] is the sub-list for extension extendee
+	0,   // [0:60] is the sub-list for field type_name
 }
 
 func init() { file_super_proto_init() }
@@ -11096,7 +11400,7 @@ func file_super_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_super_proto_rawDesc), len(file_super_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   171,
+			NumMessages:   174,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
