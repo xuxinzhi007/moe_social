@@ -47,17 +47,6 @@ func (l *CheckUserByEmailLogic) CheckUserByEmail(req *types.GetUserByEmailReq) (
 
 	return &types.GetUserByEmailResp{
 		BaseResp: common.HandleRPCError(nil, "查询成功"),
-		Data: types.User{
-			Id:           rpcResp.User.Id,
-			Username:     rpcResp.User.Username,
-			Email:        rpcResp.User.Email,
-			Avatar:       rpcResp.User.Avatar,
-			CreatedAt:    rpcResp.User.CreatedAt,
-			UpdatedAt:    rpcResp.User.UpdatedAt,
-			IsVip:        rpcResp.User.IsVip,
-			VipExpiresAt: rpcResp.User.VipExpiresAt,
-			AutoRenew:    rpcResp.User.AutoRenew,
-			Balance:      float64(rpcResp.User.Balance),
-		},
+		Data:     rpcUserToTypes(rpcResp.User),
 	}, nil
 }

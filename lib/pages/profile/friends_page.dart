@@ -763,7 +763,7 @@ class _FriendsPageState extends State<FriendsPage>
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        '加载失败时可先看内置示例样式',
+                        '礼物列表来自服务器，请检查网络或稍后重试',
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
@@ -777,7 +777,7 @@ class _FriendsPageState extends State<FriendsPage>
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
               sliver: SliverToBoxAdapter(
                 child: Text(
-                  _catalogGifts.isEmpty ? '示例礼物' : '商城礼物',
+                  '礼物商城',
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
@@ -790,12 +790,25 @@ class _FriendsPageState extends State<FriendsPage>
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final displayGifts = _catalogGifts.isNotEmpty
-                        ? _catalogGifts
-                        : Gift.getPopularGifts(limit: 8);
+                    final displayGifts = _catalogGifts;
                     final w = constraints.maxWidth;
                     if (w < 32) {
                       return const SizedBox(height: 120);
+                    }
+                    if (displayGifts.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 32),
+                        child: Center(
+                          child: Text(
+                            '暂无礼物数据，请下拉刷新或重启应用以同步服务器礼物',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                      );
                     }
                     return GridView.builder(
                       shrinkWrap: true,

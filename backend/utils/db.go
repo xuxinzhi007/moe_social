@@ -131,8 +131,9 @@ func autoMigrate() error {
 		&model.ExpLog{},        // 经验日志表
 		&model.FriendRequest{}, // 好友申请
 		&model.Gift{},            // 礼物表
-		&model.GiftRecord{},      // 礼物赠送记录表
-		&model.UserGiftStock{},   // 用户礼物背包
+		&model.GiftRecord{},           // 礼物赠送记录表
+		&model.UserGiftStock{},        // 用户礼物背包
+		&model.GiftPurchaseOrder{},    // 礼物购买订单（余额→背包）
 		// 社区相关模型
 		&model.Group{},          // 兴趣群组表
 		&model.GroupMember{},    // 群组成员关系表

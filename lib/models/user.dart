@@ -16,6 +16,10 @@ class User {
   final String? vipExpiresAt; // 后端返回的是字符串格式
   final bool autoRenew;
   final double balance; // 钱包余额
+  /// 收礼累计魅力（服务端按礼物面值×数量累加）
+  final int giftCharm;
+  /// 累计收到的礼物面值总和
+  final double receivedGiftValue;
   final List<String> inventory; // 背包物品ID列表
   final String? equippedFrameId; // 当前佩戴的头像框ID
   final String createdAt; // 后端返回的是字符串格式
@@ -35,6 +39,8 @@ class User {
     this.vipExpiresAt,
     this.autoRenew = false,
     this.balance = 0.0,
+    this.giftCharm = 0,
+    this.receivedGiftValue = 0.0,
     this.inventory = const [],
     this.equippedFrameId,
     required this.createdAt,
@@ -63,6 +69,9 @@ class User {
       vipExpiresAt: json['vip_expires_at'] as String?,
       autoRenew: json['auto_renew'] as bool? ?? false,
       balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
+      giftCharm: (json['gift_charm'] as num?)?.toInt() ?? 0,
+      receivedGiftValue:
+          (json['received_gift_value'] as num?)?.toDouble() ?? 0.0,
       inventory: _parseInventory(json['inventory']),
       equippedFrameId: json['equipped_frame_id'] as String?,
       createdAt: json['created_at'] as String? ?? '',
@@ -86,6 +95,8 @@ class User {
       'vip_expires_at': vipExpiresAt,
       'auto_renew': autoRenew,
       'balance': balance,
+      'gift_charm': giftCharm,
+      'received_gift_value': receivedGiftValue,
       'inventory': inventory,
       'equipped_frame_id': equippedFrameId,
       'created_at': createdAt,
@@ -127,6 +138,8 @@ class User {
     String? vipExpiresAt,
     bool? autoRenew,
     double? balance,
+    int? giftCharm,
+    double? receivedGiftValue,
     List<String>? inventory,
     String? equippedFrameId,
     bool clearEquippedFrame = false, // 新增参数用于清除佩戴
@@ -147,6 +160,8 @@ class User {
       vipExpiresAt: vipExpiresAt ?? this.vipExpiresAt,
       autoRenew: autoRenew ?? this.autoRenew,
       balance: balance ?? this.balance,
+      giftCharm: giftCharm ?? this.giftCharm,
+      receivedGiftValue: receivedGiftValue ?? this.receivedGiftValue,
       inventory: inventory ?? this.inventory,
       equippedFrameId: clearEquippedFrame ? null : (equippedFrameId ?? this.equippedFrameId),
       createdAt: createdAt ?? this.createdAt,
@@ -255,6 +270,8 @@ class User {
       vipExpiresAt: vipExpiresAt,
       autoRenew: autoRenew,
       balance: balance,
+      giftCharm: giftCharm,
+      receivedGiftValue: receivedGiftValue,
       inventory: inventory,
       equippedFrameId: equippedFrameId,
       createdAt: createdAt,

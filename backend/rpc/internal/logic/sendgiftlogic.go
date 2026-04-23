@@ -109,6 +109,15 @@ func (l *SendGiftLogic) SendGift(in *super.SendGiftReq) (*super.SendGiftResp, er
 		if err := tx.Create(&record).Error; err != nil {
 			return err
 		}
+
+		addCharm := gift.Price * int(quantity)
+		addValue := float64(gift.Price) * float64(quantity)
+		if err := tx.Model(&model.User{}).Where("id = ?", toUserID).Updates(map[string]interface{}{
+			"gift_charm":            gorm.Expr("gift_charm + ?", addCharm),
+			"received_gift_value":   gorm.Expr("received_gift_value + ?", addValue),
+		}).Error; err != nil {
+			return err
+		}
 		return nil
 	})
 

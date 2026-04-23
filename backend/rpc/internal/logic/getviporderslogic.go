@@ -58,10 +58,9 @@ func (l *GetVipOrdersLogic) GetVipOrders(in *super.GetVipOrdersReq) (*super.GetV
 	respOrders := make([]*super.VipOrder, len(orders))
 	for i, order := range orders {
 		paidAt := ""
-		// 这里可以根据订单状态设置paid_at
-		// if order.Status == "paid" {
-		//     paidAt = order.UpdatedAt.Format("2006-01-02 15:04:05")
-		// }
+		if order.Status == "paid" {
+			paidAt = order.UpdatedAt.Format("2006-01-02 15:04:05")
+		}
 
 		respOrders[i] = &super.VipOrder{
 			Id:        strconv.FormatUint(uint64(order.ID), 10),
@@ -72,6 +71,7 @@ func (l *GetVipOrdersLogic) GetVipOrders(in *super.GetVipOrdersReq) (*super.GetV
 			Status:    order.Status,
 			CreatedAt: order.CreatedAt.Format("2006-01-02 15:04:05"),
 			PaidAt:    paidAt,
+			OrderNo:   order.OrderNo,
 		}
 	}
 

@@ -52,6 +52,7 @@ func (l *GetVipOrdersLogic) GetVipOrders(req *types.GetVipOrdersReq) (resp *type
 			Status:    order.Status,
 			CreatedAt: order.CreatedAt,
 			PaidAt:    order.PaidAt,
+			OrderNo:   order.OrderNo,
 		})
 	}
 

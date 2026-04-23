@@ -20,6 +20,7 @@ import 'pages/profile/edit_profile_page.dart';
 import 'pages/commerce/vip_center_page.dart';
 import 'pages/commerce/vip_purchase_page.dart';
 import 'pages/commerce/vip_orders_page.dart';
+import 'pages/commerce/order_center_page.dart';
 import 'pages/commerce/vip_history_page.dart';
 import 'pages/auth/forgot_password_page.dart';
 import 'pages/auth/verify_code_page.dart';
@@ -281,6 +282,7 @@ class _MyAppState extends State<MyApp> {
         '/vip-center': (context) => const VipCenterPage(),
         '/vip-purchase': (context) => const VipPurchasePage(),
         '/vip-orders': (context) => const VipOrdersPage(),
+        '/orders': (context) => const OrderCenterPage(),
         '/vip-history': (context) => const VipHistoryPage(),
         '/forgot-password': (context) => const ForgotPasswordPage(),
         '/verify-code': (context) => VerifyCodePage(

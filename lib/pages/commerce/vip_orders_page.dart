@@ -181,7 +181,9 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '订单号: ${order.id}',
+                        (order.orderNo != null && order.orderNo!.trim().isNotEmpty)
+                            ? '订单号: ${order.orderNo}'
+                            : '订单编号: ${order.id}',
                         style: TextStyle(
                           color: Colors.grey[600],
                           fontSize: 12,

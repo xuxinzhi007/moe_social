@@ -42,17 +42,7 @@ func (l *GetUsersLogic) GetUsers(req *types.GetUsersReq) (resp *types.GetUsersRe
 	// 转换为API响应格式
 	respUsers := make([]types.User, 0, len(rpcResp.Users))
 	for _, user := range rpcResp.Users {
-		respUsers = append(respUsers, types.User{
-			Id:           user.Id,
-			Username:     user.Username,
-			Email:        user.Email,
-			Avatar:       user.Avatar,
-			CreatedAt:    user.CreatedAt,
-			UpdatedAt:    user.UpdatedAt,
-			IsVip:        user.IsVip,
-			VipExpiresAt: user.VipExpiresAt,
-			AutoRenew:    user.AutoRenew,
-		})
+		respUsers = append(respUsers, rpcUserToTypes(user))
 	}
 
 	return &types.GetUsersResp{

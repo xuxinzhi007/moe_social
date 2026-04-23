@@ -10,6 +10,7 @@ import '../models/comment.dart';
 import '../models/user.dart';
 import '../models/vip_plan.dart';
 import '../models/vip_order.dart';
+import '../models/gift_purchase_order.dart';
 import '../models/vip_record.dart';
 import '../models/user_level.dart';
 import '../models/checkin_status.dart';
@@ -1160,6 +1161,25 @@ class ApiService {
     return {
       'orders': orders,
       'total': result['total'] as int,
+    };
+  }
+
+  /// 礼物购买订单（用心意余额购买进背包）
+  static Future<Map<String, dynamic>> getGiftPurchaseOrders(String userId,
+      {int page = 1, int pageSize = 20}) async {
+    final result = await _request(
+      '/api/user/$userId/gifts/purchase-orders?page=$page&page_size=$pageSize',
+    );
+    final raw = result['data'];
+    final list = raw is List
+        ? raw
+            .whereType<Map>()
+            .map((e) => GiftPurchaseOrder.fromJson(Map<String, dynamic>.from(e)))
+            .toList()
+        : <GiftPurchaseOrder>[];
+    return {
+      'orders': list,
+      'total': (result['total'] as num?)?.toInt() ?? list.length,
     };
   }
 

@@ -413,3 +413,9 @@ func (s *SuperServer) PurchaseGift(ctx context.Context, in *super.PurchaseGiftRe
 	l := logic.NewPurchaseGiftLogic(ctx, s.svcCtx)
 	return l.PurchaseGift(in)
 }
+
+// 礼物购买订单列表
+func (s *SuperServer) GetGiftPurchaseOrders(ctx context.Context, in *super.GetGiftPurchaseOrdersReq) (*super.GetGiftPurchaseOrdersResp, error) {
+	l := logic.NewGetGiftPurchaseOrdersLogic(ctx, s.svcCtx)
+	return l.GetGiftPurchaseOrders(in)
+}
