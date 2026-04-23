@@ -2,17 +2,16 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../models/gift.dart';
 
-/// 礼物发送成功的动画效果
 class GiftSendAnimation extends StatefulWidget {
   final Gift gift;
   final VoidCallback? onAnimationComplete;
-  final Duration duration;
+  final Duration? duration;
 
   const GiftSendAnimation({
     super.key,
     required this.gift,
     this.onAnimationComplete,
-    this.duration = const Duration(seconds: 2),
+    this.duration,
   });
 
   @override
@@ -23,39 +22,54 @@ class _GiftSendAnimationState extends State<GiftSendAnimation>
     with TickerProviderStateMixin {
   late AnimationController _controller;
   late AnimationController _particleController;
+  late AnimationController _glowController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
   late Animation<double> _rotationAnimation;
   late Animation<Offset> _slideAnimation;
+  late Animation<double> _glowAnimation;
+  late Animation<double> _entryAnimation;
 
   final List<Particle> _particles = [];
+  final math.Random _random = math.Random();
 
   @override
   void initState() {
     super.initState();
 
-    // 主动画控制器
+    final duration = widget.duration ?? widget.gift.animationDuration;
+
     _controller = AnimationController(
-      duration: widget.duration,
+      duration: duration,
       vsync: this,
     );
 
-    // 粒子动画控制器
     _particleController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: Duration(milliseconds: (duration.inMilliseconds * 0.8).round()),
       vsync: this,
     );
 
-    // 缩放动画
-    _scaleAnimation = Tween<double>(
+    _glowController = AnimationController(
+      duration: Duration(milliseconds: (duration.inMilliseconds * 0.5).round()),
+      vsync: this,
+    );
+
+    _entryAnimation = Tween<double>(
       begin: 0.0,
-      end: 1.5,
+      end: 1.0,
     ).animate(CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
+      curve: const Interval(0.0, 0.2, curve: Curves.easeOut),
     ));
 
-    // 淡出动画
+    _scaleAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: _getScaleCurve(),
+    ));
+
     _fadeAnimation = Tween<double>(
       begin: 1.0,
       end: 0.0,
@@ -64,50 +78,95 @@ class _GiftSendAnimationState extends State<GiftSendAnimation>
       curve: const Interval(0.7, 1.0, curve: Curves.easeOut),
     ));
 
-    // 旋转动画
     _rotationAnimation = Tween<double>(
       begin: 0.0,
-      end: 2 * math.pi,
+      end: _getRotationEnd(),
     ).animate(CurvedAnimation(
       parent: _controller,
       curve: const Interval(0.0, 0.8, curve: Curves.easeInOut),
     ));
 
-    // 滑动动画
     _slideAnimation = Tween<Offset>(
-      begin: Offset.zero,
-      end: const Offset(0.0, -1.5),
+      begin: const Offset(0.0, 0.5),
+      end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.4, 1.0, curve: Curves.easeOut),
+      curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
     ));
 
-    // 生成粒子
+    _glowAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _glowController,
+      curve: Curves.easeInOut,
+    ));
+
     _generateParticles();
 
-    // 开始动画
     _controller.forward().then((_) {
       widget.onAnimationComplete?.call();
     });
 
     _particleController.forward();
+    _glowController.repeat(reverse: true);
+  }
+
+  Curve _getScaleCurve() {
+    switch (widget.gift.level) {
+      case GiftLevel.basic:
+        return Curves.easeOut;
+      case GiftLevel.medium:
+        return Curves.elasticOut;
+      case GiftLevel.advanced:
+        return Curves.elasticOut;
+      case GiftLevel.luxury:
+        return Curves.elasticOut;
+    }
+  }
+
+  double _getRotationEnd() {
+    switch (widget.gift.level) {
+      case GiftLevel.basic:
+        return math.pi * 0.5;
+      case GiftLevel.medium:
+        return math.pi;
+      case GiftLevel.advanced:
+        return math.pi * 1.5;
+      case GiftLevel.luxury:
+        return math.pi * 2;
+    }
   }
 
   void _generateParticles() {
-    final random = math.Random();
-    for (int i = 0; i < 20; i++) {
+    final count = widget.gift.particleCount;
+    for (int i = 0; i < count; i++) {
       _particles.add(Particle(
         position: Offset(
-          random.nextDouble() * 200 - 100,
-          random.nextDouble() * 200 - 100,
+          _random.nextDouble() * 200 - 100,
+          _random.nextDouble() * 200 - 100,
         ),
         velocity: Offset(
-          (random.nextDouble() - 0.5) * 4,
-          -(random.nextDouble() * 3 + 1),
+          (_random.nextDouble() - 0.5) * 4,
+          -(_random.nextDouble() * 3 + 1),
         ),
-        life: random.nextDouble() * 0.5 + 0.5,
+        life: _random.nextDouble() * 0.5 + 0.5,
         color: widget.gift.color,
+        size: _getParticleSize(),
       ));
+    }
+  }
+
+  double _getParticleSize() {
+    switch (widget.gift.level) {
+      case GiftLevel.basic:
+        return 3.0;
+      case GiftLevel.medium:
+        return 4.0;
+      case GiftLevel.advanced:
+        return 5.0;
+      case GiftLevel.luxury:
+        return 6.0;
     }
   }
 
@@ -115,18 +174,23 @@ class _GiftSendAnimationState extends State<GiftSendAnimation>
   void dispose() {
     _controller.dispose();
     _particleController.dispose();
+    _glowController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final iconSize = widget.gift.iconSize;
+    final glowRadius = widget.gift.glowRadius;
+    final level = widget.gift.level;
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         return Opacity(
           opacity: _fadeAnimation.value,
           child: Transform.translate(
-            offset: _slideAnimation.value * 100,
+            offset: Offset(0, (1 - _slideAnimation.value.dy) * 50),
             child: Transform.scale(
               scale: _scaleAnimation.value,
               child: Transform.rotate(
@@ -134,71 +198,78 @@ class _GiftSendAnimationState extends State<GiftSendAnimation>
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    // 粒子效果
+                    if (level.index >= GiftLevel.advanced.index)
+                      _buildGlowEffect(iconSize, glowRadius),
+
                     CustomPaint(
                       painter: ParticlePainter(
                         particles: _particles,
                         progress: _particleController.value,
+                        particleSize: _getParticleSize(),
                       ),
-                      size: const Size(200, 200),
+                      size: Size(iconSize * 2.5, iconSize * 2.5),
                     ),
 
-                    // 礼物图标
                     Container(
-                      width: 80,
-                      height: 80,
+                      width: iconSize,
+                      height: iconSize,
                       decoration: BoxDecoration(
                         color: widget.gift.color.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: widget.gift.color,
-                          width: 3,
+                          width: 3 + level.index.toDouble(),
                         ),
                         boxShadow: [
                           BoxShadow(
                             color: widget.gift.color.withValues(alpha: 0.5),
-                            blurRadius: 20,
-                            spreadRadius: 5,
+                            blurRadius: glowRadius,
+                            spreadRadius: glowRadius * 0.3,
                           ),
                         ],
                       ),
                       child: Center(
                         child: Text(
                           widget.gift.emoji,
-                          style: const TextStyle(fontSize: 40),
+                          style: TextStyle(fontSize: iconSize * 0.5),
                         ),
                       ),
                     ),
 
-                    // 礼物名称
                     Positioned(
-                      bottom: -40,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: widget.gift.color,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: widget.gift.color.withOpacity(0.3),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+                      bottom: -iconSize * 0.4,
+                      child: Transform.scale(
+                        scale: _entryAnimation.value,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: iconSize * 0.2,
+                            vertical: iconSize * 0.1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: widget.gift.color,
+                            borderRadius: BorderRadius.circular(iconSize * 0.25),
+                            boxShadow: [
+                              BoxShadow(
+                                color: widget.gift.color.withValues(alpha: 0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            widget.gift.name,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: iconSize * 0.2,
                             ),
-                          ],
-                        ),
-                        child: Text(
-                          widget.gift.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
                           ),
                         ),
                       ),
                     ),
+
+                    if (level == GiftLevel.luxury)
+                      _buildLuxuryEffect(iconSize),
                   ],
                 ),
               ),
@@ -206,6 +277,42 @@ class _GiftSendAnimationState extends State<GiftSendAnimation>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildGlowEffect(double iconSize, double glowRadius) {
+    return Transform.scale(
+      scale: 1 + _glowAnimation.value * 0.3,
+      child: Container(
+        width: iconSize * 1.5,
+        height: iconSize * 1.5,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [
+              widget.gift.color.withValues(alpha: 0.3 * _glowAnimation.value),
+              widget.gift.color.withValues(alpha: 0.0),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLuxuryEffect(double iconSize) {
+    return Transform.scale(
+      scale: 1 + _glowAnimation.value * 0.2,
+      child: Container(
+        width: iconSize * 2,
+        height: iconSize * 2,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: widget.gift.color.withValues(alpha: 0.3 * _glowAnimation.value),
+            width: 2,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -217,12 +324,14 @@ class Particle {
   double life;
   double maxLife;
   Color color;
+  double size;
 
   Particle({
     required this.position,
     required this.velocity,
     required this.life,
     required this.color,
+    this.size = 4.0,
   }) : maxLife = life;
 
   void update(double deltaTime) {
@@ -240,10 +349,12 @@ class Particle {
 class ParticlePainter extends CustomPainter {
   final List<Particle> particles;
   final double progress;
+  final double particleSize;
 
   ParticlePainter({
     required this.particles,
     required this.progress,
+    this.particleSize = 4.0,
   });
 
   @override
@@ -252,7 +363,7 @@ class ParticlePainter extends CustomPainter {
 
     for (final particle in particles) {
       if (particle.isAlive) {
-        particle.update(0.016); // 假设60fps
+        particle.update(0.016);
 
         final paint = Paint()
           ..color = particle.color.withValues(alpha: particle.alpha * 0.8)
@@ -260,7 +371,7 @@ class ParticlePainter extends CustomPainter {
 
         canvas.drawCircle(
           center + particle.position * progress,
-          4.0 * particle.alpha,
+          particle.size * particle.alpha,
           paint,
         );
       }
@@ -307,7 +418,8 @@ class _GiftRainAnimationState extends State<GiftRainAnimation>
 
   void _generateFallingGifts() {
     final random = math.Random();
-    for (int i = 0; i < math.min(widget.gifts.length, 10); i++) {
+    final maxGifts = math.min(widget.gifts.length, 10);
+    for (int i = 0; i < maxGifts; i++) {
       final gift = widget.gifts[random.nextInt(widget.gifts.length)];
       _fallingGifts.add(FallingGift(
         gift: gift,
@@ -316,6 +428,7 @@ class _GiftRainAnimationState extends State<GiftRainAnimation>
         speed: random.nextDouble() * 0.5 + 0.5,
         rotation: random.nextDouble() * 2 * math.pi,
         rotationSpeed: (random.nextDouble() - 0.5) * 4,
+        size: gift.iconSize * 0.2,
       ));
     }
   }
@@ -351,6 +464,7 @@ class FallingGift {
   final double speed;
   final double rotation;
   final double rotationSpeed;
+  final double size;
 
   FallingGift({
     required this.gift,
@@ -359,6 +473,7 @@ class FallingGift {
     required this.speed,
     required this.rotation,
     required this.rotationSpeed,
+    this.size = 20,
   });
 }
 
@@ -387,26 +502,25 @@ class GiftRainPainter extends CustomPainter {
       canvas.translate(x, y);
       canvas.rotate(fallingGift.rotation + adjustedProgress * fallingGift.rotationSpeed);
 
-      // 绘制礼物背景圆圈
+      final giftSize = fallingGift.size;
+
       final backgroundPaint = Paint()
         ..color = fallingGift.gift.color.withValues(alpha: 0.3)
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(Offset.zero, 20, backgroundPaint);
+      canvas.drawCircle(Offset.zero, giftSize, backgroundPaint);
 
-      // 绘制礼物边框
       final borderPaint = Paint()
         ..color = fallingGift.gift.color
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2;
 
-      canvas.drawCircle(Offset.zero, 20, borderPaint);
+      canvas.drawCircle(Offset.zero, giftSize, borderPaint);
 
-      // 绘制礼物表情
       final textPainter = TextPainter(
         text: TextSpan(
           text: fallingGift.gift.emoji,
-          style: const TextStyle(fontSize: 24),
+          style: TextStyle(fontSize: giftSize * 1.2),
         ),
         textDirection: TextDirection.ltr,
       );
