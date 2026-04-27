@@ -1,0 +1,33 @@
+FROM alpine:latest
+WORKDIR /app
+
+# 复制二进制文件
+COPY ./api/moe-social-api ./api
+COPY ./rpc/moe-social-rpc ./rpc
+
+# 给执行权限
+RUN chmod +x ./api
+RUN chmod +x ./rpc
+
+# 复制配置文件
+COPY api/etc/super-direct.yaml /app/etc/super.yaml
+COPY rpc/etc/super.yaml /app/rpc/etc/super.yaml
+COPY config/config.yaml /app/config/config.yaml
+
+# 创建必要的目录
+RUN mkdir -p /app/data/images
+
+# 暴露端口
+EXPOSE 8888
+EXPOSE 8080
+
+# 启动脚本
+RUN echo '#!/bin/sh
+# 启动 RPC 服务
+./rpc -f rpc/etc/super.yaml &
+
+# 启动 API 服务
+./api -f etc/super.yaml' > /app/start.sh && chmod +x /app/start.sh
+
+# 运行启动脚本
+CMD ["/app/start.sh"]
