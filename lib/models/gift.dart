@@ -10,6 +10,8 @@ class Gift {
   final Color color;
   final GiftCategory category;
   final int popularity; // 人气值，用于排序
+  /// 当前用户在背包中拥有数量（来自 `/api/gifts?user_id=`）
+  final int ownedQuantity;
   final String? svgPath; // SVG文件路径
 
   const Gift({
@@ -22,7 +24,32 @@ class Gift {
     required this.category,
     this.svgPath,
     this.popularity = 0,
+    this.ownedQuantity = 0,
   });
+
+  Gift copyWith({
+    String? id,
+    String? name,
+    String? emoji,
+    String? description,
+    double? price,
+    Color? color,
+    GiftCategory? category,
+    int? popularity,
+    int? ownedQuantity,
+  }) {
+    return Gift(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      emoji: emoji ?? this.emoji,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      color: color ?? this.color,
+      category: category ?? this.category,
+      popularity: popularity ?? this.popularity,
+      ownedQuantity: ownedQuantity ?? this.ownedQuantity,
+    );
+  }
 
   // 预定义的礼物列表
   static const List<Gift> defaultGifts = [
@@ -198,12 +225,18 @@ class Gift {
     ),
   ];
 
+  /// 后端送礼接口按 **数据库 uint 主键** 解析 [id]；内置 [defaultGifts] 使用英文 slug，不能用于扣费送礼。
+  bool get canSendViaBackendApi {
+    final n = int.tryParse(id);
+    return n != null && n > 0;
+  }
+
   /// 后端 `/api/gifts` 返回的条目（无 emoji 字段，用 [icon] 或占位）
   factory Gift.fromCatalogApi(Map<String, dynamic> json) {
     final rawIcon = json['icon'] as String? ?? '';
     final emoji = rawIcon.startsWith('http') || rawIcon.isEmpty ? '🎁' : rawIcon;
     final price = (json['price'] as num?)?.toDouble() ?? 0;
-    
+
     // 尝试获取SVG路径（如果后端提供）
     String? svgPath;
     if (json.containsKey('svg_path') && json['svg_path'] != null) {
@@ -215,7 +248,7 @@ class Gift {
         svgPath = 'assets/svg/$id.svg';
       }
     }
-    
+
     return Gift(
       id: json['id']?.toString() ?? '',
       name: (json['name'] as String?)?.trim().isNotEmpty == true
@@ -228,6 +261,7 @@ class Gift {
       category: GiftCategory.special,
       svgPath: svgPath,
       popularity: 0,
+      ownedQuantity: (json['owned_quantity'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -246,6 +280,7 @@ class Gift {
       ),
       svgPath: json['svg_path'] as String?,
       popularity: json['popularity'] as int? ?? 0,
+      ownedQuantity: (json['owned_quantity'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -261,6 +296,7 @@ class Gift {
       'category': category.name,
       'svg_path': svgPath,
       'popularity': popularity,
+      'owned_quantity': ownedQuantity,
     };
   }
 
@@ -309,10 +345,85 @@ class Gift {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is Gift && runtimeType == other.runtimeType && id == other.id;
+      other is Gift &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          ownedQuantity == other.ownedQuantity;
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => Object.hash(id, ownedQuantity);
+
+  GiftLevel get level {
+    if (price < 1.0) return GiftLevel.basic;
+    if (price < 10.0) return GiftLevel.medium;
+    if (price < 50.0) return GiftLevel.advanced;
+    return GiftLevel.luxury;
+  }
+
+  Duration get animationDuration {
+    switch (level) {
+      case GiftLevel.basic:
+        return const Duration(milliseconds: 1500);
+      case GiftLevel.medium:
+        return const Duration(milliseconds: 2000);
+      case GiftLevel.advanced:
+        return const Duration(milliseconds: 2500);
+      case GiftLevel.luxury:
+        return const Duration(milliseconds: 3500);
+    }
+  }
+
+  int get particleCount {
+    switch (level) {
+      case GiftLevel.basic:
+        return 8;
+      case GiftLevel.medium:
+        return 15;
+      case GiftLevel.advanced:
+        return 25;
+      case GiftLevel.luxury:
+        return 40;
+    }
+  }
+
+  double get iconSize {
+    switch (level) {
+      case GiftLevel.basic:
+        return 60;
+      case GiftLevel.medium:
+        return 80;
+      case GiftLevel.advanced:
+        return 100;
+      case GiftLevel.luxury:
+        return 120;
+    }
+  }
+
+  double get glowRadius {
+    switch (level) {
+      case GiftLevel.basic:
+        return 10;
+      case GiftLevel.medium:
+        return 20;
+      case GiftLevel.advanced:
+        return 30;
+      case GiftLevel.luxury:
+        return 50;
+    }
+  }
+}
+
+/// 礼物等级枚举
+enum GiftLevel {
+  basic('基础', 0),
+  medium('中等', 1),
+  advanced('高级', 2),
+  luxury('奢华', 3);
+
+  const GiftLevel(this.displayName, this.priority);
+
+  final String displayName;
+  final int priority;
 }
 
 /// 礼物分类枚举

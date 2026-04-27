@@ -280,9 +280,19 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: gift.GetGiftRecordsHandler(serverCtx),
 			},
 			{
+				Method:  http.MethodGet,
+				Path:    "/api/user/:user_id/gifts/purchase-orders",
+				Handler: gift.GetGiftPurchaseOrdersHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodPost,
 				Path:    "/api/user/:user_id/gifts/send",
 				Handler: gift.SendGiftHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/user/:user_id/gifts/purchase",
+				Handler: gift.PurchaseGiftHandler(serverCtx),
 			},
 		},
 	)

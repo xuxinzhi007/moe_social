@@ -5,7 +5,7 @@ import '../game/game_lobby_page.dart';
 import 'match_page.dart';
 
 /// 社交扩展入口：弱化游戏/AI 的主 Tab 权重，集中放在「发现」。
-/// 后续可在此接入兴趣匹配、话题广场等。
+/// 「兴趣社区」与底栏「社区」同一目的地，不在此重复入口；同好匹配等仍在此。
 class DiscoverPage extends StatelessWidget {
   const DiscoverPage({super.key});
 
@@ -32,19 +32,11 @@ class DiscoverPage extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '底栏：首页动态、联系人、社区；这里集中同好匹配、AI、小游戏与通知，避免与社区页重复堆入口。',
+            '底栏已有「社区」：群组、话题讨论与内容广场请从底栏进入；此处只放扩展玩法与工具，避免与社区重复入口。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: scheme.onSurfaceVariant,
                   height: 1.35,
                 ),
-          ),
-          const SizedBox(height: 16),
-          _DiscoverTile(
-            icon: Icons.forum_rounded,
-            title: '兴趣社区',
-            subtitle: '浏览群组、按话题看帖、广场形态筛选——数据与首页动态同一套接口',
-            color: const Color(0xFF7F7FD5),
-            onTap: () => Navigator.pushNamed(context, '/community'),
           ),
           const SizedBox(height: 20),
           _MatchEntryCard(scheme: scheme, primary: primary),

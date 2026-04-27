@@ -473,8 +473,9 @@ type GetGiftResp struct {
 }
 
 type GetGiftsReq struct {
-	Page     int `form:"page,default=1"`
-	PageSize int `form:"page_size,default=10"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+	UserId   string `form:"user_id,optional"` // 传入则每个礼物带 owned_quantity（背包）
 }
 
 type GetGiftsResp struct {
@@ -779,13 +780,14 @@ type GetVipPlansResp struct {
 }
 
 type Gift struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Price       int    `json:"price"`
-	Icon        string `json:"icon"`
-	Description string `json:"description"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	Id             string `json:"id"`
+	Name           string `json:"name"`
+	Price          int    `json:"price"`
+	Icon           string `json:"icon"`
+	Description    string `json:"description"`
+	CreatedAt      string `json:"created_at"`
+	UpdatedAt      string `json:"updated_at"`
+	OwnedQuantity  int    `json:"owned_quantity,optional"` // 当前用户背包数量
 }
 
 type GiftRecord struct {
@@ -1089,6 +1091,23 @@ type SendGiftReq struct {
 	Message  string `json:"message,optional"`
 }
 
+type PurchaseGiftReq struct {
+	UserId   string `path:"user_id"`
+	GiftId   string `json:"gift_id"`
+	Quantity int    `json:"quantity,default=1"`
+}
+
+type PurchaseGiftResp struct {
+	BaseResp
+	Data PurchaseGiftData `json:"data"`
+}
+
+type PurchaseGiftData struct {
+	NewBalance    float64 `json:"new_balance"`
+	OwnedQuantity int     `json:"owned_quantity"`
+	OrderNo       string  `json:"order_no,omitempty"`
+}
+
 type SendGiftResp struct {
 	BaseResp
 	Data GiftRecord `json:"data"`
@@ -1238,7 +1257,9 @@ type User struct {
 	IsVip           bool    `json:"is_vip"`
 	VipExpiresAt    string  `json:"vip_expires_at"`
 	AutoRenew       bool    `json:"auto_renew"`
-	Balance         float64 `json:"balance"`
+	Balance             float64 `json:"balance"`
+	GiftCharm           int     `json:"gift_charm"`
+	ReceivedGiftValue   float64 `json:"received_gift_value"`
 	Inventory       string  `json:"inventory"`
 	EquippedFrameId string  `json:"equipped_frame_id"`
 }
@@ -1284,6 +1305,33 @@ type VipOrder struct {
 	Status    string  `json:"status"`
 	CreatedAt string  `json:"created_at"`
 	PaidAt    string  `json:"paid_at"`
+	OrderNo   string  `json:"order_no,omitempty"`
+}
+
+type GiftPurchaseOrder struct {
+	Id          string  `json:"id"`
+	UserId      string  `json:"user_id"`
+	OrderNo     string  `json:"order_no"`
+	GiftId      string  `json:"gift_id"`
+	GiftName    string  `json:"gift_name"`
+	Quantity    int     `json:"quantity"`
+	UnitPrice   float64 `json:"unit_price"`
+	TotalAmount float64 `json:"total_amount"`
+	PayMethod   string  `json:"pay_method"`
+	Status      string  `json:"status"`
+	CreatedAt   string  `json:"created_at"`
+}
+
+type GetGiftPurchaseOrdersReq struct {
+	UserId   string `path:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type GetGiftPurchaseOrdersResp struct {
+	BaseResp
+	Data  []GiftPurchaseOrder `json:"data"`
+	Total int                 `json:"total"`
 }
 
 type VipPlan struct {
