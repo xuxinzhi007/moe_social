@@ -26,8 +26,8 @@ Ollama:
 
 # 图片“云空间”（实际落到服务端本地目录）
 Image:
-  # 服务端机器的本地目录（建议用绝对路径；Linux 用 /...）
-  LocalDir: "/root/gowork/moe_images"
+  # 服务端机器的本地目录（与 docker-compose 挂载路径一致）
+  LocalDir: "/app/data/images"
   # 对外访问地址（用于拼接图片 url；cpolar/服务器域名放这里）
   # 建议留空：后端会根据本次请求的 Host 自动拼接（cpolar 域名变了也不用改配置）
   PublicBaseUrl: ""
