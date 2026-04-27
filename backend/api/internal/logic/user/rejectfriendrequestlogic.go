@@ -6,8 +6,10 @@ package user
 import (
 	"context"
 
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +29,24 @@ func NewRejectFriendRequestLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *RejectFriendRequestLogic) RejectFriendRequest(req *types.FriendRequestActionReq) (resp *types.FriendRequestActionResp, err error) {
-	// todo: add your logic here and delete this line
+	// 调用RPC服务
+	rpcResp, err := l.svcCtx.SuperRpcClient.RejectFriendRequest(l.ctx, &super.RejectFriendRequestReq{
+		ActorUserId: req.UserId,
+		RequestId:   req.RequestId,
+	})
 
-	return
+	if err != nil {
+		l.Errorf("[好友] 拒绝好友请求：调用服务失败 错误=%v", err)
+		return &types.FriendRequestActionResp{
+			BaseResp: common.HandleRPCError(err, ""),
+		}, nil
+	}
+
+	// 构建响应
+	resp = &types.FriendRequestActionResp{
+		BaseResp: common.HandleRPCError(nil, "好友请求已拒绝"),
+		Data:     rpcResp.Ok,
+	}
+
+	return resp, nil
 }
