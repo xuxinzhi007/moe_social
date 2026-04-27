@@ -37,7 +37,10 @@ Image:
 
 # RPC服务配置
 SuperRpc:
-  Etcd:
-    Hosts:
-    - 127.0.0.1:2379
-    Key: super.rpc
+  Endpoints:
+    - 127.0.0.1:8080
+  NonBlock: true
+#  Etcd:
+#    Hosts:
+#    - 127.0.0.1:2379
+#    Key: super.rpc

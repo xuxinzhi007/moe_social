@@ -2,10 +2,10 @@
 class AppConfig {
   // 环境配置
   // 设置为 true 使用生产环境，false 使用开发环境
-  static const bool isProduction = false; // 修改这里切换环境
+  static const bool isProduction = true; // 修改这里切换环境
   
-  // 生产环境地址（cpolar隧道）
-  static const String productionUrl = 'http://2370922e.r3.cpolar.top';
+  // 生产环境地址（服务器公网IP）
+  static const String productionUrl = 'http://47.106.175.49:8888';
   
   // 开发环境地址
   static const String developmentUrl = 'http://localhost:8888';
@@ -19,7 +19,7 @@ class AppConfig {
   // - iOS真机: http://你的电脑IP:8888
   // 
   // 生产环境：
-  // - 所有平台: http://2370922e.r3.cpolar.top
+  // - 所有平台: http://47.106.175.49:8888
   
   static String get baseUrl {
     // 如果设置为生产环境，直接返回生产地址

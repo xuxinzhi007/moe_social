@@ -1,0 +1,10 @@
+version: '3'
+services:
+  moe-social:
+    build:
+      context: .
+      dockerfile: Dockerfile.binary
+    restart: always          # 崩溃自动重启
+    ports:
+      - "8888:8888"          # API 端口
+      - "8080:8080"          # RPC 端口

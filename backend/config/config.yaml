@@ -16,30 +16,16 @@ ollama:
   # 后端请求 Ollama 的超时（秒）
   timeout_seconds: 300
 
-# 当前公网 API 根（ngrok 等）。须与 App 能访问到的隧道一致。
+# 当前公网 API 根（服务器公网IP）。须与 App 能访问到的地址一致。
 # 重启 API 后生效；客户端会 GET /api/public/client-config 读取本字段（权威）。
-# 换 ngrok 域名时：改此处 + 更新 GitHub 上 lib/config/moe_api.json（或 MOE_API_CONFIG_URL），通常无需改 Dart。
+# 换域名时：改此处 + 更新 GitHub 上 lib/config/moe_api.json（或 MOE_API_CONFIG_URL），通常无需改 Dart。
 app_client:
-  public_api_base_url: "https://karan-unsedate-unsimultaneously.ngrok-free.dev"
+  public_api_base_url: "http://47.106.175.49:8888"
 
 
 #线上ip ：
-database:
-  host: "47.106.175.49"
-  port: 3306
-  user: "root"
-  password: "123456"
-  dbname: "go_react_demo"
-  charset: "utf8mb4"
-  parseTime: true
-  loc: "Local"
-
-
-
-
-#本地ip :
 #database:
-#  host: "127.0.0.1"
+#  host: "47.106.175.49"
 #  port: 3306
 #  user: "root"
 #  password: "123456"
@@ -47,3 +33,18 @@ database:
 #  charset: "utf8mb4"
 #  parseTime: true
 #  loc: "Local"
+
+
+
+
+#本地ip :
+
+database:
+  host: "127.0.0.1"
+  port: 3306
+  user: "root"
+  password: "123456"
+  dbname: "go_react_demo"
+  charset: "utf8mb4"
+  parseTime: true
+  loc: "Local"

@@ -113,7 +113,9 @@ git push origin v1.0.3
 git tag -d v1.0.3
 git push origin :v1.0.3
 ```
+go env -w GOOS=linux
 
+go env -w GOOS=windows
 
 ### 2. 产物下载
 构建完成后，APK 文件会出现在 Releases 页面：
