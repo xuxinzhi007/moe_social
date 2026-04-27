@@ -117,6 +117,24 @@ go env -w GOOS=linux
 
 go env -w GOOS=windows
 
+
+# 停止所有相关容器
+docker-compose -f docker-compose.binary.yml stop
+
+# 删除所有相关容器
+docker-compose -f docker-compose.binary.yml down
+
+# 清理无效的容器
+docker rm -f moe-social-rpc moe-social-api 2>/dev/null || true
+
+# 重新构建并启动
+docker-compose -f docker-compose.binary.yml up -d --build
+
+# 查看日志
+docker logs moe-social-rpc
+docker logs moe-social-api
+
+
 ### 2. 产物下载
 构建完成后，APK 文件会出现在 Releases 页面：
 - **下载地址**: [Releases 页面](https://github.com/xuxinzhi007/moe_social/releases)
