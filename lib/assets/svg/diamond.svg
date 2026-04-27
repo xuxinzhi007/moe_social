@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <!-- 赛博艺术滤镜 -->
+    <filter id="cyber-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feMorphology operator="dilate" radius="2" in="SourceAlpha" result="morph"/>
+      <feGaussianBlur in="morph" stdDeviation="4" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0
+                                              0 1 0 0 0
+                                              0 0 1 0 0
+                                              0 0 0 2 0" result="glow"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.08" numOctaves="2" result="noise"/>
+      <feDisplacementMap in="glow" in2="noise" scale="1" xChannelSelector="R" yChannelSelector="G" result="noisy-glow"/>
+      <feComposite in="noisy-glow" in2="SourceGraphic" operator="over"/>
+    </filter>
+    
+    <!-- 赛博渐变 -->
+    <linearGradient id="diamond-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#001f3f;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#00ff8f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff0080;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- 背景 -->
+  <rect width="64" height="64" fill="#0a0a1a"/>
+  <!-- 钻石主体 -->
+  <path d="M32 8L44 24L38 40L32 28L26 40L20 24Z" 
+        fill="url(#diamond-gradient)" 
+        filter="url(#cyber-glow)"/>
+  <path d="M32 28L44 44L32 56L20 44Z" 
+        fill="url(#diamond-gradient)" 
+        filter="url(#cyber-glow)"/>
+  <!-- 高光线条 -->
+  <path d="M32 8L32 28L44 24" 
+        stroke="#ffffff" 
+        stroke-width="1" 
+        stroke-opacity="0.8" 
+        filter="url(#cyber-glow)"/>
+  <path d="M32 8L32 28L20 24" 
+        stroke="#ffffff" 
+        stroke-width="1" 
+        stroke-opacity="0.8" 
+        filter="url(#cyber-glow)"/>
+  <path d="M32 28L44 24L38 40" 
+        stroke="#ffffff" 
+        stroke-width="1" 
+        stroke-opacity="0.8" 
+        filter="url(#cyber-glow)"/>
+  <path d="M32 28L20 24L26 40" 
+        stroke="#ffffff" 
+        stroke-width="1" 
+        stroke-opacity="0.8" 
+        filter="url(#cyber-glow)"/>
+  <path d="M32 28L32 56L44 44" 
+        stroke="#ffffff" 
+        stroke-width="1" 
+        stroke-opacity="0.8" 
+        filter="url(#cyber-glow)"/>
+  <path d="M32 28L32 56L20 44" 
+        stroke="#ffffff" 
+        stroke-width="1" 
+        stroke-opacity="0.8" 
+        filter="url(#cyber-glow)"/>
+  <!-- 粒子效果 -->
+  <g filter="url(#cyber-glow)">
+    <circle cx="32" cy="4" r="1.5" fill="#00ff8f" opacity="0.8"/>
+    <circle cx="28" cy="12" r="1" fill="#ff0080" opacity="0.8"/>
+    <circle cx="36" cy="12" r="1" fill="#ff0080" opacity="0.8"/>
+    <circle cx="24" cy="20" r="0.8" fill="#00ff8f" opacity="0.6"/>
+    <circle cx="40" cy="20" r="0.8" fill="#00ff8f" opacity="0.6"/>
+  </g>
+</svg>

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'package:flutter_svg/flutter_svg.dart';
 import '../models/gift.dart';
+import '../utils/svg_gift_manager.dart';
+import '../utils/gift_effect_manager.dart';
 
 /// 礼物发送成功的动画效果
 class GiftSendAnimation extends StatefulWidget {
@@ -163,10 +166,15 @@ class _GiftSendAnimationState extends State<GiftSendAnimation>
                         ],
                       ),
                       child: Center(
-                        child: Text(
-                          widget.gift.emoji,
-                          style: const TextStyle(fontSize: 40),
-                        ),
+                        child: widget.gift.svgPath != null
+                            ? GiftEffectManager.getGiftEffect(
+                                widget.gift,
+                                animation: _controller,
+                              )
+                            : Text(
+                                widget.gift.emoji,
+                                style: const TextStyle(fontSize: 40),
+                              ),
                       ),
                     ),
 
@@ -402,20 +410,38 @@ class GiftRainPainter extends CustomPainter {
 
       canvas.drawCircle(Offset.zero, 20, borderPaint);
 
-      // 绘制礼物表情
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: fallingGift.gift.emoji,
-          style: const TextStyle(fontSize: 24),
-        ),
-        textDirection: TextDirection.ltr,
-      );
+      // 绘制礼物图标（优先使用SVG）
+      if (fallingGift.gift.svgPath != null) {
+        // 注意：在CustomPaint中绘制SVG需要特殊处理
+        // 这里暂时使用emoji作为替代，实际项目中可以使用flutter_svg的PictureRecorder
+        final textPainter = TextPainter(
+          text: TextSpan(
+            text: fallingGift.gift.emoji,
+            style: const TextStyle(fontSize: 24),
+          ),
+          textDirection: TextDirection.ltr,
+        );
 
-      textPainter.layout();
-      textPainter.paint(
-        canvas,
-        Offset(-textPainter.width / 2, -textPainter.height / 2),
-      );
+        textPainter.layout();
+        textPainter.paint(
+          canvas,
+          Offset(-textPainter.width / 2, -textPainter.height / 2),
+        );
+      } else {
+        final textPainter = TextPainter(
+          text: TextSpan(
+            text: fallingGift.gift.emoji,
+            style: const TextStyle(fontSize: 24),
+          ),
+          textDirection: TextDirection.ltr,
+        );
+
+        textPainter.layout();
+        textPainter.paint(
+          canvas,
+          Offset(-textPainter.width / 2, -textPainter.height / 2),
+        );
+      }
 
       canvas.restore();
     }

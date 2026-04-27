@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <!-- 赛博艺术滤镜 -->
+    <filter id="cyber-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feMorphology operator="dilate" radius="2" in="SourceAlpha" result="morph"/>
+      <feGaussianBlur in="morph" stdDeviation="4" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0
+                                              0 1 0 0 0
+                                              0 0 1 0 0
+                                              0 0 0 2 0" result="glow"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.08" numOctaves="2" result="noise"/>
+      <feDisplacementMap in="glow" in2="noise" scale="1" xChannelSelector="R" yChannelSelector="G" result="noisy-glow"/>
+      <feComposite in="noisy-glow" in2="SourceGraphic" operator="over"/>
+    </filter>
+    
+    <!-- 赛博渐变 -->
+    <linearGradient id="rocket-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#001f3f;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#00ff8f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff0080;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- 背景 -->
+  <rect width="64" height="64" fill="#0a0a1a"/>
+  <!-- 火箭主体 -->
+  <path d="M28 16L36 16L40 24L36 32L28 32L24 24Z" 
+        fill="url(#rocket-gradient)" 
+        filter="url(#cyber-glow)"/>
+  <path d="M28 32L36 32L34 48L30 48Z" 
+        fill="url(#rocket-gradient)" 
+        filter="url(#cyber-glow)"/>
+  <!-- 火箭轮廓 -->
+  <path d="M28 16L36 16L40 24L36 32L28 32L24 24Z" 
+        fill="none" 
+        stroke="#ffffff" 
+        stroke-width="2" 
+        filter="url(#cyber-glow)"/>
+  <path d="M28 32L36 32L34 48L30 48Z" 
+        fill="none" 
+        stroke="#ffffff" 
+        stroke-width="2" 
+        filter="url(#cyber-glow)"/>
+  <!-- 推进器效果 -->
+  <path d="M32 48L32 56" 
+        stroke="url(#rocket-gradient)" 
+        stroke-width="3" 
+        stroke-linecap="round" 
+        filter="url(#cyber-glow)"/>
+  <path d="M30 52L34 52" 
+        stroke="#ffffff" 
+        stroke-width="2" 
+        stroke-linecap="round" 
+        filter="url(#cyber-glow)"/>
+  <path d="M29 54L35 54" 
+        stroke="#ffffff" 
+        stroke-width="2" 
+        stroke-linecap="round" 
+        filter="url(#cyber-glow)"/>
+  <!-- 粒子效果 -->
+  <g filter="url(#cyber-glow)">
+    <circle cx="32" cy="58" r="2" fill="#ff0080" opacity="0.8"/>
+    <circle cx="30" cy="56" r="1.5" fill="#00ff8f" opacity="0.8"/>
+    <circle cx="34" cy="56" r="1.5" fill="#00ff8f" opacity="0.8"/>
+    <circle cx="28" cy="54" r="1" fill="#ff0080" opacity="0.6"/>
+    <circle cx="36" cy="54" r="1" fill="#ff0080" opacity="0.6"/>
+  </g>
+</svg>

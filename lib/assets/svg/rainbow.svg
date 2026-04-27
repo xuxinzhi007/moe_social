@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="rainbow-gradient-1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF0000;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF7F00;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="rainbow-gradient-2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFF00;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00FF00;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="rainbow-gradient-3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0000FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4B0082;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="rainbow-gradient-4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#9400D3;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8B00FF;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <path d="M16 32Q32 16 48 32" stroke="url(#rainbow-gradient-1)" stroke-width="6" stroke-linecap="round" fill="none" />
+  <path d="M18 32Q32 18 46 32" stroke="url(#rainbow-gradient-2)" stroke-width="4" stroke-linecap="round" fill="none" />
+  <path d="M20 32Q32 20 44 32" stroke="url(#rainbow-gradient-3)" stroke-width="3" stroke-linecap="round" fill="none" />
+  <path d="M22 32Q32 22 42 32" stroke="url(#rainbow-gradient-4)" stroke-width="2" stroke-linecap="round" fill="none" />
+</svg>

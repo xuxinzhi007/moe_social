@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="hug-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#81C784;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4CAF50;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <path d="M20 20L12 32L20 44L32 36L44 44L52 32L44 20L32 28L20 20Z" fill="url(#hug-gradient)" />
+  <path d="M24 24L16 32L24 40L32 32L40 40L48 32L40 24L32 32L24 24Z" fill="#FFFFFF" fill-opacity="0.3" />
+</svg>
