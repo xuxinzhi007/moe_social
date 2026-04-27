@@ -6,8 +6,10 @@ package user
 import (
 	"context"
 
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +29,26 @@ func NewGetFriendStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 }
 
 func (l *GetFriendStatusLogic) GetFriendStatus(req *types.FriendStatusPathReq) (resp *types.FriendStatusResp, err error) {
-	// todo: add your logic here and delete this line
+	// 调用RPC服务
+	rpcResp, err := l.svcCtx.SuperRpcClient.GetFriendRelation(l.ctx, &super.GetFriendRelationReq{
+		ActorUserId: req.UserId,
+		OtherUserId: req.OtherUserId,
+	})
 
-	return
+	if err != nil {
+		l.Errorf("[好友] 获取好友状态：调用服务失败 错误=%v", err)
+		return &types.FriendStatusResp{
+			BaseResp: common.HandleRPCError(err, ""),
+		}, nil
+	}
+
+	// 构建响应
+	resp = &types.FriendStatusResp{
+		BaseResp: common.HandleRPCError(nil, "获取好友状态成功"),
+		Data: types.FriendRelationData{
+			Relation: rpcResp.Relation,
+		},
+	}
+
+	return resp, nil
 }
