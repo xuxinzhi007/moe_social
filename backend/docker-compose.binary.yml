@@ -28,7 +28,7 @@ services:
       - ./api/moe-social-api:/app/api/moe-social-api
       - ./api/etc:/app/etc
       - ./config:/app/config
-      - ./data/images:/app/data/images
+      - /root/gowork/moe_images:/app/data/images
     networks:
       - moe-network
 
