@@ -22,8 +22,10 @@ ollama:
 app_client:
   public_api_base_url: "https://karan-unsedate-unsimultaneously.ngrok-free.dev"
 
+
+#线上ip ：
 database:
-  host: "127.0.0.1"
+  host: "47.106.175.49"
   port: 3306
   user: "root"
   password: "123456"
@@ -31,3 +33,17 @@ database:
   charset: "utf8mb4"
   parseTime: true
   loc: "Local"
+
+
+
+
+#本地ip :
+#database:
+#  host: "127.0.0.1"
+#  port: 3306
+#  user: "root"
+#  password: "123456"
+#  dbname: "go_react_demo"
+#  charset: "utf8mb4"
+#  parseTime: true
+#  loc: "Local"
