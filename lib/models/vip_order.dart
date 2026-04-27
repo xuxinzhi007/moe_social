@@ -7,6 +7,8 @@ class VipOrder {
   final String status;
   final String createdAt; // 后端返回的是字符串格式
   final String? paidAt; // 后端返回的是字符串格式，可能为空
+  /// 业务订单号（与数据库主键 id 不同）
+  final String? orderNo;
 
   VipOrder({
     required this.id,
@@ -17,6 +19,7 @@ class VipOrder {
     required this.status,
     required this.createdAt,
     this.paidAt,
+    this.orderNo,
   });
 
   // 从JSON创建VipOrder实例（后端返回格式）
@@ -30,6 +33,7 @@ class VipOrder {
       status: json['status'] as String,
       createdAt: json['created_at'] as String,
       paidAt: json['paid_at'] as String?,
+      orderNo: json['order_no'] as String?,
     );
   }
 
@@ -44,6 +48,7 @@ class VipOrder {
       'status': status,
       'created_at': createdAt,
       'paid_at': paidAt,
+      if (orderNo != null && orderNo!.isNotEmpty) 'order_no': orderNo,
     };
   }
 

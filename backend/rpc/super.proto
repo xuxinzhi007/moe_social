@@ -24,6 +24,9 @@ message User {
   string inventory = 14;
   string equipped_frame_id = 15;
   string moe_no = 16;
+  // 收到他人赠送礼物累计：魅力点（与礼物标价挂钩）与面值总和（展示用）
+  int32 gift_charm = 17;
+  double received_gift_value = 18;
 }
 
 // 用户注册请求
@@ -208,6 +211,7 @@ message VipOrder {
   string status = 6;
   string created_at = 7;
   string paid_at = 8;
+  string order_no = 9;
 }
 
 message CreateVipOrderReq {
@@ -758,6 +762,10 @@ service Super {
   rpc GetGift(GetGiftReq) returns (GetGiftResp);
   rpc SendGift(SendGiftReq) returns (SendGiftResp);
   rpc GetGiftRecords(GetGiftRecordsReq) returns (GetGiftRecordsResp);
+  // 用心意（余额）购买礼物，增加背包数量
+  rpc PurchaseGift(PurchaseGiftReq) returns (PurchaseGiftResp);
+  // 礼物购买订单列表
+  rpc GetGiftPurchaseOrders(GetGiftPurchaseOrdersReq) returns (GetGiftPurchaseOrdersResp);
 }
 
 // 关注相关消息
@@ -1081,6 +1089,8 @@ message Gift {
   string description = 5;
   string created_at = 6;
   string updated_at = 7;
+  // 当 GetGiftsReq.viewer_user_id 传入时，为该用户在本礼物的背包数量
+  int32 owned_quantity = 8;
 }
 
 message GiftRecord {
@@ -1098,6 +1108,8 @@ message GiftRecord {
 message GetGiftsReq {
   int32 page = 1;
   int32 page_size = 2;
+  // 可选：传入则在每个 Gift 上填充 owned_quantity（背包）
+  string viewer_user_id = 3;
 }
 
 message GetGiftsResp {
@@ -1136,5 +1148,44 @@ message GetGiftRecordsReq {
 
 message GetGiftRecordsResp {
   repeated GiftRecord records = 1;
+  int32 total = 2;
+}
+
+message PurchaseGiftReq {
+  string user_id = 1;
+  string gift_id = 2;
+  int32 quantity = 3;
+}
+
+message PurchaseGiftResp {
+  bool success = 1;
+  string message = 2;
+  double new_balance = 3;
+  int32 owned_quantity = 4;
+  string order_no = 5;
+}
+
+message GiftPurchaseOrder {
+  string id = 1;
+  string user_id = 2;
+  string order_no = 3;
+  string gift_id = 4;
+  string gift_name = 5;
+  int32 quantity = 6;
+  double unit_price = 7;
+  double total_amount = 8;
+  string pay_method = 9;
+  string status = 10;
+  string created_at = 11;
+}
+
+message GetGiftPurchaseOrdersReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetGiftPurchaseOrdersResp {
+  repeated GiftPurchaseOrder orders = 1;
   int32 total = 2;
 }

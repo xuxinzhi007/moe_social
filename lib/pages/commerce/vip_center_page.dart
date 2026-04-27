@@ -3,7 +3,7 @@ import '../../auth_service.dart';
 import '../../services/api_service.dart';
 import '../../models/vip_record.dart';
 import 'vip_purchase_page.dart';
-import 'vip_orders_page.dart';
+import 'order_center_page.dart';
 import 'vip_history_page.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_toast.dart';
@@ -168,14 +168,15 @@ class _VipCenterPageState extends State<VipCenterPage> {
                             child: MoeMenuCard(
                               items: [
                                 MoeMenuItem(
-                                  icon: Icons.shopping_bag_outlined,
-                                  title: 'VIP订单',
-                                  subtitle: '查看我的购买记录',
+                                  icon: Icons.receipt_long_outlined,
+                                  title: '订单中心',
+                                  subtitle: '礼物购买、VIP订单与钱包流水',
                                   color: Colors.blueAccent,
                                   onTap: () {
                                     Navigator.push(
                                       context,
-                                      MaterialPageRoute(builder: (context) => const VipOrdersPage()),
+                                      MaterialPageRoute(
+                                          builder: (context) => const OrderCenterPage()),
                                     );
                                   },
                                 ),

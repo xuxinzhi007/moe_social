@@ -2,6 +2,8 @@ package logic
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strconv"
 
 	"backend/model"
@@ -82,18 +84,48 @@ func (l *SendGiftLogic) SendGift(in *super.SendGiftReq) (*super.SendGiftResp, er
 		}, nil
 	}
 
-	totalCost := float64(gift.Price * int(quantity))
-	if sender.Balance < totalCost {
-		return &super.SendGiftResp{
-			Success: false,
-			Message: "insufficient balance",
-		}, nil
-	}
-
 	var record model.GiftRecord
 	err = db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&sender).Update("balance", sender.Balance-totalCost).Error; err != nil {
+		var s model.User
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&s, fromUserID).Error; err != nil {
 			return err
+		}
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&receiver, toUserID).Error; err != nil {
+			return err
+		}
+
+		cost := float64(gift.Price) * float64(quantity)
+
+		var stock model.UserGiftStock
+		errStock := tx.Where("user_id = ? AND gift_id = ?", fromUserID, giftID).First(&stock).Error
+		useStock := errStock == nil && stock.Quantity >= int(quantity)
+
+		if useStock {
+			if err := tx.Model(&stock).Update("quantity", stock.Quantity-int(quantity)).Error; err != nil {
+				return err
+			}
+		} else {
+			if s.Balance < cost {
+				return errors.New("insufficient balance")
+			}
+			res := tx.Model(&model.User{}).Where("id = ? AND balance >= ?", fromUserID, cost).
+				Update("balance", gorm.Expr("balance - ?", cost))
+			if res.Error != nil {
+				return res.Error
+			}
+			if res.RowsAffected != 1 {
+				return errors.New("insufficient balance")
+			}
+			tr := model.Transaction{
+				UserID:      uint(fromUserID),
+				Amount:      cost,
+				Type:        "consume",
+				Status:      "success",
+				Description: fmt.Sprintf("赠送礼物「%s」×%d 给好友", gift.Name, quantity),
+			}
+			if err := tx.Create(&tr).Error; err != nil {
+				return err
+			}
 		}
 
 		record = model.GiftRecord{
@@ -106,13 +138,28 @@ func (l *SendGiftLogic) SendGift(in *super.SendGiftReq) (*super.SendGiftResp, er
 			return err
 		}
 
+		addCharm := gift.Price * int(quantity)
+		addValue := float64(gift.Price) * float64(quantity)
+		if err := tx.Model(&model.User{}).Where("id = ?", toUserID).Updates(map[string]interface{}{
+			"gift_charm":          gorm.Expr("gift_charm + ?", addCharm),
+			"received_gift_value": gorm.Expr("received_gift_value + ?", addValue),
+		}).Error; err != nil {
+			return err
+		}
 		return nil
 	})
 
 	if err != nil {
+		msg := err.Error()
+		if msg == "insufficient balance" {
+			return &super.SendGiftResp{
+				Success: false,
+				Message: "insufficient balance",
+			}, nil
+		}
 		return &super.SendGiftResp{
 			Success: false,
-			Message: "failed to send gift: " + err.Error(),
+			Message: "failed to send gift: " + msg,
 		}, nil
 	}
 
@@ -120,12 +167,12 @@ func (l *SendGiftLogic) SendGift(in *super.SendGiftReq) (*super.SendGiftResp, er
 		Success: true,
 		Message: "gift sent successfully",
 		Record: &super.GiftRecord{
-			Id:            uint64(record.ID),
-			FromUserId:    uint64(record.FromUserID),
-			FromUserName:  sender.Username,
-			ToUserId:      uint64(record.ToUserID),
-			ToUserName:    receiver.Username,
-			GiftId:        uint64(record.GiftID),
+			Id:           uint64(record.ID),
+			FromUserId:   uint64(record.FromUserID),
+			FromUserName: sender.Username,
+			ToUserId:     uint64(record.ToUserID),
+			ToUserName:   receiver.Username,
+			GiftId:       uint64(record.GiftID),
 			Gift: &super.Gift{
 				Id:          uint64(gift.ID),
 				Name:        gift.Name,

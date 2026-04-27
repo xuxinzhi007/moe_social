@@ -4,6 +4,8 @@ import '../auth_service.dart';
 import '../services/api_service.dart';
 import '../utils/error_handler.dart';
 import 'moe_loading.dart';
+import 'gift_haptic.dart';
+import 'gift_animation.dart';
 
 /// 礼物选择器组件
 class GiftSelector extends StatefulWidget {
@@ -24,45 +26,59 @@ class GiftSelector extends StatefulWidget {
   State<GiftSelector> createState() => _GiftSelectorState();
 }
 
-class _GiftSelectorState extends State<GiftSelector>
-    with TickerProviderStateMixin {
-  late TabController _tabController;
-  bool _isLoading = false;
-  double _userBalance = 0.0;
+class _GiftSelectorState extends State<GiftSelector> {
   Gift? _selectedGift;
-  /// 后端 `/api/gifts`；非空时「热门」Tab 优先展示商城数据
+  /// 正在发送的礼物 id（防连点）
+  final Set<String> _sendingGiftIds = {};
+  double _userBalance = 0.0;
+  /// 后端 `/api/gifts` 全量列表（唯一数据源）
   List<Gift> _serverGifts = [];
+  /// 已结束一次拉取（成功或失败）
+  bool _giftCatalogResolved = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: GiftCategory.values.length + 1, vsync: this);
     _loadUserBalance();
     _loadGiftCatalog();
   }
 
   Future<void> _loadGiftCatalog() async {
     try {
-      final rows = await ApiService.getGifts(page: 1, pageSize: 80);
+      final uid = AuthService.currentUser;
+      final rows = await ApiService.getGifts(
+        page: 1,
+        pageSize: 80,
+        viewerUserId: uid,
+      );
       if (!mounted) return;
       final parsed = rows.map(Gift.fromCatalogApi).toList();
       if (parsed.isNotEmpty) {
-        setState(() => _serverGifts = parsed);
+        setState(() {
+          _serverGifts = parsed;
+          _giftCatalogResolved = true;
+        });
+      } else {
+        setState(() {
+          _serverGifts = [];
+          _giftCatalogResolved = true;
+        });
       }
     } catch (_) {
-      // 保持内置礼物列表，避免打断选礼流程
+      if (mounted) {
+        setState(() {
+          _serverGifts = [];
+          _giftCatalogResolved = true;
+        });
+      }
     }
   }
 
-  List<Gift> _popularTabGifts() {
-    if (_serverGifts.isNotEmpty) return _serverGifts;
-    return Gift.getPopularGifts(limit: 12);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  List<Gift> _mapPatchGift(String id, Gift Function(Gift g) fn) {
+    return [
+      for (final g in _serverGifts)
+        if (g.id == id) fn(g) else g,
+    ];
   }
 
   Future<void> _loadUserBalance() async {
@@ -85,15 +101,36 @@ class _GiftSelectorState extends State<GiftSelector>
       ErrorHandler.showError(context, '请先登录');
       return;
     }
+    if (_sendingGiftIds.contains(gift.id)) return;
 
-    if (_userBalance < gift.price) {
-      ErrorHandler.showError(context, '余额不足，请先充值');
+    if (!gift.canSendViaBackendApi) {
+      ErrorHandler.showError(context, '礼物数据异常，请下拉刷新礼物列表后重试。');
       return;
     }
 
+    final hasStock = gift.ownedQuantity >= 1;
+    final canPay = _userBalance + 1e-9 >= gift.price;
+    if (!hasStock && !canPay) {
+      ErrorHandler.showError(
+        context,
+        '背包没有该礼物且余额不足，请先充值。',
+      );
+      return;
+    }
+
+    await GiftHapticFeedback.forGiftConfirmation(gift);
+
     setState(() {
-      _isLoading = true;
+      _sendingGiftIds.add(gift.id);
       _selectedGift = gift;
+      if (hasStock) {
+        _serverGifts = _mapPatchGift(
+          gift.id,
+          (g) => g.copyWith(ownedQuantity: (g.ownedQuantity - 1).clamp(0, 999999)),
+        );
+      } else {
+        _userBalance = (_userBalance - gift.price).clamp(0.0, 1e15);
+      }
     });
 
     try {
@@ -104,27 +141,57 @@ class _GiftSelectorState extends State<GiftSelector>
         quantity: 1,
       );
 
+      await GiftHapticFeedback.forGiftSuccess(gift);
+
       final refreshed = await ApiService.getUserInfo(userId);
       if (mounted) {
-        setState(() {
-          _userBalance = refreshed.balance;
-        });
-        ErrorHandler.showSuccess(context, '礼物发送成功！🎁');
-        widget.onGiftSent?.call(gift);
-        Navigator.of(context).pop();
+        setState(() => _userBalance = refreshed.balance);
+      }
+      await _loadGiftCatalog();
+      if (mounted) {
+        _showGiftSuccessAnimation(gift);
       }
     } catch (e) {
       if (mounted) {
+        setState(() {
+          if (hasStock) {
+            _serverGifts = _mapPatchGift(
+              gift.id,
+              (g) => g.copyWith(ownedQuantity: g.ownedQuantity + 1),
+            );
+          } else {
+            _userBalance += gift.price;
+          }
+        });
         ErrorHandler.handleException(context, e as Exception);
       }
     } finally {
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _sendingGiftIds.remove(gift.id);
           _selectedGift = null;
         });
       }
     }
+  }
+
+  void _showGiftSuccessAnimation(Gift gift) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      barrierDismissible: true,
+      builder: (context) => Center(
+        child: GiftSendAnimation(
+          gift: gift,
+          onAnimationComplete: () {
+            Navigator.of(context).pop();
+            ErrorHandler.showSuccess(context, '礼物发送成功！🎁');
+            widget.onGiftSent?.call(gift);
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -146,15 +213,35 @@ class _GiftSelectorState extends State<GiftSelector>
               ),
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '送礼物',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        '送礼物',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '点击即送出 · 背包优先，不足则从余额扣款',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[700],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
@@ -188,50 +275,59 @@ class _GiftSelectorState extends State<GiftSelector>
             ),
           ),
 
-          // 分类标签栏
-          Container(
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Colors.grey[200]!, width: 1),
-              ),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              labelColor: Colors.blue[600],
-              unselectedLabelColor: Colors.grey[600],
-              indicatorColor: Colors.blue[600],
-              indicatorWeight: 3,
-              tabs: [
-                const Tab(text: '热门'),
-                ...GiftCategory.values.map((category) => Tab(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(category.icon),
-                      const SizedBox(width: 4),
-                      Text(category.displayName),
-                    ],
-                  ),
-                )),
-              ],
-            ),
-          ),
-
-          // 礼物网格
+          // 礼物列表（仅服务端 /api/gifts）
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildGiftGrid(_popularTabGifts()),
-                ...GiftCategory.values.map((category) =>
-                    _buildGiftGrid(Gift.getGiftsByCategory(category))),
-              ],
-            ),
+            child: !_giftCatalogResolved
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        MoeSmallLoading(size: 28),
+                        SizedBox(height: 12),
+                        Text('正在加载礼物…'),
+                      ],
+                    ),
+                  )
+                : _serverGifts.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.cloud_off_outlined,
+                                  size: 48, color: Colors.grey[400]),
+                              const SizedBox(height: 12),
+                              const Text(
+                                '未获取到礼物列表',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w600, fontSize: 16),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '请确认后端已启动且已同步礼物数据，然后重试。',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    fontSize: 13, color: Colors.grey[600]),
+                              ),
+                              const SizedBox(height: 16),
+                              FilledButton.icon(
+                                onPressed: () {
+                                  setState(() => _giftCatalogResolved = false);
+                                  _loadGiftCatalog();
+                                },
+                                icon: const Icon(Icons.refresh_rounded),
+                                label: const Text('重新加载'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : _buildGiftGrid(_serverGifts),
           ),
 
           // 底部操作栏
-          if (_isLoading)
+          if (_sendingGiftIds.isNotEmpty)
             Container(
               padding: const EdgeInsets.all(16),
               child: const Row(
@@ -253,142 +349,175 @@ class _GiftSelectorState extends State<GiftSelector>
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
-        childAspectRatio: 0.8,
+        childAspectRatio: 0.82,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
       itemCount: gifts.length,
       itemBuilder: (context, index) {
         final gift = gifts[index];
-        final canAfford = _userBalance >= gift.price;
+        final hasStock = gift.ownedQuantity >= 1;
+        final canPay = _userBalance + 1e-9 >= gift.price;
+        final canSend =
+            gift.canSendViaBackendApi && (hasStock || canPay);
         final isSelected = _selectedGift?.id == gift.id;
+        final backendOk = gift.canSendViaBackendApi;
+        final sending = _sendingGiftIds.contains(gift.id);
 
-        return GestureDetector(
-          onTap: () {
-            if (_isLoading) return;
-            if (!canAfford) {
-              ErrorHandler.showError(context, '余额不足，可先充值');
-              return;
-            }
-            _sendGift(gift);
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            decoration: BoxDecoration(
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? gift.color.withValues(alpha: 0.2)
+                : (canSend ? Colors.white : Colors.grey[100]),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
               color: isSelected
-                  ? gift.color.withValues(alpha: 0.2)
-                  : (canAfford ? Colors.white : Colors.grey[100]),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected
-                    ? gift.color
-                    : (canAfford ? Colors.grey[300]! : Colors.grey[200]!),
-                width: isSelected ? 2 : 1,
-              ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: gift.color.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : [
-                      BoxShadow(
-                        color: Colors.grey.withValues(alpha: 0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
+                  ? gift.color
+                  : (canSend ? Colors.grey[300]! : Colors.grey[200]!),
+              width: isSelected ? 2 : 1,
             ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: gift.color.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: Colors.grey.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
             child: Stack(
+              clipBehavior: Clip.none,
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.fromLTRB(5, 5, 5, 6),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // 礼物表情
-                      AnimatedScale(
-                        scale: isSelected ? 1.2 : 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        child: Text(
-                          gift.emoji,
-                          style: TextStyle(
-                            fontSize: 28,
-                            color: canAfford ? null : Colors.grey[400],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-
-                      // 礼物名称
-                      Text(
-                        gift.name,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: canAfford ? Colors.grey[800] : Colors.grey[400],
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-
-                      // 价格
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: canAfford
-                              ? gift.color.withValues(alpha: 0.1)
-                              : Colors.grey[200],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '¥${gift.price.toStringAsFixed(gift.price == gift.price.roundToDouble() ? 0 : 1)}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: canAfford ? gift.color : Colors.grey[400],
+                      Expanded(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(10),
+                            onTap: () {
+                              if (sending) return;
+                              if (!backendOk) {
+                                ErrorHandler.showError(
+                                    context, '礼物数据异常，请重新打开礼物面板。');
+                                return;
+                              }
+                              if (!canSend) {
+                                ErrorHandler.showError(
+                                  context,
+                                  '背包没有该礼物且余额不足，请先充值。',
+                                );
+                                return;
+                              }
+                              GiftHapticFeedback.forGiftSelection(gift);
+                              _sendGift(gift);
+                            },
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                AnimatedScale(
+                                  scale: isSelected ? 1.15 : 1.0,
+                                  duration: const Duration(milliseconds: 200),
+                                  child: Text(
+                                    gift.emoji,
+                                    style: TextStyle(
+                                      fontSize: 26,
+                                      color: canSend
+                                          ? null
+                                          : Colors.grey[400],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  gift.name,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: canSend
+                                        ? Colors.grey[800]
+                                        : Colors.grey[400],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 5,
+                                    vertical: 1,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: canPay
+                                        ? gift.color.withValues(alpha: 0.1)
+                                        : Colors.grey[200],
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '¥${gift.price.toStringAsFixed(gift.price == gift.price.roundToDouble() ? 0 : 1)}',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: canPay
+                                          ? gift.color
+                                          : Colors.grey[400],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-
-                // 加载指示器
-                if (isSelected && _isLoading)
+                if (backendOk)
+                  Positioned(
+                    top: 4,
+                    left: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.deepPurple.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                            color: Colors.deepPurple.shade100, width: 0.5),
+                      ),
+                      child: Text(
+                        '×${gift.ownedQuantity}',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.deepPurple.shade800,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (isSelected && sending)
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.8),
+                        color: Colors.white.withValues(alpha: 0.82),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Center(
                         child: MoeSmallLoading(size: 20),
-                      ),
-                    ),
-                  ),
-
-                // 买不起的遮罩
-                if (!canAfford)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.lock,
-                          color: Colors.grey,
-                          size: 16,
-                        ),
                       ),
                     ),
                   ),
@@ -402,7 +531,7 @@ class _GiftSelectorState extends State<GiftSelector>
 }
 
 /// 礼物按钮组件（用于在帖子或评论中显示）
-class GiftButton extends StatelessWidget {
+class GiftButton extends StatefulWidget {
   final String targetId;
   final String targetType;
   final String receiverId;
@@ -418,37 +547,114 @@ class GiftButton extends StatelessWidget {
     this.size = 32.0,
   });
 
+  @override
+  State<GiftButton> createState() => _GiftButtonState();
+}
+
+class _GiftButtonState extends State<GiftButton>
+    with SingleTickerProviderStateMixin {
+  bool _isPressed = false;
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   void _showGiftSelector(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => GiftSelector(
-        targetId: targetId,
-        targetType: targetType,
-        receiverId: receiverId,
-        onGiftSent: onGiftSent,
+        targetId: widget.targetId,
+        targetType: widget.targetType,
+        receiverId: widget.receiverId,
+        onGiftSent: widget.onGiftSent,
       ),
     );
+  }
+
+  void _onTapDown(TapDownDetails details) {
+    setState(() => _isPressed = true);
+    _controller.forward();
+    GiftHapticFeedback.light();
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    setState(() => _isPressed = false);
+    _controller.reverse();
+  }
+
+  void _onTapCancel() {
+    setState(() => _isPressed = false);
+    _controller.reverse();
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
       onTap: () => _showGiftSelector(context),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: Colors.pink[50],
-          borderRadius: BorderRadius.circular(size / 2),
-          border: Border.all(color: Colors.pink[200]!, width: 1),
-        ),
-        child: Icon(
-          Icons.card_giftcard,
-          size: size * 0.5,
-          color: Colors.pink[400],
-        ),
+      onLongPress: () {
+        GiftHapticFeedback.medium();
+        _showGiftSelector(context);
+      },
+      child: AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: Container(
+              width: widget.size,
+              height: widget.size,
+              decoration: BoxDecoration(
+                color: _isPressed
+                    ? Colors.pink[100]
+                    : Colors.pink[50],
+                borderRadius: BorderRadius.circular(widget.size / 2),
+                border: Border.all(
+                  color: _isPressed
+                      ? Colors.pink[400]!
+                      : Colors.pink[200]!,
+                  width: 1,
+                ),
+                boxShadow: _isPressed
+                    ? []
+                    : [
+                        BoxShadow(
+                          color: Colors.pink.withValues(alpha: 0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+              ),
+              child: Icon(
+                Icons.card_giftcard,
+                size: widget.size * 0.5,
+                color: _isPressed
+                    ? Colors.pink[600]
+                    : Colors.pink[400],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
