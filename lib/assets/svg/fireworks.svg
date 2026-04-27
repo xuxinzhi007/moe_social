@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="fireworks-gradient-1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E040FB;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#9C27B0;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="fireworks-gradient-2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF5722;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E64A19;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="20" r="1" fill="url(#fireworks-gradient-1)" />
+  <path d="M32 20L28 12" stroke="url(#fireworks-gradient-1)" stroke-width="2" stroke-linecap="round" />
+  <path d="M32 20L36 12" stroke="url(#fireworks-gradient-1)" stroke-width="2" stroke-linecap="round" />
+  <path d="M32 20L40 20" stroke="url(#fireworks-gradient-1)" stroke-width="2" stroke-linecap="round" />
+  <path d="M32 20L36 28" stroke="url(#fireworks-gradient-1)" stroke-width="2" stroke-linecap="round" />
+  <path d="M32 20L28 28" stroke="url(#fireworks-gradient-1)" stroke-width="2" stroke-linecap="round" />
+  <path d="M32 20L24 20" stroke="url(#fireworks-gradient-1)" stroke-width="2" stroke-linecap="round" />
+  <circle cx="20" cy="40" r="1" fill="url(#fireworks-gradient-2)" />
+  <path d="M20 40L16 32" stroke="url(#fireworks-gradient-2)" stroke-width="2" stroke-linecap="round" />
+  <path d="M20 40L24 32" stroke="url(#fireworks-gradient-2)" stroke-width="2" stroke-linecap="round" />
+  <path d="M20 40L28 40" stroke="url(#fireworks-gradient-2)" stroke-width="2" stroke-linecap="round" />
+  <path d="M20 40L24 48" stroke="url(#fireworks-gradient-2)" stroke-width="2" stroke-linecap="round" />
+  <path d="M20 40L16 48" stroke="url(#fireworks-gradient-2)" stroke-width="2" stroke-linecap="round" />
+  <path d="M20 40L12 40" stroke="url(#fireworks-gradient-2)" stroke-width="2" stroke-linecap="round" />
+  <circle cx="44" cy="40" r="1" fill="url(#fireworks-gradient-1)" />
+  <path d="M44 40L40 32" stroke="url(#fireworks-gradient-1)" stroke-width="2" stroke-linecap="round" />
+  <path d="M44 40L48 32" stroke="url(#fireworks-gradient-1)" stroke-width="2" stroke-linecap="round" />
+  <path d="M44 40L52 40" stroke="url(#fireworks-gradient-1)" stroke-width="2" stroke-linecap="round" />
+  <path d="M44 40L48 48" stroke="url(#fireworks-gradient-1)" stroke-width="2" stroke-linecap="round" />
+  <path d="M44 40L40 48" stroke="url(#fireworks-gradient-1)" stroke-width="2" stroke-linecap="round" />
+  <path d="M44 40L36 40" stroke="url(#fireworks-gradient-1)" stroke-width="2" stroke-linecap="round" />
+</svg>

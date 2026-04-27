@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <defs>
+    <!-- 超强霓虹滤镜 -->
+    <filter id="cyber-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <!-- 膨胀效果 -->
+      <feMorphology operator="dilate" radius="3" in="SourceAlpha" result="morph"/>
+      <!-- 高斯模糊 -->
+      <feGaussianBlur in="morph" stdDeviation="8" result="blur"/>
+      <!-- 色彩矩阵增强 -->
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0
+                                              0 1 0 0 0
+                                              0 0 1 0 0
+                                              0 0 0 2 0" result="glow"/>
+      <!-- 湍流噪声 -->
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" result="noise"/>
+      <feDisplacementMap in="glow" in2="noise" scale="2" xChannelSelector="R" yChannelSelector="G" result="noisy-glow"/>
+      <!-- 合成 -->
+      <feComposite in="noisy-glow" in2="SourceGraphic" operator="over"/>
+    </filter>
+    
+    <!-- 深海蓝到极光绿到炽热粉的渐变 -->
+    <linearGradient id="cyber-gradient-1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#001f3f;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#00ff8f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff0080;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="cyber-gradient-2" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#001f3f;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#00ff8f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff0080;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- 丝带遮罩 -->
+    <mask id="ribbon-mask">
+      <path d="M60,80 C80,60 120,60 140,80 C160,100 160,120 140,140" fill="white"/>
+    </mask>
+  </defs>
+  
+  <!-- 背景 -->
+  <rect width="200" height="200" fill="#0a0a1a"/>
+  
+  <!-- 正在展开的礼盒轮廓 -->
+  <path d="M50,60 L150,40 L170,140 L70,160 Z" 
+        fill="url(#cyber-gradient-1)" 
+        filter="url(#cyber-glow)" 
+        opacity="0.8"/>
+  <path d="M70,160 L170,140 L160,180 L60,200 Z" 
+        fill="url(#cyber-gradient-2)" 
+        filter="url(#cyber-glow)" 
+        opacity="0.6"/>
+  <path d="M150,40 L170,140 L160,180 L140,80 Z" 
+        fill="url(#cyber-gradient-1)" 
+        filter="url(#cyber-glow)" 
+        opacity="0.7"/>
+  
+  <!-- 动态丝带 -->
+  <path d="M60,80 C80,60 120,60 140,80 C160,100 160,120 140,140 C120,160 80,160 60,140 C40,120 40,100 60,80" 
+        fill="none" 
+        stroke="url(#cyber-gradient-1)" 
+        stroke-width="3" 
+        filter="url(#cyber-glow)"/>
+  <path d="M70,90 C90,70 110,70 130,90 C150,110 150,130 130,150 C110,170 90,170 70,150 C50,130 50,110 70,90" 
+        fill="none" 
+        stroke="url(#cyber-gradient-2)" 
+        stroke-width="2" 
+        filter="url(#cyber-glow)" 
+        mask="url(#ribbon-mask)"/>
+  <path d="M80,100 C100,80 100,80 120,100 C140,120 140,140 120,160 C100,180 100,180 80,160 C60,140 60,120 80,100" 
+        fill="none" 
+        stroke="url(#cyber-gradient-1)" 
+        stroke-width="1.5" 
+        filter="url(#cyber-glow)"/>
+  
+  <!-- 粒子喷涌 -->
+  <g filter="url(#cyber-glow)">
+    <!-- 中心粒子 -->
+    <circle cx="100" cy="50" r="4" fill="url(#cyber-gradient-1)"/>
+    <!-- 粒子流 -->
+    <circle cx="90" cy="40" r="2" fill="#00ff8f" opacity="0.8"/>
+    <circle cx="110" cy="40" r="2" fill="#ff0080" opacity="0.8"/>
+    <circle cx="85" cy="35" r="1.5" fill="#00ff8f" opacity="0.6"/>
+    <circle cx="115" cy="35" r="1.5" fill="#ff0080" opacity="0.6"/>
+    <circle cx="80" cy="30" r="1" fill="#00ff8f" opacity="0.4"/>
+    <circle cx="120" cy="30" r="1" fill="#ff0080" opacity="0.4"/>
+    <circle cx="75" cy="25" r="0.8" fill="#00ff8f" opacity="0.3"/>
+    <circle cx="125" cy="25" r="0.8" fill="#ff0080" opacity="0.3"/>
+    <circle cx="70" cy="20" r="0.5" fill="#00ff8f" opacity="0.2"/>
+    <circle cx="130" cy="20" r="0.5" fill="#ff0080" opacity="0.2"/>
+  </g>
+  
+  <!-- 额外的能量波纹 -->
+  <circle cx="100" cy="50" r="20" fill="none" 
+          stroke="url(#cyber-gradient-1)" 
+          stroke-width="1" 
+          stroke-dasharray="5,5" 
+          opacity="0.3" 
+          filter="url(#cyber-glow)"/>
+  <circle cx="100" cy="50" r="30" fill="none" 
+          stroke="url(#cyber-gradient-2)" 
+          stroke-width="1" 
+          stroke-dasharray="8,3" 
+          opacity="0.2" 
+          filter="url(#cyber-glow)"/>
+</svg>

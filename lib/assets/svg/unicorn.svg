@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="unicorn-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#AB47BC;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7B1FA2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <path d="M20 36L28 28L36 36L44 28L52 36L48 44L32 36L16 44Z" fill="url(#unicorn-gradient)" />
+  <path d="M32 20L36 12L40 20" stroke="#FFD700" stroke-width="2" stroke-linecap="round" />
+  <path d="M32 20L34 16L36 20" stroke="#FFD700" stroke-width="2" stroke-linecap="round" />
+  <circle cx="36" cy="32" r="2" fill="#FFFFFF" />
+  <circle cx="40" cy="32" r="2" fill="#FFFFFF" />
+  <path d="M44 36L48 44" stroke="#AB47BC" stroke-width="2" stroke-linecap="round" />
+  <path d="M52 36L48 44" stroke="#AB47BC" stroke-width="2" stroke-linecap="round" />
+</svg>
