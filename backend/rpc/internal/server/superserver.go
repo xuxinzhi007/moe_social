@@ -174,6 +174,16 @@ func (s *SuperServer) CreatePost(ctx context.Context, in *super.CreatePostReq) (
 	return l.CreatePost(in)
 }
 
+func (s *SuperServer) UpdatePost(ctx context.Context, in *super.UpdatePostReq) (*super.UpdatePostResp, error) {
+	l := logic.NewUpdatePostLogic(ctx, s.svcCtx)
+	return l.UpdatePost(in)
+}
+
+func (s *SuperServer) DeletePost(ctx context.Context, in *super.DeletePostReq) (*super.DeletePostResp, error) {
+	l := logic.NewDeletePostLogic(ctx, s.svcCtx)
+	return l.DeletePost(in)
+}
+
 func (s *SuperServer) ReportPost(ctx context.Context, in *super.ReportPostReq) (*super.ReportPostResp, error) {
 	l := logic.NewReportPostLogic(ctx, s.svcCtx)
 	return l.ReportPost(in)

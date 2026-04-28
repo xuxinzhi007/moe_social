@@ -415,6 +415,29 @@ message CreatePostReq {
   string hand_draw_thumb_url = 6;
 }
 
+// 更新帖子请求
+message UpdatePostReq {
+  string post_id = 1;
+  string user_id = 2;
+  string content = 3;
+  repeated string images = 4;
+  repeated TopicTag topic_tags = 5;
+  string hand_draw_card = 6;
+  string hand_draw_thumb_url = 7;
+}
+
+message UpdatePostResp {
+  Post post = 1;
+}
+
+// 删除帖子请求
+message DeletePostReq {
+  string post_id = 1;
+  string user_id = 2;
+}
+
+message DeletePostResp {}
+
 // 举报帖子
 message ReportPostReq {
   string post_id = 1;
@@ -698,6 +721,8 @@ service Super {
   rpc GetPosts(GetPostsReq) returns (GetPostsResp);
   rpc GetPost(GetPostReq) returns (GetPostResp);
   rpc CreatePost(CreatePostReq) returns (CreatePostResp);
+  rpc UpdatePost(UpdatePostReq) returns (UpdatePostResp);
+  rpc DeletePost(DeletePostReq) returns (DeletePostResp);
   rpc ReportPost(ReportPostReq) returns (ReportPostResp);
   rpc LikePost(LikePostReq) returns (LikePostResp);
   rpc GetPostComments(GetPostCommentsReq) returns (GetPostCommentsResp);

@@ -19,6 +19,7 @@ import '../../widgets/gift_selector.dart';
 import '../../services/post_service.dart';
 import '../../utils/error_handler.dart';
 import '../../utils/post_navigation.dart';
+import '../feed/create_post_page.dart';
 import 'following_page.dart';
 import 'followers_page.dart';
 import '../chat/voice_call_page.dart';
@@ -211,6 +212,40 @@ class _UserProfilePageState extends State<UserProfilePage> {
       }
     }
   }
+
+  Future<void> _editPost(Post post) async {
+    final updated = await Navigator.push<Post>(
+      context,
+      MaterialPageRoute(builder: (_) => CreatePostPage(initialPost: post)),
+    );
+    if (updated != null && mounted) {
+      setState(() {
+        final i = _userPosts.indexWhere((p) => p.id == updated.id);
+        if (i != -1) {
+          _userPosts[i] = updated.copyWith(
+            likes: post.likes,
+            comments: post.comments,
+            isLiked: post.isLiked,
+            userName: updated.userName.isNotEmpty ? updated.userName : post.userName,
+            userAvatar: updated.userAvatar.isNotEmpty ? updated.userAvatar : post.userAvatar,
+          );
+        }
+      });
+    }
+  }
+
+  Future<void> _deletePost(String postId) async {
+    try {
+      await ApiService.deletePost(postId);
+      if (!mounted) return;
+      setState(() => _userPosts.removeWhere((p) => p.id == postId));
+      MoeToast.success(context, '动态已删除');
+    } catch (e) {
+      if (!mounted) return;
+      ErrorHandler.showError(context, '删除失败：$e');
+    }
+  }
+
 
   String _friendRelationLabel() {
     switch (_friendRelation) {
@@ -1068,9 +1103,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                 });
                               }
                             },
-                          onShare: () {},
-                          onAvatarTap: () {},
-                        ),
+                            onEdit: post.userId == (AuthService.currentUser ?? '')
+                                ? () => _editPost(post)
+                                : null,
+                            onDelete: post.userId == (AuthService.currentUser ?? '')
+                                ? () => _deletePost(post.id)
+                                : null,
+                          ),
                       );
                     }),
                     

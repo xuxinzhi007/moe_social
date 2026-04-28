@@ -19,7 +19,9 @@ import '../../utils/hand_draw_raster.dart';
 import '../../utils/media_url.dart';
 
 class CreatePostPage extends StatefulWidget {
-  const CreatePostPage({super.key});
+  /// 传入已有帖子时进入编辑模式，否则为新建发布模式。
+  final Post? initialPost;
+  const CreatePostPage({super.key, this.initialPost});
 
   @override
   State<CreatePostPage> createState() => _CreatePostPageState();
@@ -28,12 +30,14 @@ class CreatePostPage extends StatefulWidget {
 class _CreatePostPageState extends State<CreatePostPage> {
   final TextEditingController _contentController = TextEditingController();
   final List<File> _selectedImages = [];
-  final List<String> _selectedImageUrls = []; // 用于存储从云端图库选择的网络图片URL
+  final List<String> _selectedImageUrls = [];
   final ImagePicker _picker = ImagePicker();
   String? _userName;
   String? _userAvatar;
-  List<TopicTag> _selectedTopicTags = []; // 话题标签列表
+  List<TopicTag> _selectedTopicTags = [];
   HandDrawCardData? _handDrawCard;
+
+  bool get _isEditMode => widget.initialPost != null;
 
   Future<void> _openHandDrawEditor() async {
     final data = await Navigator.push<HandDrawCardData>(
@@ -97,6 +101,22 @@ class _CreatePostPageState extends State<CreatePostPage> {
   void initState() {
     super.initState();
     _loadUserInfo();
+    // 编辑模式：预填原帖内容
+    final init = widget.initialPost;
+    if (init != null) {
+      _contentController.text = init.displayCaption;
+      _selectedImageUrls.addAll(init.images);
+      _selectedTopicTags = List.from(init.topicTags);
+      // 恢复手绘卡片
+      if (init.handDrawCardJson.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(init.handDrawCardJson);
+          if (decoded is Map<String, dynamic>) {
+            _handDrawCard = HandDrawCardData.fromJson(decoded);
+          }
+        } catch (_) {}
+      }
+    }
   }
 
   Future<void> _loadUserInfo() async {
@@ -127,6 +147,11 @@ class _CreatePostPageState extends State<CreatePostPage> {
       context.read<LoadingProvider>().setError(
             '写点文字、选几张图，或画一张手绘卡片再发布吧',
           );
+      return;
+    }
+
+    if (_isEditMode) {
+      await _saveEdit(caption);
       return;
     }
 
@@ -198,6 +223,55 @@ class _CreatePostPageState extends State<CreatePostPage> {
     );
   }
 
+  Future<void> _saveEdit(String caption) async {
+    final loadingProvider = context.read<LoadingProvider>();
+    final init = widget.initialPost!;
+    await loadingProvider.executeOperation<void>(
+      key: LoadingKeys.createPost,
+      operation: () async {
+        final List<String> imageUrls = [];
+        for (final image in _selectedImages) {
+          imageUrls.add(await ApiService.uploadImage(image));
+        }
+        imageUrls.addAll(_selectedImageUrls);
+
+        String? handJson;
+        String? thumbUrl;
+        if (_handDrawCard != null) {
+          handJson = jsonEncode(_handDrawCard!.toJson());
+          // 只有手绘内容有变化时才重新上传缩略图
+          if (handJson != init.handDrawCardJson) {
+            final png = await handDrawCardToPngBytes(_handDrawCard!);
+            if (png != null && png.isNotEmpty) {
+              thumbUrl = await ApiService.uploadImageBytes(
+                png,
+                filename: 'hand_draw_thumb.png',
+              );
+            }
+          } else {
+            thumbUrl = init.handDrawThumbUrl;
+          }
+        }
+
+        final updated = await ApiService.updatePost(
+          init.id,
+          content: caption,
+          images: imageUrls,
+          topicTags: _selectedTopicTags
+              .map((t) => {'name': t.name, 'color': t.color})
+              .toList(),
+          handDrawCard: handJson,
+          handDrawThumbUrl: thumbUrl,
+        );
+        if (mounted) Navigator.pop(context, updated);
+      },
+      onSuccess: (_) {
+        loadingProvider.setSuccess('动态已更新 ✨');
+      },
+      onError: (_) {},
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -206,7 +280,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('记录心情', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+        title: Text(
+          _isEditMode ? '编辑动态' : '记录心情',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+        ),
         backgroundColor: const Color(0xFFF5F7FA),
         elevation: 0,
         centerTitle: true,
@@ -248,9 +325,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   ),
                   padding: EdgeInsets.zero,
                 ),
-                child: const Text(
-                  '发布',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                child: Text(
+                  _isEditMode ? '保存' : '发布',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
               ),
             ),

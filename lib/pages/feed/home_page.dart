@@ -4,6 +4,7 @@ import 'dart:async';
 import '../../auth_service.dart';
 import '../../models/topic_tag.dart';
 import '../../models/post.dart';
+import '../../services/api_service.dart';
 import '../../services/post_service.dart';
 import '../../widgets/post_skeleton.dart';
 import '../../utils/error_handler.dart';
@@ -15,6 +16,7 @@ import '../../widgets/quick_actions_grid.dart';
 import '../../widgets/home_stories_bar.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/fade_in_up.dart';
+import 'create_post_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -748,6 +750,45 @@ class _HomePageState extends State<HomePage>
           'heroTag': 'avatar_${post.id}',
         });
       },
+      onEdit: post.userId == (AuthService.currentUser ?? '')
+          ? () async {
+              final updated = await Navigator.push<Post>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CreatePostPage(initialPost: post),
+                ),
+              );
+              if (updated != null && mounted) {
+                setState(() {
+                  final merged = updated.copyWith(
+                    likes: post.likes,
+                    comments: post.comments,
+                    isLiked: post.isLiked,
+                    userName: updated.userName.isNotEmpty ? updated.userName : post.userName,
+                    userAvatar: updated.userAvatar.isNotEmpty ? updated.userAvatar : post.userAvatar,
+                  );
+                  final ai = _allPosts.indexWhere((p) => p.id == updated.id);
+                  if (ai != -1) _allPosts[ai] = merged;
+                  final di = _displayPosts.indexWhere((p) => p.id == updated.id);
+                  if (di != -1) _displayPosts[di] = merged;
+                });
+              }
+            }
+          : null,
+      onDelete: post.userId == (AuthService.currentUser ?? '')
+          ? () async {
+              try {
+                await ApiService.deletePost(post.id);
+                if (!mounted) return;
+                setState(() {
+                  _allPosts.removeWhere((p) => p.id == post.id);
+                  _displayPosts.removeWhere((p) => p.id == post.id);
+                });
+              } catch (e) {
+                if (mounted) ErrorHandler.showError(context, '删除失败：$e');
+              }
+            }
+          : null,
     );
   }
 

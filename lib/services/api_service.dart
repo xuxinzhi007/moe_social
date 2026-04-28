@@ -855,6 +855,34 @@ class ApiService {
     return post;
   }
 
+  /// 更新帖子正文 / 图片 / 话题标签（仅帖子作者可调用）。
+  static Future<Post> updatePost(
+    String postId, {
+    String? content,
+    List<String>? images,
+    List<Map<String, dynamic>>? topicTags,
+    String? handDrawCard,
+    String? handDrawThumbUrl,
+  }) async {
+    final body = <String, dynamic>{};
+    if (content != null) body['content'] = content;
+    if (images != null) body['images'] = images;
+    if (topicTags != null) body['topic_tags'] = topicTags;
+    if (handDrawCard != null) body['hand_draw_card'] = handDrawCard;
+    if (handDrawThumbUrl != null) body['hand_draw_thumb_url'] = handDrawThumbUrl;
+    final result = await _request('/api/posts/$postId', method: 'PUT', body: body);
+    final data = result['data'];
+    if (data is Map<String, dynamic>) {
+      return Post.fromJson(data);
+    }
+    throw ApiException('更新帖子失败');
+  }
+
+  /// 删除帖子（仅帖子作者可调用）。
+  static Future<void> deletePost(String postId) async {
+    await _request('/api/posts/$postId', method: 'DELETE');
+  }
+
   // 点赞/取消点赞帖子
   static Future<Post> toggleLike(String postId, String userId) async {
     final result = await _request('/api/posts/$postId/like',
