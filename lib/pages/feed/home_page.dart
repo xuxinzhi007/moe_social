@@ -12,6 +12,7 @@ import '../../providers/notification_provider.dart';
 import '../../widgets/post_card.dart';
 import '../../widgets/personalized_card.dart';
 import '../../widgets/quick_actions_grid.dart';
+import '../../widgets/home_stories_bar.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/fade_in_up.dart';
 
@@ -22,7 +23,8 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
   List<Post> _allPosts = [];
   List<Post> _displayPosts = [];
   bool _isLoading = false;
@@ -33,14 +35,23 @@ class _HomePageState extends State<HomePage> {
 
   _HomeFeedMode _mode = _HomeFeedMode.hot;
   TopicTag? _activeTopic;
-  bool _showFeedRankingTip = true;
 
-  // 添加滚动控制器和加载触发标志
+  late TabController _tabController;
+
+  // Available topic tags collected from loaded posts + official tags
+  List<TopicTag> _availableTags = [];
+
   final ScrollController _scrollController = ScrollController();
-  bool _isLoadingTriggered = false;
   Timer? _loadMoreTimer;
 
+  static const _tabs = [
+    (label: '热门', icon: Icons.whatshot_rounded, mode: _HomeFeedMode.hot),
+    (label: '最新', icon: Icons.new_releases_rounded, mode: _HomeFeedMode.latest),
+    (label: '关注', icon: Icons.star_rounded, mode: _HomeFeedMode.following),
+  ];
+
   String get _sectionTitle {
+    if (_activeTopic != null) return '#${_activeTopic!.name}';
     switch (_mode) {
       case _HomeFeedMode.hot:
         return '热门动态';
@@ -49,59 +60,59 @@ class _HomePageState extends State<HomePage> {
       case _HomeFeedMode.following:
         return '关注动态';
       case _HomeFeedMode.topic:
-        return _activeTopic != null ? '#${_activeTopic!.name}' : '分区动态';
+        return '分区动态';
     }
   }
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController.addListener(_onTabChanged);
     _scrollController.addListener(_scrollListener);
+    _availableTags = TopicTag.officialTags.take(12).toList();
     _fetchPosts();
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
+    _tabController.dispose();
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     _loadMoreTimer?.cancel();
     super.dispose();
   }
 
-  // 滚动监听器
+  void _onTabChanged() {
+    if (_tabController.indexIsChanging) return;
+    final newMode = _tabs[_tabController.index].mode;
+    if (_mode == newMode && _activeTopic == null) return;
+    setState(() {
+      _mode = newMode;
+      _activeTopic = null; // Clear topic filter on tab change
+    });
+    _fetchPosts();
+    // Rebuild topic tags after resetting
+    _refreshAvailableTags();
+  }
+
   void _scrollListener() {
-    // 检查是否有滚动位置信息
     if (!_scrollController.hasClients) return;
-
-    // 如果正在加载或没有更多数据，直接返回
-    if (_isLoading || _isLoadingMore || !_hasMore) {
-      return;
-    }
-
+    if (_isLoading || _isLoadingMore || !_hasMore) return;
     final position = _scrollController.position;
     final maxScroll = position.maxScrollExtent;
     final currentScroll = position.pixels;
-
-    // 当滚动到距底部300像素时触发加载，或者已经滚动到底部
     final threshold = maxScroll > 0 ? maxScroll - 300 : 0;
     final isNearBottom = currentScroll >= threshold ||
         (maxScroll > 0 && currentScroll >= maxScroll - 50);
-
-    if (isNearBottom) {
-      // 使用 debounce 避免重复触发
-      _scheduleLoadMore();
-    }
+    if (isNearBottom) _scheduleLoadMore();
   }
 
   void _scheduleLoadMore() {
-    // 取消之前的定时器
     _loadMoreTimer?.cancel();
-    // 200ms 延迟后执行加载，避免快速滚动时重复触发
     _loadMoreTimer = Timer(const Duration(milliseconds: 200), () {
       if (mounted && !_isLoading && !_isLoadingMore && _hasMore) {
-        setState(() {
-          _isLoadingTriggered = true;
-        });
         _loadMorePosts();
       }
     });
@@ -115,74 +126,70 @@ class _HomePageState extends State<HomePage> {
       _allPosts = [];
       _displayPosts = [];
     });
-
     try {
       final result = await _fetchPostsForMode(page: 1);
-      final posts = result.posts;
-      final total = result.total;
-
       setState(() {
-        _allPosts = posts;
-        _displayPosts = List<Post>.from(posts); // 直接使用原始列表
-        _currentPage = 1; // 确保页码正确
-        // 修复_hasMore判断逻辑：如果已加载数据小于总数，则还有更多
-        _hasMore = _mode.supportsPagination ? posts.length < total : false;
+        _allPosts = result.posts;
+        _displayPosts = List<Post>.from(result.posts);
+        _currentPage = 1;
+        _hasMore = _mode.supportsPagination
+            ? result.posts.length < result.total
+            : false;
       });
+      _refreshAvailableTags();
     } catch (e) {
       _handleError(e);
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
   Future<void> _loadMorePosts() async {
-    // 如果正在刷新、正在加载更多或没有更多数据，则不执行
-    if (_isLoading || _isLoadingMore || !_hasMore) {
-      return;
-    }
-
-    // 立即设置加载状态，防止并发调用
-    setState(() {
-      _isLoadingMore = true;
-    });
-
+    if (_isLoading || _isLoadingMore || !_hasMore) return;
+    setState(() => _isLoadingMore = true);
     try {
       final nextPage = _currentPage + 1;
-
       final result = await _fetchPostsForMode(page: nextPage);
-      final morePosts = result.posts;
-      final total = result.total;
-
-      // 如果返回的数据为空，说明没有更多数据了
-      if (morePosts.isEmpty) {
+      if (result.posts.isEmpty) {
         setState(() {
           _hasMore = false;
           _isLoadingMore = false;
         });
         return;
       }
-
       setState(() {
-        _allPosts.addAll(morePosts);
-        _displayPosts = List<Post>.from(_allPosts); // 直接使用原始列表
+        _allPosts.addAll(result.posts);
+        _displayPosts = List<Post>.from(_allPosts);
         _currentPage = nextPage;
-        // 修复_hasMore判断逻辑：如果已加载数据小于总数，则还有更多
-        _hasMore = _mode.supportsPagination ? _allPosts.length < total : false;
+        _hasMore = _mode.supportsPagination
+            ? _allPosts.length < result.total
+            : false;
       });
+      _refreshAvailableTags();
     } catch (e) {
       _handleError(e);
     } finally {
       setState(() {
         _isLoadingMore = false;
       });
-      // 重置触发标志，允许下次触发
-      _isLoadingTriggered = false;
     }
   }
 
-  // 通用错误处理方法
+  void _refreshAvailableTags() {
+    final byId = <String, TopicTag>{};
+    for (final tag in TopicTag.officialTags) {
+      byId[tag.id] = tag;
+    }
+    for (final p in _allPosts) {
+      for (final tag in p.topicTags) {
+        byId[tag.id] = tag;
+      }
+    }
+    final tags = byId.values.toList();
+    tags.sort((a, b) => b.usageCount.compareTo(a.usageCount));
+    if (mounted) setState(() => _availableTags = tags.take(15).toList());
+  }
+
   void _handleError(dynamic error) {
     if (mounted) {
       if (error is Exception) {
@@ -196,27 +203,64 @@ class _HomePageState extends State<HomePage> {
   Future<void> _toggleLike(String postId) async {
     final userId = AuthService.currentUser;
     if (userId == null) {
-      if (mounted) {
-        ErrorHandler.showError(context, '请先登录');
-      }
+      if (mounted) ErrorHandler.showError(context, '请先登录');
       return;
     }
-
     try {
-      // PostService 内部通过 LikeStateManager 处理乐观更新和状态同步
-      // UI 会通过 PostCard 中的 ValueListenableBuilder 自动刷新
       final updatedPost = await PostService.toggleLike(postId, userId);
-      
-      // 默默更新本地数据源，保持数据一致性，但不触发重排或重绘
       final postIndex = _allPosts.indexWhere((p) => p.id == postId);
-      if (postIndex != -1) {
-        _allPosts[postIndex] = updatedPost;
-        // 如果需要，也可以更新 _displayPosts 中对应的项，防止后续操作引用旧对象
-        // 但不需要 setState，避免列表重排导致跳动
-      }
+      if (postIndex != -1) _allPosts[postIndex] = updatedPost;
     } catch (e) {
       _handleError(e);
     }
+  }
+
+  String _apiFeedMode() {
+    switch (_mode) {
+      case _HomeFeedMode.hot:
+        return 'hot';
+      case _HomeFeedMode.latest:
+        return 'latest';
+      case _HomeFeedMode.following:
+        return 'following';
+      case _HomeFeedMode.topic:
+        return 'latest';
+    }
+  }
+
+  String? _apiTopicTagId() {
+    if (_activeTopic != null) return _activeTopic!.id;
+    return null;
+  }
+
+  Future<_PostPageResult> _fetchPostsForMode({required int page}) async {
+    final result = await PostService.getPosts(
+      page: page,
+      pageSize: _pageSize,
+      feedMode: _apiFeedMode(),
+      topicTagId: _apiTopicTagId(),
+    );
+    final posts = result['posts'] as List<Post>;
+    final totalRaw = result['total'];
+    final total =
+        totalRaw is int ? totalRaw : (totalRaw is num ? totalRaw.toInt() : 0);
+    return _PostPageResult(posts: posts, total: total);
+  }
+
+  void _onTopicSelected(TopicTag? tag) {
+    if (tag?.id == _activeTopic?.id) {
+      // Deselect
+      setState(() {
+        _activeTopic = null;
+        _mode = _tabs[_tabController.index].mode;
+      });
+    } else {
+      setState(() {
+        _activeTopic = tag;
+        if (tag != null) _mode = _HomeFeedMode.topic;
+      });
+    }
+    _fetchPosts();
   }
 
   @override
@@ -229,23 +273,13 @@ class _HomePageState extends State<HomePage> {
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
+            // SliverAppBar with TabBar in bottom — Flutter-idiomatic, no SliverPersistentHeader needed
             _buildSliverAppBar(context),
-            // 快捷功能入口
+            const SliverToBoxAdapter(child: HomeStoriesBar()),
             const SliverToBoxAdapter(child: QuickActionsGrid()),
-            
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _HomeHeaderDelegate(
-                // 与 _buildPinnedHeader 实际高度一致：padding 8+10 + 模式行 42 = 60（原先写 64 会触发 SliverGeometry 断言）
-                minExtent: _showComposerBar ? 120 : 60,
-                maxExtent: _showComposerBar ? 120 : 60,
-                showComposerBar: _showComposerBar,
-                mode: _mode,
-                activeTopicId: _activeTopic?.id,
-                activeTopicName: _activeTopic?.name,
-                headerBuilder: _buildPinnedHeader,
-              ),
-            ),
+            // Topic tags row — plain SliverToBoxAdapter, no dynamic-extent issues
+            if (_showTopicBar)
+              SliverToBoxAdapter(child: _buildTopicTagsRow(context)),
             SliverToBoxAdapter(child: _buildFeedSectionTitle(context)),
             if (_isLoading && _displayPosts.isEmpty)
               SliverList(
@@ -260,22 +294,241 @@ class _HomePageState extends State<HomePage> {
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    final visible = _displayPosts;
-                    final item = _feedItemAt(index, visible);
+                    final post = _displayPosts[index];
                     return FadeInUp(
-                      delay: Duration(milliseconds: index * 80),
-                      child: item == _FeedListExtra.rankingTip
-                          ? _buildRankingTipCard(context)
-                          : _buildPostCard(item as Post),
+                      delay: Duration(milliseconds: index * 60),
+                      child: _buildPostCard(post),
                     );
                   },
-                  childCount: _feedItemCount(_displayPosts),
+                  childCount: _displayPosts.length,
                 ),
               ),
             SliverToBoxAdapter(child: _buildBottomIndicator()),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            const SliverToBoxAdapter(child: SizedBox(height: 80)),
           ],
         ),
+      ),
+      floatingActionButton: _buildFAB(context),
+    );
+  }
+
+  bool get _showTopicBar =>
+      _mode != _HomeFeedMode.following && _availableTags.isNotEmpty;
+
+  SliverAppBar _buildSliverAppBar(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final expandedHeight =
+        screenHeight < 600 ? 210.0 : screenHeight < 700 ? 220.0 : 235.0;
+
+    return SliverAppBar(
+      pinned: true,
+      expandedHeight: expandedHeight,
+      elevation: 0,
+      backgroundColor: scheme.surface,
+      surfaceTintColor: scheme.surfaceTint,
+      foregroundColor: scheme.onSurface,
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              color: scheme.primary.withOpacity(0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.favorite_rounded,
+              color: scheme.primary,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Moe Social',
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.5,
+              color: scheme.onSurface,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.search_rounded),
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('搜索功能即将上线')),
+            );
+          },
+          tooltip: '搜索',
+        ),
+        IconButton(
+          icon: const Icon(Icons.qr_code_scanner_rounded),
+          onPressed: () => Navigator.pushNamed(context, '/scan'),
+          tooltip: '扫码添加好友',
+        ),
+        Stack(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined),
+              onPressed: () => Navigator.pushNamed(context, '/notifications'),
+            ),
+            Consumer<NotificationProvider>(
+              builder: (context, provider, _) {
+                if (provider.unreadCount == 0) return const SizedBox.shrink();
+                return Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints:
+                        const BoxConstraints(minWidth: 8, minHeight: 8),
+                    child: provider.unreadCount > 99
+                        ? const Text(
+                            '99+',
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 8),
+                          )
+                        : null,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        const SizedBox(width: 4),
+      ],
+      // TabBar placed here — pinned with the AppBar, avoids SliverPersistentHeader semantics bug
+      bottom: TabBar(
+        controller: _tabController,
+        indicatorColor: scheme.primary,
+        indicatorWeight: 2.5,
+        indicatorSize: TabBarIndicatorSize.label,
+        labelColor: scheme.primary,
+        unselectedLabelColor: scheme.onSurfaceVariant,
+        labelStyle:
+            const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+        unselectedLabelStyle:
+            const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+        tabs: _tabs
+            .map(
+              (t) => Tab(
+                height: 40,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(t.icon, size: 15),
+                    const SizedBox(width: 5),
+                    Text(t.label),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
+      ),
+      flexibleSpace: FlexibleSpaceBar(
+        collapseMode: CollapseMode.parallax,
+        background: Padding(
+          // top: appbar toolbar (~56) + status bar (~24) = ~80; bottom: leave space for TabBar (~40)
+          padding: const EdgeInsets.fromLTRB(16, 86, 16, 48),
+          child: const PersonalizedCard(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopicTagsRow(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      height: 44,
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border(
+          bottom: BorderSide(
+              color: scheme.outline.withOpacity(0.1), width: 0.5),
+        ),
+      ),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        itemCount: _availableTags.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            final isAll = _activeTopic == null;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () => _onTopicSelected(null),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isAll
+                        ? scheme.primary.withOpacity(0.15)
+                        : scheme.surfaceContainerHighest
+                            .withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isAll
+                          ? scheme.primary.withOpacity(0.4)
+                          : scheme.outline.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Text(
+                    '全部',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: isAll
+                          ? scheme.primary
+                          : scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+          final tag = _availableTags[index - 1];
+          final isSelected = _activeTopic?.id == tag.id;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () => _onTopicSelected(tag),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? tag.color.withOpacity(0.18)
+                      : scheme.surfaceContainerHighest.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isSelected
+                        ? tag.color.withOpacity(0.45)
+                        : scheme.outline.withOpacity(0.2),
+                  ),
+                ),
+                child: Text(
+                  '#${tag.name}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isSelected
+                        ? tag.color
+                        : scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -299,517 +552,41 @@ class _HomePageState extends State<HomePage> {
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const Spacer(),
-          if (_mode == _HomeFeedMode.topic && _activeTopic != null)
-            TextButton(
-              onPressed: () => _pickTopic(context),
-              child: const Text('换一个'),
-            ),
-        ],
-      ),
-    );
-  }
-
-  SliverAppBar _buildSliverAppBar(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final expandedHeight = screenHeight < 600 ? 240.0 : screenHeight < 700 ? 260.0 : 288.0;
-    return SliverAppBar(
-      pinned: true,
-      expandedHeight: expandedHeight,
-      elevation: 0,
-      backgroundColor: scheme.surface,
-      surfaceTintColor: scheme.surfaceTint,
-      foregroundColor: scheme.onSurface,
-      title: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: scheme.primary.withOpacity(0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.favorite_rounded,
-              color: scheme.primary,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'Moe Social',
-            style: TextStyle(
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.5,
-              color: scheme.onSurface,
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.qr_code_scanner_rounded),
-          onPressed: () {
-            Navigator.pushNamed(context, '/scan');
-          },
-          tooltip: '扫码添加好友',
-        ),
-        Stack(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.notifications_outlined),
-              onPressed: () {
-                Navigator.pushNamed(context, '/notifications');
-              },
-            ),
-            Consumer<NotificationProvider>(
-              builder: (context, provider, child) {
-                if (provider.unreadCount == 0) return const SizedBox.shrink();
-                return Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.redAccent,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints:
-                        const BoxConstraints(minWidth: 8, minHeight: 8),
-                    child: provider.unreadCount > 99
-                        ? const Text('99+',
-                            style: TextStyle(color: Colors.white, fontSize: 8))
-                        : null,
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-        const SizedBox(width: 8),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        collapseMode: CollapseMode.parallax,
-        background: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 88, 16, 12),
-          child: const PersonalizedCard(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPinnedHeader(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      color: scheme.surface,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildModeChips(context),
-          if (_showComposerBar) ...[
-            const SizedBox(height: 8),
-            _buildComposerBar(context),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildModeChips(BuildContext context) {
-    final mode = _mode;
-    return Row(
-          children: [
-            Expanded(
-              flex: 1,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: _ModeChip(
-                  icon: Icons.category_rounded,
-                  label: _activeTopic != null ? _activeTopic!.name : '分区',
-                  selected: mode == _HomeFeedMode.topic,
-                  color: Colors.pinkAccent,
-                  onTap: () => _pickTopic(context),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              flex: 1,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: _ModeChip(
-                  icon: Icons.whatshot_rounded,
-                  label: '热门',
-                  selected: mode == _HomeFeedMode.hot,
-                  color: Colors.orange,
-                  onTap: () => _setMode(_HomeFeedMode.hot),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              flex: 1,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: _ModeChip(
-                  icon: Icons.new_releases_rounded,
-                  label: '最新',
-                  selected: mode == _HomeFeedMode.latest,
-                  color: Colors.blueAccent,
-                  onTap: () => _setMode(_HomeFeedMode.latest),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              flex: 1,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: _ModeChip(
-                  icon: Icons.star_rounded,
-                  label: '关注',
-                  selected: mode == _HomeFeedMode.following,
-                  color: Colors.purpleAccent,
-                  onTap: () => _setMode(_HomeFeedMode.following),
-                ),
-              ),
-            ),
-          ],
-        );
-  }
-
-  Widget _buildComposerBar(BuildContext context) {
-    return InkWell(
-      onTap: () async {
-        final result = await Navigator.pushNamed(context, '/create-post');
-        if (result == true) {
-          _fetchPosts();
-        }
-      },
-      borderRadius: BorderRadius.circular(18),
-      child: SizedBox(
-        height: 52,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.45),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.18),
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFF7F7FD5).withOpacity(0.6),
-                      const Color(0xFF86A8E7).withOpacity(0.6),
-                    ],
-                  ),
-                ),
-                child: const Icon(Icons.edit_rounded,
-                    color: Colors.white, size: 18),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  '正在想什么？发一条萌萌动态…',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-              Container(
+          if (_activeTopic != null)
+            GestureDetector(
+              onTap: () => _onTopicSelected(null),
+              child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF7F7FD5).withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(14),
+                  color: _activeTopic!.color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: _activeTopic!.color.withOpacity(0.3)),
                 ),
-                child: const Row(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.add_rounded, size: 16, color: Color(0xFF7F7FD5)),
-                    SizedBox(width: 2),
+                    Icon(Icons.close_rounded,
+                        size: 13, color: _activeTopic!.color),
+                    const SizedBox(width: 3),
                     Text(
-                      '发布',
+                      '清除筛选',
                       style: TextStyle(
-                        color: Color(0xFF7F7FD5),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
+                        fontSize: 11,
+                        color: _activeTopic!.color,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+        ],
       ),
     );
   }
 
-  Future<void> _setMode(_HomeFeedMode next) async {
-    if (_mode == next &&
-        (next != _HomeFeedMode.topic || _activeTopic != null)) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final newMode = next;
-      TopicTag? newTopic = _activeTopic;
-      if (next != _HomeFeedMode.topic) {
-        newTopic = null;
-      }
-
-      final result = await _fetchPostsForMode(page: 1);
-      final posts = result.posts;
-      final total = result.total;
-
-      setState(() {
-        _mode = newMode;
-        _activeTopic = newTopic;
-        _allPosts = posts;
-        _displayPosts = List<Post>.from(posts);
-        _currentPage = 1;
-        _hasMore = newMode.supportsPagination ? posts.length < total : false;
-      });
-    } catch (e) {
-      _handleError(e);
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _pickTopic(BuildContext context) async {
-    final picked = await showModalBottomSheet<TopicTag>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        final tags = _collectCandidateTags();
-        return Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 18,
-                offset: const Offset(0, -6),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text('选择分区/话题',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w800)),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: tags
-                      .map((tag) => ActionChip(
-                            label: Text('#${tag.name}'),
-                            side:
-                                BorderSide(color: tag.color.withOpacity(0.35)),
-                            backgroundColor: tag.color.withOpacity(0.12),
-                            labelStyle: TextStyle(
-                              color: tag.color,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            onPressed: () => Navigator.pop(context, tag),
-                          ))
-                      .toList(),
-                ),
-                const SizedBox(height: 10),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    if (picked == null) return;
-    setState(() {
-      _mode = _HomeFeedMode.topic;
-      _activeTopic = picked;
-    });
-    await _fetchPosts();
-  }
-
-  bool get _showComposerBar {
-    final width = MediaQuery.of(context).size.width;
-    return width >= 360;
-  }
-
-  List<TopicTag> _collectCandidateTags() {
-    final byId = <String, TopicTag>{};
-    for (final tag in TopicTag.officialTags) {
-      byId[tag.id] = tag;
-    }
-    for (final p in _allPosts) {
-      for (final tag in p.topicTags) {
-        byId[tag.id] = tag;
-      }
-    }
-    final tags = byId.values.toList();
-    tags.sort((a, b) => b.usageCount.compareTo(a.usageCount));
-    return tags.take(20).toList();
-  }
-
-  // 注意：_computeDisplayPosts 方法已移除，直接使用原始列表
-
-  String _apiFeedMode() {
-    switch (_mode) {
-      case _HomeFeedMode.hot:
-        return 'hot';
-      case _HomeFeedMode.latest:
-        return 'latest';
-      case _HomeFeedMode.following:
-        return 'following';
-      case _HomeFeedMode.topic:
-        return 'latest';
-    }
-  }
-
-  String? _apiTopicTagId() {
-    if (_mode == _HomeFeedMode.topic && _activeTopic != null) {
-      return _activeTopic!.id;
-    }
-    return null;
-  }
-
-  Future<_PostPageResult> _fetchPostsForMode({required int page}) async {
-    final result = await PostService.getPosts(
-      page: page,
-      pageSize: _pageSize,
-      feedMode: _apiFeedMode(),
-      topicTagId: _apiTopicTagId(),
-    );
-    final posts = result['posts'] as List<Post>;
-    final totalRaw = result['total'];
-    final total = totalRaw is int
-        ? totalRaw
-        : (totalRaw is num ? totalRaw.toInt() : 0);
-    return _PostPageResult(posts: posts, total: total);
-  }
-
-  int _feedItemCount(List<Post> posts) {
-    final inserts = _cardInsertIndexes(posts.length);
-    return posts.length + inserts.length;
-  }
-
-  Object _feedItemAt(int index, List<Post> posts) {
-    final inserts = _cardInsertIndexes(posts.length);
-    if (inserts.contains(index)) {
-      return _FeedListExtra.rankingTip;
-    }
-    final before = inserts.where((i) => i < index).length;
-    final postIndex = index - before;
-    return posts[postIndex];
-  }
-
-  Set<int> _cardInsertIndexes(int postCount) {
-    if (!_showFeedRankingTip) return {};
-    final s = <int>{};
-    if (postCount >= 4) {
-      s.add(4);
-    }
-    if (postCount >= 10) {
-      s.add(10 + (postCount >= 4 ? 1 : 0));
-    }
-    return s;
-  }
-
-  Widget _buildRankingTipCard(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-      child: Material(
-        color: theme.cardColor,
-        elevation: 0,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: scheme.outline.withOpacity(0.22),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: scheme.shadow.withOpacity(0.06),
-                blurRadius: 14,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: scheme.primary.withOpacity(0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.local_fire_department_rounded,
-                  color: scheme.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  '小提示：热门会根据点赞与评论综合排序',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ) ??
-                      const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  setState(() => _showFeedRankingTip = false);
-                },
-                child: const Text('知道了'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 构建空状态
   Widget _buildEmptyState() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 40),
@@ -831,9 +608,10 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 24),
           Text(
             '还没有动态呢 ~',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
@@ -845,20 +623,17 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 32),
           ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pushNamed(context, '/create-post');
-            },
+            onPressed: () => Navigator.pushNamed(context, '/create-post'),
             icon: const Icon(Icons.add_rounded),
             label: const Text('发布动态'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF7F7FD5),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(25),
               ),
-              elevation: 5,
-              shadowColor: const Color(0xFF7F7FD5).withOpacity(0.4),
             ),
           ),
         ],
@@ -866,7 +641,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // 构建底部加载指示器
   Widget _buildBottomIndicator() {
     if (_isLoadingMore) {
       return Padding(
@@ -902,27 +676,22 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 12),
               Text(
                 '已经到底啦 ~',
-                style: TextStyle(
-                  color: Colors.grey[500],
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.grey[500], fontSize: 14),
               ),
             ],
           ),
         ),
       );
-    } else if (_hasMore) {
-      // 有更多数据但不在加载中，显示可点击的加载提示
+    } else if (_hasMore && !_isLoading) {
       return Padding(
         padding: const EdgeInsets.all(16),
         child: GestureDetector(
           onTap: () {
-            if (!_isLoading && !_isLoadingMore && _hasMore) {
-              _loadMorePosts();
-            }
+            if (!_isLoading && !_isLoadingMore && _hasMore) _loadMorePosts();
           },
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
               color: const Color(0xFF7F7FD5).withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
@@ -930,16 +699,13 @@ class _HomePageState extends State<HomePage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.arrow_downward_rounded,
-                  color: const Color(0xFF7F7FD5),
-                  size: 18,
-                ),
+                const Icon(Icons.arrow_downward_rounded,
+                    color: Color(0xFF7F7FD5), size: 18),
                 const SizedBox(width: 8),
-                Text(
+                const Text(
                   '点击加载更多',
                   style: TextStyle(
-                    color: const Color(0xFF7F7FD5),
+                    color: Color(0xFF7F7FD5),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -960,160 +726,64 @@ class _HomePageState extends State<HomePage> {
       onLike: () => _toggleLike(post.id),
       onComment: () async {
         final result = await openPostDetail<int>(context, post);
-        if (result != null && result is int) {
-          // 返回值是新的评论数，同时更新源数据和当前展示列表
+        if (result != null) {
           setState(() {
             final allIndex = _allPosts.indexWhere((p) => p.id == post.id);
             if (allIndex != -1) {
-              final updatedPost = _allPosts[allIndex].copyWith(comments: result);
-              _allPosts[allIndex] = updatedPost;
-
-              final displayIndex = _displayPosts.indexWhere((p) => p.id == post.id);
-              if (displayIndex != -1) {
-                _displayPosts[displayIndex] = updatedPost;
-              }
+              final updated = _allPosts[allIndex].copyWith(comments: result);
+              _allPosts[allIndex] = updated;
+              final displayIndex =
+                  _displayPosts.indexWhere((p) => p.id == post.id);
+              if (displayIndex != -1) _displayPosts[displayIndex] = updated;
             }
           });
         }
       },
       onAvatarTap: () {
-        final heroTag = 'avatar_${post.id}';
         Navigator.pushNamed(context, '/user-profile', arguments: {
           'userId': post.userId,
           'userName': post.userName,
           'userAvatar': post.userAvatar,
-          'heroTag': heroTag,
+          'heroTag': 'avatar_${post.id}',
         });
       },
     );
   }
-}
 
-enum _FeedListExtra { rankingTip }
-
-enum _HomeFeedMode {
-  hot,
-  latest,
-  following,
-  topic,
-}
-
-extension on _HomeFeedMode {
-  bool get supportsPagination {
-    switch (this) {
-      case _HomeFeedMode.hot:
-      case _HomeFeedMode.latest:
-      case _HomeFeedMode.following:
-      case _HomeFeedMode.topic:
-        return true;
-    }
-  }
-}
-
-class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
-  @override
-  final double minExtent;
-  @override
-  final double maxExtent;
-  final bool showComposerBar;
-  final _HomeFeedMode mode;
-  final String? activeTopicId;
-  final String? activeTopicName;
-  final Widget Function(BuildContext context) headerBuilder;
-
-  _HomeHeaderDelegate({
-    required this.minExtent,
-    required this.maxExtent,
-    required this.showComposerBar,
-    required this.mode,
-    required this.activeTopicId,
-    required this.activeTopicName,
-    required this.headerBuilder,
-  });
-
-  @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return headerBuilder(context);
-  }
-
-  @override
-  bool shouldRebuild(covariant _HomeHeaderDelegate oldDelegate) {
-    return minExtent != oldDelegate.minExtent ||
-        maxExtent != oldDelegate.maxExtent ||
-        showComposerBar != oldDelegate.showComposerBar ||
-        mode != oldDelegate.mode ||
-        activeTopicId != oldDelegate.activeTopicId ||
-        activeTopicName != oldDelegate.activeTopicName;
-  }
-}
-
-class _ModeChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _ModeChip({
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final bg = selected
-        ? color.withOpacity(0.14)
-        : Color.alphaBlend(
-            scheme.surfaceContainerHighest.withOpacity(0.65),
-            scheme.surface,
-          );
-    final border = selected
-        ? color.withOpacity(0.35)
-        : scheme.outline.withOpacity(0.22);
-    final fg = selected ? color : scheme.onSurfaceVariant;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        height: 42,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: border),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: fg, size: 18),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    fontWeight: FontWeight.w700, color: fg, fontSize: 12.5),
-              ),
-            ),
-          ],
-        ),
+  Widget _buildFAB(BuildContext context) {
+    return FloatingActionButton.extended(
+      onPressed: () async {
+        final result = await Navigator.pushNamed(context, '/create-post');
+        if (result == true && mounted) _fetchPosts();
+      },
+      backgroundColor: const Color(0xFF7F7FD5),
+      foregroundColor: Colors.white,
+      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      icon: const Icon(Icons.edit_rounded, size: 20),
+      label: const Text(
+        '写动态',
+        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
       ),
     );
   }
 }
 
+// ---------------------------------------------------------------------------
+// Enums & helpers
+// ---------------------------------------------------------------------------
+
+enum _HomeFeedMode { hot, latest, following, topic }
+
+extension on _HomeFeedMode {
+  bool get supportsPagination => true;
+}
+
 class _PostPageResult {
   final List<Post> posts;
   final int total;
-
-  const _PostPageResult({
-    required this.posts,
-    required this.total,
-  });
+  const _PostPageResult({required this.posts, required this.total});
 }
+
+
+
