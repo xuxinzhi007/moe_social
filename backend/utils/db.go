@@ -101,44 +101,118 @@ func InitDB() error {
 	return nil
 }
 
-// autoMigrate 自动迁移数据库表
+// autoMigrate 自动迁移数据库表（并发执行）
 func autoMigrate() error {
-	return DB.AutoMigrate(
-		&model.User{},
-		&model.VipPlan{},
-		&model.VipOrder{}, // 合并了VIP记录功能
-		&model.VipRecord{},
-		&model.Transaction{},   // 交易记录表
-		&model.Post{},          // 帖子表
-		&model.PostReport{},    // 帖子举报
-		&model.Like{},          // 统一点赞表
-		&model.TopicTag{},      // 话题标签表
-		&model.PostTopic{},     // 帖子标签关联表
-		&model.Comment{},       // 评论表
-		&model.Follow{},        // 关注关系表
-		&model.Notification{},  // 通知表
-		&model.UserAvatar{},    // 用户虚拟形象表
-		&model.AvatarOutfit{},  // 虚拟形象装扮物品表
-		&model.Emoji{},         // 单个表情包表
-		&model.EmojiPack{},     // 表情包套餐表
-		&model.UserEmojiPack{}, // 用户拥有的表情包关联表
-		&model.UserMemory{},
-		// 签到等级系统
-		&model.UserLevel{},     // 用户等级表
-		&model.LevelConfig{},   // 等级配置表
-		&model.UserCheckIn{},   // 用户签到记录表
-		&model.CheckInReward{}, // 签到奖励配置表
-		&model.ExpLog{},        // 经验日志表
-		&model.FriendRequest{}, // 好友申请
-		&model.Gift{},            // 礼物表
-		&model.GiftRecord{},           // 礼物赠送记录表
-		&model.UserGiftStock{},        // 用户礼物背包
-		&model.GiftPurchaseOrder{},    // 礼物购买订单（余额→背包）
-		// 社区相关模型
-		&model.Group{},          // 兴趣群组表
-		&model.GroupMember{},    // 群组成员关系表
-		&model.GroupPost{},      // 群组帖子关联表
+	// 创建多个数据库连接用于并发迁移
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=%t&loc=%s",
+		viper.GetString("database.user"),
+		viper.GetString("database.password"),
+		viper.GetString("database.host"),
+		viper.GetInt("database.port"),
+		viper.GetString("database.dbname"),
+		viper.GetString("database.charset"),
+		viper.GetBool("database.parseTime"),
+		viper.GetString("database.loc"),
 	)
+
+	// 创建并发迁移任务
+	migrateGroups := [][]interface{}{
+		// 组1：用户和VIP相关
+		{
+			&model.User{},
+			&model.VipPlan{},
+			&model.VipOrder{},
+			&model.VipRecord{},
+			&model.Transaction{},
+		},
+		// 组2：社交相关
+		{
+			&model.Post{},
+			&model.PostReport{},
+			&model.Like{},
+			&model.TopicTag{},
+			&model.PostTopic{},
+			&model.Comment{},
+			&model.Follow{},
+		},
+		// 组3：通知和形象相关
+		{
+			&model.Notification{},
+			&model.UserAvatar{},
+			&model.AvatarOutfit{},
+			&model.Emoji{},
+			&model.EmojiPack{},
+			&model.UserEmojiPack{},
+			&model.UserMemory{},
+		},
+		// 组4：签到等级系统
+		{
+			&model.UserLevel{},
+			&model.LevelConfig{},
+			&model.UserCheckIn{},
+			&model.CheckInReward{},
+			&model.ExpLog{},
+			&model.FriendRequest{},
+		},
+		// 组5：礼物和社区相关
+		{
+			&model.Gift{},
+			&model.GiftRecord{},
+			&model.Group{},
+			&model.GroupMember{},
+			&model.GroupPost{},
+		},
+	}
+
+	// 使用 WaitGroup 等待所有迁移完成
+	var wg sync.WaitGroup
+	errChan := make(chan error, len(migrateGroups))
+
+	// 并发执行迁移
+	for _, group := range migrateGroups {
+		wg.Add(1)
+		go func(models []interface{}) {
+			defer wg.Done()
+
+			// 为每个组创建独立的数据库连接
+			db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+				Logger: logger.Default.LogMode(logger.Warn), // 减少日志输出
+			})
+			if err != nil {
+				errChan <- fmt.Errorf("创建迁移连接失败: %v", err)
+				return
+			}
+
+			// 设置连接池参数
+			sqlDB, _ := db.DB()
+			sqlDB.SetMaxIdleConns(2)
+			sqlDB.SetMaxOpenConns(5)
+			sqlDB.SetConnMaxLifetime(1 * time.Hour)
+
+			// 执行迁移
+			if err := db.AutoMigrate(models...); err != nil {
+				errChan <- fmt.Errorf("迁移失败: %v", err)
+				return
+			}
+
+			// 关闭连接
+			sqlDB.Close()
+		}(group)
+	}
+
+	// 等待所有迁移完成
+	wg.Wait()
+	close(errChan)
+
+	// 检查是否有错误
+	for err := range errChan {
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Println("数据库表迁移完成（并发执行）")
+	return nil
 }
 
 // After auto-migrate hooks for legacy rows.
