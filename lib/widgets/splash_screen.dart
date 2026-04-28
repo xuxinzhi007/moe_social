@@ -56,10 +56,16 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     if (widget.onInit != null) {
       try {
         await widget.onInit!();
-        _statusText = '准备就绪...';
-        _progress = 1.0;
+        if (mounted) {
+          setState(() {
+            _statusText = '准备就绪...';
+            _progress = 1.0;
+          });
+        }
       } catch (e) {
-        _statusText = '初始化失败';
+        if (mounted) {
+          setState(() => _statusText = '初始化失败');
+        }
         await Future.delayed(const Duration(milliseconds: 500));
         rethrow;
       }
@@ -74,20 +80,19 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   }
 
   void _navigateToApp() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => widget.onComplete(context),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
-          },
-          transitionDuration: const Duration(milliseconds: 300),
-        ),
-      );
-    });
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => widget.onComplete(context),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 300),
+      ),
+    );
   }
 
   @override
