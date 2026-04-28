@@ -123,7 +123,8 @@ class _DailyQuoteWidgetState extends State<DailyQuoteWidget> {
     final text = _quote ?? '';
     
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,  // size to content, never overflow parent
       children: [
         if (_isLoading)
           Shimmer.fromColors(
@@ -147,13 +148,13 @@ class _DailyQuoteWidgetState extends State<DailyQuoteWidget> {
               final fittedSize = _fitFontSizeForTwoLines(text, targetWidth);
               return Text(
                 text,
-                textAlign: TextAlign.center,
+                textAlign: TextAlign.start,
                 maxLines: 2,
-                overflow: TextOverflow.clip, // 不显示 ...
+                overflow: TextOverflow.ellipsis,
                 softWrap: true,
                 style: TextStyle(
                   fontSize: fittedSize,
-                  height: 1.22,
+                  height: 1.3,
                   color: color.withOpacity(0.95),
                   fontFamily: 'serif',
                   letterSpacing: 0.4,
