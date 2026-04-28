@@ -1,6 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/gift.dart';
-import 'gift_animation.dart';
+import 'optimized_gift_animation.dart';
 
 enum AnimationPriority {
   low,
@@ -13,10 +14,12 @@ class AnimationTask {
   final Gift gift;
   final AnimationPriority priority;
   final DateTime timestamp;
+  int comboCount;
 
   AnimationTask({
     required this.gift,
     this.priority = AnimationPriority.normal,
+    this.comboCount = 1,
   }) : timestamp = DateTime.now();
 
   int get priorityValue {
@@ -43,6 +46,10 @@ class GiftAnimationManager {
   int _comboCount = 0;
   DateTime? _lastAnimationTime;
   static const _comboTimeWindow = Duration(seconds: 3);
+  static const _minIntervalBetweenAnimations = Duration(milliseconds: 200);
+
+  AnimationTask? _currentTask;
+  DateTime? _lastAnimationEndTime;
 
   int get comboCount => _comboCount;
   bool get isPlaying => _isPlaying;
@@ -74,8 +81,30 @@ class GiftAnimationManager {
 
   void addAnimation(Gift gift) {
     _updateCombo();
+
     final priority = _getPriorityForGift(gift);
-    final task = AnimationTask(gift: gift, priority: priority);
+    
+    final now = DateTime.now();
+    if (_currentTask != null && 
+        _currentTask!.gift.id == gift.id &&
+        _lastAnimationEndTime != null &&
+        now.difference(_lastAnimationEndTime!) < _comboTimeWindow) {
+      _currentTask!.comboCount++;
+      return;
+    }
+
+    for (var task in _animationQueue) {
+      if (task.gift.id == gift.id) {
+        task.comboCount++;
+        return;
+      }
+    }
+
+    final task = AnimationTask(
+      gift: gift,
+      priority: priority,
+      comboCount: _comboCount,
+    );
 
     if (_animationQueue.isEmpty) {
       _animationQueue.add(task);
@@ -89,6 +118,67 @@ class GiftAnimationManager {
       }
       _animationQueue.insert(insertIndex, task);
     }
+
+    if (!_isPlaying) {
+      _startPlaying();
+    }
+  }
+
+  void _startPlaying() {
+    if (_isPlaying) return;
+    _playNextAnimation();
+  }
+
+  Future<void> _playNextAnimation() async {
+    if (_animationQueue.isEmpty) {
+      _isPlaying = false;
+      _currentTask = null;
+      return;
+    }
+
+    _isPlaying = true;
+    _currentTask = _animationQueue.removeAt(0);
+
+    if (_lastAnimationEndTime != null) {
+      final now = DateTime.now();
+      final elapsed = now.difference(_lastAnimationEndTime!);
+      if (elapsed < _minIntervalBetweenAnimations) {
+        await Future.delayed(_minIntervalBetweenAnimations - elapsed);
+      }
+    }
+
+    await _executeAnimation(_currentTask!);
+    _lastAnimationEndTime = DateTime.now();
+
+    _playNextAnimation();
+  }
+
+  Future<void> _executeAnimation(AnimationTask task) async {
+    final completer = Completer<void>();
+    
+    if (_currentContext != null) {
+      showDialog(
+        context: _currentContext!,
+        barrierColor: Colors.black54,
+        barrierDismissible: false,
+        useSafeArea: false,
+        builder: (ctx) => Center(
+          child: OptimizedGiftAnimation(
+            gift: task.gift,
+            comboCount: task.comboCount,
+            onAnimationComplete: () {
+              Navigator.of(ctx).pop();
+              completer.complete();
+            },
+          ),
+        ),
+      );
+    } else {
+      await Future.delayed(task.gift.animationDuration);
+      completer.complete();
+    }
+
+    return completer.future;
   }
 
   AnimationTask? getNextAnimation() {
@@ -100,6 +190,7 @@ class GiftAnimationManager {
 
   void clearQueue() {
     _animationQueue.clear();
+    _comboCount = 0;
   }
 
   void startPlaying() {
@@ -109,10 +200,18 @@ class GiftAnimationManager {
   void stopPlaying() {
     _isPlaying = false;
     _comboCount = 0;
+    _animationQueue.clear();
+    _currentTask = null;
   }
 
   bool shouldPlayNext() {
     return _animationQueue.isNotEmpty && !_isPlaying;
+  }
+
+  BuildContext? _currentContext;
+
+  void setContext(BuildContext context) {
+    _currentContext = context;
   }
 
   void playAnimationSequence(
@@ -120,16 +219,18 @@ class GiftAnimationManager {
     List<Gift> gifts, {
     VoidCallback? onComplete,
   }) {
+    _currentContext = context;
+    
     if (gifts.isEmpty) {
       onComplete?.call();
       return;
     }
 
     _isPlaying = true;
-    _playNextGift(context, gifts, 0, onComplete);
+    _playNextGiftInSequence(context, gifts, 0, onComplete);
   }
 
-  void _playNextGift(
+  void _playNextGiftInSequence(
     BuildContext context,
     List<Gift> gifts,
     int index,
@@ -141,24 +242,30 @@ class GiftAnimationManager {
       return;
     }
 
+    final navigatorState = Navigator.of(context, rootNavigator: true);
     final gift = gifts[index];
-    showDialog(
-      context: context,
-      barrierColor: Colors.black54,
-      barrierDismissible: false,
-      builder: (ctx) => Center(
-        child: GiftSendAnimation(
-          gift: gift,
-          duration: gift.animationDuration,
-          onAnimationComplete: () {
-            Navigator.of(ctx).pop();
-            Future.delayed(const Duration(milliseconds: 300), () {
-              _playNextGift(context, gifts, index + 1, onComplete);
-            });
-          },
+    
+    navigatorState.push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierDismissible: false,
+        pageBuilder: (ctx, animation, secondaryAnimation) => Center(
+          child: OptimizedGiftAnimation(
+            gift: gift,
+            duration: gift.animationDuration,
+            onAnimationComplete: () {
+              navigatorState.pop();
+            },
+          ),
         ),
       ),
-    );
+    ).then((_) {
+      Future.delayed(_minIntervalBetweenAnimations, () {
+        if (navigatorState.mounted) {
+          _playNextGiftInSequence(navigatorState.context, gifts, index + 1, onComplete);
+        }
+      });
+    });
   }
 
   Map<String, dynamic> getPerformanceStats() {
@@ -167,7 +274,13 @@ class GiftAnimationManager {
       'isPlaying': _isPlaying,
       'comboCount': _comboCount,
       'lastAnimationTime': _lastAnimationTime?.toIso8601String(),
+      'currentTask': _currentTask?.gift.name,
     };
+  }
+
+  void resetCombo() {
+    _comboCount = 0;
+    _lastAnimationTime = null;
   }
 }
 

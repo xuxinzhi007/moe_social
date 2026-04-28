@@ -5,14 +5,13 @@ import '../services/api_service.dart';
 import '../utils/error_handler.dart';
 import 'moe_loading.dart';
 import 'gift_haptic.dart';
-import 'gift_animation.dart';
+import 'gift_animation_manager.dart';
 
-/// 礼物选择器组件
 class GiftSelector extends StatefulWidget {
-  final String targetId; // 目标ID（帖子ID或用户ID）
-  final String targetType; // 'post' 或 'user'
-  final String receiverId; // 接收者用户ID
-  final Function(Gift)? onGiftSent; // 礼物发送成功回调
+  final String targetId;
+  final String targetType;
+  final String receiverId;
+  final Function(Gift)? onGiftSent;
 
   const GiftSelector({
     super.key,
@@ -28,13 +27,14 @@ class GiftSelector extends StatefulWidget {
 
 class _GiftSelectorState extends State<GiftSelector> {
   Gift? _selectedGift;
-  /// 正在发送的礼物 id（防连点）
   final Set<String> _sendingGiftIds = {};
   double _userBalance = 0.0;
-  /// 后端 `/api/gifts` 全量列表（唯一数据源）
   List<Gift> _serverGifts = [];
-  /// 已结束一次拉取（成功或失败）
   bool _giftCatalogResolved = false;
+  int _comboCount = 0;
+  DateTime? _lastSendTime;
+  static const _comboTimeout = Duration(seconds: 2);
+  bool _isSending = false;
 
   @override
   void initState() {
@@ -53,17 +53,10 @@ class _GiftSelectorState extends State<GiftSelector> {
       );
       if (!mounted) return;
       final parsed = rows.map(Gift.fromCatalogApi).toList();
-      if (parsed.isNotEmpty) {
-        setState(() {
-          _serverGifts = parsed;
-          _giftCatalogResolved = true;
-        });
-      } else {
-        setState(() {
-          _serverGifts = [];
-          _giftCatalogResolved = true;
-        });
-      }
+      setState(() {
+        _serverGifts = parsed;
+        _giftCatalogResolved = true;
+      });
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -76,8 +69,7 @@ class _GiftSelectorState extends State<GiftSelector> {
 
   List<Gift> _mapPatchGift(String id, Gift Function(Gift g) fn) {
     return [
-      for (final g in _serverGifts)
-        if (g.id == id) fn(g) else g,
+      for (final g in _serverGifts) if (g.id == id) fn(g) else g,
     ];
   }
 
@@ -95,6 +87,16 @@ class _GiftSelectorState extends State<GiftSelector> {
     }
   }
 
+  void _updateCombo() {
+    final now = DateTime.now();
+    if (_lastSendTime != null && now.difference(_lastSendTime!) < _comboTimeout) {
+      _comboCount++;
+    } else {
+      _comboCount = 1;
+    }
+    _lastSendTime = now;
+  }
+
   Future<void> _sendGift(Gift gift) async {
     final userId = AuthService.currentUser;
     if (userId == null) {
@@ -102,6 +104,7 @@ class _GiftSelectorState extends State<GiftSelector> {
       return;
     }
     if (_sendingGiftIds.contains(gift.id)) return;
+    if (_isSending) return;
 
     if (!gift.canSendViaBackendApi) {
       ErrorHandler.showError(context, '礼物数据异常，请下拉刷新礼物列表后重试。');
@@ -121,8 +124,10 @@ class _GiftSelectorState extends State<GiftSelector> {
     await GiftHapticFeedback.forGiftConfirmation(gift);
 
     setState(() {
+      _isSending = true;
       _sendingGiftIds.add(gift.id);
       _selectedGift = gift;
+      _updateCombo();
       if (hasStock) {
         _serverGifts = _mapPatchGift(
           gift.id,
@@ -168,6 +173,7 @@ class _GiftSelectorState extends State<GiftSelector> {
     } finally {
       if (mounted) {
         setState(() {
+          _isSending = false;
           _sendingGiftIds.remove(gift.id);
           _selectedGift = null;
         });
@@ -176,22 +182,10 @@ class _GiftSelectorState extends State<GiftSelector> {
   }
 
   void _showGiftSuccessAnimation(Gift gift) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black54,
-      barrierDismissible: true,
-      builder: (context) => Center(
-        child: GiftSendAnimation(
-          gift: gift,
-          onAnimationComplete: () {
-            Navigator.of(context).pop();
-            ErrorHandler.showSuccess(context, '礼物发送成功！🎁');
-            widget.onGiftSent?.call(gift);
-            Navigator.of(context).pop();
-          },
-        ),
-      ),
-    );
+    final animationManager = GiftAnimationManager();
+    animationManager.setContext(context);
+    animationManager.addAnimation(gift);
+    widget.onGiftSent?.call(gift);
   }
 
   @override
@@ -204,7 +198,6 @@ class _GiftSelectorState extends State<GiftSelector> {
       ),
       child: Column(
         children: [
-          // 顶部标题栏
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -228,15 +221,41 @@ class _GiftSelectorState extends State<GiftSelector> {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        '点击即送出 · 背包优先，不足则从余额扣款',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey[700],
-                          fontWeight: FontWeight.w500,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            '点击即送出 · 背包优先，不足则从余额扣款',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          if (_comboCount > 1)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange[100],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '${_comboCount}x 连击',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange[600],
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ],
                   ),
@@ -255,7 +274,7 @@ class _GiftSelectorState extends State<GiftSelector> {
                           size: 16, color: Colors.orange[600]),
                       const SizedBox(width: 4),
                       Text(
-                        '余额: ¥${_userBalance.toStringAsFixed(2)}',
+                        '¥${_userBalance.toStringAsFixed(2)}',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -274,8 +293,6 @@ class _GiftSelectorState extends State<GiftSelector> {
               ],
             ),
           ),
-
-          // 礼物列表（仅服务端 /api/gifts）
           Expanded(
             child: !_giftCatalogResolved
                 ? const Center(
@@ -325,17 +342,30 @@ class _GiftSelectorState extends State<GiftSelector> {
                       )
                     : _buildGiftGrid(_serverGifts),
           ),
-
-          // 底部操作栏
-          if (_sendingGiftIds.isNotEmpty)
+          if (_isSending)
             Container(
               padding: const EdgeInsets.all(16),
-              child: const Row(
+              decoration: BoxDecoration(
+                color: Colors.pink[50],
+                border: Border(top: BorderSide(color: Colors.pink[200]!)),
+              ),
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  MoeSmallLoading(size: 22),
-                  SizedBox(width: 12),
-                  Text('正在发送礼物...'),
+                  const MoeSmallLoading(size: 22),
+                  const SizedBox(width: 12),
+                  const Text('正在发送礼物...'),
+                  if (_comboCount > 1)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Text(
+                        '($_comboCount连击)',
+                        style: TextStyle(
+                          color: Colors.orange[600],
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -358,8 +388,7 @@ class _GiftSelectorState extends State<GiftSelector> {
         final gift = gifts[index];
         final hasStock = gift.ownedQuantity >= 1;
         final canPay = _userBalance + 1e-9 >= gift.price;
-        final canSend =
-            gift.canSendViaBackendApi && (hasStock || canPay);
+        final canSend = gift.canSendViaBackendApi && (hasStock || canPay);
         final isSelected = _selectedGift?.id == gift.id;
         final backendOk = gift.canSendViaBackendApi;
         final sending = _sendingGiftIds.contains(gift.id);
@@ -434,10 +463,8 @@ class _GiftSelectorState extends State<GiftSelector> {
                                   child: Text(
                                     gift.emoji,
                                     style: TextStyle(
-                                      fontSize: 26,
-                                      color: canSend
-                                          ? null
-                                          : Colors.grey[400],
+                                      fontSize: 28,
+                                      color: canSend ? null : Colors.grey[400],
                                     ),
                                   ),
                                 ),
@@ -486,7 +513,7 @@ class _GiftSelectorState extends State<GiftSelector> {
                     ],
                   ),
                 ),
-                if (backendOk)
+                if (backendOk && hasStock)
                   Positioned(
                     top: 4,
                     left: 4,
@@ -521,6 +548,28 @@ class _GiftSelectorState extends State<GiftSelector> {
                       ),
                     ),
                   ),
+                if (gift.level == GiftLevel.luxury)
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.yellow,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.yellow,
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: const Text(
+                        '👑',
+                        style: TextStyle(fontSize: 10),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -530,7 +579,6 @@ class _GiftSelectorState extends State<GiftSelector> {
   }
 }
 
-/// 礼物按钮组件（用于在帖子或评论中显示）
 class GiftButton extends StatefulWidget {
   final String targetId;
   final String targetType;
@@ -625,14 +673,10 @@ class _GiftButtonState extends State<GiftButton>
               width: widget.size,
               height: widget.size,
               decoration: BoxDecoration(
-                color: _isPressed
-                    ? Colors.pink[100]
-                    : Colors.pink[50],
+                color: _isPressed ? Colors.pink[100] : Colors.pink[50],
                 borderRadius: BorderRadius.circular(widget.size / 2),
                 border: Border.all(
-                  color: _isPressed
-                      ? Colors.pink[400]!
-                      : Colors.pink[200]!,
+                  color: _isPressed ? Colors.pink[400]! : Colors.pink[200]!,
                   width: 1,
                 ),
                 boxShadow: _isPressed
@@ -648,9 +692,7 @@ class _GiftButtonState extends State<GiftButton>
               child: Icon(
                 Icons.card_giftcard,
                 size: widget.size * 0.5,
-                color: _isPressed
-                    ? Colors.pink[600]
-                    : Colors.pink[400],
+                color: _isPressed ? Colors.pink[600] : Colors.pink[400],
               ),
             ),
           );
