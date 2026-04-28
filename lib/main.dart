@@ -39,7 +39,6 @@ import 'services/notification_service.dart';
 import 'services/remote_control_service.dart';
 import 'services/presence_service.dart';
 import 'services/chat_push_service.dart';
-
 import 'services/push_notification_service.dart';
 import 'services/startup_update_service.dart';
 import 'pages/gallery/cloud_gallery_page.dart';
@@ -57,171 +56,17 @@ import 'providers/game_provider.dart';
 import 'pages/feed/home_page.dart';
 import 'pages/community/community_home_page.dart';
 import 'pages/community/community_post_detail_page.dart';
+import 'utils/startup_manager.dart';
+import 'utils/async_svg_manager.dart';
+import 'widgets/splash_screen.dart';
 
-
-void main() async {
-  // 使用runZonedGuarded捕获所有未捕获的错误
-  runZonedGuarded(() async {
-    // 确保Flutter绑定已初始化（必须在zone内部）
+void main() {
+  runZonedGuarded(() {
     WidgetsFlutterBinding.ensureInitialized();
-
-    // 生产包：从稳定托管的 JSON 拉取当前 API 域名（隧道变更无需重打包）
-    await ApiService.initRemoteProductionBaseUrl();
-
-    // 初始化认证服务，从持久化存储加载登录状态
-    await AuthService.init();
-    // 登录态已恢复后，立即启动 WebSocket（在线/私信）
-    if (AuthService.isLoggedIn) {
-      PresenceService.start();
-      ChatPushService.start();
-      final uid = AuthService.currentUser;
-      if (uid != null) {
-        unawaited(AchievementHooks.ensureReady(uid));
-      }
-    }
     
+    _setupErrorHandlers();
 
-
-    // 创建主题提供者
-    final themeProvider = ThemeProvider();
-    await themeProvider.init();
-
-    // 创建通知提供者
-    final notificationProvider = NotificationProvider();
-    notificationProvider.init(); // 启动轮询
-
-    // 创建设备信息提供者
-    final deviceInfoProvider = DeviceInfoProvider();
-    deviceInfoProvider.init(); // 启动设备信息同步
-
-    // 创建加载状态提供者
-    final loadingProvider = LoadingProvider();
-
-    await NotificationService.initLocalNotifications();
-    await RemoteControlService.init();
-    
-    // 初始化推送通知服务
-    if (!kIsWeb) {
-      await PushNotificationService.initialize(AuthService.navigatorKey);
-    }
-    
-    // 初始化聊天推送服务
-    ChatPushService.initialize(AuthService.navigatorKey);
-
-    // 捕获Flutter框架错误
-    int errorCount = 0;
-    FlutterError.onError = (FlutterErrorDetails details) {
-      final errorString = details.exceptionAsString();
-      // 过滤掉重复的parentDataDirty错误，避免日志刷屏
-      if (errorString.contains('parentDataDirty')) {
-        errorCount++;
-        if (errorCount <= 3) {
-          debugPrint('Flutter Error [${errorCount}]: $errorString');
-        } else if (errorCount == 4) {
-          debugPrint('... (重复错误已省略，修复后刷新即可)');
-        }
-        return; // 不输出到控制台
-      }
-      // 输出其他错误信息
-      errorCount = 0;
-      debugPrint('═══════════════════════════════════════');
-      debugPrint('Flutter Error:');
-      debugPrint('Exception: $errorString');
-      debugPrint('Stack: ${details.stack}');
-      debugPrint('Library: ${details.library}');
-      debugPrint('═══════════════════════════════════════');
-    };
-
-    // 避免“白屏”：当 widget build/layout 抛错时，用一个可见的错误卡片替代
-    ErrorWidget.builder = (FlutterErrorDetails details) {
-      // 保持控制台输出，便于复制排查
-      FlutterError.presentError(details);
-
-      return Material(
-        color: const Color(0xFFF5F7FA), // Moe 背景色
-        child: SafeArea(
-          child: Center(
-            child: Container(
-              margin: const EdgeInsets.all(20),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF7F7FD5).withOpacity(0.18),
-                    blurRadius: 18,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-                border: Border.all(
-                    color: const Color(0xFF7F7FD5).withOpacity(0.25)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '页面渲染出错啦 (；´д｀)ゞ',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF7F7FD5),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    details.exceptionAsString(),
-                    style: const TextStyle(color: Colors.black87, height: 1.3),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '提示：这通常不是接口数据问题，而是布局约束导致的 RenderBox 未完成 layout。\n请把控制台里最早出现的那条异常（不是后面一堆 hasSize 重复）截图发我。',
-                    style: TextStyle(
-                        color: Colors.grey[600], fontSize: 12, height: 1.35),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    };
-
-    // 捕获异步错误
-    PlatformDispatcher.instance.onError = (error, stack) {
-      debugPrint('═══════════════════════════════════════');
-      debugPrint('Platform Error:');
-      debugPrint('Error: $error');
-      debugPrint('Stack: $stack');
-      debugPrint('═══════════════════════════════════════');
-      return true;
-    };
-
-    debugPrint('🚀 App starting...');
-    // Web平台不支持Platform.operatingSystem，使用kIsWeb判断
-    if (kIsWeb) {
-      debugPrint('📱 Platform: web');
-    } else {
-      debugPrint('📱 Platform: ${Platform.operatingSystem}');
-    }
-    debugPrint('🌐 API Base URL: ${ApiService.baseUrl}');
-    debugPrint('🔐 User logged in: ${AuthService.isLoggedIn}');
-
-    runApp(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider.value(value: themeProvider),
-          ChangeNotifierProvider.value(value: notificationProvider),
-          ChangeNotifierProvider.value(value: deviceInfoProvider),
-          ChangeNotifierProvider.value(value: loadingProvider),
-          ChangeNotifierProvider(create: (_) => CheckInProvider()),
-          ChangeNotifierProvider(create: (_) => UserLevelProvider()),
-          ChangeNotifierProvider(create: (_) => GameProvider()),
-        ],
-        child: const MyApp(),
-      ),
-    );
+    runApp(const SplashScreenWrapper());
   }, (error, stack) {
     debugPrint('═══════════════════════════════════════');
     debugPrint('Uncaught Error:');
@@ -230,6 +75,183 @@ void main() async {
     debugPrint('═══════════════════════════════════════');
   });
 }
+
+void _setupErrorHandlers() {
+  int errorCount = 0;
+  FlutterError.onError = (FlutterErrorDetails details) {
+    final errorString = details.exceptionAsString();
+    if (errorString.contains('parentDataDirty')) {
+      errorCount++;
+      if (errorCount <= 3) {
+        debugPrint('Flutter Error [${errorCount}]: $errorString');
+      } else if (errorCount == 4) {
+        debugPrint('... (重复错误已省略，修复后刷新即可)');
+      }
+      return;
+    }
+    errorCount = 0;
+    debugPrint('═══════════════════════════════════════');
+    debugPrint('Flutter Error:');
+    debugPrint('Exception: $errorString');
+    debugPrint('Stack: ${details.stack}');
+    debugPrint('Library: ${details.library}');
+    debugPrint('═══════════════════════════════════════');
+  };
+
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    return Material(
+      color: const Color(0xFFF5F7FA),
+      child: SafeArea(
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF7F7FD5).withValues(alpha: 0.18),
+                  blurRadius: 18,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+              border: Border.all(color: const Color(0xFF7F7FD5).withValues(alpha: 0.25)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '页面渲染出错啦 (；´д｀)ゞ',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF7F7FD5),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  details.exceptionAsString(),
+                  style: const TextStyle(color: Colors.black87, height: 1.3),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '提示：这通常不是接口数据问题，而是布局约束导致的 RenderBox 未完成 layout。\n请把控制台里最早出现的那条异常（不是后面一堆 hasSize 重复）截图发我。',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12, height: 1.35),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('═══════════════════════════════════════');
+    debugPrint('Platform Error:');
+    debugPrint('Error: $error');
+    debugPrint('Stack: $stack');
+    debugPrint('═══════════════════════════════════════');
+    return true;
+  };
+}
+
+class SplashScreenWrapper extends StatelessWidget {
+  const SplashScreenWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Moe Social',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.purple,
+        scaffoldBackgroundColor: const Color(0xFFF5F7FA),
+      ),
+      home: SplashScreen(
+        onInit: _initializeApp,
+        onComplete: (context) => const MyApp(),
+        minDuration: const Duration(milliseconds: 1200),
+      ),
+    );
+  }
+
+  Future<void> _initializeApp() async {
+    final startupManager = StartupManager();
+
+    startupManager.addTasks([
+      StartupTask(
+        name: 'API Config',
+        task: () => ApiService.initRemoteProductionBaseUrl(),
+        critical: true,
+      ),
+      StartupTask(
+        name: 'Auth Service',
+        task: () => AuthService.init(),
+        critical: true,
+      ),
+      StartupTask(
+        name: 'Theme Provider',
+        task: () async {
+          final themeProvider = ThemeProvider();
+          await themeProvider.init();
+          _globalThemeProvider = themeProvider;
+        },
+        critical: true,
+      ),
+      StartupTask(
+        name: 'Local Notifications',
+        task: () => NotificationService.initLocalNotifications(),
+        critical: false,
+      ),
+      StartupTask(
+        name: 'Remote Control',
+        task: () => RemoteControlService.init(),
+        critical: false,
+      ),
+      StartupTask(
+        name: 'Push Notifications',
+        task: () async {
+          if (!kIsWeb) {
+            await PushNotificationService.initialize(AuthService.navigatorKey);
+          }
+        },
+        critical: false,
+      ),
+      StartupTask(
+        name: 'SVG Resources',
+        task: () => AsyncSvgManager().preloadAll(),
+        critical: false,
+      ),
+    ]);
+
+    await startupManager.run();
+
+    if (AuthService.isLoggedIn) {
+      PresenceService.start();
+      ChatPushService.start();
+      final uid = AuthService.currentUser;
+      if (uid != null) {
+        unawaited(AchievementHooks.ensureReady(uid));
+      }
+    }
+
+    ChatPushService.initialize(AuthService.navigatorKey);
+
+    debugPrint('🚀 App starting...');
+    debugPrint('📱 Platform: ${kIsWeb ? "web" : Platform.operatingSystem}');
+    debugPrint('🌐 API Base URL: ${ApiService.baseUrl}');
+    debugPrint('🔐 User logged in: ${AuthService.isLoggedIn}');
+  }
+}
+
+ThemeProvider? _globalThemeProvider;
+NotificationProvider? _globalNotificationProvider;
+DeviceInfoProvider? _globalDeviceInfoProvider;
+LoadingProvider? _globalLoadingProvider;
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -251,121 +273,128 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
+    final themeProvider = _globalThemeProvider ?? ThemeProvider();
+    final notificationProvider = _globalNotificationProvider ?? NotificationProvider()..init();
+    final deviceInfoProvider = _globalDeviceInfoProvider ?? DeviceInfoProvider()..init();
+    final loadingProvider = _globalLoadingProvider ?? LoadingProvider();
 
-    return MaterialApp(
-      title: 'Moe Social',
-      navigatorKey: AuthService.navigatorKey,
-      debugShowCheckedModeBanner: false,
-      theme: themeProvider.currentTheme,
-      initialRoute: AuthService.isLoggedIn ? '/home' : '/login',
-      builder: (context, child) {
-        return AppMessageWidget(
-          child: NotificationPopupHost(
-            child: child ?? const SizedBox.shrink(),
-          ),
-        );
-      },
-      routes: {
-        '/login': (context) => const LoginPage(),
-        '/register': (context) => const RegisterPage(),
-        '/home': (context) => const MainPage(),
-        '/profile': (context) => const ProfilePage(),
-        '/settings': (context) => const SettingsPage(),
-        '/create-post': (context) => const CreatePostPage(),
-        '/comments': (context) => CommentsPage(
-              postId: ModalRoute.of(context)!.settings.arguments as String,
+    _globalNotificationProvider = notificationProvider;
+    _globalDeviceInfoProvider = deviceInfoProvider;
+    _globalLoadingProvider = loadingProvider;
+
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: themeProvider),
+        ChangeNotifierProvider.value(value: notificationProvider),
+        ChangeNotifierProvider.value(value: deviceInfoProvider),
+        ChangeNotifierProvider.value(value: loadingProvider),
+        ChangeNotifierProvider(create: (_) => CheckInProvider()),
+        ChangeNotifierProvider(create: (_) => UserLevelProvider()),
+        ChangeNotifierProvider(create: (_) => GameProvider()),
+      ],
+      child: MaterialApp(
+        title: 'Moe Social',
+        navigatorKey: AuthService.navigatorKey,
+        debugShowCheckedModeBanner: false,
+        theme: themeProvider.currentTheme,
+        initialRoute: AuthService.isLoggedIn ? '/home' : '/login',
+        builder: (context, child) {
+          return AppMessageWidget(
+            child: NotificationPopupHost(
+              child: child ?? const SizedBox.shrink(),
             ),
-        '/edit-profile': (context) => EditProfilePage(
-              user: ModalRoute.of(context)!.settings.arguments as dynamic,
-            ),
-        '/vip-center': (context) => const VipCenterPage(),
-        '/vip-purchase': (context) => const VipPurchasePage(),
-        '/vip-orders': (context) => const VipOrdersPage(),
-        '/orders': (context) => const OrderCenterPage(),
-        '/vip-history': (context) => const VipHistoryPage(),
-        '/forgot-password': (context) => const ForgotPasswordPage(),
-        '/verify-code': (context) => VerifyCodePage(
-              email: ModalRoute.of(context)!.settings.arguments as String,
-            ),
-        '/reset-password': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments
-              as Map<String, dynamic>;
-          return ResetPasswordPage(
-            email: args['email'] as String,
-            code: args['code'] as String,
           );
         },
-        '/notifications': (context) => const NotificationCenterPage(),
-        '/wallet': (context) => const WalletPage(),
-        '/recharge': (context) => const RechargePage(),
-        '/gacha': (context) => const GachaPage(),
-        '/user-profile': (context) {
-          final args = ModalRoute.of(context)?.settings.arguments;
-          if (args is! Map<String, dynamic>) {
-            // 如果参数丢失（例如Web端刷新），重定向回首页或显示错误页
-            return const Scaffold(
-              body: Center(child: Text('页面参数丢失，请返回首页重新进入')),
+        routes: {
+          '/login': (context) => const LoginPage(),
+          '/register': (context) => const RegisterPage(),
+          '/home': (context) => const MainPage(),
+          '/profile': (context) => const ProfilePage(),
+          '/settings': (context) => const SettingsPage(),
+          '/create-post': (context) => const CreatePostPage(),
+          '/comments': (context) => CommentsPage(
+                postId: ModalRoute.of(context)!.settings.arguments as String,
+              ),
+          '/edit-profile': (context) => EditProfilePage(
+                user: ModalRoute.of(context)!.settings.arguments as dynamic,
+              ),
+          '/vip-center': (context) => const VipCenterPage(),
+          '/vip-purchase': (context) => const VipPurchasePage(),
+          '/vip-orders': (context) => const VipOrdersPage(),
+          '/orders': (context) => const OrderCenterPage(),
+          '/vip-history': (context) => const VipHistoryPage(),
+          '/forgot-password': (context) => const ForgotPasswordPage(),
+          '/verify-code': (context) => VerifyCodePage(
+                email: ModalRoute.of(context)!.settings.arguments as String,
+              ),
+          '/reset-password': (context) {
+            final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+            return ResetPasswordPage(
+              email: args['email'] as String,
+              code: args['code'] as String,
             );
-          }
-          return UserProfilePage(
-            userId: args['userId'] as String,
-            userName: args['userName'] as String?,
-            userAvatar: args['userAvatar'] as String?,
-            heroTag: args['heroTag'] as String?,
-          );
-        },
-        '/cloud-gallery': (context) => const CloudGalleryPage(),
-        '/topic-posts': (context) {
-          final tag = ModalRoute.of(context)!.settings.arguments as TopicTag;
-          return TopicPostsPage(topicTag: tag);
-        },
-        '/friends': (context) => const FriendsPage(),
-        '/community': (context) => const CommunityHomePage(),
-        '/post-detail': (context) {
-          final args = ModalRoute.of(context)?.settings.arguments;
-          if (args is! Map) {
-            return const Scaffold(
-              body: Center(child: Text('缺少动态参数')),
+          },
+          '/notifications': (context) => const NotificationCenterPage(),
+          '/wallet': (context) => const WalletPage(),
+          '/recharge': (context) => const RechargePage(),
+          '/gacha': (context) => const GachaPage(),
+          '/user-profile': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is! Map<String, dynamic>) {
+              return const Scaffold(
+                body: Center(child: Text('页面参数丢失，请返回首页重新进入')),
+              );
+            }
+            return UserProfilePage(
+              userId: args['userId'] as String,
+              userName: args['userName'] as String?,
+              userAvatar: args['userAvatar'] as String?,
+              heroTag: args['heroTag'] as String?,
             );
-          }
-          final postId = args['postId'] as String?;
-          if (postId == null || postId.isEmpty) {
-            return const Scaffold(
-              body: Center(child: Text('无效的动态 ID')),
+          },
+          '/cloud-gallery': (context) => const CloudGalleryPage(),
+          '/topic-posts': (context) {
+            final tag = ModalRoute.of(context)!.settings.arguments as TopicTag;
+            return TopicPostsPage(topicTag: tag);
+          },
+          '/friends': (context) => const FriendsPage(),
+          '/community': (context) => const CommunityHomePage(),
+          '/post-detail': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is! Map) {
+              return const Scaffold(body: Center(child: Text('缺少动态参数')));
+            }
+            final postId = args['postId'] as String?;
+            if (postId == null || postId.isEmpty) {
+              return const Scaffold(body: Center(child: Text('无效的动态 ID')));
+            }
+            final initial = args['post'] is Post ? args['post'] as Post : null;
+            return CommunityPostDetailPage(postId: postId, initialPost: initial);
+          },
+          '/match': (context) => const MatchPage(),
+          '/direct-chat': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is! Map<String, dynamic>) {
+              return const Scaffold(body: Center(child: Text('页面参数丢失，请返回重试')));
+            }
+            return DirectChatPage(
+              userId: args['userId'] as String,
+              username: args['username'] as String,
+              avatar: args['avatar'] as String,
             );
-          }
-          final initial = args['post'] is Post ? args['post'] as Post : null;
-          return CommunityPostDetailPage(
-            postId: postId,
-            initialPost: initial,
-          );
+          },
+          '/scan': (context) => const ScanPage(),
+          '/user-qr-code': (context) => const UserQrCodePage(),
+          '/interaction': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            var tab = 0;
+            if (args is Map && args['tab'] is int) {
+              tab = (args['tab'] as int).clamp(0, 1);
+            }
+            return FriendsPage(initialHubTabIndex: tab);
+          },
         },
-        '/match': (context) => const MatchPage(),
-        '/direct-chat': (context) {
-          final args = ModalRoute.of(context)?.settings.arguments;
-          if (args is! Map<String, dynamic>) {
-            return const Scaffold(
-              body: Center(child: Text('页面参数丢失，请返回重试')),
-            );
-          }
-          return DirectChatPage(
-            userId: args['userId'] as String,
-            username: args['username'] as String,
-            avatar: args['avatar'] as String,
-          );
-        },
-        '/scan': (context) => const ScanPage(),
-        '/user-qr-code': (context) => const UserQrCodePage(),
-        '/interaction': (context) {
-          final args = ModalRoute.of(context)?.settings.arguments;
-          var tab = 0;
-          if (args is Map && args['tab'] is int) {
-            tab = (args['tab'] as int).clamp(0, 1);
-          }
-          return FriendsPage(initialHubTabIndex: tab);
-        },
-      },
+      ),
     );
   }
 }
@@ -397,9 +426,8 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 设置全局上下文，用于显示消息通知
     ChatPushService.setGlobalContext(context);
-    
+
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
