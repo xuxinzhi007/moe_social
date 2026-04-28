@@ -48,6 +48,8 @@ const (
 	Super_GetPosts_FullMethodName                   = "/super.Super/GetPosts"
 	Super_GetPost_FullMethodName                    = "/super.Super/GetPost"
 	Super_CreatePost_FullMethodName                 = "/super.Super/CreatePost"
+	Super_UpdatePost_FullMethodName                 = "/super.Super/UpdatePost"
+	Super_DeletePost_FullMethodName                 = "/super.Super/DeletePost"
 	Super_ReportPost_FullMethodName                 = "/super.Super/ReportPost"
 	Super_LikePost_FullMethodName                   = "/super.Super/LikePost"
 	Super_GetPostComments_FullMethodName            = "/super.Super/GetPostComments"
@@ -138,6 +140,8 @@ type SuperClient interface {
 	GetPosts(ctx context.Context, in *GetPostsReq, opts ...grpc.CallOption) (*GetPostsResp, error)
 	GetPost(ctx context.Context, in *GetPostReq, opts ...grpc.CallOption) (*GetPostResp, error)
 	CreatePost(ctx context.Context, in *CreatePostReq, opts ...grpc.CallOption) (*CreatePostResp, error)
+	UpdatePost(ctx context.Context, in *UpdatePostReq, opts ...grpc.CallOption) (*UpdatePostResp, error)
+	DeletePost(ctx context.Context, in *DeletePostReq, opts ...grpc.CallOption) (*DeletePostResp, error)
 	ReportPost(ctx context.Context, in *ReportPostReq, opts ...grpc.CallOption) (*ReportPostResp, error)
 	LikePost(ctx context.Context, in *LikePostReq, opts ...grpc.CallOption) (*LikePostResp, error)
 	GetPostComments(ctx context.Context, in *GetPostCommentsReq, opts ...grpc.CallOption) (*GetPostCommentsResp, error)
@@ -490,6 +494,26 @@ func (c *superClient) CreatePost(ctx context.Context, in *CreatePostReq, opts ..
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreatePostResp)
 	err := c.cc.Invoke(ctx, Super_CreatePost_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) UpdatePost(ctx context.Context, in *UpdatePostReq, opts ...grpc.CallOption) (*UpdatePostResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdatePostResp)
+	err := c.cc.Invoke(ctx, Super_UpdatePost_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) DeletePost(ctx context.Context, in *DeletePostReq, opts ...grpc.CallOption) (*DeletePostResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeletePostResp)
+	err := c.cc.Invoke(ctx, Super_DeletePost_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1007,6 +1031,8 @@ type SuperServer interface {
 	GetPosts(context.Context, *GetPostsReq) (*GetPostsResp, error)
 	GetPost(context.Context, *GetPostReq) (*GetPostResp, error)
 	CreatePost(context.Context, *CreatePostReq) (*CreatePostResp, error)
+	UpdatePost(context.Context, *UpdatePostReq) (*UpdatePostResp, error)
+	DeletePost(context.Context, *DeletePostReq) (*DeletePostResp, error)
 	ReportPost(context.Context, *ReportPostReq) (*ReportPostResp, error)
 	LikePost(context.Context, *LikePostReq) (*LikePostResp, error)
 	GetPostComments(context.Context, *GetPostCommentsReq) (*GetPostCommentsResp, error)
@@ -1161,6 +1187,12 @@ func (UnimplementedSuperServer) GetPost(context.Context, *GetPostReq) (*GetPostR
 }
 func (UnimplementedSuperServer) CreatePost(context.Context, *CreatePostReq) (*CreatePostResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreatePost not implemented")
+}
+func (UnimplementedSuperServer) UpdatePost(context.Context, *UpdatePostReq) (*UpdatePostResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdatePost not implemented")
+}
+func (UnimplementedSuperServer) DeletePost(context.Context, *DeletePostReq) (*DeletePostResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeletePost not implemented")
 }
 func (UnimplementedSuperServer) ReportPost(context.Context, *ReportPostReq) (*ReportPostResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReportPost not implemented")
@@ -1842,6 +1874,42 @@ func _Super_CreatePost_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SuperServer).CreatePost(ctx, req.(*CreatePostReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_UpdatePost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdatePostReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).UpdatePost(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_UpdatePost_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).UpdatePost(ctx, req.(*UpdatePostReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_DeletePost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeletePostReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).DeletePost(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_DeletePost_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).DeletePost(ctx, req.(*DeletePostReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2814,6 +2882,14 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreatePost",
 			Handler:    _Super_CreatePost_Handler,
+		},
+		{
+			MethodName: "UpdatePost",
+			Handler:    _Super_UpdatePost_Handler,
+		},
+		{
+			MethodName: "DeletePost",
+			Handler:    _Super_DeletePost_Handler,
 		},
 		{
 			MethodName: "ReportPost",

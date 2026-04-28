@@ -17,22 +17,24 @@ type BaseResp {
 
 // 用户相关结构
 type User {
-	Id              string  `json:"id"`
-	Username        string  `json:"username"`
-	Email           string  `json:"email"`
-	MoeNo           string  `json:"moe_no,omitempty"`
-	Avatar          string  `json:"avatar"`
-	Signature       string  `json:"signature"`
-	Gender          string  `json:"gender"`
-	Birthday        string  `json:"birthday,omitempty"`
-	CreatedAt       string  `json:"created_at"`
-	UpdatedAt       string  `json:"updated_at"`
-	IsVip           bool    `json:"is_vip"`
-	VipExpiresAt    string  `json:"vip_expires_at"`
-	AutoRenew       bool    `json:"auto_renew"`
-	Balance         float64 `json:"balance"`
-	Inventory       string  `json:"inventory"`
-	EquippedFrameId string  `json:"equipped_frame_id"`
+	Id                string  `json:"id"`
+	Username          string  `json:"username"`
+	Email             string  `json:"email"`
+	MoeNo             string  `json:"moe_no,omitempty"`
+	Avatar            string  `json:"avatar"`
+	Signature         string  `json:"signature"`
+	Gender            string  `json:"gender"`
+	Birthday          string  `json:"birthday,omitempty"`
+	CreatedAt         string  `json:"created_at"`
+	UpdatedAt         string  `json:"updated_at"`
+	IsVip             bool    `json:"is_vip"`
+	VipExpiresAt      string  `json:"vip_expires_at"`
+	AutoRenew         bool    `json:"auto_renew"`
+	Balance           float64 `json:"balance"`
+	GiftCharm         int     `json:"gift_charm"`
+	ReceivedGiftValue float64 `json:"received_gift_value"`
+	Inventory         string  `json:"inventory"`
+	EquippedFrameId   string  `json:"equipped_frame_id"`
 }
 
 // VIP套餐相关结构
@@ -676,6 +678,30 @@ type CreatePostResp {
 	Data Post `json:"data"`
 }
 
+type UpdatePostReq {
+	PostId           string     `path:"post_id"`
+	UserId           string     `json:"-"`
+	Content          string     `json:"content,optional"`
+	Images           []string   `json:"images,optional"`
+	TopicTags        []TopicTag `json:"topic_tags,optional"`
+	HandDrawCard     string     `json:"hand_draw_card,optional"`
+	HandDrawThumbUrl string     `json:"hand_draw_thumb_url,optional"`
+}
+
+type UpdatePostResp {
+	BaseResp
+	Data Post `json:"data"`
+}
+
+type DeletePostReq {
+	PostId string `path:"post_id"`
+	UserId string `json:"-"`
+}
+
+type DeletePostResp {
+	BaseResp
+}
+
 type LikePostResp {
 	BaseResp
 	Data Post `json:"data"`
@@ -854,6 +880,12 @@ service Super {
 
 	@handler createPost
 	post /api/posts (CreatePostReq) returns (CreatePostResp)
+
+	@handler updatePost
+	put /api/posts/:post_id (UpdatePostReq) returns (UpdatePostResp)
+
+	@handler deletePost
+	delete /api/posts/:post_id (DeletePostReq) returns (DeletePostResp)
 
 	@handler reportPost
 	post /api/posts/:post_id/report (ReportPostReq) returns (ReportPostResp)
@@ -1150,8 +1182,13 @@ type LlmMessage {
 }
 
 type LlmChatReq {
-	Model    string       `json:"model"`
-	Messages []LlmMessage `json:"messages"`
+	Model         string       `json:"model"`
+	Messages      []LlmMessage `json:"messages"`
+	Stream        bool         `json:"stream,optional"`
+	Temperature   float64      `json:"temperature,optional"`
+	TopP          float64      `json:"top_p,optional"`
+	MaxTokens     int          `json:"max_tokens,optional"`
+	RepeatPenalty float64      `json:"repeat_penalty,optional"`
 }
 
 type LlmChatResp {
@@ -1172,6 +1209,14 @@ type LlmCreateAgentReq {
 	SystemPrompt string `json:"system_prompt"`
 }
 
+type LlmDownloadModelReq {
+	Model string `json:"model"`
+}
+
+type LlmDeleteModelReq {
+	Model string `json:"model"`
+}
+
 // LLM 聊天相关API服务
 @server (
 	group: llm
@@ -1184,6 +1229,14 @@ service Super {
 	// 创建带有个性化系统提示词的新模型
 	@handler createAgent
 	post /api/llm/agents (LlmCreateAgentReq) returns (BaseResp)
+
+	// 下载模型
+	@handler downloadModel
+	post /api/llm/models/download (LlmDownloadModelReq) returns (BaseResp)
+
+	// 删除模型
+	@handler deleteModel
+	post /api/llm/models/delete (LlmDeleteModelReq) returns (BaseResp)
 
 	// 发送聊天消息
 	@handler chat
@@ -1543,13 +1596,14 @@ service Super {
 
 // 礼物相关结构
 type Gift {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Price       int    `json:"price"`
-	Icon        string `json:"icon"`
-	Description string `json:"description"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	Id            string `json:"id"`
+	Name          string `json:"name"`
+	Price         int    `json:"price"`
+	Icon          string `json:"icon"`
+	Description   string `json:"description"`
+	CreatedAt     string `json:"created_at"`
+	UpdatedAt     string `json:"updated_at"`
+	OwnedQuantity int    `json:"owned_quantity,optional"`
 }
 
 type GiftRecord {
@@ -1565,8 +1619,9 @@ type GiftRecord {
 
 // 礼物相关请求
 type GetGiftsReq {
-	Page     int `form:"page,default=1"`
-	PageSize int `form:"page_size,default=10"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+	UserId   string `form:"user_id,optional"`
 }
 
 type GetGiftReq {
@@ -1630,6 +1685,23 @@ type GetGiftPurchaseOrdersReq {
 	PageSize int    `form:"page_size,default=10"`
 }
 
+type PurchaseGiftReq {
+	UserId   string `path:"user_id"`
+	GiftId   string `json:"gift_id"`
+	Quantity int    `json:"quantity,default=1"`
+}
+
+type PurchaseGiftData {
+	NewBalance    float64 `json:"new_balance"`
+	OwnedQuantity int     `json:"owned_quantity"`
+	OrderNo       string  `json:"order_no"`
+}
+
+type PurchaseGiftResp {
+	BaseResp
+	Data PurchaseGiftData `json:"data"`
+}
+
 type GetGiftPurchaseOrdersResp {
 	BaseResp
 	Data  []GiftPurchaseOrder `json:"data"`
@@ -1660,6 +1732,10 @@ service Super {
 	// 礼物购买订单（余额购买进背包）
 	@handler getGiftPurchaseOrders
 	get /api/user/:user_id/gifts/purchase-orders (GetGiftPurchaseOrdersReq) returns (GetGiftPurchaseOrdersResp)
+
+	// 购买礼物（进入背包）
+	@handler purchaseGift
+	post /api/user/:user_id/gifts/purchase (PurchaseGiftReq) returns (PurchaseGiftResp)
 }
 
 // 社区服务相关结构

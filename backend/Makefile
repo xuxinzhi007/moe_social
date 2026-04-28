@@ -23,14 +23,14 @@ build:
 
 # 构建 Linux 二进制文件（用于服务器）
 build-linux:
-	@echo 构建 Linux 二进制文件...
+	@echo Building Linux binary...
 	@go env -w CGO_ENABLED=0
 	@go env -w GOOS=linux
 	@go env -w GOARCH=amd64
 	@go build -o api/moe-social-api ./api
 	@go build -o rpc/moe-social-rpc ./rpc
 	@go env -w GOOS=windows
-	@echo 交叉编译完成，已恢复 GOOS 为 windows
+	@echo Build completed successfully, restored GOOS to windows
 
 help:
 	@echo Targets:

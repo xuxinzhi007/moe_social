@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../models/post.dart';
 import '../../models/topic_tag.dart';
+import '../../services/api_service.dart';
 import '../../services/post_service.dart';
 import '../../widgets/post_card.dart';
 import '../../widgets/moe_loading.dart';
 import '../../auth_service.dart';
 import '../../utils/error_handler.dart';
 import '../../utils/post_navigation.dart';
+import 'create_post_page.dart';
 
 /// 话题动态列表页面 - 显示指定话题下的所有动态
 class TopicPostsPage extends StatefulWidget {
@@ -277,7 +279,7 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
                             });
                           }
                         },
-                        onShare: () {},
+                        onShare: null,
                         onAvatarTap: () {
                           Navigator.pushNamed(
                             context,
@@ -290,6 +292,47 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
                             },
                           );
                         },
+                        onEdit: post.userId == (AuthService.currentUser ?? '')
+                            ? () async {
+                                final updated = await Navigator.push<Post>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        CreatePostPage(initialPost: post),
+                                  ),
+                                );
+                                if (updated != null && mounted) {
+                                  setState(() {
+                                    final i = _posts.indexWhere(
+                                        (p) => p.id == updated.id);
+                                    if (i != -1) {
+                                      _posts[i] = updated.copyWith(
+                                        likes: post.likes,
+                                        comments: post.comments,
+                                        isLiked: post.isLiked,
+                                        userName: updated.userName.isNotEmpty ? updated.userName : post.userName,
+                                        userAvatar: updated.userAvatar.isNotEmpty ? updated.userAvatar : post.userAvatar,
+                                      );
+                                    }
+                                  });
+                                }
+                              }
+                            : null,
+                        onDelete: post.userId == (AuthService.currentUser ?? '')
+                            ? () async {
+                                try {
+                                  await ApiService.deletePost(post.id);
+                                  if (!mounted) return;
+                                  setState(() => _posts
+                                      .removeWhere((p) => p.id == post.id));
+                                } catch (e) {
+                                  if (mounted) {
+                                    ErrorHandler.showError(
+                                        context, '删除失败：$e');
+                                  }
+                                }
+                              }
+                            : null,
                       );
                     },
                   ),

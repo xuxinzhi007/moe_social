@@ -1,28 +1,30 @@
 import 'dart:ui' show ImageFilter;
 
-import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../autoglm/autoglm_page.dart';
-import '../../autoglm/autoglm_service.dart'; // 恢复导入
+import 'package:provider/provider.dart';
+
 import '../../auth_service.dart';
-import '../../services/api_service.dart';
-import '../../models/user.dart';
+import '../../autoglm/autoglm_service.dart';
 import '../../models/achievement_badge.dart';
-import '../../services/achievement_service.dart';
-import '../../widgets/dynamic_avatar.dart';
-import '../../widgets/achievement_badge_display.dart';
-import '../../widgets/profile_bg.dart';
-import '../commerce/wallet_page.dart';
-import '../gallery/cloud_gallery_page.dart';
-import '../checkin/checkin_page.dart';
-import '../checkin/user_level_page.dart';
+import '../../models/user.dart';
 import '../../providers/user_level_provider.dart';
-import 'following_page.dart';
-import 'followers_page.dart';
-import '../../widgets/moe_toast.dart';
+import '../../services/achievement_service.dart';
+import '../../services/api_service.dart';
+import '../../widgets/achievement_badge_display.dart';
+import '../../widgets/dynamic_avatar.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_loading.dart';
+import '../../widgets/moe_toast.dart';
+import '../../widgets/profile_bg.dart';
+import '../ai/agent_list_page.dart';
+import '../autoglm/autoglm_page.dart';
+import '../checkin/checkin_page.dart';
+import '../checkin/user_level_page.dart';
+import '../commerce/wallet_page.dart';
+import '../gallery/cloud_gallery_page.dart';
+import 'followers_page.dart';
+import 'following_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -42,7 +44,6 @@ class _ProfilePageState extends State<ProfilePage> {
   List<AchievementBadge> _userBadges = [];
   final AchievementService _achievementService = AchievementService();
 
-  /// 合并同时触发的刷新（下拉、从子页返回等），避免同一套接口被并行打两遍。
   Future<void>? _ongoingProfileLoad;
 
   @override
@@ -51,16 +52,14 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadUserInfo();
   }
 
+  // ─── Data loading ─────────────────────────────────────────────────────────
+
   Future<void> _loadUserInfo() {
-    if (_ongoingProfileLoad != null) {
-      return _ongoingProfileLoad!;
-    }
+    if (_ongoingProfileLoad != null) return _ongoingProfileLoad!;
     final f = _loadUserInfoImpl();
     _ongoingProfileLoad = f;
     f.whenComplete(() {
-      if (identical(_ongoingProfileLoad, f)) {
-        _ongoingProfileLoad = null;
-      }
+      if (identical(_ongoingProfileLoad, f)) _ongoingProfileLoad = null;
     });
     return f;
   }
@@ -69,24 +68,13 @@ class _ProfilePageState extends State<ProfilePage> {
     await AuthService.init();
     final userId = AuthService.currentUser;
     if (userId == null) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
       return;
     }
-
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     try {
-      // 超时与重试由 ApiService.getUserInfo / _httpWithTimeout 统一处理，避免外层 8s 截断重试链
       final user = await ApiService.getUserInfo(userId);
-
       await _achievementService.initializeUserBadges(userId);
-
       if (mounted) {
         setState(() {
           _user = user;
@@ -94,122 +82,199 @@ class _ProfilePageState extends State<ProfilePage> {
           _isLoadingDetails = true;
         });
       }
-
       final results = await Future.wait([
         ApiService.getUserVipStatus(userId)
             .timeout(const Duration(seconds: 5))
             .catchError((_) => <String, dynamic>{}),
-        _getFollowingCount(userId),
-        _getFollowerCount(userId),
-        _getUserPostCount(userId),
+        _getCount(() => ApiService.getFollowings(userId, page: 1, pageSize: 1)),
+        _getCount(() => ApiService.getFollowers(userId, page: 1, pageSize: 1)),
+        _getPostCount(userId),
       ]);
-
       final vipStatus = results[0] as Map<String, dynamic>;
-      final followingCount = results[1] as int;
-      final followerCount = results[2] as int;
-      final postCount = results[3] as int;
-
-      bool isVip = vipStatus['is_vip'] as bool? ?? false;
-
       final userBadges = _achievementService.getUserBadges(userId);
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          final levelProvider = context.read<UserLevelProvider>();
-          if (levelProvider.userLevel == null && !levelProvider.isLoading) {
-            levelProvider.loadUserLevel(userId);
-          }
+          final lp = context.read<UserLevelProvider>();
+          if (lp.userLevel == null && !lp.isLoading) lp.loadUserLevel(userId);
         }
       });
-
       if (mounted) {
         setState(() {
-          _isVip = isVip;
-          _postCount = postCount;
-          _followingCount = followingCount;
-          _followerCount = followerCount;
+          _isVip = vipStatus['is_vip'] as bool? ?? false;
+          _followingCount = results[1] as int;
+          _followerCount = results[2] as int;
+          _postCount = results[3] as int;
           _userBadges = userBadges;
           _isLoadingDetails = false;
         });
       }
-    } catch (e) {
-      print('Profile loading error: $e');
+    } catch (_) {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isLoadingDetails = false;
-        });
+        setState(() { _isLoading = false; _isLoadingDetails = false; });
         MoeToast.error(context, '加载个人信息失败，请检查网络连接');
       }
     }
   }
 
-  Future<int> _getFollowingCount(String userId) async {
+  Future<int> _getCount(Future<Map<String, dynamic>> Function() fn) async {
     try {
-      final result = await ApiService.getFollowings(userId, page: 1, pageSize: 1)
-          .timeout(const Duration(seconds: 5));
-      return result['total'] as int? ?? 0;
-    } catch (e) {
-      return 0;
-    }
+      final r = await fn().timeout(const Duration(seconds: 5));
+      return r['total'] as int? ?? 0;
+    } catch (_) { return 0; }
   }
 
-  Future<int> _getFollowerCount(String userId) async {
+  Future<int> _getPostCount(String userId) async {
     try {
-      final result = await ApiService.getFollowers(userId, page: 1, pageSize: 1)
-          .timeout(const Duration(seconds: 5));
-      return result['total'] as int? ?? 0;
-    } catch (e) {
-      return 0;
-    }
-  }
-
-  Future<int> _getUserPostCount(String userId) async {
-    try {
-      final viewer =
-          AuthService.isLoggedIn ? (AuthService.currentUser ?? '') : '';
-      final result = await ApiService.getPosts(
-        page: 1,
-        pageSize: 1,
+      final viewer = AuthService.currentUser ?? '';
+      final r = await ApiService.getPosts(
+        page: 1, pageSize: 1,
         viewerUserId: viewer.isEmpty ? null : viewer,
         authorUserId: userId,
       ).timeout(const Duration(seconds: 8));
-      final total = result['total'];
-      if (total is int) return total;
-      if (total is num) return total.toInt();
+      final t = r['total'];
+      if (t is int) return t;
+      if (t is num) return t.toInt();
       return 0;
-    } catch (e) {
-      return 0;
-    }
+    } catch (_) { return 0; }
   }
+
+  // ─── Navigation helpers ───────────────────────────────────────────────────
 
   void _openEditProfile() {
     HapticFeedback.lightImpact();
     final u = _user;
     if (u == null) return;
-    Navigator.pushNamed(context, '/edit-profile', arguments: u).then((_) {
-      if (mounted) _loadUserInfo();
+    Navigator.pushNamed(context, '/edit-profile', arguments: u)
+        .then((_) { if (mounted) _loadUserInfo(); });
+  }
+
+  void _goToMyPosts() {
+    final u = _user;
+    if (u == null) return;
+    HapticFeedback.lightImpact();
+    Navigator.pushNamed(context, '/user-profile', arguments: {
+      'userId': u.id,
+      'userName': u.username,
+      'userAvatar': u.avatar,
+      'heroTag': 'profile_self_${u.id}',
     });
   }
+
+  void _navigateToCheckIn() {
+    final userId = AuthService.currentUser;
+    if (userId == null) { MoeToast.error(context, '请先登录'); return; }
+    HapticFeedback.lightImpact();
+    Navigator.push(context,
+        MaterialPageRoute(builder: (_) => CheckInPage(userId: userId)));
+  }
+
+  void _navigateToUserLevel() {
+    final userId = AuthService.currentUser;
+    if (userId == null) { MoeToast.error(context, '请先登录'); return; }
+    Navigator.push(context,
+        MaterialPageRoute(builder: (_) => UserLevelPage(userId: userId)));
+  }
+
+  Future<void> _openVipCenter() async {
+    HapticFeedback.lightImpact();
+    if (AuthService.currentUser == null) {
+      final login = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('先登录再查看'),
+          content: const Text('登录后可查看会员权益、套餐和开通记录。'),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('稍后再说')),
+            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('去登录')),
+          ],
+        ),
+      );
+      if (login == true && mounted) {
+        await Navigator.pushNamed(context, '/login');
+        if (mounted) _loadUserInfo();
+      }
+      return;
+    }
+    if (!mounted) return;
+    final result = await Navigator.pushNamed(context, '/vip-center');
+    if (mounted) {
+      Future.delayed(const Duration(milliseconds: 250), () {
+        if (mounted && (result == true || !_isVip)) _loadUserInfo();
+      });
+    }
+  }
+
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('退出登录'),
+        content: const Text('确定要退出当前账号吗？'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消', style: TextStyle(color: Colors.grey))),
+          TextButton(onPressed: () { Navigator.pop(context); AuthService.logout(); }, child: const Text('确定', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+  }
+
+  void _showAllBadges() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40, height: 4,
+              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                children: [
+                  const Text('我的成就徽章', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  TextButton(onPressed: () => Navigator.pop(context), child: const Text('完成')),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: BadgeGrid(badges: _userBadges, badgeSize: 80, crossAxisCount: 3, showProgress: true),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading && _user == null) {
-      return Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
+      return const Scaffold(
+        backgroundColor: Color(0xFFF5F7FA),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
+            children: [
               MoeLoading(color: Color(0xFF7F7FD5)),
               SizedBox(height: 16),
-              Text(
-                '正在加载个人信息...',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16,
-                ),
-              ),
+              Text('正在加载个人信息…', style: TextStyle(color: Colors.grey, fontSize: 16)),
             ],
           ),
         ),
@@ -218,247 +283,104 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'profile_fab',
+        onPressed: () async {
+          final result = await Navigator.pushNamed(context, '/create-post');
+          if (result == true && mounted) {
+            final uid = _user?.id;
+            if (uid != null) {
+              final n = await _getPostCount(uid);
+              if (mounted) setState(() => _postCount = n);
+            }
+          }
+        },
+        backgroundColor: const Color(0xFF7F7FD5),
+        foregroundColor: Colors.white,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        icon: const Icon(Icons.edit_rounded, size: 18),
+        label: const Text('写动态', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+      ),
       body: RefreshIndicator(
         onRefresh: _loadUserInfo,
         color: const Color(0xFF7F7FD5),
         child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
           slivers: [
-            SliverAppBar(
-              expandedHeight: 352,
-              pinned: true,
-              stretch: true,
-              backgroundColor: const Color(0xFF7F7FD5),
-              surfaceTintColor: Colors.transparent,
-              elevation: 0,
-              title: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    '我的',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                  if (_isLoadingDetails) ...[
-                    const SizedBox(width: 8),
-                    const SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              centerTitle: true,
-              actions: [
-                // 恢复设置按钮
-                IconButton(
-                  icon: const Icon(Icons.settings_outlined, color: Colors.white),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    Navigator.pushNamed(context, '/settings').then((_) {
-                      _loadUserInfo();
-                    });
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, color: Colors.white),
-                  onPressed: _openEditProfile,
-                ),
-              ],
-              flexibleSpace: FlexibleSpaceBar(
-                background: _buildHeader(),
-                stretchModes: const [
-                  StretchMode.zoomBackground,
-                  StretchMode.blurBackground,
-                ],
-              ),
-            ),
+            _buildSliverAppBar(),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 8),
-
+                    // Quick actions
+                    FadeInUp(delay: const Duration(milliseconds: 50), child: _buildQuickActions()),
+                    const SizedBox(height: 20),
+                    // Achievements preview
                     if (_user != null) ...[
-                      FadeInUp(
-                        delay: const Duration(milliseconds: 50),
-                        child: _buildAchievementPreviewCard(),
-                      ),
+                      FadeInUp(delay: const Duration(milliseconds: 80), child: _buildAchievementsPreview()),
                       const SizedBox(height: 20),
                     ],
-
-                    // 云端图库（发动态 / 好友 / 签到等在首页快捷或底栏，避免此处再堆一层入口）
+                    // Cloud & QR
                     FadeInUp(
-                      delay: const Duration(milliseconds: 100),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildProfileSectionTitle('云端与相册'),
-                          _buildMenuCard([
-                            _MenuItem(
-                              icon: Icons.cloud_queue_rounded,
-                              title: '云端图库',
-                              subtitle: '管理你的美好回忆',
-                              color: const Color(0xFF86A8E7),
-                              onTap: () async {
-                                HapticFeedback.lightImpact();
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const CloudGalleryPage(),
-                                  ),
-                                );
-                              },
-                            ),
-                            _MenuItem(
-                              icon: Icons.qr_code_rounded,
-                              title: '我的二维码',
-                              subtitle: '让其他用户扫描添加你为好友',
-                              color: const Color(0xFF4ECDC4),
-                              onTap: () {
-                                HapticFeedback.lightImpact();
-                                Navigator.pushNamed(context, '/user-qr-code');
-                              },
-                            ),
-                          ]),
-                        ],
-                      ),
+                      delay: const Duration(milliseconds: 110),
+                      child: _menuSection('云端与相册', [
+                        _MenuItem(icon: Icons.cloud_queue_rounded, title: '云端图库', subtitle: '管理你的美好回忆', color: const Color(0xFF86A8E7),
+                          onTap: () async { HapticFeedback.lightImpact(); await Navigator.push(context, MaterialPageRoute(builder: (_) => const CloudGalleryPage())); }),
+                        _MenuItem(icon: Icons.qr_code_rounded, title: '我的二维码', subtitle: '让其他用户扫描添加你', color: const Color(0xFF4ECDC4),
+                          onTap: () { HapticFeedback.lightImpact(); Navigator.pushNamed(context, '/user-qr-code'); }),
+                      ]),
                     ),
                     const SizedBox(height: 20),
-
-                    // 2. 每日福利
+                    // Lab & System
                     FadeInUp(
-                      delay: const Duration(milliseconds: 200),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildProfileSectionTitle('每日福利'),
-                          _buildMenuCard([
-                            _MenuItem(
-                              icon: Icons.calendar_today_rounded,
-                              title: '每日签到',
-                              subtitle: '连续签到有惊喜哦',
-                              color: const Color(0xFF7F7FD5),
-                              onTap: () {
+                      delay: const Duration(milliseconds: 140),
+                      child: _menuSection('实验室与系统', [
+                        _MenuItem(icon: Icons.smart_toy_rounded, title: 'AutoGLM 助手', color: const Color(0xFF7F7FD5),
+                          onTap: () { HapticFeedback.lightImpact(); Navigator.push(context, MaterialPageRoute(builder: (_) => const AutoGLMPage())); },
+                          trailing: Transform.scale(
+                            scale: 0.8,
+                            child: Switch(
+                              value: AutoGLMService.enableOverlay,
+                              activeThumbColor: const Color(0xFF7F7FD5),
+                              onChanged: (v) async {
                                 HapticFeedback.lightImpact();
-                                _navigateToCheckIn();
+                                setState(() => AutoGLMService.enableOverlay = v);
+                                if (v) {
+                                  bool ok = await AutoGLMService.checkOverlayPermission();
+                                  if (!ok) {
+                                    await AutoGLMService.requestOverlayPermission();
+                                    await Future.delayed(const Duration(seconds: 1));
+                                    ok = await AutoGLMService.checkOverlayPermission();
+                                    if (!ok) {
+                                      setState(() => AutoGLMService.enableOverlay = false);
+                                      if (!mounted) return;
+                                      final ctx = context;
+                                      MoeToast.error(ctx, '需要悬浮窗权限才能显示');
+                                      return;
+                                    }
+                                  }
+                                  await AutoGLMService.showOverlay();
+                                  if (!mounted) return;
+                                  final ctx = context;
+                                  MoeToast.success(ctx, '悬浮窗已开启');
+                                } else {
+                                  await AutoGLMService.removeOverlay();
+                                }
                               },
                             ),
-                            _MenuItem(
-                              icon: Icons.account_balance_wallet_rounded,
-                              title: '我的钱包',
-                              subtitle: '余额: ¥${_user?.balance.toStringAsFixed(2) ?? '0.00'}',
-                              color: const Color(0xFF4ECDC4),
-                              onTap: () {
-                                HapticFeedback.lightImpact();
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => const WalletPage()),
-                                ).then((value) {
-                                  _loadUserInfo();
-                                });
-                              },
-                            ),
-                            _MenuItem(
-                              icon: Icons.workspace_premium_rounded,
-                              title: 'VIP 会员中心',
-                              subtitle: AuthService.currentUser == null
-                                  ? '登录后查看会员权益与套餐'
-                                  : (_isVip ? '查看会员状态与续费信息' : '开通 VIP，解锁更多特权'),
-                              color: const Color(0xFFFFB347),
-                              onTap: () {
-                                HapticFeedback.lightImpact();
-                                _openVipCenter();
-                              },
-                            ),
-                          ]),
-                        ],
-                      ),
+                          ),
+                        ),
+                        _MenuItem(icon: Icons.smart_toy_rounded, title: 'AI 助手', subtitle: '对话、创作与辅助功能', color: const Color(0xFFFFB347),
+                          onTap: () { HapticFeedback.lightImpact(); Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentListPage())); }),
+                        _MenuItem(icon: Icons.settings_outlined, title: '通用设置', color: const Color(0xFF90A4AE),
+                          onTap: () { HapticFeedback.lightImpact(); Navigator.pushNamed(context, '/settings').then((_) { if (mounted) _loadUserInfo(); }); }),
+                        _MenuItem(icon: Icons.logout_rounded, title: '退出登录', color: const Color(0xFFFF6B6B), isDestructive: true,
+                          onTap: () { HapticFeedback.lightImpact(); _showLogoutDialog(); }),
+                      ]),
                     ),
-                    const SizedBox(height: 20),
-
-                    // 3. 实验室与系统
-                    FadeInUp(
-                      delay: const Duration(milliseconds: 300),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildProfileSectionTitle('实验室与系统'),
-                          _buildMenuCard([
-                              _MenuItem(
-                                icon: Icons.smart_toy_rounded,
-                                title: 'AutoGLM 助手',
-                                color: const Color(0xFF7F7FD5),
-                                onTap: () {
-                                  HapticFeedback.lightImpact();
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => const AutoGLMPage()),
-                                  );
-                                },
-                                // 恢复 AutoGLM 开关
-                                trailing: Transform.scale(
-                                  scale: 0.8,
-                                  child: Switch(
-                                    value: AutoGLMService.enableOverlay,
-                                    activeColor: const Color(0xFF7F7FD5),
-                                    onChanged: (value) async {
-                                      HapticFeedback.lightImpact();
-                                      setState(() {
-                                        AutoGLMService.enableOverlay = value;
-                                      });
-
-                                      if (value) {
-                                        bool hasPerm = await AutoGLMService.checkOverlayPermission();
-                                        if (!hasPerm) {
-                                          await AutoGLMService.requestOverlayPermission();
-                                          await Future.delayed(const Duration(seconds: 1));
-                                          hasPerm = await AutoGLMService.checkOverlayPermission();
-                                          if (!hasPerm) {
-                                            setState(() => AutoGLMService.enableOverlay = false);
-                                            if (mounted) {
-                                              MoeToast.error(context, '需要悬浮窗权限才能显示');
-                                            }
-                                            return;
-                                          }
-                                        }
-                                        await AutoGLMService.showOverlay();
-                                        if (mounted) {
-                                          MoeToast.success(context, '悬浮窗已开启');
-                                        }
-                                      } else {
-                                        await AutoGLMService.removeOverlay();
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ),
-                              // 移除列表中的“通用设置”
-                              _MenuItem(
-                                icon: Icons.logout_rounded,
-                                title: '退出登录',
-                                color: const Color(0xFFFF6B6B),
-                                isDestructive: true,
-                                onTap: () {
-                                  HapticFeedback.lightImpact();
-                                  _showLogoutDialog(context);
-                                },
-                              ),
-                          ]),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 40),
                   ],
                 ),
               ),
@@ -468,6 +390,44 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
+
+  // ─── SliverAppBar ─────────────────────────────────────────────────────────
+
+  Widget _buildSliverAppBar() {
+    return SliverAppBar(
+      expandedHeight: 340,
+      pinned: true,
+      stretch: true,
+      backgroundColor: const Color(0xFF7F7FD5),
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('我的', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+          if (_isLoadingDetails) ...[
+            const SizedBox(width: 8),
+            const SizedBox(width: 12, height: 12,
+              child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white70))),
+          ],
+        ],
+      ),
+      centerTitle: true,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.settings_outlined, color: Colors.white),
+          onPressed: () { HapticFeedback.lightImpact(); Navigator.pushNamed(context, '/settings').then((_) { if (mounted) _loadUserInfo(); }); },
+        ),
+        IconButton(icon: const Icon(Icons.edit_outlined, color: Colors.white), onPressed: _openEditProfile),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        background: _buildHeader(),
+        stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],
+      ),
+    );
+  }
+
+  // ─── Header (avatar + name + stats) ──────────────────────────────────────
 
   Widget _buildHeader() {
     const primaryGlow = Color(0xFF7F7FD5);
@@ -483,10 +443,7 @@ class _ProfilePageState extends State<ProfilePage> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withValues(alpha: 0.14),
-                ],
+                colors: [Colors.transparent, Colors.black.withValues(alpha: 0.12)],
                 stops: const [0.45, 1.0],
               ),
             ),
@@ -499,6 +456,7 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Avatar
                 FadeInUp(
                   delay: const Duration(milliseconds: 80),
                   child: Material(
@@ -509,31 +467,19 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: primaryGlow.withValues(alpha: 0.38),
-                              blurRadius: 28,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
+                          boxShadow: [BoxShadow(color: primaryGlow.withValues(alpha: 0.38), blurRadius: 28, offset: const Offset(0, 10))],
                         ),
                         child: Container(
                           padding: const EdgeInsets.all(3.5),
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          child: DynamicAvatar(
-                            avatarUrl: _user?.avatar ?? '',
-                            size: 82,
-                            frameId: _user?.equippedFrameId,
-                          ),
+                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                          child: DynamicAvatar(avatarUrl: _user?.avatar ?? '', size: 78, frameId: _user?.equippedFrameId),
                         ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
+                // Name + VIP
                 FadeInUp(
                   delay: const Duration(milliseconds: 120),
                   child: Row(
@@ -541,47 +487,27 @@ class _ProfilePageState extends State<ProfilePage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Flexible(
-                        child: Text(
-                          _user?.username ?? '未知用户',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            letterSpacing: 0.3,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        child: Text(_user?.username ?? '未知用户', textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.3),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
                       ),
                       if (_isVip) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: const Color(0xFFFFE082).withValues(alpha: 0.95),
-                            ),
+                            border: Border.all(color: const Color(0xFFFFE082).withValues(alpha: 0.95)),
                           ),
-                          child: const Text(
-                            'VIP',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFFFFF8E1),
-                            ),
-                          ),
+                          child: const Text('VIP', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFFFFF8E1))),
                         ),
                       ],
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
+                // Signature
                 FadeInUp(
                   delay: const Duration(milliseconds: 140),
                   child: GestureDetector(
@@ -590,130 +516,56 @@ class _ProfilePageState extends State<ProfilePage> {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Text(
                         sig.isEmpty ? '点击添加个性签名' : sig,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 13,
-                          height: 1.35,
-                          color: Colors.white.withValues(
-                            alpha: sig.isEmpty ? 0.58 : 0.9,
-                          ),
-                          fontStyle:
-                              sig.isEmpty ? FontStyle.italic : FontStyle.normal,
+                          fontSize: 13, height: 1.35,
+                          color: Colors.white.withValues(alpha: sig.isEmpty ? 0.55 : 0.9),
+                          fontStyle: sig.isEmpty ? FontStyle.italic : FontStyle.normal,
                         ),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 10),
+                // Moe-No + Level pills
                 FadeInUp(
                   delay: const Duration(milliseconds: 160),
                   child: Wrap(
                     alignment: WrapAlignment.center,
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: 8, runSpacing: 8,
                     children: [
                       if ((_user?.moeNo ?? '').isNotEmpty)
-                        Material(
-                          color: Colors.white.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(999),
-                          child: InkWell(
-                            onTap: () {
-                              Clipboard.setData(
-                                ClipboardData(text: _user!.moeNo),
-                              );
-                              MoeToast.success(context, '已复制 Moe 号');
-                            },
-                            borderRadius: BorderRadius.circular(999),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.badge_outlined,
-                                    size: 15,
-                                    color: Colors.white.withValues(alpha: 0.95),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    _user!.moeNo,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 0.6,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Icon(
-                                    Icons.copy_rounded,
-                                    size: 14,
-                                    color: Colors.white.withValues(alpha: 0.85),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                        _glassPill(
+                          onTap: () { Clipboard.setData(ClipboardData(text: _user!.moeNo)); MoeToast.success(context, '已复制 Moe 号'); },
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.badge_outlined, size: 14, color: Colors.white.withValues(alpha: 0.9)),
+                            const SizedBox(width: 5),
+                            Text(_user!.moeNo, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+                            const SizedBox(width: 4),
+                            Icon(Icons.copy_rounded, size: 13, color: Colors.white.withValues(alpha: 0.75)),
+                          ]),
                         ),
                       Consumer<UserLevelProvider>(
-                        builder: (context, levelProvider, child) {
-                          final userLevel = levelProvider.userLevel;
-                          if (userLevel == null) {
-                            return const SizedBox.shrink();
-                          }
-                          return Material(
-                            color: Colors.white.withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(999),
-                            child: InkWell(
-                              onTap: () {
-                                HapticFeedback.lightImpact();
-                                _navigateToUserLevel();
-                              },
-                              borderRadius: BorderRadius.circular(999),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.stars_rounded,
-                                      size: 15,
-                                      color: Colors.white,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Lv.${userLevel.level} ${userLevel.levelTitle}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Icon(
-                                      Icons.chevron_right_rounded,
-                                      size: 18,
-                                      color: Colors.white.withValues(alpha: 0.75),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                        builder: (_, lp, __) {
+                          final ul = lp.userLevel;
+                          if (ul == null) return const SizedBox.shrink();
+                          return _glassPill(
+                            onTap: _navigateToUserLevel,
+                            child: Row(mainAxisSize: MainAxisSize.min, children: [
+                              const Icon(Icons.stars_rounded, size: 14, color: Colors.white),
+                              const SizedBox(width: 5),
+                              Text('Lv.${ul.level} ${ul.levelTitle}', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                              const SizedBox(width: 2),
+                              Icon(Icons.chevron_right_rounded, size: 16, color: Colors.white.withValues(alpha: 0.7)),
+                            ]),
                           );
                         },
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
+                // Stats bar — each item is a tap target
                 FadeInUp(
                   delay: const Duration(milliseconds: 200),
                   child: ClipRRect(
@@ -722,88 +574,24 @@ class _ProfilePageState extends State<ProfilePage> {
                       filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                       child: Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 14,
-                          horizontal: 4,
-                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.26),
                           borderRadius: BorderRadius.circular(22),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.42),
-                          ),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.42)),
                         ),
                         child: Row(
                           children: [
+                            Expanded(child: _statItem('动态', '$_postCount', onTap: _goToMyPosts)),
+                            _vDivider(),
                             Expanded(
-                              child: _buildHeaderStatItem(
-                                '动态',
-                                '$_postCount',
-                                onTap: _user != null
-                                    ? () {
-                                        HapticFeedback.lightImpact();
-                                        Navigator.pushNamed(
-                                          context,
-                                          '/user-profile',
-                                          arguments: {
-                                            'userId': _user!.id,
-                                            'userName': _user!.username,
-                                            'userAvatar': _user!.avatar,
-                                            'heroTag':
-                                                'profile_self_${_user!.id}',
-                                          },
-                                        );
-                                      }
-                                    : null,
-                              ),
+                              child: _statItem('关注', '$_followingCount',
+                                onTap: _user != null ? () { HapticFeedback.lightImpact(); Navigator.push(context, MaterialPageRoute(builder: (_) => FollowingPage(userId: _user!.id))); } : null),
                             ),
-                            Container(
-                              width: 1,
-                              height: 34,
-                              color: Colors.white.withValues(alpha: 0.35),
-                            ),
+                            _vDivider(),
                             Expanded(
-                              child: _buildHeaderStatItem(
-                                '关注',
-                                '$_followingCount',
-                                onTap: _user != null
-                                    ? () {
-                                        HapticFeedback.lightImpact();
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute<void>(
-                                            builder: (context) => FollowingPage(
-                                              userId: _user!.id,
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    : null,
-                              ),
-                            ),
-                            Container(
-                              width: 1,
-                              height: 34,
-                              color: Colors.white.withValues(alpha: 0.35),
-                            ),
-                            Expanded(
-                              child: _buildHeaderStatItem(
-                                '粉丝',
-                                '$_followerCount',
-                                onTap: _user != null
-                                    ? () {
-                                        HapticFeedback.lightImpact();
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute<void>(
-                                            builder: (context) => FollowersPage(
-                                              userId: _user!.id,
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    : null,
-                              ),
+                              child: _statItem('粉丝', '$_followerCount',
+                                onTap: _user != null ? () { HapticFeedback.lightImpact(); Navigator.push(context, MaterialPageRoute(builder: (_) => FollowersPage(userId: _user!.id))); } : null),
                             ),
                           ],
                         ),
@@ -819,496 +607,219 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildHeaderStatItem(
-    String label,
-    String value, {
-    VoidCallback? onTap,
-  }) {
-    const valueStyle = TextStyle(
-      fontSize: 19,
-      fontWeight: FontWeight.w800,
-      color: Color(0xFF1E1E2E),
-      height: 1.05,
+  Widget _glassPill({required Widget child, required VoidCallback onTap}) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.18),
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(999),
+        child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), child: child)),
     );
-    final labelStyle = TextStyle(
-      fontSize: 11,
-      fontWeight: FontWeight.w600,
-      color: const Color(0xFF1E1E2E).withValues(alpha: 0.52),
-    );
-    final col = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(value, style: valueStyle),
-        const SizedBox(height: 4),
-        Text(label, style: labelStyle),
-      ],
-    );
+  }
+
+  Widget _statItem(String label, String value, {VoidCallback? onTap}) {
+    final col = Column(mainAxisSize: MainAxisSize.min, children: [
+      Text(value, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: Color(0xFF1E1E2E), height: 1.05)),
+      const SizedBox(height: 4),
+      Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF1E1E2E).withValues(alpha: 0.52))),
+    ]);
     if (onTap != null) {
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: col,
-          ),
-        ),
-      );
+      return Material(color: Colors.transparent,
+        child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(14),
+          child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), child: col)));
     }
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: col,
+    return Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), child: col);
+  }
+
+  Widget _vDivider() => Container(width: 1, height: 32, color: Colors.white.withValues(alpha: 0.35));
+
+  // ─── Quick Actions ────────────────────────────────────────────────────────
+
+  Widget _buildQuickActions() {
+    final actions = [
+      _QuickAction(emoji: '📅', label: '签到', onTap: _navigateToCheckIn),
+      _QuickAction(
+        emoji: '💰',
+        label: '钱包\n¥${_user?.balance.toStringAsFixed(2) ?? '0.00'}',
+        onTap: () {
+          HapticFeedback.lightImpact();
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletPage()))
+              .then((_) { if (mounted) _loadUserInfo(); });
+        },
+      ),
+      _QuickAction(
+        emoji: _isVip ? '👑' : '✨',
+        label: _isVip ? 'VIP 已开' : '开通 VIP',
+        highlight: !_isVip,
+        onTap: _openVipCenter,
+      ),
+      _QuickAction(
+        emoji: '🏅',
+        label: '成就',
+        badge: _userBadges.where((b) => b.isUnlocked).length,
+        onTap: _showAllBadges,
+      ),
+    ];
+
+    return Row(
+      children: actions.map((a) {
+        return Expanded(child: _buildQuickActionCard(a));
+      }).toList(),
     );
   }
 
-  Widget _buildProfileSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 4,
-            height: 16,
-            decoration: BoxDecoration(
-              color: const Color(0xFF7F7FD5),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF2D2D3D),
-              letterSpacing: 0.2,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<AchievementBadge> _badgesSortedForPreview() {
-    final list = List<AchievementBadge>.from(_userBadges);
-    list.sort((a, b) {
-      if (a.isUnlocked != b.isUnlocked) return a.isUnlocked ? -1 : 1;
-      return b.progress.compareTo(a.progress);
-    });
-    return list;
-  }
-
-  /// 徽章横条高度：随系统字号缩放，避免固定像素导致 dense [BadgeCard] 纵向溢出。
-  double _achievementBadgeStripHeight(BuildContext context) {
-    final scaled = MediaQuery.of(context).textScaler.scale(130.0);
-    return scaled.clamp(108.0, 248.0);
-  }
-
-  Widget _buildAchievementPreviewCard() {
-    final stats = _achievementService.getBadgeStatistics(_user!.id);
-    final sorted = _badgesSortedForPreview();
-    final showCount = sorted.length > 12 ? 12 : sorted.length;
-    final stripH = _achievementBadgeStripHeight(context);
-    const cardW = 72.0;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF7F7FD5).withOpacity(0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '成就徽章',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF333333),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFB347).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '${stats.unlockedBadges}/${stats.totalBadges}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFFE65100),
-                  ),
-                ),
-              ),
-              TextButton(
-                style: TextButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  _showAllBadges();
-                },
-                child: const Text('全部'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: stats.totalBadges > 0
-                  ? stats.unlockedBadges / stats.totalBadges
-                  : 0,
-              minHeight: 6,
-              backgroundColor: const Color(0xFFF0F0F5),
-              color: const Color(0xFF7F7FD5),
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: stripH,
-            child: showCount == 0
-                ? Center(
-                    child: Text(
-                      '暂无徽章数据',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 13),
-                    ),
-                  )
-                : ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.only(bottom: 2),
-                    clipBehavior: Clip.hardEdge,
-                    itemCount: showCount,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (context, i) {
-                      final b = sorted[i];
-                      return Align(
-                        alignment: Alignment.topCenter,
-                        child: SizedBox(
-                          width: cardW,
-                          height: stripH,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.topCenter,
-                            child: SizedBox(
-                              width: cardW,
-                              child: BadgeCard(
-                                badge: b,
-                                size: cardW,
-                                dense: true,
-                                showProgress: true,
-                                onTap: () {
-                                  HapticFeedback.lightImpact();
-                                  _showBadgeDetails(b);
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-          if (stats.unlockedBadges == 0)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                '发帖、评论、签到可积累进度并解锁成就',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _openVipCenter() async {
-    if (AuthService.currentUser == null) {
-      final shouldLogin = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('先登录再查看'),
-          content: const Text('登录后可查看会员权益、套餐和开通记录。'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('稍后再说'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('去登录'),
+  Widget _buildQuickActionCard(_QuickAction action) {
+    return GestureDetector(
+      onTap: action.onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+        decoration: BoxDecoration(
+          color: action.highlight
+              ? const Color(0xFF7F7FD5).withValues(alpha: 0.08)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: action.highlight
+              ? Border.all(color: const Color(0xFF7F7FD5).withValues(alpha: 0.3))
+              : Border.all(color: Colors.grey.shade100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8, offset: const Offset(0, 3),
             ),
           ],
         ),
-      );
-
-      if (shouldLogin == true && mounted) {
-        await Navigator.pushNamed(context, '/login');
-        if (mounted) {
-          _loadUserInfo();
-        }
-      }
-      return;
-    }
-
-    if (!mounted) return;
-    final result = await Navigator.pushNamed(context, '/vip-center');
-    if (mounted) {
-      Future.delayed(const Duration(milliseconds: 250), () {
-        if (mounted && (result == true || _isVip == false)) {
-          _loadUserInfo();
-        }
-      });
-    }
+        child: Stack(
+          alignment: Alignment.topCenter,
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(action.emoji, style: const TextStyle(fontSize: 26)),
+                const SizedBox(height: 6),
+                Text(
+                  action.label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: action.highlight ? const Color(0xFF7F7FD5) : const Color(0xFF333333),
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+            if (action.badge != null && action.badge! > 0)
+              Positioned(
+                top: 0, right: 0,
+                child: Container(
+                  width: 16, height: 16,
+                  decoration: const BoxDecoration(color: Color(0xFFFF6B35), shape: BoxShape.circle),
+                  child: Center(
+                    child: Text('${action.badge}', style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800)),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
-  Widget _buildMenuCard(List<_MenuItem> items) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF7F7FD5).withOpacity(0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: items.map((item) {
-          final isLast = items.last == item;
-          return Column(
-            children: [
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: item.onTap,
-                  borderRadius: BorderRadius.only(
-                    topLeft: items.first == item ? const Radius.circular(24) : Radius.zero,
-                    topRight: items.first == item ? const Radius.circular(24) : Radius.zero,
-                    bottomLeft: isLast ? const Radius.circular(24) : Radius.zero,
-                    bottomRight: isLast ? const Radius.circular(24) : Radius.zero,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: item.color.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Icon(item.icon, color: item.color, size: 22),
+  // ─── Achievement preview strip ────────────────────────────────────────────
+
+  Widget _buildAchievementsPreview() {
+    final stats = _achievementService.getBadgeStatistics(_user!.id);
+    final unlocked = _userBadges.where((b) => b.isUnlocked).toList();
+    final inProgress = _userBadges.where((b) => !b.isUnlocked && b.progress > 0).take(3).toList();
+    final preview = [...unlocked.take(5), ...inProgress];
+
+    return GestureDetector(
+      onTap: _showAllBadges,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [BoxShadow(color: const Color(0xFF7F7FD5).withValues(alpha: 0.07), blurRadius: 16, offset: const Offset(0, 6))],
+        ),
+        child: Row(
+          children: [
+            // Badge emoji strip
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Text('成就徽章', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF333333))),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFB347).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.title,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 15,
-                                  color: item.isDestructive ? Colors.redAccent : const Color(0xFF333333),
+                        child: Text('${stats.unlockedBadges}/${stats.totalBadges}',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFE65100))),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  preview.isEmpty
+                      ? Text('完成任务解锁成就 →', style: TextStyle(color: Colors.grey[400], fontSize: 12))
+                      : Row(
+                          children: [
+                            ...preview.take(5).map((b) => Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: Container(
+                                width: 36, height: 36,
+                                decoration: BoxDecoration(
+                                  color: b.isUnlocked ? b.color.withValues(alpha: 0.15) : Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: b.isUnlocked ? b.color.withValues(alpha: 0.4) : Colors.grey.shade200),
                                 ),
-                              ),
-                              if (item.subtitle != null) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  item.subtitle!,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[400],
+                                child: Center(
+                                  child: Text(b.emoji,
+                                    style: TextStyle(fontSize: 18, color: b.isUnlocked ? null : const Color(0xFFAAAAAA)),
                                   ),
                                 ),
-                              ],
-                            ],
-                          ),
+                              ),
+                            )),
+                            if (stats.totalBadges > 5)
+                              Container(
+                                width: 36, height: 36,
+                                decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(10)),
+                                child: Center(child: Text('+${stats.totalBadges - 5}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey[500]))),
+                              ),
+                          ],
                         ),
-                        item.trailing ?? Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          color: Colors.grey[300],
-                          size: 16,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              if (!isLast)
-                Padding(
-                  padding: const EdgeInsets.only(left: 68, right: 20),
-                  child: Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
-                ),
-            ],
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  void _showBadgeDetails(AchievementBadge badge) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: badge.color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                badge.emoji,
-                style: const TextStyle(fontSize: 48),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              badge.name,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              badge.description,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey[600],
-                height: 1.4,
-              ),
-            ),
-            if (!badge.isUnlocked && badge.progress > 0) ...[
-              const SizedBox(height: 12),
-              Text(
-                '进度 ${(badge.progress * 100).toStringAsFixed(0)}% · ${badge.condition}',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey[600], fontSize: 13),
-              ),
-            ],
-            if (badge.isUnlocked) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.green[200]!),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.check_circle,
-                        color: Colors.green, size: 16),
-                    const SizedBox(width: 6),
-                    const Text(
-                      '已解锁',
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('关闭'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAllBadges() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                children: [
-                  const Text(
-                    '我的成就徽章',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('完成'),
-                  ),
                 ],
               ),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: BadgeGrid(
-                  badges: _userBadges,
-                  badgeSize: 80,
-                  crossAxisCount: 3,
-                  showProgress: true,
+            // Progress ring + arrow
+            Column(
+              children: [
+                SizedBox(
+                  width: 44, height: 44,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        value: stats.totalBadges > 0 ? stats.unlockedBadges / stats.totalBadges : 0,
+                        strokeWidth: 4,
+                        backgroundColor: Colors.grey.shade200,
+                        color: const Color(0xFF7F7FD5),
+                      ),
+                      Text(
+                        '${stats.totalBadges > 0 ? (stats.unlockedBadges * 100 ~/ stats.totalBadges) : 0}%',
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF7F7FD5)),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 6),
+                Icon(Icons.chevron_right_rounded, size: 18, color: Colors.grey[400]),
+              ],
             ),
           ],
         ),
@@ -1316,59 +827,94 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('退出登录'),
-        content: const Text('确定要退出当前账号吗？'),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消', style: TextStyle(color: Colors.grey)),
+  // ─── Menu section ─────────────────────────────────────────────────────────
+
+  Widget _menuSection(String title, List<_MenuItem> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle(title),
+        const SizedBox(height: 10),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [BoxShadow(color: const Color(0xFF7F7FD5).withValues(alpha: 0.07), blurRadius: 16, offset: const Offset(0, 6))],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              AuthService.logout();
-            },
-            child: const Text('确定', style: TextStyle(color: Colors.red)),
+          child: Column(
+            children: items.map((item) {
+              final isLast = items.last == item;
+              return Column(
+                children: [
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: item.onTap,
+                      borderRadius: BorderRadius.only(
+                        topLeft: items.first == item ? const Radius.circular(24) : Radius.zero,
+                        topRight: items.first == item ? const Radius.circular(24) : Radius.zero,
+                        bottomLeft: isLast ? const Radius.circular(24) : Radius.zero,
+                        bottomRight: isLast ? const Radius.circular(24) : Radius.zero,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(9),
+                              decoration: BoxDecoration(color: item.color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(13)),
+                              child: Icon(item.icon, color: item.color, size: 21),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(item.title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15,
+                                      color: item.isDestructive ? Colors.redAccent : const Color(0xFF333333))),
+                                  if (item.subtitle != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(item.subtitle!, style: TextStyle(fontSize: 12, color: Colors.grey[400])),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            item.trailing ?? Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey[300], size: 15),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (!isLast)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 60, right: 20),
+                      child: Divider(height: 1, color: Colors.grey.withValues(alpha: 0.08)),
+                    ),
+                ],
+              );
+            }).toList(),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  void _navigateToCheckIn() {
-    final userId = AuthService.currentUser;
-    if (userId == null) {
-      MoeToast.error(context, '请先登录');
-      return;
-    }
+  Widget _sectionTitle(String t) => Row(children: [
+    Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFF7F7FD5), borderRadius: BorderRadius.circular(2))),
+    const SizedBox(width: 10),
+    Text(t, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF2D2D3D), letterSpacing: 0.2)),
+  ]);
+}
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CheckInPage(userId: userId),
-      ),
-    );
-  }
+// ─── Helper data models ──────────────────────────────────────────────────────
 
-  void _navigateToUserLevel() {
-    final userId = AuthService.currentUser;
-    if (userId == null) {
-      MoeToast.error(context, '请先登录');
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserLevelPage(userId: userId),
-      ),
-    );
-  }
+class _QuickAction {
+  final String emoji;
+  final String label;
+  final bool highlight;
+  final int? badge;
+  final VoidCallback onTap;
+  const _QuickAction({required this.emoji, required this.label, required this.onTap, this.highlight = false, this.badge});
 }
 
 class _MenuItem {
@@ -1379,14 +925,5 @@ class _MenuItem {
   final VoidCallback onTap;
   final bool isDestructive;
   final Widget? trailing;
-
-  _MenuItem({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    required this.color,
-    required this.onTap,
-    this.isDestructive = false,
-    this.trailing,
-  });
+  _MenuItem({required this.icon, required this.title, this.subtitle, required this.color, required this.onTap, this.isDestructive = false, this.trailing});
 }

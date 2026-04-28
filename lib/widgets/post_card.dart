@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/post.dart';
@@ -22,6 +23,10 @@ class PostCard extends StatefulWidget {
   final VoidCallback? onComment;
   final VoidCallback? onShare;
   final VoidCallback? onAvatarTap;
+  /// 作者编辑回调（非作者时不传，菜单项自动隐藏）。
+  final VoidCallback? onEdit;
+  /// 作者删除回调（非作者时不传，菜单项自动隐藏）。传入后由外层处理 UI 刷新。
+  final VoidCallback? onDelete;
   /// Hero 标签命名空间前缀。
   /// 在同一 Navigator 栈中若有多个页面都渲染 PostCard（如首页 + 用户主页），
   /// 必须传入不同的前缀，否则 Hero 标签重复会导致头像消失、无法点击。
@@ -35,6 +40,8 @@ class PostCard extends StatefulWidget {
     this.onComment,
     this.onShare,
     this.onAvatarTap,
+    this.onEdit,
+    this.onDelete,
     this.heroTagPrefix = '',
   });
 
@@ -139,6 +146,7 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                   ),
                   IconButton(
                     onPressed: () {
+                      final isAuthor = widget.post.userId == (AuthService.currentUser ?? '');
                       showModalBottomSheet(
                         context: context,
                         backgroundColor: Colors.transparent,
@@ -160,10 +168,37 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                                     borderRadius: BorderRadius.circular(2),
                                   ),
                                 ),
+                                // 作者专属：编辑与删除
+                                if (isAuthor && widget.onEdit != null)
+                                  ListTile(
+                                    leading: const Icon(Icons.edit_rounded, color: Color(0xFF7F7FD5)),
+                                    title: const Text('编辑动态'),
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      widget.onEdit!();
+                                    },
+                                  ),
+                                if (isAuthor && widget.onDelete != null)
+                                  ListTile(
+                                    leading: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                                    title: const Text('删除动态', style: TextStyle(color: Colors.redAccent)),
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      _confirmDelete(context, widget.post, widget.onDelete!);
+                                    },
+                                  ),
+                                if (isAuthor && (widget.onEdit != null || widget.onDelete != null))
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                                    child: Divider(height: 1, color: Colors.grey.withOpacity(0.15)),
+                                  ),
                                 ListTile(
                                   leading: const Icon(Icons.link_rounded, color: Color(0xFF7F7FD5)),
                                   title: const Text('复制链接'),
-                                  onTap: () => Navigator.pop(context),
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    _copyPostLink(context, widget.post);
+                                  },
                                 ),
                                 ListTile(
                                   leading: const Icon(Icons.visibility_off_rounded, color: Colors.orange),
@@ -336,15 +371,61 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
     );
   }
 
+  static void _copyPostLink(BuildContext context, Post post) {
+    final link = 'moe://post/${post.id}';
+    Clipboard.setData(ClipboardData(text: link));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('链接已复制到剪贴板'),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  static void _confirmDelete(BuildContext context, Post post, VoidCallback onConfirmed) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('删除动态', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('确定要删除这条动态吗？此操作无法撤销。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              onConfirmed();
+            },
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+  }
+
   static void _handleShare(Post post) {
     final body = post.displayCaption.isEmpty && post.handDrawCard != null
         ? '[手绘卡片]'
         : post.displayCaption;
+    final link = 'moe://post/${post.id}';
     final shareText = '''${post.userName} 的动态：
 
 $body
 
-#萌社 ${post.topicTags.isNotEmpty ? post.topicTags.map((t) => '#${t.name}').join(' ') : ''}''';
+#萌社 ${post.topicTags.isNotEmpty ? post.topicTags.map((t) => '#${t.name}').join(' ') : ''}
+
+$link''';
 
     Share.share(
       shareText,
