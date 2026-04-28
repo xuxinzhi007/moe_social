@@ -9,14 +9,14 @@ import '../widgets/avatar_image.dart';
 import '../widgets/network_image.dart';
 import '../widgets/topic_tag_selector.dart';
 import '../widgets/like_button.dart';
-import '../widgets/moe_bouncing_button.dart';
+
 import '../widgets/post_image_viewer.dart';
 import '../widgets/hand_draw/hand_draw_card_view.dart';
 import 'moe_loading.dart';
 import '../utils/media_url.dart';
 import '../utils/post_navigation.dart';
 
-class PostCard extends StatelessWidget {
+class PostCard extends StatefulWidget {
   final Post post;
   final VoidCallback? onLike;
   final VoidCallback? onComment;
@@ -39,7 +39,16 @@ class PostCard extends StatelessWidget {
   });
 
   @override
+  State<PostCard> createState() => _PostCardState();
+}
+
+class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final theme = Theme.of(context);
     final primaryColor = theme.primaryColor;
     final secondaryColor = theme.colorScheme.secondary;
@@ -70,9 +79,9 @@ class PostCard extends StatelessWidget {
               Row(
                 children: [
                   GestureDetector(
-                    onTap: onAvatarTap,
+                    onTap: widget.onAvatarTap,
                     child: Hero(
-                      tag: '${heroTagPrefix}avatar_${post.id}',
+                      tag: '${widget.heroTagPrefix}avatar_${widget.post.id}',
                       child: Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
@@ -97,7 +106,7 @@ class PostCard extends StatelessWidget {
                             color: theme.scaffoldBackgroundColor, // 适配暗黑模式
                           ),
                           child: NetworkAvatarImage(
-                            imageUrl: post.userAvatar,
+                            imageUrl: widget.post.userAvatar,
                             radius: 22,
                             placeholderIcon: Icons.person,
                           ),
@@ -111,7 +120,7 @@ class PostCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          post.userName,
+                          widget.post.userName,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -119,7 +128,7 @@ class PostCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          _formatTime(post.createdAt),
+                          _formatTime(widget.post.createdAt),
                           style: TextStyle(
                             color: theme.textTheme.bodySmall?.color ?? Colors.grey[400],
                             fontSize: 12,
@@ -166,7 +175,7 @@ class PostCard extends StatelessWidget {
                                   title: const Text('举报'),
                                   onTap: () {
                                     Navigator.pop(context);
-                                    _showReportDialog(context, post);
+                                    _showReportDialog(context, widget.post);
                                   },
                                 ),
                                 const SizedBox(height: 8),
@@ -183,7 +192,7 @@ class PostCard extends StatelessWidget {
               const SizedBox(height: 12),
 
               // 帖子正文（手绘数据已内嵌在 content 中，展示时剥离）
-              if (post.isPendingModeration)
+              if (widget.post.isPendingModeration)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Align(
@@ -199,28 +208,28 @@ class PostCard extends StatelessWidget {
                   ),
                 ),
 
-              if (post.displayCaption.isNotEmpty)
+              if (widget.post.displayCaption.isNotEmpty)
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: _renderContentWithEmojis(context, post.displayCaption),
+                  child: _renderContentWithEmojis(context, widget.post.displayCaption),
                 ),
 
-              if (post.handDrawThumbUrl.isNotEmpty) ...[
-                if (post.displayCaption.isNotEmpty) const SizedBox(height: 4),
+              if (widget.post.handDrawThumbUrl.isNotEmpty) ...[
+                if (widget.post.displayCaption.isNotEmpty) const SizedBox(height: 4),
                 _HandDrawThumbnail(
-                  post: post,
+                  post: widget.post,
                   onOpenReplay: () =>
-                      _openHandDrawViewer(context, post),
+                      _openHandDrawViewer(context, widget.post),
                 ),
-              ] else if (post.handDrawCard != null) ...[
-                if (post.displayCaption.isNotEmpty) const SizedBox(height: 4),
+              ] else if (widget.post.handDrawCard != null) ...[
+                if (widget.post.displayCaption.isNotEmpty) const SizedBox(height: 4),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxHeight: 340),
                   child: HandDrawCardReplay(
-                    data: post.handDrawCard!,
+                    data: widget.post.handDrawCard!,
                     autoPlay: false,
                     duration: Duration(
-                      milliseconds: (1600 + post.handDrawCard!.strokes.length * 35)
+                      milliseconds: (1600 + widget.post.handDrawCard!.strokes.length * 35)
                           .clamp(1200, 3800),
                     ),
                   ),
@@ -228,7 +237,7 @@ class PostCard extends StatelessWidget {
                 Align(
                   alignment: Alignment.center,
                   child: TextButton.icon(
-                    onPressed: () => _openHandDrawViewer(context, post),
+                    onPressed: () => _openHandDrawViewer(context, widget.post),
                     icon: const Icon(Icons.fullscreen_rounded, size: 20),
                     label: const Text('全屏回放绘画过程'),
                   ),
@@ -236,12 +245,12 @@ class PostCard extends StatelessWidget {
               ],
 
               // 话题标签
-              if (post.topicTags.isNotEmpty) ...[
+              if (widget.post.topicTags.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
                   runSpacing: 6,
-                  children: post.topicTags
+                  children: widget.post.topicTags
                       .map((tag) => TopicTagDisplay(
                             tag: tag,
                             fontSize: 12,
@@ -262,9 +271,9 @@ class PostCard extends StatelessWidget {
               const SizedBox(height: 12),
 
               // 帖子图片
-              if (post.images.isNotEmpty) ...[
+              if (widget.post.images.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                _buildImageGrid(context, post.images, post.id),
+                _buildImageGrid(context, widget.post.images, widget.post.id),
               ],
 
               const SizedBox(height: 20),
@@ -280,23 +289,23 @@ class PostCard extends StatelessWidget {
                 children: [
                   ValueListenableBuilder<bool>(
                     valueListenable: LikeStateManager().getStatusNotifier(
-                      post.id,
-                      initialValue: post.isLiked,
+                      widget.post.id,
+                      initialValue: widget.post.isLiked,
                     ),
                     builder: (context, isLiked, _) {
                       return ValueListenableBuilder<int>(
                         valueListenable: LikeStateManager().getCountNotifier(
-                          post.id,
-                          initialValue: post.likes,
+                          widget.post.id,
+                          initialValue: widget.post.likes,
                         ),
                         builder: (context, likeCount, _) {
                           return LikeButton(
-                            postId: post.id,
+                            postId: widget.post.id,
                             userId: AuthService.currentUser ?? '',
                             isLiked: isLiked,
                             likeCount: likeCount,
                             onLikeChanged: (liked, count) {
-                              onLike?.call();
+                              widget.onLike?.call();
                             },
                           );
                         },
@@ -306,17 +315,17 @@ class PostCard extends StatelessWidget {
                   _buildActionButton(
                       context,
                       icon: Icons.chat_bubble_outline_rounded,
-                      count: post.comments,
-                      onTap: onComment ??
+                      count: widget.post.comments,
+                      onTap: widget.onComment ??
                           () {
-                            openPostDetail(context, post);
+                            openPostDetail(context, widget.post);
                           }),
                   _buildActionButton(
                       context,
                       icon: Icons.share_rounded,
                       label: '分享',
-                      onTap: onShare ?? () {
-                        _handleShare(post);
+                      onTap: widget.onShare ?? () {
+                        _handleShare(widget.post);
                       }),
                 ],
               ),
@@ -472,12 +481,12 @@ $body
             context,
             imageUrls: images,
             postId: postId,
-            heroTagPrefix: heroTagPrefix,
+            heroTagPrefix: widget.heroTagPrefix,
             initialIndex: 0,
           );
         },
         child: Hero(
-          tag: '${heroTagPrefix}post_img_${postId}_0',
+          tag: '${widget.heroTagPrefix}post_img_${postId}_0',
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: NetworkImageWidget(
@@ -512,12 +521,12 @@ $body
                     context,
                     imageUrls: images,
                     postId: postId,
-                    heroTagPrefix: heroTagPrefix,
+                    heroTagPrefix: widget.heroTagPrefix,
                     initialIndex: index,
                   );
                 },
                 child: Hero(
-                  tag: '${heroTagPrefix}post_img_${postId}_$index',
+                  tag: '${widget.heroTagPrefix}post_img_${postId}_$index',
                   child: NetworkImageWidget(
                     imageUrl: images[index],
                     width: itemSize,

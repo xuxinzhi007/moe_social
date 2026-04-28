@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import '../../auth_service.dart';
 import '../../models/topic_tag.dart';
 import '../../models/post.dart';
@@ -12,6 +13,7 @@ import '../../widgets/post_card.dart';
 import '../../widgets/personalized_card.dart';
 import '../../widgets/quick_actions_grid.dart';
 import '../../widgets/moe_loading.dart';
+import '../../widgets/fade_in_up.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -36,6 +38,7 @@ class _HomePageState extends State<HomePage> {
   // 添加滚动控制器和加载触发标志
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingTriggered = false;
+  Timer? _loadMoreTimer;
 
   String get _sectionTitle {
     switch (_mode) {
@@ -61,6 +64,7 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
+    _loadMoreTimer?.cancel();
     super.dispose();
   }
 
@@ -70,7 +74,7 @@ class _HomePageState extends State<HomePage> {
     if (!_scrollController.hasClients) return;
 
     // 如果正在加载或没有更多数据，直接返回
-    if (_isLoading || _isLoadingMore || !_hasMore || _isLoadingTriggered) {
+    if (_isLoading || _isLoadingMore || !_hasMore) {
       return;
     }
 
@@ -84,12 +88,23 @@ class _HomePageState extends State<HomePage> {
         (maxScroll > 0 && currentScroll >= maxScroll - 50);
 
     if (isNearBottom) {
-      // 立即设置标志，防止重复触发
-      _isLoadingTriggered = true;
-
-      // 异步调用，但不等待完成就返回，避免阻塞滚动
-      _loadMorePosts();
+      // 使用 debounce 避免重复触发
+      _scheduleLoadMore();
     }
+  }
+
+  void _scheduleLoadMore() {
+    // 取消之前的定时器
+    _loadMoreTimer?.cancel();
+    // 200ms 延迟后执行加载，避免快速滚动时重复触发
+    _loadMoreTimer = Timer(const Duration(milliseconds: 200), () {
+      if (mounted && !_isLoading && !_isLoadingMore && _hasMore) {
+        setState(() {
+          _isLoadingTriggered = true;
+        });
+        _loadMorePosts();
+      }
+    });
   }
 
   Future<void> _fetchPosts() async {
@@ -247,10 +262,12 @@ class _HomePageState extends State<HomePage> {
                   (context, index) {
                     final visible = _displayPosts;
                     final item = _feedItemAt(index, visible);
-                    if (item == _FeedListExtra.rankingTip) {
-                      return _buildRankingTipCard(context);
-                    }
-                    return _buildPostCard(item as Post);
+                    return FadeInUp(
+                      delay: Duration(milliseconds: index * 80),
+                      child: item == _FeedListExtra.rankingTip
+                          ? _buildRankingTipCard(context)
+                          : _buildPostCard(item as Post),
+                    );
                   },
                   childCount: _feedItemCount(_displayPosts),
                 ),
@@ -294,9 +311,11 @@ class _HomePageState extends State<HomePage> {
 
   SliverAppBar _buildSliverAppBar(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final expandedHeight = screenHeight < 600 ? 240.0 : screenHeight < 700 ? 260.0 : 288.0;
     return SliverAppBar(
       pinned: true,
-      expandedHeight: 288,
+      expandedHeight: expandedHeight,
       elevation: 0,
       backgroundColor: scheme.surface,
       surfaceTintColor: scheme.surfaceTint,
@@ -540,14 +559,37 @@ class _HomePageState extends State<HomePage> {
         (next != _HomeFeedMode.topic || _activeTopic != null)) {
       return;
     }
+
     setState(() {
-      _mode = next;
-      if (next != _HomeFeedMode.topic) {
-        _activeTopic = null;
-      }
+      _isLoading = true;
     });
 
-    await _fetchPosts();
+    try {
+      final newMode = next;
+      TopicTag? newTopic = _activeTopic;
+      if (next != _HomeFeedMode.topic) {
+        newTopic = null;
+      }
+
+      final result = await _fetchPostsForMode(page: 1);
+      final posts = result.posts;
+      final total = result.total;
+
+      setState(() {
+        _mode = newMode;
+        _activeTopic = newTopic;
+        _allPosts = posts;
+        _displayPosts = List<Post>.from(posts);
+        _currentPage = 1;
+        _hasMore = newMode.supportsPagination ? posts.length < total : false;
+      });
+    } catch (e) {
+      _handleError(e);
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _pickTopic(BuildContext context) async {

@@ -145,218 +145,234 @@ class _PersonalizedCardState extends State<PersonalizedCard> with SingleTickerPr
             boxShadow: [
               BoxShadow(
                 color: const Color(0xFF667eea).withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
               ),
             ],
           ),
-          child: Stack(
-            clipBehavior: Clip.antiAlias,
-            children: [
-              // Positioned 必须是 Stack 的直接子节点，RepaintBoundary 只能放在 Positioned 内部。
-              AnimatedBuilder(
-                animation: _controller,
-                builder: (context, child) {
-                  return Positioned(
-                    right: -30 + math.sin(_controller.value * 2 * math.pi) * 15,
-                    top: -30 + math.cos(_controller.value * 2 * math.pi) * 15,
-                    child: RepaintBoundary(child: child!),
-                  );
-                },
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-              AnimatedBuilder(
-                animation: _controller,
-                builder: (context, child) {
-                  return Positioned(
-                    left: -40 + math.cos(_controller.value * 2 * math.pi) * 12,
-                    bottom: -40 + math.sin(_controller.value * 2 * math.pi) * 12,
-                    child: RepaintBoundary(child: child!),
-                  );
-                },
-                child: Container(
-                  width: 160,
-                  height: 160,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.06),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final column = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _getGreeting(),
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.9),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '今天也要开心呀',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0.5,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black12,
-                                    offset: Offset(0, 2),
-                                    blurRadius: 4,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () async {
-                          try {
-                            final p = Provider.of<DeviceInfoProvider>(
-                                context,
-                                listen: false);
-                            await p.refreshLocalDeviceContext(
-                              requestLocationPermission: true,
-                              includeNetworkAndBattery: false,
-                            );
-                          } catch (_) {}
-                          if (mounted) await _loadWeatherData();
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: _isLoadingWeather
-                              ? const SizedBox(
-                                  width: 80,
-                                  height: 40,
-                                  child: Center(
-                                    child: MoeSmallLoading(
-                                      color: Colors.white,
-                                      size: 20,
-                                    ),
-                                  ),
-                                )
-                              : Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      _getCity(deviceInfo),
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.8),
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          _getWeatherIcon(),
-                                          style: TextStyle(fontSize: 22),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          _getWeatherText(),
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                physics: const NeverScrollableScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Stack(
+                      clipBehavior: Clip.antiAlias,
                       children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.format_quote_rounded,
-                              color: Colors.white.withOpacity(0.6),
-                              size: 18,
+                        AnimatedBuilder(
+                          animation: _controller,
+                          builder: (context, child) {
+                            return Positioned(
+                              right: -25 + math.sin(_controller.value * 2 * math.pi) * 10,
+                              top: -25 + math.cos(_controller.value * 2 * math.pi) * 10,
+                              child: RepaintBoundary(child: child!),
+                            );
+                          },
+                          child: Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.12),
+                              shape: BoxShape.circle,
                             ),
-                            const SizedBox(width: 6),
-                            Text(
-                              '每日一言',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.5,
-                              ),
+                          ),
+                        ),
+                        AnimatedBuilder(
+                          animation: _controller,
+                          builder: (context, child) {
+                            return Positioned(
+                              left: -35 + math.cos(_controller.value * 2 * math.pi) * 8,
+                              bottom: -35 + math.sin(_controller.value * 2 * math.pi) * 8,
+                              child: RepaintBoundary(child: child!),
+                            );
+                          },
+                          child: Container(
+                            width: 140,
+                            height: 140,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.08),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _getGreeting(),
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.85),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        '今天也要开心呀',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 0.8,
+                                          shadows: [
+                                            Shadow(
+                                              color: Colors.black12,
+                                              offset: Offset(0, 2),
+                                              blurRadius: 4,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Flexible(child: _buildWeatherWidget(deviceInfo)),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Flexible(
+                              fit: FlexFit.loose,
+                              child: _buildDailyQuoteCard(),
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 10),
-                        DailyQuoteWidget(
-                          textColor: Colors.white,
-                          embedded: true,
                         ),
                       ],
                     ),
                   ),
-                ],
-                  );
-                  final maxH = constraints.maxHeight;
-                  if (maxH.isFinite && maxH > 0) {
-                    return SizedBox(
-                      height: maxH,
-                      child: SingleChildScrollView(
-                        physics: const ClampingScrollPhysics(),
-                        child: column,
-                      ),
-                    );
-                  }
-                  return column;
-                },
-              ),
-            ],
+                ),
+              );
+            },
           ),
         );
       },
+    );
+  }
+
+  Widget _buildWeatherWidget(DeviceInfoProvider deviceInfo) {
+    return GestureDetector(
+      onTap: () async {
+        try {
+          final p = Provider.of<DeviceInfoProvider>(
+              context,
+              listen: false);
+          await p.refreshLocalDeviceContext(
+            requestLocationPermission: true,
+            includeNetworkAndBattery: false,
+          );
+        } catch (_) {}
+        if (mounted) await _loadWeatherData();
+      },
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 80),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.18),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: _isLoadingWeather
+            ? const SizedBox(
+                width: 60,
+                height: 36,
+                child: Center(
+                  child: MoeSmallLoading(
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                ),
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    _getWeatherIcon(),
+                    style: const TextStyle(fontSize: 22),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    _getWeatherText(),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    _getCity(deviceInfo),
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.75),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildDailyQuoteCard() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.15),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.format_quote_rounded,
+                color: Colors.white.withOpacity(0.5),
+                size: 14,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '每日一言',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.75),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 36,
+            child: DailyQuoteWidget(
+              textColor: Colors.white.withOpacity(0.95),
+              embedded: true,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
