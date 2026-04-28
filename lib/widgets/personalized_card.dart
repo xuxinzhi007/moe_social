@@ -397,27 +397,26 @@ class _PersonalizedCardState extends State<PersonalizedCard>
 
   Widget _buildDailyQuoteCard() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.12),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white.withOpacity(0.15)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(
             Icons.format_quote_rounded,
             color: Colors.white.withOpacity(0.5),
-            size: 16,
+            size: 14,
           ),
           const SizedBox(width: 6),
           Expanded(
-            child: SizedBox(
-              height: 34,
-              child: DailyQuoteWidget(
-                textColor: Colors.white.withOpacity(0.95),
-                embedded: true,
-              ),
+            // No fixed SizedBox height — let content size naturally to avoid overflow
+            child: DailyQuoteWidget(
+              textColor: Colors.white.withOpacity(0.95),
+              embedded: true,
             ),
           ),
         ],
