@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../auth_service.dart';
 import '../../services/api_service.dart';
 import '../../models/vip_record.dart';
+import '../../widgets/moe_toast.dart';
 
 class VipHistoryPage extends StatefulWidget {
   const VipHistoryPage({super.key});
@@ -62,9 +63,7 @@ class _VipHistoryPageState extends State<VipHistoryPage> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加载历史记录失败: $e')),
-        );
+        MoeToast.error(context, '加载历史记录失败: $e');
       }
     }
   }

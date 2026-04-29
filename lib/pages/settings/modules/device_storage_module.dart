@@ -12,6 +12,7 @@ import '../../../providers/device_info_provider.dart';
 import '../../../widgets/settings/setting_item.dart';
 import '../../../widgets/fade_in_up.dart';
 import '../../../widgets/moe_menu_card.dart';
+import '../../../widgets/moe_toast.dart';
 
 class DeviceStorageModule extends StatelessWidget {
   final bool autoUpdateOnLaunch;
@@ -670,14 +671,10 @@ class DeviceStorageModule extends StatelessWidget {
                                             await _clearCache();
                                             Navigator.pop(context);
                                             Navigator.pop(context);
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('缓存清理成功')),
-                                            );
+                                            MoeToast.success(context, '缓存清理成功');
                                           } catch (e) {
                                             Navigator.pop(context);
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('缓存清理失败：${e.toString()}')),
-                                            );
+                                            MoeToast.error(context, '缓存清理失败：${e.toString()}');
                                           }
                                         },
                                         style: ElevatedButton.styleFrom(
@@ -723,14 +720,10 @@ class DeviceStorageModule extends StatelessWidget {
                                             await _clearAllData();
                                             Navigator.pop(context);
                                             Navigator.pop(context);
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('所有数据清理成功')),
-                                            );
+                                            MoeToast.success(context, '所有数据清理成功');
                                           } catch (e) {
                                             Navigator.pop(context);
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('数据清理失败：${e.toString()}')),
-                                            );
+                                            MoeToast.error(context, '数据清理失败：${e.toString()}');
                                           }
                                         },
                                         style: ElevatedButton.styleFrom(

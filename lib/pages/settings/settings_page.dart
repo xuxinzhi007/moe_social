@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../services/startup_update_preferences.dart';
 import '../../providers/device_info_provider.dart';
 import '../../widgets/fade_in_up.dart';
+import '../../widgets/moe_toast.dart';
 import '../../widgets/settings/lazy_load_widget.dart';
 import '../../widgets/settings/settings_search_bar.dart';
 import 'modules/device_storage_module.dart';
@@ -525,12 +526,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 });
                 
                 // 显示操作结果反馈
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(value ? '通知已开启' : '通知已关闭'),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
+                MoeToast.info(context, value ? '通知已开启' : '通知已关闭');
               },
             ),
           ),

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../widgets/fade_in_up.dart';
 import '../../../widgets/moe_menu_card.dart';
+import '../../../widgets/moe_toast.dart';
 
 class AppearanceModule extends StatelessWidget {
   const AppearanceModule({Key? key}) : super(key: key);
@@ -216,9 +217,7 @@ class AppearanceModule extends StatelessWidget {
                           onChanged: (value) {
                             // 设置字体大小
                             Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('功能开发中')),
-                            );
+                            MoeToast.info(context, '功能开发中');
                           },
                         ),
                       ),
@@ -230,9 +229,7 @@ class AppearanceModule extends StatelessWidget {
                           onChanged: (value) {
                             // 设置字体大小
                             Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('功能开发中')),
-                            );
+                            MoeToast.info(context, '功能开发中');
                           },
                         ),
                       ),
@@ -244,9 +241,7 @@ class AppearanceModule extends StatelessWidget {
                           onChanged: (value) {
                             // 设置字体大小
                             Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('功能开发中')),
-                            );
+                            MoeToast.info(context, '功能开发中');
                           },
                         ),
                       ),
@@ -258,9 +253,7 @@ class AppearanceModule extends StatelessWidget {
                           onChanged: (value) {
                             // 设置字体大小
                             Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('功能开发中')),
-                            );
+                            MoeToast.info(context, '功能开发中');
                           },
                         ),
                       ),

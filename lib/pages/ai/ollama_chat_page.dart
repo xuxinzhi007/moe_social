@@ -7,6 +7,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../services/api_service.dart';
 import '../../services/llm_endpoint_config.dart';
+import '../../widgets/moe_toast.dart';
 
 class OllamaChatPage extends StatefulWidget {
   const OllamaChatPage({super.key});
@@ -294,13 +295,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
       }
       if (!available) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('当前设备不支持语音识别'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        MoeToast.error(context, '当前设备不支持语音识别');
         return;
       }
       if (mounted) {
@@ -1213,13 +1208,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
   void _copyMessage(String text) {
     if (text.isEmpty) return;
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('已复制到剪贴板'),
-        duration: Duration(seconds: 1),
-      ),
-    );
+    MoeToast.success(context, '已复制到剪贴板');
   }
 
   void _showMessageActions(_ChatMessage message) {
@@ -1831,9 +1820,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
 
                                     if (response.statusCode == 200) {
                                       Navigator.pop(context);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('模型下载成功')),
-                                      );
+                                      MoeToast.success(context, '模型下载成功');
                                       // 重新加载模型列表
                                       _loadModels();
                                     } else {
@@ -1947,21 +1934,15 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
 
                                     if (response.statusCode == 200) {
                                       Navigator.pop(context);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('模型删除成功')),
-                                      );
+                                      MoeToast.success(context, '模型删除成功');
                                       // 重新加载模型列表
                                       _loadModels();
                                     } else {
                                       final data = jsonDecode(response.body);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text(data['message'] ?? '删除失败')),
-                                      );
+                                      MoeToast.error(context, data['message'] ?? '删除失败');
                                     }
                                   } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('删除出错: $e')),
-                                    );
+                                    MoeToast.error(context, '删除出错: $e');
                                   } finally {
                                     setState(() {
                                       isLoading = false;
@@ -2136,9 +2117,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                               _repeatPenalty = repeatPenalty;
                             });
                             Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('模型配置已更新')),
-                            );
+                            MoeToast.success(context, '模型配置已更新');
                           },
                           child: const Text('保存'),
                           style: ElevatedButton.styleFrom(

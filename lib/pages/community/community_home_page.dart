@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../auth_service.dart';
 import '../../widgets/moe_bottom_bar.dart';
+import '../../widgets/moe_toast.dart';
 import 'content_sharing_page.dart';
 import 'interest_groups_page.dart';
 import 'topic_discussions_page.dart';
@@ -90,11 +91,9 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
             tooltip: '与首页的关系',
             icon: Icon(Icons.dynamic_feed_rounded, color: scheme.primary),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('首页是个人/关注信息流；社区是群组与话题广场。请用底栏「首页」返回动态。'),
-                  duration: Duration(seconds: 4),
-                ),
+              MoeToast.info(
+                context,
+                '首页是个人/关注信息流；社区是群组与话题广场。请用底栏「首页」返回动态。',
               );
             },
           ),
@@ -103,20 +102,16 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
             icon: const Icon(Icons.add_circle_outline_rounded),
             onSelected: (v) {
               if (!AuthService.isLoggedIn) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('请先登录')),
-                );
+                MoeToast.error(context, '请先登录');
                 return;
               }
               if (v == 'post') {
                 Navigator.pushNamed(context, '/create-post');
               } else if (v == 'group') {
                 setState(() => _currentIndex = 0);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('已切换到「兴趣群组」，请点右下角「新建群组」'),
-                    duration: Duration(seconds: 3),
-                  ),
+                MoeToast.success(
+                  context,
+                  '已切换到「兴趣群组」，请点右下角「新建群组」',
                 );
               }
             },

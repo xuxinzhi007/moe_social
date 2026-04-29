@@ -10,6 +10,7 @@ import '../widgets/avatar_image.dart';
 import '../widgets/network_image.dart';
 import '../widgets/topic_tag_selector.dart';
 import '../widgets/like_button.dart';
+import '../widgets/moe_toast.dart';
 
 import '../widgets/post_image_viewer.dart';
 import '../widgets/hand_draw/hand_draw_card_view.dart';
@@ -374,14 +375,7 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
   static void _copyPostLink(BuildContext context, Post post) {
     final link = 'moe://post/${post.id}';
     Clipboard.setData(ClipboardData(text: link));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('链接已复制到剪贴板'),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    MoeToast.success(context, '链接已复制到剪贴板');
   }
 
   static void _confirmDelete(BuildContext context, Post post, VoidCallback onConfirmed) {
@@ -473,14 +467,7 @@ $link''';
       BuildContext context, Post post, String reason) async {
     final uid = AuthService.currentUser;
     if (uid == null || uid.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('请先登录后再举报'),
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+      MoeToast.error(context, '请先登录后再举报');
       return;
     }
     try {
@@ -490,27 +477,10 @@ $link''';
         reason: reason,
       );
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('已提交「$reason」举报，感谢反馈'),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      MoeToast.success(context, '已提交「$reason」举报，感谢反馈');
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('举报失败：$e'),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+      MoeToast.error(context, '举报失败：$e');
     }
   }
 

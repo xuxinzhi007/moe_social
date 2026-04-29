@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../services/llm_endpoint_config.dart';
 import '../../../widgets/fade_in_up.dart';
 import '../../../widgets/moe_menu_card.dart';
+import '../../../widgets/moe_toast.dart';
 import '../../ai/llm_terminal_mode_settings_page.dart';
 import '../../profile/memory_timeline_page.dart';
 
@@ -126,9 +127,7 @@ class AiSettingsModule extends StatelessWidget {
                         onTap: () {
                           // 显示模型参数设置
                           Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('功能开发中')),
-                          );
+                          MoeToast.info(context, '功能开发中');
                         },
                       ),
                       const Divider(),
@@ -147,9 +146,7 @@ class AiSettingsModule extends StatelessWidget {
                         onTap: () {
                           // 显示云端模型设置
                           Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('功能开发中')),
-                          );
+                          MoeToast.info(context, '功能开发中');
                         },
                       ),
                       const Divider(),
@@ -168,9 +165,7 @@ class AiSettingsModule extends StatelessWidget {
                         onTap: () {
                           // 显示模型性能优化设置
                           Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('功能开发中')),
-                          );
+                          MoeToast.info(context, '功能开发中');
                         },
                       ),
                     ],

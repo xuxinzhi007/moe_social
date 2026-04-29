@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../models/topic_tag.dart';
+import 'moe_toast.dart';
 
 /// 话题标签选择器 - 支持搜索、创建和选择自定义标签
 class TopicTagSelector extends StatefulWidget {
@@ -122,21 +123,11 @@ class _TopicTagSelectorState extends State<TopicTagSelector> {
   }
 
   void _showMaxTagsMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('最多只能选择${widget.maxTags}个标签'),
-        backgroundColor: Colors.orange,
-      ),
-    );
+    MoeToast.warning(context, '最多只能选择${widget.maxTags}个标签');
   }
 
   void _showInvalidTagMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('标签名称不合法，请使用中英文、数字，长度不超过20字符'),
-        backgroundColor: Colors.red,
-      ),
-    );
+    MoeToast.error(context, '标签名称不合法，请使用中英文、数字，长度不超过20字符');
   }
 
   @override

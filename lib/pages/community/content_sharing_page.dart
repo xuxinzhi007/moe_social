@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../auth_service.dart';
+import '../../widgets/moe_toast.dart';
 import 'community_posts_feed.dart';
 
 /// 内容广场：全站帖子流 + 形态筛选，与首页推荐形成互补（此处偏「逛广场」）。
@@ -22,9 +23,7 @@ class ContentSharingPage extends StatelessWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           if (!AuthService.isLoggedIn) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('请先登录后再发帖')),
-            );
+            MoeToast.error(context, '请先登录后再发帖');
             return;
           }
           Navigator.pushNamed(context, '/create-post');

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../utils/media_url.dart';
+import '../../widgets/moe_toast.dart';
 
 class VoiceCallInitiationPage extends StatefulWidget {
   final String receiverId;
@@ -74,9 +75,7 @@ class _VoiceCallInitiationPageState extends State<VoiceCallInitiationPage> {
 
   void _showError(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      MoeToast.error(context, message);
     }
   }
 
