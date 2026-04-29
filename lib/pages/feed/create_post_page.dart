@@ -484,7 +484,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                               ),
                             ),
                             const SizedBox(width: 4),
-                            InkWell(
+                            GestureDetector(
                               onTap: () {
                                 setState(() {
                                   _selectedTopicTags.remove(tag);
@@ -613,16 +613,19 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }
 
   Widget _buildToolIcon(IconData icon, Color color, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          shape: BoxShape.circle,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 22),
         ),
-        child: Icon(icon, color: color, size: 22),
       ),
     );
   }

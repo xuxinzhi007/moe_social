@@ -951,32 +951,35 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
             itemCount: quickActions.length,
             itemBuilder: (context, index) {
               final action = quickActions[index];
-              return InkWell(
-                onTap: () {
-                  Navigator.pop(context);
-                  _handleQuickAction(action['action'] as String);
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F7FA),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        action['icon'] as IconData,
-                        size: 32,
-                        color: const Color(0xFF7F7FD5),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        action['title'] as String,
-                        style: const TextStyle(fontSize: 12),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _handleQuickAction(action['action'] as String);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F7FA),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          action['icon'] as IconData,
+                          size: 32,
+                          color: const Color(0xFF7F7FD5),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          action['title'] as String,
+                          style: const TextStyle(fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );

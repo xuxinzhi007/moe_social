@@ -207,19 +207,28 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  void _showLogoutDialog() {
-    showDialog(
+  Future<void> _showLogoutDialog() async {
+    final shouldLogout = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('退出登录'),
         content: const Text('确定要退出当前账号吗？'),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消', style: TextStyle(color: Colors.grey))),
-          TextButton(onPressed: () { Navigator.pop(context); AuthService.logout(); }, child: const Text('确定', style: TextStyle(color: Colors.red))),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('取消', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('确定', style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
+    if (shouldLogout == true) {
+      AuthService.logout();
+    }
   }
 
   void _showAllBadges() {
