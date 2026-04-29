@@ -64,7 +64,7 @@ import 'widgets/splash_screen.dart';
 void main() {
   runZonedGuarded(() {
     WidgetsFlutterBinding.ensureInitialized();
-    
+
     _setupErrorHandlers();
 
     runApp(const SplashScreenWrapper());
@@ -84,7 +84,7 @@ void _setupErrorHandlers() {
     if (errorString.contains('parentDataDirty')) {
       errorCount++;
       if (errorCount <= 3) {
-        debugPrint('Flutter Error [${errorCount}]: $errorString');
+        debugPrint('Flutter Error [$errorCount]: $errorString');
       } else if (errorCount == 4) {
         debugPrint('... (重复错误已省略，修复后刷新即可)');
       }
@@ -118,7 +118,8 @@ void _setupErrorHandlers() {
                   offset: const Offset(0, 10),
                 ),
               ],
-              border: Border.all(color: const Color(0xFF7F7FD5).withValues(alpha: 0.25)),
+              border: Border.all(
+                  color: const Color(0xFF7F7FD5).withValues(alpha: 0.25)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -140,7 +141,8 @@ void _setupErrorHandlers() {
                 const SizedBox(height: 10),
                 Text(
                   '提示：这通常不是接口数据问题，而是布局约束导致的 RenderBox 未完成 layout。\n请把控制台里最早出现的那条异常（不是后面一堆 hasSize 重复）截图发我。',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12, height: 1.35),
+                  style: TextStyle(
+                      color: Colors.grey[600], fontSize: 12, height: 1.35),
                 ),
               ],
             ),
@@ -244,6 +246,7 @@ class SplashScreenWrapper extends StatelessWidget {
 
     debugPrint('🚀 App starting...');
     debugPrint('📱 Platform: ${kIsWeb ? "web" : Platform.operatingSystem}');
+    debugPrint('🧭 API Environment: ${ApiService.runtimeEnvironment}');
     debugPrint('🌐 API Base URL: ${ApiService.baseUrl}');
     debugPrint('🔐 User logged in: ${AuthService.isLoggedIn}');
   }
@@ -275,8 +278,11 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = _globalThemeProvider ?? ThemeProvider();
-    final notificationProvider = _globalNotificationProvider ?? NotificationProvider()..init();
-    final deviceInfoProvider = _globalDeviceInfoProvider ?? DeviceInfoProvider()..init();
+    final notificationProvider =
+        _globalNotificationProvider ?? NotificationProvider()
+          ..init();
+    final deviceInfoProvider = _globalDeviceInfoProvider ?? DeviceInfoProvider()
+      ..init();
     final loadingProvider = _globalLoadingProvider ?? LoadingProvider();
 
     _globalNotificationProvider = notificationProvider;
@@ -330,7 +336,8 @@ class _MyAppState extends State<MyApp> {
                 email: ModalRoute.of(context)!.settings.arguments as String,
               ),
           '/reset-password': (context) {
-            final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+            final args = ModalRoute.of(context)!.settings.arguments
+                as Map<String, dynamic>;
             return ResetPasswordPage(
               email: args['email'] as String,
               code: args['code'] as String,
@@ -371,7 +378,8 @@ class _MyAppState extends State<MyApp> {
               return const Scaffold(body: Center(child: Text('无效的动态 ID')));
             }
             final initial = args['post'] is Post ? args['post'] as Post : null;
-            return CommunityPostDetailPage(postId: postId, initialPost: initial);
+            return CommunityPostDetailPage(
+                postId: postId, initialPost: initial);
           },
           '/match': (context) => const MatchPage(),
           '/direct-chat': (context) {
