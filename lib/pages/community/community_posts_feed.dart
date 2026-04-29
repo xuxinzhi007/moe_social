@@ -123,7 +123,7 @@ class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
   }
 
   void _openPostDetail(Post post) {
-    openPostDetail<void>(context, post).then((_) {
+    openPostDetail(context, post).then((_) {
       if (mounted) _load();
     });
   }

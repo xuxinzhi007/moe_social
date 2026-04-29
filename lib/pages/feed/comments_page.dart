@@ -236,7 +236,9 @@ class _CommentsPageState extends State<CommentsPage> {
                       child: PostCard(
                         post: widget.embeddedPost!,
                         heroTagPrefix: 'cdetail_',
-                        onComment: () {},
+                        onComment: () {
+                          _commentFocus.requestFocus();
+                        },
                         onShare: () => Share.share(
                           widget.embeddedPost!.displayCaption.trim().isEmpty
                               ? '分享了一条动态'

@@ -168,6 +168,7 @@ class MoeBouncingButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       onTapDown: (_) => _animateTap(context, scaleFactor),
       onTapUp: (_) => _animateTap(context, 1.0),

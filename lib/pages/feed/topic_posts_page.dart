@@ -3,6 +3,7 @@ import '../../models/post.dart';
 import '../../models/topic_tag.dart';
 import '../../services/api_service.dart';
 import '../../services/post_service.dart';
+import '../../services/like_state_manager.dart';
 import '../../widgets/post_card.dart';
 import '../../widgets/moe_loading.dart';
 import '../../auth_service.dart';
@@ -156,29 +157,20 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
     }
   }
 
-  Future<void> _toggleLike(String postId) async {
-    final userId = AuthService.currentUser;
-    if (userId == null) {
-      if (mounted) {
-        ErrorHandler.showError(context, '请先登录');
-      }
-      return;
-    }
-
-    try {
-      final updatedPost = await PostService.toggleLike(postId, userId);
-
+  void _toggleLike(String postId) {
+    final manager = LikeStateManager();
+    final isLiked = manager.getStatusNotifier(postId).value;
+    final likeCount = manager.getCountNotifier(postId).value;
+    if (!mounted) return;
+    setState(() {
       final postIndex = _posts.indexWhere((p) => p.id == postId);
-      if (postIndex != -1 && mounted) {
-        setState(() {
-          _posts[postIndex] = updatedPost;
-        });
+      if (postIndex != -1) {
+        _posts[postIndex] = _posts[postIndex].copyWith(
+          isLiked: isLiked,
+          likes: likeCount,
+        );
       }
-    } catch (e) {
-      if (mounted) {
-        ErrorHandler.handleException(context, e as Exception);
-      }
-    }
+    });
   }
 
   @override
@@ -266,8 +258,7 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
                         post: post,
                         onLike: () => _toggleLike(post.id),
                         onComment: () async {
-                          final result =
-                              await openPostDetail<int>(context, post);
+                          final result = await openPostDetail(context, post);
                           if (result != null && mounted) {
                             setState(() {
                               final i =
