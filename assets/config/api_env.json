@@ -1,0 +1,5 @@
+{
+  "api_mode": "online",
+  "local_base_url": "http://localhost:8888",
+  "online_base_url": "http://47.106.175.49:8888"
+}

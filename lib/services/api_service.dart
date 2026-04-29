@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
-import 'dart:io' show File, Platform, SocketException;
+import 'dart:io' show File, SocketException;
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart'
     show debugPrint, kDebugMode, kIsWeb, VoidCallback;
+import 'package:flutter/services.dart' show rootBundle;
 import '../models/post.dart';
 import '../models/comment.dart';
 import '../models/user.dart';
@@ -104,7 +105,8 @@ class ApiService {
   }
 
   // 发起语音通话
-  static Future<Map<String, dynamic>> voiceCall(String receiverId, String channelName) async {
+  static Future<Map<String, dynamic>> voiceCall(
+      String receiverId, String channelName) async {
     final response = await _request(
       '/api/voice/call',
       method: 'POST',
@@ -113,11 +115,13 @@ class ApiService {
     return response;
   }
 
-  // 环境配置
-  // true：非 Web 平台走公网/隧道（initRemoteProductionBaseUrl）。
-  // false：本机调试（iOS 模拟器等用 localhost:8888；Android 见下方分支）。
-  // 注意：Flutter Web 在 Chrome 里始终用 [_developmentUrl]，因跨域访问 ngrok 常出现 Failed to fetch。
-  static const bool _isProduction = true;
+  // 环境配置（local / online），由 assets/config/api_env.json 驱动。
+  static const String _apiEnvAssetPath = 'assets/config/api_env.json';
+  static const String _envLocal = 'local';
+  static const String _envOnline = 'online';
+
+  static String _runtimeEnvironment = _envOnline;
+  static String get runtimeEnvironment => _runtimeEnvironment;
 
   /// API 调试日志开关（只在 Debug 模式生效）
   /// - 你提到的 “user_avatar/图片信息刷屏” 就是这里控制的
@@ -126,57 +130,95 @@ class ApiService {
   /// 是否输出“超详细”日志（会非常吵；默认关闭）
   static const bool _verboseApiLog = true;
 
-  // 首装无缓存时的备用入口（问 client-config）；日常只需维护 yaml + GitHub，此处可长期不改。
-  static const String _productionUrl =
-      'https://karan-unsedate-unsimultaneously.ngrok-free.dev';
+  // 首装无缓存时的线上环境兜底入口（问 client-config）。
+  static const String _defaultOnlineUrl = 'http://47.106.175.49:8888';
+  static const String _defaultLocalUrl = 'http://localhost:8888';
 
-  // 开发环境地址
-  static const String _developmentUrl = 'http://localhost:8888';
+  static String _configuredOnlineUrl = _defaultOnlineUrl;
+  static String _configuredLocalUrl = _defaultLocalUrl;
 
-  /// 生产环境下由 [initRemoteProductionBaseUrl] 写入；未初始化前为 null，[baseUrl] 用 [_productionUrl]。
+  /// online 模式下由 [initRemoteProductionBaseUrl] 写入；未初始化前为 null 时 [baseUrl] 用配置里的 online 地址。
   static String? _runtimeProductionBaseUrl;
 
+  static String? _normalizeBaseUrl(String? raw) {
+    if (raw == null) return null;
+    var s = raw.trim();
+    if (s.isEmpty) return null;
+    while (s.endsWith('/')) {
+      s = s.substring(0, s.length - 1);
+    }
+    final uri = Uri.tryParse(s);
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
+      return null;
+    }
+    if (uri.scheme != 'http' && uri.scheme != 'https') {
+      return null;
+    }
+    return s;
+  }
+
+  static Future<void> _loadApiEnvironmentConfig() async {
+    try {
+      final text = await rootBundle.loadString(_apiEnvAssetPath);
+      final decoded = json.decode(text);
+      if (decoded is! Map<String, dynamic>) return;
+
+      final mode = (decoded['api_mode'] as String?)?.trim().toLowerCase();
+      if (mode == _envLocal || mode == _envOnline) {
+        _runtimeEnvironment = mode!;
+      }
+
+      final localBase = _normalizeBaseUrl(decoded['local_base_url'] as String?);
+      if (localBase != null) {
+        _configuredLocalUrl = localBase;
+      }
+
+      final onlineBase = _normalizeBaseUrl(
+        (decoded['online_base_url'] ?? decoded['test_base_url']) as String?,
+      );
+      if (onlineBase != null) {
+        _configuredOnlineUrl = onlineBase;
+      }
+
+      _log(
+        '🔧 API环境: $_runtimeEnvironment, local=$_configuredLocalUrl, online=$_configuredOnlineUrl',
+      );
+    } catch (e) {
+      _log('⚠️ 读取$_apiEnvAssetPath失败，使用默认环境: $e');
+    }
+  }
+
   /// 在 [main] 里 `WidgetsFlutterBinding` 之后、`AuthService.init` 之前调用一次。
-  /// Web 平台不解析远程配置；其它平台在 [_isProduction] 时走 [RemoteApiConfigService]。
+  /// local 模式直接使用本地地址；online 模式会优先解析远程配置用于自动同步最新地址。
   static Future<void> initRemoteProductionBaseUrl() async {
-    if (kIsWeb) {
+    await _loadApiEnvironmentConfig();
+
+    if (_runtimeEnvironment == _envLocal) {
       _runtimeProductionBaseUrl = null;
       return;
     }
-    if (!_isProduction) {
+
+    if (kIsWeb) {
+      _runtimeProductionBaseUrl = _configuredOnlineUrl;
+      return;
+    }
+
+    if (_runtimeEnvironment != _envOnline) {
       _runtimeProductionBaseUrl = null;
       return;
     }
     _runtimeProductionBaseUrl =
         await RemoteApiConfigService.resolveProductionBaseUrl(
-      fallbackBakedUrl: _productionUrl,
+      fallbackBakedUrl: _configuredOnlineUrl,
     );
   }
 
   // 根据环境和平台自动选择API地址
   static String get baseUrl {
-    // Web：页面源是 localhost:随机端口，请求 https ngrok 会跨域；ngrok 免费版对浏览器还可能返回无 CORS 的拦截页 → Failed to fetch
-    if (kIsWeb) {
-      return _developmentUrl;
+    if (_runtimeEnvironment == _envLocal) {
+      return _configuredLocalUrl;
     }
-
-    if (_isProduction) {
-      return _runtimeProductionBaseUrl ?? _productionUrl;
-    }
-
-    // 开发环境根据平台选择
-    if (Platform.isAndroid) {
-      // Android真机需要使用电脑IP或生产环境地址
-      // 如果本地连接有问题，可以临时使用生产环境地址
-      // return 'http://7da36c26.r3.cpolar.top'; // 使用生产环境
-      // 或者使用电脑IP（需要根据实际情况修改）
-      // return 'http://192.168.1.16:8888'; // 替换为你的电脑IP
-      return 'http://7da36c26.r3.cpolar.top'; // Android模拟器使用这个
-    } else if (Platform.isIOS) {
-      // iOS模拟器使用localhost，真机需要使用电脑IP
-      return _developmentUrl; // iOS模拟器
-    }
-    return _developmentUrl;
+    return _runtimeProductionBaseUrl ?? _configuredOnlineUrl;
   }
 
   /// 与 [_performRequest] 相同：给任意 `Uri`（含 LLM 页里 `package:http` 直连）合并 ngrok 跳过页头。
@@ -407,8 +449,7 @@ class ApiService {
             errorMessage = 'cpolar隧道可能已断开，请检查隧道状态或切换到本地开发环境';
           } else if (baseUrl.contains('ngrok-free.') ||
               baseUrl.contains('ngrok.app')) {
-            errorMessage =
-                'ngrok 返回了 HTML 页面；请检查域名是否与控制台一致，或隧道是否指向 8888';
+            errorMessage = 'ngrok 返回了 HTML 页面；请检查域名是否与控制台一致，或隧道是否指向 8888';
           }
           throw ApiException(errorMessage, response.statusCode);
         }
@@ -596,8 +637,7 @@ class ApiService {
       'page_size=$pageSize',
     ];
     if (viewerUserId != null && viewerUserId.isNotEmpty) {
-      parts.add(
-          'viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}');
+      parts.add('viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}');
     }
     if (feedMode != null && feedMode.isNotEmpty) {
       parts.add('feed_mode=${Uri.encodeQueryComponent(feedMode)}');
@@ -606,8 +646,7 @@ class ApiService {
       parts.add('topic_tag_id=${Uri.encodeQueryComponent(topicTagId)}');
     }
     if (authorUserId != null && authorUserId.isNotEmpty) {
-      parts.add(
-          'author_user_id=${Uri.encodeQueryComponent(authorUserId)}');
+      parts.add('author_user_id=${Uri.encodeQueryComponent(authorUserId)}');
     }
     final result = await _request('/api/posts?${parts.join('&')}');
     // 始终输出total字段的值和postsJson的长度，不依赖于_verboseApiLog
@@ -638,9 +677,8 @@ class ApiService {
         _log('📥 成功解析${posts.length}条帖子');
       }
       final totalRaw = result['total'];
-      final total = totalRaw is int
-          ? totalRaw
-          : (totalRaw is num ? totalRaw.toInt() : 0);
+      final total =
+          totalRaw is int ? totalRaw : (totalRaw is num ? totalRaw.toInt() : 0);
       return {
         'posts': posts,
         'total': total,
@@ -821,8 +859,7 @@ class ApiService {
   static Future<Post> getPostById(String id, {String? viewerUserId}) async {
     var path = '/api/posts/$id';
     if (viewerUserId != null && viewerUserId.isNotEmpty) {
-      path +=
-          '?viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}';
+      path += '?viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}';
     }
     final result = await _request(path);
     return Post.fromJson(result['data']);
@@ -869,8 +906,11 @@ class ApiService {
     if (images != null) body['images'] = images;
     if (topicTags != null) body['topic_tags'] = topicTags;
     if (handDrawCard != null) body['hand_draw_card'] = handDrawCard;
-    if (handDrawThumbUrl != null) body['hand_draw_thumb_url'] = handDrawThumbUrl;
-    final result = await _request('/api/posts/$postId', method: 'PUT', body: body);
+    if (handDrawThumbUrl != null) {
+      body['hand_draw_thumb_url'] = handDrawThumbUrl;
+    }
+    final result =
+        await _request('/api/posts/$postId', method: 'PUT', body: body);
     final data = result['data'];
     if (data is Map<String, dynamic>) {
       return Post.fromJson(data);
@@ -913,9 +953,7 @@ class ApiService {
     final result = await _request('/api/community/groups?${parts.join('&')}');
     final raw = result['data'];
     final list = raw is List
-        ? raw
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .toList()
+        ? raw.map((e) => Map<String, dynamic>.from(e as Map)).toList()
         : <Map<String, dynamic>>[];
     final totalRaw = result['total'];
     final total = totalRaw is int
@@ -977,8 +1015,7 @@ class ApiService {
   }) async {
     final parts = <String>[];
     if (viewerUserId != null && viewerUserId.isNotEmpty) {
-      parts.add(
-          'viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}');
+      parts.add('viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}');
     }
     final q = parts.isEmpty ? '' : '?${parts.join('&')}';
     final result = await _request('/api/posts/$postId/comments$q');
@@ -1019,9 +1056,7 @@ class ApiService {
         m.contains('网络请求')) {
       return true;
     }
-    if (c == 401 ||
-        m.contains('登录已过期') ||
-        m.contains('重新登录')) {
+    if (c == 401 || m.contains('登录已过期') || m.contains('重新登录')) {
       return false;
     }
     return false;
@@ -1202,7 +1237,8 @@ class ApiService {
     final list = raw is List
         ? raw
             .whereType<Map>()
-            .map((e) => GiftPurchaseOrder.fromJson(Map<String, dynamic>.from(e)))
+            .map(
+                (e) => GiftPurchaseOrder.fromJson(Map<String, dynamic>.from(e)))
             .toList()
         : <GiftPurchaseOrder>[];
     return {
@@ -1349,9 +1385,8 @@ class ApiService {
         ),
       );
       _log('📤 Upload bytes: len=${bytes.length} uri=$uri');
-      final streamedResponse = await client
-          .send(request)
-          .timeout(const Duration(seconds: 90));
+      final streamedResponse =
+          await client.send(request).timeout(const Duration(seconds: 90));
       final response = await http.Response.fromStream(streamedResponse);
       if (response.statusCode == 200) {
         final result = json.decode(response.body) as Map<String, dynamic>;
@@ -1364,7 +1399,8 @@ class ApiService {
       if (response.statusCode == 413) {
         throw ApiException('图片太大，上传被拒绝(413)', 413);
       }
-      throw ApiException('上传失败，状态码：${response.statusCode}', response.statusCode);
+      throw ApiException(
+          '上传失败，状态码：${response.statusCode}', response.statusCode);
     }
 
     try {
@@ -1412,9 +1448,8 @@ class ApiService {
       _log('📤 Upload image: size=$length bytes, uri=$uri');
 
       // 发送请求（超时保护：cpolar/网络抖动时避免无限挂起）
-      final streamedResponse = await client
-          .send(request)
-          .timeout(const Duration(seconds: 90));
+      final streamedResponse =
+          await client.send(request).timeout(const Duration(seconds: 90));
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
@@ -1430,7 +1465,8 @@ class ApiService {
       if (response.statusCode == 413) {
         throw ApiException('图片太大，上传被拒绝(413)，请降低拍照分辨率/压缩后再试', 413);
       }
-      throw ApiException('上传失败，状态码：${response.statusCode}', response.statusCode);
+      throw ApiException(
+          '上传失败，状态码：${response.statusCode}', response.statusCode);
     }
 
     // 尝试上传；遇到 Broken pipe/连接被重置，自动重试一次
@@ -1610,8 +1646,7 @@ class ApiService {
 
   static Future<List<Map<String, dynamic>>> getIncomingFriendRequests(
       String userId) async {
-    final result =
-        await _request('/api/user/$userId/friend-requests/incoming');
+    final result = await _request('/api/user/$userId/friend-requests/incoming');
     final raw = result['data'];
     if (raw is! List) return [];
     return raw
@@ -1622,24 +1657,20 @@ class ApiService {
 
   static Future<void> acceptFriendRequest(
       String userId, String requestId) async {
-    await _request(
-        '/api/user/$userId/friend-requests/$requestId/accept',
-        method: 'POST',
-        body: <String, dynamic>{});
+    await _request('/api/user/$userId/friend-requests/$requestId/accept',
+        method: 'POST', body: <String, dynamic>{});
   }
 
   static Future<void> rejectFriendRequest(
       String userId, String requestId) async {
-    await _request(
-        '/api/user/$userId/friend-requests/$requestId/reject',
-        method: 'POST',
-        body: <String, dynamic>{});
+    await _request('/api/user/$userId/friend-requests/$requestId/reject',
+        method: 'POST', body: <String, dynamic>{});
   }
 
   static Future<String> getFriendRelation(
       String userId, String otherUserId) async {
-    final result = await _request(
-        '/api/user/$userId/friends/status/$otherUserId');
+    final result =
+        await _request('/api/user/$userId/friends/status/$otherUserId');
     final data = result['data'] as Map<String, dynamic>;
     return data['relation'] as String;
   }
@@ -1648,8 +1679,7 @@ class ApiService {
 
   /// 执行每日签到
   static Future<CheckInData> checkIn(String userId) async {
-    final result = await _request('/api/user/$userId/check-in',
-        method: 'POST');
+    final result = await _request('/api/user/$userId/check-in', method: 'POST');
     return CheckInData.fromJson(result['data']);
   }
 
@@ -1707,7 +1737,8 @@ class ApiService {
   }
 
   // 获取登录设备列表
-  static Future<List<Map<String, dynamic>>> getLoginDevices(String userId) async {
+  static Future<List<Map<String, dynamic>>> getLoginDevices(
+      String userId) async {
     final result = await _request('/api/user/$userId/devices');
     final devicesJson = result['data'] as List;
     return devicesJson.map((json) => json as Map<String, dynamic>).toList();
@@ -1715,21 +1746,22 @@ class ApiService {
 
   // 登出指定设备
   static Future<void> logoutDevice(String userId, String deviceId) async {
-    await _request('/api/user/$userId/devices/$deviceId/logout', method: 'POST');
+    await _request('/api/user/$userId/devices/$deviceId/logout',
+        method: 'POST');
   }
 
   // 更新设备信息
-  static Future<Map<String, dynamic>> updateDeviceInfo(String userId, {
+  static Future<Map<String, dynamic>> updateDeviceInfo(
+    String userId, {
     String? deviceName,
     String? deviceType,
   }) async {
     final body = <String, dynamic>{};
     if (deviceName != null) body['device_name'] = deviceName;
     if (deviceType != null) body['device_type'] = deviceType;
-    
-    final result = await _request('/api/user/$userId/device-info', 
-        method: 'PUT', 
-        body: body);
+
+    final result = await _request('/api/user/$userId/device-info',
+        method: 'PUT', body: body);
     return result['data'] as Map<String, dynamic>;
   }
 
@@ -1737,23 +1769,23 @@ class ApiService {
 
   // 启用两步验证
   static Future<Map<String, dynamic>> enableTwoFactorAuth(String userId) async {
-    final result = await _request('/api/user/$userId/2fa/enable', method: 'POST');
+    final result =
+        await _request('/api/user/$userId/2fa/enable', method: 'POST');
     return result['data'] as Map<String, dynamic>;
   }
 
   // 验证两步验证码
-  static Future<Map<String, dynamic>> verifyTwoFactorCode(String userId, String code) async {
-    final result = await _request('/api/user/$userId/2fa/verify', 
-        method: 'POST', 
-        body: {'code': code});
+  static Future<Map<String, dynamic>> verifyTwoFactorCode(
+      String userId, String code) async {
+    final result = await _request('/api/user/$userId/2fa/verify',
+        method: 'POST', body: {'code': code});
     return result['data'] as Map<String, dynamic>;
   }
 
   // 禁用两步验证
   static Future<void> disableTwoFactorAuth(String userId, String code) async {
-    await _request('/api/user/$userId/2fa/disable', 
-        method: 'POST', 
-        body: {'code': code});
+    await _request('/api/user/$userId/2fa/disable',
+        method: 'POST', body: {'code': code});
   }
 
   // 获取两步验证状态
@@ -1763,10 +1795,10 @@ class ApiService {
   }
 
   // 重新生成两步验证密钥
-  static Future<Map<String, dynamic>> regenerateTwoFactorKey(String userId, String code) async {
-    final result = await _request('/api/user/$userId/2fa/regenerate', 
-        method: 'POST', 
-        body: {'code': code});
+  static Future<Map<String, dynamic>> regenerateTwoFactorKey(
+      String userId, String code) async {
+    final result = await _request('/api/user/$userId/2fa/regenerate',
+        method: 'POST', body: {'code': code});
     return result['data'] as Map<String, dynamic>;
   }
 }
