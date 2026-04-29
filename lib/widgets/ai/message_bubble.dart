@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../moe_toast.dart';
 
 // 消息内容类型
 enum MessageContentType {
@@ -40,9 +41,7 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
     setState(() => _isCopying = true);
     await Clipboard.setData(ClipboardData(text: widget.content));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('代码已复制到剪贴板')),
-    );
+    MoeToast.success(context, '代码已复制到剪贴板');
     setState(() => _isCopying = false);
   }
 

@@ -433,9 +433,7 @@ class _ChatPageState extends State<ChatPage> {
           _isSpeaking = false;
           _speakingMessageId = null;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('语音播放失败：${e.toString()}')),
-        );
+        MoeToast.error(context, '语音播放失败：${e.toString()}');
       }
     }
   }
@@ -452,9 +450,7 @@ class _ChatPageState extends State<ChatPage> {
         _initVoice();
         if (!_speechAvailable) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('语音识别不可用')),
-            );
+            MoeToast.error(context, '语音识别不可用');
           }
           return;
         }
@@ -481,9 +477,7 @@ class _ChatPageState extends State<ChatPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _isListening = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('语音识别失败：${e.toString()}')),
-        );
+        MoeToast.error(context, '语音识别失败：${e.toString()}');
       }
     }
   }
@@ -570,10 +564,7 @@ class _ChatPageState extends State<ChatPage> {
                     Navigator.pop(context);
                     await Clipboard.setData(ClipboardData(text: message.content));
                     if (!mounted) return;
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('已复制到剪贴板')),
-                    );
+                    MoeToast.success(context, '已复制到剪贴板');
                   },
                 ),
                 if (message.role == 'user') ...[
@@ -682,14 +673,10 @@ class _ChatPageState extends State<ChatPage> {
     setState(() {
       if (_markedMessages.contains(message.id)) {
         _markedMessages.remove(message.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('已取消标记')),
-        );
+        MoeToast.info(context, '已取消标记');
       } else {
         _markedMessages.add(message.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('已标记消息')),
-        );
+        MoeToast.success(context, '已标记消息');
       }
     });
   }
@@ -715,9 +702,7 @@ class _ChatPageState extends State<ChatPage> {
                 _messages.removeWhere((msg) => msg.id == message.id);
               });
               if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('消息已撤回')),
-              );
+              MoeToast.success(context, '消息已撤回');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF7F7FD5),
@@ -998,9 +983,7 @@ class _ChatPageState extends State<ChatPage> {
                                     ClipboardData(text: agent.systemPrompt));
                                 if (!mounted) return;
                                 Navigator.pop(ctx);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('提示词已复制')),
-                                );
+                                MoeToast.success(context, '提示词已复制');
                               },
                             ),
                         ],

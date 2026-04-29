@@ -6,6 +6,7 @@ import '../../models/ai_agent.dart';
 import '../../services/ai_db_service.dart';
 import '../../services/api_service.dart';
 import '../../services/llm_endpoint_config.dart';
+import '../../widgets/moe_toast.dart';
 
 class AgentEditorPage extends StatefulWidget {
   final AiAgent? agent;
@@ -217,9 +218,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                               await Clipboard.setData(
                                   ClipboardData(text: effectivePrompt));
                               if (!ctx.mounted) return;
-                              ScaffoldMessenger.of(ctx).showSnackBar(
-                                const SnackBar(content: Text('提示词已复制')),
-                              );
+                              MoeToast.success(ctx, '提示词已复制');
                             },
                           ),
                         ),
@@ -293,9 +292,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
         modelForChat = safeName;
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString())),
-          );
+          MoeToast.error(context, e.toString());
         }
         setState(() => _isSaving = false);
         return;

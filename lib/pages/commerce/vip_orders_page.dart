@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../auth_service.dart';
 import '../../services/api_service.dart';
 import '../../models/vip_order.dart';
+import '../../widgets/moe_toast.dart';
 
 class VipOrdersPage extends StatefulWidget {
   const VipOrdersPage({super.key});
@@ -62,9 +63,7 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加载订单失败: $e')),
-        );
+        MoeToast.error(context, '加载订单失败: $e');
       }
     }
   }

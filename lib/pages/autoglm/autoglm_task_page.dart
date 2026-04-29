@@ -8,6 +8,7 @@ import '../../services/enhanced_logger.dart';
 import '../../services/task_execution_engine.dart';
 import '../../services/ai_inference_service.dart';
 import '../../widgets/fade_in_up.dart';
+import '../../widgets/moe_toast.dart';
 import '../../autoglm/autoglm_service.dart';
 import 'autoglm_config_page.dart';
 
@@ -711,9 +712,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
   Future<void> _executeTask(String command) async {
     if (!_isAccessibilityServiceConnected && !kIsWeb) {
       _logger.warn('无障碍服务未连接，无法执行任务', category: LogCategory.system);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先在系统设置中启用 Moe Social 助手无障碍服务')),
-      );
+      MoeToast.error(context, '请先在系统设置中启用 Moe Social 助手无障碍服务');
       _openAccessibilitySettings();
       return;
     }
@@ -871,9 +870,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
   Future<void> _copyLogs() async {
     final logsText = _displayLogs.map((log) => log.format(includeMetadata: true)).join('\n');
     await Clipboard.setData(ClipboardData(text: logsText));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('日志已复制到剪贴板')),
-    );
+    MoeToast.success(context, '日志已复制到剪贴板');
   }
 
   void _openAccessibilitySettings() {

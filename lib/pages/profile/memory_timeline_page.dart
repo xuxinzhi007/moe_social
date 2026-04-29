@@ -4,6 +4,7 @@ import '../../models/user.dart';
 import '../../services/memory_service.dart';
 import '../../auth_service.dart';
 import 'package:intl/intl.dart';
+import '../../widgets/moe_toast.dart';
 
 class MemoryTimelinePage extends StatefulWidget {
   const MemoryTimelinePage({super.key});
@@ -78,16 +79,12 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
       try {
         await MemoryService.deleteUserMemoryByKey(memory.userId, memory.key);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('记忆已删除')),
-          );
+          MoeToast.success(context, '记忆已删除');
           _loadMemories(); // Reload list
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('删除失败: $e')),
-          );
+          MoeToast.error(context, '删除失败: $e');
         }
       }
     }

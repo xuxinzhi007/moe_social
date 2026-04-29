@@ -5,6 +5,7 @@ import '../../utils/validators.dart';
 import '../../models/user.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../utils/media_url.dart';
+import '../../widgets/moe_toast.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -181,24 +182,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   }
 
   void _showCustomSnackBar(BuildContext context, String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 10),
-            Text(message),
-          ],
-        ),
-        backgroundColor: isError ? Colors.redAccent : Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    if (isError) {
+      MoeToast.error(context, message);
+      return;
+    }
+    MoeToast.success(context, message);
   }
 
   @override

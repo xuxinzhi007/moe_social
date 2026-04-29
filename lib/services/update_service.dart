@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../widgets/moe_toast.dart';
 
 /// 与已安装应用对比 APK 签名的结果（仅 Android 原生通道有效）。
 class ApkSignatureCompareResult {
@@ -311,9 +312,7 @@ class UpdateService {
           final info = result.info;
           if (info == null) {
             if (showNoUpdateToast && context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('未发现任何发布版本')),
-              );
+              MoeToast.info(context, '未发现任何发布版本');
             }
             return;
           }
@@ -323,55 +322,39 @@ class UpdateService {
             }
           } else {
             if (showNoUpdateToast && context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('当前已是最新版本')),
-              );
+              MoeToast.info(context, '当前已是最新版本');
             }
           }
           return;
         case UpdateFetchStatus.empty:
           if (showNoUpdateToast && context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('未发现任何发布版本')),
-            );
+            MoeToast.info(context, '未发现任何发布版本');
           }
           return;
         case UpdateFetchStatus.rateLimited:
           if (showNoUpdateToast && context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('检查更新过于频繁，请稍后再试')),
-            );
+            MoeToast.warning(context, '检查更新过于频繁，请稍后再试');
           }
           return;
         case UpdateFetchStatus.notFound:
           if (showNoUpdateToast && context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('仓库不存在或为私有仓库')),
-            );
+            MoeToast.error(context, '仓库不存在或为私有仓库');
           }
           return;
         case UpdateFetchStatus.badStatus:
           if (showNoUpdateToast && context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('检查更新失败: ${result.httpStatus ?? "?"}'),
-              ),
-            );
+            MoeToast.error(context, '检查更新失败: ${result.httpStatus ?? "?"}');
           }
           return;
         case UpdateFetchStatus.error:
           if (showNoUpdateToast && context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('检查更新出错: ${result.error}')),
-            );
+            MoeToast.error(context, '检查更新出错: ${result.error}');
           }
           return;
       }
     } catch (e) {
       if (showNoUpdateToast && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('检查更新出错: $e')),
-        );
+        MoeToast.error(context, '检查更新出错: $e');
       }
     }
   }
@@ -568,9 +551,7 @@ class UpdateService {
     final uri = Uri.tryParse(downloadUrl);
     if (uri == null) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('下载地址无效')),
-        );
+        MoeToast.error(context, '下载地址无效');
       }
       return;
     }
@@ -580,15 +561,11 @@ class UpdateService {
         ok = await launchUrl(uri, mode: LaunchMode.platformDefault);
       }
       if (!ok && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('无法打开浏览器，请手动复制 Release 链接下载')),
-        );
+        MoeToast.warning(context, '无法打开浏览器，请手动复制 Release 链接下载');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('打开浏览器失败: $e')),
-        );
+        MoeToast.error(context, '打开浏览器失败: $e');
       }
     }
   }
@@ -787,9 +764,7 @@ class UpdateService {
       final status = await Permission.requestInstallPackages.request();
       if (!status.isGranted) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('需要安装权限才能更新应用')),
-          );
+          MoeToast.error(context, '需要安装权限才能更新应用');
         }
         return;
       }
@@ -1079,32 +1054,20 @@ class UpdateService {
           ResultType.done => '',
         };
         if (msg.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+          MoeToast.error(context, msg);
         }
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          duration: const Duration(seconds: 10),
-          content: const Text(
-            '已唤起安装。若失败：① debug/正式签名不同需先卸载；② 新版 versionCode 须更高；'
-            '③ 可到「下载 → MoeSocial」手动点 APK。点右侧可复制完整路径。',
-          ),
-          action: SnackBarAction(
-            label: '复制路径',
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: filePath));
-            },
-          ),
-        ),
+      Clipboard.setData(ClipboardData(text: filePath));
+      MoeToast.info(
+        context,
+        '已唤起安装。若失败请先卸载旧包或提升 versionCode，安装包路径已复制',
       );
     } catch (e) {
       debugPrint('安装失败: $e');
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('安装调用异常: $e')),
-        );
+        MoeToast.error(context, '安装调用异常: $e');
       }
     }
   }
@@ -1509,9 +1472,7 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
                     TextButton.icon(
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: _filePath!));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('已复制完整路径')),
-                        );
+                        MoeToast.success(context, '已复制完整路径');
                       },
                       icon: const Icon(Icons.copy_rounded, size: 18),
                       label: const Text('复制路径'),

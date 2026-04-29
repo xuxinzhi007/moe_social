@@ -15,6 +15,7 @@ import '../../widgets/personalized_card.dart';
 import '../../widgets/quick_actions_grid.dart';
 import '../../widgets/home_stories_bar.dart';
 import '../../widgets/moe_loading.dart';
+import '../../widgets/moe_toast.dart';
 import '../../widgets/fade_in_up.dart';
 import 'create_post_page.dart';
 
@@ -359,9 +360,7 @@ class _HomePageState extends State<HomePage>
         IconButton(
           icon: const Icon(Icons.search_rounded),
           onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('搜索功能即将上线')),
-            );
+            MoeToast.info(context, '搜索功能即将上线');
           },
           tooltip: '搜索',
         ),

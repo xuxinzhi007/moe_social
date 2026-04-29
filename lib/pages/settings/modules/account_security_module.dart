@@ -759,15 +759,11 @@ class AccountSecurityModule extends StatelessWidget {
               try {
                 final userId = await AuthService.getUserId();
                 await ApiService.logoutDevice(userId, deviceId);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('设备已成功登出')),
-                );
+                MoeToast.success(context, '设备已成功登出');
                 // 重新加载设备列表
                 _showDeviceManagement(context);
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('登出失败: ${e.toString()}')),
-                );
+                MoeToast.error(context, '登出失败: ${e.toString()}');
               }
             },
             style: ElevatedButton.styleFrom(
@@ -910,9 +906,7 @@ class AccountSecurityModule extends StatelessWidget {
               await ApiService.verifyTwoFactorCode(userId, code);
               Navigator.pop(context);
               Navigator.pop(context); // 关闭设置对话框
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('两步验证已成功开启')),
-              );
+              MoeToast.success(context, '两步验证已成功开启');
             } catch (e) {
               setState(() {
                 errorMessage = '验证码错误，请重试';
@@ -1019,9 +1013,7 @@ class AccountSecurityModule extends StatelessWidget {
               await ApiService.disableTwoFactorAuth(userId, code);
               Navigator.pop(context);
               Navigator.pop(context); // 关闭设置对话框
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('两步验证已成功关闭')),
-              );
+              MoeToast.success(context, '两步验证已成功关闭');
             } catch (e) {
               setState(() {
                 errorMessage = '验证码错误，请重试';

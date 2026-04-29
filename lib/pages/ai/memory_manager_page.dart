@@ -11,6 +11,7 @@ import '../../services/ai_db_service.dart';
 import '../../services/api_service.dart';
 import '../../services/llm_endpoint_config.dart';
 import '../../services/memory_agent_service.dart';
+import '../../widgets/moe_toast.dart';
 
 class MemoryManagerPage extends StatefulWidget {
   final AiAgent agent;
@@ -109,14 +110,10 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
       await MemoryAgentService().curateProfiles(agent: widget.agent);
       await _load();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('记忆画像已重新整理')),
-      );
+      MoeToast.success(context, '记忆画像已重新整理');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('整理失败：$e')),
-      );
+      MoeToast.error(context, '整理失败：$e');
     } finally {
       if (mounted) setState(() => _isCurating = false);
     }

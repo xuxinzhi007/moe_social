@@ -139,9 +139,7 @@ class AboutModule extends StatelessWidget {
             onPressed: () {
               Navigator.pop(ctx);
               // 这里应该跳转到应用商店评分页面
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('功能开发中')),
-              );
+              MoeToast.info(context, '功能开发中');
             },
             child: const Text('去评分'),
           ),

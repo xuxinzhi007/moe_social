@@ -4,6 +4,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../auth_service.dart';
 import '../../services/api_service.dart';
 import '../../utils/media_url.dart';
+import '../../widgets/moe_toast.dart';
 
 class VoiceCallPage extends StatefulWidget {
   final String channelName;
@@ -40,9 +41,7 @@ class _VoiceCallPageState extends State<VoiceCallPage> {
     final userAccount = AuthService.currentUser;
     if (userAccount == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('请先登录')),
-        );
+        MoeToast.error(context, '请先登录');
         Navigator.pop(context);
       }
       return;
@@ -58,9 +57,7 @@ class _VoiceCallPageState extends State<VoiceCallPage> {
       _appId = response['app_id'];
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('获取通话凭证失败: $e')),
-        );
+        MoeToast.error(context, '获取通话凭证失败: $e');
         Navigator.pop(context);
       }
       return;
@@ -68,9 +65,7 @@ class _VoiceCallPageState extends State<VoiceCallPage> {
 
     if (_appId == null || _token == null) {
        if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('通话配置无效')),
-        );
+        MoeToast.error(context, '通话配置无效');
         Navigator.pop(context);
       }
       return;
@@ -113,9 +108,7 @@ class _VoiceCallPageState extends State<VoiceCallPage> {
         onError: (ErrorCodeType err, String msg) {
           debugPrint("Agora Error: $err, $msg");
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('通话出错: $msg')),
-          );
+          MoeToast.error(context, '通话出错: $msg');
           Navigator.pop(context);
         },
       ),
@@ -133,9 +126,7 @@ class _VoiceCallPageState extends State<VoiceCallPage> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加入通话失败: $e')),
-        );
+        MoeToast.error(context, '加入通话失败: $e');
         Navigator.pop(context);
       }
     }

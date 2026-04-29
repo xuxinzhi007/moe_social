@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../auth_service.dart';
 import '../../models/topic_tag.dart';
+import '../../widgets/moe_toast.dart';
 import 'community_posts_feed.dart';
 
 /// 话题讨论：与首页动态同一数据源（[ApiService.getPosts]），按官方话题筛选；发动态与首页闭环一致。
@@ -39,9 +40,7 @@ class _TopicDiscussionsPageState extends State<TopicDiscussionsPage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           if (!AuthService.isLoggedIn) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('请先登录后再发帖')),
-            );
+            MoeToast.error(context, '请先登录后再发帖');
             return;
           }
           Navigator.pushNamed(context, '/create-post');
