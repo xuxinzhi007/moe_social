@@ -59,4 +59,28 @@ class Responsive {
         return 980;
     }
   }
+
+  /// 页面是否处于「紧凑密度」：宽度或高度不足时统一收紧间距/字号。
+  static bool useCompactDensity(
+    BuildContext context, {
+    double widthThreshold = 430,
+    double heightThreshold = 720,
+  }) {
+    final size = MediaQuery.sizeOf(context);
+    return size.width < widthThreshold || size.height < heightThreshold;
+  }
+
+  /// 页面横向内容内边距（可覆盖默认 top/bottom）。
+  static EdgeInsets pagePadding(
+    BuildContext context, {
+    double top = 12,
+    double bottom = 24,
+  }) {
+    return EdgeInsets.fromLTRB(
+      pageHorizontalPadding(context),
+      top,
+      pageHorizontalPadding(context),
+      bottom,
+    );
+  }
 }
