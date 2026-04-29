@@ -7,6 +7,7 @@ import 'models/user.dart';
 import 'services/api_service.dart';
 import 'services/chat_push_service.dart';
 import 'services/presence_service.dart';
+import 'widgets/moe_toast.dart';
 
 // 认证结果类，包含成功状态和错误信息
 class AuthResult {
@@ -156,6 +157,7 @@ class AuthService {
   }
 
   static void logout() {
+    MoeToast.dismiss();
     final uid = _currentUser;
     _currentUser = null;
     _token = null;

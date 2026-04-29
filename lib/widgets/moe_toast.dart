@@ -7,6 +7,14 @@ class MoeToast {
   static OverlayEntry? _overlayEntry;
   static Timer? _timer;
 
+  /// 主动移除当前 Toast，常用于页面切换/登出等场景
+  static void dismiss() {
+    _timer?.cancel();
+    _timer = null;
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
   static void show(
     BuildContext context, 
     String message, {
@@ -17,9 +25,7 @@ class MoeToast {
   }) {
     void mount() {
       // 移除之前的 Toast
-      _overlayEntry?.remove();
-      _overlayEntry = null;
-      _timer?.cancel();
+      dismiss();
 
       final overlay = Overlay.maybeOf(context);
       if (overlay == null) {
