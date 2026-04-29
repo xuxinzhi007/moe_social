@@ -6,6 +6,7 @@ import '../../models/topic_tag.dart';
 import '../../models/post.dart';
 import '../../services/api_service.dart';
 import '../../services/post_service.dart';
+import '../../services/like_state_manager.dart';
 import '../../widgets/post_skeleton.dart';
 import '../../utils/error_handler.dart';
 import '../../utils/post_navigation.dart';
@@ -203,19 +204,27 @@ class _HomePageState extends State<HomePage>
     }
   }
 
-  Future<void> _toggleLike(String postId) async {
-    final userId = AuthService.currentUser;
-    if (userId == null) {
-      if (mounted) ErrorHandler.showError(context, '请先登录');
-      return;
-    }
-    try {
-      final updatedPost = await PostService.toggleLike(postId, userId);
-      final postIndex = _allPosts.indexWhere((p) => p.id == postId);
-      if (postIndex != -1) _allPosts[postIndex] = updatedPost;
-    } catch (e) {
-      _handleError(e);
-    }
+  void _toggleLike(String postId) {
+    final manager = LikeStateManager();
+    final isLiked = manager.getStatusNotifier(postId).value;
+    final likeCount = manager.getCountNotifier(postId).value;
+    if (!mounted) return;
+    setState(() {
+      final allIndex = _allPosts.indexWhere((p) => p.id == postId);
+      if (allIndex != -1) {
+        _allPosts[allIndex] = _allPosts[allIndex].copyWith(
+          isLiked: isLiked,
+          likes: likeCount,
+        );
+      }
+      final displayIndex = _displayPosts.indexWhere((p) => p.id == postId);
+      if (displayIndex != -1) {
+        _displayPosts[displayIndex] = _displayPosts[displayIndex].copyWith(
+          isLiked: isLiked,
+          likes: likeCount,
+        );
+      }
+    });
   }
 
   String _apiFeedMode() {
@@ -737,7 +746,7 @@ class _HomePageState extends State<HomePage>
       post: post,
       onLike: () => _toggleLike(post.id),
       onComment: () async {
-        final result = await openPostDetail<int>(context, post);
+        final result = await openPostDetail(context, post);
         if (result != null) {
           setState(() {
             final allIndex = _allPosts.indexWhere((p) => p.id == post.id);

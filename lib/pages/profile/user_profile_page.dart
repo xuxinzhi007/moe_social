@@ -8,6 +8,7 @@ import '../../models/achievement_badge.dart';
 import '../../auth_service.dart';
 import '../../services/api_service.dart';
 import '../../services/achievement_service.dart';
+import '../../services/like_state_manager.dart';
 import '../../widgets/avatar_image.dart';
 import '../../widgets/dynamic_avatar.dart';
 import '../../widgets/profile_bg.dart';
@@ -190,27 +191,20 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
   }
 
-  Future<void> _toggleLike(String postId) async {
-    final currentUserId = AuthService.currentUser;
-    if (currentUserId == null) {
-      if (mounted) {
-        ErrorHandler.showError(context, '请先登录');
-      }
-      return;
-    }
-
-    try {
-      final updatedPost = await PostService.toggleLike(postId, currentUserId);
-      
+  void _toggleLike(String postId) {
+    final manager = LikeStateManager();
+    final isLiked = manager.getStatusNotifier(postId).value;
+    final likeCount = manager.getCountNotifier(postId).value;
+    if (!mounted) return;
+    setState(() {
       final postIndex = _userPosts.indexWhere((p) => p.id == postId);
       if (postIndex != -1) {
-        _userPosts[postIndex] = updatedPost;
+        _userPosts[postIndex] = _userPosts[postIndex].copyWith(
+          isLiked: isLiked,
+          likes: likeCount,
+        );
       }
-    } catch (e) {
-      if (mounted) {
-        ErrorHandler.handleException(context, e as Exception);
-      }
-    }
+    });
   }
 
   Future<void> _editPost(Post post) async {
@@ -1090,8 +1084,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             heroTagPrefix: 'up_',
                             onLike: () => _toggleLike(post.id),
                             onComment: () async {
-                              final result = await openPostDetail<int>(
-                                  context, post);
+                              final result =
+                                  await openPostDetail(context, post);
                               if (result != null && mounted) {
                                 setState(() {
                                   final i = _userPosts
