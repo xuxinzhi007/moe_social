@@ -320,9 +320,20 @@ class _HomePageState extends State<HomePage>
 
   SliverAppBar _buildSliverAppBar(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final expandedHeight =
-        screenHeight < 600 ? 255.0 : screenHeight < 700 ? 268.0 : 282.0;
+    final screenSize = MediaQuery.of(context).size;
+    final screenHeight = screenSize.height;
+    final screenWidth = screenSize.width;
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+    final baseExpandedHeight =
+        screenHeight < 620 ? 286.0 : screenHeight < 760 ? 298.0 : 312.0;
+    final narrowWidthExtra = screenWidth < 340
+        ? 26.0
+        : screenWidth < 360
+            ? 18.0
+            : 0.0;
+    final expandedHeight = baseExpandedHeight +
+        ((textScale - 1.0) * 20).clamp(0.0, 24.0) +
+        narrowWidthExtra;
 
     return SliverAppBar(
       pinned: true,
@@ -436,8 +447,8 @@ class _HomePageState extends State<HomePage>
         collapseMode: CollapseMode.parallax,
         background: Padding(
           // top: appbar toolbar (~56) + status bar (~24) ≈ 80, use 86 for safety
-          // bottom: TabBar pinned at bottom of flexible space (~40px) + 8px gap
-          padding: const EdgeInsets.fromLTRB(16, 86, 16, 48),
+          // bottom: TabBar pinned at bottom of flexible space (~40px) + gap
+          padding: const EdgeInsets.fromLTRB(16, 86, 16, 44),
           child: const PersonalizedCard(),
         ),
       ),

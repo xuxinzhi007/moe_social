@@ -1,8 +1,10 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../utils/validators.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_toast.dart';
+import '../../utils/responsive.dart';
 
 class ResetPasswordPage extends StatefulWidget {
   final String email;
@@ -66,6 +68,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final layoutHeight = math.max(size.height, 900.0);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -79,16 +82,19 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         ),
       ),
       body: SingleChildScrollView(
-        child: SizedBox(
-          height: size.height,
-          child: Stack(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: Responsive.contentMaxWidth(context)),
+            child: SizedBox(
+              height: layoutHeight,
+              child: Stack(
             children: [
               // 背景层
               Positioned(
                 top: 0,
                 left: 0,
                 right: 0,
-                height: size.height * 0.4,
+                height: layoutHeight * 0.4,
                 child: Container(
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
@@ -237,6 +243,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 ),
               ),
             ],
+          ),
+            ),
           ),
         ),
       ),

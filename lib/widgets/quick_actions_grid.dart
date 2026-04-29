@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../pages/ai/agent_list_page.dart';
 import '../pages/game/game_lobby_page.dart';
+import '../utils/responsive.dart';
 
 class QuickActionsGrid extends StatelessWidget {
   const QuickActionsGrid({super.key});
@@ -77,8 +78,10 @@ class QuickActionsGrid extends StatelessWidget {
     ];
 
     final scheme = Theme.of(context).colorScheme;
+    final horizontalPadding = Responsive.pageHorizontalPadding(context);
+    final listHeight = Responsive.isCompact(context) ? 100.0 : 112.0;
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 8),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: BoxDecoration(
         color: scheme.surface,
@@ -119,7 +122,7 @@ class QuickActionsGrid extends StatelessWidget {
           const SizedBox(height: 12),
           // 每项约 52+6+文字行高+竖向 padding，90 在部分字体缩放下会溢出
           SizedBox(
-            height: 100,
+            height: listHeight,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 4),

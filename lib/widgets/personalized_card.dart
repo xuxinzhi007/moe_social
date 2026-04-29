@@ -124,8 +124,15 @@ class _PersonalizedCardState extends State<PersonalizedCard>
   Widget build(BuildContext context) {
     return Consumer2<DeviceInfoProvider, UserLevelProvider>(
       builder: (context, deviceInfo, levelProvider, _) {
+        final size = MediaQuery.sizeOf(context);
+        final compact = size.width < 430 || size.height < 720;
         return Container(
-          padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
+          padding: EdgeInsets.fromLTRB(
+            compact ? 14 : 18,
+            compact ? 14 : 16,
+            compact ? 14 : 18,
+            compact ? 10 : 14,
+          ),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [
@@ -186,9 +193,9 @@ class _PersonalizedCardState extends State<PersonalizedCard>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildUserHeader(deviceInfo, levelProvider),
-                  const SizedBox(height: 10),
-                  _buildDailyQuoteCard(),
+                  _buildUserHeader(deviceInfo, levelProvider, compact: compact),
+                  SizedBox(height: compact ? 8 : 10),
+                  _buildDailyQuoteCard(compact: compact),
                 ],
               ),
             ],
@@ -201,7 +208,7 @@ class _PersonalizedCardState extends State<PersonalizedCard>
   Widget _buildUserHeader(
     DeviceInfoProvider deviceInfo,
     UserLevelProvider levelProvider,
-  ) {
+      {required bool compact}) {
     final username = _user?.username ?? '';
     final isVip = _user?.isVip ?? false;
     final level = levelProvider.currentLevel;
@@ -216,7 +223,7 @@ class _PersonalizedCardState extends State<PersonalizedCard>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border:
-                Border.all(color: Colors.white.withOpacity(0.65), width: 2.5),
+                Border.all(color: Colors.white.withOpacity(0.65), width: compact ? 2.0 : 2.5),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.2),
@@ -227,13 +234,13 @@ class _PersonalizedCardState extends State<PersonalizedCard>
           ),
           child: NetworkAvatarImage(
             imageUrl: _user?.avatar,
-            radius: 24,
+            radius: compact ? 21 : 24,
             backgroundColor: Colors.white.withOpacity(0.25),
             placeholderIcon: Icons.person_rounded,
             placeholderColor: Colors.white70,
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: compact ? 10 : 12),
         // Greeting + Name + Level
         Expanded(
           child: Column(
@@ -244,22 +251,22 @@ class _PersonalizedCardState extends State<PersonalizedCard>
                 _getGreeting(),
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.8),
-                  fontSize: 12,
+                  fontSize: compact ? 11 : 12,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 3),
+              SizedBox(height: compact ? 2 : 3),
               Row(
                 children: [
                   Flexible(
                     child: Text(
                       username.isEmpty ? '萌友' : username,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: compact ? 16 : 18,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.3,
-                        shadows: [
+                        shadows: const [
                           Shadow(
                             color: Colors.black12,
                             offset: Offset(0, 1),
@@ -272,7 +279,7 @@ class _PersonalizedCardState extends State<PersonalizedCard>
                     ),
                   ),
                   if (isVip) ...[
-                    const SizedBox(width: 6),
+                    SizedBox(width: compact ? 4 : 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 5, vertical: 1),
@@ -286,7 +293,7 @@ class _PersonalizedCardState extends State<PersonalizedCard>
                         'VIP',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 9,
+                          fontSize: 8.5,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -294,11 +301,11 @@ class _PersonalizedCardState extends State<PersonalizedCard>
                   ],
                 ],
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: compact ? 3 : 4),
               // Level badge
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    EdgeInsets.symmetric(horizontal: compact ? 6 : 7, vertical: compact ? 1.5 : 2),
                 decoration: BoxDecoration(
                   color: levelColor.withOpacity(0.22),
                   borderRadius: BorderRadius.circular(8),
@@ -310,17 +317,19 @@ class _PersonalizedCardState extends State<PersonalizedCard>
                   children: [
                     Icon(
                       Icons.auto_awesome_rounded,
-                      size: 9,
+                      size: compact ? 8 : 9,
                       color: levelColor.withOpacity(0.9),
                     ),
                     const SizedBox(width: 3),
                     Text(
                       'Lv.$level · $levelTitle',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 9,
+                        fontSize: compact ? 8.5 : 9,
                         fontWeight: FontWeight.w700,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -328,14 +337,15 @@ class _PersonalizedCardState extends State<PersonalizedCard>
             ],
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: compact ? 6 : 8),
         // Weather
-        _buildWeatherWidget(deviceInfo),
+        _buildWeatherWidget(deviceInfo, compact: compact),
       ],
     );
   }
 
-  Widget _buildWeatherWidget(DeviceInfoProvider provider) {
+  Widget _buildWeatherWidget(DeviceInfoProvider provider,
+      {required bool compact}) {
     return GestureDetector(
       onTap: () async {
         try {
@@ -348,8 +358,9 @@ class _PersonalizedCardState extends State<PersonalizedCard>
         if (mounted) await _loadWeatherData();
       },
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 68),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+        constraints: BoxConstraints(maxWidth: compact ? 60 : 68),
+        padding: EdgeInsets.symmetric(
+            horizontal: compact ? 6 : 8, vertical: compact ? 6 : 7),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.18),
           borderRadius: BorderRadius.circular(14),
@@ -368,14 +379,14 @@ class _PersonalizedCardState extends State<PersonalizedCard>
                 children: [
                   Text(
                     _weatherData?.getWeatherEmoji() ?? '☀️',
-                    style: const TextStyle(fontSize: 20),
+                    style: TextStyle(fontSize: compact ? 18 : 20),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: compact ? 1 : 2),
                   Text(
                     _weatherData != null ? '${_weatherData!.temp}°' : '26°',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 12,
+                      fontSize: compact ? 11 : 12,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -383,7 +394,7 @@ class _PersonalizedCardState extends State<PersonalizedCard>
                     _getCity(provider),
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.75),
-                      fontSize: 9,
+                      fontSize: compact ? 8 : 9,
                       fontWeight: FontWeight.w500,
                     ),
                     maxLines: 1,
@@ -395,12 +406,13 @@ class _PersonalizedCardState extends State<PersonalizedCard>
     );
   }
 
-  Widget _buildDailyQuoteCard() {
+  Widget _buildDailyQuoteCard({required bool compact}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(
+          horizontal: compact ? 10 : 12, vertical: compact ? 6 : 8),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(compact ? 10 : 12),
         border: Border.all(color: Colors.white.withOpacity(0.15)),
       ),
       child: Row(
@@ -409,9 +421,9 @@ class _PersonalizedCardState extends State<PersonalizedCard>
           Icon(
             Icons.format_quote_rounded,
             color: Colors.white.withOpacity(0.5),
-            size: 14,
+            size: compact ? 13 : 14,
           ),
-          const SizedBox(width: 6),
+          SizedBox(width: compact ? 5 : 6),
           Expanded(
             // No fixed SizedBox height — let content size naturally to avoid overflow
             child: DailyQuoteWidget(

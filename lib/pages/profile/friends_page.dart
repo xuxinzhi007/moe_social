@@ -552,77 +552,117 @@ class _FriendsPageState extends State<FriendsPage>
                     final rid = row['id']?.toString() ?? '';
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
-                      child: Material(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(18),
-                        child: Container(
-                          decoration: BoxDecoration(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final compact = constraints.maxWidth < 360;
+                          return Material(
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(18),
-                            border: Border.all(color: Colors.grey.shade200),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(color: Colors.grey.shade200),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            child: Row(
-                              children: [
-                                NetworkAvatarImage(
-                                  imageUrl: u.avatar,
-                                  radius: 26,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        u.username,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      if (u.moeNo.isNotEmpty)
-                                        Text(
-                                          'Moe ${u.moeNo}',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[600],
+                                child: Row(
+                                  children: [
+                                    NetworkAvatarImage(
+                                      imageUrl: u.avatar,
+                                      radius: 26,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            u.username,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 16,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                        ),
-                                    ],
-                                  ),
+                                          if (u.moeNo.isNotEmpty)
+                                            Text(
+                                              'Moe ${u.moeNo}',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey[600],
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                    compact
+                                        ? Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              TextButton(
+                                                onPressed: rid.isEmpty
+                                                    ? null
+                                                    : () => _rejectIncomingRequest(rid),
+                                                child: const Text('拒绝'),
+                                              ),
+                                              FilledButton(
+                                                onPressed: rid.isEmpty
+                                                    ? null
+                                                    : () => _acceptIncomingRequest(rid),
+                                                style: FilledButton.styleFrom(
+                                                  backgroundColor:
+                                                      const Color(0xFF7F7FD5),
+                                                  visualDensity:
+                                                      VisualDensity.compact,
+                                                ),
+                                                child: const Text('同意'),
+                                              ),
+                                            ],
+                                          )
+                                        : Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              TextButton(
+                                                onPressed: rid.isEmpty
+                                                    ? null
+                                                    : () => _rejectIncomingRequest(rid),
+                                                child: const Text('拒绝'),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              FilledButton(
+                                                onPressed: rid.isEmpty
+                                                    ? null
+                                                    : () => _acceptIncomingRequest(rid),
+                                                style: FilledButton.styleFrom(
+                                                  backgroundColor:
+                                                      const Color(0xFF7F7FD5),
+                                                  visualDensity:
+                                                      VisualDensity.compact,
+                                                ),
+                                                child: const Text('同意'),
+                                              ),
+                                            ],
+                                          ),
+                                  ],
                                 ),
-                                TextButton(
-                                  onPressed: rid.isEmpty
-                                      ? null
-                                      : () => _rejectIncomingRequest(rid),
-                                  child: const Text('拒绝'),
-                                ),
-                                const SizedBox(width: 4),
-                                FilledButton(
-                                  onPressed: rid.isEmpty
-                                      ? null
-                                      : () => _acceptIncomingRequest(rid),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: const Color(0xFF7F7FD5),
-                                    visualDensity: VisualDensity.compact,
-                                  ),
-                                  child: const Text('同意'),
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
-                        ),
+                          );
+                        },
                       ),
                     );
                   },
@@ -1266,12 +1306,16 @@ class _FriendsPageState extends State<FriendsPage>
                     children: [
                       Row(
                         children: [
-                          Text(
-                            user.username,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: Color(0xFF333333),
+                          Expanded(
+                            child: Text(
+                              user.username,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Color(0xFF333333),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -1317,13 +1361,17 @@ class _FriendsPageState extends State<FriendsPage>
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
-                                  user.moeNo,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.6,
-                                    color: Colors.grey[800],
+                                Flexible(
+                                  child: Text(
+                                    user.moeNo,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.6,
+                                      color: Colors.grey[800],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 const SizedBox(width: 6),

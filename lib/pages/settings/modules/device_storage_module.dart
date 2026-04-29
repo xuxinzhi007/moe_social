@@ -13,6 +13,7 @@ import '../../../widgets/settings/setting_item.dart';
 import '../../../widgets/fade_in_up.dart';
 import '../../../widgets/moe_menu_card.dart';
 import '../../../widgets/moe_toast.dart';
+import '../../../widgets/dialogs/confirm_dialog.dart';
 
 class DeviceStorageModule extends StatelessWidget {
   final bool autoUpdateOnLaunch;
@@ -651,42 +652,22 @@ class DeviceStorageModule extends StatelessWidget {
                         children: [
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: () {
-                                // 清理缓存逻辑
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                    title: const Text('确认操作'),
-                                    content: const Text('确定要清理缓存吗？这将删除临时文件，但不会影响您的个人数据。'),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('取消', style: TextStyle(color: Colors.grey)),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () async {
-                                          try {
-                                            // 清理缓存
-                                            await _clearCache();
-                                            Navigator.pop(context);
-                                            Navigator.pop(context);
-                                            MoeToast.success(context, '缓存清理成功');
-                                          } catch (e) {
-                                            Navigator.pop(context);
-                                            MoeToast.error(context, '缓存清理失败：${e.toString()}');
-                                          }
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFF7F7FD5),
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                        ),
-                                        child: const Text('确定'),
-                                      ),
-                                    ],
-                                  ),
+                              onPressed: () async {
+                                final ok = await showConfirmDialog(
+                                  context,
+                                  title: '确认操作',
+                                  message: '确定要清理缓存吗？这将删除临时文件，但不会影响您的个人数据。',
                                 );
+                                if (!ok) return;
+                                try {
+                                  await _clearCache();
+                                  if (!context.mounted) return;
+                                  Navigator.pop(context);
+                                  MoeToast.success(context, '缓存清理成功');
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  MoeToast.error(context, '缓存清理失败：${e.toString()}');
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF7F7FD5),
@@ -700,42 +681,23 @@ class DeviceStorageModule extends StatelessWidget {
                           const SizedBox(width: 12),
                           Expanded(
                             child: OutlinedButton(
-                              onPressed: () {
-                                // 清理所有数据逻辑
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                    title: const Text('警告'),
-                                    content: const Text('确定要清理所有数据吗？这将删除所有应用数据，包括您的设置和缓存。'),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('取消', style: TextStyle(color: Colors.grey)),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () async {
-                                          try {
-                                            // 清理所有数据
-                                            await _clearAllData();
-                                            Navigator.pop(context);
-                                            Navigator.pop(context);
-                                            MoeToast.success(context, '所有数据清理成功');
-                                          } catch (e) {
-                                            Navigator.pop(context);
-                                            MoeToast.error(context, '数据清理失败：${e.toString()}');
-                                          }
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.red,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                        ),
-                                        child: const Text('确定'),
-                                      ),
-                                    ],
-                                  ),
+                              onPressed: () async {
+                                final ok = await showConfirmDialog(
+                                  context,
+                                  title: '警告',
+                                  message: '确定要清理所有数据吗？这将删除所有应用数据，包括您的设置和缓存。',
+                                  isDestructive: true,
                                 );
+                                if (!ok) return;
+                                try {
+                                  await _clearAllData();
+                                  if (!context.mounted) return;
+                                  Navigator.pop(context);
+                                  MoeToast.success(context, '所有数据清理成功');
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  MoeToast.error(context, '数据清理失败：${e.toString()}');
+                                }
                               },
                               style: OutlinedButton.styleFrom(
                                 side: const BorderSide(color: Colors.red),
