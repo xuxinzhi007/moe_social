@@ -311,7 +311,6 @@ class _HomePageState extends State<HomePage>
           ],
         ),
       ),
-      floatingActionButton: _buildFAB(context),
     );
   }
 
@@ -802,23 +801,6 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildFAB(BuildContext context) {
-    return FloatingActionButton.extended(
-      onPressed: () async {
-        final result = await Navigator.pushNamed(context, '/create-post');
-        if (result == true && mounted) _fetchPosts();
-      },
-      backgroundColor: const Color(0xFF7F7FD5),
-      foregroundColor: Colors.white,
-      elevation: 6,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      icon: const Icon(Icons.edit_rounded, size: 20),
-      label: const Text(
-        '写动态',
-        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-      ),
-    );
-  }
 }
 
 // ---------------------------------------------------------------------------
