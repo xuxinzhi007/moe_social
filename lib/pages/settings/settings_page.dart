@@ -6,8 +6,8 @@ import '../../services/startup_update_preferences.dart';
 import '../../providers/device_info_provider.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_toast.dart';
-import '../../widgets/settings/lazy_load_widget.dart';
 import '../../widgets/settings/settings_search_bar.dart';
+import '../../providers/virtual_avatar_provider.dart';
 import 'modules/device_storage_module.dart';
 import 'modules/ai_settings_module.dart';
 import 'modules/appearance_module.dart';
@@ -26,7 +26,6 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _autoUpdateOnLaunch = true;
   String _searchQuery = '';
   bool _isSearching = false;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -58,17 +57,10 @@ class _SettingsPageState extends State<SettingsPage> {
     });
   }
 
-  bool _shouldShowModule(String moduleName) {
-    if (!_isSearching) return true;
-    return moduleName.toLowerCase().contains(_searchQuery.toLowerCase());
-  }
-
   @override
   Widget build(BuildContext context) {
-    final deviceInfo = Provider.of<DeviceInfoProvider>(context);
     final isWeb = kIsWeb;
     final isMobile = !isWeb;
-    final theme = Theme.of(context);
     
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -184,7 +176,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
             ),
-            ...moduleResults.map((result) => _buildSearchResultItem(result)).toList(),
+            ...moduleResults.map((result) => _buildSearchResultItem(result)),
           ],
         );
       }).toList(),
@@ -192,133 +184,202 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   List<Map<String, dynamic>> _getSearchResults() {
-    final results = <Map<String, dynamic>>[];
-    
-    // 模拟搜索结果，实际应用中应该根据实际设置项进行搜索
-    if (_searchQuery.toLowerCase().contains('通知')) {
-      results.add({
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return <Map<String, dynamic>>[];
+
+    final entries = _buildSearchEntries();
+    final matched = entries.where((entry) {
+      final keywords = (entry['keywords'] as List<String>).join(' ');
+      final haystack =
+          '${entry['title']} ${entry['description']} ${entry['module']} $keywords'
+              .toLowerCase();
+      return haystack.contains(query);
+    }).toList();
+
+    matched.sort((a, b) {
+      final aTitle = (a['title'] as String).toLowerCase();
+      final bTitle = (b['title'] as String).toLowerCase();
+      final aStarts = aTitle.startsWith(query) ? 1 : 0;
+      final bStarts = bTitle.startsWith(query) ? 1 : 0;
+      return bStarts.compareTo(aStarts);
+    });
+
+    return matched;
+  }
+
+  List<Map<String, dynamic>> _buildSearchEntries() {
+    return [
+      {
         'title': '推送通知',
         'description': '接收最新动态和系统通知',
         'icon': Icons.notifications_active_rounded,
         'color': Colors.orange,
         'module': '常规设置',
-      });
-    }
-    
-    if (_searchQuery.toLowerCase().contains('设备')) {
-      results.add({
+        'keywords': ['通知', '消息', '提醒', 'push'],
+        'action': 'scroll',
+        'target': '常规设置',
+      },
+      {
+        'title': '虚拟助手开关',
+        'description': '开启或关闭悬浮虚拟助手',
+        'icon': Icons.smart_toy_rounded,
+        'color': Colors.deepPurple,
+        'module': '常规设置',
+        'keywords': ['虚拟', '助手', '角色', '悬浮', '开关'],
+        'action': 'scroll',
+        'target': '常规设置',
+      },
+      {
+        'title': '虚拟助手设置',
+        'description': '自定义快捷功能、皮肤与角色',
+        'icon': Icons.tune_rounded,
+        'color': Colors.deepPurpleAccent,
+        'module': '常规设置',
+        'keywords': ['虚拟', '助手', '皮肤', '角色', '快捷功能'],
+        'action': 'route',
+        'target': '/virtual-avatar-settings',
+      },
+      {
+        'title': '启动自动检查更新',
+        'description': '打开应用时自动检查新版本',
+        'icon': Icons.system_update_alt_rounded,
+        'color': Colors.blue,
+        'module': '设备与存储',
+        'keywords': ['更新', '启动', '自动更新', '版本'],
+        'action': 'scroll',
+        'target': '设备与存储',
+      },
+      {
         'title': '本机设备信息',
         'description': '查看设备ID、系统版本、网络状态等',
         'icon': Icons.phone_iphone_rounded,
         'color': Colors.blueGrey,
         'module': '设备与存储',
-      });
-      results.add({
-        'title': '远程设备列表',
-        'description': '查看登录过的设备',
-        'icon': Icons.devices_other_rounded,
-        'color': Colors.cyan,
-        'module': '设备与存储',
-      });
-      results.add({
+        'keywords': ['设备', '系统', '版本', '网络', 'ID'],
+        'action': 'scroll',
+        'target': '设备与存储',
+      },
+      {
         'title': '存储空间管理',
-        'description': '查看应用存储使用情况，清理缓存',
+        'description': '清理缓存和临时数据',
         'icon': Icons.storage_rounded,
         'color': Colors.amber,
         'module': '设备与存储',
-      });
-    }
-    
-    if (_searchQuery.toLowerCase().contains('ai') || _searchQuery.toLowerCase().contains('模型')) {
-      results.add({
+        'keywords': ['缓存', '清理', '存储', '空间'],
+        'action': 'scroll',
+        'target': '设备与存储',
+      },
+      {
         'title': '终端同款（本地 Ollama）',
         'description': '直连电脑 Ollama，尽量对齐终端输出',
         'icon': Icons.terminal_rounded,
         'color': Colors.deepPurpleAccent,
         'module': 'AI 模型',
-      });
-      results.add({
+        'keywords': ['ai', '模型', 'ollama', '终端'],
+        'action': 'scroll',
+        'target': 'AI 模型',
+      },
+      {
         'title': '模型记忆线',
         'description': '查看模型记录的所有记忆',
         'icon': Icons.psychology_rounded,
         'color': Colors.deepPurple,
         'module': 'AI 模型',
-      });
-    }
-    
-    if (_searchQuery.toLowerCase().contains('主题') || _searchQuery.toLowerCase().contains('外观')) {
-      results.add({
+        'keywords': ['记忆', 'ai', '模型', '上下文'],
+        'action': 'scroll',
+        'target': 'AI 模型',
+      },
+      {
         'title': '主题模式',
-        'description': '选择应用明暗模式',
+        'description': '切换浅色/深色/跟随系统',
         'icon': Icons.color_lens_rounded,
         'color': Colors.purple,
         'module': '外观',
-      });
-      results.add({
+        'keywords': ['主题', '深色', '浅色', '模式'],
+        'action': 'scroll',
+        'target': '外观',
+      },
+      {
         'title': '主题颜色',
         'description': '自定义应用主色调',
         'icon': Icons.palette_rounded,
         'color': Colors.pink,
         'module': '外观',
-      });
-      results.add({
+        'keywords': ['颜色', '主题色', '皮肤'],
+        'action': 'scroll',
+        'target': '外观',
+      },
+      {
         'title': '字体大小',
         'description': '调整应用字体大小',
         'icon': Icons.text_fields_rounded,
         'color': Colors.green,
         'module': '外观',
-      });
-    }
-    
-    if (_searchQuery.toLowerCase().contains('账户') || _searchQuery.toLowerCase().contains('安全')) {
-      results.add({
+        'keywords': ['字体', '字号', '文字'],
+        'action': 'scroll',
+        'target': '外观',
+      },
+      {
         'title': '修改密码',
-        'description': '修改您的账户密码',
+        'description': '修改账户登录密码',
         'icon': Icons.lock_rounded,
         'color': Colors.blue,
         'module': '账户与安全',
-      });
-      results.add({
+        'keywords': ['密码', '安全', '账户'],
+        'action': 'scroll',
+        'target': '账户与安全',
+      },
+      {
         'title': '隐私设置',
         'description': '管理应用权限和隐私设置',
         'icon': Icons.privacy_tip_rounded,
         'color': Colors.green,
         'module': '账户与安全',
-      });
-      results.add({
+        'keywords': ['隐私', '权限', '安全'],
+        'action': 'scroll',
+        'target': '账户与安全',
+      },
+      {
         'title': '账号安全',
         'description': '查看登录历史，管理登录设备',
         'icon': Icons.shield_rounded,
         'color': Colors.red,
         'module': '账户与安全',
-      });
-    }
-    
-    if (_searchQuery.toLowerCase().contains('关于')) {
-      results.add({
+        'keywords': ['账号', '安全', '登录设备'],
+        'action': 'scroll',
+        'target': '账户与安全',
+      },
+      {
         'title': '软件版本',
         'description': '点击检查更新',
         'icon': Icons.info_rounded,
         'color': Colors.teal,
         'module': '关于',
-      });
-      results.add({
+        'keywords': ['版本', '更新', '软件'],
+        'action': 'scroll',
+        'target': '关于',
+      },
+      {
         'title': '意见反馈',
         'description': '问题描述与联系方式',
         'icon': Icons.feedback_outlined,
         'color': Colors.deepOrange,
         'module': '关于',
-      });
-      results.add({
+        'keywords': ['反馈', '问题', '建议', 'bug'],
+        'action': 'scroll',
+        'target': '关于',
+      },
+      {
         'title': '用户协议',
         'description': '查看用户协议和隐私政策',
         'icon': Icons.description_rounded,
         'color': Colors.grey,
         'module': '关于',
-      });
-    }
-    
-    return results;
+        'keywords': ['协议', '条款', '隐私政策'],
+        'action': 'scroll',
+        'target': '关于',
+      },
+    ];
   }
 
   Map<String, List<Map<String, dynamic>>> _categorizeSearchResults(List<Map<String, dynamic>> results) {
@@ -364,73 +425,25 @@ class _SettingsPageState extends State<SettingsPage> {
           subtitle: Text(result['description'] as String, style: const TextStyle(fontSize: 12, color: Colors.grey)),
           trailing: const Icon(Icons.chevron_right, color: Colors.grey),
           onTap: () {
-            // 实现搜索结果导航逻辑
-            _navigateToSettingItem(result['title'] as String);
+            _navigateToSettingItem(result);
           },
         ),
       ),
     );
   }
 
-  void _navigateToSettingItem(String title) {
-    switch (title) {
-      case '推送通知':
-        // 通知设置在当前页面，无需跳转
-        break;
-      case '本机设备信息':
-      case '远程设备列表':
-      case '存储空间管理':
-        // 这些功能在设备与存储模块中
-        _showDeviceStorageModule();
-        break;
-      case '终端同款（本地 Ollama）':
-      case '模型记忆线':
-        // 这些功能在AI模型模块中
-        _showAiSettingsModule();
-        break;
-      case '主题模式':
-      case '主题颜色':
-        // 这些功能在外观模块中
-        _showAppearanceModule();
-        break;
-      case '修改密码':
-      case '隐私设置':
-        // 这些功能在账户与安全模块中
-        _showAccountSecurityModule();
-        break;
-      case '软件版本':
-      case '意见反馈':
-        // 这些功能在关于模块中
-        _showAboutModule();
-        break;
-      default:
-        break;
+  void _navigateToSettingItem(Map<String, dynamic> item) {
+    final action = item['action'] as String?;
+    final target = item['target'] as String?;
+    if (action == null || target == null) return;
+
+    if (action == 'route') {
+      Navigator.pushNamed(context, target);
+      return;
     }
-  }
-
-  void _showDeviceStorageModule() {
-    // 滚动到设备与存储模块
-    _scrollToModule('设备与存储');
-  }
-
-  void _showAiSettingsModule() {
-    // 滚动到AI模型模块
-    _scrollToModule('AI 模型');
-  }
-
-  void _showAppearanceModule() {
-    // 滚动到外观模块
-    _scrollToModule('外观');
-  }
-
-  void _showAccountSecurityModule() {
-    // 滚动到账户与安全模块
-    _scrollToModule('账户与安全');
-  }
-
-  void _showAboutModule() {
-    // 滚动到关于模块
-    _scrollToModule('关于');
+    if (action == 'scroll') {
+      _scrollToModule(target);
+    }
   }
 
   // 滚动控制器
@@ -470,17 +483,19 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   List<Widget> _buildNormalSettings() {
+    final avatarProvider = Provider.of<VirtualAvatarProvider>(context);
+
     return [
+      _buildExperienceDashboard(avatarProvider),
+      const SizedBox(height: 14),
+      _buildQuickActionGrid(),
+      const SizedBox(height: 24),
       _buildSectionTitle('账户与安全', key: _moduleKeys['账户与安全']),
-      LazyLoadWidget(
-        child: const AccountSecurityModule(),
-      ),
+      const AccountSecurityModule(),
 
       const SizedBox(height: 24),
       _buildSectionTitle('外观', key: _moduleKeys['外观']),
-      LazyLoadWidget(
-        child: const AppearanceModule(),
-      ),
+      const AppearanceModule(),
 
       const SizedBox(height: 24),
       _buildSectionTitle('常规设置', key: _moduleKeys['常规设置']),
@@ -511,19 +526,12 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: const Text('接收最新动态和系统通知', style: TextStyle(fontSize: 12, color: Colors.grey)),
             trailing: Switch.adaptive(
               value: _notificationsEnabled,
-              activeColor: const Color(0xFF7F7FD5),
+              activeThumbColor: const Color(0xFF7F7FD5),
               onChanged: (bool value) async {
                 setState(() {
-                  _isLoading = true;
-                });
-                
-                // 模拟网络请求或其他操作
-                await Future.delayed(const Duration(seconds: 1));
-                
-                setState(() {
                   _notificationsEnabled = value;
-                  _isLoading = false;
                 });
+                if (!mounted) return;
                 
                 // 显示操作结果反馈
                 MoeToast.info(context, value ? '通知已开启' : '通知已关闭');
@@ -532,31 +540,229 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
       ),
+      const SizedBox(height: 12),
+      FadeInUp(
+        delay: const Duration(milliseconds: 120),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF7F7FD5).withOpacity(0.08),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF7F7FD5).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.smart_toy_rounded,
+                  color: Color(0xFF7F7FD5), size: 20),
+            ),
+            title: const Text('虚拟助手',
+                style: TextStyle(fontWeight: FontWeight.w500)),
+            subtitle: Text(
+              avatarProvider.enabled ? '已开启，可点击进入自定义' : '默认关闭，点击进入设置',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Switch.adaptive(
+                  value: avatarProvider.enabled,
+                  activeThumbColor: const Color(0xFF7F7FD5),
+                  onChanged: (bool value) async {
+                    await avatarProvider.setEnabled(value);
+                    if (!mounted) return;
+                    MoeToast.info(context, value ? '虚拟助手已开启' : '虚拟助手已关闭');
+                  },
+                ),
+                const Icon(Icons.chevron_right, color: Colors.grey),
+              ],
+            ),
+            onTap: () {
+              Navigator.pushNamed(context, '/virtual-avatar-settings');
+            },
+          ),
+        ),
+      ),
 
       const SizedBox(height: 24),
       _buildSectionTitle('设备与存储', key: _moduleKeys['设备与存储']),
-      LazyLoadWidget(
-        child: DeviceStorageModule(
-          autoUpdateOnLaunch: _autoUpdateOnLaunch,
-          onAutoUpdateChanged: (bool value) async {
-            setState(() => _autoUpdateOnLaunch = value);
-            await StartupUpdatePreferences.setAutoCheckOnLaunch(value);
-          },
-        ),
+      DeviceStorageModule(
+        autoUpdateOnLaunch: _autoUpdateOnLaunch,
+        onAutoUpdateChanged: (bool value) async {
+          setState(() => _autoUpdateOnLaunch = value);
+          await StartupUpdatePreferences.setAutoCheckOnLaunch(value);
+        },
       ),
       
       const SizedBox(height: 24),
       _buildSectionTitle('AI 模型', key: _moduleKeys['AI 模型']),
-      LazyLoadWidget(
-        child: const AiSettingsModule(),
-      ),
+      const AiSettingsModule(),
 
       const SizedBox(height: 24),
       _buildSectionTitle('关于', key: _moduleKeys['关于']),
-      LazyLoadWidget(
-        child: const AboutModule(),
+      const AboutModule(),
+    ];
+  }
+
+  Widget _buildExperienceDashboard(VirtualAvatarProvider avatarProvider) {
+    final summary = <String>[
+      _notificationsEnabled ? '通知开启' : '通知关闭',
+      avatarProvider.enabled ? '助手开启' : '助手关闭',
+      _autoUpdateOnLaunch ? '启动自动检查更新' : '启动不自动检查更新',
+    ].join(' · ');
+
+    return FadeInUp(
+      delay: const Duration(milliseconds: 60),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF7F7FD5).withOpacity(0.22),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.tune_rounded, color: Colors.white),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '当前体验状态',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    summary,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.92),
+                      fontSize: 12,
+                      height: 1.25,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionGrid() {
+    final shortcuts = [
+      (
+        icon: Icons.shield_rounded,
+        title: '账号安全',
+        onTap: () => _scrollToModule('账户与安全')
+      ),
+      (
+        icon: Icons.color_lens_rounded,
+        title: '外观主题',
+        onTap: () => _scrollToModule('外观')
+      ),
+      (
+        icon: Icons.smart_toy_rounded,
+        title: '虚拟助手',
+        onTap: () => Navigator.pushNamed(context, '/virtual-avatar-settings')
+      ),
+      (
+        icon: Icons.psychology_rounded,
+        title: 'AI 模型',
+        onTap: () => _scrollToModule('AI 模型')
       ),
     ];
+
+    return FadeInUp(
+      delay: const Duration(milliseconds: 80),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF7F7FD5).withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: GridView.builder(
+          shrinkWrap: true,
+          itemCount: shortcuts.length,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 0.9,
+          ),
+          itemBuilder: (context, index) {
+            final item = shortcuts[index];
+            return Material(
+              color: const Color(0xFFF8F9FF),
+              borderRadius: BorderRadius.circular(14),
+              child: InkWell(
+                onTap: item.onTap,
+                borderRadius: BorderRadius.circular(14),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(item.icon, color: const Color(0xFF7F7FD5), size: 20),
+                    const SizedBox(height: 6),
+                    Text(
+                      item.title,
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF444444),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 
   Widget _buildSectionTitle(String title, {Key? key}) {

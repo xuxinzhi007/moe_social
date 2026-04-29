@@ -251,25 +251,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'profile_fab',
-        onPressed: () async {
-          final result = await Navigator.pushNamed(context, '/create-post');
-          if (result == true && mounted) {
-            final uid = _user?.id;
-            if (uid != null) {
-              final n = await _getPostCount(uid);
-              if (mounted) setState(() => _postCount = n);
-            }
-          }
-        },
-        backgroundColor: const Color(0xFF7F7FD5),
-        foregroundColor: Colors.white,
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        icon: const Icon(Icons.edit_rounded, size: 18),
-        label: const Text('写动态', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-      ),
       body: RefreshIndicator(
         onRefresh: _loadUserInfo,
         color: const Color(0xFF7F7FD5),
@@ -279,7 +260,7 @@ class _ProfilePageState extends State<ProfilePage> {
             _buildSliverAppBar(),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 84),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

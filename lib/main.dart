@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:provider/provider.dart';
+import 'package:rive/rive.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:ui';
@@ -34,6 +35,7 @@ import 'pages/profile/user_profile_page.dart';
 import 'pages/profile/user_qr_code_page.dart';
 import 'pages/scan/scan_page.dart';
 import 'widgets/app_message_widget.dart';
+import 'widgets/floating_virtual_avatar_host.dart';
 import 'widgets/notification_popup_host.dart';
 import 'widgets/moe_bottom_bar.dart';
 import 'services/notification_service.dart';
@@ -54,17 +56,21 @@ import 'providers/loading_provider.dart';
 import 'providers/checkin_provider.dart';
 import 'providers/user_level_provider.dart';
 import 'providers/game_provider.dart';
+import 'providers/virtual_avatar_provider.dart';
 import 'pages/feed/home_page.dart';
 import 'pages/community/community_home_page.dart';
 import 'pages/community/community_post_detail_page.dart';
+import 'pages/checkin/checkin_page.dart';
+import 'pages/settings/virtual_avatar_settings_page.dart';
 import 'utils/startup_manager.dart';
 import 'utils/async_svg_manager.dart';
 import 'widgets/splash_screen.dart';
 
-void main() {
-  runZonedGuarded(() {
-    WidgetsFlutterBinding.ensureInitialized();
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await RiveNative.init();
 
+  runZonedGuarded(() {
     _setupErrorHandlers();
 
     runApp(const SplashScreenWrapper());
@@ -256,6 +262,7 @@ ThemeProvider? _globalThemeProvider;
 NotificationProvider? _globalNotificationProvider;
 DeviceInfoProvider? _globalDeviceInfoProvider;
 LoadingProvider? _globalLoadingProvider;
+VirtualAvatarProvider? _globalVirtualAvatarProvider;
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -284,10 +291,13 @@ class _MyAppState extends State<MyApp> {
     final deviceInfoProvider = _globalDeviceInfoProvider ?? DeviceInfoProvider()
       ..init();
     final loadingProvider = _globalLoadingProvider ?? LoadingProvider();
+    final virtualAvatarProvider =
+        _globalVirtualAvatarProvider ?? VirtualAvatarProvider()..init();
 
     _globalNotificationProvider = notificationProvider;
     _globalDeviceInfoProvider = deviceInfoProvider;
     _globalLoadingProvider = loadingProvider;
+    _globalVirtualAvatarProvider = virtualAvatarProvider;
 
     return MultiProvider(
       providers: [
@@ -295,6 +305,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider.value(value: notificationProvider),
         ChangeNotifierProvider.value(value: deviceInfoProvider),
         ChangeNotifierProvider.value(value: loadingProvider),
+        ChangeNotifierProvider.value(value: virtualAvatarProvider),
         ChangeNotifierProvider(create: (_) => CheckInProvider()),
         ChangeNotifierProvider(create: (_) => UserLevelProvider()),
         ChangeNotifierProvider(create: (_) => GameProvider()),
@@ -308,7 +319,9 @@ class _MyAppState extends State<MyApp> {
         builder: (context, child) {
           return AppMessageWidget(
             child: NotificationPopupHost(
-              child: child ?? const SizedBox.shrink(),
+              child: FloatingVirtualAvatarHost(
+                child: child ?? const SizedBox.shrink(),
+              ),
             ),
           );
         },
@@ -319,6 +332,17 @@ class _MyAppState extends State<MyApp> {
           '/profile': (context) => const ProfilePage(),
           '/achievements': (context) => const AchievementsPage(),
           '/settings': (context) => const SettingsPage(),
+          '/virtual-avatar-settings': (context) =>
+              const VirtualAvatarSettingsPage(),
+          '/checkin': (context) {
+            final userId = AuthService.currentUser;
+            if (userId == null || userId.isEmpty) {
+              return const Scaffold(
+                body: Center(child: Text('请先登录后再签到')),
+              );
+            }
+            return CheckInPage(userId: userId);
+          },
           '/create-post': (context) => const CreatePostPage(),
           '/comments': (context) => CommentsPage(
                 postId: ModalRoute.of(context)!.settings.arguments as String,
