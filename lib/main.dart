@@ -7,6 +7,7 @@ import 'dart:ui';
 import 'services/achievement_hooks.dart';
 import 'auth_service.dart';
 import 'pages/auth/login_page.dart';
+import 'pages/achievements/achievements_page.dart';
 import 'services/api_service.dart';
 import 'pages/auth/register_page.dart';
 import 'pages/profile/profile_page.dart';
@@ -310,6 +311,7 @@ class _MyAppState extends State<MyApp> {
           '/register': (context) => const RegisterPage(),
           '/home': (context) => const MainPage(),
           '/profile': (context) => const ProfilePage(),
+          '/achievements': (context) => const AchievementsPage(),
           '/settings': (context) => const SettingsPage(),
           '/create-post': (context) => const CreatePostPage(),
           '/comments': (context) => CommentsPage(

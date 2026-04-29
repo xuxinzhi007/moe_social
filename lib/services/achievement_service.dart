@@ -1,13 +1,16 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import '../models/achievement_badge.dart';
-import '../models/user.dart';
-import '../utils/error_handler.dart';
 
 /// 成就系统服务
 class AchievementService {
   static const String _userBadgesKey = 'user_badges';
   static const String _badgeProgressKey = 'badge_progress';
+  static const String _dailyTaskCounterKey = 'daily_task_counter';
+  static const String _weeklyTaskCounterKey = 'weekly_task_counter';
+  static const String _dailyTaskRewardedKey = 'daily_task_rewarded';
+  static const String _weeklyTaskRewardedKey = 'weekly_task_rewarded';
 
   // 单例模式
   static final AchievementService _instance = AchievementService._internal();
@@ -17,20 +20,31 @@ class AchievementService {
   // 内存缓存
   Map<String, UserBadgeProgress> _progressCache = {};
   List<String> _unlockedBadges = [];
+  Map<String, int> _dailyTaskCounters = {};
+  Map<String, int> _weeklyTaskCounters = {};
+  List<String> _dailyTaskRewardedBuckets = [];
+  List<String> _weeklyTaskRewardedBuckets = [];
 
   /// 初始化用户徽章数据
   Future<void> initializeUserBadges(String userId) async {
     try {
       await _loadUserBadgesFromLocal(userId);
       await _initializeDefaultProgress(userId);
+      await updateBadgeProgress(userId, 'welcome_aboard', 1);
     } catch (e) {
-      print('初始化用户徽章数据失败: $e');
+      debugPrint('初始化用户徽章数据失败: $e');
     }
   }
 
   /// 从本地存储加载用户徽章数据
   Future<void> _loadUserBadgesFromLocal(String userId) async {
     final prefs = await SharedPreferences.getInstance();
+    _progressCache = <String, UserBadgeProgress>{};
+    _unlockedBadges = <String>[];
+    _dailyTaskCounters = <String, int>{};
+    _weeklyTaskCounters = <String, int>{};
+    _dailyTaskRewardedBuckets = <String>[];
+    _weeklyTaskRewardedBuckets = <String>[];
 
     // 加载已解锁徽章
     final unlockedJson = prefs.getString('${_userBadgesKey}_$userId');
@@ -46,6 +60,37 @@ class AchievementService {
       _progressCache = progressMap.map(
         (key, value) => MapEntry(key, UserBadgeProgress.fromJson(value)),
       );
+    }
+
+    final dailyCounterJson = prefs.getString('${_dailyTaskCounterKey}_$userId');
+    if (dailyCounterJson != null) {
+      final Map<String, dynamic> raw = json.decode(dailyCounterJson);
+      _dailyTaskCounters = raw.map(
+        (key, value) => MapEntry(key, (value as num).toInt()),
+      );
+    }
+
+    final weeklyCounterJson =
+        prefs.getString('${_weeklyTaskCounterKey}_$userId');
+    if (weeklyCounterJson != null) {
+      final Map<String, dynamic> raw = json.decode(weeklyCounterJson);
+      _weeklyTaskCounters = raw.map(
+        (key, value) => MapEntry(key, (value as num).toInt()),
+      );
+    }
+
+    final dailyRewardedJson =
+        prefs.getString('${_dailyTaskRewardedKey}_$userId');
+    if (dailyRewardedJson != null) {
+      _dailyTaskRewardedBuckets =
+          (json.decode(dailyRewardedJson) as List<dynamic>).cast<String>();
+    }
+
+    final weeklyRewardedJson =
+        prefs.getString('${_weeklyTaskRewardedKey}_$userId');
+    if (weeklyRewardedJson != null) {
+      _weeklyTaskRewardedBuckets =
+          (json.decode(weeklyRewardedJson) as List<dynamic>).cast<String>();
     }
   }
 
@@ -84,6 +129,23 @@ class AchievementService {
       '${_badgeProgressKey}_$userId',
       json.encode(progressMap),
     );
+
+    await prefs.setString(
+      '${_dailyTaskCounterKey}_$userId',
+      json.encode(_dailyTaskCounters),
+    );
+    await prefs.setString(
+      '${_weeklyTaskCounterKey}_$userId',
+      json.encode(_weeklyTaskCounters),
+    );
+    await prefs.setString(
+      '${_dailyTaskRewardedKey}_$userId',
+      json.encode(_dailyTaskRewardedBuckets),
+    );
+    await prefs.setString(
+      '${_weeklyTaskRewardedKey}_$userId',
+      json.encode(_weeklyTaskRewardedBuckets),
+    );
   }
 
   /// 获取用户的所有徽章（带进度信息）
@@ -94,6 +156,7 @@ class AchievementService {
 
       return badge.copyWith(
         progress: progress?.progress ?? 0.0,
+        currentCount: progress?.currentCount ?? 0,
         isUnlocked: isUnlocked,
         unlockedAt: progress?.unlockedAt,
       );
@@ -161,6 +224,62 @@ class AchievementService {
     return newlyUnlocked;
   }
 
+  Future<List<AchievementBadge>> setBadgeAbsoluteCount(
+    String userId,
+    String badgeId,
+    int absoluteCount,
+  ) async {
+    if (absoluteCount < 0) return <AchievementBadge>[];
+    final progress = _progressCache[badgeId];
+    if (progress != null && progress.currentCount >= absoluteCount) {
+      return <AchievementBadge>[];
+    }
+    final delta = progress == null
+        ? absoluteCount
+        : absoluteCount - progress.currentCount;
+    if (delta <= 0) return <AchievementBadge>[];
+    return updateBadgeProgress(userId, badgeId, delta);
+  }
+
+  String _dailyBucket(DateTime now) => '${now.year}-${now.month}-${now.day}';
+
+  String _weeklyBucket(DateTime now) {
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    return '${monday.year}-${monday.month}-${monday.day}';
+  }
+
+  Future<List<AchievementBadge>> recordTaskEvent(String userId) async {
+    final unlocked = <AchievementBadge>[];
+    final now = DateTime.now();
+    final dailyBucket = _dailyBucket(now);
+    final weeklyBucket = _weeklyBucket(now);
+
+    _dailyTaskCounters[dailyBucket] =
+        (_dailyTaskCounters[dailyBucket] ?? 0) + 1;
+    _weeklyTaskCounters[weeklyBucket] =
+        (_weeklyTaskCounters[weeklyBucket] ?? 0) + 1;
+
+    const dailyThreshold = 2;
+    const weeklyThreshold = 8;
+
+    if ((_dailyTaskCounters[dailyBucket] ?? 0) >= dailyThreshold &&
+        !_dailyTaskRewardedBuckets.contains(dailyBucket)) {
+      _dailyTaskRewardedBuckets.add(dailyBucket);
+      unlocked
+          .addAll(await updateBadgeProgress(userId, 'daily_task_keeper', 1));
+    }
+
+    if ((_weeklyTaskCounters[weeklyBucket] ?? 0) >= weeklyThreshold &&
+        !_weeklyTaskRewardedBuckets.contains(weeklyBucket)) {
+      _weeklyTaskRewardedBuckets.add(weeklyBucket);
+      unlocked
+          .addAll(await updateBadgeProgress(userId, 'weekly_task_keeper', 1));
+    }
+
+    await _saveProgressToLocal(userId);
+    return unlocked;
+  }
+
   /// 触发特定行为的徽章检查
   Future<List<AchievementBadge>> triggerAction(
     String userId,
@@ -172,8 +291,10 @@ class AchievementService {
     switch (action) {
       case AchievementAction.postCreated:
         // 发布动态相关徽章
-        newlyUnlocked.addAll(await updateBadgeProgress(userId, 'first_post', 1));
-        newlyUnlocked.addAll(await updateBadgeProgress(userId, 'post_master', 1));
+        newlyUnlocked
+            .addAll(await updateBadgeProgress(userId, 'first_post', 1));
+        newlyUnlocked
+            .addAll(await updateBadgeProgress(userId, 'post_master', 1));
 
         final hasImages = params?['hasImages'] as bool? ?? false;
         final imageCount = params?['imageCount'] as int? ?? 0;
@@ -182,7 +303,8 @@ class AchievementService {
             await updateBadgeProgress(userId, 'photographer', imageCount),
           );
         } else if (hasImages) {
-          newlyUnlocked.addAll(await updateBadgeProgress(userId, 'photographer', 1));
+          newlyUnlocked
+              .addAll(await updateBadgeProgress(userId, 'photographer', 1));
         }
 
         final contentLength = params?['contentLength'] as int? ?? 0;
@@ -194,31 +316,38 @@ class AchievementService {
 
         final emotionTagId = params?['emotionTagId'] as String?;
         if (emotionTagId != null) {
-          newlyUnlocked.addAll(await updateBadgeProgress(userId, 'emotion_expert', 1));
+          newlyUnlocked
+              .addAll(await updateBadgeProgress(userId, 'emotion_expert', 1));
         }
+        newlyUnlocked.addAll(await recordTaskEvent(userId));
         break;
 
       case AchievementAction.likeReceived:
-        // 获得点赞（需要传入具体数量）
+        // 单帖获赞峰值（由后端真实帖子统计同步）
         final likeCount = params?['likeCount'] as int? ?? 1;
-        if (likeCount >= 100) {
-          newlyUnlocked.addAll(await updateBadgeProgress(userId, 'like_magnet', 1));
-        }
+        newlyUnlocked.addAll(
+          await setBadgeAbsoluteCount(userId, 'like_magnet', likeCount),
+        );
         break;
 
       case AchievementAction.commentCreated:
         // 发表评论
-        newlyUnlocked.addAll(await updateBadgeProgress(userId, 'social_butterfly', 1));
+        newlyUnlocked
+            .addAll(await updateBadgeProgress(userId, 'social_butterfly', 1));
+        newlyUnlocked.addAll(await recordTaskEvent(userId));
         break;
 
       case AchievementAction.giftSent:
         // 送礼物
-        newlyUnlocked.addAll(await updateBadgeProgress(userId, 'generous_giver', 1));
+        newlyUnlocked
+            .addAll(await updateBadgeProgress(userId, 'generous_giver', 1));
 
         // 检查礼物价值
         final giftValue = params?['giftValue'] as double? ?? 0.0;
         if (giftValue > 0) {
           // 更新礼物大亨徽章（需要累计价值）
+          final giftTycoonTarget =
+              AchievementBadge.findById('gift_tycoon')?.requiredCount ?? 200;
           final currentProgress = _progressCache['gift_tycoon'];
           final currentValue = currentProgress?.currentCount ?? 0;
           final newValue = (currentValue + giftValue).round();
@@ -226,14 +355,15 @@ class AchievementService {
           _progressCache['gift_tycoon'] = UserBadgeProgress(
             userId: userId,
             badgeId: 'gift_tycoon',
-            progress: (newValue / 1000.0).clamp(0.0, 1.0),
+            progress: (newValue / giftTycoonTarget).clamp(0.0, 1.0),
             currentCount: newValue,
-            isUnlocked: newValue >= 1000,
-            unlockedAt: newValue >= 1000 ? DateTime.now() : null,
+            isUnlocked: newValue >= giftTycoonTarget,
+            unlockedAt: newValue >= giftTycoonTarget ? DateTime.now() : null,
             updatedAt: DateTime.now(),
           );
 
-          if (newValue >= 1000 && !_unlockedBadges.contains('gift_tycoon')) {
+          if (newValue >= giftTycoonTarget &&
+              !_unlockedBadges.contains('gift_tycoon')) {
             _unlockedBadges.add('gift_tycoon');
             final badge = AchievementBadge.findById('gift_tycoon');
             if (badge != null) {
@@ -248,12 +378,15 @@ class AchievementService {
 
       case AchievementAction.loginDaily:
         // 每日登录
-        newlyUnlocked.addAll(await updateBadgeProgress(userId, 'loyal_user', 1));
+        newlyUnlocked
+            .addAll(await updateBadgeProgress(userId, 'loyal_user', 1));
+        newlyUnlocked.addAll(await recordTaskEvent(userId));
         break;
 
       case AchievementAction.earlyPost:
         // 早起发帖
-        newlyUnlocked.addAll(await updateBadgeProgress(userId, 'early_bird', 1));
+        newlyUnlocked
+            .addAll(await updateBadgeProgress(userId, 'early_bird', 1));
         break;
 
       case AchievementAction.latePost:
@@ -263,15 +396,16 @@ class AchievementService {
 
       case AchievementAction.vipPurchased:
         // 购买VIP
-        newlyUnlocked.addAll(await updateBadgeProgress(userId, 'vip_member', 1));
+        newlyUnlocked
+            .addAll(await updateBadgeProgress(userId, 'vip_member', 1));
         break;
 
       case AchievementAction.topicCreated:
-        // 创建话题（需要传入使用次数）
+        // 带话题发帖总量（由后端真实帖子统计同步）
         final usageCount = params?['usageCount'] as int? ?? 0;
-        if (usageCount >= 100) {
-          newlyUnlocked.addAll(await updateBadgeProgress(userId, 'trendsetter', 1));
-        }
+        newlyUnlocked.addAll(
+          await setBadgeAbsoluteCount(userId, 'trendsetter', usageCount),
+        );
         break;
     }
 
@@ -298,7 +432,8 @@ class AchievementService {
     return BadgeStatistics(
       totalBadges: totalCount,
       unlockedBadges: unlockedCount,
-      completionPercentage: totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0.0,
+      completionPercentage:
+          totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0.0,
       rarityStatistics: rarityStats,
     );
   }
@@ -307,24 +442,32 @@ class AchievementService {
   Future<void> clearUserData(String userId) async {
     _progressCache.clear();
     _unlockedBadges.clear();
+    _dailyTaskCounters.clear();
+    _weeklyTaskCounters.clear();
+    _dailyTaskRewardedBuckets.clear();
+    _weeklyTaskRewardedBuckets.clear();
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('${_userBadgesKey}_$userId');
     await prefs.remove('${_badgeProgressKey}_$userId');
+    await prefs.remove('${_dailyTaskCounterKey}_$userId');
+    await prefs.remove('${_weeklyTaskCounterKey}_$userId');
+    await prefs.remove('${_dailyTaskRewardedKey}_$userId');
+    await prefs.remove('${_weeklyTaskRewardedKey}_$userId');
   }
 }
 
 /// 成就行为枚举
 enum AchievementAction {
-  postCreated,      // 发布动态
-  likeReceived,     // 获得点赞
-  commentCreated,   // 发表评论
-  giftSent,         // 送礼物
-  loginDaily,       // 每日登录
-  earlyPost,        // 早起发帖
-  latePost,         // 夜猫子发帖
-  vipPurchased,     // 购买VIP
-  topicCreated,     // 创建话题
+  postCreated, // 发布动态
+  likeReceived, // 获得点赞
+  commentCreated, // 发表评论
+  giftSent, // 送礼物
+  loginDaily, // 每日登录
+  earlyPost, // 早起发帖
+  latePost, // 夜猫子发帖
+  vipPurchased, // 购买VIP
+  topicCreated, // 创建话题
 }
 
 /// 徽章统计信息

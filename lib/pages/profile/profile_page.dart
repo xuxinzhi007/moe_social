@@ -12,6 +12,7 @@ import '../../providers/user_level_provider.dart';
 import '../../services/achievement_service.dart';
 import '../../services/api_service.dart';
 import '../../widgets/achievement_badge_display.dart';
+import '../achievements/achievements_page.dart';
 import '../../widgets/dynamic_avatar.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_loading.dart';
@@ -222,42 +223,11 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _showAllBadges() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40, height: 4,
-              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                children: [
-                  const Text('我的成就徽章', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const Spacer(),
-                  TextButton(onPressed: () => Navigator.pop(context), child: const Text('完成')),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: BadgeGrid(badges: _userBadges, badgeSize: 80, crossAxisCount: 3, showProgress: true),
-              ),
-            ),
-          ],
-        ),
-      ),
+    final uid = _user?.id;
+    if (uid == null || uid.isEmpty) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AchievementsPage(userId: uid)),
     );
   }
 
@@ -771,17 +741,12 @@ class _ProfilePageState extends State<ProfilePage> {
                           children: [
                             ...preview.take(5).map((b) => Padding(
                               padding: const EdgeInsets.only(right: 6),
-                              child: Container(
-                                width: 36, height: 36,
-                                decoration: BoxDecoration(
-                                  color: b.isUnlocked ? b.color.withValues(alpha: 0.15) : Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: b.isUnlocked ? b.color.withValues(alpha: 0.4) : Colors.grey.shade200),
-                                ),
-                                child: Center(
-                                  child: Text(b.emoji,
-                                    style: TextStyle(fontSize: 18, color: b.isUnlocked ? null : const Color(0xFFAAAAAA)),
-                                  ),
+                              child: SizedBox(
+                                width: 36,
+                                height: 36,
+                                child: MiniBadge(
+                                  badge: b,
+                                  size: 34,
                                 ),
                               ),
                             )),
