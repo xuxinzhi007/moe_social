@@ -222,18 +222,24 @@ class _DiscoverPageState extends State<DiscoverPage>
                                 color: Colors.white, size: 22),
                             ),
                             const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _onlineMatching ? '匹配中…' : '在线实时匹配',
-                                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900),
-                                ),
-                                Text(
-                                  _onlineMatchHint ?? (_onlineMatching ? '请保持在此页等待' : '与另一位用户实时配对，开始私聊'),
-                                  style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
-                                ),
-                              ],
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _onlineMatching ? '匹配中…' : '在线实时匹配',
+                                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    _onlineMatchHint ?? (_onlineMatching ? '请保持在此页等待' : '与另一位用户实时配对，开始私聊'),
+                                    style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -449,26 +455,48 @@ class _DiscoverPageState extends State<DiscoverPage>
         children: [
           SizedBox(
             height: 80,
-            child: Stack(
-              alignment: Alignment.center,
-              children: List.generate(math.min(8, tags.length), (i) {
-                final tag = tags[i];
-                final angle = (i / tags.length) * 2 * math.pi;
-                final r = 28.0 + rng.nextDouble() * 12;
-                return Positioned(
-                  left: 120 + r * math.cos(angle) * 1.6,
-                  top: 30 + r * math.sin(angle) * 0.8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: tag.color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: tag.color.withValues(alpha: 0.3)),
-                    ),
-                    child: Text('#${tag.name}', style: TextStyle(fontSize: 10, color: tag.color, fontWeight: FontWeight.w600)),
-                  ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final centerX = constraints.maxWidth / 2;
+                return Stack(
+                  alignment: Alignment.center,
+                  children: List.generate(math.min(8, tags.length), (i) {
+                    final tag = tags[i];
+                    final angle = (i / tags.length) * 2 * math.pi;
+                    final r = 28.0 + rng.nextDouble() * 12;
+                    final dx = r * math.cos(angle) * 1.2;
+                    final dy = r * math.sin(angle) * 0.75;
+                    return Positioned(
+                      left: centerX + dx - 34,
+                      top: 28 + dy,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: math.max(56, constraints.maxWidth * 0.34),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: tag.color.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: tag.color.withValues(alpha: 0.3)),
+                          ),
+                          child: Text(
+                            '#${tag.name}',
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: tag.color,
+                                fontWeight: FontWeight.w600),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
                 );
-              }),
+              },
             ),
           ),
           const SizedBox(height: 12),

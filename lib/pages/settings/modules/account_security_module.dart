@@ -6,6 +6,8 @@ import '../../../services/api_service.dart';
 import '../../../widgets/fade_in_up.dart';
 import '../../../widgets/moe_menu_card.dart';
 import '../../../widgets/moe_toast.dart';
+import '../../../widgets/dialogs/confirm_dialog.dart';
+import '../../../widgets/layout/adaptive_dialog_content.dart';
 import '../privacy_settings_page.dart';
 
 class AccountSecurityModule extends StatelessWidget {
@@ -742,40 +744,23 @@ class AccountSecurityModule extends StatelessWidget {
   }
 
   void _showLogoutDeviceDialog(BuildContext context, String deviceId) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('确认操作'),
-        content: const Text('确定要登出此设备吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                final userId = await AuthService.getUserId();
-                await ApiService.logoutDevice(userId, deviceId);
-                MoeToast.success(context, '设备已成功登出');
-                // 重新加载设备列表
-                _showDeviceManagement(context);
-              } catch (e) {
-                MoeToast.error(context, '登出失败: ${e.toString()}');
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF7F7FD5),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('确定'),
-          ),
-        ],
-      ),
-    );
+    showConfirmDialog(
+      context,
+      title: '确认操作',
+      message: '确定要登出此设备吗？',
+    ).then((ok) async {
+      if (!ok || !context.mounted) return;
+      try {
+        final userId = await AuthService.getUserId();
+        await ApiService.logoutDevice(userId, deviceId);
+        if (!context.mounted) return;
+        MoeToast.success(context, '设备已成功登出');
+        _showDeviceManagement(context);
+      } catch (e) {
+        if (!context.mounted) return;
+        MoeToast.error(context, '登出失败: ${e.toString()}');
+      }
+    });
   }
 
   void _showTwoFactorAuthDialog(BuildContext context) {
@@ -812,43 +797,45 @@ class AccountSecurityModule extends StatelessWidget {
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: const Text('两步验证设置'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isLoading)
-                  const Center(child: CircularProgressIndicator(color: Color(0xFF7F7FD5)))
-                else
-                  Column(
-                    children: [
-                      if (statusMessage != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Text(
-                            statusMessage!,
-                            style: TextStyle(
-                              color: isEnabled ? Colors.green : Colors.grey,
-                              fontSize: 14,
+            content: AdaptiveDialogContent(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isLoading)
+                    const Center(child: CircularProgressIndicator(color: Color(0xFF7F7FD5)))
+                  else
+                    Column(
+                      children: [
+                        if (statusMessage != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Text(
+                              statusMessage!,
+                              style: TextStyle(
+                                color: isEnabled ? Colors.green : Colors.grey,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
+                        ListTile(
+                          title: const Text('开启两步验证'),
+                          subtitle: const Text('使用验证码应用生成验证码'),
+                          trailing: Switch.adaptive(
+                            value: isEnabled,
+                            activeColor: const Color(0xFF7F7FD5),
+                            onChanged: (value) async {
+                              if (value) {
+                                _enableTwoFactorAuth(context);
+                              } else {
+                                _disableTwoFactorAuth(context);
+                              }
+                            },
+                          ),
                         ),
-                      ListTile(
-                        title: const Text('开启两步验证'),
-                        subtitle: const Text('使用验证码应用生成验证码'),
-                        trailing: Switch.adaptive(
-                          value: isEnabled,
-                          activeColor: const Color(0xFF7F7FD5),
-                          onChanged: (value) async {
-                            if (value) {
-                              _enableTwoFactorAuth(context);
-                            } else {
-                              _disableTwoFactorAuth(context);
-                            }
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-              ],
+                      ],
+                    ),
+                ],
+              ),
             ),
             actions: [
               TextButton(
@@ -922,54 +909,56 @@ class AccountSecurityModule extends StatelessWidget {
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: const Text('开启两步验证'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isLoading)
-                  const Center(child: CircularProgressIndicator(color: Color(0xFF7F7FD5)))
-                else if (errorMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      errorMessage!,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  )
-                else if (qrCodeUrl != null && secretKey != null)
-                  Column(
-                    children: [
-                      const Text('请使用验证码应用扫描二维码或手动输入密钥'),
-                      const SizedBox(height: 16),
-                      // 这里应该显示二维码图片
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade200),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          secretKey!,
-                          style: const TextStyle(
-                            fontFamily: 'Courier',
-                            letterSpacing: 2,
-                            fontSize: 16,
+            content: AdaptiveDialogContent(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isLoading)
+                    const Center(child: CircularProgressIndicator(color: Color(0xFF7F7FD5)))
+                  else if (errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        errorMessage!,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    )
+                  else if (qrCodeUrl != null && secretKey != null)
+                    Column(
+                      children: [
+                        const Text('请使用验证码应用扫描二维码或手动输入密钥'),
+                        const SizedBox(height: 16),
+                        // 这里应该显示二维码图片
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade200),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            secretKey!,
+                            style: const TextStyle(
+                              fontFamily: 'Courier',
+                              letterSpacing: 2,
+                              fontSize: 16,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        onChanged: (value) => setState(() => code = value),
-                        decoration: const InputDecoration(
-                          labelText: '验证码',
-                          hintText: '请输入6位验证码',
-                          border: OutlineInputBorder(),
+                        const SizedBox(height: 16),
+                        TextField(
+                          onChanged: (value) => setState(() => code = value),
+                          decoration: const InputDecoration(
+                            labelText: '验证码',
+                            hintText: '请输入6位验证码',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.number,
+                          maxLength: 6,
                         ),
-                        keyboardType: TextInputType.number,
-                        maxLength: 6,
-                      ),
-                    ],
-                  ),
-              ],
+                      ],
+                    ),
+                ],
+              ),
             ),
             actions: [
               TextButton(
@@ -1026,30 +1015,32 @@ class AccountSecurityModule extends StatelessWidget {
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: const Text('关闭两步验证'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('请输入验证码以确认关闭两步验证'),
-                const SizedBox(height: 16),
-                if (errorMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      errorMessage!,
-                      style: const TextStyle(color: Colors.red),
+            content: AdaptiveDialogContent(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('请输入验证码以确认关闭两步验证'),
+                  const SizedBox(height: 16),
+                  if (errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        errorMessage!,
+                        style: const TextStyle(color: Colors.red),
+                      ),
                     ),
+                  TextField(
+                    onChanged: (value) => setState(() => code = value),
+                    decoration: const InputDecoration(
+                      labelText: '验证码',
+                      hintText: '请输入6位验证码',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
                   ),
-                TextField(
-                  onChanged: (value) => setState(() => code = value),
-                  decoration: const InputDecoration(
-                    labelText: '验证码',
-                    hintText: '请输入6位验证码',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
-                  maxLength: 6,
-                ),
-              ],
+                ],
+              ),
             ),
             actions: [
               TextButton(

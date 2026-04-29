@@ -17,6 +17,7 @@ import '../../widgets/dynamic_avatar.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
+import '../../widgets/dialogs/confirm_dialog.dart';
 import '../../widgets/profile_bg.dart';
 import '../ai/agent_list_page.dart';
 import '../autoglm/autoglm_page.dart';
@@ -208,23 +209,11 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _showLogoutDialog() async {
-    final shouldLogout = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('退出登录'),
-        content: const Text('确定要退出当前账号吗？'),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('取消', style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('确定', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+    final shouldLogout = await showConfirmDialog(
+      context,
+      title: '退出登录',
+      message: '确定要退出当前账号吗？',
+      isDestructive: true,
     );
     if (shouldLogout == true) {
       AuthService.logout();
