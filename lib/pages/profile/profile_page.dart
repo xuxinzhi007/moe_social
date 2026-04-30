@@ -606,7 +606,7 @@ class _ProfilePageState extends State<ProfilePage> {
         icon: _isVip ? Icons.workspace_premium_rounded : Icons.diamond_rounded,
         iconColor: _isVip ? const Color(0xFFFFB347) : const Color(0xFF7F7FD5),
         label: 'VIP 会员',
-        subtitle: _isVip ? '权益生效中' : '立即开通',
+        subtitle: _isVip ? '权益生效中' : '会员特权',
         isCta: !_isVip,
         onTap: _openVipCenter,
       ),
@@ -620,29 +620,31 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     ];
 
-    return Row(
-      children: actions.map((a) {
-        return Expanded(child: _buildQuickActionCard(a));
-      }).toList(),
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        children: actions.map((a) {
+          return Expanded(child: _buildQuickActionCard(a));
+        }).toList(),
+      ),
     );
   }
 
   Widget _buildQuickActionCard(_QuickAction action) {
+    final isCta = action.isCta;
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 5),
+        margin: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          // 未开通 VIP 时仅展示 CTA 描边，不使用“选中填充”视觉，避免误判为已激活。
-          border: Border.all(
-            color: action.isCta
-                ? const Color(0xFF7F7FD5).withValues(alpha: 0.36)
-                : Colors.grey.shade100,
-            width: action.isCta ? 1.2 : 1,
-          ),
+          border: Border.all(color: Colors.grey.shade100),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -654,93 +656,106 @@ class _ProfilePageState extends State<ProfilePage> {
         child: InkWell(
           onTap: action.onTap,
           borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 8),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: action.iconColor.withValues(alpha: 0.14),
-                        shape: BoxShape.circle,
+          child: SizedBox(
+            height: 132,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: action.iconColor.withValues(alpha: 0.14),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          action.icon,
+                          size: 20,
+                          color: action.iconColor,
+                        ),
                       ),
-                      child: Icon(
-                        action.icon,
-                        size: 22,
-                        color: action.iconColor,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      action.label,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF2F3142),
-                        height: 1.25,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      action.subtitle,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: action.isCta ? FontWeight.w700 : FontWeight.w600,
-                        color: action.isCta
-                            ? const Color(0xFF7F7FD5)
-                            : const Color(0xFF8A8CA0),
-                        height: 1.2,
-                      ),
-                    ),
-                  ],
-                ),
-                if (action.badge != null && action.badge! > 0)
-                  Positioned(
-                    top: -2,
-                    right: -2,
-                    child: Container(
-                      width: 17,
-                      height: 17,
-                      decoration: const BoxDecoration(color: Color(0xFFFF6B35), shape: BoxShape.circle),
-                      child: Center(
+                      const SizedBox(height: 7),
+                      SizedBox(
+                        height: 17,
                         child: Text(
-                          '${action.badge}',
-                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+                          action.label,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF2F3142),
+                            height: 1.25,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      SizedBox(
+                        height: 15,
+                        child: Text(
+                          action.subtitle,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: isCta
+                                ? const Color(0xFF7F7FD5)
+                                : const Color(0xFF76798D),
+                            height: 1.2,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      SizedBox(
+                        height: 14,
+                        child: isCta
+                            ? const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    '立即开通',
+                                    style: TextStyle(
+                                      color: Color(0xFF7F7FD5),
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  SizedBox(width: 2),
+                                  Icon(
+                                    Icons.chevron_right_rounded,
+                                    size: 14,
+                                    color: Color(0xFF7F7FD5),
+                                  ),
+                                ],
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
+                  if (action.badge != null && action.badge! > 0)
+                    Positioned(
+                      top: -2,
+                      right: -2,
+                      child: Container(
+                        width: 17,
+                        height: 17,
+                        decoration: const BoxDecoration(color: Color(0xFFFF6B35), shape: BoxShape.circle),
+                        child: Center(
+                          child: Text(
+                            '${action.badge}',
+                            style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                if (action.isCta)
-                  Positioned(
-                    top: -3,
-                    left: -1,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF7F7FD5),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: const Text(
-                        '去开通',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.1,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
