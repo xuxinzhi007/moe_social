@@ -1,17 +1,9 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:moe_social/constants/app_config_constants.dart';
 
 /// 应用配置管理类
 /// 使用安全存储管理敏感配置信息
 class AppConfig {
-  static const String _keyApiUrl = 'api_url';
-  static const String _keyApiKey = 'api_key';
-  static const String _keyModelName = 'model_name';
-  static const String _keyMaxSteps = 'max_steps';
-  static const String _keyStepTimeout = 'step_timeout';
-  static const String _keyEnableLogging = 'enable_logging';
-  static const String _keyLogLevel = 'log_level';
-  static const String _keyEnablePerformanceMonitoring = 'enable_performance_monitoring';
-
   static const _secureStorage = FlutterSecureStorage(
     aOptions: AndroidOptions(
       encryptedSharedPreferences: true,
@@ -22,56 +14,62 @@ class AppConfig {
   );
 
   /// 默认配置值
-  static const String defaultApiUrl = 'https://api-inference.modelscope.cn/v1/chat/completions';
-  static const String defaultApiKey = 'ms-fa33637f-6572-4170-82b1-95f458fe9e7b';
-  static const String defaultModelName = 'ZhipuAI/AutoGLM-Phone-9B';
-  static const int defaultMaxSteps = 20;
-  static const int defaultStepTimeoutSeconds = 30;
-  static const String defaultLogLevel = 'info';
+  static const String defaultApiUrl = AppConfigDefaults.apiUrl;
+  static const String defaultApiKey = AppConfigDefaults.apiKey;
+  static const String defaultModelName = AppConfigDefaults.modelName;
+  static const int defaultMaxSteps = AppConfigDefaults.maxSteps;
+  static const int defaultStepTimeoutSeconds =
+      AppConfigDefaults.stepTimeoutSeconds;
+  static const String defaultLogLevel = AppConfigDefaults.logLevel;
 
   // ============= API 配置 =============
 
   static Future<String> getApiUrl() async {
     try {
-      return await _secureStorage.read(key: _keyApiUrl) ?? defaultApiUrl;
+      return await _secureStorage.read(key: AppConfigStorageKeys.apiUrl) ??
+          defaultApiUrl;
     } catch (e) {
       return defaultApiUrl;
     }
   }
 
   static Future<void> setApiUrl(String apiUrl) async {
-    await _secureStorage.write(key: _keyApiUrl, value: apiUrl);
+    await _secureStorage.write(key: AppConfigStorageKeys.apiUrl, value: apiUrl);
   }
 
   static Future<String> getApiKey() async {
     try {
-      return await _secureStorage.read(key: _keyApiKey) ?? defaultApiKey;
+      return await _secureStorage.read(key: AppConfigStorageKeys.apiKey) ??
+          defaultApiKey;
     } catch (e) {
       return defaultApiKey;
     }
   }
 
   static Future<void> setApiKey(String apiKey) async {
-    await _secureStorage.write(key: _keyApiKey, value: apiKey);
+    await _secureStorage.write(key: AppConfigStorageKeys.apiKey, value: apiKey);
   }
 
   static Future<String> getModelName() async {
     try {
-      return await _secureStorage.read(key: _keyModelName) ?? defaultModelName;
+      return await _secureStorage.read(key: AppConfigStorageKeys.modelName) ??
+          defaultModelName;
     } catch (e) {
       return defaultModelName;
     }
   }
 
   static Future<void> setModelName(String modelName) async {
-    await _secureStorage.write(key: _keyModelName, value: modelName);
+    await _secureStorage.write(
+        key: AppConfigStorageKeys.modelName, value: modelName);
   }
 
   // ============= 任务配置 =============
 
   static Future<int> getMaxSteps() async {
     try {
-      final value = await _secureStorage.read(key: _keyMaxSteps);
+      final value =
+          await _secureStorage.read(key: AppConfigStorageKeys.maxSteps);
       return value != null ? int.parse(value) : defaultMaxSteps;
     } catch (e) {
       return defaultMaxSteps;
@@ -79,13 +77,16 @@ class AppConfig {
   }
 
   static Future<void> setMaxSteps(int maxSteps) async {
-    await _secureStorage.write(key: _keyMaxSteps, value: maxSteps.toString());
+    await _secureStorage.write(
+        key: AppConfigStorageKeys.maxSteps, value: maxSteps.toString());
   }
 
   static Future<Duration> getStepTimeout() async {
     try {
-      final value = await _secureStorage.read(key: _keyStepTimeout);
-      final seconds = value != null ? int.parse(value) : defaultStepTimeoutSeconds;
+      final value =
+          await _secureStorage.read(key: AppConfigStorageKeys.stepTimeout);
+      final seconds =
+          value != null ? int.parse(value) : defaultStepTimeoutSeconds;
       return Duration(seconds: seconds);
     } catch (e) {
       return Duration(seconds: defaultStepTimeoutSeconds);
@@ -93,14 +94,18 @@ class AppConfig {
   }
 
   static Future<void> setStepTimeout(Duration timeout) async {
-    await _secureStorage.write(key: _keyStepTimeout, value: timeout.inSeconds.toString());
+    await _secureStorage.write(
+      key: AppConfigStorageKeys.stepTimeout,
+      value: timeout.inSeconds.toString(),
+    );
   }
 
   // ============= 日志配置 =============
 
   static Future<bool> getEnableLogging() async {
     try {
-      final value = await _secureStorage.read(key: _keyEnableLogging);
+      final value =
+          await _secureStorage.read(key: AppConfigStorageKeys.enableLogging);
       return value != null ? value.toLowerCase() == 'true' : true;
     } catch (e) {
       return true;
@@ -108,26 +113,33 @@ class AppConfig {
   }
 
   static Future<void> setEnableLogging(bool enable) async {
-    await _secureStorage.write(key: _keyEnableLogging, value: enable.toString());
+    await _secureStorage.write(
+      key: AppConfigStorageKeys.enableLogging,
+      value: enable.toString(),
+    );
   }
 
   static Future<String> getLogLevel() async {
     try {
-      return await _secureStorage.read(key: _keyLogLevel) ?? defaultLogLevel;
+      return await _secureStorage.read(key: AppConfigStorageKeys.logLevel) ??
+          defaultLogLevel;
     } catch (e) {
       return defaultLogLevel;
     }
   }
 
   static Future<void> setLogLevel(String logLevel) async {
-    await _secureStorage.write(key: _keyLogLevel, value: logLevel);
+    await _secureStorage.write(
+        key: AppConfigStorageKeys.logLevel, value: logLevel);
   }
 
   // ============= 性能监控配置 =============
 
   static Future<bool> getEnablePerformanceMonitoring() async {
     try {
-      final value = await _secureStorage.read(key: _keyEnablePerformanceMonitoring);
+      final value = await _secureStorage.read(
+        key: AppConfigStorageKeys.enablePerformanceMonitoring,
+      );
       return value != null ? value.toLowerCase() == 'true' : false;
     } catch (e) {
       return false;
@@ -135,7 +147,10 @@ class AppConfig {
   }
 
   static Future<void> setEnablePerformanceMonitoring(bool enable) async {
-    await _secureStorage.write(key: _keyEnablePerformanceMonitoring, value: enable.toString());
+    await _secureStorage.write(
+      key: AppConfigStorageKeys.enablePerformanceMonitoring,
+      value: enable.toString(),
+    );
   }
 
   // ============= 批量操作 =============
@@ -143,14 +158,15 @@ class AppConfig {
   /// 获取所有配置
   static Future<Map<String, dynamic>> getAllConfig() async {
     return {
-      'apiUrl': await getApiUrl(),
-      'apiKey': await getApiKey(),
-      'modelName': await getModelName(),
-      'maxSteps': await getMaxSteps(),
-      'stepTimeout': (await getStepTimeout()).inSeconds,
-      'enableLogging': await getEnableLogging(),
-      'logLevel': await getLogLevel(),
-      'enablePerformanceMonitoring': await getEnablePerformanceMonitoring(),
+      AppConfigFields.apiUrl: await getApiUrl(),
+      AppConfigFields.apiKey: await getApiKey(),
+      AppConfigFields.modelName: await getModelName(),
+      AppConfigFields.maxSteps: await getMaxSteps(),
+      AppConfigFields.stepTimeout: (await getStepTimeout()).inSeconds,
+      AppConfigFields.enableLogging: await getEnableLogging(),
+      AppConfigFields.logLevel: await getLogLevel(),
+      AppConfigFields.enablePerformanceMonitoring:
+          await getEnablePerformanceMonitoring(),
     };
   }
 
@@ -178,39 +194,42 @@ class AppConfig {
   /// 导出配置（不包含敏感信息）
   static Future<Map<String, dynamic>> exportConfig() async {
     return {
-      'apiUrl': await getApiUrl(),
-      'modelName': await getModelName(),
-      'maxSteps': await getMaxSteps(),
-      'stepTimeout': (await getStepTimeout()).inSeconds,
-      'enableLogging': await getEnableLogging(),
-      'logLevel': await getLogLevel(),
-      'enablePerformanceMonitoring': await getEnablePerformanceMonitoring(),
-      'exportedAt': DateTime.now().toIso8601String(),
+      AppConfigFields.apiUrl: await getApiUrl(),
+      AppConfigFields.modelName: await getModelName(),
+      AppConfigFields.maxSteps: await getMaxSteps(),
+      AppConfigFields.stepTimeout: (await getStepTimeout()).inSeconds,
+      AppConfigFields.enableLogging: await getEnableLogging(),
+      AppConfigFields.logLevel: await getLogLevel(),
+      AppConfigFields.enablePerformanceMonitoring:
+          await getEnablePerformanceMonitoring(),
+      AppConfigFields.exportedAt: DateTime.now().toIso8601String(),
     };
   }
 
   /// 导入配置（不包含敏感信息）
   static Future<void> importConfig(Map<String, dynamic> config) async {
-    if (config['apiUrl'] != null) {
-      await setApiUrl(config['apiUrl']);
+    if (config[AppConfigFields.apiUrl] != null) {
+      await setApiUrl(config[AppConfigFields.apiUrl]);
     }
-    if (config['modelName'] != null) {
-      await setModelName(config['modelName']);
+    if (config[AppConfigFields.modelName] != null) {
+      await setModelName(config[AppConfigFields.modelName]);
     }
-    if (config['maxSteps'] != null) {
-      await setMaxSteps(config['maxSteps']);
+    if (config[AppConfigFields.maxSteps] != null) {
+      await setMaxSteps(config[AppConfigFields.maxSteps]);
     }
-    if (config['stepTimeout'] != null) {
-      await setStepTimeout(Duration(seconds: config['stepTimeout']));
+    if (config[AppConfigFields.stepTimeout] != null) {
+      await setStepTimeout(
+          Duration(seconds: config[AppConfigFields.stepTimeout]));
     }
-    if (config['enableLogging'] != null) {
-      await setEnableLogging(config['enableLogging']);
+    if (config[AppConfigFields.enableLogging] != null) {
+      await setEnableLogging(config[AppConfigFields.enableLogging]);
     }
-    if (config['logLevel'] != null) {
-      await setLogLevel(config['logLevel']);
+    if (config[AppConfigFields.logLevel] != null) {
+      await setLogLevel(config[AppConfigFields.logLevel]);
     }
-    if (config['enablePerformanceMonitoring'] != null) {
-      await setEnablePerformanceMonitoring(config['enablePerformanceMonitoring']);
+    if (config[AppConfigFields.enablePerformanceMonitoring] != null) {
+      await setEnablePerformanceMonitoring(
+          config[AppConfigFields.enablePerformanceMonitoring]);
     }
   }
 }

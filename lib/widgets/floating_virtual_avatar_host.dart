@@ -30,6 +30,10 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
   late final FileLoader _riveLoader;
   Offset _offset = Offset.zero;
   bool _positionInitialized = false;
+  bool _isAssistantPanelOpen = false;
+  bool _isActionMenuOpen = false;
+  bool _isRoutePushing = false;
+  bool _isApplyingHideAction = false;
 
   @override
   void initState() {
@@ -72,182 +76,281 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
     });
   }
 
-  Future<void> _pushNamed(String routeName) async {
+  void _showBusyHint() {
+    MoeToast.info(context, '操作进行中，请稍候');
+  }
+
+  Future<void> _pushNamed(
+    String routeName, {
+    String? startMessage,
+  }) async {
+    if (_isRoutePushing) {
+      _showBusyHint();
+      return;
+    }
     final state = AuthService.navigatorKey.currentState;
     if (state == null) {
       MoeToast.error(context, '当前页面暂不可跳转，请稍后重试');
       return;
     }
-    await state.pushNamed(routeName);
+    _isRoutePushing = true;
+    if (startMessage != null) {
+      MoeToast.info(context, startMessage);
+    }
+    try {
+      await state.pushNamed(routeName);
+    } finally {
+      _isRoutePushing = false;
+    }
+  }
+
+  bool _ensureLoggedIn(String featureName) {
+    if (AuthService.isLoggedIn) return true;
+    MoeToast.info(context, '登录后可使用$featureName，快去登录吧');
+    return false;
   }
 
   Future<void> _showAssistantPanel() async {
+    if (_isAssistantPanelOpen) {
+      _showBusyHint();
+      return;
+    }
     HapticFeedback.lightImpact();
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        final avatarProvider =
-            Provider.of<VirtualAvatarProvider>(context, listen: false);
-        final actions = avatarProvider.quickActions;
-        return Container(
+    _isAssistantPanelOpen = true;
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (sheetContext) {
+          final avatarProvider =
+              Provider.of<VirtualAvatarProvider>(context, listen: false);
+          final actions = avatarProvider.quickActions;
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF7F7FD5).withValues(alpha: 0.14),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.auto_awesome_rounded,
+                            color: Color(0xFF7F7FD5), size: 18),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Moe 虚拟助手（MVP）',
+                        style:
+                            TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  if (actions.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F7FA),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Text(
+                        '当前没有可用快捷动作，去助手设置开启后会展示在这里。',
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    )
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (actions.contains(AvatarQuickActions.notifications))
+                          _actionChip(
+                            icon: Icons.notifications_active_rounded,
+                            label: '通知中心',
+                            onTap: () async {
+                              if (!_ensureLoggedIn('通知中心')) return;
+                              Navigator.pop(sheetContext);
+                              await _pushNamed(
+                                '/notifications',
+                                startMessage: '正在打开通知中心',
+                              );
+                            },
+                          ),
+                        if (actions.contains(AvatarQuickActions.createPost))
+                          _actionChip(
+                            icon: Icons.edit_note_rounded,
+                            label: '发布动态',
+                            onTap: () async {
+                              if (!_ensureLoggedIn('发布动态')) return;
+                              Navigator.pop(sheetContext);
+                              await _pushNamed(
+                                '/create-post',
+                                startMessage: '正在进入发布页',
+                              );
+                            },
+                          ),
+                        if (actions.contains(AvatarQuickActions.greet))
+                          _actionChip(
+                            icon: Icons.favorite_rounded,
+                            label: '打招呼',
+                            onTap: () async {
+                              Navigator.pop(sheetContext);
+                              MoeToast.info(context, '嗨～今天也要元气满满呀');
+                            },
+                          ),
+                        if (actions.contains(AvatarQuickActions.checkin))
+                          _actionChip(
+                            icon: Icons.event_available_rounded,
+                            label: '去签到',
+                            onTap: () async {
+                              if (!_ensureLoggedIn('签到')) return;
+                              Navigator.pop(sheetContext);
+                              await _pushNamed(
+                                '/checkin',
+                                startMessage: '正在前往签到',
+                              );
+                            },
+                          ),
+                        _actionChip(
+                          icon: Icons.tune_rounded,
+                          label: '助手设置',
+                          onTap: () async {
+                            Navigator.pop(sheetContext);
+                            await _pushNamed(
+                              '/virtual-avatar-settings',
+                              startMessage: '正在打开助手设置',
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    } finally {
+      _isAssistantPanelOpen = false;
+    }
+  }
+
+  Future<void> _showAvatarActionMenu() async {
+    if (_isActionMenuOpen) {
+      _showBusyHint();
+      return;
+    }
+    HapticFeedback.mediumImpact();
+    final avatar = Provider.of<VirtualAvatarProvider>(context, listen: false);
+    _isActionMenuOpen = true;
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (ctx) => Container(
           decoration: const BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
           child: SafeArea(
             top: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF7F7FD5).withValues(alpha: 0.14),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.auto_awesome_rounded,
-                          color: Color(0xFF7F7FD5), size: 18),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Moe 虚拟助手（MVP）',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-                    ),
-                  ],
+                ListTile(
+                  leading: const Icon(Icons.visibility_off_rounded),
+                  title: const Text('本次会话隐藏'),
+                  subtitle: const Text('重新打开 App 后恢复'),
+                  onTap: () {
+                    if (_isApplyingHideAction) {
+                      _showBusyHint();
+                      return;
+                    }
+                    _isApplyingHideAction = true;
+                    Navigator.pop(ctx);
+                    try {
+                      avatar.hideForSession();
+                    } finally {
+                      _isApplyingHideAction = false;
+                    }
+                    MoeToast.info(context, '已隐藏（本次会话）');
+                  },
                 ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    if (actions.contains(AvatarQuickActions.notifications))
-                      _actionChip(
-                        icon: Icons.notifications_active_rounded,
-                        label: '通知中心',
-                        onTap: () {
-                          Navigator.pop(sheetContext);
-                          _pushNamed('/notifications');
-                        },
-                      ),
-                    if (actions.contains(AvatarQuickActions.createPost))
-                      _actionChip(
-                        icon: Icons.edit_note_rounded,
-                        label: '发布动态',
-                        onTap: () {
-                          Navigator.pop(sheetContext);
-                          if (!AuthService.isLoggedIn) {
-                            MoeToast.error(context, '请先登录');
-                            return;
-                          }
-                          _pushNamed('/create-post');
-                        },
-                      ),
-                    if (actions.contains(AvatarQuickActions.greet))
-                      _actionChip(
-                        icon: Icons.favorite_rounded,
-                        label: '打招呼',
-                        onTap: () {
-                          Navigator.pop(sheetContext);
-                          MoeToast.info(context, '嗨～今天也要元气满满呀');
-                        },
-                      ),
-                    if (actions.contains(AvatarQuickActions.checkin))
-                      _actionChip(
-                        icon: Icons.event_available_rounded,
-                        label: '去签到',
-                        onTap: () {
-                          Navigator.pop(sheetContext);
-                          _pushNamed('/checkin');
-                        },
-                      ),
-                    _actionChip(
-                      icon: Icons.tune_rounded,
-                      label: '助手设置',
-                      onTap: () {
-                        Navigator.pop(sheetContext);
-                        _pushNamed('/virtual-avatar-settings');
-                      },
-                    ),
-                  ],
+                ListTile(
+                  leading: const Icon(Icons.today_rounded),
+                  title: const Text('隐藏到今天结束'),
+                  subtitle: const Text('明天会自动恢复显示'),
+                  onTap: () async {
+                    if (_isApplyingHideAction) {
+                      _showBusyHint();
+                      return;
+                    }
+                    _isApplyingHideAction = true;
+                    Navigator.pop(ctx);
+                    try {
+                      await avatar.hideForToday();
+                    } finally {
+                      _isApplyingHideAction = false;
+                    }
+                    if (!mounted) return;
+                    MoeToast.info(context, '已隐藏到今天结束');
+                  },
                 ),
+                ListTile(
+                  leading: const Icon(Icons.settings_rounded),
+                  title: const Text('虚拟助手设置'),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    await _pushNamed(
+                      '/virtual-avatar-settings',
+                      startMessage: '正在打开助手设置',
+                    );
+                  },
+                ),
+                const SizedBox(height: 4),
               ],
             ),
           ),
-        );
-      },
-    );
-  }
-
-  Future<void> _showAvatarActionMenu() async {
-    HapticFeedback.mediumImpact();
-    final avatar = Provider.of<VirtualAvatarProvider>(context, listen: false);
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.visibility_off_rounded),
-                title: const Text('本次会话隐藏'),
-                subtitle: const Text('重新打开 App 后恢复'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  avatar.hideForSession();
-                  MoeToast.info(context, '已隐藏（本次会话）');
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.today_rounded),
-                title: const Text('隐藏到今天结束'),
-                subtitle: const Text('明天会自动恢复显示'),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  await avatar.hideForToday();
-                  if (!mounted) return;
-                  MoeToast.info(context, '已隐藏到今天结束');
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.settings_rounded),
-                title: const Text('虚拟助手设置'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pushNamed('/virtual-avatar-settings');
-                },
-              ),
-              const SizedBox(height: 4),
-            ],
-          ),
-        ),
-      ),
-    );
+      );
+    } finally {
+      _isActionMenuOpen = false;
+    }
   }
 
   Widget _actionChip({
     required IconData icon,
     required String label,
-    required VoidCallback onTap,
+    required Future<void> Function() onTap,
   }) {
     return Material(
       color: const Color(0xFFF5F7FA),
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          if (_isRoutePushing) {
+            _showBusyHint();
+            return;
+          }
+          onTap();
+        },
         borderRadius: BorderRadius.circular(14),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

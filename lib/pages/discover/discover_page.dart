@@ -29,6 +29,9 @@ class _DiscoverPageState extends State<DiscoverPage>
   List<MatchCandidate> _candidates = [];
   bool _loading = false;
   bool _hasSearched = false;
+  String? _matchErrorMessage;
+  DateTime? _lastOfflineMatchAt;
+  static const Duration _offlineMatchThrottle = Duration(milliseconds: 800);
 
   // Online match
   StreamSubscription<Map<String, dynamic>>? _matchSub;
@@ -109,17 +112,37 @@ class _DiscoverPageState extends State<DiscoverPage>
 
   Future<void> _runOfflineMatch() async {
     if (!AuthService.isLoggedIn) { MoeToast.error(context, '请先登录后再试'); return; }
+    if (_loading) return;
+    final now = DateTime.now();
+    final lastTriggeredAt = _lastOfflineMatchAt;
+    if (lastTriggeredAt != null &&
+        now.difference(lastTriggeredAt) < _offlineMatchThrottle) {
+      return;
+    }
+    _lastOfflineMatchAt = now;
     HapticFeedback.mediumImpact();
-    setState(() { _loading = true; _hasSearched = true; });
+    setState(() {
+      _loading = true;
+      _hasSearched = true;
+      _matchErrorMessage = null;
+    });
     try {
       final list = await MatchSuggestionService.suggest(
         preferredTagIds: _selectedTagIds, maxResults: 24);
       if (!mounted) return;
-      setState(() { _candidates = list; _loading = false; });
+      setState(() {
+        _candidates = list;
+        _loading = false;
+        _matchErrorMessage = null;
+      });
       if (list.isEmpty) { MoeToast.error(context, '暂时没有合适推荐，换个标签或稍后再试'); }
     } catch (_) {
       if (!mounted) return;
-      setState(() { _candidates = []; _loading = false; });
+      setState(() {
+        _candidates = [];
+        _loading = false;
+        _matchErrorMessage = '匹配加载失败，请检查网络后重试';
+      });
       MoeToast.error(context, '加载失败，请检查网络');
     }
   }
@@ -396,21 +419,19 @@ class _DiscoverPageState extends State<DiscoverPage>
         ),
       );
     }
+    if (_matchErrorMessage != null) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+          child: _buildFailureState(),
+        ),
+      );
+    }
     if (_candidates.isEmpty) {
       return SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
-          child: Center(
-            child: Column(
-              children: [
-                Icon(Icons.search_off_rounded, size: 48, color: Colors.grey[300]),
-                const SizedBox(height: 12),
-                const Text('没有找到合适的同好', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                const SizedBox(height: 6),
-                Text('换几个话题再试试，或直接随机发现新朋友', style: TextStyle(color: Colors.grey[500], fontSize: 13)),
-              ],
-            ),
-          ),
+          child: _buildNoResultState(),
         ),
       );
     }
@@ -500,12 +521,192 @@ class _DiscoverPageState extends State<DiscoverPage>
             ),
           ),
           const SizedBox(height: 12),
-          const Text('选好话题，找到你的同好 ✨',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF333333))),
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.auto_awesome_rounded,
+                size: 16,
+                color: Color(0xFF7F7FD5),
+              ),
+              SizedBox(width: 6),
+              Text(
+                '选好话题，找到你的同好',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                  color: Color(0xFF333333),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 6),
           Text('选几个感兴趣的标签，或直接点「随机发现新面孔」',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 13, color: Colors.grey[500])),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFailureState() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFFFE0DB)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF9A44).withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.wifi_off_rounded,
+              color: Color(0xFFFF9A44),
+              size: 24,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            '这次匹配没有成功',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF1A1A2E),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _matchErrorMessage ?? '网络波动可能导致请求失败',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: _loading ? null : _runOfflineMatch,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF7F7FD5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('重试匹配'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _loading
+                      ? null
+                      : () {
+                          setState(() {
+                            _matchErrorMessage = null;
+                            _hasSearched = false;
+                            _candidates = [];
+                          });
+                        },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF7F7FD5),
+                    side: const BorderSide(color: Color(0xFF7F7FD5)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: const Icon(Icons.tune_rounded, size: 18),
+                  label: const Text('重新选择'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoResultState() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.search_off_rounded, size: 48, color: Colors.grey[300]),
+          const SizedBox(height: 12),
+          const Text(
+            '没有找到合适的同好',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+              color: Color(0xFF1A1A2E),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '可以立即刷新一次，或切换策略再试',
+            style: TextStyle(color: Colors.grey[500], fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: _loading ? null : _runOfflineMatch,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF7F7FD5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('刷新推荐'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _loading
+                      ? null
+                      : () {
+                          setState(() => _selectedTagIds.clear());
+                          _runOfflineMatch();
+                        },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF7F7FD5),
+                    side: const BorderSide(color: Color(0xFF7F7FD5)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: const Icon(Icons.shuffle_rounded, size: 18),
+                  label: const Text('随机策略'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          TextButton.icon(
+            onPressed: _onlineMatching ? null : _toggleOnlineMatch,
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF7F7FD5),
+              textStyle: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            icon: const Icon(Icons.favorite_rounded, size: 18),
+            label: const Text('试试在线实时匹配'),
+          ),
         ],
       ),
     );

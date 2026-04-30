@@ -32,10 +32,18 @@ class _HomePageState extends State<HomePage>
   List<Post> _allPosts = [];
   List<Post> _displayPosts = [];
   bool _isLoading = false;
+  bool _isRefreshing = false;
   bool _isLoadingMore = false;
   int _currentPage = 1;
   bool _hasMore = true;
   static const int _pageSize = 10;
+  String? _feedErrorMessage;
+  String? _loadMoreErrorMessage;
+  DateTime? _lastUpdatedAt;
+  bool _isPrimaryRequestInFlight = false;
+  bool _shouldReloadAfterCurrent = false;
+  bool _queuedResetContent = false;
+  bool _isLoadMoreRequestInFlight = false;
 
   _HomeFeedMode _mode = _HomeFeedMode.hot;
   TopicTag? _activeTopic;
@@ -96,7 +104,7 @@ class _HomePageState extends State<HomePage>
       _mode = newMode;
       _activeTopic = null; // Clear topic filter on tab change
     });
-    _fetchPosts();
+    _fetchPosts(resetContent: true);
     // Rebuild topic tags after resetting
     _refreshAvailableTags();
   }
@@ -122,16 +130,34 @@ class _HomePageState extends State<HomePage>
     });
   }
 
-  Future<void> _fetchPosts() async {
-    setState(() {
-      _isLoading = true;
-      _currentPage = 1;
-      _hasMore = true;
-      _allPosts = [];
-      _displayPosts = [];
-    });
+  Future<void> _fetchPosts({bool resetContent = true}) async {
+    if (_isPrimaryRequestInFlight) {
+      _shouldReloadAfterCurrent = true;
+      _queuedResetContent = _queuedResetContent || resetContent;
+      return;
+    }
+    _isPrimaryRequestInFlight = true;
+    final hasExistingPosts = _displayPosts.isNotEmpty;
+    if (mounted) {
+      setState(() {
+        _feedErrorMessage = null;
+        _loadMoreErrorMessage = null;
+        _hasMore = true;
+        _currentPage = 1;
+        if (resetContent || !hasExistingPosts) {
+          _isLoading = true;
+          _isRefreshing = false;
+          _allPosts = [];
+          _displayPosts = [];
+        } else {
+          _isRefreshing = true;
+          _isLoading = false;
+        }
+      });
+    }
     try {
       final result = await _fetchPostsForMode(page: 1);
+      if (!mounted) return;
       setState(() {
         _allPosts = result.posts;
         _displayPosts = List<Post>.from(result.posts);
@@ -139,21 +165,54 @@ class _HomePageState extends State<HomePage>
         _hasMore = _mode.supportsPagination
             ? result.posts.length < result.total
             : false;
+        _feedErrorMessage = null;
+        _lastUpdatedAt = DateTime.now();
       });
       _refreshAvailableTags();
     } catch (e) {
+      final message = _friendlyErrorMessage(e);
+      if (mounted) {
+        setState(() {
+          _feedErrorMessage = message;
+          _hasMore = false;
+        });
+      }
       _handleError(e);
     } finally {
-      setState(() => _isLoading = false);
+      final shouldReload = _shouldReloadAfterCurrent;
+      final queuedReset = _queuedResetContent;
+      _isPrimaryRequestInFlight = false;
+      _shouldReloadAfterCurrent = false;
+      _queuedResetContent = false;
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isRefreshing = false;
+        });
+      }
+      if (shouldReload) {
+        unawaited(_fetchPosts(resetContent: queuedReset));
+      }
     }
   }
 
   Future<void> _loadMorePosts() async {
-    if (_isLoading || _isLoadingMore || !_hasMore) return;
-    setState(() => _isLoadingMore = true);
+    if (_isLoading ||
+        _isRefreshing ||
+        _isLoadingMore ||
+        _isLoadMoreRequestInFlight ||
+        !_hasMore) {
+      return;
+    }
+    _isLoadMoreRequestInFlight = true;
+    setState(() {
+      _isLoadingMore = true;
+      _loadMoreErrorMessage = null;
+    });
     try {
       final nextPage = _currentPage + 1;
       final result = await _fetchPostsForMode(page: nextPage);
+      if (!mounted) return;
       if (result.posts.isEmpty) {
         setState(() {
           _hasMore = false;
@@ -168,14 +227,24 @@ class _HomePageState extends State<HomePage>
         _hasMore = _mode.supportsPagination
             ? _allPosts.length < result.total
             : false;
+        _loadMoreErrorMessage = null;
+        _lastUpdatedAt = DateTime.now();
       });
       _refreshAvailableTags();
     } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loadMoreErrorMessage = _friendlyErrorMessage(e);
+        });
+      }
       _handleError(e);
     } finally {
-      setState(() {
-        _isLoadingMore = false;
-      });
+      _isLoadMoreRequestInFlight = false;
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+        });
+      }
     }
   }
 
@@ -272,14 +341,14 @@ class _HomePageState extends State<HomePage>
         if (tag != null) _mode = _HomeFeedMode.topic;
       });
     }
-    _fetchPosts();
+    _fetchPosts(resetContent: true);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: RefreshIndicator(
-        onRefresh: _fetchPosts,
+        onRefresh: () => _fetchPosts(resetContent: false),
         color: Theme.of(context).primaryColor,
         child: CustomScrollView(
           controller: _scrollController,
@@ -287,18 +356,32 @@ class _HomePageState extends State<HomePage>
           slivers: [
             // SliverAppBar with TabBar in bottom — Flutter-idiomatic, no SliverPersistentHeader needed
             _buildSliverAppBar(context),
+            const SliverToBoxAdapter(child: SizedBox(height: 8)),
             const SliverToBoxAdapter(child: HomeStoriesBar()),
+            const SliverToBoxAdapter(child: SizedBox(height: 10)),
             const SliverToBoxAdapter(child: QuickActionsGrid()),
+            const SliverToBoxAdapter(child: SizedBox(height: 8)),
             // Topic tags row — plain SliverToBoxAdapter, no dynamic-extent issues
             if (_showTopicBar)
               SliverToBoxAdapter(child: _buildTopicTagsRow(context)),
             SliverToBoxAdapter(child: _buildFeedSectionTitle(context)),
+            if (_feedErrorMessage != null && _displayPosts.isNotEmpty)
+              SliverToBoxAdapter(
+                child: _buildInlineErrorBanner(
+                  message: _feedErrorMessage!,
+                  onRetry: () => _fetchPosts(resetContent: false),
+                ),
+              ),
             if (_isLoading && _displayPosts.isEmpty)
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) => const PostSkeleton(),
                   childCount: 6,
                 ),
+              )
+            else if (_feedErrorMessage != null && _displayPosts.isEmpty)
+              SliverToBoxAdapter(
+                child: _buildFeedErrorState(_feedErrorMessage!),
               )
             else if (!_isLoading && _displayPosts.isEmpty)
               SliverToBoxAdapter(child: _buildEmptyState())
@@ -316,7 +399,7 @@ class _HomePageState extends State<HomePage>
                 ),
               ),
             SliverToBoxAdapter(child: _buildBottomIndicator()),
-            const SliverToBoxAdapter(child: SizedBox(height: 80)),
+            const SliverToBoxAdapter(child: SizedBox(height: 72)),
           ],
         ),
       ),
@@ -355,7 +438,7 @@ class _HomePageState extends State<HomePage>
           Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: scheme.primary.withOpacity(0.12),
+              color: scheme.primary.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -466,17 +549,17 @@ class _HomePageState extends State<HomePage>
   Widget _buildTopicTagsRow(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      height: 44,
+      height: 48,
       decoration: BoxDecoration(
         color: scheme.surface,
         border: Border(
           bottom: BorderSide(
-              color: scheme.outline.withOpacity(0.1), width: 0.5),
+              color: scheme.outline.withValues(alpha: 0.1), width: 0.5),
         ),
       ),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         itemCount: _availableTags.length + 1,
         itemBuilder: (context, index) {
           if (index == 0) {
@@ -491,14 +574,14 @@ class _HomePageState extends State<HomePage>
                       horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
                     color: isAll
-                        ? scheme.primary.withOpacity(0.15)
+                        ? scheme.primary.withValues(alpha: 0.15)
                         : scheme.surfaceContainerHighest
-                            .withOpacity(0.6),
+                            .withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: isAll
-                          ? scheme.primary.withOpacity(0.4)
-                          : scheme.outline.withOpacity(0.2),
+                          ? scheme.primary.withValues(alpha: 0.4)
+                          : scheme.outline.withValues(alpha: 0.2),
                     ),
                   ),
                   child: Text(
@@ -527,13 +610,13 @@ class _HomePageState extends State<HomePage>
                     horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? tag.color.withOpacity(0.18)
-                      : scheme.surfaceContainerHighest.withOpacity(0.6),
+                      ? tag.color.withValues(alpha: 0.18)
+                      : scheme.surfaceContainerHighest.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isSelected
-                        ? tag.color.withOpacity(0.45)
-                        : scheme.outline.withOpacity(0.2),
+                        ? tag.color.withValues(alpha: 0.45)
+                        : scheme.outline.withValues(alpha: 0.2),
                   ),
                 ),
                 child: Text(
@@ -555,109 +638,295 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildFeedSectionTitle(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 4,
-            height: 20,
-            decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            _sectionTitle,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const Spacer(),
-          if (_activeTopic != null)
-            GestureDetector(
-              onTap: () => _onTopicSelected(null),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 4,
+                height: 22,
                 decoration: BoxDecoration(
-                  color: _activeTopic!.color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: _activeTopic!.color.withOpacity(0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.close_rounded,
-                        size: 13, color: _activeTopic!.color),
-                    const SizedBox(width: 3),
-                    Text(
-                      '清除筛选',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: _activeTopic!.color,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                  color: scheme.primary,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-            ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  _sectionTitle,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: scheme.onSurface,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _isLoading || _isRefreshing
+                    ? null
+                    : () => _fetchPosts(resetContent: false),
+                style: TextButton.styleFrom(
+                  foregroundColor: scheme.primary,
+                  textStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                ),
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: Text(_isRefreshing ? '刷新中' : '刷新'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _buildMetaChip(
+                icon: _isRefreshing
+                    ? Icons.sync_rounded
+                    : Icons.schedule_rounded,
+                text: _lastUpdatedText(),
+              ),
+              if (_activeTopic != null)
+                _buildMetaChip(
+                  icon: Icons.filter_alt_rounded,
+                  text: '#${_activeTopic!.name}',
+                  accentColor: _activeTopic!.color,
+                  onTap: () => _onTopicSelected(null),
+                  trailing: const Icon(Icons.close_rounded, size: 14),
+                ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 40),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF7F7FD5).withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.auto_awesome_rounded,
-              size: 64,
-              color: Color(0xFF7F7FD5),
-            ),
+  Widget _buildMetaChip({
+    required IconData icon,
+    required String text,
+    Color? accentColor,
+    VoidCallback? onTap,
+    Widget? trailing,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final color = accentColor ?? scheme.onSurfaceVariant;
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: (accentColor ?? scheme.surfaceContainerHighest)
+              .withValues(alpha: accentColor == null ? 0.55 : 0.14),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: color.withValues(alpha: 0.28),
           ),
-          const SizedBox(height: 24),
-          Text(
-            '还没有动态呢 ~',
-            style: Theme.of(context)
-                .textTheme
-                .titleLarge
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '发布第一条动态，开启萌系社交之旅吧！',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.pushNamed(context, '/create-post'),
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('发布动态'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF7F7FD5),
-              foregroundColor: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 6),
+            Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
               ),
             ),
+            if (trailing != null) ...[
+              const SizedBox(width: 6),
+              IconTheme(
+                data: IconThemeData(color: color, size: 14),
+                child: trailing,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _friendlyErrorMessage(dynamic error) {
+    final text = error.toString().trim();
+    if (text.isEmpty) return '网络开小差了，请稍后重试';
+    if (text.length > 80) return '数据加载失败，请稍后重试';
+    return text;
+  }
+
+  String _lastUpdatedText() {
+    if (_isRefreshing) return '正在刷新内容...';
+    final updatedAt = _lastUpdatedAt;
+    if (updatedAt == null) return '尚未加载最新动态';
+    final hour = updatedAt.hour.toString().padLeft(2, '0');
+    final minute = updatedAt.minute.toString().padLeft(2, '0');
+    return '最后更新 $hour:$minute';
+  }
+
+  Widget _buildInlineErrorBanner({
+    required String message,
+    required VoidCallback onRetry,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFB347).withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: const Color(0xFFFFB347).withValues(alpha: 0.35),
           ),
-        ],
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.info_outline_rounded,
+              size: 18,
+              color: Color(0xFFFFB347),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: scheme.onSurface,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: _isLoading || _isRefreshing ? null : onRetry,
+              child: const Text('重试'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeedErrorState(String message) {
+    return _buildUnifiedStatePanel(
+      icon: Icons.cloud_off_rounded,
+      title: '动态加载失败',
+      subtitle: message,
+      accentColor: const Color(0xFFFFB347),
+      action: ElevatedButton.icon(
+        onPressed: _isLoading ? null : () => _fetchPosts(resetContent: true),
+        icon: const Icon(Icons.refresh_rounded),
+        label: const Text('重新加载'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF7F7FD5),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return _buildUnifiedStatePanel(
+      icon: Icons.auto_awesome_rounded,
+      title: '还没有动态呢 ~',
+      subtitle: '发布第一条动态，开启萌系社交之旅吧！',
+      accentColor: const Color(0xFF7F7FD5),
+      action: ElevatedButton.icon(
+        onPressed: () => Navigator.pushNamed(context, '/create-post'),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('发布动态'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF7F7FD5),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUnifiedStatePanel({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color accentColor,
+    required Widget action,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 34),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 26),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: accentColor, size: 34),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: scheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: scheme.onSurfaceVariant,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 18),
+            action,
+          ],
+        ),
       ),
     );
   }
@@ -665,57 +934,75 @@ class _HomePageState extends State<HomePage>
   Widget _buildBottomIndicator() {
     if (_isLoadingMore) {
       return Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
         child: Center(
-          child: Column(
-            children: [
-              const MoeSmallLoading(),
-              const SizedBox(height: 12),
-              Text(
-                '加载中...',
-                style: TextStyle(color: Colors.grey[400], fontSize: 12),
-              ),
-            ],
+          child: _buildBottomStateCapsule(
+            icon: const MoeSmallLoading(),
+            label: '正在加载更多...',
+          ),
+        ),
+      );
+    } else if (_loadMoreErrorMessage != null &&
+        _displayPosts.isNotEmpty &&
+        !_isLoading) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+        child: Center(
+          child: _buildBottomStateCapsule(
+            icon: const Icon(
+              Icons.error_outline_rounded,
+              color: Color(0xFFFFB347),
+              size: 18,
+            ),
+            label: '加载更多失败',
+            accentColor: const Color(0xFFFFB347),
+            trailing: TextButton(
+              onPressed: _isLoadingMore ? null : _loadMorePosts,
+              child: const Text('重试'),
+            ),
           ),
         ),
       );
     } else if (!_hasMore && _displayPosts.isNotEmpty) {
       return Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
         child: Center(
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.check_circle_outline,
-                    color: Colors.grey[400], size: 32),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                '已经到底啦 ~',
-                style: TextStyle(color: Colors.grey[500], fontSize: 14),
-              ),
-            ],
+          child: _buildBottomStateCapsule(
+            icon: Icon(
+              Icons.check_circle_outline_rounded,
+              color: Colors.grey[500],
+              size: 18,
+            ),
+            label: '已经到底啦 ~',
           ),
         ),
       );
-    } else if (_hasMore && !_isLoading) {
+    } else if (_hasMore && !_isLoading && !_isRefreshing) {
       return Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
         child: GestureDetector(
-          onTap: () {
-            if (!_isLoading && !_isLoadingMore && _hasMore) _loadMorePosts();
-          },
+          onTap: (_isLoadingMore || _isRefreshing)
+              ? null
+              : () {
+                  if (!_isLoading &&
+                      !_isRefreshing &&
+                      !_isLoadingMore &&
+                      _hasMore) {
+                    _loadMorePosts();
+                  }
+                },
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFF7F7FD5).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
+              color: (_isLoadingMore || _isRefreshing)
+                  ? Colors.grey.withValues(alpha: 0.1)
+                  : const Color(0xFF7F7FD5).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: (_isLoadingMore || _isRefreshing)
+                    ? Colors.grey.withValues(alpha: 0.2)
+                    : const Color(0xFF7F7FD5).withValues(alpha: 0.26),
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -740,6 +1027,42 @@ class _HomePageState extends State<HomePage>
     return const SizedBox.shrink();
   }
 
+  Widget _buildBottomStateCapsule({
+    required Widget icon,
+    required String label,
+    Color accentColor = const Color(0xFF7F7FD5),
+    Widget? trailing,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          icon,
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              color: scheme.onSurface,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (trailing != null) ...[
+            const SizedBox(width: 6),
+            trailing,
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildPostCard(Post post) {
     return PostCard(
       key: ValueKey('home_post_${post.id}'),
@@ -747,18 +1070,17 @@ class _HomePageState extends State<HomePage>
       onLike: () => _toggleLike(post.id),
       onComment: () async {
         final result = await openPostDetail(context, post);
-        if (result != null) {
-          setState(() {
-            final allIndex = _allPosts.indexWhere((p) => p.id == post.id);
-            if (allIndex != -1) {
-              final updated = _allPosts[allIndex].copyWith(comments: result);
-              _allPosts[allIndex] = updated;
-              final displayIndex =
-                  _displayPosts.indexWhere((p) => p.id == post.id);
-              if (displayIndex != -1) _displayPosts[displayIndex] = updated;
-            }
-          });
-        }
+        if (!mounted || result == null) return;
+        setState(() {
+          final allIndex = _allPosts.indexWhere((p) => p.id == post.id);
+          if (allIndex != -1) {
+            final updated = _allPosts[allIndex].copyWith(comments: result);
+            _allPosts[allIndex] = updated;
+            final displayIndex =
+                _displayPosts.indexWhere((p) => p.id == post.id);
+            if (displayIndex != -1) _displayPosts[displayIndex] = updated;
+          }
+        });
       },
       onAvatarTap: () {
         Navigator.pushNamed(context, '/user-profile', arguments: {

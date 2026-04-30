@@ -1,11 +1,14 @@
 package websocket
 
 import (
+	"errors"
 	"sync"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
+
+var errConnectionPoolClosed = errors.New("connection pool is closed")
 
 // ConnectionPool 连接池接口
 type ConnectionPool interface {
@@ -47,12 +50,15 @@ func (p *SimpleConnectionPool) Get() (*Connection, error) {
 	p.mu.RLock()
 	if p.closed {
 		p.mu.RUnlock()
-		return nil, nil
+		return nil, errConnectionPoolClosed
 	}
 	p.mu.RUnlock()
 
 	select {
-	case conn := <-p.connections:
+	case conn, ok := <-p.connections:
+		if !ok {
+			return nil, errConnectionPoolClosed
+		}
 		// 检查连接是否有效
 		if conn != nil && conn.Conn != nil {
 			// 更新连接的最后活动时间
@@ -74,16 +80,15 @@ func (p *SimpleConnectionPool) Put(conn *Connection) {
 		return
 	}
 
-	p.mu.RLock()
+	p.mu.Lock()
 	if p.closed {
-		p.mu.RUnlock()
+		p.mu.Unlock()
 		// 连接池已关闭，关闭连接
 		conn.writeMu.Lock()
 		conn.Conn.Close()
 		conn.writeMu.Unlock()
 		return
 	}
-	p.mu.RUnlock()
 
 	select {
 	case p.connections <- conn:
@@ -96,6 +101,7 @@ func (p *SimpleConnectionPool) Put(conn *Connection) {
 		conn.Conn.Close()
 		conn.writeMu.Unlock()
 	}
+	p.mu.Unlock()
 }
 
 // Close 关闭连接池

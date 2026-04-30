@@ -1087,11 +1087,47 @@ class _UserLevelPageState extends State<UserLevelPage>
   /// 构建社交排名卡片
   Widget _buildSocialRankingCard(UserLevelProvider levelProvider) {
     final ranking = [
-      {'rank': 1, 'name': '小明', 'level': 5, 'avatar': '👑'},
-      {'rank': 2, 'name': '小红', 'level': 4, 'avatar': '💎'},
-      {'rank': 3, 'name': '你', 'level': levelProvider.currentLevel, 'avatar': '🔥', 'isCurrentUser': true},
-      {'rank': 4, 'name': '小李', 'level': 3, 'avatar': '⭐'},
-      {'rank': 5, 'name': '小张', 'level': 3, 'avatar': '🌟'},
+      {
+        'rank': 1,
+        'name': '小明',
+        'level': 5,
+        'avatarIcon': Icons.workspace_premium_rounded,
+        'avatarGradient': const [Color(0xFFFFD54F), Color(0xFFFFA726)],
+        'avatarColor': const Color(0xFFFFB300),
+      },
+      {
+        'rank': 2,
+        'name': '小红',
+        'level': 4,
+        'avatarIcon': Icons.diamond_rounded,
+        'avatarGradient': const [Color(0xFF90CAF9), Color(0xFF42A5F5)],
+        'avatarColor': const Color(0xFF42A5F5),
+      },
+      {
+        'rank': 3,
+        'name': '你',
+        'level': levelProvider.currentLevel,
+        'avatarIcon': Icons.local_fire_department_rounded,
+        'avatarGradient': const [Color(0xFFFF8A65), Color(0xFFFF5722)],
+        'avatarColor': const Color(0xFFFF7043),
+        'isCurrentUser': true,
+      },
+      {
+        'rank': 4,
+        'name': '小李',
+        'level': 3,
+        'avatarIcon': Icons.star_rounded,
+        'avatarGradient': const [Color(0xFFB39DDB), Color(0xFF9575CD)],
+        'avatarColor': const Color(0xFF9575CD),
+      },
+      {
+        'rank': 5,
+        'name': '小张',
+        'level': 3,
+        'avatarIcon': Icons.auto_awesome_rounded,
+        'avatarGradient': const [Color(0xFF80CBC4), Color(0xFF4DB6AC)],
+        'avatarColor': const Color(0xFF4DB6AC),
+      },
     ];
 
     return FadeInUp(
@@ -1172,8 +1208,8 @@ class _UserLevelPageState extends State<UserLevelPage>
                           gradient: item['rank'] as int <= 3
                               ? LinearGradient(
                                   colors: [
-                                    item['rank'] as int == 1 ? const Color(0xFFFFD700) : (item['rank'] as int == 2 ? const Color(0xC0C0C0) : const Color(0xFFCD7F32)),
-                                    item['rank'] as int == 1 ? const Color(0xFFFFA500) : (item['rank'] as int == 2 ? const Color(0xA9A9A9) : const Color(0xFFB87333)),
+                                    item['rank'] as int == 1 ? const Color(0xFFFFD700) : (item['rank'] as int == 2 ? const Color(0xFFC0C0C0) : const Color(0xFFCD7F32)),
+                                    item['rank'] as int == 1 ? const Color(0xFFFFA500) : (item['rank'] as int == 2 ? const Color(0xFFA9A9A9) : const Color(0xFFB87333)),
                                   ],
                                 )
                               : null,
@@ -1192,10 +1228,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        item['avatar'] as String,
-                        style: const TextStyle(fontSize: 24),
-                      ),
+                      _buildRankingAvatar(item),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -1272,6 +1305,36 @@ class _UserLevelPageState extends State<UserLevelPage>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildRankingAvatar(Map<String, Object?> item) {
+    final avatarIcon = item['avatarIcon'] as IconData;
+    final avatarGradient = item['avatarGradient'] as List<Color>;
+    final avatarColor = item['avatarColor'] as Color;
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: avatarGradient,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: avatarColor.withValues(alpha: 0.25),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Icon(
+        avatarIcon,
+        color: Colors.white,
+        size: 20,
       ),
     );
   }

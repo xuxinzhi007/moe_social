@@ -260,17 +260,17 @@ class _ProfilePageState extends State<ProfilePage> {
             _buildSliverAppBar(),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 84),
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 84),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Quick actions
                     FadeInUp(delay: const Duration(milliseconds: 50), child: _buildQuickActions()),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
                     // Achievements preview
                     if (_user != null) ...[
                       FadeInUp(delay: const Duration(milliseconds: 80), child: _buildAchievementsPreview()),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 18),
                     ],
                     // Cloud & QR
                     FadeInUp(
@@ -305,16 +305,14 @@ class _ProfilePageState extends State<ProfilePage> {
                                     ok = await AutoGLMService.checkOverlayPermission();
                                     if (!ok) {
                                       setState(() => AutoGLMService.enableOverlay = false);
-                                      if (!mounted) return;
-                                      final ctx = context;
-                                      MoeToast.error(ctx, '需要悬浮窗权限才能显示');
+                                      if (!context.mounted) return;
+                                      MoeToast.error(context, '需要悬浮窗权限才能显示');
                                       return;
                                     }
                                   }
                                   await AutoGLMService.showOverlay();
-                                  if (!mounted) return;
-                                  final ctx = context;
-                                  MoeToast.success(ctx, '悬浮窗已开启');
+                                  if (!context.mounted) return;
+                                  MoeToast.success(context, '悬浮窗已开启');
                                 } else {
                                   await AutoGLMService.removeOverlay();
                                 }
@@ -401,7 +399,7 @@ class _ProfilePageState extends State<ProfilePage> {
         SafeArea(
           bottom: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 36, 20, 14),
+            padding: const EdgeInsets.fromLTRB(20, 36, 20, 12),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -427,7 +425,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 // Name + VIP
                 FadeInUp(
                   delay: const Duration(milliseconds: 120),
@@ -455,7 +453,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 // Signature
                 FadeInUp(
                   delay: const Duration(milliseconds: 140),
@@ -475,7 +473,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 // Moe-No + Level pills
                 FadeInUp(
                   delay: const Duration(milliseconds: 160),
@@ -513,7 +511,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 // Stats bar — each item is a tap target
                 FadeInUp(
                   delay: const Duration(milliseconds: 200),
@@ -523,7 +521,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                       child: Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.26),
                           borderRadius: BorderRadius.circular(22),
@@ -584,11 +582,20 @@ class _ProfilePageState extends State<ProfilePage> {
   // ─── Quick Actions ────────────────────────────────────────────────────────
 
   Widget _buildQuickActions() {
+    final unlockedBadges = _userBadges.where((b) => b.isUnlocked).length;
     final actions = [
-      _QuickAction(emoji: '📅', label: '签到', onTap: _navigateToCheckIn),
       _QuickAction(
-        emoji: '💰',
-        label: '钱包\n¥${_user?.balance.toStringAsFixed(2) ?? '0.00'}',
+        icon: Icons.event_available_rounded,
+        iconColor: const Color(0xFF5A67D8),
+        label: '签到',
+        subtitle: '每日奖励',
+        onTap: _navigateToCheckIn,
+      ),
+      _QuickAction(
+        icon: Icons.account_balance_wallet_rounded,
+        iconColor: const Color(0xFFFF8F00),
+        label: '钱包',
+        subtitle: '¥${_user?.balance.toStringAsFixed(2) ?? '0.00'}',
         onTap: () {
           HapticFeedback.lightImpact();
           Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletPage()))
@@ -596,15 +603,19 @@ class _ProfilePageState extends State<ProfilePage> {
         },
       ),
       _QuickAction(
-        emoji: _isVip ? '👑' : '✨',
-        label: _isVip ? 'VIP 已开' : '开通 VIP',
-        highlight: !_isVip,
+        icon: _isVip ? Icons.workspace_premium_rounded : Icons.diamond_rounded,
+        iconColor: _isVip ? const Color(0xFFFFB347) : const Color(0xFF7F7FD5),
+        label: 'VIP 会员',
+        subtitle: _isVip ? '权益生效中' : '立即开通',
+        isCta: !_isVip,
         onTap: _openVipCenter,
       ),
       _QuickAction(
-        emoji: '🏅',
+        icon: Icons.military_tech_rounded,
+        iconColor: const Color(0xFFE65100),
         label: '成就',
-        badge: _userBadges.where((b) => b.isUnlocked).length,
+        subtitle: '$unlockedBadges 枚已解锁',
+        badge: unlockedBadges,
         onTap: _showAllBadges,
       ),
     ];
@@ -617,58 +628,121 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildQuickActionCard(_QuickAction action) {
-    return GestureDetector(
-      onTap: action.onTap,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+        margin: const EdgeInsets.symmetric(horizontal: 5),
         decoration: BoxDecoration(
-          color: action.highlight
-              ? const Color(0xFF7F7FD5).withValues(alpha: 0.08)
-              : Colors.white,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: action.highlight
-              ? Border.all(color: const Color(0xFF7F7FD5).withValues(alpha: 0.3))
-              : Border.all(color: Colors.grey.shade100),
+          // 未开通 VIP 时仅展示 CTA 描边，不使用“选中填充”视觉，避免误判为已激活。
+          border: Border.all(
+            color: action.isCta
+                ? const Color(0xFF7F7FD5).withValues(alpha: 0.36)
+                : Colors.grey.shade100,
+            width: action.isCta ? 1.2 : 1,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 8, offset: const Offset(0, 3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Stack(
-          alignment: Alignment.topCenter,
-          children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
+        child: InkWell(
+          onTap: action.onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 8),
+            child: Stack(
+              clipBehavior: Clip.none,
               children: [
-                Text(action.emoji, style: const TextStyle(fontSize: 26)),
-                const SizedBox(height: 6),
-                Text(
-                  action.label,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: action.highlight ? const Color(0xFF7F7FD5) : const Color(0xFF333333),
-                    height: 1.3,
-                  ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: action.iconColor.withValues(alpha: 0.14),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        action.icon,
+                        size: 22,
+                        color: action.iconColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      action.label,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF2F3142),
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      action.subtitle,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: action.isCta ? FontWeight.w700 : FontWeight.w600,
+                        color: action.isCta
+                            ? const Color(0xFF7F7FD5)
+                            : const Color(0xFF8A8CA0),
+                        height: 1.2,
+                      ),
+                    ),
+                  ],
                 ),
+                if (action.badge != null && action.badge! > 0)
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      width: 17,
+                      height: 17,
+                      decoration: const BoxDecoration(color: Color(0xFFFF6B35), shape: BoxShape.circle),
+                      child: Center(
+                        child: Text(
+                          '${action.badge}',
+                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (action.isCta)
+                  Positioned(
+                    top: -3,
+                    left: -1,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF7F7FD5),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Text(
+                        '去开通',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.1,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
-            if (action.badge != null && action.badge! > 0)
-              Positioned(
-                top: 0, right: 0,
-                child: Container(
-                  width: 16, height: 16,
-                  decoration: const BoxDecoration(color: Color(0xFFFF6B35), shape: BoxShape.circle),
-                  child: Center(
-                    child: Text('${action.badge}', style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800)),
-                  ),
-                ),
-              ),
-          ],
+          ),
         ),
       ),
     );
@@ -685,15 +759,16 @@ class _ProfilePageState extends State<ProfilePage> {
     return GestureDetector(
       onTap: _showAllBadges,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+        padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [BoxShadow(color: const Color(0xFF7F7FD5).withValues(alpha: 0.07), blurRadius: 16, offset: const Offset(0, 6))],
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Badge emoji strip
+            // Badge preview strip
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -713,38 +788,57 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
+                  Text(
+                    stats.totalBadges == 0
+                        ? '开始任务，点亮你的第一枚徽章'
+                        : '已完成 ${(stats.totalBadges > 0 ? stats.unlockedBadges * 100 ~/ stats.totalBadges : 0)}%',
+                    style: TextStyle(
+                      color: Colors.grey[500],
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 9),
                   preview.isEmpty
-                      ? Text('完成任务解锁成就 →', style: TextStyle(color: Colors.grey[400], fontSize: 12))
-                      : Row(
+                      ? Text('完成任务解锁成就 →', style: TextStyle(color: Colors.grey[400], fontSize: 11.5))
+                      : Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
                           children: [
-                            ...preview.take(5).map((b) => Padding(
-                              padding: const EdgeInsets.only(right: 6),
-                              child: SizedBox(
-                                width: 36,
-                                height: 36,
+                            ...preview.take(4).map(
+                              (b) => SizedBox(
+                                width: 34,
+                                height: 34,
                                 child: MiniBadge(
                                   badge: b,
-                                  size: 34,
+                                  size: 32,
                                 ),
                               ),
-                            )),
-                            if (stats.totalBadges > 5)
+                            ),
+                            if (preview.length > 4)
                               Container(
-                                width: 36, height: 36,
+                                width: 34,
+                                height: 34,
                                 decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(10)),
-                                child: Center(child: Text('+${stats.totalBadges - 5}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey[500]))),
+                                child: Center(
+                                  child: Text(
+                                    '+${preview.length - 4}',
+                                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Colors.grey[500]),
+                                  ),
+                                ),
                               ),
                           ],
                         ),
                 ],
               ),
             ),
-            // Progress ring + arrow
+            const SizedBox(width: 12),
             Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
-                  width: 44, height: 44,
+                  width: 46, height: 46,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
@@ -761,8 +855,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 6),
-                Icon(Icons.chevron_right_rounded, size: 18, color: Colors.grey[400]),
+                const SizedBox(height: 5),
+                Text('查看', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Colors.grey[500])),
+                Icon(Icons.chevron_right_rounded, size: 17, color: Colors.grey[400]),
               ],
             ),
           ],
@@ -853,12 +948,22 @@ class _ProfilePageState extends State<ProfilePage> {
 // ─── Helper data models ──────────────────────────────────────────────────────
 
 class _QuickAction {
-  final String emoji;
+  final IconData icon;
+  final Color iconColor;
   final String label;
-  final bool highlight;
+  final String subtitle;
+  final bool isCta;
   final int? badge;
   final VoidCallback onTap;
-  const _QuickAction({required this.emoji, required this.label, required this.onTap, this.highlight = false, this.badge});
+  const _QuickAction({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.subtitle,
+    required this.onTap,
+    this.isCta = false,
+    this.badge,
+  });
 }
 
 class _MenuItem {
