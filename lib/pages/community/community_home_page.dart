@@ -37,6 +37,25 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
     }
   }
 
+  Widget _buildHeaderActionShell({
+    required Widget child,
+    required ColorScheme scheme,
+  }) {
+    return Container(
+      height: 34,
+      width: 34,
+      margin: const EdgeInsets.symmetric(horizontal: 3),
+      decoration: BoxDecoration(
+        color: scheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.45),
+        ),
+      ),
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -46,97 +65,135 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
         elevation: 0,
         backgroundColor: scheme.surface,
         titleSpacing: 0,
+        toolbarHeight: 76,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
-                    color: scheme.primary.withOpacity(0.12),
+                    color: scheme.primary.withValues(alpha: 0.11),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(Icons.forum_rounded,
-                      color: scheme.primary, size: 20),
+                      color: scheme.primary, size: 18),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Text(
                   '兴趣社区',
                   style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.3,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.2,
                     color: scheme.onSurface,
-                    fontSize: 18,
+                    fontSize: 17,
                   ),
                 ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.only(left: 44, top: 2),
+            const SizedBox(height: 4),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.15),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                );
+              },
               child: Text(
                 _subtitle,
+                key: ValueKey<String>(_subtitle),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
-                  color: scheme.onSurfaceVariant,
-                  height: 1.2,
+                  color: scheme.onSurfaceVariant.withValues(alpha: 0.95),
+                  height: 1.25,
                 ),
               ),
             ),
           ],
         ),
         actions: [
-          IconButton(
-            tooltip: '与首页的关系',
-            icon: Icon(Icons.dynamic_feed_rounded, color: scheme.primary),
-            onPressed: () {
-              MoeToast.info(
-                context,
-                '首页是个人/关注信息流；社区是群组与话题广场。请用底栏「首页」返回动态。',
-              );
-            },
-          ),
-          PopupMenuButton<String>(
-            tooltip: '快捷操作',
-            icon: const Icon(Icons.add_circle_outline_rounded),
-            onSelected: (v) {
-              if (!AuthService.isLoggedIn) {
-                MoeToast.error(context, '请先登录');
-                return;
-              }
-              if (v == 'post') {
-                Navigator.pushNamed(context, '/create-post');
-              } else if (v == 'group') {
-                setState(() => _currentIndex = 0);
-                MoeToast.success(
+          _buildHeaderActionShell(
+            scheme: scheme,
+            child: IconButton(
+              tooltip: '与首页的关系',
+              icon: Icon(
+                Icons.tips_and_updates_rounded,
+                color: scheme.primary.withValues(alpha: 0.9),
+                size: 18,
+              ),
+              splashRadius: 18,
+              padding: EdgeInsets.zero,
+              onPressed: () {
+                MoeToast.info(
                   context,
-                  '已切换到「兴趣群组」，请点右下角「新建群组」',
+                  '首页是个人/关注信息流；社区是群组与话题广场。请用底栏「首页」返回动态。',
                 );
-              }
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 'post',
-                child: ListTile(
-                  leading: Icon(Icons.edit_note_rounded),
-                  title: Text('发布动态'),
-                  subtitle: Text('与首页发帖同一入口'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-              PopupMenuItem(
-                value: 'group',
-                child: ListTile(
-                  leading: Icon(Icons.groups_2_outlined),
-                  title: Text('去创建群组'),
-                  subtitle: Text('将切换到群组页'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-            ],
+              },
+            ),
           ),
-          const SizedBox(width: 4),
+          _buildHeaderActionShell(
+            scheme: scheme,
+            child: PopupMenuButton<String>(
+              tooltip: '快捷操作',
+              padding: EdgeInsets.zero,
+              icon: Icon(
+                Icons.add_rounded,
+                color: scheme.primary.withValues(alpha: 0.9),
+                size: 20,
+              ),
+              onSelected: (v) {
+                if (!AuthService.isLoggedIn) {
+                  MoeToast.error(context, '请先登录');
+                  return;
+                }
+                if (v == 'post') {
+                  Navigator.pushNamed(context, '/create-post');
+                } else if (v == 'group') {
+                  setState(() => _currentIndex = 0);
+                  MoeToast.success(
+                    context,
+                    '已切换到「兴趣群组」，请点右下角「新建群组」',
+                  );
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: 'post',
+                  child: ListTile(
+                    leading: Icon(Icons.edit_note_rounded),
+                    title: Text('发布动态'),
+                    subtitle: Text('与首页发帖同一入口'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'group',
+                  child: ListTile(
+                    leading: Icon(Icons.groups_2_outlined),
+                    title: Text('去创建群组'),
+                    subtitle: Text('将切换到群组页'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: AnimatedSwitcher(

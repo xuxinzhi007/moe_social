@@ -53,9 +53,12 @@ class _VipCenterPageState extends State<VipCenterPage> {
       try {
         activeRecord = await ApiService.getUserActiveVipRecord(userId);
       } catch (e) {
-        print('获取活跃VIP记录失败: $e');
+        debugPrint('获取活跃VIP记录失败: $e');
       }
 
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _vipStatus = vipStatus;
         _activeRecord = activeRecord;
@@ -63,6 +66,9 @@ class _VipCenterPageState extends State<VipCenterPage> {
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _isLoading = false;
       });
@@ -86,9 +92,11 @@ class _VipCenterPageState extends State<VipCenterPage> {
         MoeToast.success(context, value ? '已开启自动续费' : '已关闭自动续费');
       }
     } catch (e) {
-      setState(() {
-        _autoRenew = !value;
-      });
+      if (mounted) {
+        setState(() {
+          _autoRenew = !value;
+        });
+      }
       if (mounted) {
         MoeToast.error(context, '操作失败，请稍后重试');
       }
@@ -194,7 +202,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
                                 ),
                                 MoeMenuItem(
                                   icon: Icons.diamond_outlined,
-                                  title: '购买/续费VIP',
+                                  title: '购买/续费 VIP',
                                   subtitle: '查看最新套餐优惠',
                                   color: Colors.orangeAccent,
                                   onTap: () async {
@@ -203,10 +211,10 @@ class _VipCenterPageState extends State<VipCenterPage> {
                                       MaterialPageRoute(builder: (context) => const VipPurchasePage()),
                                     );
                                     if (result == true) {
-                                      if (mounted) {
-                                        Navigator.pop(context, true);
-                                      }
                                       _loadVipInfo();
+                                      if (context.mounted) {
+                                        MoeToast.success(context, 'VIP 状态已更新');
+                                      }
                                     }
                                   },
                                 ),
@@ -265,7 +273,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
@@ -277,7 +285,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF7F7FD5).withOpacity(0.1),
+                      color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -342,36 +350,52 @@ class _VipCenterPageState extends State<VipCenterPage> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        // VIP 保持金色质感，非 VIP 使用白色半透明玻璃拟态，不再用深灰
         gradient: isVip
             ? const LinearGradient(
-                colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                colors: [Color(0xFFFFD66B), Color(0xFFFFA94D)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               )
             : LinearGradient(
-                colors: [Colors.white.withOpacity(0.9), Colors.white.withOpacity(0.7)],
+                colors: [Colors.white.withValues(alpha: 0.9), Colors.white.withValues(alpha: 0.7)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: (isVip ? Colors.orange : Colors.black).withOpacity(0.15),
-            blurRadius: 20,
+            color: (isVip ? const Color(0xFFFFB347) : const Color(0xFF7F7FD5))
+                .withValues(alpha: 0.22),
+            blurRadius: 24,
             offset: const Offset(0, 10),
           ),
         ],
+        border: Border.all(
+          color: isVip
+              ? Colors.white.withValues(alpha: 0.5)
+              : const Color(0xFF7F7FD5).withValues(alpha: 0.1),
+          width: 1.2,
+        ),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isVip ? Colors.white.withOpacity(0.25) : const Color(0xFF7F7FD5).withOpacity(0.1),
+                  color: isVip ? Colors.white.withValues(alpha: 0.25) : const Color(0xFF7F7FD5).withValues(alpha: 0.1),
                   shape: BoxShape.circle,
+                  boxShadow: isVip
+                      ? [
+                          BoxShadow(
+                            color: Colors.white.withValues(alpha: 0.32),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Icon(
                   isVip ? Icons.workspace_premium_rounded : Icons.star_border_rounded,
@@ -397,8 +421,41 @@ class _VipCenterPageState extends State<VipCenterPage> {
                     Text(
                       isVip ? '有效期至: ${expiresAt ?? "未知"}' : '开通VIP，解锁更多特权',
                       style: TextStyle(
-                        color: isVip ? Colors.white.withOpacity(0.9) : Colors.grey[600],
+                        color: isVip ? Colors.white.withValues(alpha: 0.9) : Colors.grey[600],
                         fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isVip
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : const Color(0xFF7F7FD5).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isVip
+                        ? Colors.white.withValues(alpha: 0.45)
+                        : const Color(0xFF7F7FD5).withValues(alpha: 0.18),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isVip ? Icons.bolt_rounded : Icons.lock_outline_rounded,
+                      color: isVip ? Colors.white : const Color(0xFF7F7FD5),
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      isVip ? '已激活' : '未开通',
+                      style: TextStyle(
+                        color: isVip ? Colors.white : const Color(0xFF5E5F86),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
                       ),
                     ),
                   ],
@@ -406,7 +463,18 @@ class _VipCenterPageState extends State<VipCenterPage> {
               ),
             ],
           ),
-          
+
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildVipPerkChip(isVip, Icons.palette_rounded, '专属主题'),
+              _buildVipPerkChip(isVip, Icons.hd_rounded, '高清画质'),
+              _buildVipPerkChip(isVip, Icons.flash_on_rounded, '极速体验'),
+            ],
+          ),
+
           if (!isVip) ...[
             const SizedBox(height: 24),
             SizedBox(
@@ -425,8 +493,8 @@ class _VipCenterPageState extends State<VipCenterPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF7F7FD5), // 统一使用主色
                   foregroundColor: Colors.white,
-                  elevation: 5,
-                  shadowColor: const Color(0xFF7F7FD5).withOpacity(0.4),
+                  elevation: 0,
+                  shadowColor: const Color(0xFF7F7FD5).withValues(alpha: 0.4),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                 ),
                 child: const Text(
@@ -435,7 +503,47 @@ class _VipCenterPageState extends State<VipCenterPage> {
                 ),
               ),
             ),
+            const SizedBox(height: 10),
+            Text(
+              '开通后权益才会生效，请以支付结果为准',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 12,
+                height: 1.4,
+              ),
+            ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVipPerkChip(bool isVip, IconData icon, String label) {
+    final bgColor = isVip
+        ? Colors.white.withValues(alpha: 0.2)
+        : const Color(0xFF7F7FD5).withValues(alpha: 0.08);
+    final iconColor = isVip ? Colors.white : const Color(0xFF7F7FD5);
+    final textColor = isVip ? Colors.white : const Color(0xFF5E5F86);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: iconColor),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: textColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -449,7 +557,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7F7FD5).withOpacity(0.08),
+            color: const Color(0xFF7F7FD5).withValues(alpha: 0.08),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -478,7 +586,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
             _buildInfoRow('套餐名称', record.planName),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Divider(color: Colors.grey.withOpacity(0.1)),
+              child: Divider(color: Colors.grey.withValues(alpha: 0.1)),
             ),
             _buildInfoRow(
               '开始时间',
@@ -501,15 +609,21 @@ class _VipCenterPageState extends State<VipCenterPage> {
 
   Widget _buildInfoRow(String label, String value) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(color: Colors.grey[500], fontSize: 14),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(color: Colors.grey[500], fontSize: 14),
+          ),
         ),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF333333)),
+        const SizedBox(width: 16),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF333333)),
+          ),
         ),
       ],
     );
@@ -522,12 +636,13 @@ class _VipCenterPageState extends State<VipCenterPage> {
         MoeMenuItem(
           icon: Icons.autorenew_rounded,
           title: '自动续费',
-          subtitle: 'VIP到期后自动扣费续期',
+          subtitle: 'VIP 到期后自动使用钱包余额续期',
           color: Colors.green,
           onTap: () => _toggleAutoRenew(!_autoRenew),
           trailing: Switch.adaptive(
             value: _autoRenew,
-            activeColor: const Color(0xFF7F7FD5),
+            activeThumbColor: const Color(0xFF7F7FD5),
+            activeTrackColor: const Color(0xFF7F7FD5).withValues(alpha: 0.5),
             onChanged: _toggleAutoRenew,
           ),
         ),
