@@ -23,9 +23,6 @@ var (
 	chatConnectionsMutex sync.RWMutex
 )
 
-// 与 model.Notification.Type 一致：6=私信；WS 投递失败时写入通知表，客户端可走通知中心/私信列表。
-const notificationTypePrivateChat = 6
-
 // 聊天消息结构
 type ChatMessage struct {
 	From    string `json:"from"`
@@ -83,8 +80,8 @@ func (l *ChatWsLogic) ChatWs() error {
 		return nil
 	}
 
-	// 获取用户 ID
-	userID := fmt.Sprintf("%d", claims.UserID)
+	// 获取用户 ID（与投递时 NormalizeChatUserIDKey 对齐）
+	userID := NormalizeChatUserIDKey(fmt.Sprintf("%d", claims.UserID))
 
 	// 升级 HTTP 连接为 WebSocket
 	conn, err := upgrader.Upgrade(*w, r, nil)
@@ -184,29 +181,14 @@ func (l *ChatWsLogic) handleChatMessage(userID string, msg map[string]interface{
 		return
 	}
 
-	// 支持 both "target_id" and "to" fields
-	targetID, ok := msg["target_id"].(string)
+	targetID, ok := PeerUserIDFromChatMessage(msg)
 	if !ok {
-		// 尝试从 "to" 字段获取
-		targetID, ok = msg["to"].(string)
-		if !ok {
-			l.Logger.Errorf("Invalid target ID: neither 'target_id' nor 'to' field found")
-			return
-		}
+		l.Logger.Errorf("Invalid target ID: neither 'target_id' nor 'to' (string/number)")
+		return
 	}
 
-	// 尝试获取发送者信息，支持多种字段名
-	senderName := "用户"
+	// 头像可来自客户端；展示名在落库成功后一律由服务端解析（与 REST 发送路径一致）。
 	senderAvatar := ""
-
-	// 尝试从不同字段名获取发送者名称
-	if name, ok := msg["sender_name"].(string); ok && name != "" {
-		senderName = name
-	} else if name, ok := msg["senderName"].(string); ok && name != "" {
-		senderName = name
-	}
-
-	// 尝试从不同字段名获取发送者头像
 	if avatar, ok := msg["sender_avatar"].(string); ok && avatar != "" {
 		senderAvatar = avatar
 	} else if avatar, ok := msg["senderAvatar"].(string); ok && avatar != "" {
@@ -225,30 +207,18 @@ func (l *ChatWsLogic) handleChatMessage(userID string, msg map[string]interface{
 	if rpcErr != nil {
 		l.Errorf("SendPrivateMessage (ws path): %v", rpcErr)
 	}
-
-	chatMsg := map[string]interface{}{
-		"from":          userID,
-		"content":       content,
-		"time":          time.Now().Format(time.RFC3339),
-		"sender_name":   senderName,
-		"sender_avatar": senderAvatar,
-		"senderName":    senderName,
-		"senderAvatar":  senderAvatar,
-	}
-	if rpcResp != nil && rpcResp.Message != nil && rpcResp.Message.Id != "" {
-		chatMsg["server_message_id"] = rpcResp.Message.Id
-		chatMsg["expires_at"] = rpcResp.Message.ExpiresAt
-		if rpcResp.Message.SenderMoeNo != "" {
-			chatMsg["sender_moe_no"] = rpcResp.Message.SenderMoeNo
-		}
-		if rpcResp.Message.ReceiverMoeNo != "" {
-			chatMsg["receiver_moe_no"] = rpcResp.Message.ReceiverMoeNo
-		}
+	if rpcErr != nil || rpcResp == nil || rpcResp.Message == nil || strings.TrimSpace(rpcResp.Message.Id) == "" {
+		_ = l.sendToUser(userID, map[string]interface{}{
+			"type":    "private_message_error",
+			"message": "消息保存失败，请检查网络或稍后重试",
+		})
+		return
 	}
 
-	if !l.sendToUser(targetID, chatMsg) {
-		l.persistOfflinePrivateChat(targetID, userID, content, senderName)
-	}
+	senderName, senderAvatar := ResolvePrivateMessageSenderProfile(
+		l.ctx, l.svcCtx, userID, rpcResp.Message, senderAvatar,
+	)
+	DeliverPrivateMessageRealTime(l.ctx, l.svcCtx, userID, targetID, content, senderName, senderAvatar, rpcResp.Message)
 }
 
 func extractImagePathsFromWSMsg(msg map[string]interface{}) []string {
@@ -272,65 +242,7 @@ func extractImagePathsFromWSMsg(msg map[string]interface{}) []string {
 	return out
 }
 
-// persistOfflinePrivateChat 对端无 WS 连接或发送失败时，落库为「私信」通知（与现有 notifications 体系一致；正文受 RPC 200 字截断）。
-func (l *ChatWsLogic) persistOfflinePrivateChat(targetUserID, fromUserID, content, senderName string) {
-	body := strings.TrimSpace(content)
-	if body == "" {
-		return
-	}
-	if targetUserID == fromUserID {
-		return
-	}
-	// 与 CreateNotification 截断策略一致（按字节），避免超长
-	if len(body) > 200 {
-		body = body[:200]
-	}
-	if senderName != "" && senderName != "用户" {
-		body = senderName + ": " + body
-		if len(body) > 200 {
-			body = body[:200]
-		}
-	}
-	_, err := l.svcCtx.SuperRpcClient.CreateNotification(l.ctx, &super.CreateNotificationReq{
-		UserId:   targetUserID,
-		SenderId: fromUserID,
-		Type:     notificationTypePrivateChat,
-		PostId:   "",
-		Content:  body,
-	})
-	if err != nil {
-		l.Errorf("offline private chat notify failed to=%s from=%s: %v", targetUserID, fromUserID, err)
-		return
-	}
-	logx.WithContext(l.ctx).Debugf("offline private chat stored as notification to=%s from=%s", targetUserID, fromUserID)
-}
-
 // 发送消息给指定用户
 func (l *ChatWsLogic) sendToUser(userID string, data interface{}) bool {
-	chatConnectionsMutex.RLock()
-	conn, ok := chatConnections[userID]
-	chatConnectionsMutex.RUnlock()
-
-	if !ok {
-		return false
-	}
-
-	msgData, err := json.Marshal(data)
-	if err != nil {
-		l.Logger.Errorf("Error marshaling message: %v", err)
-		return false
-	}
-
-	err = conn.WriteMessage(websocket.TextMessage, msgData)
-	if err != nil {
-		l.Logger.Errorf("Error sending message to %s: %v", userID, err)
-		// 移除无效连接
-		chatConnectionsMutex.Lock()
-		delete(chatConnections, userID)
-		chatConnectionsMutex.Unlock()
-		conn.Close()
-		return false
-	}
-
-	return true
+	return PushJSONToChatUser(userID, data)
 }

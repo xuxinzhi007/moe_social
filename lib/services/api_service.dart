@@ -5,7 +5,6 @@ import 'dart:io' show File, SocketException;
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart'
     show debugPrint, kDebugMode, kIsWeb, VoidCallback;
-import 'package:flutter/services.dart' show rootBundle;
 import '../models/post.dart';
 import '../models/comment.dart';
 import '../models/user.dart';
@@ -21,6 +20,7 @@ import '../models/checkin_data.dart';
 import '../models/exp_log.dart';
 import 'remote_api_config_service.dart';
 import '../utils/jwt_exp.dart';
+import '../utils/config.dart' as moe_launch_config;
 
 // 自定义异常类，用于传递错误信息
 class ApiException implements Exception {
@@ -116,12 +116,11 @@ class ApiService {
     return response;
   }
 
-  // 环境配置（local / online），由 assets/config/api_env.json 驱动。
-  static const String _apiEnvAssetPath = 'assets/config/api_env.json';
+  // 环境配置（local / online）：**唯一来源** `lib/utils/config.dart` → [moe_launch_config.AppConfig]
   static const String _envLocal = 'local';
   static const String _envOnline = 'online';
 
-  static String _runtimeEnvironment = _envOnline;
+  static String _runtimeEnvironment = _envLocal;
   static String get runtimeEnvironment => _runtimeEnvironment;
 
   /// API 调试日志开关（只在 Debug 模式生效）
@@ -131,12 +130,11 @@ class ApiService {
   /// 是否输出“超详细”日志（会非常吵；默认关闭）
   static const bool _verboseApiLog = true;
 
-  // 首装无缓存时的线上环境兜底入口（问 client-config）。
-  static const String _defaultOnlineUrl = 'http://47.106.175.49:8888';
-  static const String _defaultLocalUrl = 'http://localhost:8888';
-
-  static String _configuredOnlineUrl = _defaultOnlineUrl;
-  static String _configuredLocalUrl = _defaultLocalUrl;
+  // 与 [moe_launch_config.AppConfig] 同源；[initRemoteProductionBaseUrl] 内会再做规范化。
+  static String _configuredOnlineUrl =
+      moe_launch_config.AppConfig.productionUrl;
+  static String _configuredLocalUrl =
+      moe_launch_config.AppConfig.developmentUrl;
 
   /// online 模式下由 [initRemoteProductionBaseUrl] 写入；未初始化前为 null 时 [baseUrl] 用配置里的 online 地址。
   static String? _runtimeProductionBaseUrl;
@@ -158,41 +156,33 @@ class ApiService {
     return s;
   }
 
-  static Future<void> _loadApiEnvironmentConfig() async {
-    try {
-      final text = await rootBundle.loadString(_apiEnvAssetPath);
-      final decoded = json.decode(text);
-      if (decoded is! Map<String, dynamic>) return;
+  /// 从 [moe_launch_config.AppConfig] 同步 local/online 基址（唯一配置入口，勿再使用 api_env.json）。
+  static void _applyApiEnvironmentFromAppConfig() {
+    _runtimeEnvironment = moe_launch_config.AppConfig.isProduction
+        ? _envOnline
+        : _envLocal;
 
-      final mode = (decoded['api_mode'] as String?)?.trim().toLowerCase();
-      if (mode == _envLocal || mode == _envOnline) {
-        _runtimeEnvironment = mode!;
-      }
-
-      final localBase = _normalizeBaseUrl(decoded['local_base_url'] as String?);
-      if (localBase != null) {
-        _configuredLocalUrl = localBase;
-      }
-
-      final onlineBase = _normalizeBaseUrl(
-        (decoded['online_base_url'] ?? decoded['test_base_url']) as String?,
-      );
-      if (onlineBase != null) {
-        _configuredOnlineUrl = onlineBase;
-      }
-
-      _log(
-        '🔧 API环境: $_runtimeEnvironment, local=$_configuredLocalUrl, online=$_configuredOnlineUrl',
-      );
-    } catch (e) {
-      _log('⚠️ 读取$_apiEnvAssetPath失败，使用默认环境: $e');
+    final urlLocal =
+        _normalizeBaseUrl(moe_launch_config.AppConfig.developmentUrl);
+    if (urlLocal != null) {
+      _configuredLocalUrl = urlLocal;
     }
+
+    final urlOnline =
+        _normalizeBaseUrl(moe_launch_config.AppConfig.productionUrl);
+    if (urlOnline != null) {
+      _configuredOnlineUrl = urlOnline;
+    }
+
+    _log(
+      '🔧 API环境: $_runtimeEnvironment, local=$_configuredLocalUrl, online=$_configuredOnlineUrl',
+    );
   }
 
   /// 在 [main] 里 `WidgetsFlutterBinding` 之后、`AuthService.init` 之前调用一次。
   /// local 模式直接使用本地地址；online 模式会优先解析远程配置用于自动同步最新地址。
   static Future<void> initRemoteProductionBaseUrl() async {
-    await _loadApiEnvironmentConfig();
+    _applyApiEnvironmentFromAppConfig();
 
     if (_runtimeEnvironment == _envLocal) {
       _runtimeProductionBaseUrl = null;
@@ -1167,6 +1157,32 @@ class ApiService {
     }
     final hasMore = result['has_more'] == true;
     return (items: list, hasMore: hasMore);
+  }
+
+  /// 发送私信：服务端写入 `private_messages` 并向对端推送 WS（离线则写通知）。
+  static Future<PrivateMessageItem> sendPrivateMessage({
+    required String receiverId,
+    required String body,
+    List<String>? imagePaths,
+  }) async {
+    final rid = receiverId.trim();
+    if (rid.isEmpty) {
+      throw ApiException('receiver_id 不能为空', 400);
+    }
+    final map = <String, dynamic>{
+      'receiver_id': rid,
+      'body': body,
+    };
+    if (imagePaths != null && imagePaths.isNotEmpty) {
+      map['image_paths'] = imagePaths;
+    }
+    final result =
+        await _request('/api/private-messages', method: 'POST', body: map);
+    final data = result['data'];
+    if (data is! Map<String, dynamic>) {
+      throw ApiException('发送失败：响应格式错误', 500);
+    }
+    return PrivateMessageItem.fromJson(data);
   }
 
   // 更新用户密码

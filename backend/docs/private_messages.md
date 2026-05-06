@@ -67,9 +67,10 @@ private_message:
 鉴权：与其它 `jwt: Auth` 路由相同，Header `Authorization: Bearer <token>`。  
 当前用户 ID 由中间件注入 context，**不信任 body 里的 sender**。
 
-### 4.1 发送（与 WS 并行推荐）
+### 4.1 发送（推荐：REST 为主，WS 为辅）
 
-- **POST** `/api/private-messages`
+- **POST** `/api/private-messages`  
+  成功后服务端会 **与 WS 路径一致**：向对端已连接 `/ws/chat` 的会话推送同构 JSON（含 `server_message_id`、`timestamp` 等）；对端无 WS 时仍写 **通知 type=6**。Flutter 客户端已改为 **优先走本接口** 发送，避免仅依赖 WS 时 RPC 异常导致不落库。
 - Body JSON：
 
 ```json
@@ -100,10 +101,11 @@ private_message:
 
 在 `type: "message"` 的处理中，服务端会：
 
-1. 调用 **RPC `SendPrivateMessage`** 写入 `private_messages`（含 `image_paths` 解析，见 WS JSON 字段 `image_paths` 或 `imagePaths` 数组）。
-2. 再向对端 **WS 推送** 原有 JSON（并附带 `server_message_id`、`expires_at`、`sender_moe_no`、`receiver_moe_no`（有值时）便于前端与 REST 对齐）。
+1. 调用 **RPC `SendPrivateMessage`** 写入 `private_messages`（含 `image_paths` 解析，见 WS JSON 字段 `image_paths` 或 `imagePaths` 数组）。`to` / `target_id` **支持字符串或 JSON 数字**。
+2. 落库成功后使用与 **POST `/api/private-messages`** 相同的投递逻辑：向对端 **WS 推送**（`from`、`content`、`timestamp`（毫秒）、`time`（RFC3339）、`server_message_id`、`expires_at`、`sender_moe_no`、`receiver_moe_no` 等）。若 RPC 失败，向发送方回推 `type: "private_message_error"`。
+3. 若对端 **未连接 WS**，仍会落库；并保留 **通知表 type=6** 兜底（`CreateNotification`），便于通知中心提醒。
 
-若对端 **未连接 WS**，仍会落库；并保留原有 **通知表 type=6** 兜底（`CreateNotification`），便于通知中心提醒。
+**POST** 发送在 RPC 成功后走 **同一套投递**（实时 WS + 离线通知）。
 
 ---
 
@@ -130,7 +132,7 @@ go run super.go -f etc/super.yaml -migrate
 
 | 能力 | 方式 |
 |------|------|
-| 发消息 + 持久化 | `POST /api/private-messages` 或继续用 WS（服务端会写库） |
+| 发消息 + 持久化 | **推荐** `POST /api/private-messages`（服务端写库并 WS/通知投递）；仍兼容仅用 WS `type: "message"` |
 | 历史列表 | `GET /api/private-messages?peer_user_id=...` |
 | 实时收信 | 原有 WS `type: "message"` |
 | 图片 | `image_paths` 存文件名；展示用 `client-config` 的 `api_base_url` + `/api/images/` + name |

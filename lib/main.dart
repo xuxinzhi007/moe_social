@@ -68,14 +68,19 @@ import 'utils/startup_manager.dart';
 import 'utils/async_svg_manager.dart';
 import 'widgets/splash_screen.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await RiveNative.init();
-
+void main() {
+  // ensureInitialized 与 runApp 必须在同一 Zone（与 runZonedGuarded 一致），否则 Web 上会报 Zone mismatch。
   runZonedGuarded(() {
-    _setupErrorHandlers();
+    WidgetsFlutterBinding.ensureInitialized();
 
-    runApp(const SplashScreenWrapper());
+    RiveNative.init().then((_) {
+      _setupErrorHandlers();
+      runApp(const SplashScreenWrapper());
+    }).catchError((Object e, StackTrace st) {
+      debugPrint('RiveNative.init failed: $e');
+      _setupErrorHandlers();
+      runApp(const SplashScreenWrapper());
+    });
   }, (error, stack) {
     debugPrint('═══════════════════════════════════════');
     debugPrint('Uncaught Error:');

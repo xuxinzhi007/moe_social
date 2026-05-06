@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"backend/api/internal/common"
+	"backend/api/internal/logic/chat"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 	"backend/rpc/pb/super"
@@ -49,6 +50,11 @@ func (l *SendPrivateMessageLogic) SendPrivateMessage(req *types.SendPrivateMessa
 			BaseResp: common.HandleRPCError(nil, "发送失败"),
 		}, nil
 	}
+
+	senderName, senderAvatar := chat.ResolvePrivateMessageSenderProfile(
+		l.ctx, l.svcCtx, senderID, rpcResp.Message, "",
+	)
+	chat.DeliverPrivateMessageRealTime(l.ctx, l.svcCtx, senderID, req.ReceiverId, req.Body, senderName, senderAvatar, rpcResp.Message)
 
 	return &types.SendPrivateMessageResp{
 		BaseResp: common.HandleRPCError(nil, "ok"),

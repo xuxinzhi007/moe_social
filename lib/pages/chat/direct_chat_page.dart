@@ -12,6 +12,7 @@ import '../../widgets/avatar_image.dart';
 import 'package:provider/provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../services/chat_push_service.dart';
+import '../../services/direct_chat_sync_bus.dart';
 import '../../services/presence_service.dart';
 import '../../services/notification_service.dart';
 import '../../models/notification.dart';
@@ -444,6 +445,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
             })
         .toList();
     await prefs.setString(key, json.encode(list));
+    DirectChatSyncBus.bump();
   }
 
   void _scrollToBottom() {
@@ -495,10 +497,11 @@ class _DirectChatPageState extends State<DirectChatPage> {
   void _handleIncomingMap(Map<String, dynamic> map) {
     if (!mounted) return;
     try {
-      final from = map['from'] as String?;
-      final content = map['content'] as String?;
+      // 与 ChatPushService 一致：from/content 可能是 JSON 数字，强转 String? 会失败并被 catch 吞掉。
+      final from = map['from']?.toString();
+      final content = map['content']?.toString();
       final timestamp = map['timestamp'];
-      if (from == null || content == null) {
+      if (from == null || from.isEmpty || content == null) {
         return;
       }
       final currentUserId = _currentUserId;
@@ -511,6 +514,10 @@ class _DirectChatPageState extends State<DirectChatPage> {
       DateTime time;
       if (timestamp is int) {
         time = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      } else if (timestamp is num) {
+        time = DateTime.fromMillisecondsSinceEpoch(timestamp.round());
+      } else if (map['time'] is String) {
+        time = DateTime.tryParse(map['time'] as String) ?? DateTime.now();
       } else {
         time = DateTime.now();
       }
@@ -586,18 +593,57 @@ class _DirectChatPageState extends State<DirectChatPage> {
       await _saveMessages();
       _scrollToBottom();
 
-      final channel = ChatPushService.channel;
-      if (channel != null) {
-        final payload = json.encode({
-          'type': 'message',
-          'to': widget.userId,
-          'content': content,
-          'sender_name': widget.username,
-          'sender_avatar': widget.avatar,
+      final optimisticIdx = _messages.length - 1;
+      try {
+        final saved = await ApiService.sendPrivateMessage(
+          receiverId: widget.userId,
+          body: content,
+        );
+        if (!mounted) return;
+        setState(() {
+          if (optimisticIdx < _messages.length &&
+              _messages[optimisticIdx].senderId == currentUserId &&
+              _messages[optimisticIdx].content == content) {
+            _messages[optimisticIdx] = _DirectMessage(
+              senderId: currentUserId,
+              content: content,
+              time: _messages[optimisticIdx].time,
+              serverId: _serverSlotFromWsId(saved.id, content),
+            );
+          }
         });
-        try {
-          channel.sink.add(payload);
-        } catch (_) {}
+        await _saveMessages();
+      } on ApiException catch (e) {
+        if (!mounted) return;
+        setState(() {
+          if (optimisticIdx < _messages.length &&
+              _messages[optimisticIdx].senderId == currentUserId &&
+              _messages[optimisticIdx].content == content) {
+            _messages.removeAt(optimisticIdx);
+          }
+        });
+        await _saveMessages();
+        if (!mounted) return;
+        MoeToast.show(
+          context,
+          '图片发送失败：${e.message}',
+          duration: const Duration(seconds: 4),
+          icon: Icons.cloud_off_outlined,
+        );
+        return;
+      } catch (_) {
+        if (!mounted) return;
+        setState(() {
+          if (optimisticIdx < _messages.length &&
+              _messages[optimisticIdx].senderId == currentUserId &&
+              _messages[optimisticIdx].content == content) {
+            _messages.removeAt(optimisticIdx);
+          }
+        });
+        await _saveMessages();
+        if (!mounted) return;
+        MoeToast.error(context, '图片发送失败，请检查网络');
+        return;
       }
     } catch (e) {
       if (mounted) {
@@ -630,26 +676,62 @@ class _DirectChatPageState extends State<DirectChatPage> {
     });
     await _saveMessages();
     _scrollToBottom();
-    final channel = ChatPushService.channel;
-    if (channel != null) {
-      final payload = json.encode({
-        'type': 'message',
-        'to': widget.userId,
-        'content': text,
-        'sender_name': widget.username,
-        'sender_avatar': widget.avatar,
+    final optimisticIdx = _messages.length - 1;
+    try {
+      final saved = await ApiService.sendPrivateMessage(
+        receiverId: widget.userId,
+        body: text,
+      );
+      if (!mounted) return;
+      setState(() {
+        if (optimisticIdx < _messages.length &&
+            _messages[optimisticIdx].senderId == currentUserId &&
+            _messages[optimisticIdx].content == text) {
+          _messages[optimisticIdx] = _DirectMessage(
+            senderId: currentUserId,
+            content: text,
+            time: _messages[optimisticIdx].time,
+            serverId: _serverSlotFromWsId(saved.id, text),
+          );
+        }
+        _isSending = false;
       });
-      try {
-        channel.sink.add(payload);
-      } catch (_) {}
-    } else {
-      // If websocket isn't ready yet, try to reconnect (message already shown locally).
-      ChatPushService.start();
+      await _saveMessages();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        if (optimisticIdx < _messages.length &&
+            _messages[optimisticIdx].senderId == currentUserId &&
+            _messages[optimisticIdx].content == text) {
+          _messages.removeAt(optimisticIdx);
+        }
+        _isSending = false;
+      });
+      await _saveMessages();
+      if (!mounted) return;
+      MoeToast.show(
+        context,
+        '发送失败：${e.message}',
+        duration: const Duration(seconds: 4),
+        icon: Icons.cloud_off_outlined,
+      );
+      return;
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        if (optimisticIdx < _messages.length &&
+            _messages[optimisticIdx].senderId == currentUserId &&
+            _messages[optimisticIdx].content == text) {
+          _messages.removeAt(optimisticIdx);
+        }
+        _isSending = false;
+      });
+      await _saveMessages();
+      if (!mounted) return;
+      MoeToast.error(context, '发送失败，请检查网络');
+      return;
     }
     if (!mounted) return;
-    setState(() {
-      _isSending = false;
-    });
     _inputFocusNode.requestFocus();
   }
 
