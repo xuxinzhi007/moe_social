@@ -9,6 +9,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import '../models/post.dart';
 import '../models/comment.dart';
 import '../models/user.dart';
+import '../models/private_message_item.dart';
 import '../models/vip_plan.dart';
 import '../models/vip_order.dart';
 import '../models/gift_purchase_order.dart';
@@ -1105,6 +1106,8 @@ class ApiService {
     List<String>? inventory,
     String? equippedFrameId,
     bool clearEquippedFrame = false,
+    /// 私信服务端保留策略：`auto` | `7` | `30`
+    String? messageRetention,
   }) async {
     final body = <String, dynamic>{};
 
@@ -1115,6 +1118,9 @@ class ApiService {
     if (gender != null) body['gender'] = gender;
     if (birthday != null) body['birthday'] = birthday;
     if (inventory != null) body['inventory'] = jsonEncode(inventory);
+    if (messageRetention != null && messageRetention.isNotEmpty) {
+      body['message_retention'] = messageRetention;
+    }
 
     if (clearEquippedFrame) {
       body['clear_equipped_frame'] = true;
@@ -1125,6 +1131,42 @@ class ApiService {
     final result =
         await _request('/api/user/$userId', method: 'PUT', body: body);
     return User.fromJson(result['data']);
+  }
+
+  /// 拉取与指定用户的私信历史（JWT）。`data` 为时间正序；`has_more` 表示是否还有更早消息。
+  static Future<({List<PrivateMessageItem> items, bool hasMore})>
+      listPrivateMessages({
+    required String peerUserId,
+    String? beforeId,
+    int limit = 30,
+  }) async {
+    final peer = peerUserId.trim();
+    if (peer.isEmpty) {
+      throw ApiException('peer_user_id 不能为空', 400);
+    }
+    final lim = limit.clamp(1, 100);
+    final q = <String, String>{
+      'peer_user_id': peer,
+      'limit': '$lim',
+    };
+    if (beforeId != null && beforeId.isNotEmpty) {
+      q['before_id'] = beforeId;
+    }
+    // 必须用 path + queryParameters：若写成 '/api/x?${Uri(queryParameters:)}'，
+    // Uri.toString() 自带前导 `?`，会得到 `??peer_user_id=...`，后端解析不到 peer_user_id。
+    final path = Uri(path: '/api/private-messages', queryParameters: q).toString();
+    final result = await _request(path);
+    final raw = result['data'];
+    final list = <PrivateMessageItem>[];
+    if (raw is List) {
+      for (final e in raw) {
+        if (e is Map<String, dynamic>) {
+          list.add(PrivateMessageItem.fromJson(e));
+        }
+      }
+    }
+    final hasMore = result['has_more'] == true;
+    return (items: list, hasMore: hasMore);
   }
 
   // 更新用户密码

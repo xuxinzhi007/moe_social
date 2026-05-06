@@ -7,6 +7,10 @@ class User {
   final String email;
   /// 10 位数字 Moe 号（登录账号之一）
   final String moeNo;
+  /// 对外展示 ID（与后端 `display_user_id`，一般为 Moe 号）
+  final String displayUserId;
+  /// 私信自保留偏好：0=自动；7 / 30 为用户自选天数
+  final int messageRetentionChoice;
   final String avatar;
   final String signature; // 个性签名
   final String gender; // 性别
@@ -30,6 +34,8 @@ class User {
     required this.username,
     required this.email,
     this.moeNo = '',
+    this.displayUserId = '',
+    this.messageRetentionChoice = 0,
     this.avatar = '',
     this.signature = '',
     this.gender = '',
@@ -60,6 +66,11 @@ class User {
       username: json['username'] as String? ?? '',
       email: json['email'] as String? ?? '',
       moeNo: json['moe_no'] as String? ?? '',
+      displayUserId: json['display_user_id'] as String? ??
+          json['moe_no'] as String? ??
+          '',
+      messageRetentionChoice:
+          (json['message_retention_choice'] as num?)?.toInt() ?? 0,
       avatar: json['avatar'] as String? ?? '',
       signature: json['signature'] as String? ?? '',
       gender: json['gender'] as String? ?? '',
@@ -86,6 +97,8 @@ class User {
       'username': username,
       'email': email,
       'moe_no': moeNo,
+      'display_user_id': displayUserId,
+      'message_retention_choice': messageRetentionChoice,
       'avatar': avatar,
       'signature': signature,
       'gender': gender,
@@ -129,6 +142,8 @@ class User {
     String? username,
     String? email,
     String? moeNo,
+    String? displayUserId,
+    int? messageRetentionChoice,
     String? avatar,
     String? signature,
     String? gender,
@@ -151,6 +166,9 @@ class User {
       username: username ?? this.username,
       email: email ?? this.email,
       moeNo: moeNo ?? this.moeNo,
+      displayUserId: displayUserId ?? this.displayUserId,
+      messageRetentionChoice:
+          messageRetentionChoice ?? this.messageRetentionChoice,
       avatar: avatar ?? this.avatar,
       signature: signature ?? this.signature,
       gender: gender ?? this.gender,
@@ -261,6 +279,8 @@ class User {
       username: username,
       email: email,
       moeNo: moeNo,
+      displayUserId: displayUserId,
+      messageRetentionChoice: messageRetentionChoice,
       avatar: avatar,
       signature: signature,
       gender: gender,

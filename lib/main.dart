@@ -49,6 +49,7 @@ import 'pages/profile/friends_page.dart';
 import 'pages/discover/discover_page.dart';
 import 'pages/discover/match_page.dart';
 import 'pages/chat/direct_chat_page.dart';
+import 'pages/chat/conversations_page.dart';
 import 'providers/theme_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/device_info_provider.dart';
@@ -62,6 +63,7 @@ import 'pages/community/community_home_page.dart';
 import 'pages/community/community_post_detail_page.dart';
 import 'pages/checkin/checkin_page.dart';
 import 'pages/settings/virtual_avatar_settings_page.dart';
+import 'pages/settings/message_retention_settings_page.dart';
 import 'utils/startup_manager.dart';
 import 'utils/async_svg_manager.dart';
 import 'widgets/splash_screen.dart';
@@ -334,6 +336,8 @@ class _MyAppState extends State<MyApp> {
           '/settings': (context) => const SettingsPage(),
           '/virtual-avatar-settings': (context) =>
               const VirtualAvatarSettingsPage(),
+          '/message-retention-settings': (context) =>
+              const MessageRetentionSettingsPage(),
           '/checkin': (context) {
             final userId = AuthService.currentUser;
             if (userId == null || userId.isEmpty) {
@@ -406,6 +410,7 @@ class _MyAppState extends State<MyApp> {
                 postId: postId, initialPost: initial);
           },
           '/match': (context) => const MatchPage(),
+          '/messages': (context) => const ConversationsPage(),
           '/direct-chat': (context) {
             final args = ModalRoute.of(context)?.settings.arguments;
             if (args is! Map<String, dynamic>) {
@@ -444,6 +449,7 @@ class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
   late final List<Widget Function()> _pageBuilders = [
     () => const HomePage(),
+    () => const ConversationsPage(),
     () => const FriendsPage(),
     () => const CommunityHomePage(),
     () => const DiscoverPage(),
@@ -483,6 +489,11 @@ class _MainPageState extends State<MainPage> {
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home_rounded),
             label: '首页',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.chat_bubble_outline_rounded),
+            selectedIcon: Icon(Icons.chat_rounded),
+            label: '消息',
           ),
           NavigationDestination(
             icon: Icon(Icons.contacts_outlined),

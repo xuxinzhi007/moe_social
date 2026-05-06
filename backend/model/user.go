@@ -13,6 +13,8 @@ type User struct {
 	ID              uint           `gorm:"primarykey" json:"id"`
 	Username        string         `gorm:"uniqueIndex;size:50;not null" json:"username"`
 	MoeNo           string         `gorm:"uniqueIndex;size:10" json:"moe_no"` // 10 位数字账号
+	// MessageRetentionChoice 私信保存天数偏好：0=按服务端 VIP/YAML 规则；7 或 30 为用户自选（新发出消息写入快照）
+	MessageRetentionChoice int `gorm:"default:0" json:"message_retention_choice"`
 	Password        string         `gorm:"size:100;not null" json:"-"`
 	Email           string         `gorm:"uniqueIndex;size:100;not null" json:"email"`
 	Avatar          string         `gorm:"type:text" json:"avatar"`   // 头像URL，支持长URL（如base64 data URI）

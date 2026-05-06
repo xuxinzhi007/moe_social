@@ -793,8 +793,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               ],
                             ),
                             const SizedBox(height: 16),
-                            _buildInfoRow('用户ID', widget.user.id),
-                            const Divider(height: 20, thickness: 1, color: Color(0xFFF0F0F0)),
                             _buildInfoRow(
                               'Moe 号',
                               widget.user.moeNo.isNotEmpty

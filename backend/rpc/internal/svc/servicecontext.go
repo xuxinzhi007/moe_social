@@ -23,8 +23,10 @@ func NewServiceContext(c config.Config, autoMigrate bool) *ServiceContext {
 		panic(err)
 	}
 
-	return &ServiceContext{
+	out := &ServiceContext{
 		Config: c,
 		DB:     utils.GetDB(),
 	}
+	utils.StartPrivateMessageCleanup(out.DB)
+	return out
 }

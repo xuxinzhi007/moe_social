@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"backend/api/internal/svc"
+	"backend/rpc/pb/super"
 	"backend/utils"
 
 	"github.com/gorilla/websocket"
@@ -21,6 +22,9 @@ var (
 	chatConnections      = make(map[string]*websocket.Conn)
 	chatConnectionsMutex sync.RWMutex
 )
+
+// 与 model.Notification.Type 一致：6=私信；WS 投递失败时写入通知表，客户端可走通知中心/私信列表。
+const notificationTypePrivateChat = 6
 
 // 聊天消息结构
 type ChatMessage struct {
@@ -127,7 +131,7 @@ func (l *ChatWsLogic) handleConnection(userID string, conn *websocket.Conn) {
 			}
 			break
 		}
-		l.Logger.Infof("Received chat message from %s: %s", userID, message)
+		logx.WithContext(l.ctx).Debugf("chat ws raw from %s len=%d", userID, len(message))
 		// 处理前端发送的消息
 		l.handleMessage(userID, message)
 	}
@@ -142,15 +146,13 @@ func (l *ChatWsLogic) handleMessage(userID string, message []byte) {
 		return
 	}
 
-	// 打印完整消息，用于调试
-	l.Logger.Infof("Received full message from %s: %v", userID, msg)
-
 	// 根据消息类型处理
 	msgType, ok := msg["type"].(string)
 	if !ok {
 		l.Logger.Errorf("Invalid message type")
 		return
 	}
+	logx.WithContext(l.ctx).Debugf("chat ws message from %s type=%s", userID, msgType)
 
 	switch msgType {
 	case "ping":
@@ -169,7 +171,7 @@ func (l *ChatWsLogic) handleMessage(userID string, message []byte) {
 		// 处理聊天消息
 		l.handleChatMessage(userID, msg)
 	default:
-		l.Logger.Infof("Unknown message type: %s", msgType)
+		logx.WithContext(l.ctx).Debugf("chat ws unknown type from %s: %s", userID, msgType)
 	}
 }
 
@@ -211,22 +213,96 @@ func (l *ChatWsLogic) handleChatMessage(userID string, msg map[string]interface{
 		senderAvatar = avatar
 	}
 
-	// 打印发送者信息，用于调试
-	l.Logger.Infof("Sending message from %s to %s: senderName=%s, senderAvatar=%s", userID, targetID, senderName, senderAvatar)
+	logx.WithContext(l.ctx).Debugf("chat ws send from=%s to=%s", userID, targetID)
 
-	// 创建聊天消息
+	paths := extractImagePathsFromWSMsg(msg)
+	rpcResp, rpcErr := l.svcCtx.SuperRpcClient.SendPrivateMessage(l.ctx, &super.SendPrivateMessageReq{
+		SenderId:    userID,
+		ReceiverId:  targetID,
+		Body:        content,
+		ImagePaths:  paths,
+	})
+	if rpcErr != nil {
+		l.Errorf("SendPrivateMessage (ws path): %v", rpcErr)
+	}
+
 	chatMsg := map[string]interface{}{
 		"from":          userID,
 		"content":       content,
 		"time":          time.Now().Format(time.RFC3339),
 		"sender_name":   senderName,
 		"sender_avatar": senderAvatar,
-		"senderName":    senderName,   // 同时添加驼峰命名的字段，确保前端兼容
-		"senderAvatar":  senderAvatar, // 同时添加驼峰命名的字段，确保前端兼容
+		"senderName":    senderName,
+		"senderAvatar":  senderAvatar,
+	}
+	if rpcResp != nil && rpcResp.Message != nil && rpcResp.Message.Id != "" {
+		chatMsg["server_message_id"] = rpcResp.Message.Id
+		chatMsg["expires_at"] = rpcResp.Message.ExpiresAt
+		if rpcResp.Message.SenderMoeNo != "" {
+			chatMsg["sender_moe_no"] = rpcResp.Message.SenderMoeNo
+		}
+		if rpcResp.Message.ReceiverMoeNo != "" {
+			chatMsg["receiver_moe_no"] = rpcResp.Message.ReceiverMoeNo
+		}
 	}
 
-	// 发送消息给目标用户
-	l.sendToUser(targetID, chatMsg)
+	if !l.sendToUser(targetID, chatMsg) {
+		l.persistOfflinePrivateChat(targetID, userID, content, senderName)
+	}
+}
+
+func extractImagePathsFromWSMsg(msg map[string]interface{}) []string {
+	v, ok := msg["image_paths"]
+	if !ok {
+		v, ok = msg["imagePaths"]
+	}
+	if !ok {
+		return nil
+	}
+	arr, ok := v.([]interface{})
+	if !ok {
+		return nil
+	}
+	out := make([]string, 0, len(arr))
+	for _, x := range arr {
+		if s, ok := x.(string); ok && s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// persistOfflinePrivateChat 对端无 WS 连接或发送失败时，落库为「私信」通知（与现有 notifications 体系一致；正文受 RPC 200 字截断）。
+func (l *ChatWsLogic) persistOfflinePrivateChat(targetUserID, fromUserID, content, senderName string) {
+	body := strings.TrimSpace(content)
+	if body == "" {
+		return
+	}
+	if targetUserID == fromUserID {
+		return
+	}
+	// 与 CreateNotification 截断策略一致（按字节），避免超长
+	if len(body) > 200 {
+		body = body[:200]
+	}
+	if senderName != "" && senderName != "用户" {
+		body = senderName + ": " + body
+		if len(body) > 200 {
+			body = body[:200]
+		}
+	}
+	_, err := l.svcCtx.SuperRpcClient.CreateNotification(l.ctx, &super.CreateNotificationReq{
+		UserId:   targetUserID,
+		SenderId: fromUserID,
+		Type:     notificationTypePrivateChat,
+		PostId:   "",
+		Content:  body,
+	})
+	if err != nil {
+		l.Errorf("offline private chat notify failed to=%s from=%s: %v", targetUserID, fromUserID, err)
+		return
+	}
+	logx.WithContext(l.ctx).Debugf("offline private chat stored as notification to=%s from=%s", targetUserID, fromUserID)
 }
 
 // 发送消息给指定用户

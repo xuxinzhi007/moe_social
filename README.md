@@ -113,10 +113,13 @@ git push origin v1.0.3
 git tag -d v1.0.3
 git push origin :v1.0.3
 ```
-go env -w GOOS=linux
+后端交叉编译 Linux 时，**不要**使用 `go env -w GOOS=linux` 改写全局环境（否则在本机 `go run` 会生成错误平台二进制）。在 `backend` 目录执行：
 
-go env -w GOOS=windows
+```bash
+make build-linux
+```
 
+详见 `backend/Makefile`（使用单次命令前缀环境变量）。若本机曾被误设为 `GOOS=windows`，在 Mac 上恢复：`go env -w GOOS=darwin` 或 `go env -u GOOS`。
 
 # 停止所有相关容器
 docker-compose -f docker-compose.binary.yml stop

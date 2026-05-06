@@ -27,6 +27,10 @@ message User {
   // 收到他人赠送礼物累计：魅力点（与礼物标价挂钩）与面值总和（展示用）
   int32 gift_charm = 17;
   double received_gift_value = 18;
+  // 与 moe_no 相同，个人中心等「对外展示账号」请用本字段或 moe_no；业务主键仍为 id
+  string display_user_id = 19;
+  // 0=自动（YAML+VIP）；7 或 30 为用户在设置里自选的私信保留天数（仅影响新消息）
+  int32 message_retention_choice = 20;
 }
 
 // 用户注册请求
@@ -94,6 +98,8 @@ message UpdateUserInfoReq {
   string inventory = 8;
   string equipped_frame_id = 9;
   bool clear_equipped_frame = 10;
+  // 空=不修改。auto=恢复自动；7 / 30 为自选保存天数（写入 users.message_retention_choice）
+  string message_retention = 11;
 }
 
 // 更新用户信息响应
@@ -574,6 +580,44 @@ message CreateNotificationResp {
   Notification notification = 1;
 }
 
+// --- 私信持久化（private_messages）---
+message PrivateMessage {
+  string id = 1;
+  string sender_id = 2;
+  string receiver_id = 3;
+  string body = 4;
+  repeated string image_paths = 5;
+  int32 retention_days = 6;
+  string created_at = 7;
+  string expires_at = 8;
+  // 展示用 Moe 号（10 位）；查询入参仍用 sender_id/receiver_id 主键
+  string sender_moe_no = 9;
+  string receiver_moe_no = 10;
+}
+
+message SendPrivateMessageReq {
+  string sender_id = 1;
+  string receiver_id = 2;
+  string body = 3;
+  repeated string image_paths = 4;
+}
+
+message SendPrivateMessageResp {
+  PrivateMessage message = 1;
+}
+
+message ListPrivateMessagesReq {
+  string viewer_id = 1;
+  string peer_id = 2;
+  string before_id = 3;
+  int32 limit = 4;
+}
+
+message ListPrivateMessagesResp {
+  repeated PrivateMessage messages = 1;
+  bool has_more = 2;
+}
+
 message UserMemory {
   string id = 1;
   string user_id = 2;
@@ -737,6 +781,8 @@ service Super {
   rpc ReadNotification(ReadNotificationReq) returns (ReadNotificationResp);
   rpc ReadAllNotifications(ReadAllNotificationsReq) returns (ReadAllNotificationsResp);
   rpc CreateNotification(CreateNotificationReq) returns (CreateNotificationResp);
+  rpc SendPrivateMessage(SendPrivateMessageReq) returns (SendPrivateMessageResp);
+  rpc ListPrivateMessages(ListPrivateMessagesReq) returns (ListPrivateMessagesResp);
   
   // 钱包相关服务
   rpc Recharge(RechargeReq) returns (RechargeResp);
