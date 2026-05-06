@@ -336,10 +336,10 @@ class _RealtimeChatPageState extends State<RealtimeChatPage> {
   void _handleIncomingMap(Map<String, dynamic> map) {
     if (!mounted) return;
     try {
-      final from = map['from'] as String?;
-      final content = map['content'] as String?;
+      final from = map['from']?.toString();
+      final content = map['content']?.toString();
       final timestamp = map['timestamp'];
-      if (from == null || content == null) {
+      if (from == null || from.isEmpty || content == null) {
         return;
       }
       final currentUserId = _currentUserId;
@@ -352,6 +352,10 @@ class _RealtimeChatPageState extends State<RealtimeChatPage> {
       DateTime time;
       if (timestamp is int) {
         time = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      } else if (timestamp is num) {
+        time = DateTime.fromMillisecondsSinceEpoch(timestamp.round());
+      } else if (map['time'] is String) {
+        time = DateTime.tryParse(map['time'] as String) ?? DateTime.now();
       } else {
         time = DateTime.now();
       }

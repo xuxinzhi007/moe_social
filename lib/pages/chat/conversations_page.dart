@@ -10,7 +10,10 @@ import '../../models/user.dart';
 import '../../providers/notification_provider.dart';
 import '../../services/api_service.dart';
 import '../../services/chat_push_service.dart';
+import '../../services/direct_chat_local_reader.dart';
+import '../../services/direct_chat_sync_bus.dart';
 import '../../services/notification_service.dart';
+import '../../utils/chat_message_display.dart';
 import '../../widgets/avatar_image.dart';
 
 /// 会话列表。`embedded: true` 时无 Scaffold，用于嵌在 [FriendsPage] 的 Tab 里。
@@ -28,22 +31,39 @@ class _ConversationsPageState extends State<ConversationsPage> {
   String? _error;
   List<User> _friends = [];
   List<NotificationModel> _notifs = [];
+  /// 与 [DirectChatPage] 本地缓存对齐的最后一条（用于在线聊天未进通知时的预览）
+  Map<String, ({DateTime at, String rawPreview})> _localThreadTails = {};
 
   @override
   void initState() {
     super.initState();
     ChatPushService.unreadBySender.addListener(_onPushUnread);
+    DirectChatSyncBus.threadsTick.addListener(_onLocalThreadsTick);
     unawaited(_load());
   }
 
   @override
   void dispose() {
     ChatPushService.unreadBySender.removeListener(_onPushUnread);
+    DirectChatSyncBus.threadsTick.removeListener(_onLocalThreadsTick);
     super.dispose();
   }
 
   void _onPushUnread() {
     if (mounted) setState(() {});
+    unawaited(_syncLocalThreadTails());
+  }
+
+  void _onLocalThreadsTick() {
+    unawaited(_syncLocalThreadTails());
+  }
+
+  Future<void> _syncLocalThreadTails() async {
+    final myId = await AuthService.getUserId();
+    if (myId.isEmpty) return;
+    final next = await DirectChatLocalReader.readThreadTails(myId);
+    if (!mounted) return;
+    setState(() => _localThreadTails = next);
   }
 
   Future<void> _load() async {
@@ -77,9 +97,33 @@ class _ConversationsPageState extends State<ConversationsPage> {
         _loading = false;
       });
 
+      final dmForWarm = allNotifs
+          .where((n) =>
+              n.type == NotificationModel.directMessage &&
+              (n.senderId ?? '').isNotEmpty &&
+              n.senderId != uid)
+          .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final lastBySid = <String, NotificationModel>{};
+      for (final n in dmForWarm) {
+        final sid = n.senderId!;
+        lastBySid.putIfAbsent(sid, () => n);
+      }
+      for (final e in lastBySid.entries) {
+        final sid = e.key;
+        final n = e.value;
+        final hasFriend = friends.any((f) => f.id == sid);
+        if (!hasFriend && looksLikeMoeNoOrWeakSenderLabel(n.senderName ?? '')) {
+          unawaited(ChatPushService.prefetchSenderDisplayName(sid).then((_) {
+            if (mounted) setState(() {});
+          }));
+        }
+      }
+
       unawaited(
         context.read<NotificationProvider>().fetchNotifications(refresh: true),
       );
+      unawaited(_syncLocalThreadTails());
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -236,16 +280,20 @@ class _ConversationsPageState extends State<ConversationsPage> {
       );
     }
 
+    DateTime lastActivity(String peerId) {
+      final nt = lastBySender[peerId]?.createdAt ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final lt = _localThreadTails[peerId]?.at ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      return lt.isAfter(nt) ? lt : nt;
+    }
+
     final rows = peerIds.toList();
     rows.sort((a, b) {
       final ua = pushUnread[a] ?? 0;
       final ub = pushUnread[b] ?? 0;
       if (ua != ub) return ub.compareTo(ua);
-      final ta = lastBySender[a]?.createdAt ??
-          DateTime.fromMillisecondsSinceEpoch(0);
-      final tb = lastBySender[b]?.createdAt ??
-          DateTime.fromMillisecondsSinceEpoch(0);
-      return tb.compareTo(ta);
+      return lastActivity(b).compareTo(lastActivity(a));
     });
 
     return RefreshIndicator(
@@ -264,9 +312,21 @@ class _ConversationsPageState extends State<ConversationsPage> {
             }
           }
           final last = lastBySender[peerId];
-          final title = friend?.username ?? last?.senderName ?? '用户';
+          final title = friend?.username ??
+              ChatPushService.cachedSenderDisplayName(peerId) ??
+              last?.senderName ??
+              '用户';
           final avatar = friend?.avatar ?? last?.senderAvatar ?? '';
-          final preview = (last?.content ?? '').trim();
+          final lt = _localThreadTails[peerId];
+          final ntTime = last?.createdAt ??
+              DateTime.fromMillisecondsSinceEpoch(0);
+          final previewRaw = (lt != null &&
+                  lt.rawPreview.isNotEmpty &&
+                  lt.at.isAfter(ntTime))
+              ? lt.rawPreview
+              : (last?.content ?? '').trim();
+          final preview =
+              previewRaw.isEmpty ? '' : formatDmPreviewForUi(previewRaw);
           final badge = pushUnread[peerId] ?? 0;
 
           return ListTile(
