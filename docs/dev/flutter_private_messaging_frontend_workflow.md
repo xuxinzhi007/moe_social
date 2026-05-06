@@ -8,8 +8,8 @@
 
 | 入口 | 说明 |
 |------|------|
-| 底栏 **「消息」** | `ConversationsPage`：聚合好友、通知中心私信、本地 `direct_chat_*` 缓存键、WS 未读 `ChatPushService.unreadBySender`；点进 `/direct-chat`。 |
-| `/messages` | 与底栏「消息」同一页面，便于深链或外部跳转。 |
+| 底栏 **「联系人」→ 子 Tab「消息」** | `FriendsPage` 内嵌 `ConversationsPage(embedded: true)`：聚合好友、通知中心私信、本地 `direct_chat_*` 缓存键、WS 未读 `ChatPushService.unreadBySender`；点进 `/direct-chat`。 |
+| `/messages` | 独立全屏 `ConversationsPage()`，便于深链或外部跳转（与联系人内嵌页逻辑一致）。 |
 | `/direct-chat` | 单聊页 `DirectChatPage`，参数 `Map`: `userId`, `username`, `avatar`（与好友/发现等 `pushNamed` 一致）。 |
 | `/message-retention-settings` | 「私信记录保留」设置页；也可从设置搜索命中后 `Navigator.pushNamed`。 |
 | 设置主页 `SettingsPage` | 区块 **「聊天与隐私」** → 列表项进入 `MessageRetentionSettingsPage`（`MaterialPageRoute`）。 |
@@ -102,9 +102,9 @@
 
 ---
 
-## 7. 会话列表 / 「消息」Tab
+## 7. 会话列表 / 「消息」分区
 
-- 底栏 **「消息」** / 路由 **`/messages`** → **`ConversationsPage`**：聚合好友、通知中心私信、本地缓存键、`unreadBySender`；点击进入 **`/direct-chat`**。  
+- 底栏 **「联系人」** 首个子 Tab **「消息」**（或路由 **`/messages`**）→ **`ConversationsPage`**：聚合好友、通知中心私信、本地缓存键、`unreadBySender`；点击进入 **`/direct-chat`**。  
 - 与某人的**完整历史与分页**仍在 **`DirectChatPage`** 内（**`GET /api/private-messages`** + 本地缓存 + 通知摘要合并）。
 
 ## 8. 后续可改进（未做）
