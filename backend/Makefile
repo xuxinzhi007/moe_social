@@ -40,3 +40,7 @@ help:
 	@echo   make build         - 构建本地二进制文件
 	@echo   make build-linux   - 构建 Linux 二进制文件（用于服务器）
 	@echo   make help          - 显示帮助信息
+	@echo ""
+	@echo RPC 数据库（在 backend/rpc 目录下）:
+	@echo   日常: go run super.go
+	@echo   改 model / 礼物种子 / 需批量补 moe_no 时执行一次: go run super.go -migrate

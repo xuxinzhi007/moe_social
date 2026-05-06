@@ -18,12 +18,15 @@ import (
 
 var configFile = flag.String("f", "etc/super.yaml", "the config file")
 
+// 新增模型后执行  go run super.go -migrate
+var migrate = flag.Bool("migrate", false, "run GORM AutoMigrate once at startup (use after adding/changing models); omit for normal start")
+
 func main() {
 	flag.Parse()
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
-	ctx := svc.NewServiceContext(c)
+	ctx := svc.NewServiceContext(c, *migrate)
 
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
 		super.RegisterSuperServer(grpcServer, server.NewSuperServer(ctx))

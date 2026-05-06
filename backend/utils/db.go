@@ -27,7 +27,7 @@ func EnsureDB() error {
 			ensureDBErr = err
 			return
 		}
-		ensureDBErr = InitDB()
+		ensureDBErr = InitDB(false)
 	})
 	return ensureDBErr
 }
@@ -52,8 +52,9 @@ func InitConfig() error {
 	return nil
 }
 
-// InitDB 初始化数据库连接
-func InitDB() error {
+// InitDB 初始化数据库连接。
+// runAutoMigrate 为 true 时执行 GORM AutoMigrate（改模型/首启库时用）；日常启动传 false，避免多副本抢 DDL、加快启动。
+func InitDB(runAutoMigrate bool) error {
 	// 配置gorm日志
 	gormConfig := &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
@@ -91,11 +92,14 @@ func InitDB() error {
 	// 设置连接最大生命周期
 	sqlDB.SetConnMaxLifetime(1 * time.Hour)
 
-	// 自动迁移数据库表
-	if err := autoMigrate(); err != nil {
-		return fmt.Errorf("自动迁移数据库表失败: %v", err)
+	if runAutoMigrate {
+		if err := autoMigrate(); err != nil {
+			return fmt.Errorf("自动迁移数据库表失败: %v", err)
+		}
+		postMigrate(DB)
+	} else {
+		log.Println("已跳过 AutoMigrate 与启动数据同步（补 moe_no、默认礼物）；改表/改种子后请执行: go run super.go -migrate")
 	}
-	postMigrate(DB)
 
 	log.Println("数据库连接成功")
 	return nil
@@ -151,7 +155,7 @@ func autoMigrate() error {
 	return nil
 }
 
-// After auto-migrate hooks for legacy rows.
+// postMigrate 仅在 -migrate 时调用：与 AutoMigrate 同频，避免每次普通启动扫表、写礼物。
 func postMigrate(db *gorm.DB) {
 	BackfillAllUserMoeNos(db)
 	SeedDefaultGifts(db)
@@ -163,14 +167,14 @@ func GetDB() *gorm.DB {
 	sqlDB, err := DB.DB()
 	if err != nil {
 		// 如果获取底层sql.DB失败，尝试重新初始化
-		InitDB()
+		_ = InitDB(false)
 		return DB
 	}
 
 	// 使用Ping检查连接是否活跃
 	if err := sqlDB.Ping(); err != nil {
 		// 如果连接无效，重新初始化
-		InitDB()
+		_ = InitDB(false)
 	}
 
 	return DB
