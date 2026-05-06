@@ -50,7 +50,8 @@ func EnsureUserMoeNo(db *gorm.DB, userID uint) (string, error) {
 	return "", fmt.Errorf("could not assign moe_no")
 }
 
-// BackfillAllUserMoeNos fills moe_no for users missing or invalid values (startup migration helper).
+// BackfillAllUserMoeNos 为缺少合法 moe_no 的用户批量补号（由 -migrate 触发）。
+// 日常请求路径里仍会调用 EnsureUserMoeNo，不依赖每次启动扫表。
 func BackfillAllUserMoeNos(db *gorm.DB) {
 	if db == nil {
 		return

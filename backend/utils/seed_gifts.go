@@ -8,7 +8,7 @@ import (
 )
 
 // SeedDefaultGifts 同步全量礼物到数据库（与 App 端展示清单一致），按名称 upsert。
-// 启动时执行：已有库会补全缺失条目并刷新价格/图标/描述。
+// 由 postMigrate 在 RPC 带 -migrate 启动时执行；改本文件后请再跑一次 go run super.go -migrate。
 func SeedDefaultGifts(db *gorm.DB) {
 	seeds := []model.Gift{
 		{Name: "爱心", Price: 1, Icon: "❤️", Description: "传递温暖的爱意"},
@@ -39,6 +39,9 @@ func SeedDefaultGifts(db *gorm.DB) {
 			continue
 		}
 		if err != nil {
+			continue
+		}
+		if row.Price == s.Price && row.Icon == s.Icon && row.Description == s.Description {
 			continue
 		}
 		_ = db.Model(&row).Updates(map[string]interface{}{
