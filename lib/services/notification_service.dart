@@ -73,19 +73,28 @@ class NotificationService {
     try {
       final response = await ApiService.get(
           '/api/notifications?user_id=$userId&page=$page&page_size=$pageSize');
-      if (response['code'] == 200) {
+      final code = response['code'];
+      final ok = code == 200 || code == 0 || response['success'] == true;
+      if (ok) {
         final data = response['data'];
         if (data is List) {
-          return data.map((e) => NotificationModel.fromJson(e)).toList();
+          final out = <NotificationModel>[];
+          for (final e in data) {
+            if (e is! Map<String, dynamic>) continue;
+            try {
+              out.add(NotificationModel.fromJson(e));
+            } catch (_) {
+              // 单条解析失败时跳过，避免整页空白
+            }
+          }
+          return out;
         }
-        // API returns data as a list in this project; keep defensive fallback.
         return [];
       }
       return [];
     } catch (e) {
-      print('Notification API Error: $e');
-      // 如果API失败，返回空列表，或者模拟数据（为了演示）
-      return _getMockNotifications();
+      debugPrint('Notification API Error: $e');
+      return [];
     }
   }
 
@@ -97,8 +106,12 @@ class NotificationService {
     try {
       final response =
           await ApiService.get('/api/notifications/unread?user_id=$userId');
-      if (response['code'] == 200) {
-        return response['data'] as int;
+      final code = response['code'];
+      final ok = code == 200 || code == 0 || response['success'] == true;
+      if (ok) {
+        final d = response['data'];
+        if (d is int) return d;
+        if (d is num) return d.toInt();
       }
       return 0;
     } catch (e) {
@@ -148,27 +161,4 @@ class NotificationService {
     }
   }
 
-  // 模拟数据 (Fallback)
-  static List<NotificationModel> _getMockNotifications() {
-    return [
-      NotificationModel(
-        id: '1',
-        type: 2, // Comment
-        content: '你的想法很有趣！',
-        isRead: false,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
-        senderName: 'Moe User',
-        senderAvatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Moe',
-        postId: 'post_1',
-      ),
-      NotificationModel(
-        id: '2',
-        type: 4, // System
-        content: '欢迎来到 Moe Social！',
-        isRead: true,
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        senderName: 'System',
-      ),
-    ];
-  }
 }

@@ -35,6 +35,9 @@ type User {
 	ReceivedGiftValue float64 `json:"received_gift_value"`
 	Inventory         string  `json:"inventory"`
 	EquippedFrameId   string  `json:"equipped_frame_id"`
+	// 与 moe_no 一致，个人中心展示账号请优先用本字段或 moe_no；查询、鉴权仍用 Id
+	DisplayUserId          string `json:"display_user_id"`
+	MessageRetentionChoice int    `json:"message_retention_choice"` // 0=自动；7 或 30 为用户自选（见文档）
 }
 
 // VIP套餐相关结构
@@ -174,6 +177,43 @@ type ReadNotificationReq {
 
 type ReadAllNotificationsReq {
 	UserId string `json:"user_id"`
+}
+
+// 私信持久化（REST + WS 配合说明见 backend/docs/private_messages.md）
+type PrivateMessageItem {
+	Id            string   `json:"id"`
+	SenderId      string   `json:"sender_id"`
+	ReceiverId    string   `json:"receiver_id"`
+	SenderMoeNo   string   `json:"sender_moe_no"`
+	ReceiverMoeNo string   `json:"receiver_moe_no"`
+	Body          string   `json:"body"`
+	ImagePaths    []string `json:"image_paths"`
+	RetentionDays int      `json:"retention_days"`
+	CreatedAt     string   `json:"created_at"`
+	ExpiresAt     string   `json:"expires_at"`
+}
+
+type SendPrivateMessageReq {
+	ReceiverId string   `json:"receiver_id"`
+	Body       string   `json:"body"`
+	ImagePaths []string `json:"image_paths,optional"`
+}
+
+type SendPrivateMessageResp {
+	BaseResp
+	Data PrivateMessageItem `json:"data"`
+}
+
+type ListPrivateMessagesReq {
+	PeerUserId string `form:"peer_user_id"`
+	BeforeId   string `form:"before_id,optional"`
+	Limit      int    `form:"limit,default=30"`
+}
+
+type ListPrivateMessagesResp {
+	BaseResp
+	Data    []PrivateMessageItem `json:"data"`
+	HasMore bool                 `json:"has_more"`
 }
 
 // 请求和响应结构
@@ -320,6 +360,8 @@ type UpdateUserInfoReq {
 	Inventory          string `json:"inventory,optional"`
 	EquippedFrameId    string `json:"equipped_frame_id,optional"`
 	ClearEquippedFrame bool   `json:"clear_equipped_frame,optional"`
+	// 空=不修改。auto=恢复自动；7 / 30 为自选私信保留天数
+	MessageRetention string `json:"message_retention,optional"`
 }
 
 type UpdateUserPasswordReq {
@@ -1404,6 +1446,19 @@ service Super {
 	// 批量查询用户在线状态
 	@handler chatOnlineBatch
 	get /api/chat/online/batch (ChatOnlineBatchReq) returns (ChatOnlineBatchResp)
+}
+
+// 私信持久化（需 JWT；发送方 userId 来自 token，无需在 body 传 sender）
+@server (
+	group: privatemsg
+	jwt:   Auth
+)
+service Super {
+	@handler sendPrivateMessage
+	post /api/private-messages (SendPrivateMessageReq) returns (SendPrivateMessageResp)
+
+	@handler listPrivateMessages
+	get /api/private-messages (ListPrivateMessagesReq) returns (ListPrivateMessagesResp)
 }
 
 // 客户端公网 API 基址（无鉴权；JSON 与 Flutter RemoteApiConfigService 一致：仅顶层 api_base_url）

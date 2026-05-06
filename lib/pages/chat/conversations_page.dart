@@ -1,0 +1,293 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../auth_service.dart';
+import '../../models/notification.dart';
+import '../../models/user.dart';
+import '../../providers/notification_provider.dart';
+import '../../services/api_service.dart';
+import '../../services/chat_push_service.dart';
+import '../../services/notification_service.dart';
+import '../../widgets/avatar_image.dart';
+/// 微信式「消息」入口：最近有私信或未读的会话列表（无单独后端会话接口时由通知 + 本地缓存 + 好友表聚合）。
+class ConversationsPage extends StatefulWidget {
+  const ConversationsPage({super.key});
+
+  @override
+  State<ConversationsPage> createState() => _ConversationsPageState();
+}
+
+class _ConversationsPageState extends State<ConversationsPage> {
+  bool _loading = true;
+  String? _error;
+  List<User> _friends = [];
+  List<NotificationModel> _notifs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    ChatPushService.unreadBySender.addListener(_onPushUnread);
+    unawaited(_load());
+  }
+
+  @override
+  void dispose() {
+    ChatPushService.unreadBySender.removeListener(_onPushUnread);
+    super.dispose();
+  }
+
+  void _onPushUnread() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final uid = await AuthService.getUserId();
+      if (uid.isEmpty) {
+        setState(() {
+          _loading = false;
+          _error = '请先登录';
+        });
+        return;
+      }
+
+      final friends = await ApiService.getFriends(uid);
+      final allNotifs = <NotificationModel>[];
+      for (var p = 1; p <= 3; p++) {
+        final batch =
+            await NotificationService.getNotifications(page: p, pageSize: 50);
+        if (batch.isEmpty) break;
+        allNotifs.addAll(batch);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _friends = friends;
+        _notifs = allNotifs;
+        _loading = false;
+      });
+
+      unawaited(
+        context.read<NotificationProvider>().fetchNotifications(refresh: true),
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = e.toString();
+        });
+      }
+    }
+  }
+
+  Future<Set<String>> _localChatPeerIds(String myId) async {
+    final prefs = await SharedPreferences.getInstance();
+    const prefix = 'direct_chat_';
+    final out = <String>{};
+    for (final k in prefs.getKeys()) {
+      if (!k.startsWith(prefix)) continue;
+      final rest = k.substring(prefix.length);
+      final parts = rest.split('_');
+      if (parts.length != 2) continue;
+      final a = parts[0];
+      final b = parts[1];
+      if (a == myId) {
+        out.add(b);
+      } else if (b == myId) {
+        out.add(a);
+      }
+    }
+    return out;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('消息'),
+        elevation: 0,
+        actions: [
+          IconButton(
+            tooltip: '刷新',
+            onPressed: _loading ? null : () => unawaited(_load()),
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.error_outline,
+                            size: 48, color: scheme.error),
+                        const SizedBox(height: 12),
+                        Text(_error!, textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        FilledButton(
+                          onPressed: () => unawaited(_load()),
+                          child: const Text('重试'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : FutureBuilder<Set<String>>(
+                  future: _localChatPeerIds(AuthService.currentUser ?? ''),
+                  builder: (context, snap) {
+                    final localPeers = snap.data ?? {};
+                    return _buildList(context, localPeers);
+                  },
+                ),
+    );
+  }
+
+  Widget _buildList(BuildContext context, Set<String> localPeers) {
+    final myId = AuthService.currentUser ?? '';
+    final pushUnread = ChatPushService.unreadBySender.value;
+
+    final dmNotifs = _notifs
+        .where((n) =>
+            n.type == NotificationModel.directMessage &&
+            (n.senderId ?? '').isNotEmpty &&
+            n.senderId != myId)
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    final lastBySender = <String, NotificationModel>{};
+    for (final n in dmNotifs) {
+      final sid = n.senderId!;
+      lastBySender.putIfAbsent(sid, () => n);
+    }
+
+    final peerIds = <String>{};
+    for (final f in _friends) {
+      peerIds.add(f.id);
+    }
+    peerIds.addAll(pushUnread.keys);
+    peerIds.addAll(lastBySender.keys);
+    peerIds.addAll(localPeers);
+    peerIds.remove(myId);
+    peerIds.removeWhere((e) => e.isEmpty);
+
+    if (peerIds.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.chat_bubble_outline,
+                  size: 56, color: Theme.of(context).colorScheme.outline),
+              const SizedBox(height: 16),
+              Text(
+                '暂无会话\n在联系人或发现里发起聊天后，会出现在这里。',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final rows = peerIds.toList();
+    rows.sort((a, b) {
+      final ua = pushUnread[a] ?? 0;
+      final ub = pushUnread[b] ?? 0;
+      if (ua != ub) return ub.compareTo(ua);
+      final ta = lastBySender[a]?.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final tb = lastBySender[b]?.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return tb.compareTo(ta);
+    });
+
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: rows.length,
+        separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
+        itemBuilder: (context, i) {
+          final peerId = rows[i];
+          User? friend;
+          for (final u in _friends) {
+            if (u.id == peerId) {
+              friend = u;
+              break;
+            }
+          }
+          final last = lastBySender[peerId];
+          final title = friend?.username ?? last?.senderName ?? '用户';
+          final avatar = friend?.avatar ?? last?.senderAvatar ?? '';
+          final preview = (last?.content ?? '').trim();
+          final badge = pushUnread[peerId] ?? 0;
+
+          return ListTile(
+            leading: NetworkAvatarImage(
+              imageUrl: avatar,
+              radius: 22,
+              placeholderIcon: Icons.person,
+            ),
+            title: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              preview.isEmpty ? '点击开始聊天' : preview,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: badge > 0
+                ? Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.error,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      badge > 99 ? '99+' : '$badge',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  )
+                : null,
+            onTap: () async {
+              if (!context.mounted) return;
+              await Navigator.pushNamed(
+                context,
+                '/direct-chat',
+                arguments: {
+                  'userId': peerId,
+                  'username': title,
+                  'avatar': avatar,
+                },
+              );
+              if (mounted) await _load();
+            },
+          );
+        },
+      ),
+    );
+  }
+}

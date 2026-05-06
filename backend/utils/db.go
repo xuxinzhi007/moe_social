@@ -145,6 +145,7 @@ func autoMigrate() error {
 		&model.Group{},
 		&model.GroupMember{},
 		&model.GroupPost{},
+		&model.PrivateMessage{},
 	}
 
 	if err := DB.AutoMigrate(models...); err != nil {

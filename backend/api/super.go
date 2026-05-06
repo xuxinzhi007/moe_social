@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"backend/api/internal/config"
 	"backend/api/internal/handler"
@@ -17,7 +18,7 @@ import (
 var configFile = flag.String("f", "etc/super.yaml", "the config file")
 
 // applyUnifiedConfigOverrides 尝试从 backend/config/config.yaml 读取统一配置并覆盖部分字段。
-// 例如 Ollama、REST 超时、以及客户端用的 app_client.public_api_base_url（不必写进 etc/super.yaml）。
+// 例如 Ollama、REST 超时、app_client.public_api_base_url、image.*（不必写进 etc/super.yaml）。
 // 注意：如果找不到/读取失败，会静默跳过，保持原有 go-zero 配置行为不变。
 func applyUnifiedConfigOverrides(c *config.Config) {
 	v := viper.New()
@@ -47,6 +48,16 @@ func applyUnifiedConfigOverrides(c *config.Config) {
 	}
 	if u := v.GetString("app_client.public_api_base_url"); u != "" {
 		c.ClientPublicApiBaseUrl = u
+	}
+	// 图片云空间：与 api/etc/super.yaml 的 Image 合并，便于本地/服务器只改 backend/config/config.yaml
+	if d := v.GetString("image.local_dir"); strings.TrimSpace(d) != "" {
+		c.Image.LocalDir = strings.TrimSpace(d)
+	}
+	if u := v.GetString("image.public_base_url"); strings.TrimSpace(u) != "" {
+		c.Image.PublicBaseUrl = strings.TrimSpace(u)
+	}
+	if n := v.GetInt64("image.max_bytes"); n > 0 {
+		c.Image.MaxBytes = n
 	}
 }
 

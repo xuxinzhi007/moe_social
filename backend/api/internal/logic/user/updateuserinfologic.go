@@ -38,6 +38,7 @@ func (l *UpdateUserInfoLogic) UpdateUserInfo(req *types.UpdateUserInfoReq) (resp
 		Inventory:          req.Inventory,
 		EquippedFrameId:    req.EquippedFrameId,
 		ClearEquippedFrame: req.ClearEquippedFrame,
+		MessageRetention:   req.MessageRetention,
 	})
 	if err != nil {
 		return &types.UpdateUserInfoResp{

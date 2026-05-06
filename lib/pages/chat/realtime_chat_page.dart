@@ -88,8 +88,8 @@ class _RealtimeChatPageState extends State<RealtimeChatPage> {
       });
 
       await _loadMessages(userId);
+      await _mergeDmNotificationsFromApi();
       _mergePendingWsMessages();
-      await _syncOfflineMessages();
 
       // Now that we merged offline messages, mark them as read.
       try {
@@ -163,19 +163,24 @@ class _RealtimeChatPageState extends State<RealtimeChatPage> {
     } catch (_) {}
   }
 
-  Future<void> _syncOfflineMessages() async {
-    // Pull unread direct-message notifications from backend and merge into local chat history.
+  Future<void> _mergeDmNotificationsFromApi() async {
     try {
-      final list = await NotificationService.getNotifications(page: 1, pageSize: 100);
-      final dms = list.where((n) {
-        return n.type == NotificationModel.directMessage &&
-            !n.isRead &&
-            (n.senderId ?? '') == widget.userId;
+      final all = <NotificationModel>[];
+      for (var p = 1; p <= 3; p++) {
+        final batch =
+            await NotificationService.getNotifications(page: p, pageSize: 50);
+        if (batch.isEmpty) break;
+        all.addAll(batch);
+      }
+
+      final dms = all.where((n) {
+        if (n.type != NotificationModel.directMessage) return false;
+        if ((n.senderId ?? '') != widget.userId) return false;
+        return n.content.trim().isNotEmpty;
       }).toList();
 
       if (dms.isEmpty) return;
 
-      // Oldest first
       dms.sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
       var changed = false;
@@ -220,14 +225,6 @@ class _RealtimeChatPageState extends State<RealtimeChatPage> {
         await _saveMessages();
         _scrollToBottom();
       }
-
-      // Mark as read so they won't be pulled again.
-      try {
-        await context
-            .read<NotificationProvider>()
-            .markDirectMessagesAsRead(widget.userId);
-      } catch (_) {}
-      ChatPushService.markSenderRead(widget.userId);
     } catch (_) {}
   }
 
@@ -489,7 +486,7 @@ class _RealtimeChatPageState extends State<RealtimeChatPage> {
     if (currentUserId == null) return;
     
     // 模拟语音消息
-    final content = '$_voicePrefixhttps://example.com/voice.mp3';
+    final content = '${_voicePrefix}https://example.com/voice.mp3';
     setState(() {
       _messages.add(
         _DirectMessage(

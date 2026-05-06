@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import '../auth_service.dart';
 import '../pages/chat/direct_chat_page.dart';
 import '../utils/media_url.dart';
 
@@ -7,6 +8,19 @@ import '../utils/media_url.dart';
 class MessageNotification {
   static OverlayEntry? _overlayEntry;
   static Timer? _timer;
+
+  /// 在部分路由/嵌套场景下 [Overlay.maybeOf] 可能为 null，依次尝试根 Overlay、Navigator.overlay。
+  static OverlayState? _resolveOverlay(BuildContext context) {
+    OverlayState? o = Overlay.maybeOf(context, rootOverlay: true);
+    o ??= Overlay.maybeOf(context);
+    if (o != null) return o;
+    final navCtx = AuthService.navigatorKey.currentContext;
+    if (navCtx != null && navCtx.mounted) {
+      o = Navigator.maybeOf(navCtx, rootNavigator: true)?.overlay;
+      o ??= Overlay.maybeOf(navCtx, rootOverlay: true);
+    }
+    return o;
+  }
 
   static void show(
     BuildContext context,
@@ -21,10 +35,11 @@ class MessageNotification {
     _overlayEntry = null;
     _timer?.cancel();
 
-    // 检查是否存在 Overlay
-    final overlay = Overlay.maybeOf(context);
+    final overlay = _resolveOverlay(context);
     if (overlay == null) {
-      print('MessageNotification: No Overlay found, cannot show notification');
+      debugPrint(
+        'MessageNotification: No Overlay found (context=$context), cannot show notification',
+      );
       return;
     }
 

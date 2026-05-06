@@ -7,6 +7,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'api_service.dart';
 import 'ws_channel_connector.dart';
+import '../auth_service.dart';
 import '../widgets/message_notification.dart';
 
 // ChatPushService listens on /ws/chat to receive direct messages in real time.
@@ -236,6 +237,12 @@ class ChatPushService {
     final senderName = map['sender_name']?.toString() ?? map['senderName']?.toString() ?? '用户';
     final avatarUrl = map['sender_avatar']?.toString() ?? map['senderAvatar']?.toString() ?? '';
     if (from == null || from.isEmpty || content == null) {
+      return;
+    }
+
+    final me = AuthService.currentUser;
+    if (me != null && me.isNotEmpty && from == me) {
+      // 忽略自己发出的下行（不应弹「新消息」）
       return;
     }
 

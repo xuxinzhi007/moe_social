@@ -13,6 +13,7 @@ import 'modules/ai_settings_module.dart';
 import 'modules/appearance_module.dart';
 import 'modules/account_security_module.dart';
 import 'modules/about_module.dart';
+import 'message_retention_settings_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -340,6 +341,16 @@ class _SettingsPageState extends State<SettingsPage> {
         'target': '账户与安全',
       },
       {
+        'title': '私信记录保留',
+        'description': '发送方私信在服务端保留天数偏好',
+        'icon': Icons.mark_chat_unread_outlined,
+        'color': Colors.teal,
+        'module': '聊天与隐私',
+        'keywords': ['私信', '聊天记录', '保留', '删除', '消息'],
+        'action': 'route',
+        'target': '/message-retention-settings',
+      },
+      {
         'title': '账号安全',
         'description': '查看登录历史，管理登录设备',
         'icon': Icons.shield_rounded,
@@ -452,6 +463,7 @@ class _SettingsPageState extends State<SettingsPage> {
   // 模块滚动位置映射
   final Map<String, GlobalKey> _moduleKeys = {
     '账户与安全': GlobalKey(),
+    '聊天与隐私': GlobalKey(),
     '外观': GlobalKey(),
     '常规设置': GlobalKey(),
     '设备与存储': GlobalKey(),
@@ -492,6 +504,56 @@ class _SettingsPageState extends State<SettingsPage> {
       const SizedBox(height: 24),
       _buildSectionTitle('账户与安全', key: _moduleKeys['账户与安全']),
       const AccountSecurityModule(),
+
+      const SizedBox(height: 24),
+      _buildSectionTitle('聊天与隐私', key: _moduleKeys['聊天与隐私']),
+      FadeInUp(
+        delay: const Duration(milliseconds: 95),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF7F7FD5).withOpacity(0.08),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.teal.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.mark_chat_unread_outlined,
+                color: Colors.teal,
+                size: 20,
+              ),
+            ),
+            title: const Text(
+              '私信记录保留',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+            subtitle: const Text(
+              '发送方在服务端保留策略（与会员/VIP 规则配合）',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => const MessageRetentionSettingsPage(),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
 
       const SizedBox(height: 24),
       _buildSectionTitle('外观', key: _moduleKeys['外观']),
