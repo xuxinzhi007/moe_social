@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,9 +12,12 @@ import '../../services/api_service.dart';
 import '../../services/chat_push_service.dart';
 import '../../services/notification_service.dart';
 import '../../widgets/avatar_image.dart';
-/// 微信式「消息」入口：最近有私信或未读的会话列表（无单独后端会话接口时由通知 + 本地缓存 + 好友表聚合）。
+
+/// 会话列表。`embedded: true` 时无 Scaffold，用于嵌在 [FriendsPage] 的 Tab 里。
 class ConversationsPage extends StatefulWidget {
-  const ConversationsPage({super.key});
+  const ConversationsPage({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   State<ConversationsPage> createState() => _ConversationsPageState();
@@ -106,10 +110,61 @@ class _ConversationsPageState extends State<ConversationsPage> {
     return out;
   }
 
+  Widget _buildBody(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: scheme.error),
+              const SizedBox(height: 12),
+              Text(_error!, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () => unawaited(_load()),
+                child: const Text('重试'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return FutureBuilder<Set<String>>(
+      future: _localChatPeerIds(AuthService.currentUser ?? ''),
+      builder: (context, snap) {
+        final localPeers = snap.data ?? {};
+        return _buildList(context, localPeers);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
+    final body = _buildBody(context);
+    if (widget.embedded) {
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _loading ? null : () => unawaited(_load()),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('刷新'),
+              ),
+            ),
+          ),
+          Expanded(child: body),
+        ],
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('消息'),
@@ -122,35 +177,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.error_outline,
-                            size: 48, color: scheme.error),
-                        const SizedBox(height: 12),
-                        Text(_error!, textAlign: TextAlign.center),
-                        const SizedBox(height: 16),
-                        FilledButton(
-                          onPressed: () => unawaited(_load()),
-                          child: const Text('重试'),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : FutureBuilder<Set<String>>(
-                  future: _localChatPeerIds(AuthService.currentUser ?? ''),
-                  builder: (context, snap) {
-                    final localPeers = snap.data ?? {};
-                    return _buildList(context, localPeers);
-                  },
-                ),
+      body: body,
     );
   }
 
@@ -189,11 +216,14 @@ class _ConversationsPageState extends State<ConversationsPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.chat_bubble_outline,
-                  size: 56, color: Theme.of(context).colorScheme.outline),
+              Icon(
+                Icons.chat_bubble_outline,
+                size: 56,
+                color: Theme.of(context).colorScheme.outline,
+              ),
               const SizedBox(height: 16),
               Text(
-                '暂无会话\n在联系人或发现里发起聊天后，会出现在这里。',
+                '暂无会话\n在好友或发现里发起聊天后会出现在这里。',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -211,8 +241,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
       final ua = pushUnread[a] ?? 0;
       final ub = pushUnread[b] ?? 0;
       if (ua != ub) return ub.compareTo(ua);
-      final ta = lastBySender[a]?.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final tb = lastBySender[b]?.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final ta = lastBySender[a]?.createdAt ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final tb = lastBySender[b]?.createdAt ??
+          DateTime.fromMillisecondsSinceEpoch(0);
       return tb.compareTo(ta);
     });
 

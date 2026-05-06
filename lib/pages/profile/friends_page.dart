@@ -1,10 +1,13 @@
 import 'dart:async';
+
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../auth_service.dart';
 import '../../models/user.dart';
 import '../../services/api_service.dart';
+import '../../services/chat_push_service.dart';
 import '../../widgets/gift_selector.dart';
 import '../../services/presence_service.dart';
 import '../../widgets/avatar_image.dart';
@@ -12,6 +15,7 @@ import '../../providers/notification_provider.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/fade_in_up.dart';
+import '../chat/conversations_page.dart';
 
 // 好友分组
 enum _FriendGroup {
@@ -22,17 +26,17 @@ enum _FriendGroup {
 }
 
 class FriendsPage extends StatefulWidget {
-  /// 底部「联系人」内子分区：0 好友 · 1 申请。
+  /// 底部「联系人」内子分区：**0 消息 · 1 好友 · 2 申请**（默认打开好友）。
   final int initialHubTabIndex;
 
-  const FriendsPage({super.key, this.initialHubTabIndex = 0});
+  const FriendsPage({super.key, this.initialHubTabIndex = 1});
 
   @override
   State<FriendsPage> createState() => _FriendsPageState();
 }
 
 class _FriendsPageState extends State<FriendsPage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   List<User> _friends = [];
   List<Map<String, dynamic>> _incomingRequests = [];
   /// 当前用户资料（空状态 / 添加好友里展示「我的 Moe 号」）
@@ -43,6 +47,7 @@ class _FriendsPageState extends State<FriendsPage>
   String _searchKeyword = '';
   Map<String, bool> _onlineStatus = {};
   Timer? _onlineTimer;
+  Timer? _friendsHubPollTimer;
   bool _presenceListening = false;
   _FriendGroup _currentGroup = _FriendGroup.all;
   final Set<String> _favoriteFriends = {};
@@ -67,24 +72,57 @@ class _FriendsPageState extends State<FriendsPage>
   @override
   void initState() {
     super.initState();
-    final initialTab = widget.initialHubTabIndex.clamp(0, 1);
+    WidgetsBinding.instance.addObserver(this);
+    final initialTab = widget.initialHubTabIndex.clamp(0, 2);
     _hubTabController = TabController(
-      length: 2,
+      length: 3,
       vsync: this,
       initialIndex: initialTab,
     );
     _hubTabController.addListener(_onHubTabChanged);
+    ChatPushService.unreadBySender.addListener(_onDmUnreadChanged);
+    _friendsHubPollTimer = Timer.periodic(const Duration(seconds: 22), (_) {
+      if (!mounted || AuthService.currentUser == null) return;
+      unawaited(_loadFriends(silent: true));
+    });
     _loadFriends();
+  }
+
+  void _onDmUnreadChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  int get _dmUnreadTotal {
+    var t = 0;
+    for (final n in ChatPushService.unreadBySender.value.values) {
+      t += n;
+    }
+    return t;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        AuthService.currentUser != null) {
+      unawaited(_loadFriends(silent: true));
+    }
   }
 
   void _onHubTabChanged() {
     if (!mounted) return;
     if (_hubTabController.indexIsChanging) return;
+    if (_hubTabController.index == 2) {
+      unawaited(_loadFriends(silent: true));
+    }
     setState(() {});
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    ChatPushService.unreadBySender.removeListener(_onDmUnreadChanged);
+    _friendsHubPollTimer?.cancel();
     _hubTabController.removeListener(_onHubTabChanged);
     _hubTabController.dispose();
     _onlineTimer?.cancel();
@@ -95,8 +133,8 @@ class _FriendsPageState extends State<FriendsPage>
   }
 
   void _goToRequestsTab() {
-    if (_hubTabController.index != 1) {
-      _hubTabController.animateTo(1);
+    if (_hubTabController.index != 2) {
+      _hubTabController.animateTo(2);
     }
   }
 
@@ -164,18 +202,20 @@ class _FriendsPageState extends State<FriendsPage>
     });
   }
 
-  Future<void> _loadFriends() async {
+  Future<void> _loadFriends({bool silent = false}) async {
     final currentUserId = AuthService.currentUser;
     if (currentUserId == null) {
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-        _errorMessage = '请先登录';
-      });
+      if (mounted && !silent) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+          _errorMessage = '请先登录';
+        });
+      }
       return;
     }
 
-    if (mounted) {
+    if (mounted && !silent) {
       setState(() {
         _isLoading = true;
         _hasError = false;
@@ -199,11 +239,16 @@ class _FriendsPageState extends State<FriendsPage>
         _selfProfile = self;
         _isLoading = false;
         _hasError = false;
+        _errorMessage = '';
       });
 
       await _ensureOnlineStatus();
     } catch (e) {
       if (!mounted) return;
+      if (silent) {
+        debugPrint('FriendsPage silent refresh failed: $e');
+        return;
+      }
       setState(() {
         _isLoading = false;
         _hasError = true;
@@ -427,6 +472,36 @@ class _FriendsPageState extends State<FriendsPage>
                 const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             splashBorderRadius: BorderRadius.circular(14),
             tabs: [
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('消息'),
+                    if (_dmUnreadTotal > 0) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF6B6B),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          _dmUnreadTotal > 99 ? '99+' : '$_dmUnreadTotal',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
               const Tab(text: '好友'),
               Tab(
                 child: Row(
@@ -779,6 +854,7 @@ class _FriendsPageState extends State<FriendsPage>
             child: TabBarView(
               controller: _hubTabController,
               children: [
+                const ConversationsPage(embedded: true),
                 _buildFriendsListTab(),
                 _buildIncomingRequestsTab(),
               ],
@@ -786,7 +862,7 @@ class _FriendsPageState extends State<FriendsPage>
           ),
         ],
       ),
-      floatingActionButton: _hubTabController.index == 0 &&
+      floatingActionButton: _hubTabController.index == 1 &&
               _friends.isNotEmpty &&
               _showFab
           ? _buildFloatingActionButton()

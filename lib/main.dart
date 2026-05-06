@@ -426,11 +426,13 @@ class _MyAppState extends State<MyApp> {
           '/user-qr-code': (context) => const UserQrCodePage(),
           '/interaction': (context) {
             final args = ModalRoute.of(context)?.settings.arguments;
-            var tab = 0;
+            // 历史参数：0=好友页 · 1=申请页 → 新 hub：1=好友 · 2=申请
+            var hub = 1;
             if (args is Map && args['tab'] is int) {
-              tab = (args['tab'] as int).clamp(0, 1);
+              final t = (args['tab'] as int).clamp(0, 1);
+              hub = t == 0 ? 1 : 2;
             }
-            return FriendsPage(initialHubTabIndex: tab);
+            return FriendsPage(initialHubTabIndex: hub);
           },
         },
       ),
@@ -449,7 +451,6 @@ class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
   late final List<Widget Function()> _pageBuilders = [
     () => const HomePage(),
-    () => const ConversationsPage(),
     () => const FriendsPage(),
     () => const CommunityHomePage(),
     () => const DiscoverPage(),
@@ -489,11 +490,6 @@ class _MainPageState extends State<MainPage> {
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home_rounded),
             label: '首页',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline_rounded),
-            selectedIcon: Icon(Icons.chat_rounded),
-            label: '消息',
           ),
           NavigationDestination(
             icon: Icon(Icons.contacts_outlined),
