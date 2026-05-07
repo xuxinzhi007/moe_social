@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -23,9 +25,13 @@ const (
 	maxCtxTokens       = 4096
 	maxHistoryMessages = 40
 	keepRecentMessages = 16
+	// 记忆注入上限：避免无关记忆挤占上下文窗口。
+	maxInjectedMemoryItems = 8
+	maxInjectedMemoryRunes = 520
 )
 
 var ctxSafeRatio = 0.7
+var memoryTokenPattern = regexp.MustCompile(`[\p{Han}]{2,}|[a-zA-Z0-9_]{2,}`)
 
 type ollamaMessage struct {
 	Role    string `json:"role"`
@@ -51,6 +57,12 @@ type ollamaResponse struct {
 	EvalCount       int `json:"eval_count"`
 }
 
+type rankedMemory struct {
+	line  string
+	score int
+	index int
+}
+
 func estimateTokens(s string) int {
 	return len([]rune(s))
 }
@@ -69,6 +81,123 @@ func NewChatLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ChatLogic {
 	}
 }
 
+func extractMemoryQueryTokens(messages []types.LlmMessage) []string {
+	for i := len(messages) - 1; i >= 0; i-- {
+		if strings.TrimSpace(messages[i].Role) != "user" {
+			continue
+		}
+		content := strings.ToLower(strings.TrimSpace(messages[i].Content))
+		if content == "" {
+			continue
+		}
+		matches := memoryTokenPattern.FindAllString(content, -1)
+		if len(matches) == 0 {
+			return nil
+		}
+		uniq := make([]string, 0, len(matches))
+		seen := make(map[string]struct{}, len(matches))
+		for _, m := range matches {
+			token := strings.TrimSpace(m)
+			if token == "" {
+				continue
+			}
+			if _, ok := seen[token]; ok {
+				continue
+			}
+			seen[token] = struct{}{}
+			uniq = append(uniq, token)
+		}
+		return uniq
+	}
+	return nil
+}
+
+func normalizeMemoryText(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	replacer := strings.NewReplacer("\n", " ", "\r", " ", "\t", " ")
+	s = replacer.Replace(s)
+	return strings.Join(strings.Fields(s), " ")
+}
+
+func selectRelevantMemoryLines(memories []*super.UserMemory, messages []types.LlmMessage) []string {
+	if len(memories) == 0 {
+		return nil
+	}
+	tokens := extractMemoryQueryTokens(messages)
+	ranked := make([]rankedMemory, 0, len(memories))
+	seen := make(map[string]struct{}, len(memories))
+
+	for i, m := range memories {
+		key := strings.TrimSpace(m.Key)
+		value := strings.TrimSpace(m.Value)
+		if key == "" || value == "" {
+			continue
+		}
+		line := fmt.Sprintf("%s: %s", key, value)
+		norm := normalizeMemoryText(line)
+		if norm == "" {
+			continue
+		}
+		if _, ok := seen[norm]; ok {
+			continue
+		}
+		seen[norm] = struct{}{}
+
+		score := 1
+		// 最近记忆（按 updated_at desc）给基础加权。
+		if i < 5 {
+			score += 2
+		}
+
+		joined := normalizeMemoryText(key + " " + value)
+		for _, token := range tokens {
+			if strings.Contains(joined, token) {
+				score += 3
+			}
+		}
+
+		ranked = append(ranked, rankedMemory{
+			line:  line,
+			score: score,
+			index: i,
+		})
+	}
+
+	if len(ranked) == 0 {
+		return nil
+	}
+
+	sort.Slice(ranked, func(i, j int) bool {
+		if ranked[i].score != ranked[j].score {
+			return ranked[i].score > ranked[j].score
+		}
+		return ranked[i].index < ranked[j].index
+	})
+
+	lines := make([]string, 0, min(maxInjectedMemoryItems, len(ranked)))
+	totalRunes := 0
+	for _, item := range ranked {
+		itemRunes := len([]rune(item.line))
+		if len(lines) >= maxInjectedMemoryItems {
+			break
+		}
+		if totalRunes+itemRunes > maxInjectedMemoryRunes && len(lines) > 0 {
+			break
+		}
+		lines = append(lines, item.line)
+		totalRunes += itemRunes
+	}
+
+	// 没有命中时至少兜底注入 2 条最近记忆，避免“完全失忆”。
+	if len(lines) == 0 {
+		limit := min(2, len(ranked))
+		for i := 0; i < limit; i++ {
+			lines = append(lines, ranked[i].line)
+		}
+	}
+	return lines
+}
+
 func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err error) {
 	var memoryLines []string
 	var userIDForLog string
@@ -81,12 +210,8 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 			if err != nil {
 				l.Errorf("GetUserMemories failed: %v", err)
 			} else {
-				for _, m := range rpcResp.Memories {
-					if m.Key != "" && m.Value != "" {
-						memoryLines = append(memoryLines, fmt.Sprintf("%s: %s", m.Key, m.Value))
-					}
-				}
-				l.Infof("loaded %d memories for user_id=%s", len(rpcResp.Memories), userID)
+				memoryLines = selectRelevantMemoryLines(rpcResp.Memories, req.Messages)
+				l.Infof("loaded memories for user_id=%s total=%d selected=%d", userID, len(rpcResp.Memories), len(memoryLines))
 			}
 		}
 	}
@@ -640,7 +765,7 @@ func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, b
 	}
 
 	content := strings.TrimSpace(oResp.Message.Content)
-	logger.Infof("memory extraction raw response: %s", content) // 增加调试日志
+	logger.Infof("memory extraction response received: chars=%d", len([]rune(content)))
 
 	// Clean up potential markdown code blocks
 	content = strings.TrimPrefix(content, "```json")
@@ -661,7 +786,7 @@ func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, b
 	}
 
 	if len(items) > 0 {
-		logger.Infof("extracted %d new memories for user %s: %v", len(items), userID, items)
+		logger.Infof("extracted %d new memories for user %s", len(items), userID)
 		for _, item := range items {
 			if item.Key == "" || item.Value == "" {
 				continue

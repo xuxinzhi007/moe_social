@@ -23,6 +23,11 @@ func RegisterLlmRawRoutes(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: llm.ModelsRawHandler(serverCtx),
 			},
 			{
+				Method:  http.MethodGet,
+				Path:    "/api/llm/config",
+				Handler: llm.ConfigHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodPost,
 				Path:    "/api/llm/chat/raw",
 				Handler: llm.ChatRawHandler(serverCtx),
