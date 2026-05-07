@@ -5,7 +5,12 @@ import '../pages/game/game_lobby_page.dart';
 import '../utils/responsive.dart';
 
 class QuickActionsGrid extends StatelessWidget {
-  const QuickActionsGrid({super.key});
+  final Future<void> Function(dynamic result)? onCreatePostSuccess;
+
+  const QuickActionsGrid({
+    super.key,
+    this.onCreatePostSuccess,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +22,12 @@ class QuickActionsGrid extends StatelessWidget {
           'icon': Icons.edit_note,
           'label': '发布动态',
           'color': const Color(0xFF7F7FD5),
-          'onTap': () => Navigator.pushNamed(context, '/create-post'),
+          'onTap': () async {
+            final result = await Navigator.pushNamed(context, '/create-post');
+            if (result != null) {
+              await onCreatePostSuccess?.call(result);
+            }
+          },
         },
       {
         'icon': Icons.photo_library,

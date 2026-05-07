@@ -1429,7 +1429,9 @@ class ApiService {
 
     Future<Map<String, dynamic>> doUpload(http.Client client) async {
       final request = http.MultipartRequest('POST', uri);
-      request.headers['Connection'] = 'close';
+      if (!kIsWeb) {
+        request.headers['Connection'] = 'close';
+      }
       request.headers.addAll(tunnelBypassHeadersForUrl(baseUrl));
       final token = _currentToken;
       if (token != null && token.isNotEmpty) {
@@ -1486,7 +1488,9 @@ class ApiService {
       final request = http.MultipartRequest('POST', uri);
 
       // 避免某些隧道/代理对 keep-alive 连接的复用导致 Broken pipe
-      request.headers['Connection'] = 'close';
+      if (!kIsWeb) {
+        request.headers['Connection'] = 'close';
+      }
       request.headers.addAll(tunnelBypassHeadersForUrl(baseUrl));
 
       // 添加认证令牌

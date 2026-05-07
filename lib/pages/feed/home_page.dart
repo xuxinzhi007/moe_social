@@ -55,6 +55,7 @@ class _HomePageState extends State<HomePage>
 
   final ScrollController _scrollController = ScrollController();
   Timer? _loadMoreTimer;
+  final LikeStateManager _likeManager = LikeStateManager();
 
   static const _tabs = [
     (label: '热门', icon: Icons.whatshot_rounded, mode: _HomeFeedMode.hot),
@@ -128,6 +129,36 @@ class _HomePageState extends State<HomePage>
         _loadMorePosts();
       }
     });
+  }
+
+  Future<void> _openCreatePost() async {
+    final result = await Navigator.pushNamed(context, '/create-post');
+    await _handleCreatePostResult(result);
+  }
+
+  Future<void> _handleCreatePostResult(dynamic result) async {
+    if (!mounted || result == null) return;
+    if (result is Post) {
+      _insertCreatedPost(result);
+    }
+    // 统一再拉取一次，确保热门/关注等服务端排序与本地一致。
+    await _fetchPosts(resetContent: false);
+  }
+
+  void _insertCreatedPost(Post post) {
+    if (_activeTopic != null) {
+      final matchesTopic = post.topicTags.any((t) => t.id == _activeTopic!.id);
+      if (!matchesTopic) return;
+    }
+    if (_mode == _HomeFeedMode.following) return;
+    final exists = _allPosts.any((p) => p.id == post.id);
+    if (exists) return;
+    setState(() {
+      _allPosts = [post, ..._allPosts];
+      _displayPosts = List<Post>.from(_allPosts);
+      _lastUpdatedAt = DateTime.now();
+    });
+    _refreshAvailableTags();
   }
 
   Future<void> _fetchPosts({bool resetContent = true}) async {
@@ -260,7 +291,17 @@ class _HomePageState extends State<HomePage>
     }
     final tags = byId.values.toList();
     tags.sort((a, b) => b.usageCount.compareTo(a.usageCount));
-    if (mounted) setState(() => _availableTags = tags.take(15).toList());
+    final nextTags = tags.take(15).toList();
+    if (_isSameTagSequence(_availableTags, nextTags)) return;
+    if (mounted) setState(() => _availableTags = nextTags);
+  }
+
+  bool _isSameTagSequence(List<TopicTag> a, List<TopicTag> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id) return false;
+    }
+    return true;
   }
 
   void _handleError(dynamic error) {
@@ -274,26 +315,31 @@ class _HomePageState extends State<HomePage>
   }
 
   void _toggleLike(String postId) {
-    final manager = LikeStateManager();
-    final isLiked = manager.getStatusNotifier(postId).value;
-    final likeCount = manager.getCountNotifier(postId).value;
-    if (!mounted) return;
-    setState(() {
-      final allIndex = _allPosts.indexWhere((p) => p.id == postId);
-      if (allIndex != -1) {
-        _allPosts[allIndex] = _allPosts[allIndex].copyWith(
-          isLiked: isLiked,
-          likes: likeCount,
-        );
-      }
-      final displayIndex = _displayPosts.indexWhere((p) => p.id == postId);
-      if (displayIndex != -1) {
-        _displayPosts[displayIndex] = _displayPosts[displayIndex].copyWith(
-          isLiked: isLiked,
-          likes: likeCount,
-        );
-      }
-    });
+    final isLiked = _likeManager.getStatusNotifier(postId).value;
+    final likeCount = _likeManager.getCountNotifier(postId).value;
+    _updateLikeSnapshot(postId: postId, isLiked: isLiked, likeCount: likeCount);
+  }
+
+  // 仅同步内存快照，不触发整页 rebuild（LikeButton 已由 ValueListenable 局部刷新）
+  void _updateLikeSnapshot({
+    required String postId,
+    required bool isLiked,
+    required int likeCount,
+  }) {
+    final allIndex = _allPosts.indexWhere((p) => p.id == postId);
+    if (allIndex != -1) {
+      _allPosts[allIndex] = _allPosts[allIndex].copyWith(
+        isLiked: isLiked,
+        likes: likeCount,
+      );
+    }
+    final displayIndex = _displayPosts.indexWhere((p) => p.id == postId);
+    if (displayIndex != -1) {
+      _displayPosts[displayIndex] = _displayPosts[displayIndex].copyWith(
+        isLiked: isLiked,
+        likes: likeCount,
+      );
+    }
   }
 
   String _apiFeedMode() {
@@ -357,9 +403,13 @@ class _HomePageState extends State<HomePage>
             // SliverAppBar with TabBar in bottom — Flutter-idiomatic, no SliverPersistentHeader needed
             _buildSliverAppBar(context),
             const SliverToBoxAdapter(child: SizedBox(height: 8)),
-            const SliverToBoxAdapter(child: HomeStoriesBar()),
+            SliverToBoxAdapter(
+              child: HomeStoriesBar(onCreatePostSuccess: _handleCreatePostResult),
+            ),
             const SliverToBoxAdapter(child: SizedBox(height: 10)),
-            const SliverToBoxAdapter(child: QuickActionsGrid()),
+            SliverToBoxAdapter(
+              child: QuickActionsGrid(onCreatePostSuccess: _handleCreatePostResult),
+            ),
             const SliverToBoxAdapter(child: SizedBox(height: 8)),
             // Topic tags row — plain SliverToBoxAdapter, no dynamic-extent issues
             if (_showTopicBar)
@@ -566,35 +616,18 @@ class _HomePageState extends State<HomePage>
             final isAll = _activeTopic == null;
             return Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: GestureDetector(
+              child: _buildTopicFilterChip(
+                label: '全部',
+                selected: isAll,
+                selectedColor: scheme.primary,
+                backgroundColor: isAll
+                    ? scheme.primary.withValues(alpha: 0.15)
+                    : scheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                borderColor: isAll
+                    ? scheme.primary.withValues(alpha: 0.4)
+                    : scheme.outline.withValues(alpha: 0.2),
+                textColor: isAll ? scheme.primary : scheme.onSurfaceVariant,
                 onTap: () => _onTopicSelected(null),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isAll
-                        ? scheme.primary.withValues(alpha: 0.15)
-                        : scheme.surfaceContainerHighest
-                            .withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isAll
-                          ? scheme.primary.withValues(alpha: 0.4)
-                          : scheme.outline.withValues(alpha: 0.2),
-                    ),
-                  ),
-                  child: Text(
-                    '全部',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: isAll
-                          ? scheme.primary
-                          : scheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
               ),
             );
           }
@@ -602,37 +635,65 @@ class _HomePageState extends State<HomePage>
           final isSelected = _activeTopic?.id == tag.id;
           return Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
+            child: _buildTopicFilterChip(
+              label: '#${tag.name}',
+              selected: isSelected,
+              selectedColor: tag.color,
+              backgroundColor: isSelected
+                  ? tag.color.withValues(alpha: 0.18)
+                  : scheme.surfaceContainerHighest.withValues(alpha: 0.6),
+              borderColor: isSelected
+                  ? tag.color.withValues(alpha: 0.45)
+                  : scheme.outline.withValues(alpha: 0.2),
+              textColor: isSelected ? tag.color : scheme.onSurfaceVariant,
               onTap: () => _onTopicSelected(tag),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? tag.color.withValues(alpha: 0.18)
-                      : scheme.surfaceContainerHighest.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isSelected
-                        ? tag.color.withValues(alpha: 0.45)
-                        : scheme.outline.withValues(alpha: 0.2),
-                  ),
-                ),
-                child: Text(
-                  '#${tag.name}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: isSelected
-                        ? tag.color
-                        : scheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildTopicFilterChip({
+    required String label,
+    required bool selected,
+    required Color selectedColor,
+    required Color backgroundColor,
+    required Color borderColor,
+    required Color textColor,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: borderColor),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: selectedColor.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: textColor,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -852,7 +913,7 @@ class _HomePageState extends State<HomePage>
       subtitle: '发布第一条动态，开启萌系社交之旅吧！',
       accentColor: const Color(0xFF7F7FD5),
       action: ElevatedButton.icon(
-        onPressed: () => Navigator.pushNamed(context, '/create-post'),
+        onPressed: _openCreatePost,
         icon: const Icon(Icons.add_rounded),
         label: const Text('发布动态'),
         style: ElevatedButton.styleFrom(
@@ -980,45 +1041,49 @@ class _HomePageState extends State<HomePage>
     } else if (_hasMore && !_isLoading && !_isRefreshing) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-        child: GestureDetector(
-          onTap: (_isLoadingMore || _isRefreshing)
-              ? null
-              : () {
-                  if (!_isLoading &&
-                      !_isRefreshing &&
-                      !_isLoadingMore &&
-                      _hasMore) {
-                    _loadMorePosts();
-                  }
-                },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            decoration: BoxDecoration(
-              color: (_isLoadingMore || _isRefreshing)
-                  ? Colors.grey.withValues(alpha: 0.1)
-                  : const Color(0xFF7F7FD5).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: (_isLoadingMore || _isRefreshing)
+                ? null
+                : () {
+                    if (!_isLoading &&
+                        !_isRefreshing &&
+                        !_isLoadingMore &&
+                        _hasMore) {
+                      _loadMorePosts();
+                    }
+                  },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              decoration: BoxDecoration(
                 color: (_isLoadingMore || _isRefreshing)
-                    ? Colors.grey.withValues(alpha: 0.2)
-                    : const Color(0xFF7F7FD5).withValues(alpha: 0.26),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.arrow_downward_rounded,
-                    color: Color(0xFF7F7FD5), size: 18),
-                const SizedBox(width: 8),
-                const Text(
-                  '点击加载更多',
-                  style: TextStyle(
-                    color: Color(0xFF7F7FD5),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
+                    ? Colors.grey.withValues(alpha: 0.1)
+                    : const Color(0xFF7F7FD5).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: (_isLoadingMore || _isRefreshing)
+                      ? Colors.grey.withValues(alpha: 0.2)
+                      : const Color(0xFF7F7FD5).withValues(alpha: 0.26),
                 ),
-              ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.arrow_downward_rounded,
+                      color: Color(0xFF7F7FD5), size: 18),
+                  const SizedBox(width: 8),
+                  const Text(
+                    '点击加载更多',
+                    style: TextStyle(
+                      color: Color(0xFF7F7FD5),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -1124,6 +1189,7 @@ class _HomePageState extends State<HomePage>
                   _allPosts.removeWhere((p) => p.id == post.id);
                   _displayPosts.removeWhere((p) => p.id == post.id);
                 });
+                _likeManager.evictPost(post.id);
               } catch (e) {
                 if (mounted) ErrorHandler.showError(context, '删除失败：$e');
               }
