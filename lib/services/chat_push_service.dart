@@ -63,9 +63,9 @@ class ChatPushService {
   static GlobalKey<NavigatorState>? _navigatorKey;
   static BuildContext? _globalContext;
 
-  // 指数退避：每次断线后延迟翻倍，上限 30 秒
+  // 指数退避：每次断线后延迟翻倍，上限 10 秒（让后端恢复后能在 10s 内重连上）
   static int _reconnectAttempts = 0;
-  static const int _maxReconnectDelay = 30;
+  static const int _maxReconnectDelay = 10;
   static const int _baseReconnectDelay = 3;
 
   static bool get isConnected => _channel != null;
@@ -201,8 +201,10 @@ class ChatPushService {
         },
         cancelOnError: true,
       );
-      // 连接成功，重置退避计数
-      _reconnectAttempts = 0;
+      // 注意：不要在这里直接 _reconnectAttempts = 0。
+      // 否则每次重试一启动就重置，等同于完全失去指数退避效果，
+      // 后端长时间不可用时会以 3s 间隔疯狂打点。
+      // 真正的"连接健康"信号是收到第一条消息，统一在 _handleMessage 里重置。
     } catch (_) {
       _handleDisconnected();
     } finally {
@@ -229,6 +231,8 @@ class ChatPushService {
 
   static void _handleMessage(dynamic data) {
     if (data is! String) return;
+    // 收到一条真实消息说明这条 WS 是健康的，重置退避计数。
+    _reconnectAttempts = 0;
 
     final Map<String, dynamic> map;
     try {
