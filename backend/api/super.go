@@ -49,16 +49,37 @@ func applyUnifiedConfigOverrides(c *config.Config) {
 	if u := v.GetString("app_client.public_api_base_url"); u != "" {
 		c.ClientPublicApiBaseUrl = u
 	}
-	// 图片云空间：与 api/etc/super.yaml 的 Image 合并，便于本地/服务器只改 backend/config/config.yaml
-	if d := v.GetString("image.local_dir"); strings.TrimSpace(d) != "" {
-		c.Image.LocalDir = strings.TrimSpace(d)
+	// 图片云空间：与 api/etc/super.yaml 的 Image 合并，便于本地/服务器只改 backend/config/config.yaml。
+	// 同时兼容两种命名风格：
+	// 1) image.local_dir / image.public_base_url / image.max_bytes
+	// 2) Image.LocalDir / Image.PublicBaseUrl / Image.MaxBytes
+	if d := firstNonEmptyString(v, "image.local_dir", "image.localdir"); d != "" {
+		c.Image.LocalDir = d
 	}
-	if u := v.GetString("image.public_base_url"); strings.TrimSpace(u) != "" {
-		c.Image.PublicBaseUrl = strings.TrimSpace(u)
+	if u := firstNonEmptyString(v, "image.public_base_url", "image.publicbaseurl"); u != "" {
+		c.Image.PublicBaseUrl = u
 	}
-	if n := v.GetInt64("image.max_bytes"); n > 0 {
+	if n := firstPositiveInt64(v, "image.max_bytes", "image.maxbytes"); n > 0 {
 		c.Image.MaxBytes = n
 	}
+}
+
+func firstNonEmptyString(v *viper.Viper, keys ...string) string {
+	for _, key := range keys {
+		if value := strings.TrimSpace(v.GetString(key)); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func firstPositiveInt64(v *viper.Viper, keys ...string) int64 {
+	for _, key := range keys {
+		if value := v.GetInt64(key); value > 0 {
+			return value
+		}
+	}
+	return 0
 }
 
 func main() {
@@ -85,6 +106,11 @@ func main() {
 	handler.RegisterHandlers(server, ctx)
 	// 非 goctl 生成：避免 routes.go 被覆盖时丢失 LLM raw 转发
 	handler.RegisterLlmRawRoutes(server, ctx)
+	// 非 goctl 生成：Swagger 文档入口
+	handler.RegisterSwaggerRoutes(server)
+
+	fmt.Printf("Effective image config: local_dir=%s public_base_url=%s max_bytes=%d\n",
+		c.Image.LocalDir, c.Image.PublicBaseUrl, c.Image.MaxBytes)
 
 	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
 	server.Start()
