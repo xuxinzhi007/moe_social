@@ -1,13 +1,13 @@
 # 在 backend 目录执行，例如: make gen | make build | make build-linux
 # gen-rpc 须在 backend 根目录跑（pb 路径依赖 --go_opt=module=backend）
 
-.PHONY: all gen gen-rpc gen-api build build-linux env-status help
+.PHONY: all gen gen-rpc gen-api gen-swagger build build-linux env-status help
 
 # 交叉编译用「命令前面临时变量」，不用 go env -w，避免本机 go run 编错平台。
 
 all: gen
 
-gen: gen-rpc gen-api
+gen: gen-rpc gen-api gen-swagger
 
 # --client=false：避免与 pb 包名冲突、生成坏 client
 gen-rpc:
@@ -15,6 +15,10 @@ gen-rpc:
 
 gen-api:
 	cd api && goctl api go -api super.api -dir ./
+
+gen-swagger:
+	@command -v goctl-swagger >/dev/null 2>&1 || (echo "goctl-swagger 未安装，请先执行: go install github.com/zeromicro/goctl-swagger@latest" && exit 1)
+	cd api && goctl api plugin -plugin goctl-swagger="swagger -filename ../rest.swagger.json" -api super.api -dir ./
 
 # 本机构建（当前系统）
 build:
@@ -36,6 +40,7 @@ help:
 	@echo make gen           - 生成 RPC + API 代码
 	@echo make gen-rpc       - 仅 RPC 代码生成
 	@echo make gen-api       - 仅 API 代码生成
+	@echo make gen-swagger   - 仅生成 Swagger JSON（backend/rest.swagger.json）
 	@echo make build         - 本机打包 api + rpc
 	@echo make build-linux   - 交叉编 Linux 包（不改全局 go 配置）
 	@echo make env-status    - 打印 GOOS/GOARCH
