@@ -22,13 +22,37 @@ class CompactTopicSelector extends StatefulWidget {
 }
 
 class _CompactTopicSelectorState extends State<CompactTopicSelector> {
-  bool _isExpanded = false;
+  late List<TopicTag> _selectedTags;
   final TopicTagService _tagService = TopicTagService();
 
-  void _toggleExpanded() {
+  @override
+  void initState() {
+    super.initState();
+    _selectedTags = List<TopicTag>.from(widget.selectedTags);
+  }
+
+  @override
+  void didUpdateWidget(covariant CompactTopicSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldIds = oldWidget.selectedTags.map((t) => t.id).toList();
+    final newIds = widget.selectedTags.map((t) => t.id).toList();
+    if (oldIds.length != newIds.length) {
+      _selectedTags = List<TopicTag>.from(widget.selectedTags);
+      return;
+    }
+    for (var i = 0; i < oldIds.length; i++) {
+      if (oldIds[i] != newIds[i]) {
+        _selectedTags = List<TopicTag>.from(widget.selectedTags);
+        return;
+      }
+    }
+  }
+
+  void _updateTags(List<TopicTag> next) {
     setState(() {
-      _isExpanded = !_isExpanded;
+      _selectedTags = List<TopicTag>.from(next);
     });
+    widget.onTagsChanged(_selectedTags);
   }
 
   void _showFullSelector() {
@@ -82,8 +106,8 @@ class _CompactTopicSelectorState extends State<CompactTopicSelector> {
             // 标签选择器
             Expanded(
               child: TopicTagSelector(
-                selectedTags: widget.selectedTags,
-                onTagsChanged: widget.onTagsChanged,
+                selectedTags: _selectedTags,
+                onTagsChanged: _updateTags,
                 userId: widget.userId,
                 maxTags: widget.maxTags,
               ),
@@ -124,7 +148,7 @@ class _CompactTopicSelectorState extends State<CompactTopicSelector> {
                 ),
               ),
               const Spacer(),
-              if (widget.selectedTags.isEmpty)
+              if (_selectedTags.isEmpty)
                 GestureDetector(
                   onTap: _showFullSelector,
                   child: Container(
@@ -156,18 +180,18 @@ class _CompactTopicSelectorState extends State<CompactTopicSelector> {
           ),
 
           // 已选择的标签或推荐标签
-          if (widget.selectedTags.isNotEmpty) ...[
+          if (_selectedTags.isNotEmpty) ...[
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
               runSpacing: 4,
-              children: widget.selectedTags.map((tag) {
+              children: _selectedTags.map((tag) {
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: tag.color.withOpacity(0.1),
+                    color: tag.color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: tag.color.withOpacity(0.5)),
+                    border: Border.all(color: tag.color.withValues(alpha: 0.5)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -183,10 +207,10 @@ class _CompactTopicSelectorState extends State<CompactTopicSelector> {
                       const SizedBox(width: 4),
                       GestureDetector(
                         onTap: () {
-                          final newTags = widget.selectedTags
+                          final newTags = _selectedTags
                               .where((t) => t.id != tag.id)
                               .toList();
-                          widget.onTagsChanged(newTags);
+                          _updateTags(newTags);
                         },
                         child: Icon(
                           Icons.close,
@@ -209,9 +233,9 @@ class _CompactTopicSelectorState extends State<CompactTopicSelector> {
                 children: _tagService.getPopularTags(limit: 4).map((tag) {
                   return GestureDetector(
                     onTap: () {
-                      if (widget.selectedTags.length < widget.maxTags) {
-                        widget.onTagsChanged([...widget.selectedTags, tag]);
-                      }
+                      if (_selectedTags.length >= widget.maxTags) return;
+                      if (_selectedTags.any((t) => t.id == tag.id)) return;
+                      _updateTags([..._selectedTags, tag]);
                     },
                     child: Container(
                       margin: const EdgeInsets.only(right: 8),

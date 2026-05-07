@@ -35,6 +35,7 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
 
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingTriggered = false;
+  final LikeStateManager _likeManager = LikeStateManager();
 
   @override
   void initState() {
@@ -158,19 +159,24 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
   }
 
   void _toggleLike(String postId) {
-    final manager = LikeStateManager();
-    final isLiked = manager.getStatusNotifier(postId).value;
-    final likeCount = manager.getCountNotifier(postId).value;
-    if (!mounted) return;
-    setState(() {
-      final postIndex = _posts.indexWhere((p) => p.id == postId);
-      if (postIndex != -1) {
-        _posts[postIndex] = _posts[postIndex].copyWith(
-          isLiked: isLiked,
-          likes: likeCount,
-        );
-      }
-    });
+    final isLiked = _likeManager.getStatusNotifier(postId).value;
+    final likeCount = _likeManager.getCountNotifier(postId).value;
+    _updateLikeSnapshot(postId: postId, isLiked: isLiked, likeCount: likeCount);
+  }
+
+  // 仅更新本地快照，点赞按钮由 ValueListenable 局部刷新。
+  void _updateLikeSnapshot({
+    required String postId,
+    required bool isLiked,
+    required int likeCount,
+  }) {
+    final postIndex = _posts.indexWhere((p) => p.id == postId);
+    if (postIndex != -1) {
+      _posts[postIndex] = _posts[postIndex].copyWith(
+        isLiked: isLiked,
+        likes: likeCount,
+      );
+    }
   }
 
   @override
@@ -188,7 +194,7 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
               ),
             ),
             Text(
-              '${_totalPosts} 条动态',
+              '$_totalPosts 条动态',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey[600],
@@ -316,11 +322,11 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
                                   if (!mounted) return;
                                   setState(() => _posts
                                       .removeWhere((p) => p.id == post.id));
+                                  _likeManager.evictPost(post.id);
                                 } catch (e) {
-                                  if (mounted) {
-                                    ErrorHandler.showError(
-                                        context, '删除失败：$e');
-                                  }
+                                  if (!mounted) return;
+                                  ErrorHandler.showError(
+                                      this.context, '删除失败：$e');
                                 }
                               }
                             : null,

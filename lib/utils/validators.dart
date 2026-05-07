@@ -67,6 +67,48 @@ class Validators {
     return null;
   }
 
+  /// 常见邮箱后缀补全（登录/注册输入框下方展示，不改变 [loginAccount]/[email] 规则）。
+  ///
+  /// 仅在已出现 `@`、本地部分非空、且整串尚不符合完整邮箱格式时返回候选（最多 [limit] 条）。
+  static List<String> emailDomainCompletionCandidates(String raw,
+      {int limit = 8}) {
+    final value = raw.trim();
+    if (value.isEmpty || !value.contains('@')) return [];
+
+    final at = value.indexOf('@');
+    if (at <= 0) return [];
+    if (value.indexOf('@', at + 1) >= 0) return [];
+
+    final local = value.substring(0, at);
+    if (local.isEmpty) return [];
+
+    final domainPart = value.substring(at + 1);
+    if (email(value) == null) return [];
+
+    // 顺序影响默认展示的前几条（limit）；国内常用放前。
+    const domains = <String>[
+      'qq.com',
+      '163.com',
+      '126.com',
+      'foxmail.com',
+      'gmail.com',
+      'outlook.com',
+      'hotmail.com',
+      'icloud.com',
+      'sina.com',
+      'yeah.net',
+    ];
+
+    final out = <String>[];
+    for (final d in domains) {
+      if (domainPart.isEmpty || d.startsWith(domainPart)) {
+        out.add('$local@$d');
+      }
+      if (out.length >= limit) break;
+    }
+    return out;
+  }
+
   /// 登录账号：邮箱或 10 位 Moe 号
   static String? loginAccount(String? value) {
     if (value == null || value.trim().isEmpty) {

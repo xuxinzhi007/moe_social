@@ -52,6 +52,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   final GlobalKey _postsSectionKey = GlobalKey();
   List<AchievementBadge> _userBadges = [];
   final AchievementService _achievementService = AchievementService();
+  final LikeStateManager _likeManager = LikeStateManager();
 
   // 关注统计数据
   int _followingCount = 0;
@@ -192,19 +193,24 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 
   void _toggleLike(String postId) {
-    final manager = LikeStateManager();
-    final isLiked = manager.getStatusNotifier(postId).value;
-    final likeCount = manager.getCountNotifier(postId).value;
-    if (!mounted) return;
-    setState(() {
-      final postIndex = _userPosts.indexWhere((p) => p.id == postId);
-      if (postIndex != -1) {
-        _userPosts[postIndex] = _userPosts[postIndex].copyWith(
-          isLiked: isLiked,
-          likes: likeCount,
-        );
-      }
-    });
+    final isLiked = _likeManager.getStatusNotifier(postId).value;
+    final likeCount = _likeManager.getCountNotifier(postId).value;
+    _updateLikeSnapshot(postId: postId, isLiked: isLiked, likeCount: likeCount);
+  }
+
+  // 仅更新数据快照，点赞 UI 由 PostCard 内部 ValueListenable 局部刷新。
+  void _updateLikeSnapshot({
+    required String postId,
+    required bool isLiked,
+    required int likeCount,
+  }) {
+    final postIndex = _userPosts.indexWhere((p) => p.id == postId);
+    if (postIndex != -1) {
+      _userPosts[postIndex] = _userPosts[postIndex].copyWith(
+        isLiked: isLiked,
+        likes: likeCount,
+      );
+    }
   }
 
   Future<void> _editPost(Post post) async {
@@ -233,6 +239,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       await ApiService.deletePost(postId);
       if (!mounted) return;
       setState(() => _userPosts.removeWhere((p) => p.id == postId));
+      _likeManager.evictPost(postId);
       MoeToast.success(context, '动态已删除');
     } catch (e) {
       if (!mounted) return;
