@@ -623,14 +623,20 @@ message UserMemory {
   string user_id = 2;
   string key = 3;
   string value = 4;
-  string created_at = 5;
-  string updated_at = 6;
+  string memory_type = 5;
+  double confidence = 6;
+  string source = 7;
+  string created_at = 8;
+  string updated_at = 9;
 }
 
 message UpsertUserMemoryReq {
   string user_id = 1;
   string key = 2;
   string value = 3;
+  string memory_type = 4;
+  double confidence = 5;
+  string source = 6;
 }
 
 message UpsertUserMemoryResp {
@@ -651,6 +657,19 @@ message DeleteUserMemoryReq {
 }
 
 message DeleteUserMemoryResp {
+}
+
+message SubmitUserMemoryFeedbackReq {
+  string user_id = 1;
+  string key = 2;
+  // accept | reject | correct
+  string feedback_type = 3;
+  string corrected_value = 4;
+  string reason = 5;
+}
+
+message SubmitUserMemoryFeedbackResp {
+  UserMemory memory = 1;
 }
 
 // 好友申请（同意后互相关注）
@@ -741,6 +760,7 @@ service Super {
   rpc UpsertUserMemory(UpsertUserMemoryReq) returns (UpsertUserMemoryResp);
   rpc GetUserMemories(GetUserMemoriesReq) returns (GetUserMemoriesResp);
   rpc DeleteUserMemory(DeleteUserMemoryReq) returns (DeleteUserMemoryResp);
+  rpc SubmitUserMemoryFeedback(SubmitUserMemoryFeedbackReq) returns (SubmitUserMemoryFeedbackResp);
   
   // VIP套餐相关服务
   rpc GetVipPlans(GetVipPlansReq) returns (GetVipPlansResp);

@@ -132,6 +132,7 @@ func autoMigrate() error {
 		&model.EmojiPack{},
 		&model.UserEmojiPack{},
 		&model.UserMemory{},
+		&model.UserMemoryFeedback{},
 		// 签到等级系统
 		&model.UserLevel{},
 		&model.LevelConfig{},

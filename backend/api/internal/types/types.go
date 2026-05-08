@@ -1190,6 +1190,19 @@ type SendPrivateMessageResp struct {
 	Data PrivateMessageItem `json:"data"`
 }
 
+type SubmitUserMemoryFeedbackReq struct {
+	UserId         string `path:"user_id"`
+	Key            string `json:"key"`
+	FeedbackType   string `json:"feedback_type"`            // accept | reject | correct
+	CorrectedValue string `json:"corrected_value,optional"` // 纠错后的值（feedback_type=correct 时必填）
+	Reason         string `json:"reason,optional"`          // 用户备注
+}
+
+type SubmitUserMemoryFeedbackResp struct {
+	BaseResp
+	Data UserMemory `json:"data"`
+}
+
 type SyncUserVipStatusData struct {
 	IsVip     bool   `json:"is_vip"`
 	ExpiresAt string `json:"expires_at"`
@@ -1320,9 +1333,12 @@ type UploadImageResp struct {
 }
 
 type UpsertUserMemoryReq struct {
-	UserId string `path:"user_id"`
-	Key    string `json:"key"`
-	Value  string `json:"value"`
+	UserId     string  `path:"user_id"`
+	Key        string  `json:"key"`
+	Value      string  `json:"value"`
+	MemoryType string  `json:"memory_type,optional"`
+	Confidence float64 `json:"confidence,optional"`
+	Source     string  `json:"source,optional"`
 }
 
 type UpsertUserMemoryResp struct {
@@ -1371,12 +1387,15 @@ type UserLevelInfo struct {
 }
 
 type UserMemory struct {
-	Id        string `json:"id"`
-	UserId    string `json:"user_id"`
-	Key       string `json:"key"`
-	Value     string `json:"value"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	Id         string  `json:"id"`
+	UserId     string  `json:"user_id"`
+	Key        string  `json:"key"`
+	Value      string  `json:"value"`
+	MemoryType string  `json:"memory_type,optional"`
+	Confidence float64 `json:"confidence,optional"`
+	Source     string  `json:"source,optional"`
+	CreatedAt  string  `json:"created_at"`
+	UpdatedAt  string  `json:"updated_at"`
 }
 
 type UserVipStatusData struct {

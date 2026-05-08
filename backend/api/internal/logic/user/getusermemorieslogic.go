@@ -38,12 +38,15 @@ func (l *GetUserMemoriesLogic) GetUserMemories(req *types.GetUserMemoriesReq) (r
 	memories := make([]types.UserMemory, 0, len(rpcResp.Memories))
 	for _, m := range rpcResp.Memories {
 		memories = append(memories, types.UserMemory{
-			Id:        m.Id,
-			UserId:    m.UserId,
-			Key:       m.Key,
-			Value:     m.Value,
-			CreatedAt: m.CreatedAt,
-			UpdatedAt: m.UpdatedAt,
+			Id:         m.Id,
+			UserId:     m.UserId,
+			Key:        m.Key,
+			Value:      m.Value,
+			MemoryType: m.MemoryType,
+			Confidence: m.Confidence,
+			Source:     m.Source,
+			CreatedAt:  m.CreatedAt,
+			UpdatedAt:  m.UpdatedAt,
 		})
 	}
 
@@ -52,4 +55,3 @@ func (l *GetUserMemoriesLogic) GetUserMemories(req *types.GetUserMemoriesReq) (r
 		Data:     memories,
 	}, nil
 }
-

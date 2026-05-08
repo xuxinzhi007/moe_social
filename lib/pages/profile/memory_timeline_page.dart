@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../models/user_memory.dart';
-import '../../models/user.dart';
 import '../../services/memory_service.dart';
 import '../../auth_service.dart';
 import 'package:intl/intl.dart';
@@ -32,18 +31,12 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
       });
 
       final user = await AuthService.getUserInfo();
-      if (user != null) {
-        final memories = await MemoryService.getUserMemories(user.id);
-        // Sort memories by created_at descending (newest first)
-        memories.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        setState(() {
-          _memories = memories;
-        });
-      } else {
-        setState(() {
-          _error = '未登录';
-        });
-      }
+      final memories = await MemoryService.getUserMemories(user.id);
+      // Sort memories by created_at descending (newest first)
+      memories.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      setState(() {
+        _memories = memories;
+      });
     } catch (e) {
       setState(() {
         _error = '加载失败: $e';
@@ -90,9 +83,99 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
     }
   }
 
+  Future<void> _feedbackMemory(
+    UserMemory memory, {
+    required String feedbackType,
+    String? correctedValue,
+    String? reason,
+  }) async {
+    try {
+      await MemoryService.submitUserMemoryFeedback(
+        userId: memory.userId,
+        key: memory.key,
+        feedbackType: feedbackType,
+        correctedValue: correctedValue,
+        reason: reason,
+      );
+      if (!mounted) return;
+      switch (feedbackType) {
+        case 'accept':
+          MoeToast.success(context, '已标记为有效记忆');
+          break;
+        case 'reject':
+          MoeToast.success(context, '已标记为低质量记忆');
+          break;
+        case 'correct':
+          MoeToast.success(context, '记忆已纠正');
+          break;
+      }
+      await _loadMemories();
+    } catch (e) {
+      if (mounted) MoeToast.error(context, '反馈失败: $e');
+    }
+  }
+
+  Future<void> _showCorrectDialog(UserMemory memory) async {
+    final valueController = TextEditingController(text: memory.value);
+    final reasonController = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('纠正记忆'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('键：${memory.key}'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: valueController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: '正确记忆值',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: '说明（可选）',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('提交纠正'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final corrected = valueController.text.trim();
+    if (corrected.isEmpty) {
+      if (mounted) MoeToast.error(context, '纠正内容不能为空');
+      return;
+    }
+    await _feedbackMemory(
+      memory,
+      feedbackType: 'correct',
+      correctedValue: corrected,
+      reason: reasonController.text.trim(),
+    );
+  }
+
   String _formatDate(String dateStr) {
     try {
-      final date = DateTime.parse(dateStr).toLocal();
+      final normalized = dateStr.replaceFirst(' ', 'T');
+      final date = DateTime.parse(normalized).toLocal();
       return DateFormat('yyyy-MM-dd HH:mm').format(date);
     } catch (e) {
       return dateStr;
@@ -104,7 +187,8 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('模型记忆线', style: TextStyle(fontWeight: FontWeight.bold)),
+        title:
+            const Text('模型记忆线', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -177,7 +261,8 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
           children: [
             Row(
               children: [
-                Icon(Icons.vpn_key_rounded, size: 16, color: Theme.of(context).primaryColor),
+                Icon(Icons.vpn_key_rounded,
+                    size: 16, color: Theme.of(context).primaryColor),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -189,7 +274,8 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.grey, size: 20),
+                  icon: const Icon(Icons.delete_outline,
+                      color: Colors.grey, size: 20),
                   onPressed: () => _deleteMemory(memory),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -203,9 +289,50 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
             ),
             const SizedBox(height: 12),
             Row(
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Icon(Icons.access_time_rounded, size: 14, color: Colors.grey[400]),
+                if (memory.memoryType != null && memory.memoryType!.isNotEmpty)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEEF2FF),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      memory.memoryType!,
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF4F46E5)),
+                    ),
+                  ),
+                const SizedBox(width: 8),
+                if (memory.confidence != null)
+                  Text(
+                    '置信度 ${(memory.confidence! * 100).clamp(0, 100).toStringAsFixed(0)}%',
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                  ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.thumb_up_alt_outlined, size: 18),
+                  tooltip: '认可',
+                  onPressed: () =>
+                      _feedbackMemory(memory, feedbackType: 'accept'),
+                  visualDensity: VisualDensity.compact,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.thumb_down_alt_outlined, size: 18),
+                  tooltip: '驳回',
+                  onPressed: () =>
+                      _feedbackMemory(memory, feedbackType: 'reject'),
+                  visualDensity: VisualDensity.compact,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  tooltip: '纠正',
+                  onPressed: () => _showCorrectDialog(memory),
+                  visualDensity: VisualDensity.compact,
+                ),
+                Icon(Icons.access_time_rounded,
+                    size: 14, color: Colors.grey[400]),
                 const SizedBox(width: 4),
                 Text(
                   _formatDate(memory.createdAt),

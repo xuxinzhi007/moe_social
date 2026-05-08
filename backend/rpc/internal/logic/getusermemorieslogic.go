@@ -47,12 +47,15 @@ func (l *GetUserMemoriesLogic) GetUserMemories(in *super.GetUserMemoriesReq) (*s
 	var rpcMemories []*super.UserMemory
 	for _, m := range memories {
 		rpcMemories = append(rpcMemories, &super.UserMemory{
-			Id:        strconv.Itoa(int(m.ID)),
-			UserId:    strconv.Itoa(int(m.UserID)),
-			Key:       m.Key,
-			Value:     m.Value,
-			CreatedAt: m.CreatedAt.Format("2006-01-02 15:04:05"),
-			UpdatedAt: m.UpdatedAt.Format("2006-01-02 15:04:05"),
+			Id:         strconv.Itoa(int(m.ID)),
+			UserId:     strconv.Itoa(int(m.UserID)),
+			Key:        m.Key,
+			Value:      m.Value,
+			MemoryType: m.MemoryType,
+			Confidence: m.Confidence,
+			Source:     m.Source,
+			CreatedAt:  m.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:  m.UpdatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
 
@@ -60,4 +63,3 @@ func (l *GetUserMemoriesLogic) GetUserMemories(in *super.GetUserMemoriesReq) (*s
 		Memories: rpcMemories,
 	}, nil
 }
-

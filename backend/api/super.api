@@ -78,12 +78,15 @@ type VipRecord {
 
 // 用户记忆相关结构
 type UserMemory {
-	Id        string `json:"id"`
-	UserId    string `json:"user_id"`
-	Key       string `json:"key"`
-	Value     string `json:"value"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	Id         string  `json:"id"`
+	UserId     string  `json:"user_id"`
+	Key        string  `json:"key"`
+	Value      string  `json:"value"`
+	MemoryType string  `json:"memory_type,optional"`
+	Confidence float64 `json:"confidence,optional"`
+	Source     string  `json:"source,optional"`
+	CreatedAt  string  `json:"created_at"`
+	UpdatedAt  string  `json:"updated_at"`
 }
 
 // 交易记录相关结构
@@ -438,9 +441,12 @@ type GetUserActiveVipRecordReq {
 
 // 用户记忆相关请求
 type UpsertUserMemoryReq {
-	UserId string `path:"user_id"`
-	Key    string `json:"key"`
-	Value  string `json:"value"`
+	UserId     string  `path:"user_id"`
+	Key        string  `json:"key"`
+	Value      string  `json:"value"`
+	MemoryType string  `json:"memory_type,optional"`
+	Confidence float64 `json:"confidence,optional"`
+	Source     string  `json:"source,optional"`
 }
 
 type GetUserMemoriesReq {
@@ -450,6 +456,14 @@ type GetUserMemoriesReq {
 type DeleteUserMemoryReq {
 	UserId string `path:"user_id"`
 	Key    string `form:"key"`
+}
+
+type SubmitUserMemoryFeedbackReq {
+	UserId         string `path:"user_id"`
+	Key            string `json:"key"`
+	FeedbackType   string `json:"feedback_type"` // accept | reject | correct
+	CorrectedValue string `json:"corrected_value,optional"` // 纠错后的值（feedback_type=correct 时必填）
+	Reason         string `json:"reason,optional"` // 用户备注
 }
 
 // 帖子相关请求
@@ -675,6 +689,11 @@ type DeleteUserMemoryResp {
 	BaseResp
 }
 
+type SubmitUserMemoryFeedbackResp {
+	BaseResp
+	Data UserMemory `json:"data"`
+}
+
 // 嵌套类型定义
 type UserVipStatusData {
 	IsVip     bool   `json:"is_vip"`
@@ -854,6 +873,9 @@ service Super {
 
 	@handler deleteUserMemory
 	delete /api/user/:user_id/memories (DeleteUserMemoryReq) returns (DeleteUserMemoryResp)
+
+	@handler submitUserMemoryFeedback
+	post /api/user/:user_id/memories/feedback (SubmitUserMemoryFeedbackReq) returns (SubmitUserMemoryFeedbackResp)
 
 	// 关注相关API
 	@handler followUser

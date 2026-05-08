@@ -557,6 +557,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: user.DeleteUserMemoryHandler(serverCtx),
 			},
 			{
+				Method:  http.MethodPost,
+				Path:    "/api/user/:user_id/memories/feedback",
+				Handler: user.SubmitUserMemoryFeedbackHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodPut,
 				Path:    "/api/user/:user_id/password",
 				Handler: user.UpdateUserPasswordHandler(serverCtx),
