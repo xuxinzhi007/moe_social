@@ -1,0 +1,32 @@
+---
+description: Backend AI generation spec for Go API changes
+globs: backend/**/*.go
+alwaysApply: false
+---
+
+# 后端 AI 生成规范（独立）
+
+在修改 `backend/` 下代码时，必须先阅读本规范，再开始改动。
+
+## 修改前确认
+- 详细规范以 `docs/guidelines/Codex启动指南-后端.md` 为准，开始改动前先读取该文档。
+- 先确认需求是否只涉及后端；禁止把前端 UI 逻辑混入后端改动。
+- 先读取并遵守本文件，不得跳过。
+- 必须先阅读将被修改的现有后端文件（至少同目录相关 handler/service 文件），严格沿用当前项目最新代码风格与命名习惯。
+- 本项目后端任务优先应用以下技能（按顺序）：
+  1) `implementation-guardrails`
+  2) `golang-style`
+  3) `Effective Go`
+  4) 涉及数据库/GORM/sqlx/事务/迁移时再加 `golang-gin-database`
+
+## 实现要求
+- 保持分层清晰：`api/internal/handler` 只处理请求与响应，业务逻辑放 service/usecase。
+- 请求参数校验必须完整，返回错误要有明确业务语义，不泄露内部细节。
+- 新增/修改接口时，保证路由、handler、请求结构体、响应结构体一致。
+- 涉及数据库或外部调用时，必须做错误处理和超时控制。
+- 代码格式必须与现有 Go 文件保持一致，提交前执行 `gofmt`（如项目使用 goctl 生成文件，避免改动自动生成文件中的无关内容）。
+
+## 提交前检查
+- 仅修改 `backend/` 相关文件，不混入前端文件。
+- 确认没有破坏现有接口契约（字段名、类型、状态码）。
+- 确认关键路径有基础测试或最小可验证步骤。
