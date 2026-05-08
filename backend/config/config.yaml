@@ -10,11 +10,23 @@ api:
   # go-zero REST 超时（毫秒）。LLM 首次加载模型可能较慢，建议 >= 180000
   timeout_ms: 600000
 
+#本地
+
 ollama:
   # 后端能访问到的 Ollama 地址（注意：不是前端能访问，是后端进程所在机器能访问）
   base_url: "http://127.0.0.1:11434"
   # 后端请求 Ollama 的超时（秒）
   timeout_seconds: 300
+
+
+#线上
+
+#ollama:
+#  # 后端能访问到的 Ollama 地址（注意：不是前端能访问，是后端进程所在机器能访问）
+#  base_url: "https://karan-unsedate-unsimultaneously.ngrok-free.dev"
+#  # 后端请求 Ollama 的超时（秒）
+#  timeout_seconds: 300
+
 
 # 当前公网 API 根（服务器公网IP）。须与 App 能访问到的地址一致。
 # 重启 API 后生效；客户端会 GET /api/public/client-config 读取本字段（权威）。

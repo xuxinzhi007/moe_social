@@ -365,9 +365,14 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		timeoutSeconds = 60
 	}
 
-	baseUrl := strings.TrimRight(l.svcCtx.Config.Ollama.BaseUrl, "/")
-	if baseUrl == "" {
-		baseUrl = "http://127.0.0.1:11434"
+	baseUrl, err := common.ResolveOllamaBaseURL(l.svcCtx.Config.Ollama.BaseUrl)
+	if err != nil {
+		return &types.LlmChatResp{
+			BaseResp:       common.HandleError(err),
+			Content:        "",
+			RemainingRatio: 1,
+			Summarized:     false,
+		}, nil
 	}
 
 	client := utils.NewHTTPClient(timeoutSeconds)
@@ -532,6 +537,7 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 			Summarized:     false,
 		}, nil
 	}
+	common.ApplyOllamaForwardHeaders(httpReq)
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	var httpResp *http.Response
@@ -713,6 +719,7 @@ func (l *ChatLogic) summarizeMessages(model, baseUrl string, timeoutSeconds int,
 	if err != nil {
 		return "", err
 	}
+	common.ApplyOllamaForwardHeaders(httpReq)
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	var httpResp *http.Response
@@ -827,6 +834,7 @@ func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, b
 		logger.Errorf("create extract memory req failed: %v", err)
 		return
 	}
+	common.ApplyOllamaForwardHeaders(httpReq)
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	client := utils.NewHTTPClient(timeoutSeconds)

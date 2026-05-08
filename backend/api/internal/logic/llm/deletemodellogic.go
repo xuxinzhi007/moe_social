@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"backend/api/internal/common"
@@ -43,9 +42,10 @@ func (l *DeleteModelLogic) DeleteModel(req *types.LlmDeleteModelReq) (resp *type
 		timeoutSeconds = 60
 	}
 
-	baseUrl := strings.TrimRight(l.svcCtx.Config.Ollama.BaseUrl, "/")
-	if baseUrl == "" {
-		baseUrl = "http://127.0.0.1:11434"
+	baseUrl, err := common.ResolveOllamaBaseURL(l.svcCtx.Config.Ollama.BaseUrl)
+	if err != nil {
+		resp := common.HandleError(err)
+		return &resp, nil
 	}
 
 	client := utils.NewHTTPClient(timeoutSeconds)
@@ -66,6 +66,7 @@ func (l *DeleteModelLogic) DeleteModel(req *types.LlmDeleteModelReq) (resp *type
 		resp := common.HandleError(err)
 		return &resp, nil
 	}
+	common.ApplyOllamaForwardHeaders(httpReq)
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	var httpResp *http.Response
