@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import '../models/ai_agent.dart';
 import '../models/ai_chat_session.dart';
 import '../models/ai_chat_message.dart';
@@ -11,6 +13,7 @@ import '../models/ai_memory_settings.dart';
 class AiDbService {
   static final AiDbService _instance = AiDbService._internal();
   static Database? _database;
+  static bool _databaseFactoryInitialized = false;
 
   factory AiDbService() => _instance;
 
@@ -23,6 +26,7 @@ class AiDbService {
   }
 
   Future<Database> _initDatabase() async {
+    _ensureDatabaseFactoryInitialized();
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'ai_agents.db');
 
@@ -32,6 +36,28 @@ class AiDbService {
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
+  }
+
+  void _ensureDatabaseFactoryInitialized() {
+    if (_databaseFactoryInitialized) return;
+    if (kIsWeb) {
+      databaseFactory = databaseFactoryFfiWeb;
+      _databaseFactoryInitialized = true;
+      return;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.windows:
+      case TargetPlatform.linux:
+      case TargetPlatform.macOS:
+        sqfliteFfiInit();
+        databaseFactory = databaseFactoryFfi;
+        break;
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+      case TargetPlatform.fuchsia:
+        break;
+    }
+    _databaseFactoryInitialized = true;
   }
 
   Future<void> _onCreate(Database db, int version) async {

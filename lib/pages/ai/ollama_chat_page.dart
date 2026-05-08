@@ -7,6 +7,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../services/api_service.dart';
 import '../../services/llm_endpoint_config.dart';
+import '../../services/llm_response_parser.dart';
 import '../../widgets/moe_toast.dart';
 
 class OllamaChatPage extends StatefulWidget {
@@ -702,21 +703,25 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
       }
 
       final decodedBody = utf8.decode(response.bodyBytes);
-      final data = jsonDecode(decodedBody);
+      final data = LlmResponseParser.decodeJsonOrNdjson(decodedBody);
       String content = '';
       double remainingRatio = 1.0;
       bool summarized = false;
       if (terminalMode) {
-        final msg = (data is Map) ? data['message'] : null;
-        if (msg is Map && msg['content'] is String) {
-          content = msg['content'] as String;
-        } else if (data is Map && data['error'] is String) {
+        content = LlmResponseParser.extractChatContent(
+          data,
+          terminalMode: true,
+        );
+        if (content.isEmpty && data is Map && data['error'] is String) {
           content = 'Ollama 错误: ${data['error']}';
-        } else {
+        } else if (content.isEmpty) {
           content = '响应格式异常（直连 Ollama）';
         }
       } else {
-        content = data is Map && data['content'] is String ? data['content'] as String : '';
+        content = LlmResponseParser.extractChatContent(
+          data,
+          terminalMode: false,
+        );
         remainingRatio = data is Map && data['remaining_ratio'] is num
             ? (data['remaining_ratio'] as num).toDouble()
             : 1.0;

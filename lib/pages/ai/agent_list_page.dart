@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -143,19 +144,87 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
 
   Future<void> _loadAgents() async {
     setState(() => _isLoading = true);
-    final agents = await AiDbService().getAgents();
-    
-    // 为每个智能体生成随机颜色
-    final colors = _generateAgentColors(agents);
-    
-    setState(() {
-      _agents = agents;
-      _agentColors = colors;
-      _isLoading = false;
-    });
-    
-    // 加载后过滤智能体
-    _filterAgents();
+    try {
+      final uri = await LlmEndpointConfig.modelsUri();
+      ApiService.logDirectHttp('GET', uri);
+      final response = await http
+          .get(uri, headers: ApiService.mergeTunnelHeaders(uri))
+          .timeout(const Duration(seconds: 12));
+      if (response.statusCode != 200) {
+        throw Exception('后端模型列表加载失败: ${response.statusCode}');
+      }
+      final decodedBody = utf8.decode(response.bodyBytes);
+      final data = jsonDecode(decodedBody);
+      var modelNames = <String>[];
+      if (data is Map && data['models'] is List) {
+        final raw = data['models'] as List;
+        if (raw.whereType<String>().isNotEmpty) {
+          modelNames = raw.whereType<String>().toList();
+        } else {
+          modelNames = raw
+              .whereType<Map>()
+              .map((m) => m['name'])
+              .whereType<String>()
+              .toList();
+        }
+      }
+      if (modelNames.isEmpty) {
+        throw Exception('后端返回模型列表为空');
+      }
+
+      // 读取本地元数据（描述/提示词）作为可选增强，失败不阻塞页面。
+      List<AiAgent> localAgents = [];
+      // Web 端下本地 sqflite 读写偶发卡住，列表刷新严格以后端结果为准。
+      if (!kIsWeb) {
+        try {
+          localAgents =
+              await AiDbService().getAgents().timeout(const Duration(seconds: 2));
+        } catch (_) {}
+      }
+      final localByModel = <String, AiAgent>{
+        for (final a in localAgents) a.modelName: a,
+      };
+
+      final now = DateTime.now();
+      final agents = modelNames.map((model) {
+        final local = localByModel[model];
+        if (local != null) return local;
+        return AiAgent(
+          id: model,
+          name: model,
+          description: _getModelDescription(model),
+          systemPrompt: '',
+          modelName: model,
+          createdAt: now,
+        );
+      }).toList();
+
+      // 为每个智能体生成随机颜色
+      final colors = _generateAgentColors(agents);
+
+      if (!mounted) return;
+      setState(() {
+        _agents = agents;
+        _agentColors = colors;
+        _ollamaModels = modelNames;
+      });
+
+      // 加载后过滤智能体
+      _filterAgents();
+    } catch (e, st) {
+      debugPrint('load agents failed: $e\n$st');
+      if (!mounted) return;
+      setState(() {
+        _agents = [];
+        _filteredAgents = [];
+        _ollamaModels = [];
+      });
+      MoeToast.error(context, '加载我的智能体失败：$e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   Map<String, Color> _generateAgentColors(List<AiAgent> agents) {
@@ -576,7 +645,51 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 14),
+                                  PopupMenuButton<String>(
+                                    tooltip: '更多操作',
+                                    onSelected: (value) async {
+                                      if (value == 'chat') {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => ChatPage(agent: agent),
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                      if (value == 'generate') {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => ContentGenerationPage(agent: agent),
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                      if (value == 'more') {
+                                        _showAgentOptions(agent);
+                                      }
+                                    },
+                                    itemBuilder: (_) => const [
+                                      PopupMenuItem<String>(
+                                        value: 'chat',
+                                        child: Text('进入聊天'),
+                                      ),
+                                      PopupMenuItem<String>(
+                                        value: 'generate',
+                                        child: Text('内容生成'),
+                                      ),
+                                      PopupMenuItem<String>(
+                                        value: 'more',
+                                        child: Text('更多操作'),
+                                      ),
+                                    ],
+                                    child: const Icon(
+                                      Icons.more_horiz_rounded,
+                                      color: Colors.grey,
+                                      size: 18,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -931,19 +1044,18 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
       return;
     }
 
+    // 后端统一模式下直接用模型构建会话入口，不强依赖本地入库。
     final agent = AiAgent(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: modelName,
       name: modelName,
       description: '基于 $modelName 的对话',
       systemPrompt: '',
       modelName: modelName,
       createdAt: DateTime.now(),
     );
-    await AiDbService().insertAgent(agent);
-    await _loadAgents();
 
     if (mounted) {
-      MoeToast.success(context, '智能体创建成功');
+      MoeToast.success(context, '已使用后端模型创建会话');
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => ChatPage(agent: agent)),
@@ -1059,10 +1171,36 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                       ),
                     );
                     if (confirm == true) {
-                      await AiDbService().deleteAgent(agent.id);
+                      try {
+                        final uri = Uri.parse('${ApiService.baseUrl}/api/llm/models/delete');
+                        ApiService.logDirectHttp('POST', uri);
+                        final response = await http.post(
+                          uri,
+                          headers: ApiService.mergeTunnelHeaders(uri, headers: {
+                            'Content-Type': 'application/json',
+                            if (ApiService.token case final t?)
+                              'Authorization': 'Bearer $t',
+                          }),
+                          body: jsonEncode({'model': agent.modelName}),
+                        );
+                        if (response.statusCode != 200) {
+                          throw Exception('删除失败(${response.statusCode})');
+                        }
+                        final data = jsonDecode(utf8.decode(response.bodyBytes));
+                        if (data is Map && data['success'] == false) {
+                          throw Exception(data['message'] ?? '删除失败');
+                        }
+                      } catch (e) {
+                        if (mounted) MoeToast.error(context, '删除后端模型失败：$e');
+                        return;
+                      }
+                      // 本地元数据清理（非关键）
+                      try {
+                        await AiDbService().deleteAgent(agent.id);
+                      } catch (_) {}
                       _loadAgents();
                       if (mounted) {
-                        MoeToast.success(context, '智能体删除成功');
+                        MoeToast.success(context, '后端模型删除成功');
                       }
                     }
                   },
