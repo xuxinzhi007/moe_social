@@ -7,12 +7,11 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../../services/api_service.dart';
 import '../../services/llm_endpoint_config.dart';
-import '../../services/ai_db_service.dart';
+import '../../services/llm_response_parser.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_chat_message.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/ai/message_bubble.dart';
-import '../../widgets/moe_toast.dart';
 
 enum ContentType {
   text,
@@ -139,6 +138,7 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
   }
 
   Future<String> _callContentGenerationAPI(String prompt, ContentType contentType) async {
+    final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
     final uri = await LlmEndpointConfig.chatUri();
     ApiService.logDirectHttp('POST', uri);
     final token = ApiService.token;
@@ -183,18 +183,21 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
               {'role': 'system', 'content': systemPrompt},
               {'role': 'user', 'content': prompt},
             ],
+            // 统一要求非流式，避免 Web/Flutter 端把 NDJSON 当单个 JSON 解析时报错
+            'stream': false,
           }),
         )
         .timeout(const Duration(seconds: 180));
 
     if (response.statusCode == 200) {
-      final decodedBody = utf8.decode(response.bodyBytes);
-      final data = jsonDecode(decodedBody);
-      if (data is Map && data['content'] is String) {
-        return data['content'] as String;
-      } else {
-        throw Exception('响应格式异常');
-      }
+      final decodedBody = utf8.decode(response.bodyBytes).trim();
+      final data = LlmResponseParser.decodeJsonOrNdjson(decodedBody);
+      final content = LlmResponseParser.extractChatContent(
+        data,
+        terminalMode: terminalMode,
+      );
+      if (content.isNotEmpty) return content;
+      throw Exception('响应格式异常');
     } else {
       throw Exception('请求失败 (${response.statusCode})');
     }

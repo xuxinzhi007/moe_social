@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -26,7 +27,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   List<String> _models = [];
   bool _isLoadingModels = false;
   bool _isSaving = false;
-  bool _createRealModel = false;
+  bool _createRealModel = true;
 
   @override
   void initState() {
@@ -236,15 +237,14 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
+    try {
+      final name = _nameController.text.trim();
+      final desc = _descController.text.trim();
+      final prompt = _promptController.text.trim();
 
-    final name = _nameController.text.trim();
-    final desc = _descController.text.trim();
-    final prompt = _promptController.text.trim();
+      String modelForChat = _modelName;
 
-    String modelForChat = _modelName;
-
-    if (widget.agent == null && _createRealModel) {
-      try {
+      if (widget.agent == null && _createRealModel) {
         final baseModel = _modelName.trim();
         if (baseModel.isEmpty) {
           throw Exception('请选择基础模型');
@@ -274,7 +274,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
 
         final response = await http
             .post(uri, headers: headers, body: body)
-            .timeout(const Duration(minutes: 5));
+            .timeout(const Duration(seconds: 45));
 
         if (response.statusCode != 200) {
           throw Exception('创建 Ollama 模型失败: ${response.statusCode}');
@@ -290,32 +290,43 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
         }
 
         modelForChat = safeName;
-      } catch (e) {
-        if (mounted) {
-          MoeToast.error(context, e.toString());
-        }
-        setState(() => _isSaving = false);
-        return;
       }
-    }
 
-    final agent = AiAgent(
-      id: widget.agent?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      name: name,
-      description: desc,
-      systemPrompt: prompt,
-      modelName: modelForChat,
-      createdAt: widget.agent?.createdAt ?? DateTime.now(),
-    );
+      final agent = AiAgent(
+        id: widget.agent?.id ?? modelForChat,
+        name: name,
+        description: desc,
+        systemPrompt: prompt,
+        modelName: modelForChat,
+        createdAt: widget.agent?.createdAt ?? DateTime.now(),
+      );
 
-    if (widget.agent == null) {
-      await AiDbService().insertAgent(agent);
-    } else {
-      await AiDbService().updateAgent(agent);
-    }
+      // 本地库只作为补充元数据存储；写入失败不阻塞“后端模型”流程。
+      if (!kIsWeb) {
+        try {
+          if (widget.agent == null) {
+            await AiDbService().insertAgent(agent);
+          } else {
+            await AiDbService().updateAgent(agent);
+          }
+        } catch (_) {}
+      }
 
-    if (mounted) {
-      Navigator.pop(context, true);
+      if (mounted) {
+        MoeToast.success(
+          context,
+          widget.agent == null ? '智能体创建成功' : '智能体已保存',
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        MoeToast.error(context, e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 

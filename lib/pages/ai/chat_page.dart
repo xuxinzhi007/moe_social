@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -8,6 +9,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../services/api_service.dart';
 import '../../services/llm_endpoint_config.dart';
+import '../../services/llm_response_parser.dart';
 import '../../services/ai_db_service.dart';
 import '../../services/memory_agent_service.dart';
 import '../../models/ai_agent.dart';
@@ -31,6 +33,8 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
+  // Web 端优先走后端与内存会话，避免本地 sqflite 导致页面长时间阻塞。
+  final bool _localPersistenceEnabled = !kIsWeb;
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
@@ -81,8 +85,13 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
     _initVoice();
-    _loadSessions();
-    _loadMemoryState();
+    if (_localPersistenceEnabled) {
+      _loadSessions();
+      _loadMemoryState();
+    } else {
+      _createNewSession();
+      _isLoadingHistory = false;
+    }
   }
 
   @override
@@ -108,6 +117,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _loadSessions() async {
+    if (!_localPersistenceEnabled) return;
     final sessions = await AiDbService().getSessions(widget.agent.id);
     if (mounted) {
       setState(() => _sessions = sessions);
@@ -120,6 +130,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _loadMemoryState() async {
+    if (!_localPersistenceEnabled) return;
     final db = AiDbService();
     final agentService = MemoryAgentService();
     final memories = await db.getMemories(widget.agent.id);
@@ -141,7 +152,9 @@ class _ChatPageState extends State<ChatPage> {
       title: '新对话',
       updatedAt: DateTime.now(),
     );
-    await AiDbService().insertSession(session);
+    if (_localPersistenceEnabled) {
+      await AiDbService().insertSession(session);
+    }
     if (mounted) {
       setState(() => _sessions.insert(0, session));
       _loadSession(session);
@@ -153,7 +166,9 @@ class _ChatPageState extends State<ChatPage> {
       _currentSession = session;
       _isLoadingHistory = true;
     });
-    final messages = await AiDbService().getMessages(session.id);
+    final messages = _localPersistenceEnabled
+        ? await AiDbService().getMessages(session.id)
+        : <AiChatMessage>[];
     if (mounted) {
       setState(() {
         _messages = messages;
@@ -164,7 +179,9 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _deleteSession(String id) async {
-    await AiDbService().deleteSession(id);
+    if (_localPersistenceEnabled) {
+      await AiDbService().deleteSession(id);
+    }
     if (mounted) {
       setState(() {
         _sessions.removeWhere((s) => s.id == id);
@@ -204,7 +221,9 @@ class _ChatPageState extends State<ChatPage> {
       _wasManuallyStopped = false;
     });
     _scrollToBottom();
-    await AiDbService().insertMessage(userMsg);
+    if (_localPersistenceEnabled) {
+      await AiDbService().insertMessage(userMsg);
+    }
 
     try {
       final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
@@ -216,8 +235,11 @@ class _ChatPageState extends State<ChatPage> {
           .toList();
 
       // 使用本地记忆智能体构建注入上下文：画像 + 高优先级原始记忆
-      final enrichedSystemPrompt =
-          await MemoryAgentService().buildInjectedPrompt(widget.agent);
+      final enrichedSystemPrompt = _localPersistenceEnabled
+          ? await MemoryAgentService().buildInjectedPrompt(widget.agent)
+          : (widget.agent.systemPrompt.isNotEmpty
+              ? widget.agent.systemPrompt
+              : '你是一位友好、智能的 AI 助手。');
       history.insert(0, {'role': 'system', 'content': enrichedSystemPrompt});
 
       final uri = await LlmEndpointConfig.chatUri();
@@ -245,34 +267,37 @@ class _ChatPageState extends State<ChatPage> {
 
       if (response.statusCode == 200) {
         final decodedBody = utf8.decode(response.bodyBytes);
-        final data = jsonDecode(decodedBody);
+        final data = LlmResponseParser.decodeJsonOrNdjson(decodedBody);
         String content = '';
 
         if (terminalMode) {
-          final msg = (data is Map) ? data['message'] : null;
-          if (msg is Map && msg['content'] is String) {
-            content = msg['content'] as String;
-          } else if (data is Map && data['error'] is String) {
+          content = LlmResponseParser.extractChatContent(
+            data,
+            terminalMode: true,
+          );
+          if (content.isEmpty && data is Map && data['error'] is String) {
             final errorMessage = data['error'] as String;
             if (errorMessage.contains('model not found')) {
               content = '模型不存在，请选择一个真实存在的模型。\n\n建议：\n1. 检查Ollama是否已安装该模型\n2. 尝试使用常见模型如 llama3:8b\n3. 确保模型名称拼写正确';
             } else {
               content = 'Ollama 错误: $errorMessage';
             }
-          } else {
+          } else if (content.isEmpty) {
             content = '响应格式异常（直连 Ollama）';
           }
         } else {
-          if (data is Map && data['content'] is String) {
-            content = data['content'] as String;
-          } else if (data is Map && data['error'] is String) {
+          content = LlmResponseParser.extractChatContent(
+            data,
+            terminalMode: false,
+          );
+          if (content.isEmpty && data is Map && data['error'] is String) {
             final errorMessage = data['error'] as String;
             if (errorMessage.contains('model not found')) {
               content = '模型不存在，请选择一个真实存在的模型。\n\n建议：\n1. 检查Ollama是否已安装该模型\n2. 尝试使用常见模型如 llama3:8b\n3. 确保模型名称拼写正确';
             } else {
               content = '后端错误: $errorMessage';
             }
-          } else {
+          } else if (content.isEmpty) {
             content = '响应格式异常（后端）';
           }
         }
@@ -285,10 +310,14 @@ class _ChatPageState extends State<ChatPage> {
           createdAt: DateTime.now(),
         );
 
-        await AiDbService().insertMessage(assistantMsg);
+        if (_localPersistenceEnabled) {
+          await AiDbService().insertMessage(assistantMsg);
+        }
 
         // ── 后台静默交给记忆智能体：提取 + 必要时整理画像 ──────────────
-        _processMemoryTurnInBackground(text, content);
+        if (_localPersistenceEnabled) {
+          _processMemoryTurnInBackground(text, content);
+        }
 
         if (mounted) {
           setState(() => _messages.add(assistantMsg));
@@ -303,7 +332,9 @@ class _ChatPageState extends State<ChatPage> {
               title: newTitle,
               updatedAt: DateTime.now(),
             );
-            await AiDbService().updateSession(updatedSession);
+            if (_localPersistenceEnabled) {
+              await AiDbService().updateSession(updatedSession);
+            }
             setState(() {
               _currentSession = updatedSession;
               final idx =
@@ -355,7 +386,9 @@ class _ChatPageState extends State<ChatPage> {
       content: text,
       createdAt: DateTime.now(),
     );
-    await AiDbService().insertMessage(errorMsg);
+    if (_localPersistenceEnabled) {
+      await AiDbService().insertMessage(errorMsg);
+    }
     if (mounted) setState(() => _messages.add(errorMsg));
   }
 
@@ -493,7 +526,9 @@ class _ChatPageState extends State<ChatPage> {
       content: '已手动停止生成',
       createdAt: now,
     );
-    AiDbService().insertMessage(msg);
+    if (_localPersistenceEnabled) {
+      AiDbService().insertMessage(msg);
+    }
     if (mounted) {
       setState(() {
         _messages.add(msg);
@@ -504,6 +539,10 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _openMemoryManager() {
+    if (!_localPersistenceEnabled) {
+      MoeToast.info(context, 'Web 端记忆库暂未启用本地持久化');
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -652,7 +691,9 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _editMessage(AiChatMessage message) async {
-    await AiDbService().deleteMessage(message.id);
+    if (_localPersistenceEnabled) {
+      await AiDbService().deleteMessage(message.id);
+    }
     if (!mounted) return;
     setState(() {
       _controller.text = message.content;
@@ -696,7 +737,9 @@ class _ChatPageState extends State<ChatPage> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              await AiDbService().deleteMessage(message.id);
+              if (_localPersistenceEnabled) {
+                await AiDbService().deleteMessage(message.id);
+              }
               if (!mounted) return;
               setState(() {
                 _messages.removeWhere((msg) => msg.id == message.id);
