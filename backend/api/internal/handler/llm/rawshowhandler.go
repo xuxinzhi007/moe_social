@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
@@ -20,9 +21,10 @@ func ShowRawHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			timeoutSeconds = 15
 		}
 
-		baseUrl := strings.TrimRight(svcCtx.Config.Ollama.BaseUrl, "/")
-		if baseUrl == "" {
-			baseUrl = "http://127.0.0.1:11434"
+		baseUrl, err := common.ResolveOllamaBaseURL(svcCtx.Config.Ollama.BaseUrl)
+		if err != nil {
+			httpx.ErrorCtx(r.Context(), w, err)
+			return
 		}
 
 		body, err := io.ReadAll(r.Body)
@@ -41,6 +43,7 @@ func ShowRawHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
+		common.ApplyOllamaForwardHeaders(req)
 		req.Header.Set("Content-Type", "application/json; charset=utf-8")
 
 		resp, err := client.Do(req)

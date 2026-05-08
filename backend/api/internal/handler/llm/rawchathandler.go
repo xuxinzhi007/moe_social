@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
@@ -17,9 +18,10 @@ import (
 // 避免先把整段回答读进内存再一次性下发，便于 Flutter 端做打字机效果。
 func ChatRawHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		baseUrl := strings.TrimRight(svcCtx.Config.Ollama.BaseUrl, "/")
-		if baseUrl == "" {
-			baseUrl = "http://127.0.0.1:11434"
+		baseUrl, err := common.ResolveOllamaBaseURL(svcCtx.Config.Ollama.BaseUrl)
+		if err != nil {
+			httpx.ErrorCtx(r.Context(), w, err)
+			return
 		}
 
 		body, err := io.ReadAll(r.Body)
@@ -40,6 +42,7 @@ func ChatRawHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
+		common.ApplyOllamaForwardHeaders(req)
 		req.Header.Set("Content-Type", "application/json; charset=utf-8")
 
 		resp, err := client.Do(req)

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"backend/api/internal/common"
@@ -53,9 +52,12 @@ func (l *ModelsLogic) Models(req *types.EmptyReq) (resp *types.LlmModelsResp, er
 		timeoutSeconds = 10
 	}
 
-	baseUrl := strings.TrimRight(l.svcCtx.Config.Ollama.BaseUrl, "/")
-	if baseUrl == "" {
-		baseUrl = "http://127.0.0.1:11434"
+	baseUrl, err := common.ResolveOllamaBaseURL(l.svcCtx.Config.Ollama.BaseUrl)
+	if err != nil {
+		return &types.LlmModelsResp{
+			BaseResp: common.HandleError(err),
+			Models:   nil,
+		}, nil
 	}
 
 	ctx, cancel := context.WithTimeout(l.ctx, time.Duration(timeoutSeconds)*time.Second)
@@ -72,6 +74,7 @@ func (l *ModelsLogic) Models(req *types.EmptyReq) (resp *types.LlmModelsResp, er
 			Models:   nil,
 		}, nil
 	}
+	common.ApplyOllamaForwardHeaders(httpReq)
 
 	var httpResp *http.Response
 	var retryErr error
