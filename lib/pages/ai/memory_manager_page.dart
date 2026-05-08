@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 import '../../models/ai_agent.dart';
@@ -30,7 +31,10 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
   bool _isLoading = true;
   bool _isSavingSettings = false;
   bool _isCurating = false;
+  bool _isBuildingPrompt = false;
+  bool _showFullPrompt = false;
   String _filterCategory = 'all';
+  String _promptPreview = '';
 
   final _categories = [
     ('all', '全部', '📋'),
@@ -55,12 +59,14 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
     final profiles = await db.getMemoryProfiles(widget.agent.id);
     final settings = await memoryAgent.getOrCreateSettings(widget.agent);
     final models = await _loadModels();
+    final promptPreview = await memoryAgent.buildInjectedPrompt(widget.agent);
     if (mounted) {
       setState(() {
         _memories = list;
         _profiles = profiles;
         _settings = settings;
         _models = models;
+        _promptPreview = promptPreview;
         _isLoading = false;
       });
     }
@@ -100,6 +106,30 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
         _settings = settings.copyWith(updatedAt: DateTime.now());
         _isSavingSettings = false;
       });
+    }
+    await _refreshPromptPreview(showLoading: false);
+  }
+
+  Future<void> _refreshPromptPreview({bool showLoading = true}) async {
+    if (showLoading && mounted) {
+      setState(() => _isBuildingPrompt = true);
+    }
+    try {
+      final prompt =
+          await MemoryAgentService().buildInjectedPrompt(widget.agent);
+      if (mounted) {
+        setState(() {
+          _promptPreview = prompt;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        MoeToast.error(context, '刷新提示词失败：$e');
+      }
+    } finally {
+      if (showLoading && mounted) {
+        setState(() => _isBuildingPrompt = false);
+      }
     }
   }
 
@@ -154,7 +184,8 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('清空所有记忆'),
-        content: Text('确定要清空「${widget.agent.name}」的所有 ${_memories.length} 条记忆吗？\n此操作不可撤销。'),
+        content: Text(
+            '确定要清空「${widget.agent.name}」的所有 ${_memories.length} 条记忆吗？\n此操作不可撤销。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -198,7 +229,7 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: selectedCategory,
+                  initialValue: selectedCategory,
                   decoration: const InputDecoration(
                     labelText: '分类',
                     border: OutlineInputBorder(),
@@ -281,8 +312,7 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
       body: _isLoading || settings == null
           ? const Center(child: CircularProgressIndicator())
           : CustomScrollView(
-              keyboardDismissBehavior:
-                  ScrollViewKeyboardDismissBehavior.onDrag,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
@@ -297,6 +327,12 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
                   ),
                 ),
                 SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: _buildPromptPreviewCard(settings),
+                  ),
+                ),
+                SliverToBoxAdapter(
                   child: SizedBox(
                     height: 48,
                     child: ListView(
@@ -307,9 +343,7 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
                         final (id, label, emoji) = c;
                         final count = id == 'all'
                             ? _memories.length
-                            : _memories
-                                .where((m) => m.category == id)
-                                .length;
+                            : _memories.where((m) => m.category == id).length;
                         if (count == 0 && id != 'all') {
                           return const SizedBox.shrink();
                         }
@@ -323,7 +357,7 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
                                 setState(() => _filterCategory = id),
                             selectedColor: Theme.of(context)
                                 .primaryColor
-                                .withOpacity(0.2),
+                                .withValues(alpha: 0.2),
                           ),
                         );
                       }).toList(),
@@ -420,6 +454,34 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEEF2FF),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                profile.profileType,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF4F46E5),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '置信度 ${(profile.confidence * 100).clamp(0, 100).toStringAsFixed(0)}%',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 4),
                         Text(
                           profile.summary,
@@ -469,7 +531,7 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: settings.extractModel,
+            initialValue: settings.extractModel,
             isExpanded: true,
             decoration: const InputDecoration(
               labelText: '记忆提取模型',
@@ -485,7 +547,7 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: settings.curateModel,
+            initialValue: settings.curateModel,
             isExpanded: true,
             decoration: const InputDecoration(
               labelText: '记忆整理模型',
@@ -498,6 +560,59 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
               if (v == null) return;
               _persistSettings(settings.copyWith(curateModel: v));
             },
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: settings.injectMode,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: '记忆注入模式',
+              border: OutlineInputBorder(),
+            ),
+            items: const [
+              DropdownMenuItem(
+                value: 'profile_plus_top_raw',
+                child: Text('画像 + 高优先级原始记忆'),
+              ),
+              DropdownMenuItem(
+                value: 'profile_only',
+                child: Text('仅画像摘要'),
+              ),
+            ],
+            onChanged: (v) {
+              if (v == null) return;
+              _persistSettings(settings.copyWith(injectMode: v));
+            },
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text(
+                '原始记忆注入条数上限',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+              const Spacer(),
+              Text(
+                '${settings.maxInjectedRawItems}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).primaryColor,
+                ),
+              ),
+            ],
+          ),
+          Slider(
+            min: 0,
+            max: 12,
+            divisions: 12,
+            value: settings.maxInjectedRawItems.toDouble().clamp(0, 12),
+            onChanged: settings.injectMode == 'profile_only'
+                ? null
+                : (value) {
+                    _persistSettings(
+                      settings.copyWith(maxInjectedRawItems: value.round()),
+                    );
+                  },
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
@@ -519,6 +634,96 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
     );
   }
 
+  Widget _buildPromptPreviewCard(AiMemorySettings settings) {
+    final preview = _promptPreview.trim();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.text_snippet_rounded, size: 18),
+              const SizedBox(width: 8),
+              const Text(
+                '当前生效提示词',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const Spacer(),
+              IconButton(
+                onPressed:
+                    _isBuildingPrompt ? null : () => _refreshPromptPreview(),
+                tooltip: '刷新预览',
+                icon: _isBuildingPrompt
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded, size: 18),
+              ),
+              IconButton(
+                onPressed: preview.isEmpty
+                    ? null
+                    : () async {
+                        await Clipboard.setData(ClipboardData(text: preview));
+                        if (!mounted) return;
+                        MoeToast.success(context, '提示词已复制');
+                      },
+                tooltip: '复制',
+                icon: const Icon(Icons.copy_rounded, size: 18),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '模型：${widget.agent.modelName}  ·  注入模式：${settings.injectMode}',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF7F8FC),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              preview.isEmpty ? '暂无提示词预览，点击右上角刷新。' : preview,
+              maxLines: _showFullPrompt ? null : 12,
+              overflow:
+                  _showFullPrompt ? TextOverflow.visible : TextOverflow.fade,
+              style: const TextStyle(
+                fontSize: 12,
+                height: 1.6,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () {
+                setState(() => _showFullPrompt = !_showFullPrompt);
+              },
+              child: Text(_showFullPrompt ? '收起' : '展开全部'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmpty() {
     return Center(
       child: Column(
@@ -532,11 +737,8 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            _filterCategory == 'all'
-                ? '和 AI 聊天时，它会自动记住重要信息'
-                : '切换到"全部"查看所有记忆',
-            style:
-                TextStyle(fontSize: 13, color: Colors.grey.shade500),
+            _filterCategory == 'all' ? '和 AI 聊天时，它会自动记住重要信息' : '切换到"全部"查看所有记忆',
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
           ),
         ],
       ),
@@ -563,7 +765,7 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: _categoryColor(memory.category).withOpacity(0.12),
+                color: _categoryColor(memory.category).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Center(
@@ -579,9 +781,7 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
                   Text(
                     memory.content,
                     style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black87,
-                        height: 1.5),
+                        fontSize: 14, color: Colors.black87, height: 1.5),
                   ),
                   const SizedBox(height: 6),
                   Row(
@@ -591,7 +791,7 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
                             horizontal: 7, vertical: 2),
                         decoration: BoxDecoration(
                           color: _categoryColor(memory.category)
-                              .withOpacity(0.12),
+                              .withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(

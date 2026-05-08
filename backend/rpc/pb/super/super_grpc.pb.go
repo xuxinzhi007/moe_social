@@ -34,6 +34,7 @@ const (
 	Super_UpsertUserMemory_FullMethodName           = "/super.Super/UpsertUserMemory"
 	Super_GetUserMemories_FullMethodName            = "/super.Super/GetUserMemories"
 	Super_DeleteUserMemory_FullMethodName           = "/super.Super/DeleteUserMemory"
+	Super_SubmitUserMemoryFeedback_FullMethodName   = "/super.Super/SubmitUserMemoryFeedback"
 	Super_GetVipPlans_FullMethodName                = "/super.Super/GetVipPlans"
 	Super_GetVipPlan_FullMethodName                 = "/super.Super/GetVipPlan"
 	Super_CreateVipPlan_FullMethodName              = "/super.Super/CreateVipPlan"
@@ -123,6 +124,7 @@ type SuperClient interface {
 	UpsertUserMemory(ctx context.Context, in *UpsertUserMemoryReq, opts ...grpc.CallOption) (*UpsertUserMemoryResp, error)
 	GetUserMemories(ctx context.Context, in *GetUserMemoriesReq, opts ...grpc.CallOption) (*GetUserMemoriesResp, error)
 	DeleteUserMemory(ctx context.Context, in *DeleteUserMemoryReq, opts ...grpc.CallOption) (*DeleteUserMemoryResp, error)
+	SubmitUserMemoryFeedback(ctx context.Context, in *SubmitUserMemoryFeedbackReq, opts ...grpc.CallOption) (*SubmitUserMemoryFeedbackResp, error)
 	// VIP套餐相关服务
 	GetVipPlans(ctx context.Context, in *GetVipPlansReq, opts ...grpc.CallOption) (*GetVipPlansResp, error)
 	GetVipPlan(ctx context.Context, in *GetVipPlanReq, opts ...grpc.CallOption) (*GetVipPlanResp, error)
@@ -358,6 +360,16 @@ func (c *superClient) DeleteUserMemory(ctx context.Context, in *DeleteUserMemory
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteUserMemoryResp)
 	err := c.cc.Invoke(ctx, Super_DeleteUserMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) SubmitUserMemoryFeedback(ctx context.Context, in *SubmitUserMemoryFeedbackReq, opts ...grpc.CallOption) (*SubmitUserMemoryFeedbackResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubmitUserMemoryFeedbackResp)
+	err := c.cc.Invoke(ctx, Super_SubmitUserMemoryFeedback_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1036,6 +1048,7 @@ type SuperServer interface {
 	UpsertUserMemory(context.Context, *UpsertUserMemoryReq) (*UpsertUserMemoryResp, error)
 	GetUserMemories(context.Context, *GetUserMemoriesReq) (*GetUserMemoriesResp, error)
 	DeleteUserMemory(context.Context, *DeleteUserMemoryReq) (*DeleteUserMemoryResp, error)
+	SubmitUserMemoryFeedback(context.Context, *SubmitUserMemoryFeedbackReq) (*SubmitUserMemoryFeedbackResp, error)
 	// VIP套餐相关服务
 	GetVipPlans(context.Context, *GetVipPlansReq) (*GetVipPlansResp, error)
 	GetVipPlan(context.Context, *GetVipPlanReq) (*GetVipPlanResp, error)
@@ -1171,6 +1184,9 @@ func (UnimplementedSuperServer) GetUserMemories(context.Context, *GetUserMemorie
 }
 func (UnimplementedSuperServer) DeleteUserMemory(context.Context, *DeleteUserMemoryReq) (*DeleteUserMemoryResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteUserMemory not implemented")
+}
+func (UnimplementedSuperServer) SubmitUserMemoryFeedback(context.Context, *SubmitUserMemoryFeedbackReq) (*SubmitUserMemoryFeedbackResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method SubmitUserMemoryFeedback not implemented")
 }
 func (UnimplementedSuperServer) GetVipPlans(context.Context, *GetVipPlansReq) (*GetVipPlansResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetVipPlans not implemented")
@@ -1654,6 +1670,24 @@ func _Super_DeleteUserMemory_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SuperServer).DeleteUserMemory(ctx, req.(*DeleteUserMemoryReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_SubmitUserMemoryFeedback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SubmitUserMemoryFeedbackReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).SubmitUserMemoryFeedback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_SubmitUserMemoryFeedback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).SubmitUserMemoryFeedback(ctx, req.(*SubmitUserMemoryFeedbackReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2894,6 +2928,10 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteUserMemory",
 			Handler:    _Super_DeleteUserMemory_Handler,
+		},
+		{
+			MethodName: "SubmitUserMemoryFeedback",
+			Handler:    _Super_SubmitUserMemoryFeedback_Handler,
 		},
 		{
 			MethodName: "GetVipPlans",

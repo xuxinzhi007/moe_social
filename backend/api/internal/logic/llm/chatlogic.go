@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"backend/api/internal/common"
@@ -28,10 +29,24 @@ const (
 	// 记忆注入上限：避免无关记忆挤占上下文窗口。
 	maxInjectedMemoryItems = 8
 	maxInjectedMemoryRunes = 520
+	fallbackMemoryItems    = 2
+	memoryCacheTTL         = 30 * time.Second
 )
 
 var ctxSafeRatio = 0.7
 var memoryTokenPattern = regexp.MustCompile(`[\p{Han}]{2,}|[a-zA-Z0-9_]{2,}`)
+
+type cachedMemories struct {
+	items     []*super.UserMemory
+	expiresAt time.Time
+}
+
+var userMemoryCache = struct {
+	sync.RWMutex
+	data map[string]cachedMemories
+}{
+	data: make(map[string]cachedMemories),
+}
 
 type ollamaMessage struct {
 	Role    string `json:"role"`
@@ -63,8 +78,76 @@ type rankedMemory struct {
 	index int
 }
 
+func isNoiseMemoryValue(value string) bool {
+	norm := normalizeMemoryText(value)
+	if norm == "" {
+		return true
+	}
+	switch norm {
+	case "-", "--", "/", "n/a", "na", "none", "null", "nil", "unknown", "无", "未知", "未提及", "不知道":
+		return true
+	}
+	return false
+}
+
+func selectFallbackRecentMemories(ranked []rankedMemory) []string {
+	if len(ranked) == 0 {
+		return nil
+	}
+	limit := min(fallbackMemoryItems, len(ranked))
+	lines := make([]string, 0, limit)
+	totalRunes := 0
+	for _, item := range ranked {
+		if len(lines) >= limit {
+			break
+		}
+		itemRunes := len([]rune(item.line))
+		if totalRunes+itemRunes > maxInjectedMemoryRunes && len(lines) > 0 {
+			break
+		}
+		lines = append(lines, item.line)
+		totalRunes += itemRunes
+	}
+	if len(lines) == 0 {
+		lines = append(lines, ranked[0].line)
+	}
+	return lines
+}
+
 func estimateTokens(s string) int {
 	return len([]rune(s))
+}
+
+func getCachedUserMemories(userID string) ([]*super.UserMemory, bool) {
+	now := time.Now()
+	userMemoryCache.RLock()
+	entry, ok := userMemoryCache.data[userID]
+	userMemoryCache.RUnlock()
+	if !ok {
+		return nil, false
+	}
+	if now.After(entry.expiresAt) {
+		userMemoryCache.Lock()
+		delete(userMemoryCache.data, userID)
+		userMemoryCache.Unlock()
+		return nil, false
+	}
+	return entry.items, true
+}
+
+func setCachedUserMemories(userID string, items []*super.UserMemory) {
+	userMemoryCache.Lock()
+	userMemoryCache.data[userID] = cachedMemories{
+		items:     items,
+		expiresAt: time.Now().Add(memoryCacheTTL),
+	}
+	userMemoryCache.Unlock()
+}
+
+func invalidateCachedUserMemories(userID string) {
+	userMemoryCache.Lock()
+	delete(userMemoryCache.data, userID)
+	userMemoryCache.Unlock()
 }
 
 type ChatLogic struct {
@@ -124,6 +207,8 @@ func selectRelevantMemoryLines(memories []*super.UserMemory, messages []types.Ll
 		return nil
 	}
 	tokens := extractMemoryQueryTokens(messages)
+	hasQueryTokens := len(tokens) > 0
+	hasKeywordHit := false
 	ranked := make([]rankedMemory, 0, len(memories))
 	seen := make(map[string]struct{}, len(memories))
 
@@ -131,6 +216,9 @@ func selectRelevantMemoryLines(memories []*super.UserMemory, messages []types.Ll
 		key := strings.TrimSpace(m.Key)
 		value := strings.TrimSpace(m.Value)
 		if key == "" || value == "" {
+			continue
+		}
+		if isNoiseMemoryValue(value) {
 			continue
 		}
 		line := fmt.Sprintf("%s: %s", key, value)
@@ -150,10 +238,15 @@ func selectRelevantMemoryLines(memories []*super.UserMemory, messages []types.Ll
 		}
 
 		joined := normalizeMemoryText(key + " " + value)
+		matched := false
 		for _, token := range tokens {
 			if strings.Contains(joined, token) {
 				score += 3
+				matched = true
 			}
+		}
+		if matched {
+			hasKeywordHit = true
 		}
 
 		ranked = append(ranked, rankedMemory{
@@ -174,6 +267,11 @@ func selectRelevantMemoryLines(memories []*super.UserMemory, messages []types.Ll
 		return ranked[i].index < ranked[j].index
 	})
 
+	// 没有明显关键词命中时，回退注入少量最近记忆，减少噪声和 token 消耗。
+	if !hasQueryTokens || !hasKeywordHit {
+		return selectFallbackRecentMemories(ranked)
+	}
+
 	lines := make([]string, 0, min(maxInjectedMemoryItems, len(ranked)))
 	totalRunes := 0
 	for _, item := range ranked {
@@ -187,13 +285,8 @@ func selectRelevantMemoryLines(memories []*super.UserMemory, messages []types.Ll
 		lines = append(lines, item.line)
 		totalRunes += itemRunes
 	}
-
-	// 没有命中时至少兜底注入 2 条最近记忆，避免“完全失忆”。
 	if len(lines) == 0 {
-		limit := min(2, len(ranked))
-		for i := 0; i < limit; i++ {
-			lines = append(lines, ranked[i].line)
-		}
+		return selectFallbackRecentMemories(ranked)
 	}
 	return lines
 }
@@ -204,14 +297,20 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 	if v := l.ctx.Value("user_id"); v != nil {
 		if userID, ok := v.(string); ok && userID != "" {
 			userIDForLog = userID
-			rpcResp, err := l.svcCtx.SuperRpcClient.GetUserMemories(l.ctx, &super.GetUserMemoriesReq{
-				UserId: userID,
-			})
-			if err != nil {
-				l.Errorf("GetUserMemories failed: %v", err)
+			if cached, hit := getCachedUserMemories(userID); hit {
+				memoryLines = selectRelevantMemoryLines(cached, req.Messages)
+				l.Infof("memory cache hit user_id=%s total=%d selected=%d", userID, len(cached), len(memoryLines))
 			} else {
-				memoryLines = selectRelevantMemoryLines(rpcResp.Memories, req.Messages)
-				l.Infof("loaded memories for user_id=%s total=%d selected=%d", userID, len(rpcResp.Memories), len(memoryLines))
+				rpcResp, err := l.svcCtx.SuperRpcClient.GetUserMemories(l.ctx, &super.GetUserMemoriesReq{
+					UserId: userID,
+				})
+				if err != nil {
+					l.Errorf("GetUserMemories failed: %v", err)
+				} else {
+					setCachedUserMemories(userID, rpcResp.Memories)
+					memoryLines = selectRelevantMemoryLines(rpcResp.Memories, req.Messages)
+					l.Infof("memory cache miss user_id=%s total=%d selected=%d", userID, len(rpcResp.Memories), len(memoryLines))
+				}
 			}
 		}
 	}
@@ -654,8 +753,11 @@ func (l *ChatLogic) summarizeMessages(model, baseUrl string, timeoutSeconds int,
 }
 
 type memoryItem struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
+	Key        string  `json:"key"`
+	Value      string  `json:"value"`
+	MemoryType string  `json:"memory_type,omitempty"`
+	Confidence float64 `json:"confidence,omitempty"`
+	Source     string  `json:"source,omitempty"`
 }
 
 func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, baseUrl string, timeoutSeconds int, history []ollamaMessage) {
@@ -779,9 +881,8 @@ func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, b
 
 	var items []memoryItem
 	if err := json.Unmarshal([]byte(content), &items); err != nil {
-		// 尝试容错：如果不是标准 JSON，尝试提取类似 JSON 的部分
-		// 这里简单处理，如果解析失败记录日志
-		logger.Errorf("unmarshal memory items failed: %v, content: %s", err, content)
+		// 仅记录长度，避免把潜在隐私内容写入日志。
+		logger.Errorf("unmarshal memory items failed: %v, chars=%d", err, len([]rune(content)))
 		return
 	}
 
@@ -792,13 +893,18 @@ func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, b
 				continue
 			}
 			_, err := l.svcCtx.SuperRpcClient.UpsertUserMemory(ctx, &super.UpsertUserMemoryReq{
-				UserId: userID,
-				Key:    item.Key,
-				Value:  item.Value,
+				UserId:     userID,
+				Key:        item.Key,
+				Value:      item.Value,
+				MemoryType: item.MemoryType,
+				Confidence: item.Confidence,
+				Source:     "llm_extract",
 			})
 			if err != nil {
 				logger.Errorf("upsert memory %s failed: %v", item.Key, err)
 			}
 		}
+		// 发生更新后失效缓存，避免后续会话继续命中过时记忆。
+		invalidateCachedUserMemories(userID)
 	}
 }

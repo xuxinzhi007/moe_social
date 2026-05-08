@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -71,15 +70,36 @@ class _DiscoverPageState extends State<DiscoverPage>
       return;
     }
     if (t == 'match_cancelled') {
-      setState(() { _onlineMatching = false; _onlineMatchHint = null; });
+      setState(() {
+        _onlineMatching = false;
+        _onlineMatchHint = null;
+      });
       _pulseCtrl.stop();
       return;
     }
     if (t == 'match_found') {
       final peer = e['peer_id']?.toString();
-      setState(() { _onlineMatching = false; _onlineMatchHint = null; });
+      setState(() {
+        _onlineMatching = false;
+        _onlineMatchHint = null;
+      });
       _pulseCtrl.stop();
       if (peer != null && peer.isNotEmpty) _openDirectChatWith(peer);
+    }
+  }
+
+  Future<void> _toggleTopicTag(String tagId) async {
+    HapticFeedback.lightImpact();
+    setState(() {
+      if (_selectedTagIds.contains(tagId)) {
+        _selectedTagIds.remove(tagId);
+      } else {
+        _selectedTagIds.add(tagId);
+      }
+    });
+    // 仅在用户已经触发过一次匹配后自动刷新，避免首次选择时页面高度突变。
+    if (_hasSearched && !_loading) {
+      await _runOfflineMatch();
     }
   }
 
@@ -88,7 +108,9 @@ class _DiscoverPageState extends State<DiscoverPage>
       final u = await ApiService.getUserInfo(peerId);
       if (!mounted) return;
       await Navigator.pushNamed(context, '/direct-chat', arguments: {
-        'userId': u.id, 'username': u.username, 'avatar': u.avatar,
+        'userId': u.id,
+        'username': u.username,
+        'avatar': u.avatar,
       });
     } catch (_) {
       if (mounted) MoeToast.error(context, '无法打开聊天，请稍后重试');
@@ -96,22 +118,34 @@ class _DiscoverPageState extends State<DiscoverPage>
   }
 
   Future<void> _toggleOnlineMatch() async {
-    if (!AuthService.isLoggedIn) { MoeToast.error(context, '请先登录后再试'); return; }
+    if (!AuthService.isLoggedIn) {
+      MoeToast.error(context, '请先登录后再试');
+      return;
+    }
     HapticFeedback.heavyImpact();
     if (_onlineMatching) {
       ChatPushService.sendMatchCancel();
-      setState(() { _onlineMatching = false; _onlineMatchHint = null; });
+      setState(() {
+        _onlineMatching = false;
+        _onlineMatchHint = null;
+      });
       _pulseCtrl.stop();
       return;
     }
     ChatPushService.start();
-    setState(() { _onlineMatching = true; _onlineMatchHint = '正在连接匹配…'; });
+    setState(() {
+      _onlineMatching = true;
+      _onlineMatchHint = '正在连接匹配…';
+    });
     _pulseCtrl.repeat(reverse: true);
     ChatPushService.sendMatchJoin();
   }
 
   Future<void> _runOfflineMatch() async {
-    if (!AuthService.isLoggedIn) { MoeToast.error(context, '请先登录后再试'); return; }
+    if (!AuthService.isLoggedIn) {
+      MoeToast.error(context, '请先登录后再试');
+      return;
+    }
     if (_loading) return;
     final now = DateTime.now();
     final lastTriggeredAt = _lastOfflineMatchAt;
@@ -128,14 +162,16 @@ class _DiscoverPageState extends State<DiscoverPage>
     });
     try {
       final list = await MatchSuggestionService.suggest(
-        preferredTagIds: _selectedTagIds, maxResults: 24);
+          preferredTagIds: _selectedTagIds, maxResults: 24);
       if (!mounted) return;
       setState(() {
         _candidates = list;
         _loading = false;
         _matchErrorMessage = null;
       });
-      if (list.isEmpty) { MoeToast.error(context, '暂时没有合适推荐，换个标签或稍后再试'); }
+      if (list.isEmpty) {
+        MoeToast.error(context, '暂时没有合适推荐，换个标签或稍后再试');
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -152,7 +188,8 @@ class _DiscoverPageState extends State<DiscoverPage>
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: CustomScrollView(
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics()),
         slivers: [
           _buildAppBar(),
           _buildHeroSection(),
@@ -170,16 +207,23 @@ class _DiscoverPageState extends State<DiscoverPage>
 
   Widget _buildAppBar() {
     return SliverAppBar(
-      floating: true, snap: true,
+      floating: true,
+      snap: true,
       backgroundColor: const Color(0xFFF5F7FA),
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       title: const Text('发现',
-        style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xFF1A1A2E))),
+          style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF1A1A2E))),
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_outlined),
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationCenterPage())),
+          onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const NotificationCenterPage())),
         ),
       ],
     );
@@ -213,21 +257,35 @@ class _DiscoverPageState extends State<DiscoverPage>
                 boxShadow: [
                   BoxShadow(
                     color: (_onlineMatching
-                        ? const Color(0xFFFC6076)
-                        : const Color(0xFF7F7FD5)).withValues(alpha: 0.4),
-                    blurRadius: 24, offset: const Offset(0, 8),
+                            ? const Color(0xFFFC6076)
+                            : const Color(0xFF7F7FD5))
+                        .withValues(alpha: 0.4),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
               child: Stack(
                 children: [
                   // Background decoration circles
-                  Positioned(top: -30, right: -20,
-                    child: Container(width: 120, height: 120,
-                      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.08)))),
-                  Positioned(bottom: -40, left: 20,
-                    child: Container(width: 160, height: 160,
-                      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.06)))),
+                  Positioned(
+                      top: -30,
+                      right: -20,
+                      child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withValues(alpha: 0.08)))),
+                  Positioned(
+                      bottom: -40,
+                      left: 20,
+                      child: Container(
+                          width: 160,
+                          height: 160,
+                          decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withValues(alpha: 0.06)))),
                   // Content
                   Padding(
                     padding: const EdgeInsets.all(24),
@@ -239,10 +297,15 @@ class _DiscoverPageState extends State<DiscoverPage>
                           children: [
                             Container(
                               padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
+                              decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  shape: BoxShape.circle),
                               child: Icon(
-                                _onlineMatching ? Icons.wifi_rounded : Icons.favorite_rounded,
-                                color: Colors.white, size: 22),
+                                  _onlineMatching
+                                      ? Icons.wifi_rounded
+                                      : Icons.favorite_rounded,
+                                  color: Colors.white,
+                                  size: 22),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -251,13 +314,22 @@ class _DiscoverPageState extends State<DiscoverPage>
                                 children: [
                                   Text(
                                     _onlineMatching ? '匹配中…' : '在线实时匹配',
-                                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900),
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w900),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
-                                    _onlineMatchHint ?? (_onlineMatching ? '请保持在此页等待' : '与另一位用户实时配对，开始私聊'),
-                                    style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
+                                    _onlineMatchHint ??
+                                        (_onlineMatching
+                                            ? '请保持在此页等待'
+                                            : '与另一位用户实时配对，开始私聊'),
+                                    style: TextStyle(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.85),
+                                        fontSize: 13),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -270,27 +342,40 @@ class _DiscoverPageState extends State<DiscoverPage>
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 10),
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.25),
                                 borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+                                border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.5)),
                               ),
                               child: Row(
                                 children: [
-                                  Icon(_onlineMatching ? Icons.close_rounded : Icons.bolt_rounded, color: Colors.white, size: 16),
+                                  Icon(
+                                      _onlineMatching
+                                          ? Icons.close_rounded
+                                          : Icons.bolt_rounded,
+                                      color: Colors.white,
+                                      size: 16),
                                   const SizedBox(width: 6),
                                   Text(
                                     _onlineMatching ? '取消排队' : '立即加入',
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 14),
                                   ),
                                 ],
                               ),
                             ),
                             if (_onlineMatching) ...[
                               const SizedBox(width: 12),
-                              const SizedBox(width: 18, height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                              const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white)),
                             ],
                           ],
                         ),
@@ -319,12 +404,24 @@ class _DiscoverPageState extends State<DiscoverPage>
             Row(
               children: [
                 const Text('选择感兴趣的话题',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1A1A2E))),
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1A1A2E))),
                 const Spacer(),
                 if (_selectedTagIds.isNotEmpty)
                   TextButton(
-                    onPressed: () => setState(() => _selectedTagIds.clear()),
-                    style: TextButton.styleFrom(minimumSize: Size.zero, padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), foregroundColor: Colors.grey),
+                    onPressed: () async {
+                      setState(() => _selectedTagIds.clear());
+                      if (_hasSearched && !_loading) {
+                        await _runOfflineMatch();
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                        minimumSize: Size.zero,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        foregroundColor: Colors.grey),
                     child: const Text('清除', style: TextStyle(fontSize: 12)),
                   ),
               ],
@@ -333,38 +430,37 @@ class _DiscoverPageState extends State<DiscoverPage>
             Text(
               _selectedTagIds.isEmpty
                   ? '不选也没关系，会从站内随机推荐新面孔'
-                  : '已选 ${_selectedTagIds.length} 个话题，将从相关动态作者中推荐',
+                  : '已选 ${_selectedTagIds.length} 个话题，将从相关动态作者中推荐（已自动刷新）',
               style: TextStyle(fontSize: 12, color: Colors.grey[500]),
             ),
             const SizedBox(height: 12),
             Wrap(
-              spacing: 8, runSpacing: 8,
+              spacing: 10,
+              runSpacing: 10,
               children: tags.map((tag) {
                 final sel = _selectedTagIds.contains(tag.id);
-                return GestureDetector(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    setState(() {
-                      if (sel) { _selectedTagIds.remove(tag.id); }
-                      else { _selectedTagIds.add(tag.id); }
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      gradient: sel ? LinearGradient(colors: [tag.color, tag.color.withValues(alpha: 0.7)]) : null,
-                      color: sel ? null : Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: sel ? tag.color : Colors.grey.shade200),
-                      boxShadow: sel ? [BoxShadow(color: tag.color.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 3))]
-                          : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 4, offset: const Offset(0, 2))],
+                return ChoiceChip(
+                  label: Text(
+                    '#${tag.name}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: sel ? Colors.white : const Color(0xFF333333),
                     ),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      if (sel) const Padding(padding: EdgeInsets.only(right: 4), child: Icon(Icons.check_rounded, color: Colors.white, size: 13)),
-                      Text('#${tag.name}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: sel ? Colors.white : const Color(0xFF333333))),
-                    ]),
                   ),
+                  selected: sel,
+                  onSelected: (_) => _toggleTopicTag(tag.id),
+                  selectedColor: tag.color,
+                  backgroundColor: Colors.white,
+                  side: BorderSide(
+                    color: sel ? tag.color : Colors.grey.shade200,
+                  ),
+                  pressElevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 );
               }).toList(),
             ),
@@ -385,14 +481,21 @@ class _DiscoverPageState extends State<DiscoverPage>
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFF7F7FD5),
             minimumSize: const Size(double.infinity, 52),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             elevation: 0,
           ),
           icon: _loading
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white))
               : const Icon(Icons.auto_awesome_rounded, size: 20),
           label: Text(
-            _loading ? '推荐中…' : (_selectedTagIds.isEmpty ? '随机发现新面孔' : '根据话题推荐同好'),
+            _loading
+                ? '推荐中…'
+                : (_selectedTagIds.isEmpty ? '随机发现新面孔' : '根据话题推荐同好'),
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
           ),
         ),
@@ -443,17 +546,24 @@ class _DiscoverPageState extends State<DiscoverPage>
           children: [
             Text(
               '找到 ${_candidates.length} 位可能感兴趣的人',
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF1A1A2E)),
+              style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1A1A2E)),
             ),
             const SizedBox(height: 12),
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: 0.75,
+                crossAxisCount: 3,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.75,
               ),
               itemCount: _candidates.length,
-              itemBuilder: (_, i) => _MatchCandidateCard(candidate: _candidates[i]),
+              itemBuilder: (_, i) =>
+                  _MatchCandidateCard(candidate: _candidates[i]),
             ),
           ],
         ),
@@ -462,9 +572,6 @@ class _DiscoverPageState extends State<DiscoverPage>
   }
 
   Widget _buildEmptyHint() {
-    // Decorative scattered topic badges to fill space
-    final tags = TopicTag.officialTags;
-    final rng = math.Random(42);
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -474,53 +581,6 @@ class _DiscoverPageState extends State<DiscoverPage>
       ),
       child: Column(
         children: [
-          SizedBox(
-            height: 80,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final centerX = constraints.maxWidth / 2;
-                return Stack(
-                  alignment: Alignment.center,
-                  children: List.generate(math.min(8, tags.length), (i) {
-                    final tag = tags[i];
-                    final angle = (i / tags.length) * 2 * math.pi;
-                    final r = 28.0 + rng.nextDouble() * 12;
-                    final dx = r * math.cos(angle) * 1.2;
-                    final dy = r * math.sin(angle) * 0.75;
-                    return Positioned(
-                      left: centerX + dx - 34,
-                      top: 28 + dy,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: math.max(56, constraints.maxWidth * 0.34),
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: tag.color.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                                color: tag.color.withValues(alpha: 0.3)),
-                          ),
-                          child: Text(
-                            '#${tag.name}',
-                            style: TextStyle(
-                                fontSize: 10,
-                                color: tag.color,
-                                fontWeight: FontWeight.w600),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 12),
           const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -542,8 +602,12 @@ class _DiscoverPageState extends State<DiscoverPage>
           ),
           const SizedBox(height: 6),
           Text('选几个感兴趣的标签，或直接点「随机发现新面孔」',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Colors.grey[500])),
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Colors.grey[500])),
+          const SizedBox(height: 4),
+          Text('提示：点击上方话题标签可筛选推荐结果',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.grey[400])),
         ],
       ),
     );
@@ -721,7 +785,11 @@ class _DiscoverPageState extends State<DiscoverPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('其他功能', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1A1A2E))),
+            const Text('其他功能',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1A1A2E))),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -730,7 +798,10 @@ class _DiscoverPageState extends State<DiscoverPage>
                     icon: Icons.smart_toy_rounded,
                     label: 'AI 助手',
                     gradient: const [Color(0xFF7F7FD5), Color(0xFF91EAE4)],
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentListPage())),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const AgentListPage())),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -739,7 +810,10 @@ class _DiscoverPageState extends State<DiscoverPage>
                     icon: Icons.sports_esports_rounded,
                     label: '小游戏',
                     gradient: const [Color(0xFF43C6AC), Color(0xFF191654)],
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GameLobbyPage())),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const GameLobbyPage())),
                   ),
                 ),
               ],
@@ -774,7 +848,12 @@ class _MatchCandidateCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 3))],
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 3))
+          ],
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
@@ -783,12 +862,16 @@ class _MatchCandidateCard extends StatelessWidget {
             children: [
               Hero(
                 tag: 'match_${candidate.userId}',
-                child: NetworkAvatarImage(imageUrl: candidate.userAvatar, radius: 26),
+                child: NetworkAvatarImage(
+                    imageUrl: candidate.userAvatar, radius: 26),
               ),
               const SizedBox(height: 8),
               Text(
                 candidate.username,
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF1A1A2E)),
+                style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1A2E)),
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -797,20 +880,30 @@ class _MatchCandidateCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Wrap(
                   alignment: WrapAlignment.center,
-                  spacing: 3, runSpacing: 3,
-                  children: tags.map((name) => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF7F7FD5).withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text('#$name', style: const TextStyle(fontSize: 9, color: Color(0xFF7F7FD5), fontWeight: FontWeight.w600)),
-                  )).toList(),
+                  spacing: 3,
+                  runSpacing: 3,
+                  children: tags
+                      .map((name) => Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF7F7FD5)
+                                  .withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text('#$name',
+                                style: const TextStyle(
+                                    fontSize: 9,
+                                    color: Color(0xFF7F7FD5),
+                                    fontWeight: FontWeight.w600)),
+                          ))
+                      .toList(),
                 ),
               ],
               const Spacer(),
               GestureDetector(
-                onTap: () => Navigator.pushNamed(context, '/direct-chat', arguments: {
+                onTap: () =>
+                    Navigator.pushNamed(context, '/direct-chat', arguments: {
                   'userId': candidate.userId,
                   'username': candidate.username,
                   'avatar': candidate.userAvatar,
@@ -819,16 +912,22 @@ class _MatchCandidateCard extends StatelessWidget {
                   height: 28,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)]),
+                    gradient: const LinearGradient(
+                        colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)]),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Center(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 11),
+                        Icon(Icons.chat_bubble_outline_rounded,
+                            color: Colors.white, size: 11),
                         SizedBox(width: 3),
-                        Text('打招呼', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+                        Text('打招呼',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700)),
                       ],
                     ),
                   ),
@@ -852,18 +951,33 @@ class _SmallToolCard extends StatelessWidget {
   final List<Color> gradient;
   final VoidCallback onTap;
 
-  const _SmallToolCard({required this.icon, required this.label, required this.gradient, required this.onTap});
+  const _SmallToolCard(
+      {required this.icon,
+      required this.label,
+      required this.gradient,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () { HapticFeedback.lightImpact(); onTap(); },
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       child: Container(
         height: 72,
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
+          gradient: LinearGradient(
+              colors: gradient,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight),
           borderRadius: BorderRadius.circular(18),
-          boxShadow: [BoxShadow(color: gradient[0].withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(
+                color: gradient[0].withValues(alpha: 0.3),
+                blurRadius: 10,
+                offset: const Offset(0, 4))
+          ],
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -871,9 +985,14 @@ class _SmallToolCard extends StatelessWidget {
             children: [
               Icon(icon, color: Colors.white, size: 24),
               const SizedBox(width: 10),
-              Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+              Text(label,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15)),
               const Spacer(),
-              Icon(Icons.arrow_forward_ios_rounded, color: Colors.white.withValues(alpha: 0.7), size: 14),
+              Icon(Icons.arrow_forward_ios_rounded,
+                  color: Colors.white.withValues(alpha: 0.7), size: 14),
             ],
           ),
         ),

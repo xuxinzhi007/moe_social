@@ -99,6 +99,11 @@ func (s *SuperServer) DeleteUserMemory(ctx context.Context, in *super.DeleteUser
 	return l.DeleteUserMemory(in)
 }
 
+func (s *SuperServer) SubmitUserMemoryFeedback(ctx context.Context, in *super.SubmitUserMemoryFeedbackReq) (*super.SubmitUserMemoryFeedbackResp, error) {
+	l := logic.NewSubmitUserMemoryFeedbackLogic(ctx, s.svcCtx)
+	return l.SubmitUserMemoryFeedback(in)
+}
+
 // VIP套餐相关服务
 func (s *SuperServer) GetVipPlans(ctx context.Context, in *super.GetVipPlansReq) (*super.GetVipPlansResp, error) {
 	l := logic.NewGetVipPlansLogic(ctx, s.svcCtx)
