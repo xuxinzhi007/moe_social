@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/foundation.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:gal/gal.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:ui' as ui;
 import '../../services/qr_code_service.dart';
@@ -94,26 +94,10 @@ class _UserQrCodePageState extends State<UserQrCodePage> {
       final bytes = byteData.buffer.asUint8List();
       final fileName =
           'moe_qr_${_currentUser!.id}_${DateTime.now().millisecondsSinceEpoch}';
-      final result = await ImageGallerySaver.saveImage(
-        bytes,
-        quality: 100,
-        name: fileName,
-      );
-
-      bool success = false;
-      if (result is Map) {
-        final dynamic isSuccess = result['isSuccess'] ?? result['success'];
-        success = isSuccess == true || isSuccess?.toString() == 'true';
-      } else {
-        success = result != null;
-      }
+      await Gal.putImageBytes(bytes, name: fileName, album: 'MoeSocial');
 
       if (!mounted) return;
-      if (success) {
-        MoeToast.success(context, '二维码已保存到相册');
-      } else {
-        _showError('保存失败，请重试');
-      }
+      MoeToast.success(context, '二维码已保存到相册');
     } catch (e) {
       _showError('保存失败: $e');
     } finally {

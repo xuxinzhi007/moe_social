@@ -27,6 +27,23 @@ subprojects {
 // 必须放在 evaluationDependsOn(":app") 之前注册 afterEvaluate，否则部分子项目已评估完会报错。
 subprojects {
     afterEvaluate {
+        // AGP 8+ requires namespace for every Android module.
+        // Older third-party plugins may miss it.
+        // Fill only when missing, to keep explicitly configured modules untouched.
+        extensions.findByName("android")?.let { androidExt ->
+            val getter = androidExt.javaClass.methods.firstOrNull { it.name == "getNamespace" }
+            val setter = androidExt.javaClass.methods.firstOrNull {
+                it.name == "setNamespace" &&
+                    it.parameterTypes.size == 1 &&
+                    it.parameterTypes[0] == String::class.java
+            }
+            val current = getter?.invoke(androidExt) as? String
+            if (setter != null && current.isNullOrBlank()) {
+                val fallbackNamespace = "moe.social.plugin.${project.name.replace('-', '_')}"
+                setter.invoke(androidExt, fallbackNamespace)
+            }
+        }
+
         extensions.findByType<BaseExtension>()?.compileOptions {
             sourceCompatibility = JavaVersion.VERSION_17
             targetCompatibility = JavaVersion.VERSION_17
