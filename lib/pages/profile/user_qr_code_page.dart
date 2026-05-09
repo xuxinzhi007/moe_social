@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/foundation.dart';
+import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:ui' as ui;
 import '../../services/qr_code_service.dart';
 import '../../auth_service.dart';
 import '../../models/user.dart';
-import '../../services/api_service.dart';
 import '../../widgets/moe_toast.dart';
 
 class UserQrCodePage extends StatefulWidget {
@@ -15,6 +19,8 @@ class UserQrCodePage extends StatefulWidget {
 class _UserQrCodePageState extends State<UserQrCodePage> {
   User? _currentUser;
   bool _isLoading = true;
+  bool _isSaving = false;
+  final GlobalKey _qrCardKey = GlobalKey();
 
   @override
   void initState() {
@@ -25,16 +31,103 @@ class _UserQrCodePageState extends State<UserQrCodePage> {
   Future<void> _loadCurrentUser() async {
     try {
       final user = await AuthService.getUserInfo();
+      if (!mounted) return;
       setState(() {
         _currentUser = user;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       MoeToast.error(context, '获取用户信息失败: $e');
       setState(() {
         _isLoading = false;
       });
     }
+  }
+
+  Future<bool> _ensureSavePermission() async {
+    if (kIsWeb) {
+      MoeToast.info(context, 'Web 端暂不支持直接保存到系统相册');
+      return false;
+    }
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      final status = await Permission.photosAddOnly.request();
+      if (status.isGranted || status.isLimited) {
+        return true;
+      }
+      if (!mounted) return false;
+      MoeToast.error(context, '请在系统设置中允许访问照片');
+      return false;
+    }
+    // Android 10+ 使用分区存储，插件可直接写入媒体库。
+    return true;
+  }
+
+  Future<void> _saveQrCardToGallery() async {
+    if (_isSaving || _currentUser == null) {
+      return;
+    }
+    final canSave = await _ensureSavePermission();
+    if (!canSave) {
+      return;
+    }
+    if (!mounted) return;
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      final renderObject = _qrCardKey.currentContext?.findRenderObject();
+      if (renderObject is! RenderRepaintBoundary) {
+        _showError('二维码视图获取失败，请稍后重试');
+        return;
+      }
+
+      final image = await renderObject.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) {
+        _showError('二维码图片生成失败');
+        return;
+      }
+
+      final bytes = byteData.buffer.asUint8List();
+      final fileName =
+          'moe_qr_${_currentUser!.id}_${DateTime.now().millisecondsSinceEpoch}';
+      final result = await ImageGallerySaver.saveImage(
+        bytes,
+        quality: 100,
+        name: fileName,
+      );
+
+      bool success = false;
+      if (result is Map) {
+        final dynamic isSuccess = result['isSuccess'] ?? result['success'];
+        success = isSuccess == true || isSuccess?.toString() == 'true';
+      } else {
+        success = result != null;
+      }
+
+      if (!mounted) return;
+      if (success) {
+        MoeToast.success(context, '二维码已保存到相册');
+      } else {
+        _showError('保存失败，请重试');
+      }
+    } catch (e) {
+      _showError('保存失败: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    MoeToast.error(context, message);
   }
 
   @override
@@ -58,12 +151,28 @@ class _UserQrCodePageState extends State<UserQrCodePage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const SizedBox(height: 40),
-                        QrCodeService.buildQrCodeCard(
-                          context: context,
-                          userId: _currentUser!.id,
-                          username: _currentUser!.username,
-                          avatar: _currentUser!.avatar,
-                          moeNo: _currentUser!.moeNo,
+                        RepaintBoundary(
+                          key: _qrCardKey,
+                          child: QrCodeService.buildQrCodeCard(
+                            context: context,
+                            userId: _currentUser!.id,
+                            username: _currentUser!.username,
+                            avatar: _currentUser!.avatar,
+                            moeNo: _currentUser!.moeNo,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton.icon(
+                          onPressed: _isSaving ? null : _saveQrCardToGallery,
+                          icon: _isSaving
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.download_rounded),
+                          label: Text(_isSaving ? '保存中...' : '保存到相册'),
                         ),
                         const SizedBox(height: 40),
                         const Text(

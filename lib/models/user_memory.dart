@@ -6,6 +6,8 @@ class UserMemory {
   final String? memoryType;
   final double? confidence;
   final String? source;
+  final String? sourceMsgId;
+  final String? sessionId;
   final String createdAt;
   final String updatedAt;
 
@@ -17,6 +19,8 @@ class UserMemory {
     this.memoryType,
     this.confidence,
     this.source,
+    this.sourceMsgId,
+    this.sessionId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -35,6 +39,8 @@ class UserMemory {
       memoryType: json['memory_type'] as String?,
       confidence: confidence,
       source: json['source'] as String?,
+      sourceMsgId: json['source_msg_id'] as String?,
+      sessionId: json['session_id'] as String?,
       createdAt: json['created_at'] as String,
       updatedAt: json['updated_at'] as String,
     );
@@ -49,6 +55,8 @@ class UserMemory {
       if (memoryType != null) 'memory_type': memoryType,
       if (confidence != null) 'confidence': confidence,
       if (source != null) 'source': source,
+      if (sourceMsgId != null) 'source_msg_id': sourceMsgId,
+      if (sessionId != null) 'session_id': sessionId,
       'created_at': createdAt,
       'updated_at': updatedAt,
     };

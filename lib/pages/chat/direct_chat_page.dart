@@ -18,6 +18,8 @@ import '../../services/notification_service.dart';
 import '../../models/notification.dart';
 import '../../utils/media_url.dart';
 import '../../models/private_message_item.dart';
+import 'voice_call_page.dart';
+
 class DirectChatPage extends StatefulWidget {
   final String userId;
   final String username;
@@ -49,6 +51,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
   bool _loadingServerPage = false;
   String? _oldestServerCursorId;
   late final VoidCallback _scrollLoadOlderListener;
+  String _peerDisplayUserId = '';
+  String _peerMoeNo = '';
 
   @override
   void initState() {
@@ -96,6 +100,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
       setState(() {
         _currentUserId = userId;
       });
+      unawaited(_loadPeerProfile());
 
       await _loadMessages(userId);
       // 先合并离线「通知中心」里的私信摘要，再拉 REST；避免仅依赖旧本地缓存时列表为空。
@@ -256,6 +261,41 @@ class _DirectChatPageState extends State<DirectChatPage> {
       return;
     }
     _startOnlinePolling();
+  }
+
+  Future<void> _loadPeerProfile() async {
+    try {
+      final user = await ApiService.getUserInfo(widget.userId);
+      if (!mounted) return;
+      setState(() {
+        _peerDisplayUserId = user.displayUserId.trim();
+        _peerMoeNo = user.moeNo.trim();
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _startVoiceCall() async {
+    final currentUserId = _currentUserId;
+    if (currentUserId == null || currentUserId.isEmpty) return;
+    try {
+      final channelName =
+          'call_${currentUserId}_${widget.userId}_${DateTime.now().millisecondsSinceEpoch}';
+      await ApiService.voiceCall(widget.userId, channelName);
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VoiceCallPage(
+            channelName: channelName,
+            userName: widget.username,
+            userAvatar: widget.avatar,
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      MoeToast.error(context, '发起通话失败，请重试');
+    }
   }
 
   String _storageKey(String currentUserId) {
@@ -446,6 +486,23 @@ class _DirectChatPageState extends State<DirectChatPage> {
         .toList();
     await prefs.setString(key, json.encode(list));
     DirectChatSyncBus.bump();
+  }
+
+  Future<void> _clearLocalChatHistory() async {
+    final currentUserId = _currentUserId;
+    if (currentUserId == null || currentUserId.isEmpty) return;
+    final key = _storageKey(currentUserId);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(key);
+    if (!mounted) return;
+    setState(() {
+      _messages.clear();
+      _hasMoreServer = false;
+      _oldestServerCursorId = null;
+    });
+    DirectChatSyncBus.bump();
+    ChatPushService.markSenderRead(widget.userId);
+    MoeToast.success(context, '聊天记录已清空');
   }
 
   void _scrollToBottom() {
@@ -821,6 +878,23 @@ class _DirectChatPageState extends State<DirectChatPage> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
+                        if (_peerDisplayUserId.isNotEmpty ||
+                            _peerMoeNo.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              _peerDisplayUserId.isNotEmpty
+                                  ? 'ID ${_peerDisplayUserId}'
+                                  : 'Moe ${_peerMoeNo}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: scheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ],
@@ -830,6 +904,10 @@ class _DirectChatPageState extends State<DirectChatPage> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.phone_rounded, color: scheme.primary),
+            onPressed: _startVoiceCall,
+          ),
           IconButton(
             icon: Icon(Icons.more_vert_rounded, color: scheme.onSurface),
             onPressed: () => _showChatOptions(context),
@@ -856,7 +934,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
                 final showPeerAvatar = !isMe &&
                     (index == 0 ||
-                        reversedMessages[index - 1].senderId != message.senderId);
+                        reversedMessages[index - 1].senderId !=
+                            message.senderId);
 
                 var showTime = false;
                 if (index == reversedMessages.length - 1) {
@@ -936,10 +1015,32 @@ class _DirectChatPageState extends State<DirectChatPage> {
                 },
               ),
               ListTile(
-                leading: Icon(Icons.delete_outline_rounded,
-                    color: scheme.error),
+                leading:
+                    Icon(Icons.delete_outline_rounded, color: scheme.error),
                 title: const Text('清空聊天记录'),
-                onTap: () => Navigator.pop(ctx),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (dialogCtx) => AlertDialog(
+                      title: const Text('清空聊天记录'),
+                      content: const Text('仅清空当前设备上的本地聊天缓存，是否继续？'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogCtx, false),
+                          child: const Text('取消'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(dialogCtx, true),
+                          child: const Text('清空'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true) {
+                    await _clearLocalChatHistory();
+                  }
+                },
               ),
               ListTile(
                 leading: Icon(Icons.block_rounded, color: scheme.error),
@@ -989,7 +1090,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
     final yesterday = today.subtract(const Duration(days: 1));
     final msgDate = DateTime(time.year, time.month, time.day);
 
-    String timeStr = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    String timeStr =
+        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
 
     if (msgDate == today) {
       return timeStr;
@@ -1009,9 +1111,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
   }) {
     final scheme = Theme.of(context).colorScheme;
     final maxW = MediaQuery.sizeOf(context).width * 0.74;
-    final bubbleBg = isMe
-        ? scheme.primary
-        : scheme.surfaceContainerHighest;
+    final bubbleBg = isMe ? scheme.primary : scheme.surfaceContainerHighest;
     final textColor = isMe ? scheme.onPrimary : scheme.onSurface;
     const avatarCol = 36.0;
 
@@ -1183,7 +1283,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
                             color: scheme.onPrimary,
                           ),
                         )
-                      : Icon(Icons.send_rounded, color: scheme.onPrimary, size: 22),
+                      : Icon(Icons.send_rounded,
+                          color: scheme.onPrimary, size: 22),
                 ),
               ),
             ],
@@ -1198,6 +1299,7 @@ class _DirectMessage {
   final String senderId;
   final String content;
   final DateTime time;
+
   /// 与服务端行对应的去重键（REST 展开为 `id#t` / `id#i0` 等；WS 对齐同规则）。
   final String? serverId;
 

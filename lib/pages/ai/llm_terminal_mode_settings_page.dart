@@ -101,8 +101,8 @@ class _LlmTerminalModeSettingsPageState
                     children: [
                       SwitchListTile.adaptive(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('启用终端同款（后端 raw 转发）'),
-                        subtitle: const Text('默认开启：不注入记忆/总结，最大程度贴近终端输出'),
+                        title: const Text('启用 raw 调试模式（后端 raw 转发）'),
+                        subtitle: const Text('默认关闭：开启后将绕过服务端记忆注入，仅用于调试'),
                         value: _enabled,
                         activeColor: primary,
                         onChanged: (v) => _saveEnabled(v),
@@ -134,7 +134,8 @@ class _LlmTerminalModeSettingsPageState
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                               ),
                             ),
                           ),
@@ -186,4 +187,3 @@ class _LlmTerminalModeSettingsPageState
     );
   }
 }
-

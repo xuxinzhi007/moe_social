@@ -27,12 +27,14 @@ func NewUpsertUserMemoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 
 func (l *UpsertUserMemoryLogic) UpsertUserMemory(req *types.UpsertUserMemoryReq) (resp *types.UpsertUserMemoryResp, err error) {
 	rpcResp, err := l.svcCtx.SuperRpcClient.UpsertUserMemory(l.ctx, &super.UpsertUserMemoryReq{
-		UserId:     req.UserId,
-		Key:        req.Key,
-		Value:      req.Value,
-		MemoryType: req.MemoryType,
-		Confidence: req.Confidence,
-		Source:     req.Source,
+		UserId:      req.UserId,
+		Key:         req.Key,
+		Value:       req.Value,
+		MemoryType:  req.MemoryType,
+		Confidence:  req.Confidence,
+		Source:      req.Source,
+		SourceMsgId: req.SourceMsgId,
+		SessionId:   req.SessionId,
 	})
 	if err != nil {
 		return &types.UpsertUserMemoryResp{
@@ -44,15 +46,17 @@ func (l *UpsertUserMemoryLogic) UpsertUserMemory(req *types.UpsertUserMemoryReq)
 	return &types.UpsertUserMemoryResp{
 		BaseResp: common.HandleRPCError(nil, "更新用户记忆成功"),
 		Data: types.UserMemory{
-			Id:         m.Id,
-			UserId:     m.UserId,
-			Key:        m.Key,
-			Value:      m.Value,
-			MemoryType: m.MemoryType,
-			Confidence: m.Confidence,
-			Source:     m.Source,
-			CreatedAt:  m.CreatedAt,
-			UpdatedAt:  m.UpdatedAt,
+			Id:          m.Id,
+			UserId:      m.UserId,
+			Key:         m.Key,
+			Value:       m.Value,
+			MemoryType:  m.MemoryType,
+			Confidence:  m.Confidence,
+			Source:      m.Source,
+			SourceMsgId: m.SourceMsgId,
+			SessionId:   m.SessionId,
+			CreatedAt:   m.CreatedAt,
+			UpdatedAt:   m.UpdatedAt,
 		},
 	}, nil
 }

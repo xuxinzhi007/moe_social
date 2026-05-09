@@ -46,15 +46,17 @@ func (l *SubmitUserMemoryFeedbackLogic) SubmitUserMemoryFeedback(req *types.Subm
 	return &types.SubmitUserMemoryFeedbackResp{
 		BaseResp: common.HandleRPCError(nil, "提交记忆反馈成功"),
 		Data: types.UserMemory{
-			Id:         m.Id,
-			UserId:     m.UserId,
-			Key:        m.Key,
-			Value:      m.Value,
-			MemoryType: m.MemoryType,
-			Confidence: m.Confidence,
-			Source:     m.Source,
-			CreatedAt:  m.CreatedAt,
-			UpdatedAt:  m.UpdatedAt,
+			Id:          m.Id,
+			UserId:      m.UserId,
+			Key:         m.Key,
+			Value:       m.Value,
+			MemoryType:  m.MemoryType,
+			Confidence:  m.Confidence,
+			Source:      m.Source,
+			SourceMsgId: m.SourceMsgId,
+			SessionId:   m.SessionId,
+			CreatedAt:   m.CreatedAt,
+			UpdatedAt:   m.UpdatedAt,
 		},
 	}, nil
 }

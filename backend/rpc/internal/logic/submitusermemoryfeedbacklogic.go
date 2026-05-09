@@ -91,17 +91,21 @@ func (l *SubmitUserMemoryFeedbackLogic) SubmitUserMemoryFeedback(in *super.Submi
 		return nil, errorx.Internal("提交用户记忆反馈失败")
 	}
 
+	triggerUserMemoryProfileRebuildAsync(l.svcCtx.DB, memory.UserID, l.Logger)
+
 	return &super.SubmitUserMemoryFeedbackResp{
 		Memory: &super.UserMemory{
-			Id:         strconv.Itoa(int(memory.ID)),
-			UserId:     strconv.Itoa(int(memory.UserID)),
-			Key:        memory.Key,
-			Value:      memory.Value,
-			MemoryType: memory.MemoryType,
-			Confidence: memory.Confidence,
-			Source:     memory.Source,
-			CreatedAt:  memory.CreatedAt.Format("2006-01-02 15:04:05"),
-			UpdatedAt:  memory.UpdatedAt.Format("2006-01-02 15:04:05"),
+			Id:          strconv.Itoa(int(memory.ID)),
+			UserId:      strconv.Itoa(int(memory.UserID)),
+			Key:         memory.Key,
+			Value:       memory.Value,
+			MemoryType:  memory.MemoryType,
+			Confidence:  memory.Confidence,
+			Source:      memory.Source,
+			SourceMsgId: memory.SourceMsgID,
+			SessionId:   memory.SessionID,
+			CreatedAt:   memory.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:   memory.UpdatedAt.Format("2006-01-02 15:04:05"),
 		},
 	}, nil
 }

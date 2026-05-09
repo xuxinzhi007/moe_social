@@ -22,6 +22,10 @@ func ConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 				"has_extract_prompt": svcCtx.Config.Ollama.MemoryExtractPrompt != "",
 			},
 			"memory_budget": budget,
+			"runtime": map[string]interface{}{
+				"server_memory_enabled": true,
+				"raw_debug_only":        true,
+			},
 		}
 
 		httpx.OkJsonCtx(r.Context(), w, map[string]interface{}{

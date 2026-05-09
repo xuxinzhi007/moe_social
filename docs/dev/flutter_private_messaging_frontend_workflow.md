@@ -107,12 +107,15 @@
 - 底栏 **「联系人」** 首个子 Tab **「消息」**（或路由 **`/messages`**）→ **`ConversationsPage`**：聚合好友、通知中心私信、本地缓存键、`unreadBySender`；点击进入 **`/direct-chat`**。  
 - 与某人的**完整历史与分页**仍在 **`DirectChatPage`** 内（**`GET /api/private-messages`** + 本地缓存 + 通知摘要合并）。
 
-## 8. 后续可改进（未做）
+## 8. 近期收敛状态（按 2026-05-09 代码现状）
 
-- WS 发送失败时 **`POST /api/private-messages`** 兜底重试。  
-- 单聊 AppBar 展示对方 **`display_user_id` / moe_no`**。  
-- 清空聊天记录时同步清理本地 key 与 UI（当前菜单项多为占位）。  
-- 后端增加「会话列表」接口后可替换前端的纯聚合逻辑。
+- [已完成/架构] 单聊页面已收敛为 **`DirectChatPage`** 单一实现，历史 `RealtimeChatPage` 已下线，避免双实现分叉维护。  
+- [已完成] 发送链路默认走 **`POST /api/private-messages`**（`ApiService.sendPrivateMessage`），不再依赖“仅 WS 再兜底”的旧状态。  
+- [已完成/P0] `DirectChatPage` 的“清空聊天记录”已实现：确认弹窗 + 清理本地 `direct_chat_*` key + 当前 UI 立即清空 + 会话列表同步刷新。  
+- [已完成/P1] 单聊页 AppBar 已展示对方账号标识（优先 `display_user_id`，回退 `moe_no`），增强会话对象可识别性。  
+- [已完成/能力迁移] 语音通话入口已并入 `DirectChatPage`（标题栏电话按钮 -> `VoiceCallPage`）。  
+- [已完成/P2 过渡] `ConversationsPage` 新增服务端最后一条兜底预览：在“好友 + 通知 + 本地缓存 + unread”聚合基础上，补拉 REST 最新消息，降低跨端/无通知场景下的预览偏差。  
+- [已完成/收敛] 后端已提供正式会话列表接口 `GET /api/private-messages/conversations`，前端 `ConversationsPage` 已优先使用该接口渲染会话（最后一条消息 + 未读数 + 对端信息）；旧前端聚合逻辑仅作为降级兜底。
 
 ---
 

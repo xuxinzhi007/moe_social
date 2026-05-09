@@ -33,6 +33,7 @@ const (
 	Super_GetUserCount_FullMethodName               = "/super.Super/GetUserCount"
 	Super_UpsertUserMemory_FullMethodName           = "/super.Super/UpsertUserMemory"
 	Super_GetUserMemories_FullMethodName            = "/super.Super/GetUserMemories"
+	Super_GetUserMemoryProfiles_FullMethodName      = "/super.Super/GetUserMemoryProfiles"
 	Super_DeleteUserMemory_FullMethodName           = "/super.Super/DeleteUserMemory"
 	Super_SubmitUserMemoryFeedback_FullMethodName   = "/super.Super/SubmitUserMemoryFeedback"
 	Super_GetVipPlans_FullMethodName                = "/super.Super/GetVipPlans"
@@ -63,6 +64,7 @@ const (
 	Super_CreateNotification_FullMethodName         = "/super.Super/CreateNotification"
 	Super_SendPrivateMessage_FullMethodName         = "/super.Super/SendPrivateMessage"
 	Super_ListPrivateMessages_FullMethodName        = "/super.Super/ListPrivateMessages"
+	Super_ListPrivateConversations_FullMethodName   = "/super.Super/ListPrivateConversations"
 	Super_Recharge_FullMethodName                   = "/super.Super/Recharge"
 	Super_GetTransactions_FullMethodName            = "/super.Super/GetTransactions"
 	Super_GetTransaction_FullMethodName             = "/super.Super/GetTransaction"
@@ -123,6 +125,7 @@ type SuperClient interface {
 	GetUserCount(ctx context.Context, in *GetUserCountReq, opts ...grpc.CallOption) (*GetUserCountResp, error)
 	UpsertUserMemory(ctx context.Context, in *UpsertUserMemoryReq, opts ...grpc.CallOption) (*UpsertUserMemoryResp, error)
 	GetUserMemories(ctx context.Context, in *GetUserMemoriesReq, opts ...grpc.CallOption) (*GetUserMemoriesResp, error)
+	GetUserMemoryProfiles(ctx context.Context, in *GetUserMemoryProfilesReq, opts ...grpc.CallOption) (*GetUserMemoryProfilesResp, error)
 	DeleteUserMemory(ctx context.Context, in *DeleteUserMemoryReq, opts ...grpc.CallOption) (*DeleteUserMemoryResp, error)
 	SubmitUserMemoryFeedback(ctx context.Context, in *SubmitUserMemoryFeedbackReq, opts ...grpc.CallOption) (*SubmitUserMemoryFeedbackResp, error)
 	// VIP套餐相关服务
@@ -160,6 +163,7 @@ type SuperClient interface {
 	CreateNotification(ctx context.Context, in *CreateNotificationReq, opts ...grpc.CallOption) (*CreateNotificationResp, error)
 	SendPrivateMessage(ctx context.Context, in *SendPrivateMessageReq, opts ...grpc.CallOption) (*SendPrivateMessageResp, error)
 	ListPrivateMessages(ctx context.Context, in *ListPrivateMessagesReq, opts ...grpc.CallOption) (*ListPrivateMessagesResp, error)
+	ListPrivateConversations(ctx context.Context, in *ListPrivateConversationsReq, opts ...grpc.CallOption) (*ListPrivateConversationsResp, error)
 	// 钱包相关服务
 	Recharge(ctx context.Context, in *RechargeReq, opts ...grpc.CallOption) (*RechargeResp, error)
 	// 交易记录相关服务
@@ -350,6 +354,16 @@ func (c *superClient) GetUserMemories(ctx context.Context, in *GetUserMemoriesRe
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetUserMemoriesResp)
 	err := c.cc.Invoke(ctx, Super_GetUserMemories_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) GetUserMemoryProfiles(ctx context.Context, in *GetUserMemoryProfilesReq, opts ...grpc.CallOption) (*GetUserMemoryProfilesResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserMemoryProfilesResp)
+	err := c.cc.Invoke(ctx, Super_GetUserMemoryProfiles_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -650,6 +664,16 @@ func (c *superClient) ListPrivateMessages(ctx context.Context, in *ListPrivateMe
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListPrivateMessagesResp)
 	err := c.cc.Invoke(ctx, Super_ListPrivateMessages_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) ListPrivateConversations(ctx context.Context, in *ListPrivateConversationsReq, opts ...grpc.CallOption) (*ListPrivateConversationsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListPrivateConversationsResp)
+	err := c.cc.Invoke(ctx, Super_ListPrivateConversations_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1047,6 +1071,7 @@ type SuperServer interface {
 	GetUserCount(context.Context, *GetUserCountReq) (*GetUserCountResp, error)
 	UpsertUserMemory(context.Context, *UpsertUserMemoryReq) (*UpsertUserMemoryResp, error)
 	GetUserMemories(context.Context, *GetUserMemoriesReq) (*GetUserMemoriesResp, error)
+	GetUserMemoryProfiles(context.Context, *GetUserMemoryProfilesReq) (*GetUserMemoryProfilesResp, error)
 	DeleteUserMemory(context.Context, *DeleteUserMemoryReq) (*DeleteUserMemoryResp, error)
 	SubmitUserMemoryFeedback(context.Context, *SubmitUserMemoryFeedbackReq) (*SubmitUserMemoryFeedbackResp, error)
 	// VIP套餐相关服务
@@ -1084,6 +1109,7 @@ type SuperServer interface {
 	CreateNotification(context.Context, *CreateNotificationReq) (*CreateNotificationResp, error)
 	SendPrivateMessage(context.Context, *SendPrivateMessageReq) (*SendPrivateMessageResp, error)
 	ListPrivateMessages(context.Context, *ListPrivateMessagesReq) (*ListPrivateMessagesResp, error)
+	ListPrivateConversations(context.Context, *ListPrivateConversationsReq) (*ListPrivateConversationsResp, error)
 	// 钱包相关服务
 	Recharge(context.Context, *RechargeReq) (*RechargeResp, error)
 	// 交易记录相关服务
@@ -1182,6 +1208,9 @@ func (UnimplementedSuperServer) UpsertUserMemory(context.Context, *UpsertUserMem
 func (UnimplementedSuperServer) GetUserMemories(context.Context, *GetUserMemoriesReq) (*GetUserMemoriesResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUserMemories not implemented")
 }
+func (UnimplementedSuperServer) GetUserMemoryProfiles(context.Context, *GetUserMemoryProfilesReq) (*GetUserMemoryProfilesResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserMemoryProfiles not implemented")
+}
 func (UnimplementedSuperServer) DeleteUserMemory(context.Context, *DeleteUserMemoryReq) (*DeleteUserMemoryResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteUserMemory not implemented")
 }
@@ -1271,6 +1300,9 @@ func (UnimplementedSuperServer) SendPrivateMessage(context.Context, *SendPrivate
 }
 func (UnimplementedSuperServer) ListPrivateMessages(context.Context, *ListPrivateMessagesReq) (*ListPrivateMessagesResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListPrivateMessages not implemented")
+}
+func (UnimplementedSuperServer) ListPrivateConversations(context.Context, *ListPrivateConversationsReq) (*ListPrivateConversationsResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListPrivateConversations not implemented")
 }
 func (UnimplementedSuperServer) Recharge(context.Context, *RechargeReq) (*RechargeResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method Recharge not implemented")
@@ -1652,6 +1684,24 @@ func _Super_GetUserMemories_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SuperServer).GetUserMemories(ctx, req.(*GetUserMemoriesReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_GetUserMemoryProfiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserMemoryProfilesReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).GetUserMemoryProfiles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_GetUserMemoryProfiles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).GetUserMemoryProfiles(ctx, req.(*GetUserMemoryProfilesReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2192,6 +2242,24 @@ func _Super_ListPrivateMessages_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SuperServer).ListPrivateMessages(ctx, req.(*ListPrivateMessagesReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_ListPrivateConversations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPrivateConversationsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).ListPrivateConversations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_ListPrivateConversations_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).ListPrivateConversations(ctx, req.(*ListPrivateConversationsReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2926,6 +2994,10 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Super_GetUserMemories_Handler,
 		},
 		{
+			MethodName: "GetUserMemoryProfiles",
+			Handler:    _Super_GetUserMemoryProfiles_Handler,
+		},
+		{
 			MethodName: "DeleteUserMemory",
 			Handler:    _Super_DeleteUserMemory_Handler,
 		},
@@ -3044,6 +3116,10 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListPrivateMessages",
 			Handler:    _Super_ListPrivateMessages_Handler,
+		},
+		{
+			MethodName: "ListPrivateConversations",
+			Handler:    _Super_ListPrivateConversations_Handler,
 		},
 		{
 			MethodName: "Recharge",

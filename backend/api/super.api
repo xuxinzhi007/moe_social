@@ -78,15 +78,17 @@ type VipRecord {
 
 // 用户记忆相关结构
 type UserMemory {
-	Id         string  `json:"id"`
-	UserId     string  `json:"user_id"`
-	Key        string  `json:"key"`
-	Value      string  `json:"value"`
-	MemoryType string  `json:"memory_type,optional"`
-	Confidence float64 `json:"confidence,optional"`
-	Source     string  `json:"source,optional"`
-	CreatedAt  string  `json:"created_at"`
-	UpdatedAt  string  `json:"updated_at"`
+	Id          string  `json:"id"`
+	UserId      string  `json:"user_id"`
+	Key         string  `json:"key"`
+	Value       string  `json:"value"`
+	MemoryType  string  `json:"memory_type,optional"`
+	Confidence  float64 `json:"confidence,optional"`
+	Source      string  `json:"source,optional"`
+	SourceMsgId string  `json:"source_msg_id,optional"`
+	SessionId   string  `json:"session_id,optional"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
 }
 
 // 交易记录相关结构
@@ -217,6 +219,30 @@ type ListPrivateMessagesResp {
 	BaseResp
 	Data    []PrivateMessageItem `json:"data"`
 	HasMore bool                 `json:"has_more"`
+}
+
+type PrivateConversationItem {
+	PeerUserId        string             `json:"peer_user_id"`
+	PeerName          string             `json:"peer_name"`
+	PeerAvatar        string             `json:"peer_avatar"`
+	PeerMoeNo         string             `json:"peer_moe_no"`
+	PeerDisplayUserId string             `json:"peer_display_user_id"`
+	LastMessage       PrivateMessageItem `json:"last_message"`
+	UnreadCount       int                `json:"unread_count"`
+}
+
+type ListPrivateConversationsReq {
+	Limit  int `form:"limit,default=30"`
+	Offset int `form:"offset,default=0"`
+}
+
+type ListPrivateConversationsResp {
+	BaseResp
+	Data    []PrivateConversationItem `json:"data"`
+	Total   int                       `json:"total"`
+	Limit   int                       `json:"limit"`
+	Offset  int                       `json:"offset"`
+	HasMore bool                      `json:"has_more"`
 }
 
 // 请求和响应结构
@@ -441,16 +467,25 @@ type GetUserActiveVipRecordReq {
 
 // 用户记忆相关请求
 type UpsertUserMemoryReq {
-	UserId     string  `path:"user_id"`
-	Key        string  `json:"key"`
-	Value      string  `json:"value"`
-	MemoryType string  `json:"memory_type,optional"`
-	Confidence float64 `json:"confidence,optional"`
-	Source     string  `json:"source,optional"`
+	UserId      string  `path:"user_id"`
+	Key         string  `json:"key"`
+	Value       string  `json:"value"`
+	MemoryType  string  `json:"memory_type,optional"`
+	Confidence  float64 `json:"confidence,optional"`
+	Source      string  `json:"source,optional"`
+	SourceMsgId string  `json:"source_msg_id,optional"`
+	SessionId   string  `json:"session_id,optional"`
 }
 
 type GetUserMemoriesReq {
 	UserId string `path:"user_id"`
+	Limit  int    `form:"limit,default=50"`
+	Offset int    `form:"offset,default=0"`
+}
+
+type GetUserMemoryProfilesReq {
+	UserId string `path:"user_id"`
+	Limit  int    `form:"limit,default=6"`
 }
 
 type DeleteUserMemoryReq {
@@ -682,7 +717,23 @@ type UpsertUserMemoryResp {
 
 type GetUserMemoriesResp {
 	BaseResp
-	Data []UserMemory `json:"data"`
+	Data    []UserMemory `json:"data"`
+	Total   int64        `json:"total"`
+	Limit   int          `json:"limit"`
+	Offset  int          `json:"offset"`
+	HasMore bool         `json:"has_more"`
+}
+
+type UserMemoryProfile {
+	MemoryType string  `json:"memory_type"`
+	Summary    string  `json:"summary"`
+	ItemCount  int     `json:"item_count"`
+	Confidence float64 `json:"confidence"`
+}
+
+type GetUserMemoryProfilesResp {
+	BaseResp
+	Data []UserMemoryProfile `json:"data"`
 }
 
 type DeleteUserMemoryResp {
@@ -870,6 +921,9 @@ service Super {
 
 	@handler getUserMemories
 	get /api/user/:user_id/memories (GetUserMemoriesReq) returns (GetUserMemoriesResp)
+
+	@handler getUserMemoryProfiles
+	get /api/user/:user_id/memories/profiles (GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp)
 
 	@handler deleteUserMemory
 	delete /api/user/:user_id/memories (DeleteUserMemoryReq) returns (DeleteUserMemoryResp)
@@ -1248,6 +1302,8 @@ type LlmMessage {
 type LlmChatReq {
 	Model         string       `json:"model"`
 	Messages      []LlmMessage `json:"messages"`
+	SessionId     string       `json:"session_id,optional"`
+	SourceMsgId   string       `json:"source_msg_id,optional"`
 	Stream        bool         `json:"stream,optional"`
 	Temperature   float64      `json:"temperature,optional"`
 	TopP          float64      `json:"top_p,optional"`
@@ -1481,6 +1537,9 @@ service Super {
 
 	@handler listPrivateMessages
 	get /api/private-messages (ListPrivateMessagesReq) returns (ListPrivateMessagesResp)
+
+	@handler listPrivateConversations
+	get /api/private-messages/conversations (ListPrivateConversationsReq) returns (ListPrivateConversationsResp)
 }
 
 // 客户端公网 API 基址（无鉴权；JSON 与 Flutter RemoteApiConfigService 一致：仅顶层 api_base_url）

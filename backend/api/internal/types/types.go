@@ -730,11 +730,27 @@ type GetUserLevelResp struct {
 
 type GetUserMemoriesReq struct {
 	UserId string `path:"user_id"`
+	Limit  int    `form:"limit,default=50"`
+	Offset int    `form:"offset,default=0"`
 }
 
 type GetUserMemoriesResp struct {
 	BaseResp
-	Data []UserMemory `json:"data"`
+	Data    []UserMemory `json:"data"`
+	Total   int64        `json:"total"`
+	Limit   int          `json:"limit"`
+	Offset  int          `json:"offset"`
+	HasMore bool         `json:"has_more"`
+}
+
+type GetUserMemoryProfilesReq struct {
+	UserId string `path:"user_id"`
+	Limit  int    `form:"limit,default=6"`
+}
+
+type GetUserMemoryProfilesResp struct {
+	BaseResp
+	Data []UserMemoryProfile `json:"data"`
 }
 
 type GetUserReq struct {
@@ -919,6 +935,20 @@ type ListFriendsResp struct {
 	Data []User `json:"data"`
 }
 
+type ListPrivateConversationsReq struct {
+	Limit  int `form:"limit,default=30"`
+	Offset int `form:"offset,default=0"`
+}
+
+type ListPrivateConversationsResp struct {
+	BaseResp
+	Data    []PrivateConversationItem `json:"data"`
+	Total   int                       `json:"total"`
+	Limit   int                       `json:"limit"`
+	Offset  int                       `json:"offset"`
+	HasMore bool                      `json:"has_more"`
+}
+
 type ListPrivateMessagesReq struct {
 	PeerUserId string `form:"peer_user_id"`
 	BeforeId   string `form:"before_id,optional"`
@@ -934,6 +964,8 @@ type ListPrivateMessagesResp struct {
 type LlmChatReq struct {
 	Model         string       `json:"model"`
 	Messages      []LlmMessage `json:"messages"`
+	SessionId     string       `json:"session_id,optional"`
+	SourceMsgId   string       `json:"source_msg_id,optional"`
 	Stream        bool         `json:"stream,optional"`
 	Temperature   float64      `json:"temperature,optional"`
 	TopP          float64      `json:"top_p,optional"`
@@ -1028,6 +1060,16 @@ type Post struct {
 	HandDrawCard     string     `json:"hand_draw_card,optional"`
 	HandDrawThumbUrl string     `json:"hand_draw_thumb_url,optional"`
 	ModerationStatus string     `json:"moderation_status,optional"`
+}
+
+type PrivateConversationItem struct {
+	PeerUserId        string             `json:"peer_user_id"`
+	PeerName          string             `json:"peer_name"`
+	PeerAvatar        string             `json:"peer_avatar"`
+	PeerMoeNo         string             `json:"peer_moe_no"`
+	PeerDisplayUserId string             `json:"peer_display_user_id"`
+	LastMessage       PrivateMessageItem `json:"last_message"`
+	UnreadCount       int                `json:"unread_count"`
 }
 
 type PrivateMessageItem struct {
@@ -1333,12 +1375,14 @@ type UploadImageResp struct {
 }
 
 type UpsertUserMemoryReq struct {
-	UserId     string  `path:"user_id"`
-	Key        string  `json:"key"`
-	Value      string  `json:"value"`
-	MemoryType string  `json:"memory_type,optional"`
-	Confidence float64 `json:"confidence,optional"`
-	Source     string  `json:"source,optional"`
+	UserId      string  `path:"user_id"`
+	Key         string  `json:"key"`
+	Value       string  `json:"value"`
+	MemoryType  string  `json:"memory_type,optional"`
+	Confidence  float64 `json:"confidence,optional"`
+	Source      string  `json:"source,optional"`
+	SourceMsgId string  `json:"source_msg_id,optional"`
+	SessionId   string  `json:"session_id,optional"`
 }
 
 type UpsertUserMemoryResp struct {
@@ -1387,15 +1431,24 @@ type UserLevelInfo struct {
 }
 
 type UserMemory struct {
-	Id         string  `json:"id"`
-	UserId     string  `json:"user_id"`
-	Key        string  `json:"key"`
-	Value      string  `json:"value"`
-	MemoryType string  `json:"memory_type,optional"`
-	Confidence float64 `json:"confidence,optional"`
-	Source     string  `json:"source,optional"`
-	CreatedAt  string  `json:"created_at"`
-	UpdatedAt  string  `json:"updated_at"`
+	Id          string  `json:"id"`
+	UserId      string  `json:"user_id"`
+	Key         string  `json:"key"`
+	Value       string  `json:"value"`
+	MemoryType  string  `json:"memory_type,optional"`
+	Confidence  float64 `json:"confidence,optional"`
+	Source      string  `json:"source,optional"`
+	SourceMsgId string  `json:"source_msg_id,optional"`
+	SessionId   string  `json:"session_id,optional"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
+}
+
+type UserMemoryProfile struct {
+	MemoryType string  `json:"memory_type"`
+	Summary    string  `json:"summary"`
+	ItemCount  int     `json:"item_count"`
+	Confidence float64 `json:"confidence"`
 }
 
 type UserVipStatusData struct {
