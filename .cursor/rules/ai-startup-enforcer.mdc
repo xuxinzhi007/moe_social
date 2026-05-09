@@ -1,0 +1,23 @@
+---
+description: Global mandatory startup rule for all code changes
+alwaysApply: true
+---
+
+# 全局强制启动规则（硬性）
+
+本规则对所有会话、所有文件修改生效。开始任何代码任务前，必须先执行以下步骤，不得跳过：
+
+1. 判断本次任务属于前端、后端或前后端联动。
+2. 读取对应规范文件：
+   - 后端：`.cursor/rules/backend-ai-spec.mdc`
+   - 前端：`.cursor/rules/frontend-ai-spec.mdc`
+3. 同步读取对应启动指南：
+   - 后端：`docs/guidelines/Codex启动指南-后端.md`
+   - 前端：`docs/guidelines/Codex启动指南-前端.md`
+4. 代码实现与提交前检查必须遵守对应规范中的流程、生成命令与格式要求。
+
+## 执行约束
+
+- 禁止在未读取对应规范前直接修改代码。
+- 禁止把前端规范用于后端改动，或把后端规范用于前端改动。
+- 若任务涉及前后端联动，必须同时读取并遵守两套规范。

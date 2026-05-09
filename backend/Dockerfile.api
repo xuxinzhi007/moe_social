@@ -1,0 +1,47 @@
+# 阶段1：编译构建
+FROM golang:1.25.5-alpine AS builder
+
+WORKDIR /app
+
+# 复制 go 模块依赖文件
+COPY go.mod go.sum ./
+
+# 加速配置
+ENV GOPROXY=https://goproxy.cn,direct
+ENV GO111MODULE=on
+
+# 下载项目依赖
+RUN go mod download
+
+# 复制所有源代码文件
+COPY . .
+
+# 编译 API 服务
+RUN go build -o api ./api
+
+# 阶段2：最终运行镜像
+FROM alpine:latest
+
+WORKDIR /app
+
+# 安装 HTTPS 请求所需的证书
+RUN apk add --no-cache ca-certificates
+
+# 从编译阶段复制编译好的可执行文件
+COPY --from=builder /app/api /app/api
+
+# 复制配置文件
+COPY api/etc/super.yaml /app/etc/super.yaml
+COPY config/config.yaml /app/config/config.yaml
+
+# 创建必要的目录
+RUN mkdir -p /app/data/images
+
+# 暴露 API 端口
+EXPOSE 8888
+
+# 设置环境变量
+ENV GIN_MODE=release
+
+# 启动 API 服务
+CMD ["/app/api", "-f", "etc/super.yaml"]

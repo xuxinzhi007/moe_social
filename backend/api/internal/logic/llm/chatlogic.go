@@ -7,13 +7,17 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
+	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 	"backend/rpc/pb/super"
+	"backend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,9 +26,27 @@ const (
 	maxCtxTokens       = 4096
 	maxHistoryMessages = 40
 	keepRecentMessages = 16
+	// 记忆注入上限：避免无关记忆挤占上下文窗口。
+	maxInjectedMemoryItems = 8
+	maxInjectedMemoryRunes = 520
+	fallbackMemoryItems    = 2
+	memoryCacheTTL         = 30 * time.Second
 )
 
 var ctxSafeRatio = 0.7
+var memoryTokenPattern = regexp.MustCompile(`[\p{Han}]{2,}|[a-zA-Z0-9_]{2,}`)
+
+type cachedMemories struct {
+	items     []*super.UserMemory
+	expiresAt time.Time
+}
+
+var userMemoryCache = struct {
+	sync.RWMutex
+	data map[string]cachedMemories
+}{
+	data: make(map[string]cachedMemories),
+}
 
 type ollamaMessage struct {
 	Role    string `json:"role"`
@@ -32,9 +54,13 @@ type ollamaMessage struct {
 }
 
 type ollamaRequest struct {
-	Model    string          `json:"model"`
-	Messages []ollamaMessage `json:"messages"`
-	Stream   bool            `json:"stream"`
+	Model         string          `json:"model"`
+	Messages      []ollamaMessage `json:"messages"`
+	Stream        bool            `json:"stream"`
+	Temperature   float64         `json:"temperature,omitempty"`
+	TopP          float64         `json:"top_p,omitempty"`
+	MaxTokens     int             `json:"max_tokens,omitempty"`
+	RepeatPenalty float64         `json:"repeat_penalty,omitempty"`
 }
 
 type ollamaResponse struct {
@@ -46,8 +72,82 @@ type ollamaResponse struct {
 	EvalCount       int `json:"eval_count"`
 }
 
+type rankedMemory struct {
+	line  string
+	score int
+	index int
+}
+
+func isNoiseMemoryValue(value string) bool {
+	norm := normalizeMemoryText(value)
+	if norm == "" {
+		return true
+	}
+	switch norm {
+	case "-", "--", "/", "n/a", "na", "none", "null", "nil", "unknown", "无", "未知", "未提及", "不知道":
+		return true
+	}
+	return false
+}
+
+func selectFallbackRecentMemories(ranked []rankedMemory) []string {
+	if len(ranked) == 0 {
+		return nil
+	}
+	limit := min(fallbackMemoryItems, len(ranked))
+	lines := make([]string, 0, limit)
+	totalRunes := 0
+	for _, item := range ranked {
+		if len(lines) >= limit {
+			break
+		}
+		itemRunes := len([]rune(item.line))
+		if totalRunes+itemRunes > maxInjectedMemoryRunes && len(lines) > 0 {
+			break
+		}
+		lines = append(lines, item.line)
+		totalRunes += itemRunes
+	}
+	if len(lines) == 0 {
+		lines = append(lines, ranked[0].line)
+	}
+	return lines
+}
+
 func estimateTokens(s string) int {
 	return len([]rune(s))
+}
+
+func getCachedUserMemories(userID string) ([]*super.UserMemory, bool) {
+	now := time.Now()
+	userMemoryCache.RLock()
+	entry, ok := userMemoryCache.data[userID]
+	userMemoryCache.RUnlock()
+	if !ok {
+		return nil, false
+	}
+	if now.After(entry.expiresAt) {
+		userMemoryCache.Lock()
+		delete(userMemoryCache.data, userID)
+		userMemoryCache.Unlock()
+		return nil, false
+	}
+	return entry.items, true
+}
+
+func setCachedUserMemories(userID string, items []*super.UserMemory) {
+	userMemoryCache.Lock()
+	userMemoryCache.data[userID] = cachedMemories{
+		items:     items,
+		expiresAt: time.Now().Add(memoryCacheTTL),
+	}
+	userMemoryCache.Unlock()
+}
+
+func invalidateCachedUserMemories(userID string) {
+	userMemoryCache.Lock()
+	delete(userMemoryCache.data, userID)
+	userMemoryCache.Unlock()
 }
 
 type ChatLogic struct {
@@ -64,24 +164,155 @@ func NewChatLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ChatLogic {
 	}
 }
 
+func extractMemoryQueryTokens(messages []types.LlmMessage) []string {
+	for i := len(messages) - 1; i >= 0; i-- {
+		if strings.TrimSpace(messages[i].Role) != "user" {
+			continue
+		}
+		content := strings.ToLower(strings.TrimSpace(messages[i].Content))
+		if content == "" {
+			continue
+		}
+		matches := memoryTokenPattern.FindAllString(content, -1)
+		if len(matches) == 0 {
+			return nil
+		}
+		uniq := make([]string, 0, len(matches))
+		seen := make(map[string]struct{}, len(matches))
+		for _, m := range matches {
+			token := strings.TrimSpace(m)
+			if token == "" {
+				continue
+			}
+			if _, ok := seen[token]; ok {
+				continue
+			}
+			seen[token] = struct{}{}
+			uniq = append(uniq, token)
+		}
+		return uniq
+	}
+	return nil
+}
+
+func normalizeMemoryText(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	replacer := strings.NewReplacer("\n", " ", "\r", " ", "\t", " ")
+	s = replacer.Replace(s)
+	return strings.Join(strings.Fields(s), " ")
+}
+
+func selectRelevantMemoryLines(memories []*super.UserMemory, messages []types.LlmMessage) []string {
+	if len(memories) == 0 {
+		return nil
+	}
+	tokens := extractMemoryQueryTokens(messages)
+	hasQueryTokens := len(tokens) > 0
+	hasKeywordHit := false
+	ranked := make([]rankedMemory, 0, len(memories))
+	seen := make(map[string]struct{}, len(memories))
+
+	for i, m := range memories {
+		key := strings.TrimSpace(m.Key)
+		value := strings.TrimSpace(m.Value)
+		if key == "" || value == "" {
+			continue
+		}
+		if isNoiseMemoryValue(value) {
+			continue
+		}
+		line := fmt.Sprintf("%s: %s", key, value)
+		norm := normalizeMemoryText(line)
+		if norm == "" {
+			continue
+		}
+		if _, ok := seen[norm]; ok {
+			continue
+		}
+		seen[norm] = struct{}{}
+
+		score := 1
+		// 最近记忆（按 updated_at desc）给基础加权。
+		if i < 5 {
+			score += 2
+		}
+
+		joined := normalizeMemoryText(key + " " + value)
+		matched := false
+		for _, token := range tokens {
+			if strings.Contains(joined, token) {
+				score += 3
+				matched = true
+			}
+		}
+		if matched {
+			hasKeywordHit = true
+		}
+
+		ranked = append(ranked, rankedMemory{
+			line:  line,
+			score: score,
+			index: i,
+		})
+	}
+
+	if len(ranked) == 0 {
+		return nil
+	}
+
+	sort.Slice(ranked, func(i, j int) bool {
+		if ranked[i].score != ranked[j].score {
+			return ranked[i].score > ranked[j].score
+		}
+		return ranked[i].index < ranked[j].index
+	})
+
+	// 没有明显关键词命中时，回退注入少量最近记忆，减少噪声和 token 消耗。
+	if !hasQueryTokens || !hasKeywordHit {
+		return selectFallbackRecentMemories(ranked)
+	}
+
+	lines := make([]string, 0, min(maxInjectedMemoryItems, len(ranked)))
+	totalRunes := 0
+	for _, item := range ranked {
+		itemRunes := len([]rune(item.line))
+		if len(lines) >= maxInjectedMemoryItems {
+			break
+		}
+		if totalRunes+itemRunes > maxInjectedMemoryRunes && len(lines) > 0 {
+			break
+		}
+		lines = append(lines, item.line)
+		totalRunes += itemRunes
+	}
+	if len(lines) == 0 {
+		return selectFallbackRecentMemories(ranked)
+	}
+	return lines
+}
+
 func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err error) {
+	sessionID := strings.TrimSpace(req.SessionId)
+	sourceMsgID := strings.TrimSpace(req.SourceMsgId)
 	var memoryLines []string
 	var userIDForLog string
 	if v := l.ctx.Value("user_id"); v != nil {
 		if userID, ok := v.(string); ok && userID != "" {
 			userIDForLog = userID
-			rpcResp, err := l.svcCtx.SuperRpcClient.GetUserMemories(l.ctx, &super.GetUserMemoriesReq{
-				UserId: userID,
-			})
-			if err != nil {
-				l.Errorf("GetUserMemories failed: %v", err)
+			if cached, hit := getCachedUserMemories(userID); hit {
+				memoryLines = selectRelevantMemoryLines(cached, req.Messages)
+				l.Infof("memory cache hit user_id=%s total=%d selected=%d", userID, len(cached), len(memoryLines))
 			} else {
-				for _, m := range rpcResp.Memories {
-					if m.Key != "" && m.Value != "" {
-						memoryLines = append(memoryLines, fmt.Sprintf("%s: %s", m.Key, m.Value))
-					}
+				rpcResp, err := l.svcCtx.SuperRpcClient.GetUserMemories(l.ctx, &super.GetUserMemoriesReq{
+					UserId: userID,
+				})
+				if err != nil {
+					l.Errorf("GetUserMemories failed: %v", err)
+				} else {
+					setCachedUserMemories(userID, rpcResp.Memories)
+					memoryLines = selectRelevantMemoryLines(rpcResp.Memories, req.Messages)
+					l.Infof("memory cache miss user_id=%s total=%d selected=%d", userID, len(rpcResp.Memories), len(memoryLines))
 				}
-				l.Infof("loaded %d memories for user_id=%s", len(rpcResp.Memories), userID)
 			}
 		}
 	}
@@ -136,14 +367,17 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		timeoutSeconds = 60
 	}
 
-	baseUrl := strings.TrimRight(l.svcCtx.Config.Ollama.BaseUrl, "/")
-	if baseUrl == "" {
-		baseUrl = "http://127.0.0.1:11434"
+	baseUrl, err := common.ResolveOllamaBaseURL(l.svcCtx.Config.Ollama.BaseUrl)
+	if err != nil {
+		return &types.LlmChatResp{
+			BaseResp:       common.HandleError(err),
+			Content:        "",
+			RemainingRatio: 1,
+			Summarized:     false,
+		}, nil
 	}
 
-	client := &http.Client{
-		Timeout: time.Duration(timeoutSeconds) * time.Second,
-	}
+	client := utils.NewHTTPClient(timeoutSeconds)
 
 	memoryModel := strings.TrimSpace(l.svcCtx.Config.Ollama.MemoryModel)
 	if memoryModel == "" {
@@ -193,10 +427,10 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 					Content: summary,
 				}
 
-				go func(uid, model, baseUrl string, timeout int, msgs []ollamaMessage) {
+				go func(uid, model, baseUrl, sid, msgID string, timeout int, msgs []ollamaMessage) {
 					bgCtx := context.Background()
-					l.extractAndSaveMemories(bgCtx, uid, model, baseUrl, timeout, msgs)
-				}(userIDForLog, memoryModel, baseUrl, timeoutSeconds, fullMessages)
+					l.extractAndSaveMemories(bgCtx, uid, model, baseUrl, timeout, sid, msgID, msgs)
+				}(userIDForLog, memoryModel, baseUrl, sessionID, sourceMsgID, timeoutSeconds, fullMessages)
 			}
 
 			usedTokens = 0
@@ -260,17 +494,34 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		}
 	}
 
-	body, err := json.Marshal(ollamaRequest{
+	// 构建请求参数
+	request := ollamaRequest{
 		Model:    req.Model,
 		Messages: messages,
-		Stream:   false,
-	})
+		Stream:   req.Stream,
+	}
+
+	// 设置可选参数
+	if req.Temperature > 0 {
+		request.Temperature = req.Temperature
+	}
+	if req.TopP > 0 {
+		request.TopP = req.TopP
+	}
+	if req.MaxTokens > 0 {
+		request.MaxTokens = req.MaxTokens
+	}
+	if req.RepeatPenalty > 0 {
+		request.RepeatPenalty = req.RepeatPenalty
+	}
+
+	body, err := json.Marshal(request)
 	if err != nil {
 		return &types.LlmChatResp{
-			BaseResp:        common.HandleError(err),
-			Content:         "",
-			RemainingRatio:  1,
-			Summarized:      false,
+			BaseResp:       common.HandleError(err),
+			Content:        "",
+			RemainingRatio: 1,
+			Summarized:     false,
 		}, nil
 	}
 
@@ -288,12 +539,31 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 			Summarized:     false,
 		}, nil
 	}
+	common.ApplyOllamaForwardHeaders(httpReq)
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	httpResp, err := client.Do(httpReq)
-	if err != nil {
+	var httpResp *http.Response
+	var retryErr error
+	for i := 0; i <= utils.DefaultRetryConfig.MaxRetries; i++ {
+		httpResp, retryErr = client.Do(httpReq)
+		if retryErr == nil && httpResp.StatusCode == http.StatusOK {
+			break
+		}
+		if retryErr == nil && !utils.IsRetryableStatus(httpResp.StatusCode) {
+			break
+		}
+		if i < utils.DefaultRetryConfig.MaxRetries {
+			delay := time.Duration(float64(utils.DefaultRetryConfig.InitialDelay) * (utils.DefaultRetryConfig.BackoffFactor * float64(i)))
+			if delay > utils.DefaultRetryConfig.MaxDelay {
+				delay = utils.DefaultRetryConfig.MaxDelay
+			}
+			time.Sleep(delay)
+		}
+	}
+
+	if retryErr != nil {
 		return &types.LlmChatResp{
-			BaseResp:       common.HandleError(err),
+			BaseResp:       common.HandleError(retryErr),
 			Content:        "",
 			RemainingRatio: 1,
 			Summarized:     summarized,
@@ -312,13 +582,48 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 	}
 
 	var oResp ollamaResponse
-	if err := json.NewDecoder(httpResp.Body).Decode(&oResp); err != nil {
-		return &types.LlmChatResp{
-			BaseResp:       common.HandleError(err),
-			Content:        "",
-			RemainingRatio: 1,
-			Summarized:     summarized,
-		}, nil
+
+	// 处理流式响应
+	if req.Stream {
+		// 这里应该返回流式响应，但由于当前接口设计，我们先收集所有内容
+		// 实际生产环境中，应该使用Server-Sent Events或WebSocket
+		reader := httpResp.Body
+		decoder := json.NewDecoder(reader)
+		var fullContent strings.Builder
+
+		for {
+			var chunk map[string]interface{}
+			if err := decoder.Decode(&chunk); err != nil {
+				if err == io.EOF {
+					break
+				}
+				l.Errorf("decode stream chunk failed: %v", err)
+				continue
+			}
+
+			if message, ok := chunk["message"].(map[string]interface{}); ok {
+				if content, ok := message["content"].(string); ok {
+					fullContent.WriteString(content)
+				}
+			}
+
+			// 检查是否结束
+			if done, ok := chunk["done"].(bool); ok && done {
+				break
+			}
+		}
+
+		oResp.Message.Content = fullContent.String()
+	} else {
+		// 处理非流式响应
+		if err := json.NewDecoder(httpResp.Body).Decode(&oResp); err != nil {
+			return &types.LlmChatResp{
+				BaseResp:       common.HandleError(err),
+				Content:        "",
+				RemainingRatio: 1,
+				Summarized:     summarized,
+			}, nil
+		}
 	}
 
 	// Async memory extraction
@@ -331,11 +636,11 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 			Content: oResp.Message.Content,
 		}
 
-		go func(uid, model, baseUrl string, timeout int, msgs []ollamaMessage) {
+		go func(uid, model, baseUrl, sid, msgID string, timeout int, msgs []ollamaMessage) {
 			bgCtx := context.Background()
 			// Create a new detached logger/logic context if needed, but simple function call is enough
-			l.extractAndSaveMemories(bgCtx, uid, model, baseUrl, timeout, msgs)
-		}(userIDForLog, req.Model, baseUrl, timeoutSeconds, fullMessages)
+			l.extractAndSaveMemories(bgCtx, uid, model, baseUrl, timeout, sid, msgID, msgs)
+		}(userIDForLog, req.Model, baseUrl, sessionID, sourceMsgID, timeoutSeconds, fullMessages)
 	}
 
 	usedTokens = 0
@@ -416,11 +721,30 @@ func (l *ChatLogic) summarizeMessages(model, baseUrl string, timeoutSeconds int,
 	if err != nil {
 		return "", err
 	}
+	common.ApplyOllamaForwardHeaders(httpReq)
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	httpResp, err := client.Do(httpReq)
-	if err != nil {
-		return "", err
+	var httpResp *http.Response
+	var retryErr error
+	for i := 0; i <= utils.DefaultRetryConfig.MaxRetries; i++ {
+		httpResp, retryErr = client.Do(httpReq)
+		if retryErr == nil && httpResp.StatusCode == http.StatusOK {
+			break
+		}
+		if retryErr == nil && !utils.IsRetryableStatus(httpResp.StatusCode) {
+			break
+		}
+		if i < utils.DefaultRetryConfig.MaxRetries {
+			delay := time.Duration(float64(utils.DefaultRetryConfig.InitialDelay) * (utils.DefaultRetryConfig.BackoffFactor * float64(i)))
+			if delay > utils.DefaultRetryConfig.MaxDelay {
+				delay = utils.DefaultRetryConfig.MaxDelay
+			}
+			time.Sleep(delay)
+		}
+	}
+
+	if retryErr != nil {
+		return "", retryErr
 	}
 	defer httpResp.Body.Close()
 
@@ -438,11 +762,14 @@ func (l *ChatLogic) summarizeMessages(model, baseUrl string, timeoutSeconds int,
 }
 
 type memoryItem struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
+	Key        string  `json:"key"`
+	Value      string  `json:"value"`
+	MemoryType string  `json:"memory_type,omitempty"`
+	Confidence float64 `json:"confidence,omitempty"`
+	Source     string  `json:"source,omitempty"`
 }
 
-func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, baseUrl string, timeoutSeconds int, history []ollamaMessage) {
+func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, baseUrl string, timeoutSeconds int, sessionID, sourceMsgID string, history []ollamaMessage) {
 	// Only analyze if history is significant enough
 	// 降低门槛，只要有对话就尝试（system + user + assistant >= 3）
 	if len(history) < 2 {
@@ -509,12 +836,31 @@ func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, b
 		logger.Errorf("create extract memory req failed: %v", err)
 		return
 	}
+	common.ApplyOllamaForwardHeaders(httpReq)
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: time.Duration(timeoutSeconds) * time.Second}
-	httpResp, err := client.Do(httpReq)
-	if err != nil {
-		logger.Errorf("extract memory http request failed: %v", err)
+	client := utils.NewHTTPClient(timeoutSeconds)
+	var httpResp *http.Response
+	var retryErr error
+	for i := 0; i <= utils.DefaultRetryConfig.MaxRetries; i++ {
+		httpResp, retryErr = client.Do(httpReq)
+		if retryErr == nil && httpResp.StatusCode == http.StatusOK {
+			break
+		}
+		if retryErr == nil && !utils.IsRetryableStatus(httpResp.StatusCode) {
+			break
+		}
+		if i < utils.DefaultRetryConfig.MaxRetries {
+			delay := time.Duration(float64(utils.DefaultRetryConfig.InitialDelay) * (utils.DefaultRetryConfig.BackoffFactor * float64(i)))
+			if delay > utils.DefaultRetryConfig.MaxDelay {
+				delay = utils.DefaultRetryConfig.MaxDelay
+			}
+			time.Sleep(delay)
+		}
+	}
+
+	if retryErr != nil {
+		logger.Errorf("extract memory http request failed: %v", retryErr)
 		return
 	}
 	defer httpResp.Body.Close()
@@ -531,7 +877,7 @@ func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, b
 	}
 
 	content := strings.TrimSpace(oResp.Message.Content)
-	logger.Infof("memory extraction raw response: %s", content) // 增加调试日志
+	logger.Infof("memory extraction response received: chars=%d", len([]rune(content)))
 
 	// Clean up potential markdown code blocks
 	content = strings.TrimPrefix(content, "```json")
@@ -545,26 +891,32 @@ func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, b
 
 	var items []memoryItem
 	if err := json.Unmarshal([]byte(content), &items); err != nil {
-		// 尝试容错：如果不是标准 JSON，尝试提取类似 JSON 的部分
-		// 这里简单处理，如果解析失败记录日志
-		logger.Errorf("unmarshal memory items failed: %v, content: %s", err, content)
+		// 仅记录长度，避免把潜在隐私内容写入日志。
+		logger.Errorf("unmarshal memory items failed: %v, chars=%d", err, len([]rune(content)))
 		return
 	}
 
 	if len(items) > 0 {
-		logger.Infof("extracted %d new memories for user %s: %v", len(items), userID, items)
+		logger.Infof("extracted %d new memories for user %s", len(items), userID)
 		for _, item := range items {
 			if item.Key == "" || item.Value == "" {
 				continue
 			}
 			_, err := l.svcCtx.SuperRpcClient.UpsertUserMemory(ctx, &super.UpsertUserMemoryReq{
-				UserId: userID,
-				Key:    item.Key,
-				Value:  item.Value,
+				UserId:      userID,
+				Key:         item.Key,
+				Value:       item.Value,
+				MemoryType:  item.MemoryType,
+				Confidence:  item.Confidence,
+				Source:      "llm_extract",
+				SourceMsgId: sourceMsgID,
+				SessionId:   sessionID,
 			})
 			if err != nil {
 				logger.Errorf("upsert memory %s failed: %v", item.Key, err)
 			}
 		}
+		// 发生更新后失效缓存，避免后续会话继续命中过时记忆。
+		invalidateCachedUserMemories(userID)
 	}
 }

@@ -17,22 +17,27 @@ type BaseResp {
 
 // 用户相关结构
 type User {
-	Id              string  `json:"id"`
-	Username        string  `json:"username"`
-	Email           string  `json:"email"`
-	MoeNo           string  `json:"moe_no,omitempty"`
-	Avatar          string  `json:"avatar"`
-	Signature       string  `json:"signature"`
-	Gender          string  `json:"gender"`
-	Birthday        string  `json:"birthday,omitempty"`
-	CreatedAt       string  `json:"created_at"`
-	UpdatedAt       string  `json:"updated_at"`
-	IsVip           bool    `json:"is_vip"`
-	VipExpiresAt    string  `json:"vip_expires_at"`
-	AutoRenew       bool    `json:"auto_renew"`
-	Balance         float64 `json:"balance"`
-	Inventory       string  `json:"inventory"`
-	EquippedFrameId string  `json:"equipped_frame_id"`
+	Id                string  `json:"id"`
+	Username          string  `json:"username"`
+	Email             string  `json:"email"`
+	MoeNo             string  `json:"moe_no,omitempty"`
+	Avatar            string  `json:"avatar"`
+	Signature         string  `json:"signature"`
+	Gender            string  `json:"gender"`
+	Birthday          string  `json:"birthday,omitempty"`
+	CreatedAt         string  `json:"created_at"`
+	UpdatedAt         string  `json:"updated_at"`
+	IsVip             bool    `json:"is_vip"`
+	VipExpiresAt      string  `json:"vip_expires_at"`
+	AutoRenew         bool    `json:"auto_renew"`
+	Balance           float64 `json:"balance"`
+	GiftCharm         int     `json:"gift_charm"`
+	ReceivedGiftValue float64 `json:"received_gift_value"`
+	Inventory         string  `json:"inventory"`
+	EquippedFrameId   string  `json:"equipped_frame_id"`
+	// 与 moe_no 一致，个人中心展示账号请优先用本字段或 moe_no；查询、鉴权仍用 Id
+	DisplayUserId          string `json:"display_user_id"`
+	MessageRetentionChoice int    `json:"message_retention_choice"` // 0=自动；7 或 30 为用户自选（见文档）
 }
 
 // VIP套餐相关结构
@@ -56,6 +61,7 @@ type VipOrder {
 	Status    string  `json:"status"`
 	CreatedAt string  `json:"created_at"`
 	PaidAt    string  `json:"paid_at"`
+	OrderNo   string  `json:"order_no,optional"`
 }
 
 // VIP记录相关结构
@@ -72,12 +78,17 @@ type VipRecord {
 
 // 用户记忆相关结构
 type UserMemory {
-	Id        string `json:"id"`
-	UserId    string `json:"user_id"`
-	Key       string `json:"key"`
-	Value     string `json:"value"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	Id          string  `json:"id"`
+	UserId      string  `json:"user_id"`
+	Key         string  `json:"key"`
+	Value       string  `json:"value"`
+	MemoryType  string  `json:"memory_type,optional"`
+	Confidence  float64 `json:"confidence,optional"`
+	Source      string  `json:"source,optional"`
+	SourceMsgId string  `json:"source_msg_id,optional"`
+	SessionId   string  `json:"session_id,optional"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
 }
 
 // 交易记录相关结构
@@ -171,6 +182,67 @@ type ReadNotificationReq {
 
 type ReadAllNotificationsReq {
 	UserId string `json:"user_id"`
+}
+
+// 私信持久化（REST + WS 配合说明见 backend/docs/private_messages.md）
+type PrivateMessageItem {
+	Id            string   `json:"id"`
+	SenderId      string   `json:"sender_id"`
+	ReceiverId    string   `json:"receiver_id"`
+	SenderMoeNo   string   `json:"sender_moe_no"`
+	ReceiverMoeNo string   `json:"receiver_moe_no"`
+	Body          string   `json:"body"`
+	ImagePaths    []string `json:"image_paths"`
+	RetentionDays int      `json:"retention_days"`
+	CreatedAt     string   `json:"created_at"`
+	ExpiresAt     string   `json:"expires_at"`
+}
+
+type SendPrivateMessageReq {
+	ReceiverId string   `json:"receiver_id"`
+	Body       string   `json:"body"`
+	ImagePaths []string `json:"image_paths,optional"`
+}
+
+type SendPrivateMessageResp {
+	BaseResp
+	Data PrivateMessageItem `json:"data"`
+}
+
+type ListPrivateMessagesReq {
+	PeerUserId string `form:"peer_user_id"`
+	BeforeId   string `form:"before_id,optional"`
+	Limit      int    `form:"limit,default=30"`
+}
+
+type ListPrivateMessagesResp {
+	BaseResp
+	Data    []PrivateMessageItem `json:"data"`
+	HasMore bool                 `json:"has_more"`
+}
+
+type PrivateConversationItem {
+	PeerUserId        string             `json:"peer_user_id"`
+	PeerName          string             `json:"peer_name"`
+	PeerAvatar        string             `json:"peer_avatar"`
+	PeerMoeNo         string             `json:"peer_moe_no"`
+	PeerDisplayUserId string             `json:"peer_display_user_id"`
+	LastMessage       PrivateMessageItem `json:"last_message"`
+	UnreadCount       int                `json:"unread_count"`
+}
+
+type ListPrivateConversationsReq {
+	Limit  int `form:"limit,default=30"`
+	Offset int `form:"offset,default=0"`
+}
+
+type ListPrivateConversationsResp {
+	BaseResp
+	Data    []PrivateConversationItem `json:"data"`
+	Total   int                       `json:"total"`
+	Limit   int                       `json:"limit"`
+	Offset  int                       `json:"offset"`
+	HasMore bool                      `json:"has_more"`
 }
 
 // 请求和响应结构
@@ -317,6 +389,8 @@ type UpdateUserInfoReq {
 	Inventory          string `json:"inventory,optional"`
 	EquippedFrameId    string `json:"equipped_frame_id,optional"`
 	ClearEquippedFrame bool   `json:"clear_equipped_frame,optional"`
+	// 空=不修改。auto=恢复自动；7 / 30 为自选私信保留天数
+	MessageRetention string `json:"message_retention,optional"`
 }
 
 type UpdateUserPasswordReq {
@@ -393,18 +467,38 @@ type GetUserActiveVipRecordReq {
 
 // 用户记忆相关请求
 type UpsertUserMemoryReq {
-	UserId string `path:"user_id"`
-	Key    string `json:"key"`
-	Value  string `json:"value"`
+	UserId      string  `path:"user_id"`
+	Key         string  `json:"key"`
+	Value       string  `json:"value"`
+	MemoryType  string  `json:"memory_type,optional"`
+	Confidence  float64 `json:"confidence,optional"`
+	Source      string  `json:"source,optional"`
+	SourceMsgId string  `json:"source_msg_id,optional"`
+	SessionId   string  `json:"session_id,optional"`
 }
 
 type GetUserMemoriesReq {
 	UserId string `path:"user_id"`
+	Limit  int    `form:"limit,default=50"`
+	Offset int    `form:"offset,default=0"`
+}
+
+type GetUserMemoryProfilesReq {
+	UserId string `path:"user_id"`
+	Limit  int    `form:"limit,default=6"`
 }
 
 type DeleteUserMemoryReq {
 	UserId string `path:"user_id"`
 	Key    string `form:"key"`
+}
+
+type SubmitUserMemoryFeedbackReq {
+	UserId         string `path:"user_id"`
+	Key            string `json:"key"`
+	FeedbackType   string `json:"feedback_type"` // accept | reject | correct
+	CorrectedValue string `json:"corrected_value,optional"` // 纠错后的值（feedback_type=correct 时必填）
+	Reason         string `json:"reason,optional"` // 用户备注
 }
 
 // 帖子相关请求
@@ -623,11 +717,32 @@ type UpsertUserMemoryResp {
 
 type GetUserMemoriesResp {
 	BaseResp
-	Data []UserMemory `json:"data"`
+	Data    []UserMemory `json:"data"`
+	Total   int64        `json:"total"`
+	Limit   int          `json:"limit"`
+	Offset  int          `json:"offset"`
+	HasMore bool         `json:"has_more"`
+}
+
+type UserMemoryProfile {
+	MemoryType string  `json:"memory_type"`
+	Summary    string  `json:"summary"`
+	ItemCount  int     `json:"item_count"`
+	Confidence float64 `json:"confidence"`
+}
+
+type GetUserMemoryProfilesResp {
+	BaseResp
+	Data []UserMemoryProfile `json:"data"`
 }
 
 type DeleteUserMemoryResp {
 	BaseResp
+}
+
+type SubmitUserMemoryFeedbackResp {
+	BaseResp
+	Data UserMemory `json:"data"`
 }
 
 // 嵌套类型定义
@@ -673,6 +788,30 @@ type GetPostResp {
 type CreatePostResp {
 	BaseResp
 	Data Post `json:"data"`
+}
+
+type UpdatePostReq {
+	PostId           string     `path:"post_id"`
+	UserId           string     `json:"-"`
+	Content          string     `json:"content,optional"`
+	Images           []string   `json:"images,optional"`
+	TopicTags        []TopicTag `json:"topic_tags,optional"`
+	HandDrawCard     string     `json:"hand_draw_card,optional"`
+	HandDrawThumbUrl string     `json:"hand_draw_thumb_url,optional"`
+}
+
+type UpdatePostResp {
+	BaseResp
+	Data Post `json:"data"`
+}
+
+type DeletePostReq {
+	PostId string `path:"post_id"`
+	UserId string `json:"-"`
+}
+
+type DeletePostResp {
+	BaseResp
 }
 
 type LikePostResp {
@@ -783,8 +922,14 @@ service Super {
 	@handler getUserMemories
 	get /api/user/:user_id/memories (GetUserMemoriesReq) returns (GetUserMemoriesResp)
 
+	@handler getUserMemoryProfiles
+	get /api/user/:user_id/memories/profiles (GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp)
+
 	@handler deleteUserMemory
 	delete /api/user/:user_id/memories (DeleteUserMemoryReq) returns (DeleteUserMemoryResp)
+
+	@handler submitUserMemoryFeedback
+	post /api/user/:user_id/memories/feedback (SubmitUserMemoryFeedbackReq) returns (SubmitUserMemoryFeedbackResp)
 
 	// 关注相关API
 	@handler followUser
@@ -853,6 +998,12 @@ service Super {
 
 	@handler createPost
 	post /api/posts (CreatePostReq) returns (CreatePostResp)
+
+	@handler updatePost
+	put /api/posts/:post_id (UpdatePostReq) returns (UpdatePostResp)
+
+	@handler deletePost
+	delete /api/posts/:post_id (DeletePostReq) returns (DeletePostResp)
 
 	@handler reportPost
 	post /api/posts/:post_id/report (ReportPostReq) returns (ReportPostResp)
@@ -1149,8 +1300,15 @@ type LlmMessage {
 }
 
 type LlmChatReq {
-	Model    string       `json:"model"`
-	Messages []LlmMessage `json:"messages"`
+	Model         string       `json:"model"`
+	Messages      []LlmMessage `json:"messages"`
+	SessionId     string       `json:"session_id,optional"`
+	SourceMsgId   string       `json:"source_msg_id,optional"`
+	Stream        bool         `json:"stream,optional"`
+	Temperature   float64      `json:"temperature,optional"`
+	TopP          float64      `json:"top_p,optional"`
+	MaxTokens     int          `json:"max_tokens,optional"`
+	RepeatPenalty float64      `json:"repeat_penalty,optional"`
 }
 
 type LlmChatResp {
@@ -1171,6 +1329,14 @@ type LlmCreateAgentReq {
 	SystemPrompt string `json:"system_prompt"`
 }
 
+type LlmDownloadModelReq {
+	Model string `json:"model"`
+}
+
+type LlmDeleteModelReq {
+	Model string `json:"model"`
+}
+
 // LLM 聊天相关API服务
 @server (
 	group: llm
@@ -1183,6 +1349,14 @@ service Super {
 	// 创建带有个性化系统提示词的新模型
 	@handler createAgent
 	post /api/llm/agents (LlmCreateAgentReq) returns (BaseResp)
+
+	// 下载模型
+	@handler downloadModel
+	post /api/llm/models/download (LlmDownloadModelReq) returns (BaseResp)
+
+	// 删除模型
+	@handler deleteModel
+	post /api/llm/models/delete (LlmDeleteModelReq) returns (BaseResp)
 
 	// 发送聊天消息
 	@handler chat
@@ -1352,6 +1526,22 @@ service Super {
 	get /api/chat/online/batch (ChatOnlineBatchReq) returns (ChatOnlineBatchResp)
 }
 
+// 私信持久化（需 JWT；发送方 userId 来自 token，无需在 body 传 sender）
+@server (
+	group: privatemsg
+	jwt:   Auth
+)
+service Super {
+	@handler sendPrivateMessage
+	post /api/private-messages (SendPrivateMessageReq) returns (SendPrivateMessageResp)
+
+	@handler listPrivateMessages
+	get /api/private-messages (ListPrivateMessagesReq) returns (ListPrivateMessagesResp)
+
+	@handler listPrivateConversations
+	get /api/private-messages/conversations (ListPrivateConversationsReq) returns (ListPrivateConversationsResp)
+}
+
 // 客户端公网 API 基址（无鉴权；JSON 与 Flutter RemoteApiConfigService 一致：仅顶层 api_base_url）
 type PublicClientConfigResp {
 	ApiBaseUrl string `json:"api_base_url"`
@@ -1480,6 +1670,417 @@ service Super {
 
 	@handler getExpLogs
 	get /api/user/:user_id/exp/logs (GetExpLogsReq) returns (GetExpLogsResp)
+}
+
+// 内容生成相关结构
+type ContentGenerationReq {
+	UserId  string                 `json:"user_id"`
+	Type    string                 `json:"type"` // text, image, video
+	Prompt  string                 `json:"prompt"`
+	Options map[string]interface{} `json:"options,optional"`
+}
+
+type ContentGenerationData {
+	Id        string `json:"id"`
+	Type      string `json:"type"`
+	Url       string `json:"url,optional"`
+	Content   string `json:"content,optional"`
+	CreatedAt string `json:"created_at"`
+}
+
+type ContentGenerationResp {
+	BaseResp
+	Data ContentGenerationData `json:"data"`
+}
+
+type ContentListReq {
+	UserId   string `path:"user_id"`
+	Type     string `form:"type,optional"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type ContentItem {
+	Id        string `json:"id"`
+	UserId    string `json:"user_id"`
+	Type      string `json:"type"`
+	Prompt    string `json:"prompt"`
+	Url       string `json:"url,optional"`
+	Content   string `json:"content,optional"`
+	CreatedAt string `json:"created_at"`
+}
+
+type ContentListResp {
+	BaseResp
+	Data  []ContentItem `json:"data"`
+	Total int           `json:"total"`
+}
+
+// 内容生成相关API服务
+@server (
+	group: content
+)
+service Super {
+	// 生成内容
+	@handler generateContent
+	post /api/content/generate (ContentGenerationReq) returns (ContentGenerationResp)
+
+	// 获取用户生成的内容列表
+	@handler getContentList
+	get /api/user/:user_id/content (ContentListReq) returns (ContentListResp)
+}
+
+// 礼物相关结构
+type Gift {
+	Id            string `json:"id"`
+	Name          string `json:"name"`
+	Price         int    `json:"price"`
+	Icon          string `json:"icon"`
+	Description   string `json:"description"`
+	CreatedAt     string `json:"created_at"`
+	UpdatedAt     string `json:"updated_at"`
+	OwnedQuantity int    `json:"owned_quantity,optional"`
+}
+
+type GiftRecord {
+	Id         string `json:"id"`
+	FromUserID string `json:"from_user_id"`
+	ToUserID   string `json:"to_user_id"`
+	GiftID     string `json:"gift_id"`
+	Quantity   int    `json:"quantity"`
+	Message    string `json:"message"`
+	CreatedAt  string `json:"created_at"`
+	Gift       Gift   `json:"gift,omitempty"`
+}
+
+// 礼物相关请求
+type GetGiftsReq {
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+	UserId   string `form:"user_id,optional"`
+}
+
+type GetGiftReq {
+	GiftId string `path:"gift_id"`
+}
+
+type SendGiftReq {
+	UserId   string `path:"user_id"`
+	ToUserId string `json:"to_user_id"`
+	GiftId   string `json:"gift_id"`
+	Quantity int    `json:"quantity,default=1"`
+	Message  string `json:"message,optional"`
+}
+
+type GetGiftRecordsReq {
+	UserId   string `path:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+// 礼物相关响应
+type GetGiftsResp {
+	BaseResp
+	Data  []Gift `json:"data"`
+	Total int    `json:"total"`
+}
+
+type GetGiftResp {
+	BaseResp
+	Data Gift `json:"data"`
+}
+
+type SendGiftResp {
+	BaseResp
+	Data GiftRecord `json:"data"`
+}
+
+type GetGiftRecordsResp {
+	BaseResp
+	Data  []GiftRecord `json:"data"`
+	Total int          `json:"total"`
+}
+
+type GiftPurchaseOrder {
+	Id          string  `json:"id"`
+	UserId      string  `json:"user_id"`
+	OrderNo     string  `json:"order_no"`
+	GiftId      string  `json:"gift_id"`
+	GiftName    string  `json:"gift_name"`
+	Quantity    int     `json:"quantity"`
+	UnitPrice   float64 `json:"unit_price"`
+	TotalAmount float64 `json:"total_amount"`
+	PayMethod   string  `json:"pay_method"`
+	Status      string  `json:"status"`
+	CreatedAt   string  `json:"created_at"`
+}
+
+type GetGiftPurchaseOrdersReq {
+	UserId   string `path:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type PurchaseGiftReq {
+	UserId   string `path:"user_id"`
+	GiftId   string `json:"gift_id"`
+	Quantity int    `json:"quantity,default=1"`
+}
+
+type PurchaseGiftData {
+	NewBalance    float64 `json:"new_balance"`
+	OwnedQuantity int     `json:"owned_quantity"`
+	OrderNo       string  `json:"order_no"`
+}
+
+type PurchaseGiftResp {
+	BaseResp
+	Data PurchaseGiftData `json:"data"`
+}
+
+type GetGiftPurchaseOrdersResp {
+	BaseResp
+	Data  []GiftPurchaseOrder `json:"data"`
+	Total int                 `json:"total"`
+}
+
+// 礼物相关API服务
+@server (
+	group: gift
+)
+service Super {
+	// 获取礼物列表
+	@handler getGifts
+	get /api/gifts (GetGiftsReq) returns (GetGiftsResp)
+
+	// 获取礼物详情
+	@handler getGift
+	get /api/gifts/:gift_id (GetGiftReq) returns (GetGiftResp)
+
+	// 发送礼物
+	@handler sendGift
+	post /api/user/:user_id/gifts/send (SendGiftReq) returns (SendGiftResp)
+
+	// 获取用户礼物记录
+	@handler getGiftRecords
+	get /api/user/:user_id/gifts/records (GetGiftRecordsReq) returns (GetGiftRecordsResp)
+
+	// 礼物购买订单（余额购买进背包）
+	@handler getGiftPurchaseOrders
+	get /api/user/:user_id/gifts/purchase-orders (GetGiftPurchaseOrdersReq) returns (GetGiftPurchaseOrdersResp)
+
+	// 购买礼物（进入背包）
+	@handler purchaseGift
+	post /api/user/:user_id/gifts/purchase (PurchaseGiftReq) returns (PurchaseGiftResp)
+}
+
+// 社区服务相关结构
+// 兴趣群组结构
+type Group {
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Avatar      string `json:"avatar"`
+	Cover       string `json:"cover"`
+	CreatorId   string `json:"creator_id"`
+	CreatorName string `json:"creator_name"`
+	MemberCount int    `json:"member_count"`
+	IsPublic    bool   `json:"is_public"`
+	Status      string `json:"status"`
+	CreatedAt   string `json:"created_at"`
+	IsJoined    bool   `json:"is_joined,optional"`
+	UserRole    string `json:"user_role,optional"`
+}
+
+// 群组成员结构
+type GroupMember {
+	Id         string `json:"id"`
+	GroupId    string `json:"group_id"`
+	UserId     string `json:"user_id"`
+	UserName   string `json:"user_name"`
+	UserAvatar string `json:"user_avatar"`
+	Role       string `json:"role"`
+	JoinAt     string `json:"join_at"`
+	CreatedAt  string `json:"created_at"`
+}
+
+// 群组帖子结构
+type GroupPost {
+	Id        string `json:"id"`
+	GroupId   string `json:"group_id"`
+	PostId    string `json:"post_id"`
+	Post      Post   `json:"post"`
+	CreatedAt string `json:"created_at"`
+}
+
+// 社区服务相关请求
+// 群组相关请求
+type GetGroupsReq {
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+	UserId   string `form:"user_id,optional"`
+	Keyword  string `form:"keyword,optional"`
+	IsPublic bool   `form:"is_public,optional"`
+}
+
+type GetGroupReq {
+	GroupId string `path:"group_id"`
+	UserId  string `form:"user_id,optional"`
+}
+
+type CreateGroupReq {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Avatar      string `json:"avatar,optional"`
+	Cover       string `json:"cover,optional"`
+	IsPublic    bool   `json:"is_public,optional"`
+	UserId      string `json:"user_id"`
+}
+
+type UpdateGroupReq {
+	GroupId     string `path:"group_id"`
+	Name        string `json:"name,optional"`
+	Description string `json:"description,optional"`
+	Avatar      string `json:"avatar,optional"`
+	Cover       string `json:"cover,optional"`
+	IsPublic    bool   `json:"is_public,optional"`
+	UserId      string `json:"user_id"`
+}
+
+type DeleteGroupReq {
+	GroupId string `path:"group_id"`
+	UserId  string `json:"user_id"`
+}
+
+type JoinGroupReq {
+	GroupId string `path:"group_id"`
+	UserId  string `json:"user_id"`
+}
+
+type LeaveGroupReq {
+	GroupId string `path:"group_id"`
+	UserId  string `json:"user_id"`
+}
+
+type GetGroupMembersReq {
+	GroupId  string `path:"group_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type GetUserGroupsReq {
+	UserId   string `path:"user_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+}
+
+type CreateGroupPostReq {
+	GroupId string `path:"group_id"`
+	PostId  string `json:"post_id"`
+	UserId  string `json:"user_id"`
+}
+
+type GetGroupPostsReq {
+	GroupId  string `path:"group_id"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=10"`
+	UserId   string `form:"user_id,optional"`
+}
+
+// 社区服务相关响应
+// 群组相关响应
+type GetGroupsResp {
+	BaseResp
+	Data  []Group `json:"data"`
+	Total int     `json:"total"`
+}
+
+type GetGroupResp {
+	BaseResp
+	Data Group `json:"data"`
+}
+
+type CreateGroupResp {
+	BaseResp
+	Data Group `json:"data"`
+}
+
+type UpdateGroupResp {
+	BaseResp
+	Data Group `json:"data"`
+}
+
+type GetGroupMembersResp {
+	BaseResp
+	Data  []GroupMember `json:"data"`
+	Total int           `json:"total"`
+}
+
+type GetUserGroupsResp {
+	BaseResp
+	Data  []Group `json:"data"`
+	Total int     `json:"total"`
+}
+
+type CreateGroupPostResp {
+	BaseResp
+	Data GroupPost `json:"data"`
+}
+
+type GetGroupPostsResp {
+	BaseResp
+	Data  []GroupPost `json:"data"`
+	Total int         `json:"total"`
+}
+
+// 社区服务相关API服务
+@server (
+	group: community
+)
+service Super {
+	// 获取群组列表
+	@handler getGroups
+	get /api/community/groups (GetGroupsReq) returns (GetGroupsResp)
+
+	// 获取群详情
+	@handler getGroup
+	get /api/community/groups/:group_id (GetGroupReq) returns (GetGroupResp)
+
+	// 创建群组
+	@handler createGroup
+	post /api/community/groups (CreateGroupReq) returns (CreateGroupResp)
+
+	// 更新群组信息
+	@handler updateGroup
+	put /api/community/groups/:group_id (UpdateGroupReq) returns (UpdateGroupResp)
+
+	// 删除群组
+	@handler deleteGroup
+	delete /api/community/groups/:group_id (DeleteGroupReq) returns (BaseResp)
+
+	// 加入群组
+	@handler joinGroup
+	post /api/community/groups/:group_id/join (JoinGroupReq) returns (BaseResp)
+
+	// 退出群组
+	@handler leaveGroup
+	post /api/community/groups/:group_id/leave (LeaveGroupReq) returns (BaseResp)
+
+	// 获取群组成员列表
+	@handler getGroupMembers
+	get /api/community/groups/:group_id/members (GetGroupMembersReq) returns (GetGroupMembersResp)
+
+	// 获取用户加入的群组
+	@handler getUserGroups
+	get /api/user/:user_id/community/groups (GetUserGroupsReq) returns (GetUserGroupsResp)
+
+	// 发布群组帖子
+	@handler createGroupPost
+	post /api/community/groups/:group_id/posts (CreateGroupPostReq) returns (CreateGroupPostResp)
+
+	// 获取群组帖子列表
+	@handler getGroupPosts
+	get /api/community/groups/:group_id/posts (GetGroupPostsReq) returns (GetGroupPostsResp)
 }
 
 // WebSocket 服务组 (不使用JWT middleware，在handler内部验证token)

@@ -51,8 +51,8 @@ func (l *CreateVipOrderLogic) CreateVipOrder(in *super.CreateVipOrderReq) (*supe
 			return errorx.New(400, "余额不足，请先充值")
 		}
 
-		// 生成订单号
-		orderNo := "ORD" + time.Now().Format("20060102150405") + in.UserId
+		// 生成订单号（须全局唯一，避免同一秒内重复下单冲突）
+		orderNo := "ORD" + strconv.FormatInt(time.Now().UnixNano(), 10)
 		now := time.Now()
 		vipEnd := now.AddDate(0, 0, plan.Duration)
 
@@ -127,6 +127,7 @@ func (l *CreateVipOrderLogic) CreateVipOrder(in *super.CreateVipOrderReq) (*supe
 			Status:    order.Status,
 			CreatedAt: order.CreatedAt.Format("2006-01-02 15:04:05"),
 			PaidAt:    order.UpdatedAt.Format("2006-01-02 15:04:05"),
+			OrderNo:   order.OrderNo,
 		},
 	}, nil
 }

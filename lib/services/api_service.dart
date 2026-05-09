@@ -1,14 +1,18 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
-import 'dart:io' show File, Platform, SocketException;
+import 'dart:io' show File, SocketException;
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart'
     show debugPrint, kDebugMode, kIsWeb, VoidCallback;
 import '../models/post.dart';
 import '../models/comment.dart';
 import '../models/user.dart';
+import '../models/private_message_item.dart';
+import '../models/private_conversation_item.dart';
 import '../models/vip_plan.dart';
 import '../models/vip_order.dart';
+import '../models/gift_purchase_order.dart';
 import '../models/vip_record.dart';
 import '../models/user_level.dart';
 import '../models/checkin_status.dart';
@@ -17,6 +21,7 @@ import '../models/checkin_data.dart';
 import '../models/exp_log.dart';
 import 'remote_api_config_service.dart';
 import '../utils/jwt_exp.dart';
+import '../utils/config.dart' as moe_launch_config;
 
 // 自定义异常类，用于传递错误信息
 class ApiException implements Exception {
@@ -101,11 +106,23 @@ class ApiService {
     return response;
   }
 
-  // 环境配置
-  // true：非 Web 平台走公网/隧道（initRemoteProductionBaseUrl）。
-  // false：本机调试（iOS 模拟器等用 localhost:8888；Android 见下方分支）。
-  // 注意：Flutter Web 在 Chrome 里始终用 [_developmentUrl]，因跨域访问 ngrok 常出现 Failed to fetch。
-  static const bool _isProduction = true;
+  // 发起语音通话
+  static Future<Map<String, dynamic>> voiceCall(
+      String receiverId, String channelName) async {
+    final response = await _request(
+      '/api/voice/call',
+      method: 'POST',
+      body: {'receiver_id': receiverId, 'channel_name': channelName},
+    );
+    return response;
+  }
+
+  // 环境配置（local / online）：**唯一来源** `lib/utils/config.dart` → [moe_launch_config.AppConfig]
+  static const String _envLocal = 'local';
+  static const String _envOnline = 'online';
+
+  static String _runtimeEnvironment = _envLocal;
+  static String get runtimeEnvironment => _runtimeEnvironment;
 
   /// API 调试日志开关（只在 Debug 模式生效）
   /// - 你提到的 “user_avatar/图片信息刷屏” 就是这里控制的
@@ -114,57 +131,101 @@ class ApiService {
   /// 是否输出“超详细”日志（会非常吵；默认关闭）
   static const bool _verboseApiLog = true;
 
-  // 首装无缓存时的备用入口（问 client-config）；日常只需维护 yaml + GitHub，此处可长期不改。
-  static const String _productionUrl =
-      'https://karan-unsedate-unsimultaneously.ngrok-free.dev';
+  // 与 [moe_launch_config.AppConfig] 同源；[initRemoteProductionBaseUrl] 内会再做规范化。
+  static String _configuredOnlineUrl =
+      moe_launch_config.AppConfig.productionUrl;
+  static String _configuredLocalUrl =
+      moe_launch_config.AppConfig.developmentUrl;
 
-  // 开发环境地址
-  static const String _developmentUrl = 'http://localhost:8888';
-
-  /// 生产环境下由 [initRemoteProductionBaseUrl] 写入；未初始化前为 null，[baseUrl] 用 [_productionUrl]。
+  /// online 模式下由 [initRemoteProductionBaseUrl] 写入；未初始化前为 null 时 [baseUrl] 用配置里的 online 地址。
   static String? _runtimeProductionBaseUrl;
 
+  static String? _normalizeBaseUrl(String? raw) {
+    if (raw == null) return null;
+    var s = raw.trim();
+    if (s.isEmpty) return null;
+    while (s.endsWith('/')) {
+      s = s.substring(0, s.length - 1);
+    }
+    final uri = Uri.tryParse(s);
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
+      return null;
+    }
+    if (uri.scheme != 'http' && uri.scheme != 'https') {
+      return null;
+    }
+    return s;
+  }
+
+  /// 从 [moe_launch_config.AppConfig] 同步 local/online 基址（唯一配置入口，勿再使用 api_env.json）。
+  static void _applyApiEnvironmentFromAppConfig() {
+    _runtimeEnvironment =
+        moe_launch_config.AppConfig.isProduction ? _envOnline : _envLocal;
+
+    final urlLocal =
+        _normalizeBaseUrl(moe_launch_config.AppConfig.developmentUrl);
+    if (urlLocal != null) {
+      _configuredLocalUrl = urlLocal;
+    }
+
+    final urlOnline =
+        _normalizeBaseUrl(moe_launch_config.AppConfig.productionUrl);
+    if (urlOnline != null) {
+      _configuredOnlineUrl = urlOnline;
+    }
+
+    _log(
+      '🔧 API环境: $_runtimeEnvironment, local=$_configuredLocalUrl, online=$_configuredOnlineUrl',
+    );
+  }
+
   /// 在 [main] 里 `WidgetsFlutterBinding` 之后、`AuthService.init` 之前调用一次。
-  /// Web 平台不解析远程配置；其它平台在 [_isProduction] 时走 [RemoteApiConfigService]。
+  /// local 模式直接使用本地地址；online 模式会优先解析远程配置用于自动同步最新地址。
   static Future<void> initRemoteProductionBaseUrl() async {
-    if (kIsWeb) {
+    _applyApiEnvironmentFromAppConfig();
+
+    if (_runtimeEnvironment == _envLocal) {
       _runtimeProductionBaseUrl = null;
       return;
     }
-    if (!_isProduction) {
+
+    if (kIsWeb) {
+      _runtimeProductionBaseUrl = _configuredOnlineUrl;
+      return;
+    }
+
+    if (_runtimeEnvironment != _envOnline) {
       _runtimeProductionBaseUrl = null;
       return;
     }
     _runtimeProductionBaseUrl =
         await RemoteApiConfigService.resolveProductionBaseUrl(
-      fallbackBakedUrl: _productionUrl,
+      fallbackBakedUrl: _configuredOnlineUrl,
     );
   }
 
   // 根据环境和平台自动选择API地址
   static String get baseUrl {
-    // Web：页面源是 localhost:随机端口，请求 https ngrok 会跨域；ngrok 免费版对浏览器还可能返回无 CORS 的拦截页 → Failed to fetch
-    if (kIsWeb) {
-      return _developmentUrl;
+    if (_runtimeEnvironment == _envLocal) {
+      return _configuredLocalUrl;
     }
+    return _runtimeProductionBaseUrl ?? _configuredOnlineUrl;
+  }
 
-    if (_isProduction) {
-      return _runtimeProductionBaseUrl ?? _productionUrl;
-    }
+  /// 与 [_performRequest] 相同：给任意 `Uri`（含 LLM 页里 `package:http` 直连）合并 ngrok 跳过页头。
+  static Map<String, String> mergeTunnelHeaders(
+    Uri uri, {
+    Map<String, String>? headers,
+  }) {
+    return {
+      ...tunnelBypassHeadersForUrl(uri.toString()),
+      if (headers != null) ...headers,
+    };
+  }
 
-    // 开发环境根据平台选择
-    if (Platform.isAndroid) {
-      // Android真机需要使用电脑IP或生产环境地址
-      // 如果本地连接有问题，可以临时使用生产环境地址
-      // return 'http://7da36c26.r3.cpolar.top'; // 使用生产环境
-      // 或者使用电脑IP（需要根据实际情况修改）
-      // return 'http://192.168.1.16:8888'; // 替换为你的电脑IP
-      return 'http://7da36c26.r3.cpolar.top'; // Android模拟器使用这个
-    } else if (Platform.isIOS) {
-      // iOS模拟器使用localhost，真机需要使用电脑IP
-      return _developmentUrl; // iOS模拟器
-    }
-    return _developmentUrl;
+  /// LLM 等使用 `http.get`/`http.post` 全路径 URL 时不会经过 [_performRequest]，默认没有「📡 API Request」日志。
+  static void logDirectHttp(String method, Uri uri) {
+    _log('📡 API Request: $method $uri');
   }
 
   /// ngrok 免费域名可能返回 HTML 拦截页；REST/WS 握手需带此头才能稳定拿到 JSON。
@@ -186,6 +247,9 @@ class ApiService {
 
   /// 距离过期不足此时长则先发制人调用刷新（当前 token 仍须有效，后端才会签发新 token）
   static const Duration _proactiveRefreshThreshold = Duration(hours: 6);
+
+  /// 单次 HTTP 超时（原 http 包无默认超时，隧道/弱网下会长时间挂起，表现为「间歇性刷不出」）
+  static const Duration _httpTimeout = Duration(seconds: 18);
 
   // 防止并发刷新token
   static bool _isRefreshing = false;
@@ -246,6 +310,18 @@ class ApiService {
     return await _request(path, method: 'DELETE');
   }
 
+  static Future<http.Response> _httpWithTimeout(
+    Future<http.Response> inner,
+  ) {
+    return inner.timeout(
+      _httpTimeout,
+      onTimeout: () => throw ApiException(
+        '请求超时（${_httpTimeout.inSeconds}秒），请检查网络或稍后重试',
+        504,
+      ),
+    );
+  }
+
   // 执行实际的HTTP请求
   static Future<Map<String, dynamic>> _performRequest(
       String path, String method, dynamic body) async {
@@ -273,25 +349,25 @@ class ApiService {
       // 发送请求
       http.Response response;
       if (method == 'GET') {
-        response = await http.get(uri, headers: headers);
+        response = await _httpWithTimeout(http.get(uri, headers: headers));
       } else if (method == 'POST') {
-        response = await http.post(
+        response = await _httpWithTimeout(http.post(
           uri,
           headers: headers,
           body: body != null ? json.encode(body) : null,
-        );
+        ));
       } else if (method == 'PUT') {
-        response = await http.put(
+        response = await _httpWithTimeout(http.put(
           uri,
           headers: headers,
           body: body != null ? json.encode(body) : null,
-        );
+        ));
       } else if (method == 'DELETE') {
-        response = await http.delete(
+        response = await _httpWithTimeout(http.delete(
           uri,
           headers: headers,
           body: body != null ? json.encode(body) : null,
-        );
+        ));
       } else {
         throw ApiException('不支持的HTTP方法: $method', null);
       }
@@ -364,8 +440,7 @@ class ApiService {
             errorMessage = 'cpolar隧道可能已断开，请检查隧道状态或切换到本地开发环境';
           } else if (baseUrl.contains('ngrok-free.') ||
               baseUrl.contains('ngrok.app')) {
-            errorMessage =
-                'ngrok 返回了 HTML 页面；请检查域名是否与控制台一致，或隧道是否指向 8888';
+            errorMessage = 'ngrok 返回了 HTML 页面；请检查域名是否与控制台一致，或隧道是否指向 8888';
           }
           throw ApiException(errorMessage, response.statusCode);
         }
@@ -392,6 +467,9 @@ class ApiService {
       }
 
       return result;
+    } on TimeoutException catch (e) {
+      _log('❌ 请求超时: $e');
+      throw ApiException('请求超时，请检查网络或稍后重试', 504);
     } on SocketException catch (e) {
       _log('❌ 网络连接错误: $e');
       throw ApiException('无法连接到服务器，请检查网络设置或服务器是否开启', 503);
@@ -456,7 +534,7 @@ class ApiService {
         headers['Authorization'] = 'Bearer $currentToken';
       }
 
-      final response = await http.post(uri, headers: headers);
+      final response = await _httpWithTimeout(http.post(uri, headers: headers));
       final bodyText = _decodeUtf8Body(response);
 
       if (response.statusCode == 200) {
@@ -550,8 +628,7 @@ class ApiService {
       'page_size=$pageSize',
     ];
     if (viewerUserId != null && viewerUserId.isNotEmpty) {
-      parts.add(
-          'viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}');
+      parts.add('viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}');
     }
     if (feedMode != null && feedMode.isNotEmpty) {
       parts.add('feed_mode=${Uri.encodeQueryComponent(feedMode)}');
@@ -560,8 +637,7 @@ class ApiService {
       parts.add('topic_tag_id=${Uri.encodeQueryComponent(topicTagId)}');
     }
     if (authorUserId != null && authorUserId.isNotEmpty) {
-      parts.add(
-          'author_user_id=${Uri.encodeQueryComponent(authorUserId)}');
+      parts.add('author_user_id=${Uri.encodeQueryComponent(authorUserId)}');
     }
     final result = await _request('/api/posts?${parts.join('&')}');
     // 始终输出total字段的值和postsJson的长度，不依赖于_verboseApiLog
@@ -592,9 +668,8 @@ class ApiService {
         _log('📥 成功解析${posts.length}条帖子');
       }
       final totalRaw = result['total'];
-      final total = totalRaw is int
-          ? totalRaw
-          : (totalRaw is num ? totalRaw.toInt() : 0);
+      final total =
+          totalRaw is int ? totalRaw : (totalRaw is num ? totalRaw.toInt() : 0);
       return {
         'posts': posts,
         'total': total,
@@ -775,8 +850,7 @@ class ApiService {
   static Future<Post> getPostById(String id, {String? viewerUserId}) async {
     var path = '/api/posts/$id';
     if (viewerUserId != null && viewerUserId.isNotEmpty) {
-      path +=
-          '?viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}';
+      path += '?viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}';
     }
     final result = await _request(path);
     return Post.fromJson(result['data']);
@@ -809,11 +883,120 @@ class ApiService {
     return post;
   }
 
+  /// 更新帖子正文 / 图片 / 话题标签（仅帖子作者可调用）。
+  static Future<Post> updatePost(
+    String postId, {
+    String? content,
+    List<String>? images,
+    List<Map<String, dynamic>>? topicTags,
+    String? handDrawCard,
+    String? handDrawThumbUrl,
+  }) async {
+    final body = <String, dynamic>{};
+    if (content != null) body['content'] = content;
+    if (images != null) body['images'] = images;
+    if (topicTags != null) body['topic_tags'] = topicTags;
+    if (handDrawCard != null) body['hand_draw_card'] = handDrawCard;
+    if (handDrawThumbUrl != null) {
+      body['hand_draw_thumb_url'] = handDrawThumbUrl;
+    }
+    final result =
+        await _request('/api/posts/$postId', method: 'PUT', body: body);
+    final data = result['data'];
+    if (data is Map<String, dynamic>) {
+      return Post.fromJson(data);
+    }
+    throw ApiException('更新帖子失败');
+  }
+
+  /// 删除帖子（仅帖子作者可调用）。
+  static Future<void> deletePost(String postId) async {
+    await _request('/api/posts/$postId', method: 'DELETE');
+  }
+
   // 点赞/取消点赞帖子
   static Future<Post> toggleLike(String postId, String userId) async {
     final result = await _request('/api/posts/$postId/like',
         method: 'POST', body: {'user_id': userId});
     return Post.fromJson(result['data']);
+  }
+
+  // ========== 社区 / 兴趣群组 ==========
+
+  /// GET `/api/community/groups` — 分页列表，可选关键词与 viewer（影响 is_joined）。
+  static Future<Map<String, dynamic>> getCommunityGroups({
+    int page = 1,
+    int pageSize = 20,
+    String? keyword,
+    String? userId,
+    bool? isPublic,
+  }) async {
+    final parts = <String>['page=$page', 'page_size=$pageSize'];
+    if (keyword != null && keyword.trim().isNotEmpty) {
+      parts.add('keyword=${Uri.encodeQueryComponent(keyword.trim())}');
+    }
+    if (userId != null && userId.isNotEmpty) {
+      parts.add('user_id=${Uri.encodeQueryComponent(userId)}');
+    }
+    if (isPublic != null) {
+      parts.add('is_public=$isPublic');
+    }
+    final result = await _request('/api/community/groups?${parts.join('&')}');
+    final raw = result['data'];
+    final list = raw is List
+        ? raw.map((e) => Map<String, dynamic>.from(e as Map)).toList()
+        : <Map<String, dynamic>>[];
+    final totalRaw = result['total'];
+    final total = totalRaw is int
+        ? totalRaw
+        : (totalRaw is num ? totalRaw.toInt() : list.length);
+    return {'groups': list, 'total': total};
+  }
+
+  static Future<Map<String, dynamic>> createCommunityGroup({
+    required String userId,
+    required String name,
+    required String description,
+    bool isPublic = true,
+    String avatar = '',
+    String cover = '',
+  }) async {
+    final body = <String, dynamic>{
+      'user_id': userId,
+      'name': name,
+      'description': description,
+      'is_public': isPublic,
+    };
+    if (avatar.isNotEmpty) body['avatar'] = avatar;
+    if (cover.isNotEmpty) body['cover'] = cover;
+    final result =
+        await _request('/api/community/groups', method: 'POST', body: body);
+    final data = result['data'];
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return <String, dynamic>{};
+  }
+
+  static Future<void> joinCommunityGroup({
+    required String groupId,
+    required String userId,
+  }) async {
+    await _request(
+      '/api/community/groups/$groupId/join',
+      method: 'POST',
+      body: {'user_id': userId},
+    );
+  }
+
+  static Future<void> leaveCommunityGroup({
+    required String groupId,
+    required String userId,
+  }) async {
+    await _request(
+      '/api/community/groups/$groupId/leave',
+      method: 'POST',
+      body: {'user_id': userId},
+    );
   }
 
   // 获取帖子评论（传 viewer 才能返回准确的 is_liked）
@@ -823,8 +1006,7 @@ class ApiService {
   }) async {
     final parts = <String>[];
     if (viewerUserId != null && viewerUserId.isNotEmpty) {
-      parts.add(
-          'viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}');
+      parts.add('viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}');
     }
     final q = parts.isEmpty ? '' : '?${parts.join('&')}';
     final result = await _request('/api/posts/$postId/comments$q');
@@ -849,10 +1031,57 @@ class ApiService {
 
   // ========== 用户信息管理相关API ==========
 
-  // 获取用户信息
+  static bool _isTransientUserInfoFailure(Object e) {
+    if (e is SocketException) return true;
+    if (e is http.ClientException) return true;
+    if (e is TimeoutException) return true;
+    if (e is! ApiException) return false;
+    final c = e.code;
+    if (c == 502 || c == 503 || c == 504) return true;
+    if (c == 500) return true;
+    final m = e.message;
+    if (m.contains('无法连接') ||
+        m.contains('服务器暂时') ||
+        m.contains('空响应') ||
+        m.contains('超时') ||
+        m.contains('网络请求')) {
+      return true;
+    }
+    if (c == 401 || m.contains('登录已过期') || m.contains('重新登录')) {
+      return false;
+    }
+    return false;
+  }
+
+  // 获取用户信息（带短暂失败重试，减轻隧道/弱网间歇性失败）
   static Future<User> getUserInfo(String userId) async {
-    final result = await _request('/api/user/$userId');
-    return User.fromJson(result['data']);
+    if (userId.isEmpty) {
+      throw ApiException('用户 ID 无效', 400);
+    }
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        final result = await _request('/api/user/$userId');
+        final data = result['data'];
+        if (data is! Map<String, dynamic>) {
+          throw ApiException('用户信息格式异常', 500);
+        }
+        return User.fromJson(data);
+      } catch (e, st) {
+        if (kDebugMode) {
+          debugPrint('getUserInfo attempt ${attempt + 1}/3 failed: $e\n$st');
+        }
+        if (attempt < 2 && _isTransientUserInfoFailure(e)) {
+          _log('⚠️ getUserInfo 短暂失败，${attempt + 2}/3 次重试…');
+          await Future<void>.delayed(
+            Duration(milliseconds: 400 * (attempt + 1)),
+          );
+          continue;
+        }
+        rethrow;
+      }
+    }
+    // 不可达：循环内要么 return 要么 rethrow；保留以满足静态返回类型
+    throw ApiException('获取用户信息失败', 503);
   }
 
   // 更新用户信息
@@ -867,6 +1096,9 @@ class ApiService {
     List<String>? inventory,
     String? equippedFrameId,
     bool clearEquippedFrame = false,
+
+    /// 私信服务端保留策略：`auto` | `7` | `30`
+    String? messageRetention,
   }) async {
     final body = <String, dynamic>{};
 
@@ -877,6 +1109,9 @@ class ApiService {
     if (gender != null) body['gender'] = gender;
     if (birthday != null) body['birthday'] = birthday;
     if (inventory != null) body['inventory'] = jsonEncode(inventory);
+    if (messageRetention != null && messageRetention.isNotEmpty) {
+      body['message_retention'] = messageRetention;
+    }
 
     if (clearEquippedFrame) {
       body['clear_equipped_frame'] = true;
@@ -887,6 +1122,100 @@ class ApiService {
     final result =
         await _request('/api/user/$userId', method: 'PUT', body: body);
     return User.fromJson(result['data']);
+  }
+
+  /// 拉取与指定用户的私信历史（JWT）。`data` 为时间正序；`has_more` 表示是否还有更早消息。
+  static Future<({List<PrivateMessageItem> items, bool hasMore})>
+      listPrivateMessages({
+    required String peerUserId,
+    String? beforeId,
+    int limit = 30,
+  }) async {
+    final peer = peerUserId.trim();
+    if (peer.isEmpty) {
+      throw ApiException('peer_user_id 不能为空', 400);
+    }
+    final lim = limit.clamp(1, 100);
+    final q = <String, String>{
+      'peer_user_id': peer,
+      'limit': '$lim',
+    };
+    if (beforeId != null && beforeId.isNotEmpty) {
+      q['before_id'] = beforeId;
+    }
+    // 必须用 path + queryParameters：若写成 '/api/x?${Uri(queryParameters:)}'，
+    // Uri.toString() 自带前导 `?`，会得到 `??peer_user_id=...`，后端解析不到 peer_user_id。
+    final path =
+        Uri(path: '/api/private-messages', queryParameters: q).toString();
+    final result = await _request(path);
+    final raw = result['data'];
+    final list = <PrivateMessageItem>[];
+    if (raw is List) {
+      for (final e in raw) {
+        if (e is Map<String, dynamic>) {
+          list.add(PrivateMessageItem.fromJson(e));
+        }
+      }
+    }
+    final hasMore = result['has_more'] == true;
+    return (items: list, hasMore: hasMore);
+  }
+
+  /// 会话列表（服务端聚合）：返回每个会话的对端信息、最后一条消息和未读数。
+  static Future<
+      ({
+        List<PrivateConversationItem> items,
+        int total,
+        bool hasMore,
+      })> listPrivateConversations({
+    int limit = 30,
+    int offset = 0,
+  }) async {
+    final lim = limit.clamp(1, 200);
+    final off = offset < 0 ? 0 : offset;
+    final path = '/api/private-messages/conversations?limit=$lim&offset=$off';
+    final result = await _request(path);
+    final raw = result['data'];
+    final list = <PrivateConversationItem>[];
+    if (raw is List) {
+      for (final e in raw) {
+        if (e is Map<String, dynamic>) {
+          list.add(PrivateConversationItem.fromJson(e));
+        }
+      }
+    }
+    final totalRaw = result['total'];
+    final total = totalRaw is int
+        ? totalRaw
+        : (totalRaw is num ? totalRaw.toInt() : list.length);
+    final hasMore = result['has_more'] == true;
+    return (items: list, total: total, hasMore: hasMore);
+  }
+
+  /// 发送私信：服务端写入 `private_messages` 并向对端推送 WS（离线则写通知）。
+  static Future<PrivateMessageItem> sendPrivateMessage({
+    required String receiverId,
+    required String body,
+    List<String>? imagePaths,
+  }) async {
+    final rid = receiverId.trim();
+    if (rid.isEmpty) {
+      throw ApiException('receiver_id 不能为空', 400);
+    }
+    final map = <String, dynamic>{
+      'receiver_id': rid,
+      'body': body,
+    };
+    if (imagePaths != null && imagePaths.isNotEmpty) {
+      map['image_paths'] = imagePaths;
+    }
+    final result =
+        await _request('/api/private-messages', method: 'POST', body: map);
+    final data = result['data'];
+    if (data is! Map<String, dynamic>) {
+      throw ApiException('发送失败：响应格式错误', 500);
+    }
+    return PrivateMessageItem.fromJson(data);
   }
 
   // 更新用户密码
@@ -986,6 +1315,26 @@ class ApiService {
     return {
       'orders': orders,
       'total': result['total'] as int,
+    };
+  }
+
+  /// 礼物购买订单（用心意余额购买进背包）
+  static Future<Map<String, dynamic>> getGiftPurchaseOrders(String userId,
+      {int page = 1, int pageSize = 20}) async {
+    final result = await _request(
+      '/api/user/$userId/gifts/purchase-orders?page=$page&page_size=$pageSize',
+    );
+    final raw = result['data'];
+    final list = raw is List
+        ? raw
+            .whereType<Map>()
+            .map(
+                (e) => GiftPurchaseOrder.fromJson(Map<String, dynamic>.from(e)))
+            .toList()
+        : <GiftPurchaseOrder>[];
+    return {
+      'orders': list,
+      'total': (result['total'] as num?)?.toInt() ?? list.length,
     };
   }
 
@@ -1113,7 +1462,9 @@ class ApiService {
 
     Future<Map<String, dynamic>> doUpload(http.Client client) async {
       final request = http.MultipartRequest('POST', uri);
-      request.headers['Connection'] = 'close';
+      if (!kIsWeb) {
+        request.headers['Connection'] = 'close';
+      }
       request.headers.addAll(tunnelBypassHeadersForUrl(baseUrl));
       final token = _currentToken;
       if (token != null && token.isNotEmpty) {
@@ -1127,9 +1478,8 @@ class ApiService {
         ),
       );
       _log('📤 Upload bytes: len=${bytes.length} uri=$uri');
-      final streamedResponse = await client
-          .send(request)
-          .timeout(const Duration(seconds: 90));
+      final streamedResponse =
+          await client.send(request).timeout(const Duration(seconds: 90));
       final response = await http.Response.fromStream(streamedResponse);
       if (response.statusCode == 200) {
         final result = json.decode(response.body) as Map<String, dynamic>;
@@ -1142,7 +1492,8 @@ class ApiService {
       if (response.statusCode == 413) {
         throw ApiException('图片太大，上传被拒绝(413)', 413);
       }
-      throw ApiException('上传失败，状态码：${response.statusCode}', response.statusCode);
+      throw ApiException(
+          '上传失败，状态码：${response.statusCode}', response.statusCode);
     }
 
     try {
@@ -1170,7 +1521,9 @@ class ApiService {
       final request = http.MultipartRequest('POST', uri);
 
       // 避免某些隧道/代理对 keep-alive 连接的复用导致 Broken pipe
-      request.headers['Connection'] = 'close';
+      if (!kIsWeb) {
+        request.headers['Connection'] = 'close';
+      }
       request.headers.addAll(tunnelBypassHeadersForUrl(baseUrl));
 
       // 添加认证令牌
@@ -1190,9 +1543,8 @@ class ApiService {
       _log('📤 Upload image: size=$length bytes, uri=$uri');
 
       // 发送请求（超时保护：cpolar/网络抖动时避免无限挂起）
-      final streamedResponse = await client
-          .send(request)
-          .timeout(const Duration(seconds: 90));
+      final streamedResponse =
+          await client.send(request).timeout(const Duration(seconds: 90));
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
@@ -1208,7 +1560,8 @@ class ApiService {
       if (response.statusCode == 413) {
         throw ApiException('图片太大，上传被拒绝(413)，请降低拍照分辨率/压缩后再试', 413);
       }
-      throw ApiException('上传失败，状态码：${response.statusCode}', response.statusCode);
+      throw ApiException(
+          '上传失败，状态码：${response.statusCode}', response.statusCode);
     }
 
     // 尝试上传；遇到 Broken pipe/连接被重置，自动重试一次
@@ -1305,10 +1658,73 @@ class ApiService {
 
   static Future<List<User>> getFriends(String userId) async {
     final result = await _request('/api/user/$userId/friends');
-    final list = result['data'] as List<dynamic>;
-    return list
-        .map((e) => User.fromJson(e as Map<String, dynamic>))
+    final raw = result['data'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((e) => User.fromJson(Map<String, dynamic>.from(e)))
         .toList();
+  }
+
+  /// GET `/api/gifts` — 礼物商城（可选 [viewerUserId] 带上背包 `owned_quantity`）
+  static Future<List<Map<String, dynamic>>> getGifts({
+    int page = 1,
+    int pageSize = 50,
+    String? viewerUserId,
+  }) async {
+    final q = <String>[
+      'page=$page',
+      'page_size=$pageSize',
+    ];
+    if (viewerUserId != null && viewerUserId.isNotEmpty) {
+      q.add('user_id=${Uri.encodeQueryComponent(viewerUserId)}');
+    }
+    final result = await _request(
+      '/api/gifts?${q.join('&')}',
+      method: 'GET',
+    );
+    final raw = result['data'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  /// POST `/api/user/:user_id/gifts/send`
+  static Future<void> sendGift({
+    required String fromUserId,
+    required String toUserId,
+    required String giftId,
+    int quantity = 1,
+    String message = '',
+  }) async {
+    await _request(
+      '/api/user/$fromUserId/gifts/send',
+      method: 'POST',
+      body: {
+        'to_user_id': toUserId,
+        'gift_id': giftId,
+        'quantity': quantity,
+        if (message.trim().isNotEmpty) 'message': message.trim(),
+      },
+    );
+  }
+
+  /// POST `/api/user/:user_id/gifts/purchase` — 用心意（余额）购买，增加背包数量
+  static Future<Map<String, dynamic>> purchaseGift({
+    required String userId,
+    required String giftId,
+    int quantity = 1,
+  }) async {
+    return await _request(
+      '/api/user/$userId/gifts/purchase',
+      method: 'POST',
+      body: {
+        'gift_id': giftId,
+        'quantity': quantity,
+      },
+    );
   }
 
   static Future<void> sendFriendRequestByMoeNo(
@@ -1325,32 +1741,31 @@ class ApiService {
 
   static Future<List<Map<String, dynamic>>> getIncomingFriendRequests(
       String userId) async {
-    final result =
-        await _request('/api/user/$userId/friend-requests/incoming');
-    final list = result['data'] as List<dynamic>;
-    return list.map((e) => e as Map<String, dynamic>).toList();
+    final result = await _request('/api/user/$userId/friend-requests/incoming');
+    final raw = result['data'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
   }
 
   static Future<void> acceptFriendRequest(
       String userId, String requestId) async {
-    await _request(
-        '/api/user/$userId/friend-requests/$requestId/accept',
-        method: 'POST',
-        body: <String, dynamic>{});
+    await _request('/api/user/$userId/friend-requests/$requestId/accept',
+        method: 'POST', body: <String, dynamic>{});
   }
 
   static Future<void> rejectFriendRequest(
       String userId, String requestId) async {
-    await _request(
-        '/api/user/$userId/friend-requests/$requestId/reject',
-        method: 'POST',
-        body: <String, dynamic>{});
+    await _request('/api/user/$userId/friend-requests/$requestId/reject',
+        method: 'POST', body: <String, dynamic>{});
   }
 
   static Future<String> getFriendRelation(
       String userId, String otherUserId) async {
-    final result = await _request(
-        '/api/user/$userId/friends/status/$otherUserId');
+    final result =
+        await _request('/api/user/$userId/friends/status/$otherUserId');
     final data = result['data'] as Map<String, dynamic>;
     return data['relation'] as String;
   }
@@ -1359,8 +1774,7 @@ class ApiService {
 
   /// 执行每日签到
   static Future<CheckInData> checkIn(String userId) async {
-    final result = await _request('/api/user/$userId/check-in',
-        method: 'POST');
+    final result = await _request('/api/user/$userId/check-in', method: 'POST');
     return CheckInData.fromJson(result['data']);
   }
 
@@ -1404,5 +1818,82 @@ class ApiService {
       'logs': logs,
       'total': result['total'] as int,
     };
+  }
+
+  // ========== 登录历史和设备管理相关API ==========
+
+  // 获取登录历史
+  static Future<List<Map<String, dynamic>>> getLoginHistory(String userId,
+      {int page = 1, int pageSize = 10}) async {
+    final result = await _request(
+        '/api/user/$userId/login-history?page=$page&page_size=$pageSize');
+    final historyJson = result['data'] as List;
+    return historyJson.map((json) => json as Map<String, dynamic>).toList();
+  }
+
+  // 获取登录设备列表
+  static Future<List<Map<String, dynamic>>> getLoginDevices(
+      String userId) async {
+    final result = await _request('/api/user/$userId/devices');
+    final devicesJson = result['data'] as List;
+    return devicesJson.map((json) => json as Map<String, dynamic>).toList();
+  }
+
+  // 登出指定设备
+  static Future<void> logoutDevice(String userId, String deviceId) async {
+    await _request('/api/user/$userId/devices/$deviceId/logout',
+        method: 'POST');
+  }
+
+  // 更新设备信息
+  static Future<Map<String, dynamic>> updateDeviceInfo(
+    String userId, {
+    String? deviceName,
+    String? deviceType,
+  }) async {
+    final body = <String, dynamic>{};
+    if (deviceName != null) body['device_name'] = deviceName;
+    if (deviceType != null) body['device_type'] = deviceType;
+
+    final result = await _request('/api/user/$userId/device-info',
+        method: 'PUT', body: body);
+    return result['data'] as Map<String, dynamic>;
+  }
+
+  // ========== 两步验证相关API ==========
+
+  // 启用两步验证
+  static Future<Map<String, dynamic>> enableTwoFactorAuth(String userId) async {
+    final result =
+        await _request('/api/user/$userId/2fa/enable', method: 'POST');
+    return result['data'] as Map<String, dynamic>;
+  }
+
+  // 验证两步验证码
+  static Future<Map<String, dynamic>> verifyTwoFactorCode(
+      String userId, String code) async {
+    final result = await _request('/api/user/$userId/2fa/verify',
+        method: 'POST', body: {'code': code});
+    return result['data'] as Map<String, dynamic>;
+  }
+
+  // 禁用两步验证
+  static Future<void> disableTwoFactorAuth(String userId, String code) async {
+    await _request('/api/user/$userId/2fa/disable',
+        method: 'POST', body: {'code': code});
+  }
+
+  // 获取两步验证状态
+  static Future<Map<String, dynamic>> getTwoFactorStatus(String userId) async {
+    final result = await _request('/api/user/$userId/2fa/status');
+    return result['data'] as Map<String, dynamic>;
+  }
+
+  // 重新生成两步验证密钥
+  static Future<Map<String, dynamic>> regenerateTwoFactorKey(
+      String userId, String code) async {
+    final result = await _request('/api/user/$userId/2fa/regenerate',
+        method: 'POST', body: {'code': code});
+    return result['data'] as Map<String, dynamic>;
   }
 }

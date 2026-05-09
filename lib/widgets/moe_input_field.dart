@@ -8,6 +8,10 @@ class MoeInputField extends StatefulWidget {
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
   final Color primaryColor;
+  final FocusNode? focusNode;
+  final TextInputAction? textInputAction;
+  final VoidCallback? onEditingComplete;
+  final AutovalidateMode? autovalidateMode;
 
   const MoeInputField({
     super.key,
@@ -18,6 +22,10 @@ class MoeInputField extends StatefulWidget {
     this.validator,
     this.keyboardType,
     this.primaryColor = const Color(0xFF7F7FD5),
+    this.focusNode,
+    this.textInputAction,
+    this.onEditingComplete,
+    this.autovalidateMode,
   });
 
   @override
@@ -35,7 +43,7 @@ class _MoeInputFieldState extends State<MoeInputField> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: widget.primaryColor.withOpacity(0.08),
+            color: widget.primaryColor.withValues(alpha: 0.08),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -43,14 +51,20 @@ class _MoeInputFieldState extends State<MoeInputField> {
       ),
       child: TextFormField(
         controller: widget.controller,
+        focusNode: widget.focusNode,
+        autovalidateMode:
+            widget.autovalidateMode ?? AutovalidateMode.disabled,
         obscureText: widget.isPassword ? _obscurePassword : false,
         validator: widget.validator,
         keyboardType: widget.keyboardType,
+        textInputAction: widget.textInputAction ??
+            (widget.isPassword ? TextInputAction.done : TextInputAction.next),
+        onEditingComplete: widget.onEditingComplete,
         style: const TextStyle(color: Colors.black87),
         decoration: InputDecoration(
           hintText: widget.hintText,
           hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
-          prefixIcon: Icon(widget.icon, color: widget.primaryColor.withOpacity(0.6), size: 22),
+          prefixIcon: Icon(widget.icon, color: widget.primaryColor.withValues(alpha: 0.6), size: 22),
           suffixIcon: widget.isPassword
               ? IconButton(
                   icon: Icon(

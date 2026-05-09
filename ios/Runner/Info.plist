@@ -47,6 +47,10 @@
 	<string>我们需要访问您的麦克风以进行语音通话</string>
 	<key>NSCameraUsageDescription</key>
 	<string>我们需要访问您的摄像头以进行远程监控和拍摄</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>我们需要保存二维码图片到您的相册</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>我们需要访问您的相册以选择并识别二维码图片</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>我们需要访问您的位置信息以获取网络状态和定位</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

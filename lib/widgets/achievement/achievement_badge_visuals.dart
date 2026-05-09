@@ -4,6 +4,8 @@ import '../../models/achievement_badge.dart';
 /// 成就 ID → 个性化图标（替代列表里单纯 emoji 展示）
 IconData achievementIconForId(String id) {
   switch (id) {
+    case 'welcome_aboard':
+      return Icons.waving_hand_rounded;
     case 'first_post':
       return Icons.eco_rounded;
     case 'post_master':
@@ -24,6 +26,10 @@ IconData achievementIconForId(String id) {
       return Icons.nights_stay_rounded;
     case 'loyal_user':
       return Icons.verified_rounded;
+    case 'daily_task_keeper':
+      return Icons.event_available_rounded;
+    case 'weekly_task_keeper':
+      return Icons.date_range_rounded;
     case 'vip_member':
       return Icons.diamond_rounded;
     case 'trendsetter':

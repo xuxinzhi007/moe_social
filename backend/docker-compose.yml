@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  rpc:
+    build:
+      context: .
+      dockerfile: Dockerfile.rpc
+    container_name: moe-social-rpc
+    ports:
+      - "8080:8080"
+    networks:
+      - moe-network
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: moe-social-api
+    ports:
+      - "8888:8888"
+    depends_on:
+      - rpc
+    volumes:
+      - /root/gowork/moe_images:/app/data/images
+    networks:
+      - moe-network
+    restart: unless-stopped
+
+networks:
+  moe-network:
+    driver: bridge

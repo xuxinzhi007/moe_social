@@ -75,37 +75,40 @@ class TrendingTopics extends StatelessWidget {
   }
 
   Widget _buildTopicChip(TopicTag topic) {
-    return InkWell(
-      onTap: () => onTopicTap(topic),
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: topic.color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: topic.color.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.tag,
-              size: 14,
-              color: topic.color,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => onTopicTap(topic),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: topic.color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: topic.color.withOpacity(0.3),
+              width: 1,
             ),
-            const SizedBox(width: 4),
-            Text(
-              topic.name,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.tag,
+                size: 14,
                 color: topic.color,
               ),
-            ),
-          ],
+              const SizedBox(width: 4),
+              Text(
+                topic.name,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: topic.color,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

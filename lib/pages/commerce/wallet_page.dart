@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:moe_social/auth_service.dart';
 import 'package:moe_social/services/api_service.dart';
 import 'package:moe_social/pages/commerce/recharge_page.dart';
+import 'package:moe_social/pages/commerce/order_center_page.dart';
 import '../../widgets/fade_in_up.dart'; // 恢复导入
 import '../../widgets/moe_toast.dart';
 
@@ -151,6 +152,20 @@ class _WalletPageState extends State<WalletPage> {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
+        actions: [
+          TextButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (context) => const OrderCenterPage(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.receipt_long_outlined, size: 20, color: Color(0xFF7F7FD5)),
+            label: const Text('订单', style: TextStyle(color: Color(0xFF7F7FD5))),
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _refresh,

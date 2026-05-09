@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/post.dart';
@@ -9,17 +10,24 @@ import '../widgets/avatar_image.dart';
 import '../widgets/network_image.dart';
 import '../widgets/topic_tag_selector.dart';
 import '../widgets/like_button.dart';
-import '../widgets/moe_bouncing_button.dart';
+import '../widgets/moe_toast.dart';
+
 import '../widgets/post_image_viewer.dart';
 import '../widgets/hand_draw/hand_draw_card_view.dart';
+import 'moe_loading.dart';
 import '../utils/media_url.dart';
+import '../utils/post_navigation.dart';
 
-class PostCard extends StatelessWidget {
+class PostCard extends StatefulWidget {
   final Post post;
   final VoidCallback? onLike;
   final VoidCallback? onComment;
   final VoidCallback? onShare;
   final VoidCallback? onAvatarTap;
+  /// 作者编辑回调（非作者时不传，菜单项自动隐藏）。
+  final VoidCallback? onEdit;
+  /// 作者删除回调（非作者时不传，菜单项自动隐藏）。传入后由外层处理 UI 刷新。
+  final VoidCallback? onDelete;
   /// Hero 标签命名空间前缀。
   /// 在同一 Navigator 栈中若有多个页面都渲染 PostCard（如首页 + 用户主页），
   /// 必须传入不同的前缀，否则 Hero 标签重复会导致头像消失、无法点击。
@@ -33,11 +41,22 @@ class PostCard extends StatelessWidget {
     this.onComment,
     this.onShare,
     this.onAvatarTap,
+    this.onEdit,
+    this.onDelete,
     this.heroTagPrefix = '',
   });
 
   @override
+  State<PostCard> createState() => _PostCardState();
+}
+
+class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final theme = Theme.of(context);
     final primaryColor = theme.primaryColor;
     final secondaryColor = theme.colorScheme.secondary;
@@ -68,9 +87,9 @@ class PostCard extends StatelessWidget {
               Row(
                 children: [
                   GestureDetector(
-                    onTap: onAvatarTap,
+                    onTap: widget.onAvatarTap,
                     child: Hero(
-                      tag: '${heroTagPrefix}avatar_${post.id}',
+                      tag: '${widget.heroTagPrefix}avatar_${widget.post.id}',
                       child: Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
@@ -95,7 +114,7 @@ class PostCard extends StatelessWidget {
                             color: theme.scaffoldBackgroundColor, // 适配暗黑模式
                           ),
                           child: NetworkAvatarImage(
-                            imageUrl: post.userAvatar,
+                            imageUrl: widget.post.userAvatar,
                             radius: 22,
                             placeholderIcon: Icons.person,
                           ),
@@ -109,7 +128,7 @@ class PostCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          post.userName,
+                          widget.post.userName,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -117,7 +136,7 @@ class PostCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          _formatTime(post.createdAt),
+                          _formatTime(widget.post.createdAt),
                           style: TextStyle(
                             color: theme.textTheme.bodySmall?.color ?? Colors.grey[400],
                             fontSize: 12,
@@ -128,6 +147,7 @@ class PostCard extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: () {
+                      final isAuthor = widget.post.userId == (AuthService.currentUser ?? '');
                       showModalBottomSheet(
                         context: context,
                         backgroundColor: Colors.transparent,
@@ -149,10 +169,37 @@ class PostCard extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(2),
                                   ),
                                 ),
+                                // 作者专属：编辑与删除
+                                if (isAuthor && widget.onEdit != null)
+                                  ListTile(
+                                    leading: const Icon(Icons.edit_rounded, color: Color(0xFF7F7FD5)),
+                                    title: const Text('编辑动态'),
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      widget.onEdit!();
+                                    },
+                                  ),
+                                if (isAuthor && widget.onDelete != null)
+                                  ListTile(
+                                    leading: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                                    title: const Text('删除动态', style: TextStyle(color: Colors.redAccent)),
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      _confirmDelete(context, widget.post, widget.onDelete!);
+                                    },
+                                  ),
+                                if (isAuthor && (widget.onEdit != null || widget.onDelete != null))
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                                    child: Divider(height: 1, color: Colors.grey.withOpacity(0.15)),
+                                  ),
                                 ListTile(
                                   leading: const Icon(Icons.link_rounded, color: Color(0xFF7F7FD5)),
                                   title: const Text('复制链接'),
-                                  onTap: () => Navigator.pop(context),
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    _copyPostLink(context, widget.post);
+                                  },
                                 ),
                                 ListTile(
                                   leading: const Icon(Icons.visibility_off_rounded, color: Colors.orange),
@@ -164,7 +211,7 @@ class PostCard extends StatelessWidget {
                                   title: const Text('举报'),
                                   onTap: () {
                                     Navigator.pop(context);
-                                    _showReportDialog(context, post);
+                                    _showReportDialog(context, widget.post);
                                   },
                                 ),
                                 const SizedBox(height: 8),
@@ -181,7 +228,7 @@ class PostCard extends StatelessWidget {
               const SizedBox(height: 12),
 
               // 帖子正文（手绘数据已内嵌在 content 中，展示时剥离）
-              if (post.isPendingModeration)
+              if (widget.post.isPendingModeration)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Align(
@@ -197,28 +244,28 @@ class PostCard extends StatelessWidget {
                   ),
                 ),
 
-              if (post.displayCaption.isNotEmpty)
+              if (widget.post.displayCaption.isNotEmpty)
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: _renderContentWithEmojis(context, post.displayCaption),
+                  child: _renderContentWithEmojis(context, widget.post.displayCaption),
                 ),
 
-              if (post.handDrawThumbUrl.isNotEmpty) ...[
-                if (post.displayCaption.isNotEmpty) const SizedBox(height: 4),
+              if (widget.post.handDrawThumbUrl.isNotEmpty) ...[
+                if (widget.post.displayCaption.isNotEmpty) const SizedBox(height: 4),
                 _HandDrawThumbnail(
-                  post: post,
+                  post: widget.post,
                   onOpenReplay: () =>
-                      _openHandDrawViewer(context, post),
+                      _openHandDrawViewer(context, widget.post),
                 ),
-              ] else if (post.handDrawCard != null) ...[
-                if (post.displayCaption.isNotEmpty) const SizedBox(height: 4),
+              ] else if (widget.post.handDrawCard != null) ...[
+                if (widget.post.displayCaption.isNotEmpty) const SizedBox(height: 4),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxHeight: 340),
                   child: HandDrawCardReplay(
-                    data: post.handDrawCard!,
+                    data: widget.post.handDrawCard!,
                     autoPlay: false,
                     duration: Duration(
-                      milliseconds: (1600 + post.handDrawCard!.strokes.length * 35)
+                      milliseconds: (1600 + widget.post.handDrawCard!.strokes.length * 35)
                           .clamp(1200, 3800),
                     ),
                   ),
@@ -226,7 +273,7 @@ class PostCard extends StatelessWidget {
                 Align(
                   alignment: Alignment.center,
                   child: TextButton.icon(
-                    onPressed: () => _openHandDrawViewer(context, post),
+                    onPressed: () => _openHandDrawViewer(context, widget.post),
                     icon: const Icon(Icons.fullscreen_rounded, size: 20),
                     label: const Text('全屏回放绘画过程'),
                   ),
@@ -234,12 +281,12 @@ class PostCard extends StatelessWidget {
               ],
 
               // 话题标签
-              if (post.topicTags.isNotEmpty) ...[
+              if (widget.post.topicTags.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
                   runSpacing: 6,
-                  children: post.topicTags
+                  children: widget.post.topicTags
                       .map((tag) => TopicTagDisplay(
                             tag: tag,
                             fontSize: 12,
@@ -260,9 +307,9 @@ class PostCard extends StatelessWidget {
               const SizedBox(height: 12),
 
               // 帖子图片
-              if (post.images.isNotEmpty) ...[
+              if (widget.post.images.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                _buildImageGrid(context, post.images, post.id),
+                _buildImageGrid(context, widget.post.images, widget.post.id),
               ],
 
               const SizedBox(height: 20),
@@ -278,20 +325,24 @@ class PostCard extends StatelessWidget {
                 children: [
                   ValueListenableBuilder<bool>(
                     valueListenable: LikeStateManager().getStatusNotifier(
-                      post.id,
-                      initialValue: post.isLiked,
+                      widget.post.id,
+                      initialValue: widget.post.isLiked,
                     ),
                     builder: (context, isLiked, _) {
                       return ValueListenableBuilder<int>(
                         valueListenable: LikeStateManager().getCountNotifier(
-                          post.id,
-                          initialValue: post.likes,
+                          widget.post.id,
+                          initialValue: widget.post.likes,
                         ),
                         builder: (context, likeCount, _) {
                           return LikeButton(
+                            postId: widget.post.id,
+                            userId: AuthService.currentUser ?? '',
                             isLiked: isLiked,
                             likeCount: likeCount,
-                            onTap: onLike ?? () {},
+                            onLikeChanged: (liked, count) {
+                              widget.onLike?.call();
+                            },
                           );
                         },
                       );
@@ -300,14 +351,17 @@ class PostCard extends StatelessWidget {
                   _buildActionButton(
                       context,
                       icon: Icons.chat_bubble_outline_rounded,
-                      count: post.comments,
-                      onTap: onComment ?? () {}),
+                      count: widget.post.comments,
+                      onTap: widget.onComment ??
+                          () {
+                            openPostDetail(context, widget.post);
+                          }),
                   _buildActionButton(
                       context,
                       icon: Icons.share_rounded,
                       label: '分享',
-                      onTap: onShare ?? () {
-                        _handleShare(post);
+                      onTap: widget.onShare ?? () {
+                        _handleShare(widget.post);
                       }),
                 ],
               ),
@@ -318,15 +372,54 @@ class PostCard extends StatelessWidget {
     );
   }
 
+  static void _copyPostLink(BuildContext context, Post post) {
+    final link = 'moe://post/${post.id}';
+    Clipboard.setData(ClipboardData(text: link));
+    MoeToast.success(context, '链接已复制到剪贴板');
+  }
+
+  static void _confirmDelete(BuildContext context, Post post, VoidCallback onConfirmed) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('删除动态', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('确定要删除这条动态吗？此操作无法撤销。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              onConfirmed();
+            },
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+  }
+
   static void _handleShare(Post post) {
     final body = post.displayCaption.isEmpty && post.handDrawCard != null
         ? '[手绘卡片]'
         : post.displayCaption;
+    final link = 'moe://post/${post.id}';
     final shareText = '''${post.userName} 的动态：
 
 $body
 
-#萌社 ${post.topicTags.isNotEmpty ? post.topicTags.map((t) => '#${t.name}').join(' ') : ''}''';
+#萌社 ${post.topicTags.isNotEmpty ? post.topicTags.map((t) => '#${t.name}').join(' ') : ''}
+
+$link''';
 
     Share.share(
       shareText,
@@ -374,14 +467,7 @@ $body
       BuildContext context, Post post, String reason) async {
     final uid = AuthService.currentUser;
     if (uid == null || uid.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('请先登录后再举报'),
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+      MoeToast.error(context, '请先登录后再举报');
       return;
     }
     try {
@@ -391,27 +477,10 @@ $body
         reason: reason,
       );
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('已提交「$reason」举报，感谢反馈'),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      MoeToast.success(context, '已提交「$reason」举报，感谢反馈');
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('举报失败：$e'),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+      MoeToast.error(context, '举报失败：$e');
     }
   }
 
@@ -463,12 +532,12 @@ $body
             context,
             imageUrls: images,
             postId: postId,
-            heroTagPrefix: heroTagPrefix,
+            heroTagPrefix: widget.heroTagPrefix,
             initialIndex: 0,
           );
         },
         child: Hero(
-          tag: '${heroTagPrefix}post_img_${postId}_0',
+          tag: '${widget.heroTagPrefix}post_img_${postId}_0',
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: NetworkImageWidget(
@@ -503,12 +572,12 @@ $body
                     context,
                     imageUrls: images,
                     postId: postId,
-                    heroTagPrefix: heroTagPrefix,
+                    heroTagPrefix: widget.heroTagPrefix,
                     initialIndex: index,
                   );
                 },
                 child: Hero(
-                  tag: '${heroTagPrefix}post_img_${postId}_$index',
+                  tag: '${widget.heroTagPrefix}post_img_${postId}_$index',
                   child: NetworkImageWidget(
                     imageUrl: images[index],
                     width: itemSize,
@@ -763,8 +832,10 @@ void _openHandDrawViewer(BuildContext context, Post post) {
                     width: 200,
                     height: 280,
                     child: Center(
-                      child: CircularProgressIndicator(
-                          color: Colors.white54),
+                      child: MoeSmallLoading(
+                        color: Colors.white70,
+                        size: 28,
+                      ),
                     ),
                   ),
                   errorWidget: (_, __, ___) => const Icon(

@@ -48,6 +48,7 @@ func (l *CreateVipOrderLogic) CreateVipOrder(req *types.CreateVipOrderReq) (resp
 			Status:    rpcResp.Order.Status,
 			CreatedAt: rpcResp.Order.CreatedAt,
 			PaidAt:    rpcResp.Order.PaidAt,
+			OrderNo:   rpcResp.Order.OrderNo,
 		},
 	}, nil
 }

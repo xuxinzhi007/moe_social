@@ -57,11 +57,12 @@ class NetworkAvatarImage extends StatelessWidget {
   Widget _buildPlaceholder() {
     return CircleAvatar(
       radius: radius,
-      backgroundColor: backgroundColor ?? Colors.grey[300],
+      backgroundColor: backgroundColor ?? Colors.grey[200],
+      foregroundColor: placeholderColor ?? Colors.grey[400],
       child: Icon(
         placeholderIcon,
         size: radius,
-        color: placeholderColor ?? Colors.grey[600],
+        color: placeholderColor ?? Colors.grey[500],
       ),
     );
   }

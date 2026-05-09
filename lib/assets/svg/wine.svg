@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="wine-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD54F;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFA000;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <path d="M28 20L36 20L38 32L34 48L30 48L26 32Z" fill="url(#wine-gradient)" />
+  <rect x="30" y="48" width="4" height="12" fill="#8D6E63" />
+  <path d="M26 16L40 16L38 20L26 20Z" fill="#E0E0E0" />
+  <path d="M28 12L36 12L38 16L26 16Z" fill="#BDBDBD" />
+  <path d="M32 4L32 12" stroke="#FFD54F" stroke-width="2" stroke-linecap="round" />
+  <circle cx="32" cy="4" r="2" fill="#FFD54F" />
+  <path d="M30 8L34 8" stroke="#FFD54F" stroke-width="2" stroke-linecap="round" />
+  <path d="M29 10L35 10" stroke="#FFD54F" stroke-width="2" stroke-linecap="round" />
+</svg>

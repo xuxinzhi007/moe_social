@@ -1,15 +1,17 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
+import '../../auth_service.dart';
 import '../../models/ai_agent.dart';
-import '../../models/ai_memory.dart';
-import '../../models/ai_memory_profile.dart';
-import '../../models/ai_memory_settings.dart';
-import '../../services/ai_db_service.dart';
+import '../../models/user_memory.dart';
+import '../../models/user_memory_profile.dart';
+import '../../services/api_service.dart';
 import '../../services/llm_endpoint_config.dart';
-import '../../services/memory_agent_service.dart';
+import '../../services/memory_service.dart';
+import '../../widgets/moe_toast.dart';
 
 class MemoryManagerPage extends StatefulWidget {
   final AiAgent agent;
@@ -21,23 +23,14 @@ class MemoryManagerPage extends StatefulWidget {
 }
 
 class _MemoryManagerPageState extends State<MemoryManagerPage> {
-  List<AiMemory> _memories = [];
-  List<AiMemoryProfile> _profiles = [];
-  AiMemorySettings? _settings;
-  List<String> _models = [];
+  List<UserMemory> _memories = [];
+  List<UserMemoryProfile> _profiles = [];
+  Map<String, dynamic>? _llmConfig;
+  bool _terminalModeEnabled = false;
   bool _isLoading = true;
-  bool _isSavingSettings = false;
-  bool _isCurating = false;
-  String _filterCategory = 'all';
-
-  final _categories = [
-    ('all', '全部', '📋'),
-    ('preference', '偏好', '❤️'),
-    ('habit', '习惯', '🔄'),
-    ('reminder', '提醒', '⏰'),
-    ('personal', '个人信息', '👤'),
-    ('general', '一般', '📝'),
-  ];
+  bool _isBuildingPrompt = false;
+  bool _showFullPrompt = false;
+  String _promptPreview = '';
 
   @override
   void initState() {
@@ -47,88 +40,102 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
-    final db = AiDbService();
-    final memoryAgent = MemoryAgentService();
-    final list = await db.getMemories(widget.agent.id);
-    final profiles = await db.getMemoryProfiles(widget.agent.id);
-    final settings = await memoryAgent.getOrCreateSettings(widget.agent);
-    final models = await _loadModels();
-    if (mounted) {
-      setState(() {
-        _memories = list;
-        _profiles = profiles;
-        _settings = settings;
-        _models = models;
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<List<String>> _loadModels() async {
     try {
-      final uri = await LlmEndpointConfig.modelsUri();
-      final response = await http.get(uri).timeout(const Duration(seconds: 10));
-      if (response.statusCode != 200) return [widget.agent.modelName];
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
-      if (data is Map && data['models'] is List) {
-        final raw = data['models'] as List;
-        final list = raw.whereType<String>().isNotEmpty
-            ? raw.whereType<String>().toList()
-            : raw
-                .whereType<Map>()
-                .map((m) => m['name'])
-                .whereType<String>()
-                .toList();
-        if (list.isNotEmpty) return list;
+      final user = await AuthService.getUserInfo();
+      final paged = await MemoryService.getUserMemoriesPaged(user.id,
+          limit: 100, offset: 0);
+      final memories = (paged['items'] as List<UserMemory>? ?? const []);
+      memories.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      final profiles = await MemoryService.getUserMemoryProfiles(user.id);
+      final terminal = await LlmEndpointConfig.isTerminalModeEnabled();
+      final llmConfig = await _loadLlmConfig();
+      final preview = _buildPromptPreview(memories);
+      if (mounted) {
+        setState(() {
+          _memories = memories;
+          _profiles = profiles;
+          _terminalModeEnabled = terminal;
+          _llmConfig = llmConfig;
+          _promptPreview = preview;
+          _isLoading = false;
+        });
       }
-    } catch (_) {}
-    return [widget.agent.modelName];
-  }
-
-  Future<void> _persistSettings(AiMemorySettings settings) async {
-    setState(() => _isSavingSettings = true);
-    await AiDbService().upsertMemorySettings(
-      settings.copyWith(updatedAt: DateTime.now()),
-    );
-    if (mounted) {
-      setState(() {
-        _settings = settings.copyWith(updatedAt: DateTime.now());
-        _isSavingSettings = false;
-      });
-    }
-  }
-
-  Future<void> _curateNow() async {
-    if (_isCurating) return;
-    setState(() => _isCurating = true);
-    try {
-      await MemoryAgentService().curateProfiles(agent: widget.agent);
-      await _load();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('记忆画像已重新整理')),
-      );
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('整理失败：$e')),
-      );
-    } finally {
-      if (mounted) setState(() => _isCurating = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      if (mounted) {
+        MoeToast.error(context, '加载失败：$e');
+      }
     }
   }
 
-  List<AiMemory> get _filtered {
-    if (_filterCategory == 'all') return _memories;
-    return _memories.where((m) => m.category == _filterCategory).toList();
+  Future<Map<String, dynamic>> _loadLlmConfig() async {
+    final uri = Uri.parse('${ApiService.baseUrl}/api/llm/config');
+    ApiService.logDirectHttp('GET', uri);
+    final response = await http
+        .get(
+          uri,
+          headers: ApiService.mergeTunnelHeaders(uri, headers: {
+            if (ApiService.token case final t?) 'Authorization': 'Bearer $t',
+          }),
+        )
+        .timeout(const Duration(seconds: 10));
+    if (response.statusCode != 200) return const {};
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    if (decoded is! Map || decoded['data'] is! Map) return const {};
+    return Map<String, dynamic>.from(decoded['data'] as Map);
   }
 
-  Future<void> _delete(AiMemory memory) async {
+  String _buildPromptPreview(List<UserMemory> memories) {
+    final base = widget.agent.systemPrompt.isNotEmpty
+        ? widget.agent.systemPrompt
+        : '你是一位友好、智能的 AI 助手。';
+    final lines = memories.take(8).map((m) {
+      final type =
+          (m.memoryType?.isNotEmpty == true) ? m.memoryType! : 'general';
+      return '- [$type] ${m.value}';
+    }).join('\n');
+    if (lines.isEmpty) {
+      return '$base\n\n（当前暂无可注入记忆）';
+    }
+    return '$base\n\n用户长期背景与偏好（后端注入示意）：\n$lines';
+  }
+
+  Future<void> _refreshPromptPreview({bool showLoading = true}) async {
+    if (showLoading && mounted) setState(() => _isBuildingPrompt = true);
+    try {
+      final user = await AuthService.getUserInfo();
+      final paged = await MemoryService.getUserMemoriesPaged(user.id,
+          limit: 100, offset: 0);
+      final memories = (paged['items'] as List<UserMemory>? ?? const []);
+      memories.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      final profiles = await MemoryService.getUserMemoryProfiles(user.id);
+      final prompt = _buildPromptPreview(memories);
+      if (mounted) {
+        setState(() {
+          _memories = memories;
+          _profiles = profiles;
+          _promptPreview = prompt;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        MoeToast.error(context, '刷新提示词失败：$e');
+      }
+    } finally {
+      if (showLoading && mounted) setState(() => _isBuildingPrompt = false);
+    }
+  }
+
+  Future<void> _delete(UserMemory memory) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('删除记忆'),
-        content: Text('确定要删除这条记忆吗？\n\n"${memory.content}"'),
+        content: Text('确定要删除这条记忆吗？\n\n"${memory.value}"'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -143,7 +150,7 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
       ),
     );
     if (confirmed == true) {
-      await AiDbService().deleteMemory(memory.id);
+      await MemoryService.deleteUserMemoryByKey(memory.userId, memory.key);
       await _load();
     }
   }
@@ -153,7 +160,8 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('清空所有记忆'),
-        content: Text('确定要清空「${widget.agent.name}」的所有 ${_memories.length} 条记忆吗？\n此操作不可撤销。'),
+        content: Text(
+            '确定要清空「${widget.agent.name}」的所有 ${_memories.length} 条记忆吗？\n此操作不可撤销。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -168,98 +176,35 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
       ),
     );
     if (confirmed == true) {
-      await AiDbService().clearMemories(widget.agent.id);
-      await _load();
-    }
-  }
-
-  Future<void> _addManually() async {
-    final controller = TextEditingController();
-    String selectedCategory = 'general';
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(builder: (ctx, setDlgState) {
-          return AlertDialog(
-            title: const Text('手动添加记忆'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: controller,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: '记忆内容',
-                    hintText: '例如：用户喜欢晚上10点后聊天',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: selectedCategory,
-                  decoration: const InputDecoration(
-                    labelText: '分类',
-                    border: OutlineInputBorder(),
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  ),
-                  items: _categories
-                      .where((c) => c.$1 != 'all')
-                      .map((c) => DropdownMenuItem(
-                            value: c.$1,
-                            child: Text('${c.$3} ${c.$2}'),
-                          ))
-                      .toList(),
-                  onChanged: (v) {
-                    if (v != null) setDlgState(() => selectedCategory = v);
-                  },
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('取消')),
-              ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('添加')),
-            ],
-          );
-        });
-      },
-    );
-
-    if (result == true && controller.text.trim().isNotEmpty) {
-      final now = DateTime.now();
-      final mem = AiMemory(
-        id: now.millisecondsSinceEpoch.toString(),
-        agentId: widget.agent.id,
-        content: controller.text.trim(),
-        category: selectedCategory,
-        importance: 3,
-        createdAt: now,
-        updatedAt: now,
-      );
-      await AiDbService().insertMemory(mem);
+      if (_memories.isEmpty) return;
+      for (final m in _memories) {
+        await MemoryService.deleteUserMemoryByKey(m.userId, m.key);
+      }
       await _load();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filtered;
-    final settings = _settings;
+    final runtime = _llmConfig?['runtime'];
+    final serverMemoryEnabled = runtime is Map
+        ? runtime['server_memory_enabled'] == true
+        : !_terminalModeEnabled;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('记忆库', style: TextStyle(fontSize: 16)),
             Text(
               widget.agent.name,
               style: const TextStyle(fontSize: 12, color: Colors.grey),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -272,70 +217,46 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
             ),
         ],
       ),
-      body: _isLoading || settings == null
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: _buildProfilesCard(),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: _buildSettingsCard(settings),
-                ),
-                // ── 分类筛选标签 ──────────────────────────────────
-                SizedBox(
-                  height: 48,
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    scrollDirection: Axis.horizontal,
-                    children: _categories.map((c) {
-                      final (id, label, emoji) = c;
-                      final count = id == 'all'
-                          ? _memories.length
-                          : _memories
-                              .where((m) => m.category == id)
-                              .length;
-                      if (count == 0 && id != 'all') {
-                        return const SizedBox.shrink();
-                      }
-                      final selected = _filterCategory == id;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text('$emoji $label ($count)'),
-                          selected: selected,
-                          onSelected: (_) =>
-                              setState(() => _filterCategory = id),
-                          selectedColor: Theme.of(context)
-                              .primaryColor
-                              .withOpacity(0.2),
-                        ),
-                      );
-                    }).toList(),
+          : CustomScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: _buildProfilesCard(),
                   ),
                 ),
-                // ── 记忆列表 ──────────────────────────────────────
-                Expanded(
-                  child: filtered.isEmpty
-                      ? _buildEmpty()
-                      : ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
-                          itemCount: filtered.length,
-                          itemBuilder: (_, i) =>
-                              _buildMemoryCard(filtered[i]),
-                        ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: _buildRuntimeCard(serverMemoryEnabled),
+                  ),
                 ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: _buildPromptPreviewCard(),
+                  ),
+                ),
+                if (_memories.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _buildEmpty(),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, i) => _buildMemoryCard(_memories[i]),
+                        childCount: _memories.length,
+                      ),
+                    ),
+                  ),
               ],
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: "memory_manager_add_button",
-        onPressed: _addManually,
-        icon: const Icon(Icons.add),
-        label: const Text('手动添加'),
-      ),
     );
   }
 
@@ -359,24 +280,12 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
                 '长期画像（${_profiles.length}）',
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
-              const Spacer(),
-              TextButton.icon(
-                onPressed: _isCurating ? null : _curateNow,
-                icon: _isCurating
-                    ? const SizedBox(
-                        width: 12,
-                        height: 12,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.refresh_rounded, size: 16),
-                label: const Text('整理'),
-              ),
             ],
           ),
           const SizedBox(height: 6),
           if (_profiles.isEmpty)
             Text(
-              '还没有整理后的用户画像。新增几条记忆后，点击“整理”即可生成更稳定的长期摘要。',
+              '还没有可展示画像。继续聊天后，后端会基于记忆逐步形成稳定画像。',
               style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 13,
@@ -397,11 +306,23 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          profile.title,
+                          profile.memoryType,
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                           ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Text(
+                              '聚合条目 ${profile.itemCount}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -421,7 +342,14 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
     );
   }
 
-  Widget _buildSettingsCard(AiMemorySettings settings) {
+  Widget _buildRuntimeCard(bool serverMemoryEnabled) {
+    final memoryBudget = _llmConfig?['memory_budget'];
+    final maxItems = memoryBudget is Map
+        ? '${memoryBudget['max_injected_memory_items'] ?? '-'}'
+        : '-';
+    final maxRunes = memoryBudget is Map
+        ? '${memoryBudget['max_injected_memory_runes'] ?? '-'}'
+        : '-';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -435,67 +363,133 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
         children: [
           Row(
             children: [
-              const Icon(Icons.tune_rounded, size: 18),
+              const Icon(Icons.settings_suggest_rounded, size: 18),
               const SizedBox(width: 8),
               const Text(
-                '记忆设置',
+                '后端记忆运行状态',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _buildKV('终端同款(raw)模式', _terminalModeEnabled ? '已开启' : '已关闭'),
+          _buildKV('服务端记忆生效', serverMemoryEnabled ? '是' : '否'),
+          _buildKV('后端注入条数上限', maxItems),
+          _buildKV('后端注入字符上限', maxRunes),
+          const SizedBox(height: 8),
+          Text(
+            '说明：本页仅展示后端状态，聊天主链路已不再使用本地 SQLite 记忆注入。',
+            style: TextStyle(
+                fontSize: 12, color: Colors.grey.shade600, height: 1.4),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKV(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+            ),
+          ),
+          Text(value,
+              style:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromptPreviewCard() {
+    final preview = _promptPreview.trim();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.text_snippet_rounded, size: 18),
+              const SizedBox(width: 8),
+              const Text(
+                '当前生效提示词',
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),
               const Spacer(),
-              if (_isSavingSettings)
-                const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+              IconButton(
+                onPressed:
+                    _isBuildingPrompt ? null : () => _refreshPromptPreview(),
+                tooltip: '刷新预览',
+                icon: _isBuildingPrompt
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded, size: 18),
+              ),
+              IconButton(
+                onPressed: preview.isEmpty
+                    ? null
+                    : () async {
+                        await Clipboard.setData(ClipboardData(text: preview));
+                        if (!mounted) return;
+                        MoeToast.success(context, '提示词已复制');
+                      },
+                tooltip: '复制',
+                icon: const Icon(Icons.copy_rounded, size: 18),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: settings.extractModel,
-            isExpanded: true,
-            decoration: const InputDecoration(
-              labelText: '记忆提取模型',
-              border: OutlineInputBorder(),
+          const SizedBox(height: 8),
+          Text(
+            '模型：${widget.agent.modelName}  ·  来源：后端用户记忆',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade600,
             ),
-            items: _models
-                .map((m) => DropdownMenuItem(value: m, child: Text(m)))
-                .toList(),
-            onChanged: (v) {
-              if (v == null) return;
-              _persistSettings(settings.copyWith(extractModel: v));
-            },
           ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: settings.curateModel,
-            isExpanded: true,
-            decoration: const InputDecoration(
-              labelText: '记忆整理模型',
-              border: OutlineInputBorder(),
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF7F8FC),
+              borderRadius: BorderRadius.circular(12),
             ),
-            items: _models
-                .map((m) => DropdownMenuItem(value: m, child: Text(m)))
-                .toList(),
-            onChanged: (v) {
-              if (v == null) return;
-              _persistSettings(settings.copyWith(curateModel: v));
-            },
+            child: Text(
+              preview.isEmpty ? '暂无提示词预览，点击右上角刷新。' : preview,
+              maxLines: _showFullPrompt ? null : 12,
+              overflow:
+                  _showFullPrompt ? TextOverflow.visible : TextOverflow.fade,
+              style: const TextStyle(
+                fontSize: 12,
+                height: 1.6,
+                color: Colors.black87,
+              ),
+            ),
           ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('自动提取记忆'),
-            value: settings.autoExtract,
-            onChanged: (v) =>
-                _persistSettings(settings.copyWith(autoExtract: v)),
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('自动整理画像'),
-            subtitle: const Text('每累计一定数量的新记忆时自动执行'),
-            value: settings.autoCurate,
-            onChanged: (v) =>
-                _persistSettings(settings.copyWith(autoCurate: v)),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () {
+                setState(() => _showFullPrompt = !_showFullPrompt);
+              },
+              child: Text(_showFullPrompt ? '收起' : '展开全部'),
+            ),
           ),
         ],
       ),
@@ -510,25 +504,23 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
           const Text('🧠', style: TextStyle(fontSize: 48)),
           const SizedBox(height: 16),
           Text(
-            _filterCategory == 'all' ? '还没有任何记忆' : '该分类暂无记忆',
+            '还没有任何账号记忆',
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 8),
           Text(
-            _filterCategory == 'all'
-                ? '和 AI 聊天时，它会自动记住重要信息'
-                : '切换到"全部"查看所有记忆',
-            style:
-                TextStyle(fontSize: 13, color: Colors.grey.shade500),
+            '和 AI 聊天时，后端会自动提取并保存记忆。',
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMemoryCard(AiMemory memory) {
-    final (label, emoji) = AiMemory.categoryMeta(memory.category);
-
+  Widget _buildMemoryCard(UserMemory memory) {
+    final label = (memory.memoryType?.isNotEmpty == true)
+        ? memory.memoryType!
+        : 'general';
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 0,
@@ -546,11 +538,11 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: _categoryColor(memory.category).withOpacity(0.12),
+                color: _typeColor(label).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Center(
-                child: Text(emoji, style: const TextStyle(fontSize: 18)),
+                child: const Text('🧠', style: TextStyle(fontSize: 18)),
               ),
             ),
             const SizedBox(width: 12),
@@ -560,11 +552,9 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    memory.content,
+                    memory.value,
                     style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black87,
-                        height: 1.5),
+                        fontSize: 14, color: Colors.black87, height: 1.5),
                   ),
                   const SizedBox(height: 6),
                   Row(
@@ -573,33 +563,22 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 7, vertical: 2),
                         decoration: BoxDecoration(
-                          color: _categoryColor(memory.category)
-                              .withOpacity(0.12),
+                          color: _typeColor(label).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           label,
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: _categoryColor(memory.category)),
+                          style:
+                              TextStyle(fontSize: 11, color: _typeColor(label)),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      // 重要性星星
-                      Row(
-                        children: List.generate(
-                          5,
-                          (i) => Icon(
-                            i < memory.importance
-                                ? Icons.star_rounded
-                                : Icons.star_outline_rounded,
-                            size: 11,
-                            color: i < memory.importance
-                                ? Colors.amber
-                                : Colors.grey.shade300,
-                          ),
+                      if (memory.confidence != null)
+                        Text(
+                          '置信度 ${(memory.confidence! * 100).clamp(0, 100).toStringAsFixed(0)}%',
+                          style: TextStyle(
+                              fontSize: 11, color: Colors.grey.shade500),
                         ),
-                      ),
                       const Spacer(),
                       Text(
                         _formatDate(memory.updatedAt),
@@ -624,23 +603,20 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
     );
   }
 
-  Color _categoryColor(String category) {
-    return switch (category) {
-      'preference' => Colors.pink,
-      'reminder' => Colors.orange,
-      'habit' => Colors.teal,
-      'personal' => Colors.blue,
+  Color _typeColor(String type) {
+    return switch (type) {
+      'preference' => Colors.pinkAccent,
+      'plan' => Colors.orange,
+      'fact' => Colors.teal,
+      'identity' => Colors.blue,
       _ => Colors.grey,
     };
   }
 
-  String _formatDate(DateTime dt) {
-    final now = DateTime.now();
-    final diff = now.difference(dt);
-    if (diff.inMinutes < 1) return '刚刚';
-    if (diff.inHours < 1) return '${diff.inMinutes}分钟前';
-    if (diff.inDays < 1) return '${diff.inHours}小时前';
-    if (diff.inDays < 7) return '${diff.inDays}天前';
-    return '${dt.month}/${dt.day}';
+  String _formatDate(String dateStr) {
+    final date = DateTime.tryParse(dateStr.replaceFirst(' ', 'T'));
+    if (date == null) return dateStr;
+    final dt = date.toLocal();
+    return '${dt.month}/${dt.day} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }

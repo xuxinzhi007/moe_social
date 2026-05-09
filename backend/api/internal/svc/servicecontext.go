@@ -3,6 +3,7 @@ package svc
 import (
 	"backend/api/internal/config"
 	"backend/rpc/pb/super"
+	"backend/utils"
 
 	"github.com/zeromicro/go-zero/zrpc"
 )
@@ -10,6 +11,7 @@ import (
 type ServiceContext struct {
 	Config         config.Config
 	SuperRpcClient super.SuperClient
+	ModelCache     *utils.ModelCache
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -18,5 +20,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	return &ServiceContext{
 		Config:         c,
 		SuperRpcClient: super.NewSuperClient(rpcClient.Conn()),
+		ModelCache:     utils.NewModelCache(),
 	}
 }

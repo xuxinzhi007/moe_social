@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import '../../config/app_config.dart';
 import '../../services/enhanced_logger.dart';
 import '../../widgets/fade_in_up.dart';
+import '../../widgets/moe_toast.dart';
 
 class AutoGLMConfigPage extends StatefulWidget {
   @override
@@ -879,18 +880,11 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : const Color(0xFF7F7FD5),
-        duration: Duration(seconds: isError ? 4 : 2),
-        action: SnackBarAction(
-          label: '知道了',
-          textColor: Colors.white,
-          onPressed: () {},
-        ),
-      ),
-    );
+    if (isError) {
+      MoeToast.error(context, message);
+      return;
+    }
+    MoeToast.info(context, message);
   }
 
   Widget _buildConfigTip() {

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../../services/api_service.dart';
 import '../../services/llm_endpoint_config.dart';
 
 class LlmTerminalModeSettingsPage extends StatefulWidget {
@@ -51,7 +52,10 @@ class _LlmTerminalModeSettingsPageState
       _testResult = null;
     });
     try {
-      final resp = await http.get(uri).timeout(const Duration(seconds: 8));
+      ApiService.logDirectHttp('GET', uri);
+      final resp = await http
+          .get(uri, headers: ApiService.mergeTunnelHeaders(uri))
+          .timeout(const Duration(seconds: 8));
       final text = utf8.decode(resp.bodyBytes);
       if (resp.statusCode != 200) {
         setState(() => _testResult = '连接失败：${resp.statusCode}\n$text');
@@ -97,8 +101,8 @@ class _LlmTerminalModeSettingsPageState
                     children: [
                       SwitchListTile.adaptive(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('启用终端同款（后端 raw 转发）'),
-                        subtitle: const Text('默认开启：不注入记忆/总结，最大程度贴近终端输出'),
+                        title: const Text('启用 raw 调试模式（后端 raw 转发）'),
+                        subtitle: const Text('默认关闭：开启后将绕过服务端记忆注入，仅用于调试'),
                         value: _enabled,
                         activeColor: primary,
                         onChanged: (v) => _saveEnabled(v),
@@ -130,7 +134,8 @@ class _LlmTerminalModeSettingsPageState
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                               ),
                             ),
                           ),
@@ -182,4 +187,3 @@ class _LlmTerminalModeSettingsPageState
     );
   }
 }
-

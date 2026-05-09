@@ -10,6 +10,9 @@ class Gift {
   final Color color;
   final GiftCategory category;
   final int popularity; // 人气值，用于排序
+  /// 当前用户在背包中拥有数量（来自 `/api/gifts?user_id=`）
+  final int ownedQuantity;
+  final String? svgPath; // SVG文件路径
 
   const Gift({
     required this.id,
@@ -19,8 +22,34 @@ class Gift {
     required this.price,
     required this.color,
     required this.category,
+    this.svgPath,
     this.popularity = 0,
+    this.ownedQuantity = 0,
   });
+
+  Gift copyWith({
+    String? id,
+    String? name,
+    String? emoji,
+    String? description,
+    double? price,
+    Color? color,
+    GiftCategory? category,
+    int? popularity,
+    int? ownedQuantity,
+  }) {
+    return Gift(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      emoji: emoji ?? this.emoji,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      color: color ?? this.color,
+      category: category ?? this.category,
+      popularity: popularity ?? this.popularity,
+      ownedQuantity: ownedQuantity ?? this.ownedQuantity,
+    );
+  }
 
   // 预定义的礼物列表
   static const List<Gift> defaultGifts = [
@@ -33,6 +62,7 @@ class Gift {
       price: 0.1,
       color: Color(0xFFE91E63),
       category: GiftCategory.emotion,
+      svgPath: 'assets/svg/heart.svg',
       popularity: 100,
     ),
     Gift(
@@ -43,6 +73,7 @@ class Gift {
       price: 0.5,
       color: Color(0xFFE57373),
       category: GiftCategory.emotion,
+      svgPath: 'assets/svg/flower.svg',
       popularity: 95,
     ),
     Gift(
@@ -53,6 +84,7 @@ class Gift {
       price: 0.2,
       color: Color(0xFF42A5F5),
       category: GiftCategory.emotion,
+      svgPath: 'assets/svg/thumbsup.svg',
       popularity: 90,
     ),
     Gift(
@@ -63,6 +95,7 @@ class Gift {
       price: 0.3,
       color: Color(0xFFFFB74D),
       category: GiftCategory.emotion,
+      svgPath: 'assets/svg/clap.svg',
       popularity: 85,
     ),
     Gift(
@@ -73,6 +106,7 @@ class Gift {
       price: 0.8,
       color: Color(0xFF81C784),
       category: GiftCategory.emotion,
+      svgPath: 'assets/svg/hug.svg',
       popularity: 80,
     ),
 
@@ -85,6 +119,7 @@ class Gift {
       price: 2.0,
       color: Color(0xFF8D6E63),
       category: GiftCategory.food,
+      svgPath: 'assets/svg/coffee.svg',
       popularity: 75,
     ),
     Gift(
@@ -95,6 +130,7 @@ class Gift {
       price: 5.0,
       color: Color(0xFFBA68C8),
       category: GiftCategory.food,
+      svgPath: 'assets/svg/cake.svg',
       popularity: 70,
     ),
     Gift(
@@ -105,6 +141,7 @@ class Gift {
       price: 3.0,
       color: Color(0xFF4FC3F7),
       category: GiftCategory.food,
+      svgPath: 'assets/svg/ice_cream.svg',
       popularity: 65,
     ),
     Gift(
@@ -115,6 +152,7 @@ class Gift {
       price: 8.0,
       color: Color(0xFFFFD54F),
       category: GiftCategory.food,
+      svgPath: 'assets/svg/wine.svg',
       popularity: 60,
     ),
 
@@ -127,6 +165,7 @@ class Gift {
       price: 50.0,
       color: Color(0xFF64B5F6),
       category: GiftCategory.luxury,
+      svgPath: 'assets/svg/diamond.svg',
       popularity: 95,
     ),
     Gift(
@@ -137,6 +176,7 @@ class Gift {
       price: 100.0,
       color: Color(0xFFFFD700),
       category: GiftCategory.luxury,
+      svgPath: 'assets/svg/crown.svg',
       popularity: 90,
     ),
     Gift(
@@ -147,6 +187,7 @@ class Gift {
       price: 200.0,
       color: Color(0xFFFF5722),
       category: GiftCategory.luxury,
+      svgPath: 'assets/svg/rocket.svg',
       popularity: 85,
     ),
     Gift(
@@ -157,6 +198,7 @@ class Gift {
       price: 30.0,
       color: Color(0xFF9C27B0),
       category: GiftCategory.special,
+      svgPath: 'assets/svg/rainbow.svg',
       popularity: 75,
     ),
     Gift(
@@ -167,6 +209,7 @@ class Gift {
       price: 20.0,
       color: Color(0xFFE040FB),
       category: GiftCategory.special,
+      svgPath: 'assets/svg/fireworks.svg',
       popularity: 80,
     ),
     Gift(
@@ -177,9 +220,50 @@ class Gift {
       price: 66.6,
       color: Color(0xFFAB47BC),
       category: GiftCategory.special,
+      svgPath: 'assets/svg/unicorn.svg',
       popularity: 70,
     ),
   ];
+
+  /// 后端送礼接口按 **数据库 uint 主键** 解析 [id]；内置 [defaultGifts] 使用英文 slug，不能用于扣费送礼。
+  bool get canSendViaBackendApi {
+    final n = int.tryParse(id);
+    return n != null && n > 0;
+  }
+
+  /// 后端 `/api/gifts` 返回的条目（无 emoji 字段，用 [icon] 或占位）
+  factory Gift.fromCatalogApi(Map<String, dynamic> json) {
+    final rawIcon = json['icon'] as String? ?? '';
+    final emoji = rawIcon.startsWith('http') || rawIcon.isEmpty ? '🎁' : rawIcon;
+    final price = (json['price'] as num?)?.toDouble() ?? 0;
+
+    // 尝试获取SVG路径（如果后端提供）
+    String? svgPath;
+    if (json.containsKey('svg_path') && json['svg_path'] != null) {
+      svgPath = json['svg_path'] as String?;
+    } else {
+      // 尝试根据ID生成SVG路径
+      final id = json['id']?.toString() ?? '';
+      if (id.isNotEmpty) {
+        svgPath = 'assets/svg/$id.svg';
+      }
+    }
+
+    return Gift(
+      id: json['id']?.toString() ?? '',
+      name: (json['name'] as String?)?.trim().isNotEmpty == true
+          ? json['name'] as String
+          : '礼物',
+      emoji: emoji,
+      description: json['description'] as String? ?? '',
+      price: price,
+      color: const Color(0xFFFFB347),
+      category: GiftCategory.special,
+      svgPath: svgPath,
+      popularity: 0,
+      ownedQuantity: (json['owned_quantity'] as num?)?.toInt() ?? 0,
+    );
+  }
 
   // 从JSON创建实例
   factory Gift.fromJson(Map<String, dynamic> json) {
@@ -194,7 +278,9 @@ class Gift {
         (c) => c.name == json['category'],
         orElse: () => GiftCategory.emotion,
       ),
+      svgPath: json['svg_path'] as String?,
       popularity: json['popularity'] as int? ?? 0,
+      ownedQuantity: (json['owned_quantity'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -206,9 +292,11 @@ class Gift {
       'emoji': emoji,
       'description': description,
       'price': price,
-      'color': color.value,
+      'color': color.toARGB32(),
       'category': category.name,
+      'svg_path': svgPath,
       'popularity': popularity,
+      'owned_quantity': ownedQuantity,
     };
   }
 
@@ -257,10 +345,85 @@ class Gift {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is Gift && runtimeType == other.runtimeType && id == other.id;
+      other is Gift &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          ownedQuantity == other.ownedQuantity;
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => Object.hash(id, ownedQuantity);
+
+  GiftLevel get level {
+    if (price < 1.0) return GiftLevel.basic;
+    if (price < 10.0) return GiftLevel.medium;
+    if (price < 50.0) return GiftLevel.advanced;
+    return GiftLevel.luxury;
+  }
+
+  Duration get animationDuration {
+    switch (level) {
+      case GiftLevel.basic:
+        return const Duration(milliseconds: 1500);
+      case GiftLevel.medium:
+        return const Duration(milliseconds: 2000);
+      case GiftLevel.advanced:
+        return const Duration(milliseconds: 2500);
+      case GiftLevel.luxury:
+        return const Duration(milliseconds: 3500);
+    }
+  }
+
+  int get particleCount {
+    switch (level) {
+      case GiftLevel.basic:
+        return 8;
+      case GiftLevel.medium:
+        return 15;
+      case GiftLevel.advanced:
+        return 25;
+      case GiftLevel.luxury:
+        return 40;
+    }
+  }
+
+  double get iconSize {
+    switch (level) {
+      case GiftLevel.basic:
+        return 60;
+      case GiftLevel.medium:
+        return 80;
+      case GiftLevel.advanced:
+        return 100;
+      case GiftLevel.luxury:
+        return 120;
+    }
+  }
+
+  double get glowRadius {
+    switch (level) {
+      case GiftLevel.basic:
+        return 10;
+      case GiftLevel.medium:
+        return 20;
+      case GiftLevel.advanced:
+        return 30;
+      case GiftLevel.luxury:
+        return 50;
+    }
+  }
+}
+
+/// 礼物等级枚举
+enum GiftLevel {
+  basic('基础', 0),
+  medium('中等', 1),
+  advanced('高级', 2),
+  luxury('奢华', 3);
+
+  const GiftLevel(this.displayName, this.priority);
+
+  final String displayName;
+  final int priority;
 }
 
 /// 礼物分类枚举

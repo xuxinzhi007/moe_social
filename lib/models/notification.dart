@@ -31,16 +31,20 @@ class NotificationModel {
   });
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
+    final idRaw = json['id'];
+    final typeRaw = json['type'];
+    final senderRaw = json['sender_id'];
     return NotificationModel(
-      id: json['id'] as String,
-      type: json['type'] as int,
+      id: idRaw == null ? '' : idRaw.toString(),
+      type: (typeRaw is num) ? typeRaw.toInt() : int.tryParse('$typeRaw') ?? 0,
       content: json['content'] as String? ?? '',
       isRead: json['is_read'] as bool? ?? false,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      postId: json['post_id'] as String?,
-      senderId: json['sender_id'] as String?,
-      senderName: json['sender_name'] as String?,
-      senderAvatar: json['sender_avatar'] as String?,
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
+          DateTime.now(),
+      postId: json['post_id']?.toString(),
+      senderId: senderRaw?.toString(),
+      senderName: json['sender_name']?.toString(),
+      senderAvatar: json['sender_avatar']?.toString(),
     );
   }
 

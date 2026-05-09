@@ -47,19 +47,7 @@ func (l *GetFollowingsLogic) GetFollowings(req *types.GetFollowingsReq) (resp *t
 	// 转换为API响应格式
 	respUsers := make([]types.User, 0, len(rpcResp.Users))
 	for _, user := range rpcResp.Users {
-		respUser := types.User{
-			Id:           user.Id,
-			Username:     user.Username,
-			Email:        user.Email,
-			Avatar:       user.Avatar,
-			CreatedAt:    user.CreatedAt,
-			UpdatedAt:    user.UpdatedAt,
-			IsVip:        user.IsVip,
-			VipExpiresAt: user.VipExpiresAt,
-			AutoRenew:    user.AutoRenew,
-			Balance:      float64(user.Balance),
-		}
-		respUsers = append(respUsers, respUser)
+		respUsers = append(respUsers, rpcUserToTypes(user))
 	}
 	
 	l.Debug("获取关注列表成功:", len(respUsers), "个用户，总数:", rpcResp.Total)

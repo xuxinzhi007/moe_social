@@ -59,14 +59,20 @@ dependencies:
   geocoding: ^2.1.1
   battery_plus: ^6.2.0
   lottie: ^3.1.0
-  flutter_overlay_window: ^0.5.0
+  device_info_plus: ^10.1.0
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^3.2.0
+  gal: ^2.3.1
   
 
 
   # AutoGLM系统依赖
   flutter_secure_storage: ^9.2.2  # 安全配置存储
   sqflite: ^2.3.0                 # 本地数据库（日志持久化）
+  sqflite_common_ffi: ^2.3.4
+  sqflite_common_ffi_web: ^1.0.0
   json_annotation: ^4.8.1         # JSON序列化
+  rive: ^0.14.6
 
 dev_dependencies:
   flutter_test:
@@ -91,14 +97,10 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
+  # 只保留 assets/ 即可包含子目录；勿再并列声明子路径，否则同一文件会被打包两次，
+  # Windows 上复制到 flutter_assets 会报 errno 183（文件已存在）。
   assets:
     - assets/
-    - assets/frames/
-    - assets/avatars/faces/
-    - assets/avatars/hairs/
-    - assets/avatars/eyes/
-    - assets/avatars/clothes/
-    - assets/avatars/accessories/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

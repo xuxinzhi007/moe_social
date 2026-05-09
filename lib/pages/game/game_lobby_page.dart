@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import '../../auth_service.dart';
 import '../../widgets/moe_toast.dart';
 import '../commerce/gacha_page.dart';
-import 'game_room_list_page.dart';
+import 'minesweeper_lobby_page.dart';
 import '../../widgets/fade_in_up.dart';
 
 class GameLobbyPage extends StatelessWidget {
@@ -57,12 +57,12 @@ class GameLobbyPage extends StatelessWidget {
                       delay: const Duration(milliseconds: 200),
                       child: _buildGameCard(
                         context,
-                        title: '猜大小 · 猜颜色',
-                        subtitle: '多人实时对战 · 赔率 1.9x',
-                        description: '猜庄家摇出的数字，每30秒一局，支持大小和颜色双下注',
-                        icon: Icons.casino_rounded,
-                        gradient: const [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
-                        onTap: () => _enterGameRoomList(context),
+                        title: '扫雷游戏',
+                        subtitle: '经典益智 · 三个难度等级',
+                        description: '挑战你的逻辑思维，在不同难度下找出所有地雷',
+                        icon: Icons.games_rounded,
+                        gradient: const [Color(0xFF4CAF50), Color(0xFF81C784)],
+                        onTap: () => _enterMinesweeperGame(context),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -255,19 +255,17 @@ class GameLobbyPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _rule(Icons.timer_rounded, '每局 30 秒，时间到自动开奖'),
+          _rule(Icons.touch_app_rounded, '点击格子：揭示格子内容'),
           const SizedBox(height: 12),
-          _rule(Icons.casino_rounded, '庄家摇 1-10：1-5 为小/黑，6-10 为大/红'),
+          _rule(Icons.flip_rounded, '长按格子：标记为地雷'),
           const SizedBox(height: 12),
-          _rule(Icons.monetization_on_rounded, '胜出赔率 1.9x，平台抽水 10%'),
+          _rule(Icons.numbers_rounded, '数字：表示周围8个格子中的地雷数'),
           const SizedBox(height: 12),
-          _rule(Icons.layers_rounded, '可同时下注大小和颜色两组'),
+          _rule(Icons.check_circle_rounded, '目标：揭示所有非地雷格子'),
           const SizedBox(height: 12),
-          _rule(Icons.history_rounded, '支持查看自己的下注记录'),
+          _rule(Icons.timer_rounded, '计时：记录完成游戏的时间'),
           const SizedBox(height: 12),
-          _rule(Icons.account_balance_wallet_rounded, '使用个人中心钱包余额'),
-          const SizedBox(height: 12),
-          _rule(Icons.warning_amber_rounded, '请理性游戏，量力而行'),
+          _rule(Icons.star_rounded, '排行榜：根据时间和难度记录最佳成绩'),
         ],
       ),
     );
@@ -298,7 +296,7 @@ class GameLobbyPage extends StatelessWidget {
     );
   }
 
-  void _enterGameRoomList(BuildContext context) {
+  void _enterMinesweeperGame(BuildContext context) {
     if (AuthService.currentUser == null) {
       MoeToast.error(context, '请先登录后再进入游戏');
       return;
@@ -306,7 +304,7 @@ class GameLobbyPage extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const GameRoomListPage(),
+        builder: (context) => const MinesweeperLobbyPage(),
       ),
     );
   }

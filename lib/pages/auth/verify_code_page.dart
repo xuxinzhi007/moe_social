@@ -1,8 +1,11 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import 'reset_password_page.dart';
 import '../../widgets/fade_in_up.dart';
+import '../../widgets/moe_toast.dart';
+import '../../utils/responsive.dart';
 
 class VerifyCodePage extends StatefulWidget {
   final String email;
@@ -87,24 +90,11 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
   }
 
   void _showCustomSnackBar(BuildContext context, String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 10),
-            Text(message),
-          ],
-        ),
-        backgroundColor: isError ? Colors.redAccent : Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    if (isError) {
+      MoeToast.error(context, message);
+      return;
+    }
+    MoeToast.success(context, message);
   }
 
   @override
@@ -123,6 +113,7 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final layoutHeight = math.max(size.height, 900.0);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -136,16 +127,19 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
         ),
       ),
       body: SingleChildScrollView(
-        child: SizedBox(
-          height: size.height,
-          child: Stack(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: Responsive.contentMaxWidth(context)),
+            child: SizedBox(
+              height: layoutHeight,
+              child: Stack(
             children: [
               // 背景层
               Positioned(
                 top: 0,
                 left: 0,
                 right: 0,
-                height: size.height * 0.4,
+                height: layoutHeight * 0.4,
                 child: Container(
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
@@ -287,6 +281,8 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                 ),
               ),
             ],
+          ),
+            ),
           ),
         ),
       ),

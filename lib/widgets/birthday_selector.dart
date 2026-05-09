@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'moe_toast.dart';
 
 /// 生日选择组件
 /// 提供日期选择器功能，限制选择未来日期
@@ -194,12 +195,7 @@ class BirthdaySelector extends StatelessWidget {
     } catch (e) {
       // 如果日期选择器出现错误，显示简单的错误提示
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('无法打开日期选择器'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        MoeToast.error(context, '无法打开日期选择器');
       }
     }
   }

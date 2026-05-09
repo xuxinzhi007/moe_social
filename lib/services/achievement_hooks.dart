@@ -1,6 +1,7 @@
 import '../auth_service.dart';
 import '../models/achievement_badge.dart';
 import '../widgets/moe_toast.dart';
+import '../widgets/achievement/achievement_unlock_notification.dart';
 import 'achievement_service.dart';
 
 /// 将成就系统接入业务入口（登录、发帖、评论、签到、VIP）。
@@ -15,18 +16,41 @@ class AchievementHooks {
     await _svc.initializeUserBadges(userId);
   }
 
+  static void _openAchievementsCenter() {
+    AuthService.navigatorKey.currentState?.pushNamed('/achievements');
+  }
+
   static void _toastUnlocks(List<AchievementBadge> unlocked) {
     if (unlocked.isEmpty) return;
+    final seenIds = <String>{};
+    final uniqueUnlocked = unlocked
+        .where((badge) => seenIds.add(badge.id))
+        .toList(growable: false);
     final ctx = AuthService.navigatorKey.currentContext;
     if (ctx == null || !ctx.mounted) return;
-    if (unlocked.length == 1) {
-      final b = unlocked.first;
+    if (uniqueUnlocked.length == 1) {
+      final b = uniqueUnlocked.first;
+      AchievementNotificationManager.showUnlockNotification(
+        ctx,
+        b,
+        onView: _openAchievementsCenter,
+      );
       MoeToast.success(ctx, '解锁成就「${b.name}」');
       return;
     }
-    final names = unlocked.take(3).map((b) => b.name).join('、');
-    final more = unlocked.length > 3 ? '…' : '';
-    MoeToast.success(ctx, '解锁 ${unlocked.length} 个成就：$names$more');
+    final names = uniqueUnlocked.take(3).map((b) => b.name).join('、');
+    final more = uniqueUnlocked.length > 3 ? '…' : '';
+    AchievementNotificationManager.showUnlockNotification(
+      ctx,
+      uniqueUnlocked.first,
+      onView: _openAchievementsCenter,
+    );
+    AchievementNotificationManager.showBottomGuideSheet(
+      ctx,
+      unlockedCount: uniqueUnlocked.length,
+      onViewAchievements: _openAchievementsCenter,
+    );
+    MoeToast.success(ctx, '解锁 ${uniqueUnlocked.length} 个成就：$names$more');
   }
 
   /// 发布动态成功后调用（含图片张数、正文字数）。

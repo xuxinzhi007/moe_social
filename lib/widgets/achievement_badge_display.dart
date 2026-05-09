@@ -3,6 +3,44 @@ import '../models/achievement_badge.dart';
 import 'achievement/achievement_badge_medallion.dart';
 import 'achievement/achievement_badge_visuals.dart';
 
+class AchievementRarityChip extends StatelessWidget {
+  final BadgeRarity rarity;
+  final double fontSize;
+  final bool unlocked;
+
+  const AchievementRarityChip({
+    super.key,
+    required this.rarity,
+    required this.fontSize,
+    required this.unlocked,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: fontSize * 1.2,
+        vertical: fontSize * 0.3,
+      ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: rarity.tierGradient,
+        ),
+        borderRadius: BorderRadius.circular(fontSize),
+      ),
+      child: Text(
+        rarity.displayName,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: fontSize,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+
 /// 单个徽章展示组件
 class BadgeCard extends StatelessWidget {
   final AchievementBadge badge;
@@ -188,7 +226,6 @@ class BadgeCard extends StatelessWidget {
                       rarity: badge.rarity,
                       fontSize: 8,
                       unlocked: badge.isUnlocked,
-                      dense: true,
                     ),
                   ],
                 ),

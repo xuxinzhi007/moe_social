@@ -4,6 +4,7 @@ import '../../models/virtual_item.dart';
 import '../../widgets/dynamic_avatar.dart';
 // import '../../auth_service.dart';
 import '../../services/api_service.dart';
+import '../../widgets/moe_toast.dart';
 
 class InventoryPage extends StatefulWidget {
   final User user;
@@ -75,15 +76,11 @@ class _InventoryPageState extends State<InventoryPage> {
 
         widget.onUserUpdate(_currentUser);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('佩戴成功！')),
-        );
+        MoeToast.success(context, '佩戴成功！');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('佩戴失败: $e')),
-        );
+        MoeToast.error(context, '佩戴失败: $e');
       }
     }
   }
@@ -103,16 +100,12 @@ class _InventoryPageState extends State<InventoryPage> {
           _currentUser = refreshed;
         });
         widget.onUserUpdate(_currentUser);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('已卸下头像框')),
-        );
+        MoeToast.success(context, '已卸下头像框');
       }
     } catch (e) {
       print('卸下失败: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('卸下失败: $e')),
-      );
+      MoeToast.error(context, '卸下失败: $e');
     }
   }
 
@@ -192,9 +185,7 @@ class _InventoryPageState extends State<InventoryPage> {
                                 }
                               } else {
                                 // 其他类型物品详情
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('选择了: ${item.name}')),
-                                );
+                                MoeToast.info(context, '选择了: ${item.name}');
                               }
                             },
                             child: Container(

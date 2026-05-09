@@ -3,9 +3,9 @@ package llm
 import (
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
@@ -20,9 +20,10 @@ func ModelsRawHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			timeoutSeconds = 10
 		}
 
-		baseUrl := strings.TrimRight(svcCtx.Config.Ollama.BaseUrl, "/")
-		if baseUrl == "" {
-			baseUrl = "http://127.0.0.1:11434"
+		baseUrl, err := common.ResolveOllamaBaseURL(svcCtx.Config.Ollama.BaseUrl)
+		if err != nil {
+			httpx.ErrorCtx(r.Context(), w, err)
+			return
 		}
 
 		client := &http.Client{Timeout: time.Duration(timeoutSeconds) * time.Second}
@@ -31,6 +32,7 @@ func ModelsRawHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
+		common.ApplyOllamaForwardHeaders(req)
 
 		resp, err := client.Do(req)
 		if err != nil {
