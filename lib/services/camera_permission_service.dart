@@ -1,45 +1,47 @@
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:permission_handler/permission_handler.dart' as ph;
 
 class CameraPermissionService {
   // 请求相机权限
-  static Future<PermissionStatus> requestCameraPermission() async {
-    final status = await Permission.camera.request();
+  static Future<ph.PermissionStatus> requestCameraPermission() async {
+    final status = await ph.Permission.camera.request();
     return status;
   }
 
   // 检查相机权限状态
-  static Future<PermissionStatus> checkCameraPermission() async {
-    final status = await Permission.camera.status;
+  static Future<ph.PermissionStatus> checkCameraPermission() async {
+    final status = await ph.Permission.camera.status;
     return status;
   }
 
   // 打开应用设置页面
   static Future<void> openAppSettings() async {
-    // 避免无限递归，直接返回
-    return;
+    await ph.openAppSettings();
   }
 
   // 处理相机权限
   static Future<bool> handleCameraPermission(BuildContext context) async {
     final status = await requestCameraPermission();
+    if (!context.mounted) {
+      return false;
+    }
 
     switch (status) {
-      case PermissionStatus.granted:
+      case ph.PermissionStatus.granted:
         return true;
-      case PermissionStatus.denied:
+      case ph.PermissionStatus.denied:
         // 权限被拒绝，显示提示
         _showPermissionDeniedDialog(context);
         return false;
-      case PermissionStatus.permanentlyDenied:
+      case ph.PermissionStatus.permanentlyDenied:
         // 权限被永久拒绝，引导用户到设置页面
         _showPermissionPermanentlyDeniedDialog(context);
         return false;
-      case PermissionStatus.restricted:
+      case ph.PermissionStatus.restricted:
         // 权限受限
         _showPermissionRestrictedDialog(context);
         return false;
-      case PermissionStatus.limited:
+      case ph.PermissionStatus.limited:
         // 权限有限制（iOS）
         return true;
       default:

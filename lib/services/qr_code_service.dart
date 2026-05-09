@@ -2,7 +2,33 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+enum QrCodeType {
+  contact,
+  unknown,
+}
+
 class QrCodeService {
+  static const int schemaVersion = 1;
+
+  static Map<String, dynamic> buildContactPayload({
+    required String userId,
+    required String username,
+    String? avatar,
+    String? moeNo,
+  }) {
+    return {
+      'version': schemaVersion,
+      'type': 'contact',
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+      'payload': {
+        'userId': userId,
+        'username': username,
+        'avatar': avatar,
+        'moeNo': moeNo,
+      },
+    };
+  }
+
   // 生成包含用户信息的二维码
   static Widget generateUserQrCode({
     required String userId,
@@ -11,14 +37,12 @@ class QrCodeService {
     String? moeNo,
     double size = 200.0,
   }) {
-    final qrData = {
-      'type': 'contact',
-      'userId': userId,
-      'username': username,
-      'avatar': avatar,
-      'moeNo': moeNo,
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-    };
+    final qrData = buildContactPayload(
+      userId: userId,
+      username: username,
+      avatar: avatar,
+      moeNo: moeNo,
+    );
 
     final jsonData = jsonEncode(qrData);
 
@@ -52,7 +76,25 @@ class QrCodeService {
     try {
       final jsonData = jsonDecode(data);
       if (jsonData is Map<String, dynamic>) {
-        return jsonData;
+        // 标准结构：{version,type,timestamp,payload}
+        final payloadRaw = jsonData['payload'];
+        if (payloadRaw is Map<String, dynamic>) {
+          return {
+            'version': (jsonData['version'] ?? 0).toString(),
+            'type': (jsonData['type'] ?? '').toString(),
+            'timestamp': jsonData['timestamp'],
+            ...payloadRaw,
+          };
+        }
+        // 兼容历史结构：{type,userId,username,...}
+        if (jsonData.containsKey('type') &&
+            jsonData.containsKey('userId') &&
+            jsonData.containsKey('username')) {
+          return {
+            'version': '0',
+            ...jsonData,
+          };
+        }
       }
       return null;
     } catch (e) {
@@ -70,6 +112,16 @@ class QrCodeService {
         data['username'] != null;
   }
 
+  static QrCodeType parseType(Map<String, dynamic> data) {
+    final raw = (data['type'] ?? '').toString();
+    switch (raw) {
+      case 'contact':
+        return QrCodeType.contact;
+      default:
+        return QrCodeType.unknown;
+    }
+  }
+
   // 生成分享二维码的完整视图
   static Widget buildQrCodeCard({
     required BuildContext context,
@@ -85,7 +137,7 @@ class QrCodeService {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

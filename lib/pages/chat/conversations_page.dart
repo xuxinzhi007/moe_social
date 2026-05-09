@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../auth_service.dart';
 import '../../models/notification.dart';
+import '../../models/private_conversation_item.dart';
 import '../../models/user.dart';
 import '../../providers/notification_provider.dart';
 import '../../services/api_service.dart';
@@ -31,8 +32,15 @@ class _ConversationsPageState extends State<ConversationsPage> {
   String? _error;
   List<User> _friends = [];
   List<NotificationModel> _notifs = [];
+  List<PrivateConversationItem> _serverConversations = [];
+
   /// 与 [DirectChatPage] 本地缓存对齐的最后一条（用于在线聊天未进通知时的预览）
   Map<String, ({DateTime at, String rawPreview})> _localThreadTails = {};
+
+  /// 服务端历史兜底的最后一条（避免仅靠通知/本地缓存导致预览缺失或过旧）。
+  Map<String, ({DateTime at, String rawPreview})> _serverThreadTails = {};
+  bool _refreshingServerTails = false;
+  DateTime? _lastServerTailRefreshAt;
 
   @override
   void initState() {
@@ -52,6 +60,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
   void _onPushUnread() {
     if (mounted) setState(() {});
     unawaited(_syncLocalThreadTails());
+    unawaited(_refreshServerConversations());
   }
 
   void _onLocalThreadsTick() {
@@ -64,6 +73,90 @@ class _ConversationsPageState extends State<ConversationsPage> {
     final next = await DirectChatLocalReader.readThreadTails(myId);
     if (!mounted) return;
     setState(() => _localThreadTails = next);
+  }
+
+  Set<String> _collectPeerIdsForServerTail(String myId) {
+    final out = <String>{};
+    for (final f in _friends) {
+      if (f.id.isNotEmpty) out.add(f.id);
+    }
+    for (final sender in ChatPushService.unreadBySender.value.keys) {
+      if (sender.isNotEmpty) out.add(sender);
+    }
+    for (final n in _notifs) {
+      if (n.type != NotificationModel.directMessage) continue;
+      final sid = (n.senderId ?? '').trim();
+      if (sid.isEmpty) continue;
+      out.add(sid);
+    }
+    out.remove(myId);
+    out.removeWhere((e) => e.trim().isEmpty);
+    return out;
+  }
+
+  Future<void> _refreshServerThreadTails({bool force = false}) async {
+    final myId = await AuthService.getUserId();
+    if (myId.isEmpty) return;
+    if (_refreshingServerTails) return;
+    final lastAt = _lastServerTailRefreshAt;
+    if (!force &&
+        lastAt != null &&
+        DateTime.now().difference(lastAt) < const Duration(seconds: 25)) {
+      return;
+    }
+
+    final peers = _collectPeerIdsForServerTail(myId).toList();
+    if (peers.isEmpty) return;
+    if (peers.length > 24) {
+      peers.sort();
+      peers.removeRange(24, peers.length);
+    }
+
+    _refreshingServerTails = true;
+    try {
+      final next = Map<String, ({DateTime at, String rawPreview})>.from(
+        _serverThreadTails,
+      );
+      for (final peerId in peers) {
+        try {
+          final page = await ApiService.listPrivateMessages(
+            peerUserId: peerId,
+            limit: 1,
+          );
+          if (page.items.isEmpty) continue;
+          final item = page.items.first;
+          final at = DateTime.tryParse(item.createdAt) ??
+              DateTime.fromMillisecondsSinceEpoch(0);
+          var rawPreview = item.body.trim();
+          if (rawPreview.isEmpty && item.imagePaths.isNotEmpty) {
+            rawPreview = '[IMG]';
+          }
+          if (rawPreview.isEmpty) continue;
+          final prev = next[peerId];
+          if (prev == null || at.isAfter(prev.at)) {
+            next[peerId] = (at: at, rawPreview: rawPreview);
+          }
+        } catch (_) {}
+      }
+      if (!mounted) return;
+      setState(() {
+        _serverThreadTails = next;
+        _lastServerTailRefreshAt = DateTime.now();
+      });
+    } finally {
+      _refreshingServerTails = false;
+    }
+  }
+
+  Future<void> _refreshServerConversations() async {
+    try {
+      final page =
+          await ApiService.listPrivateConversations(limit: 120, offset: 0);
+      if (!mounted) return;
+      setState(() {
+        _serverConversations = page.items;
+      });
+    } catch (_) {}
   }
 
   Future<void> _load() async {
@@ -94,6 +187,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
       setState(() {
         _friends = friends;
         _notifs = allNotifs;
+        _serverConversations = [];
         _loading = false;
       });
 
@@ -124,6 +218,8 @@ class _ConversationsPageState extends State<ConversationsPage> {
         context.read<NotificationProvider>().fetchNotifications(refresh: true),
       );
       unawaited(_syncLocalThreadTails());
+      unawaited(_refreshServerThreadTails(force: true));
+      unawaited(_refreshServerConversations());
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -229,6 +325,100 @@ class _ConversationsPageState extends State<ConversationsPage> {
     final myId = AuthService.currentUser ?? '';
     final pushUnread = ChatPushService.unreadBySender.value;
 
+    if (_serverConversations.isNotEmpty) {
+      final rows = List<PrivateConversationItem>.from(_serverConversations);
+      return RefreshIndicator(
+        onRefresh: _load,
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: rows.length,
+          separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
+          itemBuilder: (context, i) {
+            final c = rows[i];
+            final peerId = c.peerUserId.trim();
+            if (peerId.isEmpty || peerId == myId) {
+              return const SizedBox.shrink();
+            }
+            User? friend;
+            for (final u in _friends) {
+              if (u.id == peerId) {
+                friend = u;
+                break;
+              }
+            }
+            final title = () {
+              final friendName = (friend?.username ?? '').trim();
+              if (friendName.isNotEmpty) return friendName;
+              final peerName = c.peerName.trim();
+              if (peerName.isNotEmpty) return peerName;
+              return ChatPushService.cachedSenderDisplayName(peerId) ?? '用户';
+            }();
+            final avatar = (friend?.avatar ?? '').trim().isNotEmpty
+                ? friend!.avatar
+                : c.peerAvatar;
+            var previewRaw = c.lastMessage.body.trim();
+            if (previewRaw.isEmpty && c.lastMessage.imagePaths.isNotEmpty) {
+              previewRaw = '[IMG]';
+            }
+            final preview = previewRaw.isEmpty
+                ? '点击开始聊天'
+                : formatDmPreviewForUi(previewRaw);
+            final pushBadge = pushUnread[peerId] ?? 0;
+            final badge = pushBadge > c.unreadCount ? pushBadge : c.unreadCount;
+            return ListTile(
+              leading: NetworkAvatarImage(
+                imageUrl: avatar,
+                radius: 22,
+                placeholderIcon: Icons.person,
+              ),
+              title: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text(
+                preview,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: badge > 0
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.error,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        badge > 99 ? '99+' : '$badge',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    )
+                  : null,
+              onTap: () async {
+                if (!context.mounted) return;
+                await Navigator.pushNamed(
+                  context,
+                  '/direct-chat',
+                  arguments: {
+                    'userId': peerId,
+                    'username': title,
+                    'avatar': avatar,
+                  },
+                );
+                if (mounted) await _load();
+              },
+            );
+          },
+        ),
+      );
+    }
+
     final dmNotifs = _notifs
         .where((n) =>
             n.type == NotificationModel.directMessage &&
@@ -285,7 +475,12 @@ class _ConversationsPageState extends State<ConversationsPage> {
           DateTime.fromMillisecondsSinceEpoch(0);
       final lt = _localThreadTails[peerId]?.at ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      return lt.isAfter(nt) ? lt : nt;
+      final st = _serverThreadTails[peerId]?.at ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      var latest = nt;
+      if (lt.isAfter(latest)) latest = lt;
+      if (st.isAfter(latest)) latest = st;
+      return latest;
     }
 
     final rows = peerIds.toList();
@@ -318,13 +513,26 @@ class _ConversationsPageState extends State<ConversationsPage> {
               '用户';
           final avatar = friend?.avatar ?? last?.senderAvatar ?? '';
           final lt = _localThreadTails[peerId];
-          final ntTime = last?.createdAt ??
-              DateTime.fromMillisecondsSinceEpoch(0);
-          final previewRaw = (lt != null &&
-                  lt.rawPreview.isNotEmpty &&
-                  lt.at.isAfter(ntTime))
-              ? lt.rawPreview
-              : (last?.content ?? '').trim();
+          final st = _serverThreadTails[peerId];
+          final ntTime =
+              last?.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final previewRaw = () {
+            final fromNotif = (last?.content ?? '').trim();
+            var bestAt = ntTime;
+            var bestRaw = fromNotif;
+            if (lt != null &&
+                lt.rawPreview.isNotEmpty &&
+                lt.at.isAfter(bestAt)) {
+              bestAt = lt.at;
+              bestRaw = lt.rawPreview;
+            }
+            if (st != null &&
+                st.rawPreview.isNotEmpty &&
+                st.at.isAfter(bestAt)) {
+              bestRaw = st.rawPreview;
+            }
+            return bestRaw;
+          }();
           final preview =
               previewRaw.isEmpty ? '' : formatDmPreviewForUi(previewRaw);
           final badge = pushUnread[peerId] ?? 0;

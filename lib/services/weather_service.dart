@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:geocoding/geocoding.dart' as geocoding;
 
 class WeatherData {
   final String city;
@@ -21,17 +22,58 @@ class WeatherData {
     required this.windSpeed,
   });
 
-  factory WeatherData.fromJson(Map<String, dynamic> json, String cityName) {
-    final now = json['now'] as Map<String, dynamic>;
+  factory WeatherData.fromApiRow(Map<String, dynamic> row, String cityName) {
+    final weatherText = (row['tianqi'] ?? '').toString();
+    final temperatureText = (row['wendu'] ?? '').toString();
+    final windText = (row['fengdu'] ?? '').toString();
+    final (windDir, windSpeed) = _splitWindInfo(windText);
     return WeatherData(
       city: cityName,
-      temp: now['temp'] as String,
-      text: now['text'] as String,
-      iconCode: now['icon'] as String,
-      humidity: now['humidity'] as String,
-      windDir: now['windDir'] as String,
-      windSpeed: now['windSpeed'] as String,
+      temp: _extractDisplayTemp(temperatureText),
+      text: weatherText,
+      iconCode: _weatherTextToIconCode(weatherText),
+      humidity: (row['pm'] ?? '--').toString(),
+      windDir: windDir,
+      windSpeed: windSpeed,
     );
+  }
+
+  static String _extractDisplayTemp(String raw) {
+    if (raw.contains('～')) {
+      final parts = raw.split('～');
+      if (parts.length >= 2) {
+        return parts.last.trim();
+      }
+    }
+    if (raw.contains('~')) {
+      final parts = raw.split('~');
+      if (parts.length >= 2) {
+        return parts.last.trim();
+      }
+    }
+    return raw.trim().isEmpty ? '--' : raw.trim();
+  }
+
+  static (String, String) _splitWindInfo(String raw) {
+    final txt = raw.trim();
+    if (txt.isEmpty) return ('--', '--');
+    if (txt.contains('-')) {
+      final parts = txt.split('-');
+      if (parts.length >= 2) {
+        return (parts.first.trim(), parts.last.trim());
+      }
+    }
+    return (txt, '--');
+  }
+
+  static String _weatherTextToIconCode(String text) {
+    if (text.contains('雷')) return '303';
+    if (text.contains('雪')) return '400';
+    if (text.contains('雨')) return '305';
+    if (text.contains('阴') || text.contains('云')) return '101';
+    if (text.contains('晴')) return '100';
+    if (text.contains('雾') || text.contains('霾')) return '150';
+    return '101';
   }
 
   String getWeatherEmoji() {
@@ -85,122 +127,90 @@ class WeatherData {
 }
 
 class WeatherService {
-  static const String _apiKey = '0971b773e8ea4db386ae892ea02dc905';
-  static const String _baseUrl = 'https://devapi.qweather.com/v7';
+  // 免费天气接口（按城市查询，返回未来多日数据）。
+  static const String _weatherApiHost = 'v.api.aa1.cn';
+  static const String _weatherApiPath = '/api/api-tianqi-3/index.php';
   static const Duration _cacheDuration = Duration(minutes: 30);
+  static const String _defaultCity = '深圳';
 
   static Future<WeatherData?> getWeatherByCity(String cityName) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final cacheKey = 'weather_$cityName';
+      final normalizedCity = _normalizeCityName(cityName);
+      final cacheKey = 'weather_$normalizedCity';
       final cachedTime = prefs.getInt('${cacheKey}_time') ?? 0;
       final now = DateTime.now().millisecondsSinceEpoch;
 
       if (now - cachedTime < _cacheDuration.inMilliseconds) {
         final cachedData = prefs.getString(cacheKey);
         if (cachedData != null) {
-          return WeatherData.fromJson(
-            jsonDecode(cachedData) as Map<String, dynamic>,
-            cityName,
+          final cached = jsonDecode(cachedData) as Map<String, dynamic>;
+          return WeatherData.fromApiRow(
+            cached,
+            normalizedCity,
           );
         }
       }
 
-      final locationResponse = await http.get(
-        Uri.parse('$_baseUrl/city/lookup?location=$cityName&key=$_apiKey'),
+      final response = await http.get(
+        Uri.https(_weatherApiHost, _weatherApiPath, {
+          'msg': normalizedCity,
+          'type': '1',
+        }),
       );
-
-      if (locationResponse.statusCode != 200) {
+      if (response.statusCode != 200) {
         return null;
       }
-
-      final locationData = jsonDecode(locationResponse.body) as Map<String, dynamic>;
-      if (locationData['code'] != '200') {
+      final apiData = jsonDecode(response.body) as Map<String, dynamic>;
+      if ((apiData['code'] ?? '').toString() != '1') {
         return null;
       }
-
-      final locations = locationData['location'] as List;
-      if (locations.isEmpty) {
+      final list = apiData['data'];
+      if (list is! List ||
+          list.isEmpty ||
+          list.first is! Map<String, dynamic>) {
         return null;
       }
-
-      final locationId = locations[0]['id'] as String;
-
-      final weatherResponse = await http.get(
-        Uri.parse('$_baseUrl/weather/now?location=$locationId&key=$_apiKey'),
-      );
-
-      if (weatherResponse.statusCode != 200) {
-        return null;
-      }
-
-      final weatherData = jsonDecode(weatherResponse.body) as Map<String, dynamic>;
-      if (weatherData['code'] != '200') {
-        return null;
-      }
-
-      await prefs.setString(cacheKey, jsonEncode(weatherData));
+      final firstRow = list.first as Map<String, dynamic>;
+      await prefs.setString(cacheKey, jsonEncode(firstRow));
       await prefs.setInt('${cacheKey}_time', now);
-
-      return WeatherData.fromJson(weatherData, cityName);
+      return WeatherData.fromApiRow(firstRow, normalizedCity);
     } catch (e) {
       return null;
     }
   }
 
-  static Future<WeatherData?> getWeatherByLocation(double lat, double lon) async {
+  static Future<WeatherData?> getWeatherByLocation(
+      double lat, double lon) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final cacheKey = 'weather_${lat}_$lon';
-      final cachedTime = prefs.getInt('${cacheKey}_time') ?? 0;
-      final now = DateTime.now().millisecondsSinceEpoch;
-
-      if (now - cachedTime < _cacheDuration.inMilliseconds) {
-        final cachedData = prefs.getString(cacheKey);
-        final cachedCity = prefs.getString('${cacheKey}_city');
-        if (cachedData != null && cachedCity != null) {
-          return WeatherData.fromJson(
-            jsonDecode(cachedData) as Map<String, dynamic>,
-            cachedCity,
+      String cityName = _defaultCity;
+      try {
+        final placemarks = await geocoding.placemarkFromCoordinates(
+          lat,
+          lon,
+          localeIdentifier: 'zh_CN',
+        );
+        if (placemarks.isNotEmpty) {
+          cityName = _normalizeCityName(
+            placemarks.first.locality ??
+                placemarks.first.subAdministrativeArea ??
+                placemarks.first.administrativeArea ??
+                _defaultCity,
           );
         }
+      } catch (_) {
+        // reverse geocoding 失败时回退默认城市
       }
-
-      final weatherResponse = await http.get(
-        Uri.parse('$_baseUrl/weather/now?location=$lon,$lat&key=$_apiKey'),
-      );
-
-      if (weatherResponse.statusCode != 200) {
-        return null;
-      }
-
-      final weatherData = jsonDecode(weatherResponse.body) as Map<String, dynamic>;
-      if (weatherData['code'] != '200') {
-        return null;
-      }
-
-      final locationResponse = await http.get(
-        Uri.parse('$_baseUrl/city/lookup?location=$lon,$lat&key=$_apiKey'),
-      );
-
-      String cityName = '未知城市';
-      if (locationResponse.statusCode == 200) {
-        final locationData = jsonDecode(locationResponse.body) as Map<String, dynamic>;
-        if (locationData['code'] == '200') {
-          final locations = locationData['location'] as List;
-          if (locations.isNotEmpty) {
-            cityName = locations[0]['name'] as String;
-          }
-        }
-      }
-
-      await prefs.setString(cacheKey, jsonEncode(weatherData));
-      await prefs.setInt('${cacheKey}_time', now);
-      await prefs.setString('${cacheKey}_city', cityName);
-
-      return WeatherData.fromJson(weatherData, cityName);
+      return getWeatherByCity(cityName);
     } catch (e) {
       return null;
     }
+  }
+
+  static String _normalizeCityName(String cityName) {
+    final raw = cityName.trim();
+    if (raw.isEmpty) return _defaultCity;
+    final cleaned = raw.replaceAll(RegExp(r'(省|市|区|县|自治州|特别行政区)$'), '').trim();
+    return cleaned.isEmpty ? _defaultCity : cleaned;
   }
 }

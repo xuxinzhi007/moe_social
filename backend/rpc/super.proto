@@ -618,6 +618,30 @@ message ListPrivateMessagesResp {
   bool has_more = 2;
 }
 
+message PrivateConversation {
+  string peer_id = 1;
+  string peer_name = 2;
+  string peer_avatar = 3;
+  string peer_moe_no = 4;
+  string peer_display_user_id = 5;
+  PrivateMessage last_message = 6;
+  int32 unread_count = 7;
+}
+
+message ListPrivateConversationsReq {
+  string viewer_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message ListPrivateConversationsResp {
+  repeated PrivateConversation conversations = 1;
+  int32 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  bool has_more = 5;
+}
+
 message UserMemory {
   string id = 1;
   string user_id = 2;
@@ -628,6 +652,8 @@ message UserMemory {
   string source = 7;
   string created_at = 8;
   string updated_at = 9;
+  string source_msg_id = 10;
+  string session_id = 11;
 }
 
 message UpsertUserMemoryReq {
@@ -637,6 +663,8 @@ message UpsertUserMemoryReq {
   string memory_type = 4;
   double confidence = 5;
   string source = 6;
+  string source_msg_id = 7;
+  string session_id = 8;
 }
 
 message UpsertUserMemoryResp {
@@ -645,10 +673,32 @@ message UpsertUserMemoryResp {
 
 message GetUserMemoriesReq {
   string user_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
 }
 
 message GetUserMemoriesResp {
   repeated UserMemory memories = 1;
+  int64 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  bool has_more = 5;
+}
+
+message UserMemoryProfile {
+  string memory_type = 1;
+  string summary = 2;
+  int32 item_count = 3;
+  double confidence = 4;
+}
+
+message GetUserMemoryProfilesReq {
+  string user_id = 1;
+  int32 limit = 2;
+}
+
+message GetUserMemoryProfilesResp {
+  repeated UserMemoryProfile profiles = 1;
 }
 
 message DeleteUserMemoryReq {
@@ -759,6 +809,7 @@ service Super {
   rpc GetUserCount(GetUserCountReq) returns (GetUserCountResp);
   rpc UpsertUserMemory(UpsertUserMemoryReq) returns (UpsertUserMemoryResp);
   rpc GetUserMemories(GetUserMemoriesReq) returns (GetUserMemoriesResp);
+  rpc GetUserMemoryProfiles(GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp);
   rpc DeleteUserMemory(DeleteUserMemoryReq) returns (DeleteUserMemoryResp);
   rpc SubmitUserMemoryFeedback(SubmitUserMemoryFeedbackReq) returns (SubmitUserMemoryFeedbackResp);
   
@@ -803,6 +854,7 @@ service Super {
   rpc CreateNotification(CreateNotificationReq) returns (CreateNotificationResp);
   rpc SendPrivateMessage(SendPrivateMessageReq) returns (SendPrivateMessageResp);
   rpc ListPrivateMessages(ListPrivateMessagesReq) returns (ListPrivateMessagesResp);
+  rpc ListPrivateConversations(ListPrivateConversationsReq) returns (ListPrivateConversationsResp);
   
   // 钱包相关服务
   rpc Recharge(RechargeReq) returns (RechargeResp);

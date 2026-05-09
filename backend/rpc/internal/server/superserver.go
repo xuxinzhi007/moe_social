@@ -94,6 +94,11 @@ func (s *SuperServer) GetUserMemories(ctx context.Context, in *super.GetUserMemo
 	return l.GetUserMemories(in)
 }
 
+func (s *SuperServer) GetUserMemoryProfiles(ctx context.Context, in *super.GetUserMemoryProfilesReq) (*super.GetUserMemoryProfilesResp, error) {
+	l := logic.NewGetUserMemoryProfilesLogic(ctx, s.svcCtx)
+	return l.GetUserMemoryProfiles(in)
+}
+
 func (s *SuperServer) DeleteUserMemory(ctx context.Context, in *super.DeleteUserMemoryReq) (*super.DeleteUserMemoryResp, error) {
 	l := logic.NewDeleteUserMemoryLogic(ctx, s.svcCtx)
 	return l.DeleteUserMemory(in)
@@ -249,6 +254,11 @@ func (s *SuperServer) SendPrivateMessage(ctx context.Context, in *super.SendPriv
 func (s *SuperServer) ListPrivateMessages(ctx context.Context, in *super.ListPrivateMessagesReq) (*super.ListPrivateMessagesResp, error) {
 	l := logic.NewListPrivateMessagesLogic(ctx, s.svcCtx)
 	return l.ListPrivateMessages(in)
+}
+
+func (s *SuperServer) ListPrivateConversations(ctx context.Context, in *super.ListPrivateConversationsReq) (*super.ListPrivateConversationsResp, error) {
+	l := logic.NewListPrivateConversationsLogic(ctx, s.svcCtx)
+	return l.ListPrivateConversations(in)
 }
 
 // 钱包相关服务

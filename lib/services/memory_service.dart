@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../models/ai_memory.dart';
 import '../models/user_memory.dart';
+import '../models/user_memory_profile.dart';
 import 'api_service.dart';
 
 /// MemoryService 包含两类功能：
@@ -14,12 +15,54 @@ class MemoryService {
   // 一、用户后端记忆（原有功能，勿删）
   // ═══════════════════════════════════════════════════════════════════════════
 
+  static const int _defaultMemoryPageSize = 50;
+
+  /// 分页获取用户记忆列表（后端支持 limit/offset）
+  static Future<Map<String, dynamic>> getUserMemoriesPaged(
+    String userId, {
+    int limit = _defaultMemoryPageSize,
+    int offset = 0,
+  }) async {
+    final safeLimit = limit <= 0 ? _defaultMemoryPageSize : limit;
+    final safeOffset = offset < 0 ? 0 : offset;
+    final result = await ApiService.get(
+      '/api/user/$userId/memories?limit=$safeLimit&offset=$safeOffset',
+    );
+    final List<dynamic> list = result['data'] ?? [];
+    return {
+      'items': list
+          .map((json) => UserMemory.fromJson(json as Map<String, dynamic>))
+          .toList(),
+      'total': (result['total'] as num?)?.toInt() ?? list.length,
+      'limit': (result['limit'] as num?)?.toInt() ?? safeLimit,
+      'offset': (result['offset'] as num?)?.toInt() ?? safeOffset,
+      'has_more': result['has_more'] == true,
+    };
+  }
+
   /// 获取用户记忆列表
   static Future<List<UserMemory>> getUserMemories(String userId) async {
-    final result = await ApiService.get('/api/user/$userId/memories');
+    final paged = await getUserMemoriesPaged(
+      userId,
+      limit: _defaultMemoryPageSize,
+      offset: 0,
+    );
+    final items = paged['items'];
+    if (items is List<UserMemory>) return items;
+    return const [];
+  }
+
+  /// 获取后端聚合画像摘要
+  static Future<List<UserMemoryProfile>> getUserMemoryProfiles(
+    String userId, {
+    int limit = 6,
+  }) async {
+    final safeLimit = limit <= 0 ? 6 : limit;
+    final result = await ApiService.get(
+        '/api/user/$userId/memories/profiles?limit=$safeLimit');
     final List<dynamic> list = result['data'] ?? [];
     return list
-        .map((json) => UserMemory.fromJson(json as Map<String, dynamic>))
+        .map((json) => UserMemoryProfile.fromJson(json as Map<String, dynamic>))
         .toList();
   }
 

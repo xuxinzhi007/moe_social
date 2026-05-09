@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/user_memory.dart';
+import '../../models/user_memory_profile.dart';
 import '../../services/memory_service.dart';
 import '../../auth_service.dart';
 import 'package:intl/intl.dart';
@@ -14,8 +15,11 @@ class MemoryTimelinePage extends StatefulWidget {
 
 class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
   List<UserMemory> _memories = [];
+  List<UserMemoryProfile> _profiles = [];
   bool _isLoading = true;
   String? _error;
+  bool _hasMore = false;
+  int _total = 0;
 
   @override
   void initState() {
@@ -31,11 +35,20 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
       });
 
       final user = await AuthService.getUserInfo();
-      final memories = await MemoryService.getUserMemories(user.id);
+      final paged = await MemoryService.getUserMemoriesPaged(
+        user.id,
+        limit: 100,
+        offset: 0,
+      );
+      final memories = (paged['items'] as List<UserMemory>? ?? const []);
+      final profiles = await MemoryService.getUserMemoryProfiles(user.id);
       // Sort memories by created_at descending (newest first)
       memories.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       setState(() {
         _memories = memories;
+        _profiles = profiles;
+        _hasMore = paged['has_more'] == true;
+        _total = (paged['total'] as int?) ?? memories.length;
       });
     } catch (e) {
       setState(() {
@@ -239,13 +252,93 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
       );
     }
 
-    return ListView.builder(
+    return ListView(
       padding: const EdgeInsets.all(16),
-      itemCount: _memories.length,
-      itemBuilder: (context, index) {
-        final memory = _memories[index];
-        return _buildMemoryCard(memory);
-      },
+      children: [
+        _buildProfileCard(_profiles),
+        const SizedBox(height: 12),
+        ..._memories.map(_buildMemoryCard),
+      ],
+    );
+  }
+
+  Widget _buildProfileCard(List<UserMemoryProfile> profiles) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.psychology_alt_rounded,
+                    size: 18, color: Theme.of(context).primaryColor),
+                const SizedBox(width: 8),
+                const Text(
+                  '账号画像摘要（后端记忆聚合）',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '当前账号的画像由数据库记忆实时聚合，跨端共享，不依赖本地缓存。',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 10),
+            if (profiles.isEmpty)
+              Text(
+                '暂无可聚合画像，继续聊天后会逐步形成。',
+                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              )
+            else
+              ...profiles.map(
+                (p) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7F8FC),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${p.memoryType} · ${p.itemCount}条',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF4F46E5),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          p.summary,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            height: 1.45,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 6),
+            Text(
+              _hasMore
+                  ? '已加载 ${_memories.length}/$_total 条，更多请分页查看。'
+                  : '共 $_total 条账号记忆。',
+              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -287,6 +380,21 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
               memory.value,
               style: const TextStyle(fontSize: 15, height: 1.5),
             ),
+            if ((memory.source?.isNotEmpty == true) ||
+                (memory.sessionId?.isNotEmpty == true) ||
+                (memory.sourceMsgId?.isNotEmpty == true)) ...[
+              const SizedBox(height: 8),
+              Text(
+                [
+                  if (memory.source?.isNotEmpty == true) '来源: ${memory.source}',
+                  if (memory.sessionId?.isNotEmpty == true)
+                    '会话: ${memory.sessionId}',
+                  if (memory.sourceMsgId?.isNotEmpty == true)
+                    '消息: ${memory.sourceMsgId}',
+                ].join('  |  '),
+                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+              ),
+            ],
             const SizedBox(height: 12),
             Row(
               children: [

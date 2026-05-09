@@ -292,6 +292,8 @@ func selectRelevantMemoryLines(memories []*super.UserMemory, messages []types.Ll
 }
 
 func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err error) {
+	sessionID := strings.TrimSpace(req.SessionId)
+	sourceMsgID := strings.TrimSpace(req.SourceMsgId)
 	var memoryLines []string
 	var userIDForLog string
 	if v := l.ctx.Value("user_id"); v != nil {
@@ -425,10 +427,10 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 					Content: summary,
 				}
 
-				go func(uid, model, baseUrl string, timeout int, msgs []ollamaMessage) {
+				go func(uid, model, baseUrl, sid, msgID string, timeout int, msgs []ollamaMessage) {
 					bgCtx := context.Background()
-					l.extractAndSaveMemories(bgCtx, uid, model, baseUrl, timeout, msgs)
-				}(userIDForLog, memoryModel, baseUrl, timeoutSeconds, fullMessages)
+					l.extractAndSaveMemories(bgCtx, uid, model, baseUrl, timeout, sid, msgID, msgs)
+				}(userIDForLog, memoryModel, baseUrl, sessionID, sourceMsgID, timeoutSeconds, fullMessages)
 			}
 
 			usedTokens = 0
@@ -634,11 +636,11 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 			Content: oResp.Message.Content,
 		}
 
-		go func(uid, model, baseUrl string, timeout int, msgs []ollamaMessage) {
+		go func(uid, model, baseUrl, sid, msgID string, timeout int, msgs []ollamaMessage) {
 			bgCtx := context.Background()
 			// Create a new detached logger/logic context if needed, but simple function call is enough
-			l.extractAndSaveMemories(bgCtx, uid, model, baseUrl, timeout, msgs)
-		}(userIDForLog, req.Model, baseUrl, timeoutSeconds, fullMessages)
+			l.extractAndSaveMemories(bgCtx, uid, model, baseUrl, timeout, sid, msgID, msgs)
+		}(userIDForLog, req.Model, baseUrl, sessionID, sourceMsgID, timeoutSeconds, fullMessages)
 	}
 
 	usedTokens = 0
@@ -767,7 +769,7 @@ type memoryItem struct {
 	Source     string  `json:"source,omitempty"`
 }
 
-func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, baseUrl string, timeoutSeconds int, history []ollamaMessage) {
+func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, baseUrl string, timeoutSeconds int, sessionID, sourceMsgID string, history []ollamaMessage) {
 	// Only analyze if history is significant enough
 	// 降低门槛，只要有对话就尝试（system + user + assistant >= 3）
 	if len(history) < 2 {
@@ -901,12 +903,14 @@ func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, b
 				continue
 			}
 			_, err := l.svcCtx.SuperRpcClient.UpsertUserMemory(ctx, &super.UpsertUserMemoryReq{
-				UserId:     userID,
-				Key:        item.Key,
-				Value:      item.Value,
-				MemoryType: item.MemoryType,
-				Confidence: item.Confidence,
-				Source:     "llm_extract",
+				UserId:      userID,
+				Key:         item.Key,
+				Value:       item.Value,
+				MemoryType:  item.MemoryType,
+				Confidence:  item.Confidence,
+				Source:      "llm_extract",
+				SourceMsgId: sourceMsgID,
+				SessionId:   sessionID,
 			})
 			if err != nil {
 				logger.Errorf("upsert memory %s failed: %v", item.Key, err)

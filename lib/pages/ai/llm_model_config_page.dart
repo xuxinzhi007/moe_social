@@ -18,6 +18,7 @@ class _LlmModelConfigPageState extends State<LlmModelConfigPage> {
   String? _error;
   Map<String, dynamic>? _ollama;
   Map<String, dynamic>? _memoryBudget;
+  Map<String, dynamic>? _runtime;
   bool _terminalModeEnabled = false;
 
   @override
@@ -63,6 +64,7 @@ class _LlmModelConfigPageState extends State<LlmModelConfigPage> {
 
       final ollama = data['ollama'];
       final memoryBudget = data['memory_budget'];
+      final runtime = data['runtime'];
       if (ollama is! Map || memoryBudget is! Map) {
         throw Exception('配置字段缺失');
       }
@@ -72,6 +74,11 @@ class _LlmModelConfigPageState extends State<LlmModelConfigPage> {
         _terminalModeEnabled = terminalMode;
         _ollama = Map<String, dynamic>.from(ollama);
         _memoryBudget = Map<String, dynamic>.from(memoryBudget);
+        if (runtime is Map) {
+          _runtime = Map<String, dynamic>.from(runtime);
+        } else {
+          _runtime = null;
+        }
       });
     } catch (e) {
       if (!mounted) return;
@@ -79,10 +86,11 @@ class _LlmModelConfigPageState extends State<LlmModelConfigPage> {
         _error = e.toString();
       });
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -177,6 +185,16 @@ class _LlmModelConfigPageState extends State<LlmModelConfigPage> {
                             _terminalModeEnabled
                                 ? '/api/llm/chat/raw'
                                 : '/api/llm/chat',
+                          ),
+                          _kv(
+                            '服务端记忆是否生效',
+                            _terminalModeEnabled ? '否（raw 调试）' : '是',
+                          ),
+                          _kv(
+                            'raw 调试边界',
+                            (_runtime?['raw_debug_only'] == true)
+                                ? '仅调试用途'
+                                : '未声明',
                           ),
                         ],
                       ),

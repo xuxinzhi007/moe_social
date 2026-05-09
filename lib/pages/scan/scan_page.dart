@@ -1,5 +1,3 @@
-import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -16,10 +14,10 @@ class ScanPage extends StatefulWidget {
   State<ScanPage> createState() => _ScanPageState();
 }
 
-class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin {
+class _ScanPageState extends State<ScanPage>
+    with SingleTickerProviderStateMixin {
   MobileScannerController? _controller;
   bool _hasPermission = false;
-  bool _isScanning = false;
   bool _isProcessing = false;
   bool _isScanSuccess = false;
   double _scanLinePosition = 0.0;
@@ -61,7 +59,8 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
 
   Future<void> _initScanner() async {
     // 请求相机权限
-    final hasPermission = await CameraPermissionService.handleCameraPermission(context);
+    final hasPermission =
+        await CameraPermissionService.handleCameraPermission(context);
     if (hasPermission) {
       setState(() {
         _hasPermission = true;
@@ -84,7 +83,7 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
 
       if (pickedFile != null) {
         MoeToast.info(context, '图片选择成功，正在识别二维码...');
-        
+
         // 使用 mobile_scanner 库的 analyzeImage 方法识别二维码
         try {
           if (_controller != null) {
@@ -151,111 +150,121 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
       return;
     }
 
-    // 验证二维码数据
+    // 二维码分发层：按 type 路由到对应业务处理器。
+    final type = QrCodeService.parseType(qrData);
+    switch (type) {
+      case QrCodeType.contact:
+        await _handleContactQr(qrData);
+        break;
+      case QrCodeType.unknown:
+        MoeToast.error(context, '暂不支持该二维码类型');
+        break;
+    }
+  }
+
+  Future<void> _handleContactQr(Map<String, dynamic> qrData) async {
     if (!QrCodeService.isValidContactQrCode(qrData)) {
       MoeToast.error(context, '这不是有效的联系人二维码');
       return;
     }
-
-    // 提取用户信息
-    final String userId = qrData['userId'];
-    final String username = qrData['username'];
-    final String? avatar = qrData['avatar'];
-    final String? moeNo = qrData['moeNo'];
-
-    // 显示用户信息确认界面
+    final String userId = qrData['userId'].toString();
+    final String username = qrData['username'].toString();
+    final String? avatar = qrData['avatar']?.toString();
+    final String? moeNo = qrData['moeNo']?.toString();
     await _showUserConfirmDialog(userId, username, avatar, moeNo);
   }
 
-  Future<void> _showUserConfirmDialog(String userId, String username, String? avatar, String? moeNo) async {
+  Future<void> _showUserConfirmDialog(
+      String userId, String username, String? avatar, String? moeNo) async {
     final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('添加好友'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (avatar != null && avatar.isNotEmpty)
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('添加好友'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (avatar != null && avatar.isNotEmpty)
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: ClipOval(
-                  child: FadeInImage.assetNetwork(
-                    placeholder: 'assets/default_avatar.png',
-                    image: avatar,
-                    fit: BoxFit.cover,
-                    imageErrorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        decoration: const BoxDecoration(
-                          color: Colors.grey,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.person,
-                          size: 40,
-                          color: Colors.white,
-                        ),
-                      );
-                    },
+                    child: ClipOval(
+                      child: FadeInImage.assetNetwork(
+                        placeholder: 'assets/default_avatar.png',
+                        image: avatar,
+                        fit: BoxFit.cover,
+                        imageErrorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.grey,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.person,
+                              size: 40,
+                              color: Colors.white,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: const BoxDecoration(
+                      color: Colors.grey,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.person,
+                      size: 40,
+                      color: Colors.white,
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                Text(
+                  username,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              )
-            else
-              Container(
-                width: 80,
-                height: 80,
-                decoration: const BoxDecoration(
-                  color: Colors.grey,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.person,
-                  size: 40,
-                  color: Colors.white,
-                ),
-              ),
-            const SizedBox(height: 16),
-            Text(
-              username,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+                if (moeNo != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'Moe号: $moeNo',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                const Text('是否添加此用户为好友？'),
+              ],
             ),
-            if (moeNo != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  'Moe号: $moeNo',
-                  style: const TextStyle(color: Colors.grey),
-                ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
               ),
-            const SizedBox(height: 16),
-            const Text('是否添加此用户为好友？'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('添加'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('添加'),
-          ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
 
     if (confirmed) {
       await _sendFriendRequest(userId, username);

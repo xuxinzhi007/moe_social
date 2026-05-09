@@ -450,6 +450,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/api/private-messages",
 				Handler: privatemsg.ListPrivateMessagesHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/private-messages/conversations",
+				Handler: privatemsg.ListPrivateConversationsHandler(serverCtx),
+			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 	)
@@ -560,6 +565,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodPost,
 				Path:    "/api/user/:user_id/memories/feedback",
 				Handler: user.SubmitUserMemoryFeedbackHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/user/:user_id/memories/profiles",
+				Handler: user.GetUserMemoryProfilesHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodPut,

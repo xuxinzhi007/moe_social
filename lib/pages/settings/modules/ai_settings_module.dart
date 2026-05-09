@@ -17,8 +17,8 @@ class AiSettingsModule extends StatelessWidget {
         items: [
           MoeMenuItem(
             icon: Icons.terminal_rounded,
-            title: '终端同款（本地 Ollama）',
-            subtitle: '直连电脑 Ollama，尽量对齐终端输出',
+            title: 'raw 调试模式（本地 Ollama）',
+            subtitle: '仅调试时开启；日常建议走服务端记忆链路',
             color: Colors.deepPurpleAccent,
             onTap: () async {
               await Navigator.push(

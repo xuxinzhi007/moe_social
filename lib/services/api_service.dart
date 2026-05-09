@@ -9,6 +9,7 @@ import '../models/post.dart';
 import '../models/comment.dart';
 import '../models/user.dart';
 import '../models/private_message_item.dart';
+import '../models/private_conversation_item.dart';
 import '../models/vip_plan.dart';
 import '../models/vip_order.dart';
 import '../models/gift_purchase_order.dart';
@@ -158,9 +159,8 @@ class ApiService {
 
   /// 从 [moe_launch_config.AppConfig] 同步 local/online 基址（唯一配置入口，勿再使用 api_env.json）。
   static void _applyApiEnvironmentFromAppConfig() {
-    _runtimeEnvironment = moe_launch_config.AppConfig.isProduction
-        ? _envOnline
-        : _envLocal;
+    _runtimeEnvironment =
+        moe_launch_config.AppConfig.isProduction ? _envOnline : _envLocal;
 
     final urlLocal =
         _normalizeBaseUrl(moe_launch_config.AppConfig.developmentUrl);
@@ -1096,6 +1096,7 @@ class ApiService {
     List<String>? inventory,
     String? equippedFrameId,
     bool clearEquippedFrame = false,
+
     /// 私信服务端保留策略：`auto` | `7` | `30`
     String? messageRetention,
   }) async {
@@ -1144,7 +1145,8 @@ class ApiService {
     }
     // 必须用 path + queryParameters：若写成 '/api/x?${Uri(queryParameters:)}'，
     // Uri.toString() 自带前导 `?`，会得到 `??peer_user_id=...`，后端解析不到 peer_user_id。
-    final path = Uri(path: '/api/private-messages', queryParameters: q).toString();
+    final path =
+        Uri(path: '/api/private-messages', queryParameters: q).toString();
     final result = await _request(path);
     final raw = result['data'];
     final list = <PrivateMessageItem>[];
@@ -1157,6 +1159,37 @@ class ApiService {
     }
     final hasMore = result['has_more'] == true;
     return (items: list, hasMore: hasMore);
+  }
+
+  /// 会话列表（服务端聚合）：返回每个会话的对端信息、最后一条消息和未读数。
+  static Future<
+      ({
+        List<PrivateConversationItem> items,
+        int total,
+        bool hasMore,
+      })> listPrivateConversations({
+    int limit = 30,
+    int offset = 0,
+  }) async {
+    final lim = limit.clamp(1, 200);
+    final off = offset < 0 ? 0 : offset;
+    final path = '/api/private-messages/conversations?limit=$lim&offset=$off';
+    final result = await _request(path);
+    final raw = result['data'];
+    final list = <PrivateConversationItem>[];
+    if (raw is List) {
+      for (final e in raw) {
+        if (e is Map<String, dynamic>) {
+          list.add(PrivateConversationItem.fromJson(e));
+        }
+      }
+    }
+    final totalRaw = result['total'];
+    final total = totalRaw is int
+        ? totalRaw
+        : (totalRaw is num ? totalRaw.toInt() : list.length);
+    final hasMore = result['has_more'] == true;
+    return (items: list, total: total, hasMore: hasMore);
   }
 
   /// 发送私信：服务端写入 `private_messages` 并向对端推送 WS（离线则写通知）。

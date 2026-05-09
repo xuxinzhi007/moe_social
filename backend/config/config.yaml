@@ -18,6 +18,7 @@ ollama:
   # 后端请求 Ollama 的超时（秒）
   timeout_seconds: 300
 
+# ngrok http 11434 --host-header=rewrite
 
 #线上
 
