@@ -43,6 +43,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            // 本地开发包与正式包共存，避免签名冲突导致覆盖失败。
+            applicationIdSuffix = ".dev"
+        }
         release {
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
