@@ -353,6 +353,29 @@ func (l *WorldWsLogic) handleMessage(roomID, userID string, message []byte) {
 			"user_id":  userID,
 			"username": uname,
 		})
+	case "world_chat":
+		content := fmt.Sprint(msg["content"])
+		if content == "" {
+			return
+		}
+		var senderUsername string
+		worldRoomsMutex.RLock()
+		if room, ok := worldRooms[roomID]; ok {
+			if m, ok := room[userID]; ok && m != nil {
+				senderUsername = m.username
+			}
+		}
+		worldRoomsMutex.RUnlock()
+		if senderUsername == "" {
+			senderUsername = "玩家"
+		}
+		l.Logger.Infof("World chat from %s (%s): %s", userID, senderUsername, content)
+		worldBroadcast(roomID, "", map[string]interface{}{
+			"type":     "world_chat",
+			"user_id":  userID,
+			"username": senderUsername,
+			"content":  content,
+		})
 	default:
 		l.Logger.Infof("World ws unknown type from %s: %s", userID, msgType)
 	}

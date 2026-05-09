@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../models/ai_memory.dart';
 import '../models/user_memory.dart';
+import '../models/user_memory_profile.dart';
 import 'api_service.dart';
 
 /// MemoryService 包含两类功能：
@@ -14,17 +15,83 @@ class MemoryService {
   // 一、用户后端记忆（原有功能，勿删）
   // ═══════════════════════════════════════════════════════════════════════════
 
+  static const int _defaultMemoryPageSize = 50;
+
+  /// 分页获取用户记忆列表（后端支持 limit/offset）
+  static Future<Map<String, dynamic>> getUserMemoriesPaged(
+    String userId, {
+    int limit = _defaultMemoryPageSize,
+    int offset = 0,
+  }) async {
+    final safeLimit = limit <= 0 ? _defaultMemoryPageSize : limit;
+    final safeOffset = offset < 0 ? 0 : offset;
+    final result = await ApiService.get(
+      '/api/user/$userId/memories?limit=$safeLimit&offset=$safeOffset',
+    );
+    final List<dynamic> list = result['data'] ?? [];
+    return {
+      'items': list
+          .map((json) => UserMemory.fromJson(json as Map<String, dynamic>))
+          .toList(),
+      'total': (result['total'] as num?)?.toInt() ?? list.length,
+      'limit': (result['limit'] as num?)?.toInt() ?? safeLimit,
+      'offset': (result['offset'] as num?)?.toInt() ?? safeOffset,
+      'has_more': result['has_more'] == true,
+    };
+  }
+
   /// 获取用户记忆列表
   static Future<List<UserMemory>> getUserMemories(String userId) async {
-    final result = await ApiService.get('/api/user/$userId/memories');
+    final paged = await getUserMemoriesPaged(
+      userId,
+      limit: _defaultMemoryPageSize,
+      offset: 0,
+    );
+    final items = paged['items'];
+    if (items is List<UserMemory>) return items;
+    return const [];
+  }
+
+  /// 获取后端聚合画像摘要
+  static Future<List<UserMemoryProfile>> getUserMemoryProfiles(
+    String userId, {
+    int limit = 6,
+  }) async {
+    final safeLimit = limit <= 0 ? 6 : limit;
+    final result = await ApiService.get(
+        '/api/user/$userId/memories/profiles?limit=$safeLimit');
     final List<dynamic> list = result['data'] ?? [];
-    return list.map((json) => UserMemory.fromJson(json as Map<String, dynamic>)).toList();
+    return list
+        .map((json) => UserMemoryProfile.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   /// 按 key 删除用户记忆
   static Future<void> deleteUserMemoryByKey(String userId, String key) async {
     final encodedKey = Uri.encodeComponent(key);
     await ApiService.delete('/api/user/$userId/memories?key=$encodedKey');
+  }
+
+  /// 对记忆提交反馈（accept/reject/correct）
+  static Future<UserMemory> submitUserMemoryFeedback({
+    required String userId,
+    required String key,
+    required String feedbackType,
+    String? correctedValue,
+    String? reason,
+  }) async {
+    final result = await ApiService.post(
+      '/api/user/$userId/memories/feedback',
+      body: {
+        'key': key,
+        'feedback_type': feedbackType,
+        if (correctedValue != null && correctedValue.isNotEmpty)
+          'corrected_value': correctedValue,
+        if (reason != null && reason.isNotEmpty) 'reason': reason,
+      },
+    );
+    final data = Map<String, dynamic>.from(result['data'] ?? const {});
+    return UserMemory.fromJson(data);
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -46,7 +113,8 @@ class MemoryService {
 
     if (memories.isNotEmpty) {
       buffer.write('\n\n--- 你的长期记忆数据库 ---\n');
-      buffer.write('（以下是你之前和该用户聊天记住的事实。在回答时，如果相关，请自然地体现出你记得这些事，就像老朋友一样。不要生硬地罗列，只需在对话中表现出你“知道”即可）：\n');
+      buffer.write(
+          '（以下是你之前和该用户聊天记住的事实。在回答时，如果相关，请自然地体现出你记得这些事，就像老朋友一样。不要生硬地罗列，只需在对话中表现出你“知道”即可）：\n');
       for (int i = 0; i < memories.length; i++) {
         final (_, emoji) = AiMemory.categoryMeta(memories[i].category);
         buffer.write('${i + 1}. $emoji ${memories[i].content}\n');
@@ -60,11 +128,12 @@ class MemoryService {
   /// 构建专门用于记忆提取的 prompt
   ///
   /// 传入已有记忆，让大模型判断是新记忆、旧记忆还是有冲突需要更新。
-  static String buildExtractionPrompt(String userMessage, String aiResponse, List<AiMemory> currentMemories) {
-    String existing = currentMemories.isEmpty 
-        ? "无" 
+  static String buildExtractionPrompt(
+      String userMessage, String aiResponse, List<AiMemory> currentMemories) {
+    String existing = currentMemories.isEmpty
+        ? "无"
         : currentMemories.map((m) => m.content).join("；");
-        
+
     return '你是信息提取助手。请分析最新对话，提取关于用户的重要长期记忆。\n'
         '【已有记忆】：$existing\n'
         '【提取规则】：\n'
@@ -146,8 +215,7 @@ class MemoryService {
         .hasMatch(content)) {
       return 'reminder';
     }
-    if (RegExp(r'习惯|每天|每周|每月|经常|总是|routine|always|usually')
-        .hasMatch(content)) {
+    if (RegExp(r'习惯|每天|每周|每月|经常|总是|routine|always|usually').hasMatch(content)) {
       return 'habit';
     }
     if (RegExp(r'叫|名字|年龄|生日|住在|职业|name|age|birthday|job|work')
@@ -159,8 +227,7 @@ class MemoryService {
 
   /// 推断记忆重要性（1–5）
   static int inferImportance(String content) {
-    if (RegExp(r'提醒|deadline|重要|urgent|紧急|不能忘|appointment')
-        .hasMatch(content)) {
+    if (RegExp(r'提醒|deadline|重要|urgent|紧急|不能忘|appointment').hasMatch(content)) {
       return 5;
     }
     if (RegExp(r'喜欢|讨厌|习惯|每天|每周').hasMatch(content)) {

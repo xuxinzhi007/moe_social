@@ -13,6 +13,8 @@ type User struct {
 	ID              uint           `gorm:"primarykey" json:"id"`
 	Username        string         `gorm:"uniqueIndex;size:50;not null" json:"username"`
 	MoeNo           string         `gorm:"uniqueIndex;size:10" json:"moe_no"` // 10 位数字账号
+	// MessageRetentionChoice 私信保存天数偏好：0=按服务端 VIP/YAML 规则；7 或 30 为用户自选（新发出消息写入快照）
+	MessageRetentionChoice int `gorm:"default:0" json:"message_retention_choice"`
 	Password        string         `gorm:"size:100;not null" json:"-"`
 	Email           string         `gorm:"uniqueIndex;size:100;not null" json:"email"`
 	Avatar          string         `gorm:"type:text" json:"avatar"`   // 头像URL，支持长URL（如base64 data URI）
@@ -23,7 +25,9 @@ type User struct {
 	VipStartAt      *time.Time     `json:"vip_start_at,omitempty"`
 	VipEndAt        *time.Time     `json:"vip_end_at,omitempty"`
 	AutoRenew       bool           `gorm:"default:false" json:"auto_renew"`   // 自动续费
-	Balance         float64        `gorm:"default:0" json:"balance"`          // 钱包余额
+	Balance             float64 `gorm:"default:0" json:"balance"`               // 钱包余额
+	GiftCharm           int     `gorm:"default:0" json:"gift_charm"`             // 收到礼物累计魅力（与礼物标价同步累加）
+	ReceivedGiftValue   float64 `gorm:"default:0" json:"received_gift_value"`     // 收到礼物累计面值（标价×数量）
 	Inventory       string         `gorm:"type:text" json:"inventory"`        // JSON: ["item1", "item2"]
 	EquippedFrameId string         `gorm:"size:100" json:"equipped_frame_id"` // 佩戴的头像框ID
 	Role            string         `gorm:"size:20;default:user" json:"role"`  // 用户角色：user/admin/super_admin

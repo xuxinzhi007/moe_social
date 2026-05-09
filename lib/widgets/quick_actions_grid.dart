@@ -2,9 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../pages/ai/agent_list_page.dart';
 import '../pages/game/game_lobby_page.dart';
+import '../utils/responsive.dart';
 
 class QuickActionsGrid extends StatelessWidget {
-  const QuickActionsGrid({super.key});
+  final Future<void> Function(dynamic result)? onCreatePostSuccess;
+
+  const QuickActionsGrid({
+    super.key,
+    this.onCreatePostSuccess,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +22,12 @@ class QuickActionsGrid extends StatelessWidget {
           'icon': Icons.edit_note,
           'label': '发布动态',
           'color': const Color(0xFF7F7FD5),
-          'onTap': () => Navigator.pushNamed(context, '/create-post'),
+          'onTap': () async {
+            final result = await Navigator.pushNamed(context, '/create-post');
+            if (result != null) {
+              await onCreatePostSuccess?.call(result);
+            }
+          },
         },
       {
         'icon': Icons.photo_library,
@@ -25,8 +36,8 @@ class QuickActionsGrid extends StatelessWidget {
         'onTap': () => Navigator.pushNamed(context, '/cloud-gallery'),
       },
       {
-        'icon': Icons.people,
-        'label': '好友',
+        'icon': Icons.contacts_rounded,
+        'label': '联系人',
         'color': const Color(0xFFFF6B6B),
         'onTap': () => Navigator.pushNamed(context, '/friends'),
       },
@@ -77,8 +88,10 @@ class QuickActionsGrid extends StatelessWidget {
     ];
 
     final scheme = Theme.of(context).colorScheme;
+    final horizontalPadding = Responsive.pageHorizontalPadding(context);
+    final listHeight = Responsive.isCompact(context) ? 100.0 : 112.0;
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 8),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: BoxDecoration(
         color: scheme.surface,
@@ -117,8 +130,9 @@ class QuickActionsGrid extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
+          // 每项约 52+6+文字行高+竖向 padding，90 在部分字体缩放下会溢出
           SizedBox(
-            height: 90,
+            height: listHeight,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -149,43 +163,46 @@ class QuickActionsGrid extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: color.withOpacity(0.25),
-                  width: 1,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: color.withOpacity(0.25),
+                    width: 1,
+                  ),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 26,
                 ),
               ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 26,
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: onSurfaceVariant,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: onSurfaceVariant,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

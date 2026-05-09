@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../models/topic_tag.dart';
+import 'moe_toast.dart';
 
 /// 话题标签选择器 - 支持搜索、创建和选择自定义标签
 class TopicTagSelector extends StatefulWidget {
@@ -30,6 +31,7 @@ class _TopicTagSelectorState extends State<TopicTagSelector> {
   final FocusNode _searchFocus = FocusNode();
   final TopicTagService _tagService = TopicTagService();
 
+  late List<TopicTag> _selectedTags;
   List<TopicTag> _searchResults = [];
   List<TopicTag> _recommendedTags = [];
   Timer? _debounceTimer;
@@ -38,8 +40,26 @@ class _TopicTagSelectorState extends State<TopicTagSelector> {
   @override
   void initState() {
     super.initState();
+    _selectedTags = List<TopicTag>.from(widget.selectedTags);
     _loadRecommendedTags();
     _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant TopicTagSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldIds = oldWidget.selectedTags.map((t) => t.id).toList();
+    final newIds = widget.selectedTags.map((t) => t.id).toList();
+    if (oldIds.length != newIds.length) {
+      _selectedTags = List<TopicTag>.from(widget.selectedTags);
+      return;
+    }
+    for (var i = 0; i < oldIds.length; i++) {
+      if (oldIds[i] != newIds[i]) {
+        _selectedTags = List<TopicTag>.from(widget.selectedTags);
+        return;
+      }
+    }
   }
 
   @override
@@ -75,18 +95,20 @@ class _TopicTagSelectorState extends State<TopicTagSelector> {
   }
 
   void _addTag(TopicTag tag) {
-    if (widget.selectedTags.length >= widget.maxTags) {
+    if (_selectedTags.length >= widget.maxTags) {
       _showMaxTagsMessage();
       return;
     }
 
     // 检查是否已选择
-    if (widget.selectedTags.any((t) => t.id == tag.id)) {
+    if (_selectedTags.any((t) => t.id == tag.id)) {
       return;
     }
 
-    final newTags = [...widget.selectedTags, tag];
-    widget.onTagsChanged(newTags);
+    setState(() {
+      _selectedTags = [..._selectedTags, tag];
+    });
+    widget.onTagsChanged(_selectedTags);
 
     // 清空搜索
     _searchController.clear();
@@ -101,13 +123,13 @@ class _TopicTagSelectorState extends State<TopicTagSelector> {
       return;
     }
 
-    if (widget.selectedTags.length >= widget.maxTags) {
+    if (_selectedTags.length >= widget.maxTags) {
       _showMaxTagsMessage();
       return;
     }
 
     // 检查是否已有同名标签
-    if (widget.selectedTags.any((t) =>
+    if (_selectedTags.any((t) =>
         t.name.toLowerCase() == cleanName.toLowerCase())) {
       return;
     }
@@ -117,26 +139,18 @@ class _TopicTagSelectorState extends State<TopicTagSelector> {
   }
 
   void _removeTag(TopicTag tag) {
-    final newTags = widget.selectedTags.where((t) => t.id != tag.id).toList();
-    widget.onTagsChanged(newTags);
+    setState(() {
+      _selectedTags = _selectedTags.where((t) => t.id != tag.id).toList();
+    });
+    widget.onTagsChanged(_selectedTags);
   }
 
   void _showMaxTagsMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('最多只能选择${widget.maxTags}个标签'),
-        backgroundColor: Colors.orange,
-      ),
-    );
+    MoeToast.warning(context, '最多只能选择${widget.maxTags}个标签');
   }
 
   void _showInvalidTagMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('标签名称不合法，请使用中英文、数字，长度不超过20字符'),
-        backgroundColor: Colors.red,
-      ),
-    );
+    MoeToast.error(context, '标签名称不合法，请使用中英文、数字，长度不超过20字符');
   }
 
   @override
@@ -162,7 +176,7 @@ class _TopicTagSelectorState extends State<TopicTagSelector> {
               ),
               const SizedBox(width: 8),
               Text(
-                '添加话题标签 (${widget.selectedTags.length}/${widget.maxTags})',
+                '添加话题标签 (${_selectedTags.length}/${widget.maxTags})',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -172,12 +186,12 @@ class _TopicTagSelectorState extends State<TopicTagSelector> {
           ),
 
           // 已选择的标签
-          if (widget.selectedTags.isNotEmpty) ...[
+          if (_selectedTags.isNotEmpty) ...[
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: widget.selectedTags.map((tag) {
+              children: _selectedTags.map((tag) {
                 return _buildSelectedTagChip(tag);
               }).toList(),
             ),
@@ -369,7 +383,7 @@ class _TopicTagSelectorState extends State<TopicTagSelector> {
   }
 
   Widget _buildTagChip(TopicTag tag) {
-    final isSelected = widget.selectedTags.any((t) => t.id == tag.id);
+    final isSelected = _selectedTags.any((t) => t.id == tag.id);
 
     return GestureDetector(
       onTap: isSelected ? null : () => _addTag(tag),

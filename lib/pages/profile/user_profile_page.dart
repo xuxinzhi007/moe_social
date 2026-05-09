@@ -5,10 +5,10 @@ import 'package:flutter/services.dart';
 import '../../models/user.dart';
 import '../../models/post.dart';
 import '../../models/achievement_badge.dart';
-import '../../models/gift.dart';
 import '../../auth_service.dart';
 import '../../services/api_service.dart';
 import '../../services/achievement_service.dart';
+import '../../services/like_state_manager.dart';
 import '../../widgets/avatar_image.dart';
 import '../../widgets/dynamic_avatar.dart';
 import '../../widgets/profile_bg.dart';
@@ -16,9 +16,11 @@ import '../../widgets/fade_in_up.dart';
 import '../../widgets/achievement_badge_display.dart';
 import '../../widgets/post_card.dart';
 import '../../widgets/moe_toast.dart';
-import '../../widgets/gift_animation.dart';
+import '../../widgets/gift_selector.dart';
 import '../../services/post_service.dart';
 import '../../utils/error_handler.dart';
+import '../../utils/post_navigation.dart';
+import '../feed/create_post_page.dart';
 import 'following_page.dart';
 import 'followers_page.dart';
 import '../chat/voice_call_page.dart';
@@ -50,6 +52,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   final GlobalKey _postsSectionKey = GlobalKey();
   List<AchievementBadge> _userBadges = [];
   final AchievementService _achievementService = AchievementService();
+  final LikeStateManager _likeManager = LikeStateManager();
 
   // 关注统计数据
   int _followingCount = 0;
@@ -189,28 +192,61 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
   }
 
-  Future<void> _toggleLike(String postId) async {
-    final currentUserId = AuthService.currentUser;
-    if (currentUserId == null) {
-      if (mounted) {
-        ErrorHandler.showError(context, '请先登录');
-      }
-      return;
-    }
+  void _toggleLike(String postId) {
+    final isLiked = _likeManager.getStatusNotifier(postId).value;
+    final likeCount = _likeManager.getCountNotifier(postId).value;
+    _updateLikeSnapshot(postId: postId, isLiked: isLiked, likeCount: likeCount);
+  }
 
-    try {
-      final updatedPost = await PostService.toggleLike(postId, currentUserId);
-      
-      final postIndex = _userPosts.indexWhere((p) => p.id == postId);
-      if (postIndex != -1) {
-        _userPosts[postIndex] = updatedPost;
-      }
-    } catch (e) {
-      if (mounted) {
-        ErrorHandler.handleException(context, e as Exception);
-      }
+  // 仅更新数据快照，点赞 UI 由 PostCard 内部 ValueListenable 局部刷新。
+  void _updateLikeSnapshot({
+    required String postId,
+    required bool isLiked,
+    required int likeCount,
+  }) {
+    final postIndex = _userPosts.indexWhere((p) => p.id == postId);
+    if (postIndex != -1) {
+      _userPosts[postIndex] = _userPosts[postIndex].copyWith(
+        isLiked: isLiked,
+        likes: likeCount,
+      );
     }
   }
+
+  Future<void> _editPost(Post post) async {
+    final updated = await Navigator.push<Post>(
+      context,
+      MaterialPageRoute(builder: (_) => CreatePostPage(initialPost: post)),
+    );
+    if (updated != null && mounted) {
+      setState(() {
+        final i = _userPosts.indexWhere((p) => p.id == updated.id);
+        if (i != -1) {
+          _userPosts[i] = updated.copyWith(
+            likes: post.likes,
+            comments: post.comments,
+            isLiked: post.isLiked,
+            userName: updated.userName.isNotEmpty ? updated.userName : post.userName,
+            userAvatar: updated.userAvatar.isNotEmpty ? updated.userAvatar : post.userAvatar,
+          );
+        }
+      });
+    }
+  }
+
+  Future<void> _deletePost(String postId) async {
+    try {
+      await ApiService.deletePost(postId);
+      if (!mounted) return;
+      setState(() => _userPosts.removeWhere((p) => p.id == postId));
+      _likeManager.evictPost(postId);
+      MoeToast.success(context, '动态已删除');
+    } catch (e) {
+      if (!mounted) return;
+      ErrorHandler.showError(context, '删除失败：$e');
+    }
+  }
+
 
   String _friendRelationLabel() {
     switch (_friendRelation) {
@@ -219,7 +255,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       case 'pending_out':
         return '好友申请已发送';
       case 'pending_in':
-        return '对方向你发了申请（在好友页处理）';
+        return '对方向你发了申请（在联系人页处理）';
       default:
         return '发好友申请';
     }
@@ -248,8 +284,20 @@ class _UserProfilePageState extends State<UserProfilePage> {
     final topPad = MediaQuery.paddingOf(context).top + kToolbarHeight + 2;
     const bottomPad = 14.0;
     final ts = MediaQuery.textScalerOf(context);
-    final bodyMin = ts.scale(205.0).clamp(178.0, 360.0);
+    // 统计条为两行（动态/关注/粉丝 + 魅力/收礼），略增高避免挤压。
+    final bodyMin = ts.scale(238.0).clamp(200.0, 400.0);
     return (topPad + bottomPad + bodyMin).clamp(300.0, 580.0);
+  }
+
+  String _formatReceivedGiftValue(double v) {
+    if (v >= 10000) {
+      final w = v / 10000;
+      return '${w.toStringAsFixed(v >= 100000 ? 0 : 1)}万';
+    }
+    if (v == v.roundToDouble()) {
+      return v.toInt().toString();
+    }
+    return v.toStringAsFixed(1);
   }
 
   Widget _buildFrostedStatsStrip() {
@@ -312,6 +360,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
 
     final postsLabel = _isLoadingPosts && _userPosts.isEmpty ? '…' : '$_postTotal';
+    final charmLabel = _user == null ? '…' : '${_user!.giftCharm}';
+    final giftValueLabel =
+        _user == null ? '…' : _formatReceivedGiftValue(_user!.receivedGiftValue);
+    final sepH = MediaQuery.textScalerOf(context).scale(32.0).clamp(24.0, 44.0);
+
+    Widget vDivider() => Container(
+          width: 1,
+          height: sepH,
+          color: Colors.white.withValues(alpha: 0.35),
+        );
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -328,42 +386,59 @@ class _UserProfilePageState extends State<UserProfilePage> {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: Colors.white.withValues(alpha: 0.42)),
           ),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              stat('动态', postsLabel, onTap: _scrollToPosts),
-              Container(
-                width: 1,
-                height: MediaQuery.textScalerOf(context).scale(32.0).clamp(24.0, 44.0),
-                color: Colors.white.withValues(alpha: 0.35),
+              Row(
+                children: [
+                  stat('动态', postsLabel, onTap: _scrollToPosts),
+                  vDivider(),
+                  stat(
+                    '关注',
+                    _isLoadingStats ? '…' : '$_followingCount',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (context) => FollowingPage(userId: widget.userId),
+                        ),
+                      );
+                    },
+                  ),
+                  vDivider(),
+                  stat(
+                    '粉丝',
+                    _isLoadingStats ? '…' : '$_followersCount',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (context) => FollowersPage(userId: widget.userId),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
-              stat(
-                '关注',
-                _isLoadingStats ? '…' : '$_followingCount',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (context) => FollowingPage(userId: widget.userId),
-                    ),
-                  );
-                },
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  8,
+                  MediaQuery.textScalerOf(context).scale(6.0).clamp(4.0, 10.0),
+                  8,
+                  0,
+                ),
+                child: Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Colors.white.withValues(alpha: 0.35),
+                ),
               ),
-              Container(
-                width: 1,
-                height: MediaQuery.textScalerOf(context).scale(32.0).clamp(24.0, 44.0),
-                color: Colors.white.withValues(alpha: 0.35),
-              ),
-              stat(
-                '粉丝',
-                _isLoadingStats ? '…' : '$_followersCount',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (context) => FollowersPage(userId: widget.userId),
-                    ),
-                  );
-                },
+              Row(
+                children: [
+                  stat('魅力', charmLabel),
+                  vDivider(),
+                  stat('收礼', giftValueLabel),
+                ],
               ),
             ],
           ),
@@ -1016,11 +1091,26 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             heroTagPrefix: 'up_',
                             onLike: () => _toggleLike(post.id),
                             onComment: () async {
-                            await Navigator.pushNamed(context, '/comments', arguments: post.id);
-                          },
-                          onShare: () {},
-                          onAvatarTap: () {},
-                        ),
+                              final result =
+                                  await openPostDetail(context, post);
+                              if (result != null && mounted) {
+                                setState(() {
+                                  final i = _userPosts
+                                      .indexWhere((p) => p.id == post.id);
+                                  if (i != -1) {
+                                    _userPosts[i] = _userPosts[i]
+                                        .copyWith(comments: result);
+                                  }
+                                });
+                              }
+                            },
+                            onEdit: post.userId == (AuthService.currentUser ?? '')
+                                ? () => _editPost(post)
+                                : null,
+                            onDelete: post.userId == (AuthService.currentUser ?? '')
+                                ? () => _deletePost(post.id)
+                                : null,
+                          ),
                       );
                     }),
                     
@@ -1038,148 +1128,23 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
 
   void _showGiftSelector() {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.75,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        child: Column(
-          children: [
-            // 顶部拖拽指示器
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            // 标题
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                children: [
-                  const Icon(Icons.card_giftcard, color: Colors.pink),
-                  const SizedBox(width: 8),
-                  Text(
-                    '送礼给 ${_user?.username ?? widget.userName ?? '用户'}',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('取消'),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            // 礼物选择器
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: _buildGiftGrid(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGiftGrid() {
-    final gifts = Gift.getPopularGifts(limit: 12);
-    return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 0.8,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemCount: gifts.length,
-      itemBuilder: (context, index) {
-        final gift = gifts[index];
-        return GestureDetector(
-          onTap: () {
-            Navigator.pop(context);
-            _sendGift(gift);
-          },
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: gift.color.withOpacity(0.3)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(gift.emoji, style: const TextStyle(fontSize: 32)),
-                const SizedBox(height: 8),
-                Text(
-                  gift.name,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '¥${gift.price.toStringAsFixed(gift.price == gift.price.roundToDouble() ? 0 : 1)}',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: gift.color,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _sendGift(Gift gift) {
-    // 显示礼物发送动画
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black54,
-      builder: (context) => GiftSendAnimation(
-        gift: gift,
-        onAnimationComplete: () {
-          Navigator.of(context).pop();
-          // 显示发送成功提示
+      builder: (context) => GiftSelector(
+        targetId: widget.userId,
+        targetType: 'user',
+        receiverId: widget.userId,
+        onGiftSent: (gift) {
+          if (!mounted) return;
           MoeToast.show(
             context,
-            '${gift.emoji} 已送出${gift.name}给 ${_user?.username ?? widget.userName ?? '用户'}',
+            '已向 ${_user?.username ?? widget.userName ?? '用户'} 赠送 ${gift.name}',
             icon: Icons.favorite_rounded,
             backgroundColor: const Color(0xFFF0FDF4),
             textColor: const Color(0xFF16A34A),
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 2),
           );
         },
       ),
@@ -1189,73 +1154,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   void _showBadgeDetails(AchievementBadge badge) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: badge.color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                badge.emoji,
-                style: const TextStyle(fontSize: 48),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              badge.name,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              badge.description,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey[600],
-                height: 1.4,
-              ),
-            ),
-            if (badge.isUnlocked) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.green[200]!),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.check_circle, color: Colors.green, size: 16),
-                    const SizedBox(width: 6),
-                    const Text(
-                      '已解锁',
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('关闭'),
-          ),
-        ],
-      ),
+      builder: (_) => BadgeDetailDialog(badge: badge),
     );
   }
 

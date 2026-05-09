@@ -202,45 +202,48 @@ class _RechargePageState extends State<RechargePage> {
                       final amount = _presetAmounts[index];
                       final isSelected = _selectedAmount == amount;
                       
-                      return InkWell(
-                        onTap: () {
-                          setState(() {
-                            _selectedAmount = amount;
-                            _amountController.text = amount.toString();
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(16),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          decoration: BoxDecoration(
-                            color: isSelected ? _primaryColor : Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isSelected ? Colors.transparent : Colors.grey.withOpacity(0.1),
-                              width: 1,
+                      return Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            setState(() {
+                              _selectedAmount = amount;
+                              _amountController.text = amount.toString();
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            decoration: BoxDecoration(
+                              color: isSelected ? _primaryColor : Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSelected ? Colors.transparent : Colors.grey.withOpacity(0.1),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                if (isSelected)
+                                  BoxShadow(
+                                    color: _primaryColor.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  )
+                                else
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.05),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                              ],
                             ),
-                            boxShadow: [
-                              if (isSelected)
-                                BoxShadow(
-                                  color: _primaryColor.withOpacity(0.3),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                )
-                              else
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.05),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                            ],
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '¥$amount',
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.black87,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                            alignment: Alignment.center,
+                            child: Text(
+                              '¥$amount',
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : Colors.black87,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
                           ),
                         ),

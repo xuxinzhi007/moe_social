@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'voice_call_page.dart';
 import '../../services/api_service.dart';
 import '../../utils/media_url.dart';
+import '../../widgets/moe_toast.dart';
 
 class VoiceCallReceivingPage extends StatelessWidget {
   final String callerId;
@@ -50,9 +51,7 @@ class VoiceCallReceivingPage extends StatelessWidget {
   }
 
   void _showError(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    MoeToast.error(context, message);
   }
 
   @override

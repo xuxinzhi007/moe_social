@@ -54,6 +54,8 @@
 | 文档 | 说明 |
 |------|------|
 | [项目开发规范](guidelines/项目开发规范.md) | 仓库内开发约定 |
+| [Codex启动指南-后端](guidelines/Codex启动指南-后端.md) | AI/代理修改后端前的启动规范 |
+| [Codex启动指南-前端](guidelines/Codex启动指南-前端.md) | AI/代理修改前端前的启动规范 |
 
 ## 规划与备忘（`planning/`）
 

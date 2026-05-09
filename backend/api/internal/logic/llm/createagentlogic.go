@@ -83,9 +83,10 @@ func (l *CreateAgentLogic) CreateAgent(req *types.LlmCreateAgentReq) (*types.Bas
 		Timeout: 10 * time.Minute,
 	}
 
-	baseURL := strings.TrimRight(l.svcCtx.Config.Ollama.BaseUrl, "/")
-	if baseURL == "" {
-		baseURL = "http://127.0.0.1:11434"
+	baseURL, err := common.ResolveOllamaBaseURL(l.svcCtx.Config.Ollama.BaseUrl)
+	if err != nil {
+		resp := common.HandleError(err)
+		return &resp, nil
 	}
 	createURL, err := url.JoinPath(baseURL, "/api/create")
 	if err != nil {
@@ -98,6 +99,7 @@ func (l *CreateAgentLogic) CreateAgent(req *types.LlmCreateAgentReq) (*types.Bas
 		resp := common.HandleError(err)
 		return &resp, nil
 	}
+	common.ApplyOllamaForwardHeaders(httpReq)
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	httpResp, err := client.Do(httpReq)

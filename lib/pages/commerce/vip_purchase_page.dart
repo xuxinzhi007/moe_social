@@ -1,13 +1,10 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import '../../auth_service.dart';
 import '../../services/api_service.dart';
 import '../../models/vip_plan.dart';
-import 'recharge_page.dart';
+import 'vip_order_confirm_page.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_toast.dart';
-import '../../services/achievement_hooks.dart';
 
 class VipPurchasePage extends StatefulWidget {
   const VipPurchasePage({super.key});
@@ -19,9 +16,11 @@ class VipPurchasePage extends StatefulWidget {
 class _VipPurchasePageState extends State<VipPurchasePage> {
   List<VipPlan> _plans = [];
   bool _isLoading = true;
+  bool _isOpeningConfirm = false;
   String? _selectedPlanId;
-  bool _isPurchasing = false;
+  String? _loadErrorMessage;
   double _balance = 0.0;
+  final List<String> _vipHighlights = const ['尊贵身份标识', '专享高级功能', '会员专属权益'];
 
   @override
   void initState() {
@@ -29,10 +28,12 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
     _loadInitialData();
   }
 
-  Future<void> _loadInitialData() async {
-    setState(() {
-      _isLoading = true;
-    });
+  Future<void> _loadInitialData({bool showLoading = true}) async {
+    if (mounted && showLoading) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
 
     try {
       final userId = AuthService.currentUser;
@@ -43,40 +44,77 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
       final results = await Future.wait(futures);
       final plans = results[0] as List<VipPlan>;
 
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _plans = plans;
+        _loadErrorMessage = null;
         if (userId != null && results.length > 1) {
           _balance = results[1].balance as double;
         }
-        // 默认选中第一个
         if (plans.isNotEmpty) {
-          _selectedPlanId = plans.first.id;
+          final hasSelectedPlan =
+              plans.any((plan) => plan.id == _selectedPlanId);
+          if (!hasSelectedPlan) {
+            _selectedPlanId = plans.first.id;
+          }
+        } else {
+          _selectedPlanId = null;
         }
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _isLoading = false;
+        _loadErrorMessage = _resolveLoadErrorMessage(e);
       });
-      if (mounted) {
-        MoeToast.error(context, '加载VIP套餐失败，请稍后重试');
-      }
+      MoeToast.error(context, _loadErrorMessage ?? '加载VIP套餐失败，请稍后重试');
     }
+  }
+
+  String _resolveLoadErrorMessage(Object error) {
+    final message = error.toString().toLowerCase();
+    if (message.contains('timeout') || message.contains('超时')) {
+      return '网络超时，加载失败，请下拉刷新或重试';
+    }
+    if (message.contains('socket') ||
+        message.contains('无法连接') ||
+        message.contains('network')) {
+      return '网络连接异常，请检查后重试';
+    }
+    return '加载VIP套餐失败，请稍后重试';
   }
 
   Future<void> _refreshBalance() async {
     final userId = AuthService.currentUser;
     if (userId == null) return;
-    final userInfo = await ApiService.getUserInfo(userId);
-    if (mounted) {
-      setState(() {
-        _balance = userInfo.balance;
-      });
+    try {
+      final userInfo = await ApiService.getUserInfo(userId);
+      if (mounted) {
+        setState(() {
+          _balance = userInfo.balance;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        MoeToast.error(context, '刷新余额失败，请稍后重试');
+      }
     }
   }
 
-  Future<void> _purchaseVip() async {
-    if (_selectedPlanId == null) return;
+  Future<void> _handleRefresh() async {
+    await _loadInitialData(showLoading: false);
+  }
+
+  Future<void> _goOrderConfirm() async {
+    if (_selectedPlanId == null || _isOpeningConfirm) return;
+
+    final selectedPlan = _getSelectedPlan();
+    if (selectedPlan == null) return;
 
     final userId = AuthService.currentUser;
     if (userId == null) {
@@ -84,74 +122,29 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
       return;
     }
 
-    final selectedPlan = _getSelectedPlan();
-    if (selectedPlan == null) return;
-
-    if (_balance < selectedPlan.price) {
-      final shouldRecharge = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('余额不足'),
-          content: Text(
-            '当前余额 ¥${_balance.toStringAsFixed(2)}，开通 ${selectedPlan.name} 需要 ¥${selectedPlan.price.toStringAsFixed(2)}。',
+    setState(() {
+      _isOpeningConfirm = true;
+    });
+    try {
+      final result = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VipOrderConfirmPage(
+            plan: selectedPlan,
+            initialBalance: _balance,
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('取消'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('去充值'),
-            ),
-          ],
         ),
       );
-
-      if (shouldRecharge == true && mounted) {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const RechargePage()),
-        );
+      if (result == true) {
         await _refreshBalance();
-      }
-      return;
-    }
-
-    setState(() {
-      _isPurchasing = true;
-    });
-
-    try {
-      final order = await ApiService.createVipOrder(userId, _selectedPlanId!);
-      await _refreshBalance();
-      final vipStatus = await ApiService.syncUserVipStatus(userId);
-      final isVip = vipStatus['is_vip'] as bool? ?? false;
-      final paid = order.paidAt != null ||
-          order.status.toLowerCase() == 'paid' ||
-          order.status.toLowerCase() == 'completed' ||
-          isVip;
-
-      if (mounted) {
-        if (paid) {
-          MoeToast.success(context, '开通成功，已从钱包扣款 ¥${order.amount.toStringAsFixed(2)}');
-          unawaited(AchievementHooks.recordVipPurchased(userId));
-        } else {
-          MoeToast.show(context, '订单已创建，请稍后查看订单状态',
-              icon: Icons.info_outline_rounded,
-              backgroundColor: const Color(0xFFFFF8E1),
-              textColor: const Color(0xFF8B6914));
+        if (mounted) {
+          Navigator.pop(context, true);
         }
-        Navigator.pop(context, paid);
-      }
-    } catch (e) {
-      if (mounted) {
-        MoeToast.error(context, '购买失败，请稍后重试');
       }
     } finally {
       if (mounted) {
         setState(() {
-          _isPurchasing = false;
+          _isOpeningConfirm = false;
         });
       }
     }
@@ -184,14 +177,19 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
               ),
             ),
           ),
-          
+
           SafeArea(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: Colors.white))
-                : SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ? const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  )
+                : RefreshIndicator(
+                    color: const Color(0xFF7F7FD5),
+                    onRefresh: _handleRefresh,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
                       children: [
                         // Header
                         Padding(
@@ -209,78 +207,75 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(2),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(Icons.check_circle, color: Color(0xFFFFD700), size: 16),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '解锁尊贵身份标识',
-                                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w500),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Container(
-                                    padding: const EdgeInsets.all(2),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(Icons.check_circle, color: Color(0xFFFFD700), size: 16),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '专享高级功能',
-                                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w500),
-                                  ),
-                                ],
+                              const SizedBox(height: 4),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: _vipHighlights
+                                    .map(
+                                      (label) => Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color:
+                                              Colors.white.withValues(alpha: 0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                              Icons.check_circle_rounded,
+                                              color: Color(0xFFFFD66B),
+                                              size: 14,
+                                            ),
+                                            const SizedBox(width: 5),
+                                            Text(
+                                              label,
+                                              style: TextStyle(
+                                                color: Colors.white
+                                                    .withValues(alpha: 0.95),
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
                               ),
                             ],
                           ),
                         ),
 
                         // 套餐列表 (横向滚动)
-                        if (_plans.isEmpty)
-                          SizedBox(
-                            height: 200,
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.inbox_outlined, size: 64, color: Colors.white.withOpacity(0.5)),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    '暂无VIP套餐',
-                                    style: TextStyle(color: Colors.white.withOpacity(0.7)),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
+                        if (_plans.isEmpty && _loadErrorMessage != null)
+                          _buildLoadFailedState()
+                        else if (_plans.isEmpty)
+                          _buildEmptyPlanState()
                         else
                           SizedBox(
                             height: 230,
                             child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
                               scrollDirection: Axis.horizontal,
                               itemCount: _plans.length,
                               itemBuilder: (context, index) {
                                 final plan = _plans[index];
                                 return FadeInUp(
-                                  delay: Duration(milliseconds: 30 * (index % 8)),
+                                  delay:
+                                      Duration(milliseconds: 30 * (index % 8)),
                                   child: _buildPlanCard(plan),
                                 );
                               },
                             ),
                           ),
 
-                        const SizedBox(height: 30),
-                        
+                        const SizedBox(height: 24),
+
                         // 权益说明区
                         Container(
                           width: double.infinity,
@@ -317,10 +312,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                                 ],
                               ),
                               const SizedBox(height: 24),
-                              _buildBenefitItem(Icons.color_lens_rounded, '专属主题色', '解锁更多个性化主题颜色', Colors.purpleAccent),
-                              _buildBenefitItem(Icons.hd_rounded, '高清画质', '上传/查看原图特权', Colors.blueAccent),
-                              _buildBenefitItem(Icons.speed_rounded, '极速体验', '专属线路加速', Colors.greenAccent),
-                              _buildBenefitItem(Icons.star_rounded, '身份铭牌', '尊贵 VIP 专属标识', Colors.orangeAccent),
+                              ..._buildBenefitWidgets(),
                               // 底部留白，防止被浮动按钮遮挡
                               const SizedBox(height: 80),
                             ],
@@ -339,7 +331,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF7F7FD5).withOpacity(0.1),
+              color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, -5),
             ),
@@ -349,74 +341,76 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
         child: SafeArea(
           child: Row(
             children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
+              Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('总计', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF4E5),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '总计 ¥${_getSelectedPlanPrice()}',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFFFF8F00),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          '钱包余额 ¥${_balance.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF7F7FD5),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed:
+                            (_isLoading || _plans.isEmpty || _isOpeningConfirm)
+                                ? null
+                                : _goOrderConfirm,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF7F7FD5),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(26),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          '去确认订单',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
                     Text(
-                      '¥${_getSelectedPlanPrice()}',
-                      style: const TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFFFF8F00),
+                      '确认页将展示钱包扣款明细，未支付前不会开通会员',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        height: 1.35,
                       ),
                     ),
                   ],
-                ),
-              ),
-              const Spacer(),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text('钱包余额', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  Text(
-                    '¥${_balance.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF7F7FD5),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: SizedBox(
-                  height: 54,
-                  child: ElevatedButton(
-                    onPressed: (_isLoading || _isPurchasing || _plans.isEmpty) 
-                        ? null 
-                        : _purchaseVip,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF7F7FD5),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(27),
-                      ),
-                      elevation: 8,
-                      shadowColor: const Color(0xFF7F7FD5).withOpacity(0.4),
-                    ),
-                    child: _isPurchasing
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(Colors.white),
-                            ),
-                          )
-                        : const Text(
-                            '立即支付',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
                 ),
               ),
             ],
@@ -428,7 +422,8 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
 
   String _getSelectedPlanPrice() {
     if (_plans.isEmpty || _selectedPlanId == null) return '0.00';
-    final plan = _plans.firstWhere((p) => p.id == _selectedPlanId, orElse: () => _plans.first);
+    final plan = _plans.firstWhere((p) => p.id == _selectedPlanId,
+        orElse: () => _plans.first);
     return plan.price.toStringAsFixed(2);
   }
 
@@ -442,7 +437,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
 
   Widget _buildPlanCard(VipPlan plan) {
     final isSelected = _selectedPlanId == plan.id;
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -452,10 +447,11 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: 160,
-        margin: const EdgeInsets.only(right: 16, bottom: 20, top: 10), // 留出阴影空间
-        padding: const EdgeInsets.all(20),
+        margin: const EdgeInsets.only(right: 16, bottom: 16, top: 8), // 留出阴影空间
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.white.withOpacity(0.9),
+          color:
+              isSelected ? Colors.white : Colors.white.withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isSelected ? const Color(0xFFFFD700) : Colors.transparent,
@@ -464,21 +460,44 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
           boxShadow: [
             if (isSelected)
               BoxShadow(
-                color: const Color(0xFFFFD700).withOpacity(0.4),
+                color: const Color(0xFFFFD700).withValues(alpha: 0.4),
                 blurRadius: 15,
                 offset: const Offset(0, 8),
               )
             else
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: Colors.grey.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
           ],
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: isSelected ? 1 : 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD66B),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    '已选中',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF6B4B00),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const Spacer(),
             Text(
               plan.name,
               style: TextStyle(
@@ -493,21 +512,21 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: '¥', 
-                    style: TextStyle(
-                      fontSize: 16, 
-                      color: isSelected ? const Color(0xFFFF8F00) : Colors.black87,
-                      fontWeight: FontWeight.bold
-                    )
-                  ),
+                      text: '¥',
+                      style: TextStyle(
+                          fontSize: 16,
+                          color: isSelected
+                              ? const Color(0xFFFF8F00)
+                              : Colors.black87,
+                          fontWeight: FontWeight.bold)),
                   TextSpan(
-                    text: plan.price.toStringAsFixed(0), 
-                    style: TextStyle(
-                      fontSize: 32, 
-                      color: isSelected ? const Color(0xFFFF8F00) : Colors.black87,
-                      fontWeight: FontWeight.bold
-                    )
-                  ),
+                      text: plan.price.toStringAsFixed(0),
+                      style: TextStyle(
+                          fontSize: 32,
+                          color: isSelected
+                              ? const Color(0xFFFF8F00)
+                              : Colors.black87,
+                          fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -527,13 +546,23 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                 ),
               ),
             ),
+            const Spacer(),
+            Text(
+              '点击选择套餐',
+              style: TextStyle(
+                fontSize: 11,
+                color: isSelected ? const Color(0xFF7F7FD5) : Colors.grey[500],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBenefitItem(IconData icon, String title, String subtitle, Color iconColor) {
+  Widget _buildBenefitItem(
+      IconData icon, String title, String subtitle, Color iconColor) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Row(
@@ -541,7 +570,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, color: iconColor, size: 24),
@@ -553,7 +582,10 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF333333)),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Color(0xFF333333)),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -566,5 +598,143 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
         ],
       ),
     );
+  }
+
+  Widget _buildLoadFailedState() {
+    return SizedBox(
+      height: 220,
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off_rounded,
+                  color: Color(0xFF7F7FD5), size: 42),
+              const SizedBox(height: 10),
+              Text(
+                _loadErrorMessage ?? '加载失败，请稍后重试',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF333333),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: _loadInitialData,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('重试'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7F7FD5),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyPlanState() {
+    return SizedBox(
+      height: 200,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.inbox_outlined,
+                size: 64, color: Colors.white.withValues(alpha: 0.5)),
+            const SizedBox(height: 16),
+            Text(
+              '暂无VIP套餐',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildBenefitWidgets() {
+    final selectedPlan = _getSelectedPlan();
+    final benefitsFromPlan =
+        _extractBenefitsFromDescription(selectedPlan?.description ?? '');
+    final fallbackBenefits = <Map<String, dynamic>>[
+      {
+        'icon': Icons.color_lens_rounded,
+        'title': '专属主题色',
+        'subtitle': '解锁更多个性化主题颜色',
+        'color': Colors.purpleAccent,
+      },
+      {
+        'icon': Icons.hd_rounded,
+        'title': '高清画质',
+        'subtitle': '上传/查看原图特权',
+        'color': Colors.blueAccent,
+      },
+      {
+        'icon': Icons.speed_rounded,
+        'title': '极速体验',
+        'subtitle': '专属线路加速',
+        'color': Colors.greenAccent,
+      },
+      {
+        'icon': Icons.star_rounded,
+        'title': '身份铭牌',
+        'subtitle': '尊贵 VIP 专属标识',
+        'color': Colors.orangeAccent,
+      },
+    ];
+
+    if (benefitsFromPlan.isEmpty) {
+      return fallbackBenefits
+          .map(
+            (benefit) => _buildBenefitItem(
+              benefit['icon'] as IconData,
+              benefit['title'] as String,
+              benefit['subtitle'] as String,
+              benefit['color'] as Color,
+            ),
+          )
+          .toList();
+    }
+
+    final colors = <Color>[
+      Colors.purpleAccent,
+      Colors.blueAccent,
+      Colors.greenAccent,
+      Colors.orangeAccent,
+    ];
+    return List.generate(benefitsFromPlan.length, (index) {
+      return _buildBenefitItem(
+        Icons.check_circle_rounded,
+        benefitsFromPlan[index],
+        '当前套餐专属权益说明',
+        colors[index % colors.length],
+      );
+    });
+  }
+
+  List<String> _extractBenefitsFromDescription(String description) {
+    if (description.trim().isEmpty) {
+      return [];
+    }
+    final lines = description
+        .split(RegExp(r'[\n;；|]'))
+        .map((line) => line.replaceAll(RegExp(r'^[\-\d\.\s、]+'), '').trim())
+        .where((line) => line.isNotEmpty)
+        .toList();
+    return lines.take(6).toList();
   }
 }

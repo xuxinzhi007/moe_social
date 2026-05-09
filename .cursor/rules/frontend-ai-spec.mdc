@@ -1,0 +1,28 @@
+---
+description: Frontend AI generation spec for Flutter UI and app flow
+globs: lib/**/*.dart
+alwaysApply: false
+---
+
+# 前端 AI 生成规范（独立）
+
+在修改 `lib/` 下代码时，必须先阅读本规范，再开始改动。
+
+## 修改前确认
+- 详细规范以 `docs/guidelines/Codex启动指南-前端.md` 为准，开始改动前先读取该文档。
+- 先确认需求是否只涉及前端；禁止把后端接口实现逻辑混入前端改动。
+- 先读取并遵守本文件，不得跳过。
+- 必须先阅读将被修改的现有前端文件（至少同页面/同组件目录代码），严格沿用当前项目最新代码风格与 UI 结构。
+- 前端任务优先应用 `implementation-guardrails`（最小改动、可验证交付）；涉及安全专项再按需应用 `security-best-practices`。
+
+## 实现要求
+- 页面放在 `lib/pages/`，复用组件放在 `lib/widgets/`，避免页面内堆积重复 UI。
+- 调用后端必须通过 service 层或现有封装，不在 widget 中直接写网络细节。
+- 异步更新状态前检查 `mounted`，避免生命周期导致崩溃。
+- 错误提示面向用户可读，避免直接暴露原始异常。
+- 代码格式必须与现有 Dart 文件保持一致，提交前执行 `dart format`，并遵守 `analysis_options.yaml` 当前 lint 约束。
+
+## 提交前检查
+- 仅修改 `lib/`（及必要前端配置）相关文件，不混入 `backend/` 文件。
+- 新增页面/组件保持命名清晰、结构一致、可复用。
+- 至少完成一次关键交互自测（加载、成功、失败三种状态）。

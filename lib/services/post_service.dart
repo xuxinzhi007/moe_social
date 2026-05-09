@@ -26,9 +26,12 @@ class PostService {
     );
     List<Post> posts = result['posts'];
 
+    final manager = LikeStateManager();
     for (var post in posts) {
-      LikeStateManager().syncState(post.id, post.isLiked, post.likes);
+      manager.syncState(post.id, post.isLiked, post.likes);
     }
+    // 统一在服务层裁剪缓存，避免页面各自实现导致策略分散。
+    manager.trimPostCaches(maxEntries: 600);
     
     return result;
   }
@@ -107,9 +110,11 @@ class PostService {
     );
     
     // 同步到全局状态管理器
+    final manager = LikeStateManager();
     for (var comment in comments) {
-      LikeStateManager().syncCommentState(comment.id, comment.isLiked, comment.likes);
+      manager.syncCommentState(comment.id, comment.isLiked, comment.likes);
     }
+    manager.trimCommentCaches(maxEntries: 1200);
     
     return comments;
   }

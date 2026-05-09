@@ -10,17 +10,73 @@ api:
   # go-zero REST 超时（毫秒）。LLM 首次加载模型可能较慢，建议 >= 180000
   timeout_ms: 600000
 
+#本地
+
 ollama:
   # 后端能访问到的 Ollama 地址（注意：不是前端能访问，是后端进程所在机器能访问）
   base_url: "http://127.0.0.1:11434"
   # 后端请求 Ollama 的超时（秒）
   timeout_seconds: 300
 
-# 当前公网 API 根（ngrok 等）。须与 App 能访问到的隧道一致。
+# ngrok http 11434 --host-header=rewrite
+
+#线上
+
+#ollama:
+#  # 后端能访问到的 Ollama 地址（注意：不是前端能访问，是后端进程所在机器能访问）
+#  base_url: "https://karan-unsedate-unsimultaneously.ngrok-free.dev"
+#  # 后端请求 Ollama 的超时（秒）
+#  timeout_seconds: 300
+
+
+# 当前公网 API 根（服务器公网IP）。须与 App 能访问到的地址一致。
 # 重启 API 后生效；客户端会 GET /api/public/client-config 读取本字段（权威）。
-# 换 ngrok 域名时：改此处 + 更新 GitHub 上 lib/config/moe_api.json（或 MOE_API_CONFIG_URL），通常无需改 Dart。
+# 换域名时：改此处 + 更新 GitHub 上 lib/config/moe_api.json（或 MOE_API_CONFIG_URL），通常无需改 Dart。
+# 服务器到期改回本地：把下面改成 http://127.0.0.1:8888（或你的局域网 IP），并注释/切换下方 database 为本地块。
 app_client:
-  public_api_base_url: "https://karan-unsedate-unsimultaneously.ngrok-free.dev"
+  public_api_base_url: "http://47.106.175.49:8888"
+
+# 可选：覆盖 api/etc/super.yaml 里的 Image（不配置则完全沿用 super.yaml）。
+
+# 图片“云空间”（实际落到服务端本地目录）
+Image:
+  # 服务端机器的本地目录（与 docker-compose 挂载路径一致）
+  LocalDir: "/app/data/images"
+  # 对外访问地址（用于拼接图片 url；cpolar/服务器域名放这里）
+  # 建议留空：后端会根据本次请求的 Host 自动拼接（cpolar 域名变了也不用改配置）
+  PublicBaseUrl: ""
+  # 1GB = 1073741824（0 表示不限制/不展示容量）
+  MaxBytes: 1073741824
+
+
+# 本地开发示例（取消注释并改成你的路径即可）：
+# image:
+#   local_dir: "/Users/you/moe_social_data/images"
+#   public_base_url: ""   # 空则按请求 Host 自动拼图片 URL
+#   max_bytes: 1073741824
+
+# 私信持久化 private_messages 表（保留天数在写入时按发送方 VIP 快照；见 docs/private_messages.md）
+private_message:
+  retention_days_default: 30   # normal 未配置时的兜底
+  retention_days_normal: 7     # 非有效 VIP 的发送方
+  retention_days_vip: 90       # 发送方 IsVip 且 VipEndAt 未过期
+  body_max_runes: 8000
+  image_paths_max: 9
+
+
+#线上ip ：
+
+#database:
+#  host: "47.106.175.49"
+#  port: 3306
+#  user: "root"
+#  password: "123456xxZ."
+#  dbname: "go_react_demo"
+#  charset: "utf8mb4"
+#  parseTime: true
+#  loc: "Local"
+
+#本地ip :
 
 database:
   host: "127.0.0.1"

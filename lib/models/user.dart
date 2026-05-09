@@ -7,6 +7,10 @@ class User {
   final String email;
   /// 10 位数字 Moe 号（登录账号之一）
   final String moeNo;
+  /// 对外展示 ID（与后端 `display_user_id`，一般为 Moe 号）
+  final String displayUserId;
+  /// 私信自保留偏好：0=自动；7 / 30 为用户自选天数
+  final int messageRetentionChoice;
   final String avatar;
   final String signature; // 个性签名
   final String gender; // 性别
@@ -16,6 +20,10 @@ class User {
   final String? vipExpiresAt; // 后端返回的是字符串格式
   final bool autoRenew;
   final double balance; // 钱包余额
+  /// 收礼累计魅力（服务端按礼物面值×数量累加）
+  final int giftCharm;
+  /// 累计收到的礼物面值总和
+  final double receivedGiftValue;
   final List<String> inventory; // 背包物品ID列表
   final String? equippedFrameId; // 当前佩戴的头像框ID
   final String createdAt; // 后端返回的是字符串格式
@@ -26,6 +34,8 @@ class User {
     required this.username,
     required this.email,
     this.moeNo = '',
+    this.displayUserId = '',
+    this.messageRetentionChoice = 0,
     this.avatar = '',
     this.signature = '',
     this.gender = '',
@@ -35,19 +45,32 @@ class User {
     this.vipExpiresAt,
     this.autoRenew = false,
     this.balance = 0.0,
+    this.giftCharm = 0,
+    this.receivedGiftValue = 0.0,
     this.inventory = const [],
     this.equippedFrameId,
     required this.createdAt,
     required this.updatedAt,
   });
 
+  static String _coerceId(dynamic v) {
+    if (v == null) return '';
+    if (v is String) return v;
+    return v.toString();
+  }
+
   // 从JSON创建User实例（后端返回格式）
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'] as String,
-      username: json['username'] as String,
-      email: json['email'] as String,
+      id: _coerceId(json['id']),
+      username: json['username'] as String? ?? '',
+      email: json['email'] as String? ?? '',
       moeNo: json['moe_no'] as String? ?? '',
+      displayUserId: json['display_user_id'] as String? ??
+          json['moe_no'] as String? ??
+          '',
+      messageRetentionChoice:
+          (json['message_retention_choice'] as num?)?.toInt() ?? 0,
       avatar: json['avatar'] as String? ?? '',
       signature: json['signature'] as String? ?? '',
       gender: json['gender'] as String? ?? '',
@@ -57,10 +80,13 @@ class User {
       vipExpiresAt: json['vip_expires_at'] as String?,
       autoRenew: json['auto_renew'] as bool? ?? false,
       balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
+      giftCharm: (json['gift_charm'] as num?)?.toInt() ?? 0,
+      receivedGiftValue:
+          (json['received_gift_value'] as num?)?.toDouble() ?? 0.0,
       inventory: _parseInventory(json['inventory']),
       equippedFrameId: json['equipped_frame_id'] as String?,
-      createdAt: json['created_at'] as String,
-      updatedAt: json['updated_at'] as String,
+      createdAt: json['created_at'] as String? ?? '',
+      updatedAt: json['updated_at'] as String? ?? '',
     );
   }
 
@@ -71,6 +97,8 @@ class User {
       'username': username,
       'email': email,
       'moe_no': moeNo,
+      'display_user_id': displayUserId,
+      'message_retention_choice': messageRetentionChoice,
       'avatar': avatar,
       'signature': signature,
       'gender': gender,
@@ -80,6 +108,8 @@ class User {
       'vip_expires_at': vipExpiresAt,
       'auto_renew': autoRenew,
       'balance': balance,
+      'gift_charm': giftCharm,
+      'received_gift_value': receivedGiftValue,
       'inventory': inventory,
       'equipped_frame_id': equippedFrameId,
       'created_at': createdAt,
@@ -112,6 +142,8 @@ class User {
     String? username,
     String? email,
     String? moeNo,
+    String? displayUserId,
+    int? messageRetentionChoice,
     String? avatar,
     String? signature,
     String? gender,
@@ -121,6 +153,8 @@ class User {
     String? vipExpiresAt,
     bool? autoRenew,
     double? balance,
+    int? giftCharm,
+    double? receivedGiftValue,
     List<String>? inventory,
     String? equippedFrameId,
     bool clearEquippedFrame = false, // 新增参数用于清除佩戴
@@ -132,6 +166,9 @@ class User {
       username: username ?? this.username,
       email: email ?? this.email,
       moeNo: moeNo ?? this.moeNo,
+      displayUserId: displayUserId ?? this.displayUserId,
+      messageRetentionChoice:
+          messageRetentionChoice ?? this.messageRetentionChoice,
       avatar: avatar ?? this.avatar,
       signature: signature ?? this.signature,
       gender: gender ?? this.gender,
@@ -141,6 +178,8 @@ class User {
       vipExpiresAt: vipExpiresAt ?? this.vipExpiresAt,
       autoRenew: autoRenew ?? this.autoRenew,
       balance: balance ?? this.balance,
+      giftCharm: giftCharm ?? this.giftCharm,
+      receivedGiftValue: receivedGiftValue ?? this.receivedGiftValue,
       inventory: inventory ?? this.inventory,
       equippedFrameId: clearEquippedFrame ? null : (equippedFrameId ?? this.equippedFrameId),
       createdAt: createdAt ?? this.createdAt,
@@ -240,6 +279,8 @@ class User {
       username: username,
       email: email,
       moeNo: moeNo,
+      displayUserId: displayUserId,
+      messageRetentionChoice: messageRetentionChoice,
       avatar: avatar,
       signature: signature,
       gender: gender,
@@ -249,6 +290,8 @@ class User {
       vipExpiresAt: vipExpiresAt,
       autoRenew: autoRenew,
       balance: balance,
+      giftCharm: giftCharm,
+      receivedGiftValue: receivedGiftValue,
       inventory: inventory,
       equippedFrameId: equippedFrameId,
       createdAt: createdAt,

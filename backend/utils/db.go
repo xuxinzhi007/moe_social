@@ -27,7 +27,7 @@ func EnsureDB() error {
 			ensureDBErr = err
 			return
 		}
-		ensureDBErr = InitDB()
+		ensureDBErr = InitDB(false)
 	})
 	return ensureDBErr
 }
@@ -52,8 +52,9 @@ func InitConfig() error {
 	return nil
 }
 
-// InitDB 初始化数据库连接
-func InitDB() error {
+// InitDB 初始化数据库连接。
+// runAutoMigrate 为 true 时执行 GORM AutoMigrate（改模型/首启库时用）；日常启动传 false，避免多副本抢 DDL、加快启动。
+func InitDB(runAutoMigrate bool) error {
 	// 配置gorm日志
 	gormConfig := &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
@@ -91,51 +92,76 @@ func InitDB() error {
 	// 设置连接最大生命周期
 	sqlDB.SetConnMaxLifetime(1 * time.Hour)
 
-	// 自动迁移数据库表
-	if err := autoMigrate(); err != nil {
-		return fmt.Errorf("自动迁移数据库表失败: %v", err)
+	if runAutoMigrate {
+		if err := autoMigrate(); err != nil {
+			return fmt.Errorf("自动迁移数据库表失败: %v", err)
+		}
+		postMigrate(DB)
+	} else {
+		log.Println("已跳过 AutoMigrate 与启动数据同步（补 moe_no、默认礼物）；改表/改种子后请执行: go run super.go -migrate")
 	}
-	postMigrate(DB)
 
 	log.Println("数据库连接成功")
 	return nil
 }
 
-// autoMigrate 自动迁移数据库表
+// autoMigrate 自动迁移数据库表（串行执行，避免并发建表竞争）
 func autoMigrate() error {
-	return DB.AutoMigrate(
+	// 模型之间存在外键/关联依赖，并发迁移会在首次建表时竞争创建同一张表（如 users）。
+	// 串行迁移能保证幂等和稳定，避免 "Table already exists" 导致启动失败。
+	models := []interface{}{
+		// 用户和VIP相关
 		&model.User{},
 		&model.VipPlan{},
-		&model.VipOrder{}, // 合并了VIP记录功能
+		&model.VipOrder{},
 		&model.VipRecord{},
-		&model.Transaction{},   // 交易记录表
-		&model.Post{},          // 帖子表
-		&model.PostReport{},    // 帖子举报
-		&model.Like{},          // 统一点赞表
-		&model.TopicTag{},      // 话题标签表
-		&model.PostTopic{},     // 帖子标签关联表
-		&model.Comment{},       // 评论表
-		&model.Follow{},        // 关注关系表
-		&model.Notification{},  // 通知表
-		&model.UserAvatar{},    // 用户虚拟形象表
-		&model.AvatarOutfit{},  // 虚拟形象装扮物品表
-		&model.Emoji{},         // 单个表情包表
-		&model.EmojiPack{},     // 表情包套餐表
-		&model.UserEmojiPack{}, // 用户拥有的表情包关联表
+		&model.Transaction{},
+		// 社交相关
+		&model.Post{},
+		&model.PostReport{},
+		&model.Like{},
+		&model.TopicTag{},
+		&model.PostTopic{},
+		&model.Comment{},
+		&model.Follow{},
+		// 通知和形象相关
+		&model.Notification{},
+		&model.UserAvatar{},
+		&model.AvatarOutfit{},
+		&model.Emoji{},
+		&model.EmojiPack{},
+		&model.UserEmojiPack{},
 		&model.UserMemory{},
+		&model.UserMemoryFeedback{},
+		&model.UserMemoryProfileCache{},
 		// 签到等级系统
-		&model.UserLevel{},     // 用户等级表
-		&model.LevelConfig{},   // 等级配置表
-		&model.UserCheckIn{},   // 用户签到记录表
-		&model.CheckInReward{}, // 签到奖励配置表
-		&model.ExpLog{},        // 经验日志表
-		&model.FriendRequest{}, // 好友申请
-	)
+		&model.UserLevel{},
+		&model.LevelConfig{},
+		&model.UserCheckIn{},
+		&model.CheckInReward{},
+		&model.ExpLog{},
+		&model.FriendRequest{},
+		// 礼物和社区相关
+		&model.Gift{},
+		&model.GiftRecord{},
+		&model.Group{},
+		&model.GroupMember{},
+		&model.GroupPost{},
+		&model.PrivateMessage{},
+	}
+
+	if err := DB.AutoMigrate(models...); err != nil {
+		return fmt.Errorf("迁移失败: %v", err)
+	}
+
+	log.Println("数据库表迁移完成（串行执行）")
+	return nil
 }
 
-// After auto-migrate hooks for legacy rows.
+// postMigrate 仅在 -migrate 时调用：与 AutoMigrate 同频，避免每次普通启动扫表、写礼物。
 func postMigrate(db *gorm.DB) {
 	BackfillAllUserMoeNos(db)
+	SeedDefaultGifts(db)
 }
 
 // GetDB 获取数据库实例，并确保连接有效
@@ -144,14 +170,14 @@ func GetDB() *gorm.DB {
 	sqlDB, err := DB.DB()
 	if err != nil {
 		// 如果获取底层sql.DB失败，尝试重新初始化
-		InitDB()
+		_ = InitDB(false)
 		return DB
 	}
 
 	// 使用Ping检查连接是否活跃
 	if err := sqlDB.Ping(); err != nil {
 		// 如果连接无效，重新初始化
-		InitDB()
+		_ = InitDB(false)
 	}
 
 	return DB

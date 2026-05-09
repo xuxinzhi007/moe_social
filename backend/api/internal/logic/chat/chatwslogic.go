@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"backend/api/internal/svc"
+	"backend/rpc/pb/super"
 	"backend/utils"
 
 	"github.com/gorilla/websocket"
@@ -79,8 +80,8 @@ func (l *ChatWsLogic) ChatWs() error {
 		return nil
 	}
 
-	// 获取用户 ID
-	userID := fmt.Sprintf("%d", claims.UserID)
+	// 获取用户 ID（与投递时 NormalizeChatUserIDKey 对齐）
+	userID := NormalizeChatUserIDKey(fmt.Sprintf("%d", claims.UserID))
 
 	// 升级 HTTP 连接为 WebSocket
 	conn, err := upgrader.Upgrade(*w, r, nil)
@@ -127,7 +128,7 @@ func (l *ChatWsLogic) handleConnection(userID string, conn *websocket.Conn) {
 			}
 			break
 		}
-		l.Logger.Infof("Received chat message from %s: %s", userID, message)
+		logx.WithContext(l.ctx).Debugf("chat ws raw from %s len=%d", userID, len(message))
 		// 处理前端发送的消息
 		l.handleMessage(userID, message)
 	}
@@ -142,15 +143,13 @@ func (l *ChatWsLogic) handleMessage(userID string, message []byte) {
 		return
 	}
 
-	// 打印完整消息，用于调试
-	l.Logger.Infof("Received full message from %s: %v", userID, msg)
-
 	// 根据消息类型处理
 	msgType, ok := msg["type"].(string)
 	if !ok {
 		l.Logger.Errorf("Invalid message type")
 		return
 	}
+	logx.WithContext(l.ctx).Debugf("chat ws message from %s type=%s", userID, msgType)
 
 	switch msgType {
 	case "ping":
@@ -169,7 +168,7 @@ func (l *ChatWsLogic) handleMessage(userID string, message []byte) {
 		// 处理聊天消息
 		l.handleChatMessage(userID, msg)
 	default:
-		l.Logger.Infof("Unknown message type: %s", msgType)
+		logx.WithContext(l.ctx).Debugf("chat ws unknown type from %s: %s", userID, msgType)
 	}
 }
 
@@ -182,79 +181,68 @@ func (l *ChatWsLogic) handleChatMessage(userID string, msg map[string]interface{
 		return
 	}
 
-	// 支持 both "target_id" and "to" fields
-	targetID, ok := msg["target_id"].(string)
+	targetID, ok := PeerUserIDFromChatMessage(msg)
 	if !ok {
-		// 尝试从 "to" 字段获取
-		targetID, ok = msg["to"].(string)
-		if !ok {
-			l.Logger.Errorf("Invalid target ID: neither 'target_id' nor 'to' field found")
-			return
-		}
+		l.Logger.Errorf("Invalid target ID: neither 'target_id' nor 'to' (string/number)")
+		return
 	}
 
-	// 尝试获取发送者信息，支持多种字段名
-	senderName := "用户"
+	// 头像可来自客户端；展示名在落库成功后一律由服务端解析（与 REST 发送路径一致）。
 	senderAvatar := ""
-
-	// 尝试从不同字段名获取发送者名称
-	if name, ok := msg["sender_name"].(string); ok && name != "" {
-		senderName = name
-	} else if name, ok := msg["senderName"].(string); ok && name != "" {
-		senderName = name
-	}
-
-	// 尝试从不同字段名获取发送者头像
 	if avatar, ok := msg["sender_avatar"].(string); ok && avatar != "" {
 		senderAvatar = avatar
 	} else if avatar, ok := msg["senderAvatar"].(string); ok && avatar != "" {
 		senderAvatar = avatar
 	}
 
-	// 打印发送者信息，用于调试
-	l.Logger.Infof("Sending message from %s to %s: senderName=%s, senderAvatar=%s", userID, targetID, senderName, senderAvatar)
+	logx.WithContext(l.ctx).Debugf("chat ws send from=%s to=%s", userID, targetID)
 
-	// 创建聊天消息
-	chatMsg := map[string]interface{}{
-		"from":          userID,
-		"content":       content,
-		"time":          time.Now().Format(time.RFC3339),
-		"sender_name":   senderName,
-		"sender_avatar": senderAvatar,
-		"senderName":    senderName,   // 同时添加驼峰命名的字段，确保前端兼容
-		"senderAvatar":  senderAvatar, // 同时添加驼峰命名的字段，确保前端兼容
+	paths := extractImagePathsFromWSMsg(msg)
+	rpcResp, rpcErr := l.svcCtx.SuperRpcClient.SendPrivateMessage(l.ctx, &super.SendPrivateMessageReq{
+		SenderId:    userID,
+		ReceiverId:  targetID,
+		Body:        content,
+		ImagePaths:  paths,
+	})
+	if rpcErr != nil {
+		l.Errorf("SendPrivateMessage (ws path): %v", rpcErr)
+	}
+	if rpcErr != nil || rpcResp == nil || rpcResp.Message == nil || strings.TrimSpace(rpcResp.Message.Id) == "" {
+		_ = l.sendToUser(userID, map[string]interface{}{
+			"type":    "private_message_error",
+			"message": "消息保存失败，请检查网络或稍后重试",
+		})
+		return
 	}
 
-	// 发送消息给目标用户
-	l.sendToUser(targetID, chatMsg)
+	senderName, senderAvatar := ResolvePrivateMessageSenderProfile(
+		l.ctx, l.svcCtx, userID, rpcResp.Message, senderAvatar,
+	)
+	DeliverPrivateMessageRealTime(l.ctx, l.svcCtx, userID, targetID, content, senderName, senderAvatar, rpcResp.Message)
+}
+
+func extractImagePathsFromWSMsg(msg map[string]interface{}) []string {
+	v, ok := msg["image_paths"]
+	if !ok {
+		v, ok = msg["imagePaths"]
+	}
+	if !ok {
+		return nil
+	}
+	arr, ok := v.([]interface{})
+	if !ok {
+		return nil
+	}
+	out := make([]string, 0, len(arr))
+	for _, x := range arr {
+		if s, ok := x.(string); ok && s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 // 发送消息给指定用户
 func (l *ChatWsLogic) sendToUser(userID string, data interface{}) bool {
-	chatConnectionsMutex.RLock()
-	conn, ok := chatConnections[userID]
-	chatConnectionsMutex.RUnlock()
-
-	if !ok {
-		return false
-	}
-
-	msgData, err := json.Marshal(data)
-	if err != nil {
-		l.Logger.Errorf("Error marshaling message: %v", err)
-		return false
-	}
-
-	err = conn.WriteMessage(websocket.TextMessage, msgData)
-	if err != nil {
-		l.Logger.Errorf("Error sending message to %s: %v", userID, err)
-		// 移除无效连接
-		chatConnectionsMutex.Lock()
-		delete(chatConnections, userID)
-		chatConnectionsMutex.Unlock()
-		conn.Close()
-		return false
-	}
-
-	return true
+	return PushJSONToChatUser(userID, data)
 }

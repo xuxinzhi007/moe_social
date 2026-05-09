@@ -1,0 +1,11 @@
+FROM alpine:latest
+WORKDIR /app
+
+RUN apk add --no-cache ca-certificates
+
+RUN mkdir -p /app/rpc/etc /app/config && \
+    ln -s /app/config ./config
+
+EXPOSE 8080
+
+CMD ["/app/rpc/moe-social-rpc", "-f", "/app/rpc/etc/super.yaml"]

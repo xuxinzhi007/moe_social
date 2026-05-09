@@ -2,6 +2,7 @@ package logic
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"backend/model"
@@ -98,6 +99,19 @@ func (l *UpdateUserInfoLogic) UpdateUserInfo(in *super.UpdateUserInfoReq) (*supe
 		user.EquippedFrameId = in.EquippedFrameId
 	}
 
+	if mt := strings.TrimSpace(in.MessageRetention); mt != "" {
+		switch strings.ToLower(mt) {
+		case "auto", "default", "0":
+			user.MessageRetentionChoice = 0
+		case "7":
+			user.MessageRetentionChoice = 7
+		case "30":
+			user.MessageRetentionChoice = 30
+		default:
+			return nil, errorx.InvalidArgument("message_retention 仅支持 auto、7、30")
+		}
+	}
+
 	// 3. 保存更新
 	// Use Updates to avoid touching unrelated fields (especially Password).
 	updates := map[string]interface{}{}
@@ -126,6 +140,9 @@ func (l *UpdateUserInfoLogic) UpdateUserInfo(in *super.UpdateUserInfoReq) (*supe
 		updates["equipped_frame_id"] = ""
 	} else if in.EquippedFrameId != "" {
 		updates["equipped_frame_id"] = user.EquippedFrameId
+	}
+	if strings.TrimSpace(in.MessageRetention) != "" {
+		updates["message_retention_choice"] = user.MessageRetentionChoice
 	}
 
 	if len(updates) == 0 {

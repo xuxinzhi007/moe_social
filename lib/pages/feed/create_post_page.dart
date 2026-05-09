@@ -9,8 +9,9 @@ import '../../models/topic_tag.dart';
 import '../../services/api_service.dart';
 import '../../services/achievement_hooks.dart';
 import '../../providers/loading_provider.dart';
-import '../../widgets/compact_topic_selector.dart';
 import '../../widgets/app_message_widget.dart';
+import '../../widgets/moe_toast.dart';
+import '../../widgets/topic_tag_selector.dart';
 import '../gallery/cloud_gallery_page.dart';
 import '../../models/hand_draw_card.dart';
 import 'hand_draw_editor_page.dart';
@@ -19,7 +20,9 @@ import '../../utils/hand_draw_raster.dart';
 import '../../utils/media_url.dart';
 
 class CreatePostPage extends StatefulWidget {
-  const CreatePostPage({super.key});
+  /// 传入已有帖子时进入编辑模式，否则为新建发布模式。
+  final Post? initialPost;
+  const CreatePostPage({super.key, this.initialPost});
 
   @override
   State<CreatePostPage> createState() => _CreatePostPageState();
@@ -28,12 +31,14 @@ class CreatePostPage extends StatefulWidget {
 class _CreatePostPageState extends State<CreatePostPage> {
   final TextEditingController _contentController = TextEditingController();
   final List<File> _selectedImages = [];
-  final List<String> _selectedImageUrls = []; // 用于存储从云端图库选择的网络图片URL
+  final List<String> _selectedImageUrls = [];
   final ImagePicker _picker = ImagePicker();
   String? _userName;
   String? _userAvatar;
-  List<TopicTag> _selectedTopicTags = []; // 话题标签列表
+  List<TopicTag> _selectedTopicTags = [];
   HandDrawCardData? _handDrawCard;
+
+  bool get _isEditMode => widget.initialPost != null;
 
   Future<void> _openHandDrawEditor() async {
     final data = await Navigator.push<HandDrawCardData>(
@@ -93,10 +98,81 @@ class _CreatePostPageState extends State<CreatePostPage> {
     });
   }
 
+  void _openTopicTagSelector() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (bottomSheetContext) => Container(
+        height: MediaQuery.of(bottomSheetContext).size.height * 0.8,
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Row(
+              children: [
+                const Text(
+                  '选择话题标签',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => Navigator.pop(bottomSheetContext),
+                  child: const Text('完成'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: TopicTagSelector(
+                selectedTags: _selectedTopicTags,
+                onTagsChanged: (tags) {
+                  setState(() {
+                    _selectedTopicTags = List<TopicTag>.from(tags);
+                  });
+                },
+                userId: AuthService.currentUser ?? 'guest',
+                maxTags: 5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     _loadUserInfo();
+    // 编辑模式：预填原帖内容
+    final init = widget.initialPost;
+    if (init != null) {
+      _contentController.text = init.displayCaption;
+      _selectedImageUrls.addAll(init.images);
+      _selectedTopicTags = List.from(init.topicTags);
+      // 恢复手绘卡片
+      if (init.handDrawCardJson.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(init.handDrawCardJson);
+          if (decoded is Map<String, dynamic>) {
+            _handDrawCard = HandDrawCardData.fromJson(decoded);
+          }
+        } catch (_) {}
+      }
+    }
   }
 
   Future<void> _loadUserInfo() async {
@@ -107,6 +183,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
     try {
       final user = await ApiService.getUserInfo(userId);
+      if (!mounted) return;
       setState(() {
         _userName = user.username;
         _userAvatar = user.avatar.isNotEmpty ? user.avatar : null;
@@ -130,8 +207,13 @@ class _CreatePostPageState extends State<CreatePostPage> {
       return;
     }
 
+    if (_isEditMode) {
+      await _saveEdit(caption);
+      return;
+    }
+
     final loadingProvider = context.read<LoadingProvider>();
-    await loadingProvider.executeOperation<void>(
+    await loadingProvider.executeOperation<Post>(
       key: LoadingKeys.createPost,
       operation: () async {
         final List<String> imageUrls = [];
@@ -154,12 +236,17 @@ class _CreatePostPageState extends State<CreatePostPage> {
         String thumbUrl = '';
         if (_handDrawCard != null) {
           handJson = jsonEncode(_handDrawCard!.toJson());
-          final png = await handDrawCardToPngBytes(_handDrawCard!);
-          if (png != null && png.isNotEmpty) {
-            thumbUrl = await ApiService.uploadImageBytes(
-              png,
-              filename: 'hand_draw_thumb.png',
-            );
+          try {
+            final png = await handDrawCardToPngBytes(_handDrawCard!);
+            if (png != null && png.isNotEmpty) {
+              thumbUrl = await ApiService.uploadImageBytes(
+                png,
+                filename: 'hand_draw_thumb.png',
+              );
+            }
+          } catch (e) {
+            // 缩略图上传失败不应阻断主流程；保留 hand_draw_card 让动态可正常发布。
+            debugPrint('手绘缩略图上传失败，继续发布: $e');
           }
         }
 
@@ -179,7 +266,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
           handDrawThumbUrl: thumbUrl,
         );
 
-        await ApiService.createPost(newPost);
+        final createdPost = await ApiService.createPost(newPost);
         try {
           await AchievementHooks.recordPostPublished(
             userId,
@@ -187,14 +274,82 @@ class _CreatePostPageState extends State<CreatePostPage> {
             contentLength: caption.length,
           );
         } catch (_) {}
+        return createdPost;
       },
-      onSuccess: (_) {
-        loadingProvider.setSuccess('帖子发布成功！(≧∇≦)/');
-        Navigator.pop(context, true);
+      onSuccess: (createdPost) {
+        if (!mounted) return;
+        Navigator.pop(context, createdPost);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final rootCtx = AuthService.navigatorKey.currentContext;
+          if (rootCtx != null) {
+            MoeToast.success(rootCtx, '帖子发布成功！(≧∇≦)/');
+          }
+        });
       },
       onError: (_) {
         // 错误已由 LoadingProvider 统一显示
       },
+    );
+  }
+
+  Future<void> _saveEdit(String caption) async {
+    final loadingProvider = context.read<LoadingProvider>();
+    final init = widget.initialPost!;
+    await loadingProvider.executeOperation<Post>(
+      key: LoadingKeys.createPost,
+      operation: () async {
+        final List<String> imageUrls = [];
+        for (final image in _selectedImages) {
+          imageUrls.add(await ApiService.uploadImage(image));
+        }
+        imageUrls.addAll(_selectedImageUrls);
+
+        String? handJson;
+        String? thumbUrl;
+        if (_handDrawCard != null) {
+          handJson = jsonEncode(_handDrawCard!.toJson());
+          // 只有手绘内容有变化时才重新上传缩略图
+          if (handJson != init.handDrawCardJson) {
+            try {
+              final png = await handDrawCardToPngBytes(_handDrawCard!);
+              if (png != null && png.isNotEmpty) {
+                thumbUrl = await ApiService.uploadImageBytes(
+                  png,
+                  filename: 'hand_draw_thumb.png',
+                );
+              }
+            } catch (e) {
+              // 编辑态同样容错：缩略图失败保留原图或空，不阻断保存。
+              debugPrint('编辑动态时手绘缩略图上传失败，继续保存: $e');
+              thumbUrl = init.handDrawThumbUrl;
+            }
+          } else {
+            thumbUrl = init.handDrawThumbUrl;
+          }
+        }
+
+        return await ApiService.updatePost(
+          init.id,
+          content: caption,
+          images: imageUrls,
+          topicTags: _selectedTopicTags
+              .map((t) => {'name': t.name, 'color': t.color})
+              .toList(),
+          handDrawCard: handJson,
+          handDrawThumbUrl: thumbUrl,
+        );
+      },
+      onSuccess: (updated) {
+        if (!mounted) return;
+        Navigator.pop(context, updated);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final rootCtx = AuthService.navigatorKey.currentContext;
+          if (rootCtx != null) {
+            MoeToast.success(rootCtx, '动态已更新 ✨');
+          }
+        });
+      },
+      onError: (_) {},
     );
   }
 
@@ -206,7 +361,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('记录心情', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+        title: Text(
+          _isEditMode ? '编辑动态' : '记录心情',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+        ),
         backgroundColor: const Color(0xFFF5F7FA),
         elevation: 0,
         centerTitle: true,
@@ -248,9 +406,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   ),
                   padding: EdgeInsets.zero,
                 ),
-                child: const Text(
-                  '发布',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                child: Text(
+                  _isEditMode ? '保存' : '发布',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
               ),
             ),
@@ -407,7 +565,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                               ),
                             ),
                             const SizedBox(width: 4),
-                            InkWell(
+                            GestureDetector(
                               onTap: () {
                                 setState(() {
                                   _selectedTopicTags.remove(tag);
@@ -447,30 +605,11 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   _buildToolIcon(Icons.brush_rounded, const Color(0xFF7F7FD5), _openHandDrawEditor),
                   _buildToolIcon(Icons.image_rounded, Colors.green, _addImage),
                   _buildToolIcon(Icons.cloud_upload_rounded, Colors.blue, _openCloudGallery),
-                  _buildToolIcon(Icons.tag_rounded, Colors.purple, () {
-                    // 临时打开话题选择器
-                    showModalBottomSheet(
-                      context: context,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                        ),
-                        child: CompactTopicSelector(
-                          selectedTags: _selectedTopicTags,
-                          onTagsChanged: (tags) {
-                            setState(() {
-                              _selectedTopicTags = tags;
-                            });
-                          },
-                          userId: AuthService.currentUser ?? 'guest',
-                          maxTags: 5,
-                        ),
-                      ),
-                    );
-                  }),
+                  _buildToolIcon(
+                    Icons.tag_rounded,
+                    Colors.purple,
+                    _openTopicTagSelector,
+                  ),
                   Container(
                     width: 1,
                     height: 24,
@@ -536,16 +675,19 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }
 
   Widget _buildToolIcon(IconData icon, Color color, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          shape: BoxShape.circle,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 22),
         ),
-        child: Icon(icon, color: color, size: 22),
       ),
     );
   }

@@ -1,0 +1,10 @@
+FROM alpine:latest
+WORKDIR /app
+
+RUN apk add --no-cache ca-certificates
+
+RUN mkdir -p /app/etc /app/config
+
+EXPOSE 8888
+
+CMD ["/app/api/moe-social-api", "-f", "/app/etc/super.yaml"]

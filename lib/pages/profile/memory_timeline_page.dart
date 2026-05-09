@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../models/user_memory.dart';
-import '../../models/user.dart';
+import '../../models/user_memory_profile.dart';
 import '../../services/memory_service.dart';
 import '../../auth_service.dart';
 import 'package:intl/intl.dart';
+import '../../widgets/moe_toast.dart';
 
 class MemoryTimelinePage extends StatefulWidget {
   const MemoryTimelinePage({super.key});
@@ -14,8 +15,11 @@ class MemoryTimelinePage extends StatefulWidget {
 
 class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
   List<UserMemory> _memories = [];
+  List<UserMemoryProfile> _profiles = [];
   bool _isLoading = true;
   String? _error;
+  bool _hasMore = false;
+  int _total = 0;
 
   @override
   void initState() {
@@ -31,18 +35,21 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
       });
 
       final user = await AuthService.getUserInfo();
-      if (user != null) {
-        final memories = await MemoryService.getUserMemories(user.id);
-        // Sort memories by created_at descending (newest first)
-        memories.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        setState(() {
-          _memories = memories;
-        });
-      } else {
-        setState(() {
-          _error = '未登录';
-        });
-      }
+      final paged = await MemoryService.getUserMemoriesPaged(
+        user.id,
+        limit: 100,
+        offset: 0,
+      );
+      final memories = (paged['items'] as List<UserMemory>? ?? const []);
+      final profiles = await MemoryService.getUserMemoryProfiles(user.id);
+      // Sort memories by created_at descending (newest first)
+      memories.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      setState(() {
+        _memories = memories;
+        _profiles = profiles;
+        _hasMore = paged['has_more'] == true;
+        _total = (paged['total'] as int?) ?? memories.length;
+      });
     } catch (e) {
       setState(() {
         _error = '加载失败: $e';
@@ -78,24 +85,110 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
       try {
         await MemoryService.deleteUserMemoryByKey(memory.userId, memory.key);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('记忆已删除')),
-          );
+          MoeToast.success(context, '记忆已删除');
           _loadMemories(); // Reload list
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('删除失败: $e')),
-          );
+          MoeToast.error(context, '删除失败: $e');
         }
       }
     }
   }
 
+  Future<void> _feedbackMemory(
+    UserMemory memory, {
+    required String feedbackType,
+    String? correctedValue,
+    String? reason,
+  }) async {
+    try {
+      await MemoryService.submitUserMemoryFeedback(
+        userId: memory.userId,
+        key: memory.key,
+        feedbackType: feedbackType,
+        correctedValue: correctedValue,
+        reason: reason,
+      );
+      if (!mounted) return;
+      switch (feedbackType) {
+        case 'accept':
+          MoeToast.success(context, '已标记为有效记忆');
+          break;
+        case 'reject':
+          MoeToast.success(context, '已标记为低质量记忆');
+          break;
+        case 'correct':
+          MoeToast.success(context, '记忆已纠正');
+          break;
+      }
+      await _loadMemories();
+    } catch (e) {
+      if (mounted) MoeToast.error(context, '反馈失败: $e');
+    }
+  }
+
+  Future<void> _showCorrectDialog(UserMemory memory) async {
+    final valueController = TextEditingController(text: memory.value);
+    final reasonController = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('纠正记忆'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('键：${memory.key}'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: valueController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: '正确记忆值',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: '说明（可选）',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('提交纠正'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final corrected = valueController.text.trim();
+    if (corrected.isEmpty) {
+      if (mounted) MoeToast.error(context, '纠正内容不能为空');
+      return;
+    }
+    await _feedbackMemory(
+      memory,
+      feedbackType: 'correct',
+      correctedValue: corrected,
+      reason: reasonController.text.trim(),
+    );
+  }
+
   String _formatDate(String dateStr) {
     try {
-      final date = DateTime.parse(dateStr).toLocal();
+      final normalized = dateStr.replaceFirst(' ', 'T');
+      final date = DateTime.parse(normalized).toLocal();
       return DateFormat('yyyy-MM-dd HH:mm').format(date);
     } catch (e) {
       return dateStr;
@@ -107,7 +200,8 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('模型记忆线', style: TextStyle(fontWeight: FontWeight.bold)),
+        title:
+            const Text('模型记忆线', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -158,13 +252,93 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
       );
     }
 
-    return ListView.builder(
+    return ListView(
       padding: const EdgeInsets.all(16),
-      itemCount: _memories.length,
-      itemBuilder: (context, index) {
-        final memory = _memories[index];
-        return _buildMemoryCard(memory);
-      },
+      children: [
+        _buildProfileCard(_profiles),
+        const SizedBox(height: 12),
+        ..._memories.map(_buildMemoryCard),
+      ],
+    );
+  }
+
+  Widget _buildProfileCard(List<UserMemoryProfile> profiles) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.psychology_alt_rounded,
+                    size: 18, color: Theme.of(context).primaryColor),
+                const SizedBox(width: 8),
+                const Text(
+                  '账号画像摘要（后端记忆聚合）',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '当前账号的画像由数据库记忆实时聚合，跨端共享，不依赖本地缓存。',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 10),
+            if (profiles.isEmpty)
+              Text(
+                '暂无可聚合画像，继续聊天后会逐步形成。',
+                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              )
+            else
+              ...profiles.map(
+                (p) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7F8FC),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${p.memoryType} · ${p.itemCount}条',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF4F46E5),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          p.summary,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            height: 1.45,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 6),
+            Text(
+              _hasMore
+                  ? '已加载 ${_memories.length}/$_total 条，更多请分页查看。'
+                  : '共 $_total 条账号记忆。',
+              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -180,7 +354,8 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
           children: [
             Row(
               children: [
-                Icon(Icons.vpn_key_rounded, size: 16, color: Theme.of(context).primaryColor),
+                Icon(Icons.vpn_key_rounded,
+                    size: 16, color: Theme.of(context).primaryColor),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -192,7 +367,8 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.grey, size: 20),
+                  icon: const Icon(Icons.delete_outline,
+                      color: Colors.grey, size: 20),
                   onPressed: () => _deleteMemory(memory),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -204,11 +380,67 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
               memory.value,
               style: const TextStyle(fontSize: 15, height: 1.5),
             ),
+            if ((memory.source?.isNotEmpty == true) ||
+                (memory.sessionId?.isNotEmpty == true) ||
+                (memory.sourceMsgId?.isNotEmpty == true)) ...[
+              const SizedBox(height: 8),
+              Text(
+                [
+                  if (memory.source?.isNotEmpty == true) '来源: ${memory.source}',
+                  if (memory.sessionId?.isNotEmpty == true)
+                    '会话: ${memory.sessionId}',
+                  if (memory.sourceMsgId?.isNotEmpty == true)
+                    '消息: ${memory.sourceMsgId}',
+                ].join('  |  '),
+                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+              ),
+            ],
             const SizedBox(height: 12),
             Row(
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Icon(Icons.access_time_rounded, size: 14, color: Colors.grey[400]),
+                if (memory.memoryType != null && memory.memoryType!.isNotEmpty)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEEF2FF),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      memory.memoryType!,
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF4F46E5)),
+                    ),
+                  ),
+                const SizedBox(width: 8),
+                if (memory.confidence != null)
+                  Text(
+                    '置信度 ${(memory.confidence! * 100).clamp(0, 100).toStringAsFixed(0)}%',
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                  ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.thumb_up_alt_outlined, size: 18),
+                  tooltip: '认可',
+                  onPressed: () =>
+                      _feedbackMemory(memory, feedbackType: 'accept'),
+                  visualDensity: VisualDensity.compact,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.thumb_down_alt_outlined, size: 18),
+                  tooltip: '驳回',
+                  onPressed: () =>
+                      _feedbackMemory(memory, feedbackType: 'reject'),
+                  visualDensity: VisualDensity.compact,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  tooltip: '纠正',
+                  onPressed: () => _showCorrectDialog(memory),
+                  visualDensity: VisualDensity.compact,
+                ),
+                Icon(Icons.access_time_rounded,
+                    size: 14, color: Colors.grey[400]),
                 const SizedBox(width: 4),
                 Text(
                   _formatDate(memory.createdAt),

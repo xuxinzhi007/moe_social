@@ -36,9 +36,17 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // 真机常用 ABI；跳过 x86_64 可避开 Agora iris_method_channel 在模拟器 ABI 上的 CMake 问题并缩短编译
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+        }
     }
 
     buildTypes {
+        debug {
+            // 本地开发包与正式包共存，避免签名冲突导致覆盖失败。
+            applicationIdSuffix = ".dev"
+        }
         release {
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false

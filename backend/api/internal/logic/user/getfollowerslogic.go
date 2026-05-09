@@ -47,19 +47,7 @@ func (l *GetFollowersLogic) GetFollowers(req *types.GetFollowersReq) (resp *type
 	// 转换为API响应格式
 	respUsers := make([]types.User, 0, len(rpcResp.Users))
 	for _, user := range rpcResp.Users {
-		respUser := types.User{
-			Id:           user.Id,
-			Username:     user.Username,
-			Email:        user.Email,
-			Avatar:       user.Avatar,
-			CreatedAt:    user.CreatedAt,
-			UpdatedAt:    user.UpdatedAt,
-			IsVip:        user.IsVip,
-			VipExpiresAt: user.VipExpiresAt,
-			AutoRenew:    user.AutoRenew,
-			Balance:      float64(user.Balance),
-		}
-		respUsers = append(respUsers, respUser)
+		respUsers = append(respUsers, rpcUserToTypes(user))
 	}
 	
 	l.Debug("获取粉丝列表成功:", len(respUsers), "个粉丝，总数:", rpcResp.Total)

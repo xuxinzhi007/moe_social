@@ -380,7 +380,15 @@ class TopicTagService {
     // 这里暂时返回热门标签和一些变化
     final popular = getPopularTags(limit: limit ~/ 2);
     final recent = getRecentTags(userId, limit: limit - popular.length);
-
-    return [...popular, ...recent].take(limit).toList();
+    final merged = [...popular, ...recent];
+    final seen = <String>{};
+    final unique = <TopicTag>[];
+    for (final tag in merged) {
+      if (seen.add(tag.id)) {
+        unique.add(tag);
+      }
+      if (unique.length >= limit) break;
+    }
+    return unique;
   }
 }

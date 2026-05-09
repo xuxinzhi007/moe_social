@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../models/post.dart';
 import '../../models/topic_tag.dart';
+import '../../services/api_service.dart';
 import '../../services/post_service.dart';
+import '../../services/like_state_manager.dart';
 import '../../widgets/post_card.dart';
+import '../../widgets/moe_loading.dart';
 import '../../auth_service.dart';
 import '../../utils/error_handler.dart';
+import '../../utils/post_navigation.dart';
+import 'create_post_page.dart';
 
 /// 话题动态列表页面 - 显示指定话题下的所有动态
 class TopicPostsPage extends StatefulWidget {
@@ -30,6 +35,7 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
 
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingTriggered = false;
+  final LikeStateManager _likeManager = LikeStateManager();
 
   @override
   void initState() {
@@ -152,28 +158,24 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
     }
   }
 
-  Future<void> _toggleLike(String postId) async {
-    final userId = AuthService.currentUser;
-    if (userId == null) {
-      if (mounted) {
-        ErrorHandler.showError(context, '请先登录');
-      }
-      return;
-    }
+  void _toggleLike(String postId) {
+    final isLiked = _likeManager.getStatusNotifier(postId).value;
+    final likeCount = _likeManager.getCountNotifier(postId).value;
+    _updateLikeSnapshot(postId: postId, isLiked: isLiked, likeCount: likeCount);
+  }
 
-    try {
-      final updatedPost = await PostService.toggleLike(postId, userId);
-
-      final postIndex = _posts.indexWhere((p) => p.id == postId);
-      if (postIndex != -1 && mounted) {
-        setState(() {
-          _posts[postIndex] = updatedPost;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ErrorHandler.handleException(context, e as Exception);
-      }
+  // 仅更新本地快照，点赞按钮由 ValueListenable 局部刷新。
+  void _updateLikeSnapshot({
+    required String postId,
+    required bool isLiked,
+    required int likeCount,
+  }) {
+    final postIndex = _posts.indexWhere((p) => p.id == postId);
+    if (postIndex != -1) {
+      _posts[postIndex] = _posts[postIndex].copyWith(
+        isLiked: isLiked,
+        likes: likeCount,
+      );
     }
   }
 
@@ -192,7 +194,7 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
               ),
             ),
             Text(
-              '${_totalPosts} 条动态',
+              '$_totalPosts 条动态',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey[600],
@@ -210,7 +212,7 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
         ),
       ),
       body: _isLoading && _posts.isEmpty
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: MoeLoading())
           : _posts.isEmpty
               ? Center(
                   child: Column(
@@ -236,9 +238,24 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
                     itemCount: _posts.length + (_isLoadingMore ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index >= _posts.length) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          child: Center(child: CircularProgressIndicator()),
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                MoeSmallLoading(),
+                                SizedBox(height: 8),
+                                Text(
+                                  '加载中...',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         );
                       }
                       final post = _posts[index];
@@ -247,10 +264,19 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
                         post: post,
                         onLike: () => _toggleLike(post.id),
                         onComment: () async {
-                          await Navigator.pushNamed(
-                              context, '/comments', arguments: post.id);
+                          final result = await openPostDetail(context, post);
+                          if (result != null && mounted) {
+                            setState(() {
+                              final i =
+                                  _posts.indexWhere((p) => p.id == post.id);
+                              if (i != -1) {
+                                _posts[i] = _posts[i]
+                                    .copyWith(comments: result);
+                              }
+                            });
+                          }
                         },
-                        onShare: () {},
+                        onShare: null,
                         onAvatarTap: () {
                           Navigator.pushNamed(
                             context,
@@ -263,6 +289,47 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
                             },
                           );
                         },
+                        onEdit: post.userId == (AuthService.currentUser ?? '')
+                            ? () async {
+                                final updated = await Navigator.push<Post>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        CreatePostPage(initialPost: post),
+                                  ),
+                                );
+                                if (updated != null && mounted) {
+                                  setState(() {
+                                    final i = _posts.indexWhere(
+                                        (p) => p.id == updated.id);
+                                    if (i != -1) {
+                                      _posts[i] = updated.copyWith(
+                                        likes: post.likes,
+                                        comments: post.comments,
+                                        isLiked: post.isLiked,
+                                        userName: updated.userName.isNotEmpty ? updated.userName : post.userName,
+                                        userAvatar: updated.userAvatar.isNotEmpty ? updated.userAvatar : post.userAvatar,
+                                      );
+                                    }
+                                  });
+                                }
+                              }
+                            : null,
+                        onDelete: post.userId == (AuthService.currentUser ?? '')
+                            ? () async {
+                                try {
+                                  await ApiService.deletePost(post.id);
+                                  if (!mounted) return;
+                                  setState(() => _posts
+                                      .removeWhere((p) => p.id == post.id));
+                                  _likeManager.evictPost(post.id);
+                                } catch (e) {
+                                  if (!mounted) return;
+                                  ErrorHandler.showError(
+                                      this.context, '删除失败：$e');
+                                }
+                              }
+                            : null,
                       );
                     },
                   ),

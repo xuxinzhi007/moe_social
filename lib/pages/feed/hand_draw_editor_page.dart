@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../models/hand_draw_card.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/hand_draw/hand_draw_card_view.dart';
+import '../../widgets/moe_toast.dart';
 
 /// 手绘卡片编辑：颜色、粗细、撤销、清空；完成后返回 [HandDrawCardData]
 class HandDrawEditorPage extends StatefulWidget {
@@ -116,13 +117,7 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
   Future<void> _previewAndDone() async {
     final data = _buildData();
     if (data.strokes.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('先画点什么再发布吧 (´･ω･`)'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+      MoeToast.info(context, '先画点什么再发布吧 (´･ω･`)');
       return;
     }
 

@@ -7,12 +7,32 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'api_service.dart';
 import 'ws_channel_connector.dart';
+import '../auth_service.dart';
+import '../utils/chat_message_display.dart';
 import '../widgets/message_notification.dart';
 
 // ChatPushService listens on /ws/chat to receive direct messages in real time.
 // It exposes a stream of incoming messages and a per-sender unread counter.
 class ChatPushService {
   ChatPushService._();
+
+  /// 发送方 userId → 展示昵称（避免 WS 里 sender_name 为 Moe 号时通知标题不友好）
+  static final Map<String, String> _senderDisplayNameCache = {};
+
+  static String? cachedSenderDisplayName(String senderId) =>
+      _senderDisplayNameCache[senderId];
+
+  static Future<void> prefetchSenderDisplayName(String senderId) async {
+    if (senderId.isEmpty) return;
+    if (_senderDisplayNameCache.containsKey(senderId)) return;
+    try {
+      final u = await ApiService.getUserInfo(senderId);
+      final n = u.username.trim();
+      if (n.isNotEmpty) {
+        _senderDisplayNameCache[senderId] = n;
+      }
+    } catch (_) {}
+  }
 
   static final ValueNotifier<Map<String, int>> unreadBySender =
       ValueNotifier<Map<String, int>>(<String, int>{});
@@ -43,9 +63,9 @@ class ChatPushService {
   static GlobalKey<NavigatorState>? _navigatorKey;
   static BuildContext? _globalContext;
 
-  // 指数退避：每次断线后延迟翻倍，上限 30 秒
+  // 指数退避：每次断线后延迟翻倍，上限 10 秒（让后端恢复后能在 10s 内重连上）
   static int _reconnectAttempts = 0;
-  static const int _maxReconnectDelay = 30;
+  static const int _maxReconnectDelay = 10;
   static const int _baseReconnectDelay = 3;
 
   static bool get isConnected => _channel != null;
@@ -181,8 +201,10 @@ class ChatPushService {
         },
         cancelOnError: true,
       );
-      // 连接成功，重置退避计数
-      _reconnectAttempts = 0;
+      // 注意：不要在这里直接 _reconnectAttempts = 0。
+      // 否则每次重试一启动就重置，等同于完全失去指数退避效果，
+      // 后端长时间不可用时会以 3s 间隔疯狂打点。
+      // 真正的"连接健康"信号是收到第一条消息，统一在 _handleMessage 里重置。
     } catch (_) {
       _handleDisconnected();
     } finally {
@@ -209,12 +231,15 @@ class ChatPushService {
 
   static void _handleMessage(dynamic data) {
     if (data is! String) return;
+    // 收到一条真实消息说明这条 WS 是健康的，重置退避计数。
+    _reconnectAttempts = 0;
 
-    Map<String, dynamic> map;
+    final Map<String, dynamic> map;
     try {
       final decoded = json.decode(data);
-      if (decoded is! Map<String, dynamic>) return;
-      map = decoded;
+      // Web / 部分运行时下 json.decode 可能得到非 Map<String, dynamic> 的 Map，直接 is 判断会丢消息。
+      if (decoded is! Map) return;
+      map = Map<String, dynamic>.from(decoded);
     } catch (_) {
       return;
     }
@@ -239,6 +264,12 @@ class ChatPushService {
       return;
     }
 
+    final me = AuthService.currentUser;
+    if (me != null && me.isNotEmpty && from == me) {
+      // 忽略自己发出的下行（不应弹「新消息」）
+      return;
+    }
+
     // 打印接收到的消息，用于调试
     print('ChatPushService: Received message from $from: $content, senderName: $senderName, avatarUrl: $avatarUrl');
 
@@ -253,32 +284,53 @@ class ChatPushService {
     next[from] = (next[from] ?? 0) + 1;
     unreadBySender.value = next;
 
-    // 显示消息通知弹窗
-    _showMessageNotification(senderName, content, avatarUrl, from);
+    // 显示消息通知弹窗（展示名可能需异步解析，避免标题为 Moe 号）
+    unawaited(_showMessageNotification(senderName, content, avatarUrl, from));
   }
 
-  static void _showMessageNotification(String senderName, String message, String avatarUrl, String senderId) {
-    // 优先使用全局上下文，因为它在 Overlay 内部
+  static Future<void> _showMessageNotification(
+    String senderName,
+    String message,
+    String avatarUrl,
+    String senderId,
+  ) async {
+    var title = senderName;
+    if (looksLikeMoeNoOrWeakSenderLabel(title)) {
+      final cached = _senderDisplayNameCache[senderId];
+      if (cached != null) {
+        title = cached;
+      } else {
+        try {
+          final u = await ApiService.getUserInfo(senderId);
+          final n = u.username.trim();
+          if (n.isNotEmpty) {
+            title = n;
+            _senderDisplayNameCache[senderId] = n;
+          }
+        } catch (_) {}
+      }
+    }
+
+    final body = formatDmPreviewForUi(message);
+
+    void show(BuildContext ctx) {
+      MessageNotification.show(
+        ctx,
+        title,
+        body,
+        avatarUrl,
+        senderId,
+      );
+    }
+
     if (_globalContext != null) {
-      MessageNotification.show(
-        _globalContext!,
-        senderName,
-        message,
-        avatarUrl,
-        senderId,
-      );
+      show(_globalContext!);
     } else if (_navigatorKey?.currentContext != null) {
-      // 作为备用方案，尝试使用 navigatorKey 的上下文
-      final context = _navigatorKey!.currentContext!;
-      MessageNotification.show(
-        context,
-        senderName,
-        message,
-        avatarUrl,
-        senderId,
-      );
+      show(_navigatorKey!.currentContext!);
     } else {
-      print('ChatPushService: No context available to show notification');
+      if (kDebugMode) {
+        debugPrint('ChatPushService: No context available to show notification');
+      }
     }
   }
 
