@@ -40,7 +40,8 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
         limit: 100,
         offset: 0,
       );
-      final memories = (paged['items'] as List<UserMemory>? ?? const []);
+      final rawMemories = (paged['items'] as List<UserMemory>? ?? const []);
+      final memories = MemoryService.filterUserFacingMemories(rawMemories);
       final profiles = await MemoryService.getUserMemoryProfiles(user.id);
       // Sort memories by created_at descending (newest first)
       memories.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -48,7 +49,7 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
         _memories = memories;
         _profiles = profiles;
         _hasMore = paged['has_more'] == true;
-        _total = (paged['total'] as int?) ?? memories.length;
+        _total = memories.length;
       });
     } catch (e) {
       setState(() {
@@ -239,7 +240,7 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
       );
     }
 
-    if (_memories.isEmpty) {
+    if (_memories.isEmpty && _profiles.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -257,7 +258,21 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
       children: [
         _buildProfileCard(_profiles),
         const SizedBox(height: 12),
-        ..._memories.map(_buildMemoryCard),
+        if (_memories.isEmpty)
+          Card(
+            elevation: 1,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                '暂无可展示的模型记忆（设备同步类记录已自动隐藏）',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ),
+          )
+        else
+          ..._memories.map(_buildMemoryCard),
       ],
     );
   }

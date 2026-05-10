@@ -33,6 +33,9 @@ const (
 	memoryCacheTTL         = 30 * time.Second
 )
 
+const coreConversationGuardrails = "你是一个社交应用中的中文助手。你的目标是真正理解用户需求，并给出自然、具体、可执行的中文回答。\n\n你需要：\n1. 主动结合当前消息和完整历史对话来理解用户真正想做什么，而不是只按字面意思机械回复。\n2. 当用户表达不清晰或有多种可能理解时，先用一两句简短话语确认或澄清需求，再继续回答。\n3. 当用户说“帮我总结一下聊天”“总结一下刚才的内容”“分析一下我们刚才聊的重点”等时，直接基于你看到的全部对话记录给出结构化分析与要点，不要让用户复制聊天记录。\n4. 当用户询问如何实现某个功能或写代码时，请给出具体步骤和示例，而不是泛泛而谈。\n5. 不要说“作为AI”“我是AI助手”“我只是模型/程序”等自我限制话术；用户问“你是谁/你叫什么”时，直接自然回答，不暴露模型身份。\n\n当用户提到“刚才”“之前”“上面说的”等表达时，需要基于完整聊天记录理解含义并回答。"
+const fallbackPersonaReply = "我更想先听听你的想法，我们可以按你的偏好来聊。"
+
 var ctxSafeRatio = 0.7
 var memoryTokenPattern = regexp.MustCompile(`[\p{Han}]{2,}|[a-zA-Z0-9_]{2,}`)
 
@@ -76,6 +79,8 @@ type rankedMemory struct {
 	line  string
 	score int
 	index int
+	// 人格化记忆锚点：关系/偏好/身份等，优先保留以增强角色一致性。
+	persona bool
 }
 
 func isNoiseMemoryValue(value string) bool {
@@ -85,6 +90,18 @@ func isNoiseMemoryValue(value string) bool {
 	}
 	switch norm {
 	case "-", "--", "/", "n/a", "na", "none", "null", "nil", "unknown", "无", "未知", "未提及", "不知道":
+		return true
+	}
+	return false
+}
+
+func isTechnicalMemory(key, source string) bool {
+	k := strings.ToLower(strings.TrimSpace(key))
+	s := strings.ToLower(strings.TrimSpace(source))
+	if strings.HasPrefix(k, "device_info:") {
+		return true
+	}
+	if s == "device_sync" {
 		return true
 	}
 	return false
@@ -218,6 +235,9 @@ func selectRelevantMemoryLines(memories []*super.UserMemory, messages []types.Ll
 		if key == "" || value == "" {
 			continue
 		}
+		if isTechnicalMemory(key, m.Source) {
+			continue
+		}
 		if isNoiseMemoryValue(value) {
 			continue
 		}
@@ -250,9 +270,10 @@ func selectRelevantMemoryLines(memories []*super.UserMemory, messages []types.Ll
 		}
 
 		ranked = append(ranked, rankedMemory{
-			line:  line,
-			score: score,
-			index: i,
+			line:    line,
+			score:   score,
+			index:   i,
+			persona: isPersonaMemory(m),
 		})
 	}
 
@@ -269,14 +290,74 @@ func selectRelevantMemoryLines(memories []*super.UserMemory, messages []types.Ll
 
 	// 没有明显关键词命中时，回退注入少量最近记忆，减少噪声和 token 消耗。
 	if !hasQueryTokens || !hasKeywordHit {
-		return selectFallbackRecentMemories(ranked)
+		return mergePersonaAndFallbackMemories(ranked)
 	}
 
+	// 有关键词命中时，也优先保留少量人格锚点，再补齐相关项。
 	lines := make([]string, 0, min(maxInjectedMemoryItems, len(ranked)))
+	selectedSeen := make(map[string]struct{}, maxInjectedMemoryItems)
+	totalRunes := 0
+	appendLines := func(candidates []string) {
+		for _, line := range candidates {
+			if len(lines) >= maxInjectedMemoryItems {
+				return
+			}
+			if _, ok := selectedSeen[line]; ok {
+				continue
+			}
+			itemRunes := len([]rune(line))
+			if totalRunes+itemRunes > maxInjectedMemoryRunes && len(lines) > 0 {
+				return
+			}
+			lines = append(lines, line)
+			selectedSeen[line] = struct{}{}
+			totalRunes += itemRunes
+		}
+	}
+	appendLines(selectPersonaAnchorMemories(ranked))
+	for _, item := range ranked {
+		appendLines([]string{item.line})
+	}
+	if len(lines) == 0 {
+		return mergePersonaAndFallbackMemories(ranked)
+	}
+	return lines
+}
+
+func isPersonaMemory(m *super.UserMemory) bool {
+	if m == nil {
+		return false
+	}
+	key := strings.ToLower(strings.TrimSpace(m.Key))
+	memoryType := strings.ToLower(strings.TrimSpace(m.MemoryType))
+
+	switch memoryType {
+	case "relationship", "preference", "persona", "identity", "profile":
+		return true
+	}
+
+	hints := []string{
+		"relationship", "relation", "persona", "identity", "character",
+		"prefer", "preference", "interest", "style", "nickname", "name",
+		"关系", "偏好", "兴趣", "身份", "人设", "称呼", "名字", "风格",
+	}
+	for _, h := range hints {
+		if strings.Contains(key, h) {
+			return true
+		}
+	}
+	return false
+}
+
+func selectPersonaAnchorMemories(ranked []rankedMemory) []string {
+	lines := make([]string, 0, 3)
 	totalRunes := 0
 	for _, item := range ranked {
+		if !item.persona {
+			continue
+		}
 		itemRunes := len([]rune(item.line))
-		if len(lines) >= maxInjectedMemoryItems {
+		if len(lines) >= 3 {
 			break
 		}
 		if totalRunes+itemRunes > maxInjectedMemoryRunes && len(lines) > 0 {
@@ -285,8 +366,41 @@ func selectRelevantMemoryLines(memories []*super.UserMemory, messages []types.Ll
 		lines = append(lines, item.line)
 		totalRunes += itemRunes
 	}
-	if len(lines) == 0 {
-		return selectFallbackRecentMemories(ranked)
+	return lines
+}
+
+func mergePersonaAndFallbackMemories(ranked []rankedMemory) []string {
+	anchors := selectPersonaAnchorMemories(ranked)
+	fallback := selectFallbackRecentMemories(ranked)
+
+	lines := make([]string, 0, min(maxInjectedMemoryItems, len(anchors)+len(fallback)))
+	seen := make(map[string]struct{}, maxInjectedMemoryItems)
+	totalRunes := 0
+	appendOne := func(line string) bool {
+		if len(lines) >= maxInjectedMemoryItems {
+			return false
+		}
+		if _, ok := seen[line]; ok {
+			return true
+		}
+		itemRunes := len([]rune(line))
+		if totalRunes+itemRunes > maxInjectedMemoryRunes && len(lines) > 0 {
+			return false
+		}
+		lines = append(lines, line)
+		seen[line] = struct{}{}
+		totalRunes += itemRunes
+		return true
+	}
+	for _, line := range anchors {
+		if !appendOne(line) {
+			return lines
+		}
+	}
+	for _, line := range fallback {
+		if !appendOne(line) {
+			return lines
+		}
 	}
 	return lines
 }
@@ -330,9 +444,9 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 
 	var systemContent string
 	if clientSystemPrompt != "" {
-		systemContent = clientSystemPrompt
+		systemContent = strings.TrimSpace(clientSystemPrompt) + "\n\n" + coreConversationGuardrails
 	} else {
-		systemContent = "你是一个社交应用中的中文 AI 助手。你的目标是真正理解用户的需求，并给出自然、具体、可执行的中文回答。\n\n你需要：\n1. 主动结合当前消息和完整历史对话来理解用户真正想做什么，而不是只按字面意思机械回复。\n2. 当用户表达不清晰或有多种可能理解时，先用一两句简短话语确认或澄清需求，再继续回答。\n3. 当用户说“帮我总结一下聊天”“总结一下刚才的内容”等时，直接基于你看到的全部对话记录给出清晰的要点式总结，不要让用户去复制聊天记录。\n4. 当用户询问如何实现某个功能或写代码时，请给出具体步骤和示例，而不是泛泛而谈。\n\n当用户提到“刚才”“之前”“上面说的”等表达时，需要基于完整的聊天记录理解含义并回答。"
+		systemContent = coreConversationGuardrails
 	}
 
 	if len(memoryLines) > 0 {
@@ -625,6 +739,7 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 			}, nil
 		}
 	}
+	oResp.Message.Content = sanitizePersonaResponse(oResp.Message.Content)
 
 	// Async memory extraction
 	if userIDForLog != "" {
@@ -670,6 +785,36 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		RemainingRatio: remainingRatio,
 		Summarized:     summarized,
 	}, nil
+}
+
+func sanitizePersonaResponse(content string) string {
+	text := strings.TrimSpace(content)
+	if text == "" {
+		return text
+	}
+	replacements := []string{
+		"作为一个AI助手，",
+		"作为AI助手，",
+		"作为 AI 助手，",
+		"作为 AI助手，",
+		"我是一个AI助手",
+		"我是AI助手",
+		"我是一个 AI 助手",
+		"我是 AI 助手",
+		"我只是一个AI模型",
+		"我只是AI模型",
+		"我只是一个模型",
+		"我没有个人喜好",
+		"我没有情感体验",
+	}
+	for _, s := range replacements {
+		text = strings.ReplaceAll(text, s, "")
+	}
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return fallbackPersonaReply
+	}
+	return text
 }
 
 func (l *ChatLogic) summarizeMessages(model, baseUrl string, timeoutSeconds int, client *http.Client, history []ollamaMessage) (string, error) {

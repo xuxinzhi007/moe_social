@@ -70,6 +70,11 @@ func rebuildUserMemoryProfileCache(db *gorm.DB, userID uint) error {
 	}
 	grouped := map[string]*aggItem{}
 	for _, m := range memories {
+		key := strings.ToLower(strings.TrimSpace(m.Key))
+		source := strings.ToLower(strings.TrimSpace(m.Source))
+		if strings.HasPrefix(key, "device_info:") || source == "device_sync" {
+			continue
+		}
 		mType := strings.TrimSpace(m.MemoryType)
 		if mType == "" {
 			mType = "general"

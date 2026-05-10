@@ -17,6 +17,16 @@ class MemoryService {
 
   static const int _defaultMemoryPageSize = 50;
 
+  static bool isTechnicalMemory(UserMemory memory) {
+    final key = memory.key.toLowerCase();
+    final source = (memory.source ?? '').toLowerCase();
+    return key.startsWith('device_info:') || source == 'device_sync';
+  }
+
+  static List<UserMemory> filterUserFacingMemories(List<UserMemory> memories) {
+    return memories.where((m) => !isTechnicalMemory(m)).toList();
+  }
+
   /// 分页获取用户记忆列表（后端支持 limit/offset）
   static Future<Map<String, dynamic>> getUserMemoriesPaged(
     String userId, {

@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../../models/ai_agent.dart';
 import '../../services/ai_db_service.dart';
 import '../../services/api_service.dart';
+import '../../services/ai_prompt_defaults.dart';
 import '../../services/llm_endpoint_config.dart';
 import '../../widgets/moe_toast.dart';
 
@@ -28,16 +29,25 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   bool _isLoadingModels = false;
   bool _isSaving = false;
   bool _createRealModel = true;
+  bool _syncModelOnEdit = true;
 
   @override
   void initState() {
     super.initState();
     final agent = widget.agent;
+    final initialPrompt = (agent?.systemPrompt ?? '').trim().isEmpty
+        ? AiPromptDefaults.defaultAgentSystemPrompt
+        : (agent!.systemPrompt);
     _nameController = TextEditingController(text: agent?.name ?? '');
     _descController = TextEditingController(text: agent?.description ?? '');
-    _promptController = TextEditingController(text: agent?.systemPrompt ?? '');
+    _promptController = TextEditingController(
+      text: initialPrompt,
+    );
     if (agent != null) {
       _modelName = agent.modelName;
+      if (agent.systemPrompt.trim().isEmpty) {
+        _refreshPromptFromBackend(agent.modelName);
+      }
     }
     _loadModels();
   }
@@ -106,14 +116,17 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
         // 新版 Ollama 直接返回 system 字段
-        if (data is Map && data['system'] is String && (data['system'] as String).isNotEmpty) {
+        if (data is Map &&
+            data['system'] is String &&
+            (data['system'] as String).isNotEmpty) {
           return data['system'] as String;
         }
         // 旧版从 modelfile 解析 SYSTEM 指令
         if (data is Map && data['modelfile'] is String) {
           final mf = data['modelfile'] as String;
           final tripleMatch =
-              RegExp(r'SYSTEM\s+"""([\s\S]*?)"""', multiLine: true).firstMatch(mf);
+              RegExp(r'SYSTEM\s+"""([\s\S]*?)"""', multiLine: true)
+                  .firstMatch(mf);
           if (tripleMatch != null) return tripleMatch.group(1)?.trim() ?? '';
           final singleMatch = RegExp(r'SYSTEM\s+"(.*?)"').firstMatch(mf);
           if (singleMatch != null) return singleMatch.group(1)?.trim() ?? '';
@@ -138,20 +151,26 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 14),
           childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-          leading: const Icon(Icons.visibility_outlined, size: 18, color: Colors.blueGrey),
+          leading: const Icon(Icons.visibility_outlined,
+              size: 18, color: Colors.blueGrey),
           title: const Text(
             '查看当前提示词（含 Ollama 模型内置）',
-            style: TextStyle(fontSize: 13, color: Colors.blueGrey, fontWeight: FontWeight.w500),
+            style: TextStyle(
+                fontSize: 13,
+                color: Colors.blueGrey,
+                fontWeight: FontWeight.w500),
           ),
           children: [
             FutureBuilder<String>(
               future: _fetchOllamaSystemPrompt(modelName),
               builder: (ctx, snap) {
                 final ollamaPrompt = snap.data;
-                final effectivePrompt = (ollamaPrompt != null && ollamaPrompt.isNotEmpty)
-                    ? ollamaPrompt
-                    : localPrompt;
-                final isLoading = snap.connectionState == ConnectionState.waiting;
+                final effectivePrompt =
+                    (ollamaPrompt != null && ollamaPrompt.isNotEmpty)
+                        ? ollamaPrompt
+                        : localPrompt;
+                final isLoading =
+                    snap.connectionState == ConnectionState.waiting;
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,7 +186,9 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                             SizedBox(width: 8),
-                            Text('正在从 Ollama 读取...', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                            Text('正在从 Ollama 读取...',
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey)),
                           ],
                         ),
                       )
@@ -181,7 +202,9 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                                   size: 13, color: Colors.green),
                               const SizedBox(width: 4),
                               Text('来自 Ollama Modelfile',
-                                  style: TextStyle(fontSize: 11, color: Colors.green.shade700)),
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.green.shade700)),
                             ],
                           ),
                         ),
@@ -203,7 +226,9 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                             : SelectableText(
                                 effectivePrompt,
                                 style: const TextStyle(
-                                    fontSize: 13, height: 1.6, color: Colors.black87),
+                                    fontSize: 13,
+                                    height: 1.6,
+                                    color: Colors.black87),
                               ),
                       ),
                       if (effectivePrompt.isNotEmpty)
@@ -212,9 +237,11 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                           child: TextButton.icon(
                             style: TextButton.styleFrom(
                                 padding: EdgeInsets.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                                tapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap),
                             icon: const Icon(Icons.copy_rounded, size: 13),
-                            label: const Text('复制', style: TextStyle(fontSize: 12)),
+                            label: const Text('复制',
+                                style: TextStyle(fontSize: 12)),
                             onPressed: () async {
                               await Clipboard.setData(
                                   ClipboardData(text: effectivePrompt));
@@ -243,60 +270,48 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       final prompt = _promptController.text.trim();
 
       String modelForChat = _modelName;
+      String resolvedPromptForLocal = prompt;
 
-      if (widget.agent == null && _createRealModel) {
+      final shouldCreateNew = widget.agent == null && _createRealModel;
+      final shouldSyncEdit = widget.agent != null && _syncModelOnEdit;
+      if (shouldCreateNew || shouldSyncEdit) {
         final baseModel = _modelName.trim();
         if (baseModel.isEmpty) {
           throw Exception('请选择基础模型');
         }
 
-        String safeName = name.toLowerCase();
-        safeName = safeName.replaceAll(RegExp(r'\s+'), '-');
-        safeName = safeName.replaceAll(RegExp(r'[^a-z0-9_\-\.:/]'), '_');
-        if (safeName.isEmpty) {
-          throw Exception('无效的模型名称');
+        if (shouldCreateNew) {
+          String safeName = name.toLowerCase();
+          safeName = safeName.replaceAll(RegExp(r'\s+'), '-');
+          safeName = safeName.replaceAll(RegExp(r'[^a-z0-9_\-\.:/]'), '_');
+          if (safeName.isEmpty) {
+            throw Exception('无效的模型名称');
+          }
+          modelForChat = safeName;
+        } else {
+          modelForChat = widget.agent!.modelName;
         }
 
-        final uri = Uri.parse('${ApiService.baseUrl}/api/llm/agents');
-        final headers = <String, String>{
-          'Content-Type': 'application/json',
-        };
-        final token = ApiService.token;
-        if (token != null && token.isNotEmpty) {
-          headers['Authorization'] = 'Bearer $token';
+        await _createOrUpdateModelInOllama(
+          modelName: modelForChat,
+          baseModel: baseModel,
+          prompt: prompt,
+        );
+
+        if (resolvedPromptForLocal.isEmpty) {
+          final backendPrompt =
+              await _fetchSystemPromptFromBackend(modelForChat);
+          if (backendPrompt != null && backendPrompt.trim().isNotEmpty) {
+            resolvedPromptForLocal = backendPrompt.trim();
+          }
         }
-
-        final body = jsonEncode({
-          'name': safeName,
-          'base_model': baseModel,
-          'system_prompt': prompt,
-        });
-
-        final response = await http
-            .post(uri, headers: headers, body: body)
-            .timeout(const Duration(seconds: 45));
-
-        if (response.statusCode != 200) {
-          throw Exception('创建 Ollama 模型失败: ${response.statusCode}');
-        }
-
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
-        final success = data is Map && (data['success'] == true);
-        if (!success) {
-          final msg = data is Map && data['message'] is String
-              ? data['message'] as String
-              : '创建 Ollama 模型失败';
-          throw Exception(msg);
-        }
-
-        modelForChat = safeName;
       }
 
       final agent = AiAgent(
         id: widget.agent?.id ?? modelForChat,
         name: name,
         description: desc,
-        systemPrompt: prompt,
+        systemPrompt: resolvedPromptForLocal,
         modelName: modelForChat,
         createdAt: widget.agent?.createdAt ?? DateTime.now(),
       );
@@ -315,7 +330,9 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       if (mounted) {
         MoeToast.success(
           context,
-          widget.agent == null ? '智能体创建成功' : '智能体已保存',
+          widget.agent == null
+              ? '智能体创建成功'
+              : (_syncModelOnEdit ? '智能体已保存并同步模型' : '智能体已保存'),
         );
         Navigator.pop(context, true);
       }
@@ -328,6 +345,105 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
         setState(() => _isSaving = false);
       }
     }
+  }
+
+  Future<void> _createOrUpdateModelInOllama({
+    required String modelName,
+    required String baseModel,
+    required String prompt,
+  }) async {
+    final uri = Uri.parse('${ApiService.baseUrl}/api/llm/agents');
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+    };
+    final token = ApiService.token;
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
+    final body = jsonEncode({
+      'name': modelName,
+      'base_model': baseModel,
+      'system_prompt': prompt,
+    });
+
+    final response = await http
+        .post(uri, headers: headers, body: body)
+        .timeout(const Duration(seconds: 45));
+
+    if (response.statusCode != 200) {
+      throw Exception('创建/更新 Ollama 模型失败: ${response.statusCode}');
+    }
+
+    final data = jsonDecode(utf8.decode(response.bodyBytes));
+    final success = data is Map && (data['success'] == true);
+    if (!success) {
+      final msg = data is Map && data['message'] is String
+          ? data['message'] as String
+          : '创建/更新 Ollama 模型失败';
+      throw Exception(msg);
+    }
+  }
+
+  Future<void> _refreshPromptFromBackend(String modelName) async {
+    final prompt = await _fetchSystemPromptFromBackend(modelName);
+    if (!mounted || prompt == null || prompt.trim().isEmpty) return;
+    _promptController.text = prompt.trim();
+  }
+
+  Future<String?> _fetchSystemPromptFromBackend(String modelName) async {
+    try {
+      final uri = LlmEndpointConfig.showUri();
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        ...ApiService.mergeTunnelHeaders(uri),
+      };
+      final token = ApiService.token;
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
+      final resp = await http
+          .post(
+            uri,
+            headers: headers,
+            body: jsonEncode({'name': modelName}),
+          )
+          .timeout(const Duration(seconds: 12));
+      if (resp.statusCode != 200) return null;
+
+      final data = jsonDecode(utf8.decode(resp.bodyBytes));
+      if (data is! Map) return null;
+      final directSystem = data['system'];
+      if (directSystem is String && directSystem.trim().isNotEmpty) {
+        return directSystem;
+      }
+      final modelfile = data['modelfile'];
+      if (modelfile is! String || modelfile.trim().isEmpty) return null;
+      return _extractSystemPromptFromModelfile(modelfile);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _extractSystemPromptFromModelfile(String modelfile) {
+    final triple = RegExp(
+      r'SYSTEM\s+"""([\s\S]*?)"""',
+      caseSensitive: false,
+      multiLine: true,
+    ).firstMatch(modelfile);
+    if (triple != null) {
+      return triple.group(1)?.trim();
+    }
+    final single = RegExp(
+      r'^SYSTEM\s+"(.*)"$',
+      caseSensitive: false,
+      multiLine: true,
+    ).firstMatch(modelfile);
+    if (single != null) {
+      return single.group(1)?.trim();
+    }
+    return null;
   }
 
   @override
@@ -372,7 +488,17 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                   setState(() => _createRealModel = v);
                 },
               ),
+            if (widget.agent != null)
+              SwitchListTile(
+                title: const Text('同步更新到 Ollama 模型'),
+                subtitle: const Text('关闭后仅修改本地展示，开启后会重建模型使新提示词生效'),
+                value: _syncModelOnEdit,
+                onChanged: (v) {
+                  setState(() => _syncModelOnEdit = v);
+                },
+              ),
             if (widget.agent == null) const SizedBox(height: 16),
+            if (widget.agent != null) const SizedBox(height: 16),
             TextFormField(
               controller: _descController,
               decoration: const InputDecoration(
@@ -412,20 +538,21 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
             if (_isLoadingModels)
               const Padding(
                 padding: EdgeInsets.only(top: 8),
-                child: Text('正在加载模型列表...', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                child: Text('正在加载模型列表...',
+                    style: TextStyle(color: Colors.grey, fontSize: 12)),
               ),
             const SizedBox(height: 16),
             if (widget.agent != null) ...[
-              _buildPromptPreview(widget.agent!.systemPrompt, widget.agent!.modelName),
+              _buildPromptPreview(
+                  widget.agent!.systemPrompt, widget.agent!.modelName),
               const SizedBox(height: 12),
             ],
             TextFormField(
               controller: _promptController,
               maxLines: 8,
               decoration: InputDecoration(
-                labelText: widget.agent != null
-                    ? '修改系统提示词'
-                    : '系统提示词 (System Prompt)',
+                labelText:
+                    widget.agent != null ? '修改系统提示词' : '系统提示词 (System Prompt)',
                 hintText: '设定智能体的人设、语气、擅长领域等...',
                 border: const OutlineInputBorder(),
                 alignLabelWithHint: true,

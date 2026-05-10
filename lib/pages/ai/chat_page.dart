@@ -7,7 +7,9 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
+import '../../services/ai_prompt_defaults.dart';
 import '../../services/llm_endpoint_config.dart';
 import '../../services/llm_response_parser.dart';
 import '../../services/ai_db_service.dart';
@@ -42,10 +44,12 @@ class _ChatPageState extends State<ChatPage> {
   AiChatSession? _currentSession;
   List<AiChatMessage> _messages = [];
   List<UserMemory> _memories = [];
+  String _systemPrompt = '';
 
   bool _isSending = false;
   bool _isLoadingHistory = true;
   bool _wasManuallyStopped = false;
+  bool _isSyncingModelPrompt = false;
 
   // Voice
   final stt.SpeechToText _speech = stt.SpeechToText();
@@ -80,18 +84,23 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
+    _systemPrompt = widget.agent.systemPrompt.trim().isNotEmpty
+        ? widget.agent.systemPrompt
+        : AiPromptDefaults.defaultAgentSystemPrompt;
     _initVoice();
     _loadMemoryState();
     if (_localPersistenceEnabled) {
       _loadSessions();
     } else {
-      _createNewSession();
-      _isLoadingHistory = false;
+      _loadWebCachedSession();
     }
   }
 
   @override
   void dispose() {
+    if (!_localPersistenceEnabled) {
+      unawaited(_persistWebCache());
+    }
     _controller.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
@@ -100,6 +109,80 @@ class _ChatPageState extends State<ChatPage> {
     _tts.stop();
     _tts.setCompletionHandler(() {}); // 解除业务回调（API 要求非 null 的 void Function()）
     super.dispose();
+  }
+
+  String get _webCacheKey => 'chat_web_cache_${widget.agent.id}';
+
+  Future<void> _loadWebCachedSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_webCacheKey);
+      if (raw != null && raw.isNotEmpty) {
+        final data = jsonDecode(raw);
+        if (data is Map) {
+          final sessionsRaw = data['sessions'];
+          final messagesRaw = data['messages'];
+          final currentSessionId = data['current_session_id'] as String?;
+          final savedPrompt = data['system_prompt'] as String?;
+          final sessions = sessionsRaw is List
+              ? sessionsRaw
+                  .whereType<Map>()
+                  .map((e) =>
+                      AiChatSession.fromMap(Map<String, dynamic>.from(e)))
+                  .toList()
+              : <AiChatSession>[];
+          final messages = messagesRaw is List
+              ? messagesRaw
+                  .whereType<Map>()
+                  .map((e) =>
+                      AiChatMessage.fromMap(Map<String, dynamic>.from(e)))
+                  .toList()
+              : <AiChatMessage>[];
+
+          AiChatSession? current;
+          if (sessions.isNotEmpty && currentSessionId != null) {
+            final idx = sessions.indexWhere((s) => s.id == currentSessionId);
+            if (idx != -1) current = sessions[idx];
+          }
+          current ??= sessions.isNotEmpty ? sessions.first : null;
+
+          if (mounted && current != null) {
+            setState(() {
+              _sessions = sessions;
+              _currentSession = current;
+              _messages =
+                  messages.where((m) => m.sessionId == current!.id).toList();
+              if (savedPrompt != null) {
+                _systemPrompt = savedPrompt;
+              }
+              _isLoadingHistory = false;
+            });
+            _scrollToBottom();
+            return;
+          }
+        }
+      }
+    } catch (_) {}
+
+    await _createNewSession();
+    if (mounted) {
+      setState(() => _isLoadingHistory = false);
+    }
+  }
+
+  Future<void> _persistWebCache() async {
+    if (_localPersistenceEnabled) return;
+    if (_currentSession == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final payload = {
+        'sessions': _sessions.map((s) => s.toMap()).toList(),
+        'messages': _messages.map((m) => m.toMap()).toList(),
+        'current_session_id': _currentSession!.id,
+        'system_prompt': _systemPrompt,
+      };
+      await prefs.setString(_webCacheKey, jsonEncode(payload));
+    } catch (_) {}
   }
 
   Future<void> _initVoice() async {
@@ -128,7 +211,8 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _loadMemoryState() async {
     try {
       final user = await AuthService.getUserInfo();
-      final memories = await MemoryService.getUserMemories(user.id);
+      final rawMemories = await MemoryService.getUserMemories(user.id);
+      final memories = MemoryService.filterUserFacingMemories(rawMemories);
       memories.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       if (mounted) {
         setState(() {
@@ -153,6 +237,7 @@ class _ChatPageState extends State<ChatPage> {
     if (mounted) {
       setState(() => _sessions.insert(0, session));
       _loadSession(session);
+      unawaited(_persistWebCache());
     }
   }
 
@@ -170,6 +255,7 @@ class _ChatPageState extends State<ChatPage> {
         _isLoadingHistory = false;
       });
       _scrollToBottom();
+      unawaited(_persistWebCache());
     }
   }
 
@@ -188,6 +274,7 @@ class _ChatPageState extends State<ChatPage> {
           }
         }
       });
+      unawaited(_persistWebCache());
     }
   }
 
@@ -230,9 +317,11 @@ class _ChatPageState extends State<ChatPage> {
           .toList();
 
       // 统一由后端负责记忆注入，这里仅传基础 system prompt。
-      final enrichedSystemPrompt = widget.agent.systemPrompt.isNotEmpty
-          ? widget.agent.systemPrompt
-          : '你是一位友好、智能的 AI 助手。';
+      final enrichedSystemPrompt = _withNoAiSelfDisclosureRule(
+        _systemPrompt.trim().isNotEmpty
+            ? _systemPrompt.trim()
+            : AiPromptDefaults.defaultAgentSystemPrompt,
+      );
       history.insert(0, {'role': 'system', 'content': enrichedSystemPrompt});
 
       final uri = await LlmEndpointConfig.chatUri();
@@ -312,6 +401,7 @@ class _ChatPageState extends State<ChatPage> {
 
         if (mounted) {
           setState(() => _messages.add(assistantMsg));
+          unawaited(_persistWebCache());
 
           // 自动更新会话标题
           if (_messages.length <= 2 && _currentSession!.title == '新对话') {
@@ -332,6 +422,7 @@ class _ChatPageState extends State<ChatPage> {
                   _sessions.indexWhere((s) => s.id == updatedSession.id);
               if (idx != -1) _sessions[idx] = updatedSession;
             });
+            unawaited(_persistWebCache());
           }
         }
       } else {
@@ -349,6 +440,16 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  String _withNoAiSelfDisclosureRule(String prompt) {
+    const rule = '''
+
+补充硬性规则：
+1) 不要说“作为AI”“我是AI助手”“我只是模型/程序”等自我限制话术。
+2) 用户问“你是谁/你叫什么”时，直接以自然人格化口吻回答，不要暴露模型身份。
+''';
+    return '$prompt$rule';
+  }
+
   Future<void> _appendError(String text) async {
     final errorMsg = AiChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -360,7 +461,123 @@ class _ChatPageState extends State<ChatPage> {
     if (_localPersistenceEnabled) {
       await AiDbService().insertMessage(errorMsg);
     }
-    if (mounted) setState(() => _messages.add(errorMsg));
+    if (mounted) {
+      setState(() => _messages.add(errorMsg));
+      unawaited(_persistWebCache());
+    }
+  }
+
+  Future<void> _editSystemPrompt() async {
+    final controller = TextEditingController(text: _systemPrompt);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('编辑系统提示词'),
+        content: TextField(
+          controller: controller,
+          maxLines: 8,
+          decoration: const InputDecoration(
+            hintText: '输入系统提示词（为空则使用默认）',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    if (!mounted) return;
+    final nextPrompt = controller.text.trim();
+    setState(() {
+      _systemPrompt = nextPrompt;
+    });
+    unawaited(_persistWebCache());
+    setState(() => _isSyncingModelPrompt = true);
+    try {
+      await _syncPromptToOllamaModel(nextPrompt);
+      // 提示词更新后自动开启新会话，避免旧会话历史干扰新风格。
+      await _createNewSession();
+      if (!mounted) return;
+      MoeToast.success(context, '系统提示词已更新并同步到模型（已开启新对话）');
+    } catch (e) {
+      if (!mounted) return;
+      MoeToast.error(context, '提示词已保存，但同步模型失败：$e');
+    } finally {
+      if (mounted) {
+        setState(() => _isSyncingModelPrompt = false);
+      }
+    }
+  }
+
+  Future<void> _syncPromptToOllamaModel(String prompt) async {
+    final baseModel = await _resolveBaseModelFromModel();
+    final uri = Uri.parse('${ApiService.baseUrl}/api/llm/agents');
+    final token = ApiService.token;
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+    final body = jsonEncode({
+      'name': widget.agent.modelName,
+      'base_model': baseModel,
+      'system_prompt': prompt,
+    });
+    final resp = await http
+        .post(uri, headers: headers, body: body)
+        .timeout(const Duration(seconds: 45));
+    if (resp.statusCode != 200) {
+      throw Exception('HTTP ${resp.statusCode}');
+    }
+    final data = jsonDecode(utf8.decode(resp.bodyBytes));
+    final success = data is Map && data['success'] == true;
+    if (!success) {
+      final msg = data is Map && data['message'] is String
+          ? data['message'] as String
+          : '未知错误';
+      throw Exception(msg);
+    }
+  }
+
+  Future<String> _resolveBaseModelFromModel() async {
+    try {
+      final uri = LlmEndpointConfig.showUri();
+      final token = ApiService.token;
+      final headers = ApiService.mergeTunnelHeaders(uri, headers: {
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      });
+      final resp = await http
+          .post(
+            uri,
+            headers: headers,
+            body: jsonEncode({'name': widget.agent.modelName}),
+          )
+          .timeout(const Duration(seconds: 12));
+      if (resp.statusCode != 200) return widget.agent.modelName;
+      final data = jsonDecode(utf8.decode(resp.bodyBytes));
+      if (data is! Map) return widget.agent.modelName;
+      final modelfile = data['modelfile'];
+      if (modelfile is! String || modelfile.trim().isEmpty) {
+        return widget.agent.modelName;
+      }
+      final fromMatch = RegExp(r'^\s*FROM\s+([^\s#]+)', multiLine: true)
+          .firstMatch(modelfile);
+      final fromModel = fromMatch?.group(1)?.trim();
+      if (fromModel != null && fromModel.isNotEmpty) {
+        return fromModel;
+      }
+      return widget.agent.modelName;
+    } catch (_) {
+      return widget.agent.modelName;
+    }
   }
 
   void _scrollToBottom() {
@@ -999,7 +1216,7 @@ class _ChatPageState extends State<ChatPage> {
                                   fontWeight: FontWeight.w600,
                                   color: Colors.grey)),
                           const Spacer(),
-                          if (agent.systemPrompt.isNotEmpty)
+                          if (_systemPrompt.isNotEmpty)
                             TextButton.icon(
                               style: TextButton.styleFrom(
                                   padding: EdgeInsets.zero,
@@ -1010,12 +1227,25 @@ class _ChatPageState extends State<ChatPage> {
                                   style: TextStyle(fontSize: 12)),
                               onPressed: () async {
                                 await Clipboard.setData(
-                                    ClipboardData(text: agent.systemPrompt));
+                                    ClipboardData(text: _systemPrompt));
                                 if (!mounted) return;
                                 Navigator.pop(ctx);
                                 MoeToast.success(context, '提示词已复制');
                               },
                             ),
+                          TextButton.icon(
+                            style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                tapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap),
+                            icon: const Icon(Icons.edit_rounded, size: 14),
+                            label: const Text('编辑',
+                                style: TextStyle(fontSize: 12)),
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _editSystemPrompt();
+                            },
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -1027,14 +1257,14 @@ class _ChatPageState extends State<ChatPage> {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.grey.shade200),
                         ),
-                        child: agent.systemPrompt.isEmpty
+                        child: _systemPrompt.isEmpty
                             ? Text('未设置系统提示词',
                                 style: TextStyle(
                                     color: Colors.grey.shade400,
                                     fontSize: 14,
                                     fontStyle: FontStyle.italic))
                             : SelectableText(
-                                agent.systemPrompt,
+                                _systemPrompt,
                                 style: const TextStyle(
                                     fontSize: 14,
                                     height: 1.6,
@@ -1292,6 +1522,7 @@ class _ChatPageState extends State<ChatPage> {
       ),
       body: Column(
         children: [
+          _buildIdentityHero(),
           Expanded(
             child: _isLoadingHistory
                 ? const Center(child: CircularProgressIndicator())
@@ -1407,6 +1638,75 @@ class _ChatPageState extends State<ChatPage> {
       content: 'AI is thinking...',
       contentType: MessageContentType.thinking,
       isUser: false,
+    );
+  }
+
+  Widget _buildIdentityHero() {
+    final promptReady = _systemPrompt.trim().isNotEmpty;
+    final memoryCount = _memories.length;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0x1A8A2387), Color(0x14E94057)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: const Color(0x338A2387)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [Color(0xFF8A2387), Color(0xFFE94057)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: const Icon(Icons.auto_awesome_rounded,
+                color: Colors.white, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildIdentityChip('模型', widget.agent.modelName),
+                _buildIdentityChip('人设', promptReady ? '已启用' : '未设置'),
+                _buildIdentityChip('记忆', '$memoryCount 条'),
+                if (_isSyncingModelPrompt) _buildIdentityChip('状态', '同步中'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIdentityChip(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.85),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0x228A2387)),
+      ),
+      child: Text(
+        '$label · $value',
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF6C3A86),
+        ),
+      ),
     );
   }
 
