@@ -188,6 +188,8 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
         body: {
           'key': 'device_info:$_deviceId',
           'value': json.encode(info),
+          'source': 'device_sync',
+          'memory_type': 'fact',
         },
       );
       _lastServerSyncAt = DateTime.now();

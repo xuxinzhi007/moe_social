@@ -24,6 +24,19 @@ type CreateAgentLogic struct {
 	svcCtx *svc.ServiceContext
 }
 
+const defaultSystemPrompt = "你是一个自然、友好的中文助手。回答请具体、口语化、可执行，避免空泛模板化回复。"
+const builtInModelfileTemplate = `FROM {{BASE_MODEL}}
+
+SYSTEM """
+{{SYSTEM_PROMPT}}
+"""
+
+PARAMETER temperature 0.7
+PARAMETER top_p 0.9
+PARAMETER repeat_penalty 1.1
+PARAMETER num_ctx 8192
+`
+
 func NewCreateAgentLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CreateAgentLogic {
 	return &CreateAgentLogic{
 		Logger: logx.WithContext(ctx),
@@ -36,6 +49,9 @@ func (l *CreateAgentLogic) CreateAgent(req *types.LlmCreateAgentReq) (*types.Bas
 	name := strings.TrimSpace(req.Name)
 	baseModel := strings.TrimSpace(req.BaseModel)
 	systemPrompt := strings.TrimSpace(req.SystemPrompt)
+	if systemPrompt == "" {
+		systemPrompt = defaultSystemPrompt
+	}
 
 	if name == "" || baseModel == "" {
 		resp := common.HandleError(fmt.Errorf("模型名称和基础模型不能为空"))
@@ -62,15 +78,13 @@ func (l *CreateAgentLogic) CreateAgent(req *types.LlmCreateAgentReq) (*types.Bas
 		return &resp, nil
 	}
 
-	// Use Ollama create API fields compatible with newer versions.
-	// Some versions no longer accept "modelfile" directly and require "from"/"files".
+	modelfile := renderBuiltInModelfile(baseModel, systemPrompt)
+
+	// 首选 modelfile 创建，满足「可控模板 + 默认文件」诉求。
 	body := map[string]interface{}{
-		"model":  safeName,
-		"from":   baseModel,
-		"stream": false,
-	}
-	if systemPrompt != "" {
-		body["system"] = systemPrompt
+		"model":     safeName,
+		"modelfile": modelfile,
+		"stream":    false,
 	}
 
 	payload, err := json.Marshal(body)
@@ -112,7 +126,39 @@ func (l *CreateAgentLogic) CreateAgent(req *types.LlmCreateAgentReq) (*types.Bas
 	respBody, _ := io.ReadAll(httpResp.Body)
 
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
-		err = fmt.Errorf("创建 Ollama 模型失败(%d): %s", httpResp.StatusCode, strings.TrimSpace(string(respBody)))
+		// 兼容部分旧版/定制 Ollama：若不支持 modelfile 字段，则回退 from/system 方式。
+		rawErr := strings.TrimSpace(string(respBody))
+		lowErr := strings.ToLower(rawErr)
+		if strings.Contains(lowErr, "modelfile") ||
+			strings.Contains(lowErr, "unknown field") ||
+			strings.Contains(lowErr, "invalid character") {
+			fallback := map[string]interface{}{
+				"model":  safeName,
+				"from":   baseModel,
+				"system": systemPrompt,
+				"stream": false,
+			}
+			fallbackPayload, merr := json.Marshal(fallback)
+			if merr == nil {
+				fallbackReq, nerr := http.NewRequestWithContext(l.ctx, http.MethodPost, createURL, bytes.NewReader(fallbackPayload))
+				if nerr == nil {
+					common.ApplyOllamaForwardHeaders(fallbackReq)
+					fallbackReq.Header.Set("Content-Type", "application/json")
+					fallbackResp, derr := client.Do(fallbackReq)
+					if derr == nil {
+						defer fallbackResp.Body.Close()
+						fallbackBody, _ := io.ReadAll(fallbackResp.Body)
+						if fallbackResp.StatusCode >= 200 && fallbackResp.StatusCode < 300 {
+							resp := common.HandleError(nil)
+							resp.Message = "模型创建成功"
+							return &resp, nil
+						}
+						rawErr = strings.TrimSpace(string(fallbackBody))
+					}
+				}
+			}
+		}
+		err = fmt.Errorf("创建 Ollama 模型失败(%d): %s", httpResp.StatusCode, rawErr)
 		resp := common.HandleError(err)
 		return &resp, nil
 	}
@@ -120,8 +166,16 @@ func (l *CreateAgentLogic) CreateAgent(req *types.LlmCreateAgentReq) (*types.Bas
 	var apiResp map[string]interface{}
 	_ = json.Unmarshal(respBody, &apiResp)
 
+	// 创建成功后主动失效模型缓存，确保前端立即看到最新模型列表。
+	l.svcCtx.ModelCache.Clear()
+
 	resp := common.HandleError(nil)
 	resp.Message = "模型创建成功"
 	return &resp, nil
 }
 
+func renderBuiltInModelfile(baseModel, systemPrompt string) string {
+	out := strings.ReplaceAll(builtInModelfileTemplate, "{{BASE_MODEL}}", baseModel)
+	out = strings.ReplaceAll(out, "{{SYSTEM_PROMPT}}", systemPrompt)
+	return out
+}

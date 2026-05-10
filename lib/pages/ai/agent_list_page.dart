@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../../services/api_service.dart';
 import '../../services/llm_endpoint_config.dart';
 import '../../services/ai_db_service.dart';
+import '../../services/ai_prompt_defaults.dart';
 import '../../models/ai_agent.dart';
 import 'agent_editor_page.dart';
 import 'chat_page.dart';
@@ -193,7 +194,7 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
           id: model,
           name: model,
           description: _getModelDescription(model),
-          systemPrompt: '',
+          systemPrompt: AiPromptDefaults.defaultAgentSystemPrompt,
           modelName: model,
           createdAt: now,
         );
@@ -1049,7 +1050,7 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
       id: modelName,
       name: modelName,
       description: '基于 $modelName 的对话',
-      systemPrompt: '',
+      systemPrompt: AiPromptDefaults.defaultAgentSystemPrompt,
       modelName: modelName,
       createdAt: DateTime.now(),
     );
