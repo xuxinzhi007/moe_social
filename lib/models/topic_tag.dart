@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:flutter/material.dart';
 
 /// 话题标签模型 - 支持用户自定义创建
@@ -140,11 +141,61 @@ class TopicTag {
     );
   }
 
+  /// 服务端帖子里的 `topic_tags` 通常只有 id/name/color，无创建时间；用 UTC epoch 表示「未知」。
+  static final DateTime _unknownCreatedAt =
+      DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+
+  /// 解析创建时间：支持 ISO/RFC3339、Go 常见本地格式字符串，以及 Unix 秒/毫秒。
+  static DateTime _parseCreatedAtFromJson(Map<String, dynamic> json) {
+    final raw = json['created_at'] ?? json['createdAt'];
+    if (raw == null) {
+      return _unknownCreatedAt;
+    }
+    if (raw is String) {
+      final s = raw.trim();
+      if (s.isEmpty) {
+        return _unknownCreatedAt;
+      }
+      try {
+        return DateTime.parse(s);
+      } catch (_) {
+        try {
+          return DateTime.parse('${s.replaceAll(' ', 'T')}Z');
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('TopicTag.fromJson: 日期解析失败: $e, raw=$raw');
+          }
+          return _unknownCreatedAt;
+        }
+      }
+    }
+    if (raw is int) {
+      if (raw < 10000000000) {
+        return DateTime.fromMillisecondsSinceEpoch(raw * 1000, isUtc: true);
+      }
+      return DateTime.fromMillisecondsSinceEpoch(raw, isUtc: true);
+    }
+    if (raw is num) {
+      final v = raw.toInt();
+      if (v < 10000000000) {
+        return DateTime.fromMillisecondsSinceEpoch(v * 1000, isUtc: true);
+      }
+      return DateTime.fromMillisecondsSinceEpoch(v, isUtc: true);
+    }
+    if (kDebugMode) {
+      debugPrint(
+          'TopicTag.fromJson: 未支持的日期类型 ${raw.runtimeType}, raw=$raw');
+    }
+    return _unknownCreatedAt;
+  }
+
   /// 从JSON创建实例
   factory TopicTag.fromJson(Map<String, dynamic> json) {
     try {
-      print('🏷️ 解析话题标签JSON: $json');
-      
+      if (kDebugMode) {
+        debugPrint('TopicTag.fromJson: $json');
+      }
+
       // 解析颜色，支持十六进制字符串和整数
       Color color;
       final colorValue = json['color'];
@@ -155,7 +206,9 @@ class TopicTag {
           final colorInt = int.parse(hexString, radix: 16);
           color = Color(colorInt | 0xFF000000); // 添加alpha通道
         } catch (e) {
-          print('⚠️ 颜色解析失败: $e，使用默认颜色');
+          if (kDebugMode) {
+            debugPrint('TopicTag.fromJson: 颜色解析失败: $e，使用默认颜色');
+          }
           // 如果解析失败，使用默认颜色
           color = const Color(0xFF42A5F5);
         }
@@ -167,21 +220,7 @@ class TopicTag {
         color = const Color(0xFF42A5F5);
       }
 
-      // 处理下划线命名和驼峰命名的兼容，确保即使没有日期字段也能正常解析
-      DateTime createdAt;
-      final createdAtStr = json['created_at'] as String? ?? json['createdAt'] as String?;
-      if (createdAtStr != null && createdAtStr.isNotEmpty) {
-        try {
-          createdAt = DateTime.parse(createdAtStr);
-        } catch (e) {
-          print('⚠️ 日期解析失败: $e，使用当前时间');
-          createdAt = DateTime.now();
-        }
-      } else {
-        // 如果没有日期字段或日期字段为空，使用当前时间
-        print('⚠️ 没有日期字段，使用当前时间');
-        createdAt = DateTime.now();
-      }
+      final createdAt = _parseCreatedAtFromJson(json);
       
       final usageCount = (json['usage_count'] as int?) ?? (json['usageCount'] as int?) ?? 0;
       final isOfficial = (json['is_official'] as bool?) ?? (json['isOfficial'] as bool?) ?? false;
@@ -195,8 +234,11 @@ class TopicTag {
       final id = idValue?.toString() ?? '';
       final name = json['name']?.toString() ?? '';
       
-      print('🏷️ 解析标签字段: id=$idValue (${idValue.runtimeType}) -> "$id", name="$name"');
-      
+      if (kDebugMode) {
+        debugPrint(
+            'TopicTag.fromJson: id=$idValue (${idValue.runtimeType}) -> "$id", name="$name"');
+      }
+
       if (id.isEmpty || name.isEmpty) {
         throw Exception('话题标签缺少必要字段: id=$id, name=$name');
       }
@@ -212,13 +254,12 @@ class TopicTag {
         isOfficial: isOfficial,
         relatedTags: relatedTags,
       );
-      
-      print('✅ 成功解析话题标签: $name (ID: $id)');
+
       return tag;
     } catch (e, stackTrace) {
-      print('❌ TopicTag.fromJson错误: $e');
-      print('❌ JSON数据: $json');
-      print('❌ 堆栈跟踪: $stackTrace');
+      debugPrint('TopicTag.fromJson 错误: $e');
+      debugPrint('TopicTag.fromJson JSON: $json');
+      debugPrint('TopicTag.fromJson 堆栈: $stackTrace');
       rethrow;
     }
   }

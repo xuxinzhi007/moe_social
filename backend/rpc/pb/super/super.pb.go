@@ -3227,10 +3227,12 @@ func (x *GetTransactionResp) GetTransaction() *Transaction {
 
 // 话题标签消息
 type TopicTag struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Color         string                 `protobuf:"bytes,3,opt,name=color,proto3" json:"color,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Id    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name  string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Color string                 `protobuf:"bytes,3,opt,name=color,proto3" json:"color,omitempty"`
+	// 标签在库中的创建时间（与帖子 created_at 相同本地格式，便于 Flutter 复用解析）
+	CreatedAt     string `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3282,6 +3284,13 @@ func (x *TopicTag) GetName() string {
 func (x *TopicTag) GetColor() string {
 	if x != nil {
 		return x.Color
+	}
+	return ""
+}
+
+func (x *TopicTag) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
 	}
 	return ""
 }
@@ -11625,11 +11634,13 @@ const file_super_proto_rawDesc = "" +
 	"\x11GetTransactionReq\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"J\n" +
 	"\x12GetTransactionResp\x124\n" +
-	"\vtransaction\x18\x01 \x01(\v2\x12.super.TransactionR\vtransaction\"D\n" +
+	"\vtransaction\x18\x01 \x01(\v2\x12.super.TransactionR\vtransaction\"c\n" +
 	"\bTopicTag\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
-	"\x05color\x18\x03 \x01(\tR\x05color\"\xbd\x03\n" +
+	"\x05color\x18\x03 \x01(\tR\x05color\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x04 \x01(\tR\tcreatedAt\"\xbd\x03\n" +
 	"\x04Post\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x1b\n" +

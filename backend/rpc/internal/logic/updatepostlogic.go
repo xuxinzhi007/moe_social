@@ -116,9 +116,10 @@ func (l *UpdatePostLogic) UpdatePost(in *super.UpdatePostReq) (*super.UpdatePost
 	respTags := make([]*super.TopicTag, 0, len(p.TopicTags))
 	for _, t := range p.TopicTags {
 		respTags = append(respTags, &super.TopicTag{
-			Id:    strconv.FormatUint(uint64(t.ID), 10),
-			Name:  t.Name,
-			Color: t.Color,
+			Id:        strconv.FormatUint(uint64(t.ID), 10),
+			Name:      t.Name,
+			Color:     t.Color,
+			CreatedAt: t.CreatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
 

@@ -100,8 +100,8 @@ func (l *LikePostLogic) LikePost(in *super.LikePostReq) (*super.LikePostResp, er
 		return nil, err
 	}
 
-	// 重新查询帖子（获取最新数据）并加载用户信息
-	if err := l.svcCtx.DB.Preload("User").First(&post, postID).Error; err != nil {
+	// 重新查询帖子（获取最新数据）并加载用户与话题标签
+	if err := l.svcCtx.DB.Preload("User").Preload("TopicTags").First(&post, postID).Error; err != nil {
 		l.Error("重新查询帖子失败:", err)
 		return nil, err
 	}
@@ -133,6 +133,16 @@ func (l *LikePostLogic) LikePost(in *super.LikePostReq) (*super.LikePostResp, er
 	var currentLike model.Like
 	isLiked := l.svcCtx.DB.Where("target_id = ? AND user_id = ? AND target_type = ?", postID, userID, "post").First(&currentLike).Error == nil
 
+	topicTags := make([]*super.TopicTag, 0, len(post.TopicTags))
+	for _, tag := range post.TopicTags {
+		topicTags = append(topicTags, &super.TopicTag{
+			Id:        strconv.FormatUint(uint64(tag.ID), 10),
+			Name:      tag.Name,
+			Color:     tag.Color,
+			CreatedAt: tag.CreatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+
 	// 构建响应
 	rpcPost := &super.Post{
 		Id:                strconv.FormatUint(uint64(post.ID), 10),
@@ -141,6 +151,7 @@ func (l *LikePostLogic) LikePost(in *super.LikePostReq) (*super.LikePostResp, er
 		UserAvatar:        avatar,
 		Content:           post.Content,
 		Images:            images,
+		TopicTags:         topicTags,
 		Likes:             int32(post.Likes),
 		Comments:          int32(post.Comments),
 		IsLiked:           isLiked,

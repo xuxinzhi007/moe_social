@@ -30,9 +30,10 @@ func (l *CreatePostLogic) CreatePost(req *types.CreatePostReq) (resp *types.Crea
 	rpcTopicTags := make([]*super.TopicTag, 0, len(req.TopicTags))
 	for _, tag := range req.TopicTags {
 		rpcTopicTags = append(rpcTopicTags, &super.TopicTag{
-			Id:    tag.Id,
-			Name:  tag.Name,
-			Color: tag.Color,
+			Id:        tag.Id,
+			Name:      tag.Name,
+			Color:     tag.Color,
+			CreatedAt: tag.CreatedAt,
 		})
 	}
 
@@ -55,9 +56,10 @@ func (l *CreatePostLogic) CreatePost(req *types.CreatePostReq) (resp *types.Crea
 	apiTopicTags := make([]types.TopicTag, 0, len(rpcResp.Post.TopicTags))
 	for _, tag := range rpcResp.Post.TopicTags {
 		apiTopicTags = append(apiTopicTags, types.TopicTag{
-			Id:    tag.Id,
-			Name:  tag.Name,
-			Color: tag.Color,
+			Id:        tag.Id,
+			Name:      tag.Name,
+			Color:     tag.Color,
+			CreatedAt: tag.CreatedAt,
 		})
 	}
 

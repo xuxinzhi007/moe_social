@@ -95,9 +95,10 @@ func (l *GetPostLogic) GetPost(in *super.GetPostReq) (*super.GetPostResp, error)
 	topicTags := make([]*super.TopicTag, 0, len(post.TopicTags))
 	for _, tag := range post.TopicTags {
 		topicTags = append(topicTags, &super.TopicTag{
-			Id:    strconv.FormatUint(uint64(tag.ID), 10),
-			Name:  tag.Name,
-			Color: tag.Color,
+			Id:        strconv.FormatUint(uint64(tag.ID), 10),
+			Name:      tag.Name,
+			Color:     tag.Color,
+			CreatedAt: tag.CreatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
 	

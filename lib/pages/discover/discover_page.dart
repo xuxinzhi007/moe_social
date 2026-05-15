@@ -601,13 +601,39 @@ class _DiscoverPageState extends State<DiscoverPage>
             ],
           ),
           const SizedBox(height: 6),
-          Text('选几个感兴趣的标签，或直接点「随机发现新面孔」',
+          Text('选几个感兴趣的标签，或直接点下面按钮随机认识同好',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: Colors.grey[500])),
           const SizedBox(height: 4),
           Text('提示：点击上方话题标签可筛选推荐结果',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: Colors.grey[400])),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _loading ? null : _runOfflineMatch,
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF7F7FD5),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              icon: _loading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.shuffle_rounded, size: 20),
+              label: Text(_loading ? '推荐中…' : '随机认识同好'),
+            ),
+          ),
         ],
       ),
     );

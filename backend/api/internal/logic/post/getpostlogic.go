@@ -41,9 +41,10 @@ func (l *GetPostLogic) GetPost(req *types.GetPostReq) (resp *types.GetPostResp, 
 	apiTopicTags := make([]types.TopicTag, 0, len(rpcResp.Post.TopicTags))
 	for _, tag := range rpcResp.Post.TopicTags {
 		apiTopicTags = append(apiTopicTags, types.TopicTag{
-			Id:    tag.Id,
-			Name:  tag.Name,
-			Color: tag.Color,
+			Id:        tag.Id,
+			Name:      tag.Name,
+			Color:     tag.Color,
+			CreatedAt: tag.CreatedAt,
 		})
 	}
 

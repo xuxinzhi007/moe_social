@@ -18,6 +18,7 @@ import '../../widgets/home_stories_bar.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/fade_in_up.dart';
+import '../../providers/main_nav_controller.dart';
 import 'create_post_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -255,9 +256,8 @@ class _HomePageState extends State<HomePage>
         _allPosts.addAll(result.posts);
         _displayPosts = List<Post>.from(_allPosts);
         _currentPage = nextPage;
-        _hasMore = _mode.supportsPagination
-            ? _allPosts.length < result.total
-            : false;
+        _hasMore =
+            _mode.supportsPagination ? _allPosts.length < result.total : false;
         _loadMoreErrorMessage = null;
         _lastUpdatedAt = DateTime.now();
       });
@@ -404,11 +404,13 @@ class _HomePageState extends State<HomePage>
             _buildSliverAppBar(context),
             const SliverToBoxAdapter(child: SizedBox(height: 8)),
             SliverToBoxAdapter(
-              child: HomeStoriesBar(onCreatePostSuccess: _handleCreatePostResult),
+              child:
+                  HomeStoriesBar(onCreatePostSuccess: _handleCreatePostResult),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 10)),
             SliverToBoxAdapter(
-              child: QuickActionsGrid(onCreatePostSuccess: _handleCreatePostResult),
+              child: QuickActionsGrid(
+                  onCreatePostSuccess: _handleCreatePostResult),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 8)),
             // Topic tags row — plain SliverToBoxAdapter, no dynamic-extent issues
@@ -434,7 +436,7 @@ class _HomePageState extends State<HomePage>
                 child: _buildFeedErrorState(_feedErrorMessage!),
               )
             else if (!_isLoading && _displayPosts.isEmpty)
-              SliverToBoxAdapter(child: _buildEmptyState())
+              SliverToBoxAdapter(child: _buildFeedEmptyState())
             else
               SliverList(
                 delegate: SliverChildBuilderDelegate(
@@ -465,8 +467,11 @@ class _HomePageState extends State<HomePage>
     final screenHeight = screenSize.height;
     final screenWidth = screenSize.width;
     final textScale = MediaQuery.textScalerOf(context).scale(1.0);
-    final baseExpandedHeight =
-        screenHeight < 620 ? 286.0 : screenHeight < 760 ? 298.0 : 312.0;
+    final baseExpandedHeight = screenHeight < 620
+        ? 286.0
+        : screenHeight < 760
+            ? 298.0
+            : 312.0;
     final narrowWidthExtra = screenWidth < 340
         ? 26.0
         : screenWidth < 360
@@ -544,8 +549,7 @@ class _HomePageState extends State<HomePage>
                     child: provider.unreadCount > 99
                         ? const Text(
                             '99+',
-                            style:
-                                TextStyle(color: Colors.white, fontSize: 8),
+                            style: TextStyle(color: Colors.white, fontSize: 8),
                           )
                         : null,
                   ),
@@ -564,8 +568,7 @@ class _HomePageState extends State<HomePage>
         indicatorSize: TabBarIndicatorSize.label,
         labelColor: scheme.primary,
         unselectedLabelColor: scheme.onSurfaceVariant,
-        labelStyle:
-            const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+        labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
         unselectedLabelStyle:
             const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         tabs: _tabs
@@ -752,9 +755,8 @@ class _HomePageState extends State<HomePage>
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               _buildMetaChip(
-                icon: _isRefreshing
-                    ? Icons.sync_rounded
-                    : Icons.schedule_rounded,
+                icon:
+                    _isRefreshing ? Icons.sync_rounded : Icons.schedule_rounded,
                 text: _lastUpdatedText(),
               ),
               if (_activeTopic != null)
@@ -906,23 +908,89 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildEmptyState() {
+  void _requestMainTab(int index) {
+    if (!mounted) return;
+    context.read<MainNavController>().requestTab(index);
+  }
+
+  Widget _buildFeedEmptyState() {
+    if (_mode == _HomeFeedMode.following) {
+      return _buildUnifiedStatePanel(
+        icon: Icons.star_border_rounded,
+        title: '关注的人还没有发动态',
+        subtitle: '先去兴趣社区逛逛话题，或在发现里认识新的同好 ~(｡•ᴗ•｡)~',
+        accentColor: const Color(0xFFFFB347),
+        action: SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () => _requestMainTab(2),
+            icon: const Icon(Icons.forum_rounded, size: 20),
+            label: const Text('去兴趣社区'),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF7F7FD5),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+            ),
+          ),
+        ),
+        secondaryAction: SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => _requestMainTab(3),
+            icon: const Icon(Icons.explore_rounded, size: 20),
+            label: const Text('去找同好'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF7F7FD5),
+              side: const BorderSide(color: Color(0xFF7F7FD5)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final topicName = _activeTopic?.name;
+    final inTopic = _activeTopic != null;
     return _buildUnifiedStatePanel(
       icon: Icons.auto_awesome_rounded,
-      title: '还没有动态呢 ~',
-      subtitle: '发布第一条动态，开启萌系社交之旅吧！',
+      title: inTopic ? '#$topicName 下暂时还没有动态' : '这里还是空的耶',
+      subtitle: inTopic ? '换个小话题看看，或自己发帖带上这个标签吧。' : '发一条动态记录今天，或去发现页用话题认识同好。',
       accentColor: const Color(0xFF7F7FD5),
-      action: ElevatedButton.icon(
-        onPressed: _openCreatePost,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('发布动态'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF7F7FD5),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
+      action: SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: _openCreatePost,
+          icon: const Icon(Icons.edit_rounded, size: 20),
+          label: const Text('发布动态'),
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF7F7FD5),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
+          ),
+        ),
+      ),
+      secondaryAction: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () => _requestMainTab(3),
+          icon: const Icon(Icons.favorite_rounded, size: 20),
+          label: const Text('去找同好'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFF7F7FD5),
+            side: const BorderSide(color: Color(0xFF7F7FD5)),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
           ),
         ),
       ),
@@ -935,6 +1003,7 @@ class _HomePageState extends State<HomePage>
     required String subtitle,
     required Color accentColor,
     required Widget action,
+    Widget? secondaryAction,
   }) {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
@@ -986,6 +1055,10 @@ class _HomePageState extends State<HomePage>
             ),
             const SizedBox(height: 18),
             action,
+            if (secondaryAction != null) ...[
+              const SizedBox(height: 12),
+              secondaryAction,
+            ],
           ],
         ),
       ),
@@ -1169,12 +1242,17 @@ class _HomePageState extends State<HomePage>
                     likes: post.likes,
                     comments: post.comments,
                     isLiked: post.isLiked,
-                    userName: updated.userName.isNotEmpty ? updated.userName : post.userName,
-                    userAvatar: updated.userAvatar.isNotEmpty ? updated.userAvatar : post.userAvatar,
+                    userName: updated.userName.isNotEmpty
+                        ? updated.userName
+                        : post.userName,
+                    userAvatar: updated.userAvatar.isNotEmpty
+                        ? updated.userAvatar
+                        : post.userAvatar,
                   );
                   final ai = _allPosts.indexWhere((p) => p.id == updated.id);
                   if (ai != -1) _allPosts[ai] = merged;
-                  final di = _displayPosts.indexWhere((p) => p.id == updated.id);
+                  final di =
+                      _displayPosts.indexWhere((p) => p.id == updated.id);
                   if (di != -1) _displayPosts[di] = merged;
                 });
               }
@@ -1197,7 +1275,6 @@ class _HomePageState extends State<HomePage>
           : null,
     );
   }
-
 }
 
 // ---------------------------------------------------------------------------
@@ -1215,6 +1292,3 @@ class _PostPageResult {
   final int total;
   const _PostPageResult({required this.posts, required this.total});
 }
-
-
-
