@@ -361,6 +361,8 @@ message TopicTag {
   string id = 1;
   string name = 2;
   string color = 3;
+  // 标签在库中的创建时间（与帖子 created_at 相同本地格式，便于 Flutter 复用解析）
+  string created_at = 4;
 }
 
 // 服务定义帖子相关消息

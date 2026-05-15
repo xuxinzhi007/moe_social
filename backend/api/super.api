@@ -122,9 +122,10 @@ type Post {
 
 // 话题标签结构
 type TopicTag {
-	Id    string `json:"id,optional"`
-	Name  string `json:"name"`
-	Color string `json:"color"`
+	Id        string `json:"id,optional"`
+	Name      string `json:"name"`
+	Color     string `json:"color"`
+	CreatedAt string `json:"created_at,optional"`
 }
 
 // 评论相关结构

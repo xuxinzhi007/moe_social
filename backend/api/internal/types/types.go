@@ -1260,9 +1260,10 @@ type SyncUserVipStatusResp struct {
 }
 
 type TopicTag struct {
-	Id    string `json:"id,optional"`
-	Name  string `json:"name"`
-	Color string `json:"color"`
+	Id        string `json:"id,optional"`
+	Name      string `json:"name"`
+	Color     string `json:"color"`
+	CreatedAt string `json:"created_at,optional"`
 }
 
 type Transaction struct {

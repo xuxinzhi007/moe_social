@@ -58,6 +58,7 @@ import 'providers/checkin_provider.dart';
 import 'providers/user_level_provider.dart';
 import 'providers/game_provider.dart';
 import 'providers/virtual_avatar_provider.dart';
+import 'providers/main_nav_controller.dart';
 import 'pages/feed/home_page.dart';
 import 'pages/community/community_home_page.dart';
 import 'pages/community/community_post_detail_page.dart';
@@ -299,7 +300,8 @@ class _MyAppState extends State<MyApp> {
       ..init();
     final loadingProvider = _globalLoadingProvider ?? LoadingProvider();
     final virtualAvatarProvider =
-        _globalVirtualAvatarProvider ?? VirtualAvatarProvider()..init();
+        _globalVirtualAvatarProvider ?? VirtualAvatarProvider()
+          ..init();
 
     _globalNotificationProvider = notificationProvider;
     _globalDeviceInfoProvider = deviceInfoProvider;
@@ -316,6 +318,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => CheckInProvider()),
         ChangeNotifierProvider(create: (_) => UserLevelProvider()),
         ChangeNotifierProvider(create: (_) => GameProvider()),
+        ChangeNotifierProvider(create: (_) => MainNavController()),
       ],
       child: MaterialApp(
         title: 'Moe Social',
@@ -454,6 +457,7 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
+  late final MainNavController _mainNav;
   late final List<Widget Function()> _pageBuilders = [
     () => const HomePage(),
     () => const FriendsPage(),
@@ -467,7 +471,25 @@ class _MainPageState extends State<MainPage> {
   @override
   void initState() {
     super.initState();
+    _mainNav = context.read<MainNavController>();
+    _mainNav.addListener(_onMainNavRequested);
     _loadedPages[_selectedIndex] = _pageBuilders[_selectedIndex]();
+  }
+
+  @override
+  void dispose() {
+    _mainNav.removeListener(_onMainNavRequested);
+    super.dispose();
+  }
+
+  void _onMainNavRequested() {
+    final idx = _mainNav.consumeTabRequest();
+    if (!mounted || idx == null) return;
+    if (idx < 0 || idx >= _pageBuilders.length) return;
+    setState(() {
+      _loadedPages[idx] ??= _pageBuilders[idx]();
+      _selectedIndex = idx;
+    });
   }
 
   @override
@@ -499,12 +521,12 @@ class _MainPageState extends State<MainPage> {
           NavigationDestination(
             icon: Icon(Icons.contacts_outlined),
             selectedIcon: Icon(Icons.contacts_rounded),
-            label: '联系人',
+            label: '同好与人脉',
           ),
           NavigationDestination(
             icon: Icon(Icons.forum_outlined),
             selectedIcon: Icon(Icons.forum_rounded),
-            label: '社区',
+            label: '兴趣社区',
           ),
           NavigationDestination(
             icon: Icon(Icons.explore_outlined),
