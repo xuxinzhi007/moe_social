@@ -16,6 +16,7 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.content.pm.Signature
 import java.security.MessageDigest
+import java.io.File
 
 class MainActivity : FlutterActivity() {
     private var lastImeIdLogged: String? = null
@@ -45,6 +46,18 @@ class MainActivity : FlutterActivity() {
                         }
                         startActivity(intent)
                         result.success(true)
+                    } catch (e: Exception) {
+                        result.error("ERROR", e.message, null)
+                    }
+                }
+                "openApkContainingFolder" -> {
+                    val path = call.argument<String>("apkPath")
+                    if (path.isNullOrBlank()) {
+                        result.error("INVALID", "apkPath required", null)
+                        return@setMethodCallHandler
+                    }
+                    try {
+                        result.success(openContainingFolder(path))
                     } catch (e: Exception) {
                         result.error("ERROR", e.message, null)
                     }
@@ -82,6 +95,10 @@ class MainActivity : FlutterActivity() {
                 "error" to "package_name_mismatch",
                 "installedPackage" to myPkg,
                 "apkPackage" to apkPkg,
+                "installedVersionName" to installedPi.versionName,
+                "apkVersionName" to apkPi.versionName,
+                "installedVersionCode" to versionCodeLong(installedPi),
+                "apkVersionCode" to versionCodeLong(apkPi),
             )
         }
 
@@ -107,7 +124,47 @@ class MainActivity : FlutterActivity() {
             "match" to true,
             "installedSha256" to installedSha,
             "apkSha256" to apkSha,
+            "installedPackage" to myPkg,
+            "apkPackage" to apkPkg,
+            "installedVersionName" to installedPi.versionName,
+            "apkVersionName" to apkPi.versionName,
+            "installedVersionCode" to versionCodeLong(installedPi),
+            "apkVersionCode" to versionCodeLong(apkPi),
         )
+    }
+
+    private fun versionCodeLong(pi: PackageInfo): Long {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            pi.longVersionCode
+        } else {
+            @Suppress("DEPRECATION")
+            pi.versionCode.toLong()
+        }
+    }
+
+    private fun openContainingFolder(apkPath: String): Boolean {
+        val dir = File(apkPath).parentFile ?: return false
+        val candidates = listOf(
+            Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(Uri.parse(dir.absolutePath), "resource/folder")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            },
+            Intent(Intent.ACTION_VIEW).apply {
+                data = Uri.parse("content://com.android.externalstorage.documents/root/primary")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            },
+            Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            },
+        )
+
+        for (intent in candidates) {
+            if (intent.resolveActivity(packageManager) != null) {
+                startActivity(intent)
+                return true
+            }
+        }
+        return false
     }
 
     private fun signingFlags(): Int {
