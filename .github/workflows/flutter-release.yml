@@ -44,7 +44,12 @@ jobs:
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: flutter build apk --release --no-tree-shake-icons
+        run: |
+          VERSION_NAME="${GITHUB_REF_NAME#v}"
+          BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
+          flutter build apk --release --no-tree-shake-icons \
+            --build-name "$VERSION_NAME" \
+            --build-number "$BUILD_NUMBER"
 
       # 6. 发布到 GitHub Releases
       - name: Create Release and Upload APK

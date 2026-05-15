@@ -19,6 +19,7 @@ import '../services/api_service.dart';
 class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
   String _version = '';
   String _buildNumber = '';
+  String _packageName = '';
   String _deviceId = '';
   String _deviceType = '';
   String _osVersion = '';
@@ -35,15 +36,19 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
   static const Duration _serverSyncMinGap = Duration(minutes: 2);
 
   String get version => _version;
+
   /// 构建号（Android versionCode / iOS CFBundleVersion），与 [version] 同源来自 PackageInfo。
   String get buildNumber => _buildNumber;
+  String get packageName => _packageName;
 
-  /// 设置页等展示用：仅展示软件版本号（如 v1.0.0），不含构建号括号。
-  /// [buildNumber] 仍可用于调试或上报。
+  /// 设置页等展示用：展示版本号、构建号，并标记本地开发包。
   String get versionDisplayLabel {
     if (_version.isEmpty) return '未知';
-    return 'v$_version';
+    final build = _buildNumber.isEmpty ? '' : '+$_buildNumber';
+    final flavor = _packageName.endsWith('.dev') ? ' Dev' : '';
+    return 'v$_version$build$flavor';
   }
+
   String get deviceId => _deviceId;
   String get deviceType => _deviceType;
   String get osVersion => _osVersion;
@@ -115,6 +120,7 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
       final info = await PackageInfo.fromPlatform();
       _version = info.version;
       _buildNumber = info.buildNumber;
+      _packageName = info.packageName;
     } catch (_) {}
   }
 
