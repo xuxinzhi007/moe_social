@@ -10,6 +10,11 @@ api:
   # go-zero REST 超时（毫秒）。LLM 首次加载模型可能较慢，建议 >= 180000
   timeout_ms: 600000
 
+feishu:
+  enabled: true  # true / false
+  webhook_url: "cli_aa805993a6a3dcc4"
+  secret: "YCNyyGx73ZWBa7S3vyjUveJq6ortsaIb"
+
 #本地
 
 ollama:

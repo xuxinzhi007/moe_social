@@ -100,10 +100,8 @@ class AiMemoryOrchestrator {
   String modeDescription(AiMemoryMode mode) => switch (mode) {
         AiMemoryMode.server =>
           '当前聊天使用账号级 UserMemory，跨设备同步；内置 Ollama 由后端自动注入与提取。',
-        AiMemoryMode.local =>
-          '当前聊天使用本机 SQLite 角色记忆，仅本设备；回合后由智能体模型提取并整理画像。',
-        AiMemoryMode.disabled =>
-          '已开启终端 raw 模式，聊天不注入、不写入记忆。',
+        AiMemoryMode.local => '当前聊天使用本机 SQLite 角色记忆，仅本设备；回合后由智能体模型提取并整理画像。',
+        AiMemoryMode.disabled => '已开启终端 raw 模式，聊天不注入、不写入记忆。',
       };
 
   // ─── 聊天 / 内容生成 ─────────────────────────────────────────────────────
@@ -188,40 +186,45 @@ class AiMemoryOrchestrator {
 
   Future<AiMemoryManagerState> loadManagerState(AiAgent agent) async {
     final mode = await resolveMode(agent);
-    final terminal = await LlmEndpointConfig.isTerminalModeEnabled();
-    final llmConfig = await _loadLlmConfig();
+    final terminalFuture = LlmEndpointConfig.isTerminalModeEnabled();
+    final llmConfigFuture = _loadLlmConfig();
+    final localMemoriesFuture = _db.getMemories(agent.id);
+    final localProfilesFuture = _db.getMemoryProfiles(agent.id);
+    final accountFuture = mode == AiMemoryMode.server
+        ? _loadAccountMemoryState()
+        : Future.value(
+            (
+              memories: <UserMemory>[],
+              profiles: <UserMemoryProfile>[],
+            ),
+          );
 
-    var accountMemories = <UserMemory>[];
-    var accountProfiles = <UserMemoryProfile>[];
-    try {
-      final user = await AuthService.getUserInfo();
-      final paged = await MemoryService.getUserMemoriesPaged(
-        user.id,
-        limit: 100,
-        offset: 0,
-      );
-      accountMemories = (paged['items'] as List<UserMemory>? ?? const [])
-        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-      accountProfiles = await MemoryService.getUserMemoryProfiles(user.id);
-    } catch (_) {}
-
-    final localMemories = await _db.getMemories(agent.id);
-    final localProfiles = await _db.getMemoryProfiles(agent.id);
+    final terminal = await terminalFuture;
+    final llmConfig = await llmConfigFuture;
+    final localMemories = await localMemoriesFuture;
+    final localProfiles = await localProfilesFuture;
+    final account = await accountFuture;
 
     final basePrompt = agent.systemPrompt.isNotEmpty
         ? agent.systemPrompt
         : '你是一位友好、智能的 AI 助手。';
-    final promptPreview = await buildPromptPreview(
-      agent: agent,
-      basePrompt: basePrompt,
-    );
+    final promptPreview = mode == AiMemoryMode.server
+        ? await _injectServerMemories(
+            basePrompt,
+            '',
+            preloadedMemories: account.memories,
+          )
+        : await buildPromptPreview(
+            agent: agent,
+            basePrompt: basePrompt,
+          );
 
     return AiMemoryManagerState(
       activeMode: mode,
       activeModeLabel: modeLabel(mode),
       activeModeDescription: modeDescription(mode),
-      accountMemories: accountMemories,
-      accountProfiles: accountProfiles,
+      accountMemories: account.memories,
+      accountProfiles: account.profiles,
       localMemories: localMemories,
       localProfiles: localProfiles,
       promptPreview: promptPreview,
@@ -323,16 +326,23 @@ class AiMemoryOrchestrator {
 
   Future<String> _injectServerMemories(
     String basePrompt,
-    String latestUserMessage,
-  ) async {
+    String latestUserMessage, {
+    List<UserMemory>? preloadedMemories,
+  }) async {
     try {
-      final user = await AuthService.getUserInfo();
-      final raw = await MemoryService.getUserMemories(user.id);
-      final filtered = MemoryService.filterUserFacingMemories(raw);
-      if (filtered.isEmpty) return basePrompt;
-
+      final filtered = preloadedMemories == null
+          ? () async {
+              final user = await AuthService.getUserInfo();
+              final raw = await MemoryService.getUserMemories(user.id);
+              return MemoryService.filterUserFacingMemories(raw);
+            }()
+          : Future.value(
+              MemoryService.filterUserFacingMemories(preloadedMemories),
+            );
+      final resolved = await filtered;
+      if (resolved.isEmpty) return basePrompt;
       final selected = MemoryService.selectRelevantUserMemories(
-        memories: filtered,
+        memories: resolved,
         queryText: latestUserMessage,
       );
       if (selected.isEmpty) return basePrompt;
@@ -372,6 +382,31 @@ class AiMemoryOrchestrator {
       return Map<String, dynamic>.from(decoded['data'] as Map);
     } catch (_) {
       return const {};
+    }
+  }
+
+  Future<({List<UserMemory> memories, List<UserMemoryProfile> profiles})>
+      _loadAccountMemoryState() async {
+    try {
+      final user = await AuthService.getUserInfo();
+      final futures = await Future.wait<dynamic>([
+        MemoryService.getUserMemoriesPaged(
+          user.id,
+          limit: 100,
+          offset: 0,
+        ),
+        MemoryService.getUserMemoryProfiles(user.id),
+      ]);
+      final paged = futures[0] as Map<String, dynamic>;
+      final profiles = futures[1] as List<UserMemoryProfile>;
+      final memories = (paged['items'] as List<UserMemory>? ?? const [])
+        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      return (memories: memories, profiles: profiles);
+    } catch (_) {
+      return (
+        memories: <UserMemory>[],
+        profiles: <UserMemoryProfile>[],
+      );
     }
   }
 

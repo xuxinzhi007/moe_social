@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -45,7 +46,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   String? _lorebookId;
   bool _isLoadingModels = false;
   bool _isSaving = false;
-  bool _createRealModel = true;
+  bool _createRealModel = false;
   bool _syncModelOnEdit = true;
 
   bool get _isTemplateDraft =>
@@ -199,9 +200,9 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   Future<void> _loadModels() async {
     setState(() => _isLoadingModels = true);
     try {
-      final profile =
-          _selectedProvider ?? AiProviderProfile.builtinBackend();
-      final models = await AiChatGatewayService().fetchModelsForProfile(profile);
+      final profile = _selectedProvider ?? AiProviderProfile.builtinBackend();
+      final models =
+          await AiChatGatewayService().fetchModelsForProfile(profile);
       if (!mounted) return;
       setState(() {
         _models = models;
@@ -396,8 +397,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       final name = _nameController.text.trim();
       final desc = _descController.text.trim();
       final prompt = _promptController.text.trim();
-      final provider =
-          _selectedProvider ?? AiProviderProfile.builtinBackend();
+      final provider = _selectedProvider ?? AiProviderProfile.builtinBackend();
 
       String modelForChat = _modelNameController.text.trim();
       String resolvedPromptForLocal = prompt;
@@ -424,15 +424,22 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
           modelForChat = widget.agent!.modelName;
         }
 
-        await _createOrUpdateModelInOllama(
-          modelName: modelForChat,
-          baseModel: baseModel,
-          prompt: prompt,
+        await _withStepTimeout(
+          step: '生成 Ollama 模型',
+          timeout: const Duration(seconds: 60),
+          action: () => _createOrUpdateModelInOllama(
+            modelName: modelForChat,
+            baseModel: baseModel,
+            prompt: prompt,
+          ),
         );
 
         if (resolvedPromptForLocal.isEmpty) {
-          final backendPrompt =
-              await _fetchSystemPromptFromBackend(modelForChat);
+          final backendPrompt = await _withStepTimeout<String?>(
+            step: '读取模型系统提示词',
+            timeout: const Duration(seconds: 15),
+            action: () => _fetchSystemPromptFromBackend(modelForChat),
+          );
           if (backendPrompt != null && backendPrompt.trim().isNotEmpty) {
             resolvedPromptForLocal = backendPrompt.trim();
           }
@@ -440,7 +447,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       }
 
       if (modelForChat.isEmpty) {
-        throw Exception('请输入模型 ID');
+        throw Exception('请输入绑定模型 ID');
       }
 
       final agent = AiAgent(
@@ -452,38 +459,52 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
         description: desc,
         systemPrompt: resolvedPromptForLocal,
         modelName: modelForChat,
-        providerProfileId:
-            provider.isBuiltinBackend ? null : provider.id,
-        lorebookId: (_lorebookId?.trim().isNotEmpty ?? false) ? _lorebookId : null,
+        providerProfileId: provider.isBuiltinBackend ? null : provider.id,
+        lorebookId:
+            (_lorebookId?.trim().isNotEmpty ?? false) ? _lorebookId : null,
         persona: _personaController.text.trim(),
         scenario: _scenarioController.text.trim(),
         openingMessage: _openingMessageController.text.trim(),
         exampleDialogues: _exampleDialoguesController.text.trim(),
-        createdAt: isNewAgent ? DateTime.now() : (widget.agent?.createdAt ?? DateTime.now()),
+        createdAt: isNewAgent
+            ? DateTime.now()
+            : (widget.agent?.createdAt ?? DateTime.now()),
       );
 
       // 本地库只作为补充元数据存储；写入失败不阻塞“后端模型”流程。
+      if (isNewAgent) {
+        await _withStepTimeout(
+          step: '写入本地角色卡',
+          timeout: const Duration(seconds: 8),
+          action: () => AiDbService().insertAgent(agent),
+        );
+      } else {
+        await _withStepTimeout(
+          step: '更新本地角色卡',
+          timeout: const Duration(seconds: 8),
+          action: () => AiDbService().updateAgent(agent),
+        );
+      }
       try {
-        if (isNewAgent) {
-          await AiDbService().insertAgent(agent);
-        } else {
-          await AiDbService().updateAgent(agent);
-        }
-        if (isNewAgent) {
-          await AiAgentCloudService().saveAgent(agent);
-        } else {
-          await AiAgentCloudService().updateAgent(agent);
-        }
-      } catch (_) {}
+        await _withStepTimeout(
+          step: '同步角色卡到后端',
+          timeout: const Duration(seconds: 8),
+          action: () => AiAgentCloudService().syncAgentToCloud(agent),
+        );
+      } catch (e) {
+        throw Exception('角色卡已保存到本地，但同步到后端失败：$e');
+      }
 
       if (mounted) {
         MoeToast.success(
           context,
           isNewAgent
-              ? '智能体创建成功'
+              ? (_selectedProviderIsBackend && _createRealModel
+                  ? '角色卡已创建，并已同步生成模型'
+                  : '角色卡创建成功')
               : (_selectedProviderIsBackend && _syncModelOnEdit
-                  ? '智能体已保存并同步模型'
-                  : '智能体已保存'),
+                  ? '角色卡已保存，并已同步模型配置'
+                  : '角色卡已保存'),
         );
         Navigator.pop(context, true);
       }
@@ -495,6 +516,18 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       if (mounted) {
         setState(() => _isSaving = false);
       }
+    }
+  }
+
+  Future<T> _withStepTimeout<T>({
+    required String step,
+    required Duration timeout,
+    required Future<T> Function() action,
+  }) async {
+    try {
+      return await action().timeout(timeout);
+    } on TimeoutException {
+      throw Exception('$step超时（${timeout.inSeconds} 秒）');
     }
   }
 
@@ -518,9 +551,14 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       'system_prompt': prompt,
     });
 
-    final response = await http
-        .post(uri, headers: headers, body: body)
-        .timeout(const Duration(seconds: 45));
+    http.Response response;
+    try {
+      response = await http
+          .post(uri, headers: headers, body: body)
+          .timeout(const Duration(seconds: 45));
+    } on TimeoutException {
+      throw Exception('创建 Ollama 模型超时（45 秒），通常是首次拉取基础模型较慢，请稍后重试');
+    }
 
     if (response.statusCode != 200) {
       throw Exception('创建/更新 Ollama 模型失败: ${response.statusCode}');
@@ -601,7 +639,8 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text((widget.agent == null || _isTemplateDraft) ? '创建智能体' : '编辑智能体'),
+        title: Text(
+            (widget.agent == null || _isTemplateDraft) ? '创建角色卡' : '编辑角色卡'),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _save,
@@ -654,14 +693,16 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                         .map(
                           (item) => DropdownMenuItem(
                             value: item.id,
-                            child: Text(item.name, overflow: TextOverflow.ellipsis),
+                            child: Text(item.name,
+                                overflow: TextOverflow.ellipsis),
                           ),
                         )
                         .toList(),
                     onChanged: (value) async {
                       if (value == null) return;
                       setState(() => _providerProfileId = value);
-                      await AiProviderService().saveLastSelectedProfileId(value);
+                      await AiProviderService()
+                          .saveLastSelectedProfileId(value);
                       await _loadModels();
                     },
                   ),
@@ -734,8 +775,8 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
             const SizedBox(height: 16),
             if (widget.agent == null && _selectedProviderIsBackend)
               SwitchListTile(
-                title: const Text('在 Ollama 中创建真实模型'),
-                subtitle: const Text('使用上面的基础模型和系统提示词创建可复用模型'),
+                title: const Text('同时在 Ollama 中生成模型'),
+                subtitle: const Text('角色卡本身只是配置；开启后会额外用当前提示词生成一个可复用模型'),
                 value: _createRealModel,
                 onChanged: (v) {
                   setState(() => _createRealModel = v);
@@ -743,8 +784,8 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
               ),
             if (widget.agent != null && _selectedProviderIsBackend)
               SwitchListTile(
-                title: const Text('同步更新到 Ollama 模型'),
-                subtitle: const Text('关闭后仅修改本地展示，开启后会重建模型使新提示词生效'),
+                title: const Text('同步更新 Ollama 模型'),
+                subtitle: const Text('角色卡配置修改后，是否同时把新提示词同步到已生成模型'),
                 value: _syncModelOnEdit,
                 onChanged: (v) {
                   setState(() => _syncModelOnEdit = v);
@@ -767,7 +808,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                   : null,
               isExpanded: true,
               decoration: const InputDecoration(
-                labelText: '模型列表',
+                labelText: '可用模型',
                 border: OutlineInputBorder(),
               ),
               items: _models.isEmpty
@@ -797,19 +838,19 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
             if (_isLoadingModels)
               const Padding(
                 padding: EdgeInsets.only(top: 8),
-                child: Text('正在加载模型列表...',
+                child: Text('正在加载可绑定模型...',
                     style: TextStyle(color: Colors.grey, fontSize: 12)),
               ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _modelNameController,
               decoration: const InputDecoration(
-                labelText: '模型 ID',
-                hintText: '可手动输入模型，例如 gpt-4o-mini / deepseek-chat',
+                labelText: '绑定模型 ID',
+                hintText: '角色卡默认使用哪个模型，例如 gpt-4o-mini / deepseek-chat',
                 border: OutlineInputBorder(),
               ),
               validator: (v) =>
-                  v == null || v.trim().isEmpty ? '请输入模型 ID' : null,
+                  v == null || v.trim().isEmpty ? '请输入绑定模型 ID' : null,
             ),
             const SizedBox(height: 16),
             if (widget.agent != null && _selectedProviderIsBackend) ...[

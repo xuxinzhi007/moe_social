@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'api_service.dart';
 
 class AiCloudConfigSnapshot {
@@ -21,10 +23,12 @@ class AiCloudConfigService {
 
   static final AiCloudConfigService _instance = AiCloudConfigService._();
   factory AiCloudConfigService() => _instance;
+  static const Duration _readTimeout = Duration(seconds: 6);
+  static const Duration _writeTimeout = Duration(seconds: 5);
 
   Future<AiCloudConfigSnapshot?> fetch() async {
     try {
-      final resp = await ApiService.get('/api/ai/config');
+      final resp = await ApiService.get('/api/ai/config').timeout(_readTimeout);
       final data = (resp['data'] as Map?)?.cast<String, dynamic>() ?? {};
       final profiles = (data['provider_profiles'] as List?)
               ?.whereType<Map>()
@@ -41,8 +45,7 @@ class AiCloudConfigService {
               .map((e) => Map<String, dynamic>.from(e))
               .toList() ??
           const <Map<String, dynamic>>[];
-      final prefs = (data['preferences'] as Map?)
-              ?.cast<String, dynamic>() ??
+      final prefs = (data['preferences'] as Map?)?.cast<String, dynamic>() ??
           const <String, dynamic>{};
       return AiCloudConfigSnapshot(
         providerProfiles: profiles,
@@ -58,7 +61,8 @@ class AiCloudConfigService {
 
   Future<List<Map<String, dynamic>>?> fetchProviders() async {
     try {
-      final resp = await ApiService.get('/api/ai/providers');
+      final resp =
+          await ApiService.get('/api/ai/providers').timeout(_readTimeout);
       return (resp['data'] as List?)
           ?.whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
@@ -69,20 +73,17 @@ class AiCloudConfigService {
   }
 
   Future<void> upsertProvider(Map<String, dynamic> data) async {
-    try {
-      await ApiService.put('/api/ai/providers', body: {'data': data});
-    } catch (_) {}
+    await ApiService.put('/api/ai/providers', body: {'data': data})
+        .timeout(_writeTimeout);
   }
 
   Future<void> deleteProvider(String id) async {
-    try {
-      await ApiService.delete('/api/ai/providers?id=$id');
-    } catch (_) {}
+    await ApiService.delete('/api/ai/providers?id=$id').timeout(_writeTimeout);
   }
 
   Future<List<Map<String, dynamic>>?> fetchAgents() async {
     try {
-      final resp = await ApiService.get('/api/ai/agents');
+      final resp = await ApiService.get('/api/ai/agents').timeout(_readTimeout);
       return (resp['data'] as List?)
           ?.whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
@@ -93,20 +94,18 @@ class AiCloudConfigService {
   }
 
   Future<void> upsertAgent(Map<String, dynamic> data) async {
-    try {
-      await ApiService.put('/api/ai/agents', body: {'data': data});
-    } catch (_) {}
+    await ApiService.put('/api/ai/agents', body: {'data': data})
+        .timeout(_writeTimeout);
   }
 
   Future<void> deleteAgent(String id) async {
-    try {
-      await ApiService.delete('/api/ai/agents?id=$id');
-    } catch (_) {}
+    await ApiService.delete('/api/ai/agents?id=$id').timeout(_writeTimeout);
   }
 
   Future<List<Map<String, dynamic>>?> fetchLorebooks() async {
     try {
-      final resp = await ApiService.get('/api/ai/lorebooks');
+      final resp =
+          await ApiService.get('/api/ai/lorebooks').timeout(_readTimeout);
       return (resp['data'] as List?)
           ?.whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
@@ -120,18 +119,14 @@ class AiCloudConfigService {
     Map<String, dynamic> data,
     List<Map<String, dynamic>> entries,
   ) async {
-    try {
-      await ApiService.put(
-        '/api/ai/lorebooks',
-        body: {'data': data, 'entries': entries},
-      );
-    } catch (_) {}
+    await ApiService.put(
+      '/api/ai/lorebooks',
+      body: {'data': data, 'entries': entries},
+    ).timeout(_writeTimeout);
   }
 
   Future<void> deleteLorebook(String id) async {
-    try {
-      await ApiService.delete('/api/ai/lorebooks?id=$id');
-    } catch (_) {}
+    await ApiService.delete('/api/ai/lorebooks?id=$id').timeout(_writeTimeout);
   }
 
   Future<void> saveUserPersona(String persona) async {
@@ -146,10 +141,6 @@ class AiCloudConfigService {
   }
 
   Future<void> _put(Map<String, dynamic> body) async {
-    try {
-      await ApiService.put('/api/ai/config', body: body);
-    } catch (_) {
-      // keep local-first fallback silent
-    }
+    await ApiService.put('/api/ai/config', body: body).timeout(_writeTimeout);
   }
 }

@@ -24,7 +24,5 @@ func NewDeleteAiLorebookLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *DeleteAiLorebookLogic) DeleteAiLorebook(in *super.DeleteAiResourceReq) (*super.DeleteAiResourceResp, error) {
-	// todo: add your logic here and delete this line
-
-	return &super.DeleteAiResourceResp{}, nil
+	return NewAiResourcesLogic(l.ctx, l.svcCtx).delete("lorebooks", in)
 }

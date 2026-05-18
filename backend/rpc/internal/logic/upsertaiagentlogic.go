@@ -24,7 +24,5 @@ func NewUpsertAiAgentLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ups
 }
 
 func (l *UpsertAiAgentLogic) UpsertAiAgent(in *super.UpsertAiResourceReq) (*super.UpsertAiResourceResp, error) {
-	// todo: add your logic here and delete this line
-
-	return &super.UpsertAiResourceResp{}, nil
+	return NewAiResourcesLogic(l.ctx, l.svcCtx).upsert("agents", in)
 }

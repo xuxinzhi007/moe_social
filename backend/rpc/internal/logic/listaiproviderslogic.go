@@ -24,7 +24,5 @@ func NewListAiProvidersLogic(ctx context.Context, svcCtx *svc.ServiceContext) *L
 }
 
 func (l *ListAiProvidersLogic) ListAiProviders(in *super.ListAiResourceReq) (*super.ListAiResourceResp, error) {
-	// todo: add your logic here and delete this line
-
-	return &super.ListAiResourceResp{}, nil
+	return NewAiResourcesLogic(l.ctx, l.svcCtx).list("providers", in)
 }
