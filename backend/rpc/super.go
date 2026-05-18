@@ -1,13 +1,13 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-
 	"backend/rpc/internal/config"
+	"backend/rpc/internal/debug"
 	"backend/rpc/internal/server"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
+	"flag"
+	"fmt"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/service"
@@ -23,6 +23,9 @@ var migrate = flag.Bool("migrate", false, "run GORM AutoMigrate once at startup 
 
 func main() {
 	flag.Parse()
+
+	// 本地性能监控（仅 127.0.0.1，配合项目根目录 monitor.html）
+	debug.StartMonitor("127.0.0.1:6060")
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)

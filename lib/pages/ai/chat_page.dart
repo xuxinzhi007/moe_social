@@ -13,10 +13,15 @@ import '../../services/ai_prompt_defaults.dart';
 import '../../services/llm_endpoint_config.dart';
 import '../../services/llm_response_parser.dart';
 import '../../services/ai_db_service.dart';
+import '../../services/ai_chat_gateway_service.dart';
+import '../../services/ai_lorebook_service.dart';
+import '../../services/ai_roleplay_prompt_builder.dart';
+import '../../services/ai_user_persona_service.dart';
 import '../../services/memory_service.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_chat_session.dart';
 import '../../models/ai_chat_message.dart';
+import '../../models/ai_provider_profile.dart';
 import '../../models/user_memory.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/ai/message_bubble.dart';
@@ -45,6 +50,7 @@ class _ChatPageState extends State<ChatPage> {
   List<AiChatMessage> _messages = [];
   List<UserMemory> _memories = [];
   String _systemPrompt = '';
+  String _userPersona = '';
 
   bool _isSending = false;
   bool _isLoadingHistory = true;
@@ -81,6 +87,13 @@ class _ChatPageState extends State<ChatPage> {
   // Edit Message
   String? _editingMessageId;
 
+  bool get _isBackendProviderAgent =>
+      widget.agent.providerProfileId == null ||
+      widget.agent.providerProfileId == AiProviderProfile.builtinBackendId;
+
+  String get _providerSourceLabel =>
+      _isBackendProviderAgent ? '服务器 Ollama' : '我的 API';
+
   @override
   void initState() {
     super.initState();
@@ -89,6 +102,7 @@ class _ChatPageState extends State<ChatPage> {
         : AiPromptDefaults.defaultAgentSystemPrompt;
     _initVoice();
     _loadMemoryState();
+    _loadUserPersona();
     if (_localPersistenceEnabled) {
       _loadSessions();
     } else {
@@ -224,6 +238,81 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  Future<void> _loadUserPersona() async {
+    try {
+      final persona = await AiUserPersonaService().loadPersona();
+      if (!mounted) return;
+      setState(() => _userPersona = persona);
+    } catch (_) {}
+  }
+
+  Future<void> _editUserPersona() async {
+    final controller = TextEditingController(text: _userPersona);
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 8,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '用户 Persona',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '用于告诉角色“你是谁、偏好什么、和角色处于什么关系”。',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              minLines: 5,
+              maxLines: 8,
+              decoration: const InputDecoration(
+                hintText: '例如：我是一个偏理性但容易焦虑的产品经理，希望对方叫我阿栀，回答尽量直接一点。',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () {
+                    controller.clear();
+                  },
+                  child: const Text('清空'),
+                ),
+                const Spacer(),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('保存'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+    if (result == true) {
+      final next = controller.text.trim();
+      await AiUserPersonaService().savePersona(next);
+      if (!mounted) return;
+      setState(() => _userPersona = next);
+      MoeToast.success(context, '用户 Persona 已保存');
+    }
+    controller.dispose();
+  }
+
   Future<void> _createNewSession() async {
     final session = AiChatSession(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -237,8 +326,32 @@ class _ChatPageState extends State<ChatPage> {
     if (mounted) {
       setState(() => _sessions.insert(0, session));
       _loadSession(session);
+      unawaited(_seedOpeningMessageIfNeeded(session));
       unawaited(_persistWebCache());
     }
+  }
+
+  Future<void> _seedOpeningMessageIfNeeded(AiChatSession session) async {
+    final opening = widget.agent.openingMessage.trim();
+    if (opening.isEmpty) return;
+    final greeting = AiChatMessage(
+      id: '${session.id}_opening',
+      sessionId: session.id,
+      role: 'assistant',
+      content: opening,
+      createdAt: DateTime.now(),
+    );
+    if (_localPersistenceEnabled) {
+      final existing = await AiDbService().getMessages(session.id);
+      if (existing.isNotEmpty) return;
+      await AiDbService().insertMessage(greeting);
+    }
+    if (!mounted) return;
+    if (_currentSession?.id != session.id) return;
+    if (_messages.isNotEmpty) return;
+    setState(() => _messages = [greeting]);
+    unawaited(_persistWebCache());
+    _scrollToBottom();
   }
 
   Future<void> _loadSession(AiChatSession session) async {
@@ -308,85 +421,42 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     try {
-      final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
-
       // ── 构建对话历史（排除 system 角色，避免重复） ──────────────────
       final history = _messages
           .where((m) => m.role != 'system')
           .map((m) => {'role': m.role, 'content': m.content})
           .toList();
 
-      // 统一由后端负责记忆注入，这里仅传基础 system prompt。
+      final lorebookEntries = await AiLorebookService().resolveEntriesForAgent(
+        agent: widget.agent,
+        latestUserMessage: text,
+        recentConversation: _messages
+            .where((m) => m.role != 'system')
+            .map((m) => m.content)
+            .toList(),
+      );
+
+      // 后续可在 provider 层做更细粒度 prompt 组合；当前先完成角色卡基础层。
       final enrichedSystemPrompt = _withNoAiSelfDisclosureRule(
-        _systemPrompt.trim().isNotEmpty
-            ? _systemPrompt.trim()
-            : AiPromptDefaults.defaultAgentSystemPrompt,
+        AiRoleplayPromptBuilder.buildSystemPrompt(
+          widget.agent,
+          overrideSystemPrompt: _systemPrompt.trim().isNotEmpty
+              ? _systemPrompt.trim()
+              : AiPromptDefaults.defaultAgentSystemPrompt,
+          userPersona: _userPersona,
+          lorebookEntries: lorebookEntries,
+        ),
       );
       history.insert(0, {'role': 'system', 'content': enrichedSystemPrompt});
 
-      final uri = await LlmEndpointConfig.chatUri();
-      ApiService.logDirectHttp('POST', uri);
-      final token = ApiService.token;
-      final headers = ApiService.mergeTunnelHeaders(uri, headers: {
-        'Content-Type': 'application/json',
-        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-      });
-
-      final response = await http
-          .post(
-            uri,
-            headers: headers,
-            body: jsonEncode({
-              'model': widget.agent.modelName,
-              'messages': history,
-              'session_id': _currentSession?.id,
-              'source_msg_id': userMsg.id,
-              if (terminalMode) 'stream': false,
-            }),
-          )
-          .timeout(const Duration(seconds: 180));
-
       if (_wasManuallyStopped) return;
-
-      if (response.statusCode == 200) {
-        final decodedBody = utf8.decode(response.bodyBytes);
-        final data = LlmResponseParser.decodeJsonOrNdjson(decodedBody);
-        String content = '';
-
-        if (terminalMode) {
-          content = LlmResponseParser.extractChatContent(
-            data,
-            terminalMode: true,
-          );
-          if (content.isEmpty && data is Map && data['error'] is String) {
-            final errorMessage = data['error'] as String;
-            if (errorMessage.contains('model not found')) {
-              content =
-                  '模型不存在，请选择一个真实存在的模型。\n\n建议：\n1. 检查Ollama是否已安装该模型\n2. 尝试使用常见模型如 llama3:8b\n3. 确保模型名称拼写正确';
-            } else {
-              content = 'Ollama 错误: $errorMessage';
-            }
-          } else if (content.isEmpty) {
-            content = '响应格式异常（直连 Ollama）';
-          }
-        } else {
-          content = LlmResponseParser.extractChatContent(
-            data,
-            terminalMode: false,
-          );
-          if (content.isEmpty && data is Map && data['error'] is String) {
-            final errorMessage = data['error'] as String;
-            if (errorMessage.contains('model not found')) {
-              content =
-                  '模型不存在，请选择一个真实存在的模型。\n\n建议：\n1. 检查Ollama是否已安装该模型\n2. 尝试使用常见模型如 llama3:8b\n3. 确保模型名称拼写正确';
-            } else {
-              content = '后端错误: $errorMessage';
-            }
-          } else if (content.isEmpty) {
-            content = '响应格式异常（后端）';
-          }
-        }
-
+      final content = await AiChatGatewayService().sendChat(
+        agent: widget.agent,
+        messages: history,
+        sessionId: _currentSession?.id,
+        sourceMsgId: userMsg.id,
+      );
+      if (_wasManuallyStopped) return;
         final assistantMsg = AiChatMessage(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           sessionId: _currentSession!.id,
@@ -425,10 +495,6 @@ class _ChatPageState extends State<ChatPage> {
             unawaited(_persistWebCache());
           }
         }
-      } else {
-        if (_wasManuallyStopped) return;
-        await _appendError('请求失败 (${response.statusCode})');
-      }
     } catch (e) {
       if (_wasManuallyStopped) return;
       await _appendError('请求出错: $e');
@@ -1408,7 +1474,7 @@ class _ChatPageState extends State<ChatPage> {
                       final sessionTitle = _currentSession?.title ?? '加载中...';
                       final suffix = terminal ? ' · 终端同款' : '';
                       return Text(
-                        '$sessionTitle$suffix',
+                        '$_providerSourceLabel · $sessionTitle$suffix',
                         style:
                             const TextStyle(fontSize: 12, color: Colors.grey),
                         maxLines: 1,
@@ -1462,7 +1528,8 @@ class _ChatPageState extends State<ChatPage> {
             UserAccountsDrawerHeader(
               decoration: BoxDecoration(color: Theme.of(context).primaryColor),
               accountName: Text(widget.agent.name),
-              accountEmail: Text(widget.agent.modelName),
+              accountEmail:
+                  Text('$_providerSourceLabel · ${widget.agent.modelName}'),
               currentAccountPicture: CircleAvatar(
                 backgroundColor: Colors.white,
                 child: Icon(Icons.smart_toy_rounded,
@@ -1483,6 +1550,19 @@ class _ChatPageState extends State<ChatPage> {
               onTap: () {
                 Navigator.pop(context);
                 _openMemoryManager();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_outline_rounded),
+              title: const Text('用户 Persona'),
+              subtitle: Text(
+                _userPersona.isEmpty ? '未设置' : '已设置',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _editUserPersona();
               },
             ),
             const Divider(),
@@ -1681,6 +1761,8 @@ class _ChatPageState extends State<ChatPage> {
               children: [
                 _buildIdentityChip('模型', widget.agent.modelName),
                 _buildIdentityChip('人设', promptReady ? '已启用' : '未设置'),
+                if (_userPersona.trim().isNotEmpty)
+                  _buildIdentityChip('Persona', '已挂载'),
                 _buildIdentityChip('记忆', '$memoryCount 条'),
                 if (_isSyncingModelPrompt) _buildIdentityChip('状态', '同步中'),
               ],

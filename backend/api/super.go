@@ -106,6 +106,8 @@ func main() {
 	handler.RegisterHandlers(server, ctx)
 	// 非 goctl 生成：避免 routes.go 被覆盖时丢失 LLM raw 转发
 	handler.RegisterLlmRawRoutes(server, ctx)
+	handler.RegisterAiConfigRoutes(server, ctx)
+	handler.RegisterAiResourceRoutes(server, ctx)
 	// 非 goctl 生成：Swagger 文档入口
 	handler.RegisterSwaggerRoutes(server)
 

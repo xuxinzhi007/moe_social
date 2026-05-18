@@ -36,6 +36,17 @@ const (
 	Super_GetUserMemoryProfiles_FullMethodName      = "/super.Super/GetUserMemoryProfiles"
 	Super_DeleteUserMemory_FullMethodName           = "/super.Super/DeleteUserMemory"
 	Super_SubmitUserMemoryFeedback_FullMethodName   = "/super.Super/SubmitUserMemoryFeedback"
+	Super_ListAiProviders_FullMethodName            = "/super.Super/ListAiProviders"
+	Super_UpsertAiProvider_FullMethodName           = "/super.Super/UpsertAiProvider"
+	Super_DeleteAiProvider_FullMethodName           = "/super.Super/DeleteAiProvider"
+	Super_ListAiAgents_FullMethodName               = "/super.Super/ListAiAgents"
+	Super_UpsertAiAgent_FullMethodName              = "/super.Super/UpsertAiAgent"
+	Super_DeleteAiAgent_FullMethodName              = "/super.Super/DeleteAiAgent"
+	Super_ListAiLorebooks_FullMethodName            = "/super.Super/ListAiLorebooks"
+	Super_UpsertAiLorebook_FullMethodName           = "/super.Super/UpsertAiLorebook"
+	Super_DeleteAiLorebook_FullMethodName           = "/super.Super/DeleteAiLorebook"
+	Super_GetAiUserConfig_FullMethodName            = "/super.Super/GetAiUserConfig"
+	Super_UpsertAiUserConfig_FullMethodName         = "/super.Super/UpsertAiUserConfig"
 	Super_GetVipPlans_FullMethodName                = "/super.Super/GetVipPlans"
 	Super_GetVipPlan_FullMethodName                 = "/super.Super/GetVipPlan"
 	Super_CreateVipPlan_FullMethodName              = "/super.Super/CreateVipPlan"
@@ -128,6 +139,17 @@ type SuperClient interface {
 	GetUserMemoryProfiles(ctx context.Context, in *GetUserMemoryProfilesReq, opts ...grpc.CallOption) (*GetUserMemoryProfilesResp, error)
 	DeleteUserMemory(ctx context.Context, in *DeleteUserMemoryReq, opts ...grpc.CallOption) (*DeleteUserMemoryResp, error)
 	SubmitUserMemoryFeedback(ctx context.Context, in *SubmitUserMemoryFeedbackReq, opts ...grpc.CallOption) (*SubmitUserMemoryFeedbackResp, error)
+	ListAiProviders(ctx context.Context, in *ListAiResourceReq, opts ...grpc.CallOption) (*ListAiResourceResp, error)
+	UpsertAiProvider(ctx context.Context, in *UpsertAiResourceReq, opts ...grpc.CallOption) (*UpsertAiResourceResp, error)
+	DeleteAiProvider(ctx context.Context, in *DeleteAiResourceReq, opts ...grpc.CallOption) (*DeleteAiResourceResp, error)
+	ListAiAgents(ctx context.Context, in *ListAiResourceReq, opts ...grpc.CallOption) (*ListAiResourceResp, error)
+	UpsertAiAgent(ctx context.Context, in *UpsertAiResourceReq, opts ...grpc.CallOption) (*UpsertAiResourceResp, error)
+	DeleteAiAgent(ctx context.Context, in *DeleteAiResourceReq, opts ...grpc.CallOption) (*DeleteAiResourceResp, error)
+	ListAiLorebooks(ctx context.Context, in *ListAiResourceReq, opts ...grpc.CallOption) (*ListAiResourceResp, error)
+	UpsertAiLorebook(ctx context.Context, in *UpsertAiResourceReq, opts ...grpc.CallOption) (*UpsertAiResourceResp, error)
+	DeleteAiLorebook(ctx context.Context, in *DeleteAiResourceReq, opts ...grpc.CallOption) (*DeleteAiResourceResp, error)
+	GetAiUserConfig(ctx context.Context, in *GetAiUserConfigReq, opts ...grpc.CallOption) (*GetAiUserConfigResp, error)
+	UpsertAiUserConfig(ctx context.Context, in *UpsertAiUserConfigReq, opts ...grpc.CallOption) (*UpsertAiUserConfigResp, error)
 	// VIP套餐相关服务
 	GetVipPlans(ctx context.Context, in *GetVipPlansReq, opts ...grpc.CallOption) (*GetVipPlansResp, error)
 	GetVipPlan(ctx context.Context, in *GetVipPlanReq, opts ...grpc.CallOption) (*GetVipPlanResp, error)
@@ -384,6 +406,116 @@ func (c *superClient) SubmitUserMemoryFeedback(ctx context.Context, in *SubmitUs
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SubmitUserMemoryFeedbackResp)
 	err := c.cc.Invoke(ctx, Super_SubmitUserMemoryFeedback_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) ListAiProviders(ctx context.Context, in *ListAiResourceReq, opts ...grpc.CallOption) (*ListAiResourceResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAiResourceResp)
+	err := c.cc.Invoke(ctx, Super_ListAiProviders_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) UpsertAiProvider(ctx context.Context, in *UpsertAiResourceReq, opts ...grpc.CallOption) (*UpsertAiResourceResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpsertAiResourceResp)
+	err := c.cc.Invoke(ctx, Super_UpsertAiProvider_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) DeleteAiProvider(ctx context.Context, in *DeleteAiResourceReq, opts ...grpc.CallOption) (*DeleteAiResourceResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteAiResourceResp)
+	err := c.cc.Invoke(ctx, Super_DeleteAiProvider_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) ListAiAgents(ctx context.Context, in *ListAiResourceReq, opts ...grpc.CallOption) (*ListAiResourceResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAiResourceResp)
+	err := c.cc.Invoke(ctx, Super_ListAiAgents_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) UpsertAiAgent(ctx context.Context, in *UpsertAiResourceReq, opts ...grpc.CallOption) (*UpsertAiResourceResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpsertAiResourceResp)
+	err := c.cc.Invoke(ctx, Super_UpsertAiAgent_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) DeleteAiAgent(ctx context.Context, in *DeleteAiResourceReq, opts ...grpc.CallOption) (*DeleteAiResourceResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteAiResourceResp)
+	err := c.cc.Invoke(ctx, Super_DeleteAiAgent_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) ListAiLorebooks(ctx context.Context, in *ListAiResourceReq, opts ...grpc.CallOption) (*ListAiResourceResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAiResourceResp)
+	err := c.cc.Invoke(ctx, Super_ListAiLorebooks_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) UpsertAiLorebook(ctx context.Context, in *UpsertAiResourceReq, opts ...grpc.CallOption) (*UpsertAiResourceResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpsertAiResourceResp)
+	err := c.cc.Invoke(ctx, Super_UpsertAiLorebook_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) DeleteAiLorebook(ctx context.Context, in *DeleteAiResourceReq, opts ...grpc.CallOption) (*DeleteAiResourceResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteAiResourceResp)
+	err := c.cc.Invoke(ctx, Super_DeleteAiLorebook_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) GetAiUserConfig(ctx context.Context, in *GetAiUserConfigReq, opts ...grpc.CallOption) (*GetAiUserConfigResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAiUserConfigResp)
+	err := c.cc.Invoke(ctx, Super_GetAiUserConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) UpsertAiUserConfig(ctx context.Context, in *UpsertAiUserConfigReq, opts ...grpc.CallOption) (*UpsertAiUserConfigResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpsertAiUserConfigResp)
+	err := c.cc.Invoke(ctx, Super_UpsertAiUserConfig_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1074,6 +1206,17 @@ type SuperServer interface {
 	GetUserMemoryProfiles(context.Context, *GetUserMemoryProfilesReq) (*GetUserMemoryProfilesResp, error)
 	DeleteUserMemory(context.Context, *DeleteUserMemoryReq) (*DeleteUserMemoryResp, error)
 	SubmitUserMemoryFeedback(context.Context, *SubmitUserMemoryFeedbackReq) (*SubmitUserMemoryFeedbackResp, error)
+	ListAiProviders(context.Context, *ListAiResourceReq) (*ListAiResourceResp, error)
+	UpsertAiProvider(context.Context, *UpsertAiResourceReq) (*UpsertAiResourceResp, error)
+	DeleteAiProvider(context.Context, *DeleteAiResourceReq) (*DeleteAiResourceResp, error)
+	ListAiAgents(context.Context, *ListAiResourceReq) (*ListAiResourceResp, error)
+	UpsertAiAgent(context.Context, *UpsertAiResourceReq) (*UpsertAiResourceResp, error)
+	DeleteAiAgent(context.Context, *DeleteAiResourceReq) (*DeleteAiResourceResp, error)
+	ListAiLorebooks(context.Context, *ListAiResourceReq) (*ListAiResourceResp, error)
+	UpsertAiLorebook(context.Context, *UpsertAiResourceReq) (*UpsertAiResourceResp, error)
+	DeleteAiLorebook(context.Context, *DeleteAiResourceReq) (*DeleteAiResourceResp, error)
+	GetAiUserConfig(context.Context, *GetAiUserConfigReq) (*GetAiUserConfigResp, error)
+	UpsertAiUserConfig(context.Context, *UpsertAiUserConfigReq) (*UpsertAiUserConfigResp, error)
 	// VIP套餐相关服务
 	GetVipPlans(context.Context, *GetVipPlansReq) (*GetVipPlansResp, error)
 	GetVipPlan(context.Context, *GetVipPlanReq) (*GetVipPlanResp, error)
@@ -1216,6 +1359,39 @@ func (UnimplementedSuperServer) DeleteUserMemory(context.Context, *DeleteUserMem
 }
 func (UnimplementedSuperServer) SubmitUserMemoryFeedback(context.Context, *SubmitUserMemoryFeedbackReq) (*SubmitUserMemoryFeedbackResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method SubmitUserMemoryFeedback not implemented")
+}
+func (UnimplementedSuperServer) ListAiProviders(context.Context, *ListAiResourceReq) (*ListAiResourceResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListAiProviders not implemented")
+}
+func (UnimplementedSuperServer) UpsertAiProvider(context.Context, *UpsertAiResourceReq) (*UpsertAiResourceResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpsertAiProvider not implemented")
+}
+func (UnimplementedSuperServer) DeleteAiProvider(context.Context, *DeleteAiResourceReq) (*DeleteAiResourceResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteAiProvider not implemented")
+}
+func (UnimplementedSuperServer) ListAiAgents(context.Context, *ListAiResourceReq) (*ListAiResourceResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListAiAgents not implemented")
+}
+func (UnimplementedSuperServer) UpsertAiAgent(context.Context, *UpsertAiResourceReq) (*UpsertAiResourceResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpsertAiAgent not implemented")
+}
+func (UnimplementedSuperServer) DeleteAiAgent(context.Context, *DeleteAiResourceReq) (*DeleteAiResourceResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteAiAgent not implemented")
+}
+func (UnimplementedSuperServer) ListAiLorebooks(context.Context, *ListAiResourceReq) (*ListAiResourceResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListAiLorebooks not implemented")
+}
+func (UnimplementedSuperServer) UpsertAiLorebook(context.Context, *UpsertAiResourceReq) (*UpsertAiResourceResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpsertAiLorebook not implemented")
+}
+func (UnimplementedSuperServer) DeleteAiLorebook(context.Context, *DeleteAiResourceReq) (*DeleteAiResourceResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteAiLorebook not implemented")
+}
+func (UnimplementedSuperServer) GetAiUserConfig(context.Context, *GetAiUserConfigReq) (*GetAiUserConfigResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAiUserConfig not implemented")
+}
+func (UnimplementedSuperServer) UpsertAiUserConfig(context.Context, *UpsertAiUserConfigReq) (*UpsertAiUserConfigResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpsertAiUserConfig not implemented")
 }
 func (UnimplementedSuperServer) GetVipPlans(context.Context, *GetVipPlansReq) (*GetVipPlansResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetVipPlans not implemented")
@@ -1738,6 +1914,204 @@ func _Super_SubmitUserMemoryFeedback_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SuperServer).SubmitUserMemoryFeedback(ctx, req.(*SubmitUserMemoryFeedbackReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_ListAiProviders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAiResourceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).ListAiProviders(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_ListAiProviders_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).ListAiProviders(ctx, req.(*ListAiResourceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_UpsertAiProvider_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertAiResourceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).UpsertAiProvider(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_UpsertAiProvider_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).UpsertAiProvider(ctx, req.(*UpsertAiResourceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_DeleteAiProvider_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteAiResourceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).DeleteAiProvider(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_DeleteAiProvider_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).DeleteAiProvider(ctx, req.(*DeleteAiResourceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_ListAiAgents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAiResourceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).ListAiAgents(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_ListAiAgents_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).ListAiAgents(ctx, req.(*ListAiResourceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_UpsertAiAgent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertAiResourceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).UpsertAiAgent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_UpsertAiAgent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).UpsertAiAgent(ctx, req.(*UpsertAiResourceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_DeleteAiAgent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteAiResourceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).DeleteAiAgent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_DeleteAiAgent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).DeleteAiAgent(ctx, req.(*DeleteAiResourceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_ListAiLorebooks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAiResourceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).ListAiLorebooks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_ListAiLorebooks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).ListAiLorebooks(ctx, req.(*ListAiResourceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_UpsertAiLorebook_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertAiResourceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).UpsertAiLorebook(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_UpsertAiLorebook_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).UpsertAiLorebook(ctx, req.(*UpsertAiResourceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_DeleteAiLorebook_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteAiResourceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).DeleteAiLorebook(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_DeleteAiLorebook_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).DeleteAiLorebook(ctx, req.(*DeleteAiResourceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_GetAiUserConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAiUserConfigReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).GetAiUserConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_GetAiUserConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).GetAiUserConfig(ctx, req.(*GetAiUserConfigReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_UpsertAiUserConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertAiUserConfigReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).UpsertAiUserConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_UpsertAiUserConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).UpsertAiUserConfig(ctx, req.(*UpsertAiUserConfigReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3004,6 +3378,50 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SubmitUserMemoryFeedback",
 			Handler:    _Super_SubmitUserMemoryFeedback_Handler,
+		},
+		{
+			MethodName: "ListAiProviders",
+			Handler:    _Super_ListAiProviders_Handler,
+		},
+		{
+			MethodName: "UpsertAiProvider",
+			Handler:    _Super_UpsertAiProvider_Handler,
+		},
+		{
+			MethodName: "DeleteAiProvider",
+			Handler:    _Super_DeleteAiProvider_Handler,
+		},
+		{
+			MethodName: "ListAiAgents",
+			Handler:    _Super_ListAiAgents_Handler,
+		},
+		{
+			MethodName: "UpsertAiAgent",
+			Handler:    _Super_UpsertAiAgent_Handler,
+		},
+		{
+			MethodName: "DeleteAiAgent",
+			Handler:    _Super_DeleteAiAgent_Handler,
+		},
+		{
+			MethodName: "ListAiLorebooks",
+			Handler:    _Super_ListAiLorebooks_Handler,
+		},
+		{
+			MethodName: "UpsertAiLorebook",
+			Handler:    _Super_UpsertAiLorebook_Handler,
+		},
+		{
+			MethodName: "DeleteAiLorebook",
+			Handler:    _Super_DeleteAiLorebook_Handler,
+		},
+		{
+			MethodName: "GetAiUserConfig",
+			Handler:    _Super_GetAiUserConfig_Handler,
+		},
+		{
+			MethodName: "UpsertAiUserConfig",
+			Handler:    _Super_UpsertAiUserConfig_Handler,
 		},
 		{
 			MethodName: "GetVipPlans",

@@ -109,6 +109,61 @@ func (s *SuperServer) SubmitUserMemoryFeedback(ctx context.Context, in *super.Su
 	return l.SubmitUserMemoryFeedback(in)
 }
 
+func (s *SuperServer) ListAiProviders(ctx context.Context, in *super.ListAiResourceReq) (*super.ListAiResourceResp, error) {
+	l := logic.NewListAiProvidersLogic(ctx, s.svcCtx)
+	return l.ListAiProviders(in)
+}
+
+func (s *SuperServer) UpsertAiProvider(ctx context.Context, in *super.UpsertAiResourceReq) (*super.UpsertAiResourceResp, error) {
+	l := logic.NewUpsertAiProviderLogic(ctx, s.svcCtx)
+	return l.UpsertAiProvider(in)
+}
+
+func (s *SuperServer) DeleteAiProvider(ctx context.Context, in *super.DeleteAiResourceReq) (*super.DeleteAiResourceResp, error) {
+	l := logic.NewDeleteAiProviderLogic(ctx, s.svcCtx)
+	return l.DeleteAiProvider(in)
+}
+
+func (s *SuperServer) ListAiAgents(ctx context.Context, in *super.ListAiResourceReq) (*super.ListAiResourceResp, error) {
+	l := logic.NewListAiAgentsLogic(ctx, s.svcCtx)
+	return l.ListAiAgents(in)
+}
+
+func (s *SuperServer) UpsertAiAgent(ctx context.Context, in *super.UpsertAiResourceReq) (*super.UpsertAiResourceResp, error) {
+	l := logic.NewUpsertAiAgentLogic(ctx, s.svcCtx)
+	return l.UpsertAiAgent(in)
+}
+
+func (s *SuperServer) DeleteAiAgent(ctx context.Context, in *super.DeleteAiResourceReq) (*super.DeleteAiResourceResp, error) {
+	l := logic.NewDeleteAiAgentLogic(ctx, s.svcCtx)
+	return l.DeleteAiAgent(in)
+}
+
+func (s *SuperServer) ListAiLorebooks(ctx context.Context, in *super.ListAiResourceReq) (*super.ListAiResourceResp, error) {
+	l := logic.NewListAiLorebooksLogic(ctx, s.svcCtx)
+	return l.ListAiLorebooks(in)
+}
+
+func (s *SuperServer) UpsertAiLorebook(ctx context.Context, in *super.UpsertAiResourceReq) (*super.UpsertAiResourceResp, error) {
+	l := logic.NewUpsertAiLorebookLogic(ctx, s.svcCtx)
+	return l.UpsertAiLorebook(in)
+}
+
+func (s *SuperServer) DeleteAiLorebook(ctx context.Context, in *super.DeleteAiResourceReq) (*super.DeleteAiResourceResp, error) {
+	l := logic.NewDeleteAiLorebookLogic(ctx, s.svcCtx)
+	return l.DeleteAiLorebook(in)
+}
+
+func (s *SuperServer) GetAiUserConfig(ctx context.Context, in *super.GetAiUserConfigReq) (*super.GetAiUserConfigResp, error) {
+	l := logic.NewGetAiUserConfigLogic(ctx, s.svcCtx)
+	return l.GetAiUserConfig(in)
+}
+
+func (s *SuperServer) UpsertAiUserConfig(ctx context.Context, in *super.UpsertAiUserConfigReq) (*super.UpsertAiUserConfigResp, error) {
+	l := logic.NewUpsertAiUserConfigLogic(ctx, s.svcCtx)
+	return l.UpsertAiUserConfig(in)
+}
+
 // VIP套餐相关服务
 func (s *SuperServer) GetVipPlans(ctx context.Context, in *super.GetVipPlansReq) (*super.GetVipPlansResp, error) {
 	l := logic.NewGetVipPlansLogic(ctx, s.svcCtx)
