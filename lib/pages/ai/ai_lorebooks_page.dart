@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../models/ai_lorebook.dart';
 import '../../models/ai_lorebook_entry.dart';
 import '../../services/ai_agent_cloud_service.dart';
+import '../../services/ai_db_service.dart';
 import '../../services/ai_starter_templates.dart';
+import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 
@@ -17,34 +20,69 @@ class AiLorebooksPage extends StatefulWidget {
 class _AiLorebooksPageState extends State<AiLorebooksPage> {
   List<AiLorebook> _lorebooks = [];
   Map<String, int> _entryCounts = {};
-  bool _loading = true;
+  bool _syncingCloud = false;
+  String? _syncError;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _loadLocalFirst();
+    _syncFromCloud();
   }
 
-  Future<void> _load() async {
-    setState(() => _loading = true);
+  Future<void> _loadLocalFirst() async {
     try {
-      final cloudLorebooks = await AiAgentCloudService().getLorebooks();
-      final counts = <String, int>{};
-      for (final lorebook in cloudLorebooks) {
-        counts[lorebook.id] =
-            (await AiAgentCloudService().getLorebookEntries(lorebook.id)).length;
+      final local = await AiDbService().getLorebooks();
+      if (local.isEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _lorebooks = local;
+          _entryCounts = {};
+        });
+        return;
       }
+      final counts = await Future.wait(
+        local.map((lorebook) async {
+          final entries = await AiDbService().getLorebookEntries(lorebook.id);
+          return MapEntry(lorebook.id, entries.length);
+        }),
+      );
       if (!mounted) return;
       setState(() {
-        _lorebooks = cloudLorebooks;
-        _entryCounts = counts;
-        _loading = false;
+        _lorebooks = local;
+        _entryCounts = Map<String, int>.fromEntries(counts);
+      });
+    } catch (_) {
+      // 本地读取失败不阻塞页面，云端同步仍会尝试
+    }
+  }
+
+  Future<void> _syncFromCloud() async {
+    if (!mounted) return;
+    setState(() {
+      _syncingCloud = true;
+      _syncError = null;
+    });
+    try {
+      final snapshot = await AiAgentCloudService().getLorebooksSnapshot();
+      if (!mounted) return;
+      setState(() {
+        _lorebooks = snapshot.lorebooks;
+        _entryCounts = snapshot.entryCounts;
+        _syncingCloud = false;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _loading = false);
-      MoeToast.error(context, '加载 Lorebook 失败：$e');
+      setState(() {
+        _syncingCloud = false;
+        _syncError = e.toString();
+      });
     }
+  }
+
+  Future<void> _load() async {
+    await _loadLocalFirst();
+    await _syncFromCloud();
   }
 
   Future<void> _deleteLorebook(AiLorebook lorebook) async {
@@ -85,7 +123,13 @@ class _AiLorebooksPageState extends State<AiLorebooksPage> {
     }
   }
 
-  Future<void> _applyStarterLorebookTemplate() async {
+  Future<void> _applyStarterLorebookTemplate({
+    AiStarterLorebookTemplate? preset,
+  }) async {
+    if (preset != null) {
+      await _createLorebookFromTemplate(preset);
+      return;
+    }
     final template = await showModalBottomSheet<AiStarterLorebookTemplate>(
       context: context,
       showDragHandle: true,
@@ -129,6 +173,13 @@ class _AiLorebooksPageState extends State<AiLorebooksPage> {
       },
     );
     if (template == null) return;
+    await _createLorebookFromTemplate(template);
+  }
+
+  Future<void> _createLorebookFromTemplate(
+    AiStarterLorebookTemplate template,
+  ) async {
+    HapticFeedback.lightImpact();
     final lorebook = AiStarterTemplates.buildLorebookFromTemplate(template);
     final entries = AiStarterTemplates.buildLorebookEntriesFromTemplate(
       template,
@@ -136,20 +187,173 @@ class _AiLorebooksPageState extends State<AiLorebooksPage> {
     );
     await AiAgentCloudService().saveLorebook(lorebook, entries);
     if (!mounted) return;
-    MoeToast.success(context, '默认世界书模板已创建');
+    MoeToast.success(context, '已创建「${template.name}」');
     await _load();
+  }
+
+  Widget _buildStarterSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '默认可用模板',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: AiBrandTokens.titleColor,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '无需等待云端同步，点一下即可创建完整世界书。',
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.4),
+        ),
+        const SizedBox(height: 12),
+        ...AiStarterTemplates.lorebookTemplates.map((template) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => _applyStarterLorebookTemplate(preset: template),
+                child: Ink(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AiBrandTokens.primary.withValues(alpha: 0.18),
+                    ),
+                    gradient: LinearGradient(
+                      colors: [
+                        AiBrandTokens.primary.withValues(alpha: 0.06),
+                        AiBrandTokens.accent.withValues(alpha: 0.05),
+                      ],
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            gradient: AiBrandTokens.heroGradient,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.auto_awesome_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                template.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${template.description} · ${template.entries.length} 条设定',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade700,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.add_circle_outline_rounded),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildSyncBanner() {
+    if (_syncingCloud) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AiBrandTokens.primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AiBrandTokens.primary.withValues(alpha: 0.9),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              '正在同步云端世界书…',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+            ),
+          ],
+        ),
+      );
+    }
+    if (_syncError != null) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.orange.shade100),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.cloud_off_rounded, size: 18, color: Colors.orange.shade700),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '云端同步失败，已显示本地数据。可下拉刷新重试。',
+                style: TextStyle(fontSize: 12, color: Colors.orange.shade900),
+              ),
+            ),
+            TextButton(
+              onPressed: _syncFromCloud,
+              child: const Text('重试'),
+            ),
+          ],
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AiBrandTokens.pageBackground,
       appBar: AppBar(
         title: const Text('Lorebook 世界书'),
+        backgroundColor: AiBrandTokens.pageBackground,
         actions: [
           TextButton.icon(
             onPressed: _applyStarterLorebookTemplate,
             icon: const Icon(Icons.auto_awesome_rounded, size: 18),
-            label: const Text('默认模板'),
+            label: const Text('更多模板'),
           ),
         ],
       ),
@@ -158,85 +362,107 @@ class _AiLorebooksPageState extends State<AiLorebooksPage> {
         icon: const Icon(Icons.add_rounded),
         label: const Text('新建'),
       ),
-      body: _loading
-          ? const Center(child: MoeLoading())
-          : _lorebooks.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.menu_book_outlined,
-                          size: 64,
-                          color: Colors.grey.shade400,
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          '还没有 Lorebook',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '为角色补充世界观、地点、人物关系和规则设定。',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
-                      ],
-                    ),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            _buildSyncBanner(),
+            _buildStarterSection(),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                const Text(
+                  '我的世界书',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AiBrandTokens.titleColor,
                   ),
-                )
-              : ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _lorebooks.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final lorebook = _lorebooks[index];
-                    final count = _entryCounts[lorebook.id] ?? 0;
-                    return Card(
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.all(16),
-                        onTap: () => _openEditor(lorebook: lorebook),
-                        title: Text(
-                          lorebook.name,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            lorebook.description.trim().isEmpty
-                                ? '$count 条设定'
-                                : '${lorebook.description}\n$count 条设定',
-                            style: const TextStyle(height: 1.4),
-                          ),
-                        ),
-                        trailing: PopupMenuButton<String>(
-                          onSelected: (value) async {
-                            if (value == 'edit') {
-                              await _openEditor(lorebook: lorebook);
-                            } else if (value == 'delete') {
-                              await _deleteLorebook(lorebook);
-                            }
-                          },
-                          itemBuilder: (context) => const [
-                            PopupMenuItem(
-                              value: 'edit',
-                              child: Text('编辑'),
-                            ),
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Text('删除'),
-                            ),
-                          ],
+                ),
+                const Spacer(),
+                if (_lorebooks.isNotEmpty)
+                  Text(
+                    '${_lorebooks.length} 本',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (_lorebooks.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.menu_book_outlined,
+                      size: 48,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      '还没有自建 Lorebook',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '可从上方模板一键创建，或使用右下角「新建」。',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey.shade600, height: 1.4),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ..._lorebooks.map((lorebook) {
+                final count = _entryCounts[lorebook.id] ?? 0;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Card(
+                    margin: EdgeInsets.zero,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(16),
+                      onTap: () => _openEditor(lorebook: lorebook),
+                      title: Text(
+                        lorebook.name,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          lorebook.description.trim().isEmpty
+                              ? '$count 条设定'
+                              : '${lorebook.description}\n$count 条设定',
+                          style: const TextStyle(height: 1.4),
                         ),
                       ),
-                    );
-                  },
-                ),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (value) async {
+                          if (value == 'edit') {
+                            await _openEditor(lorebook: lorebook);
+                          } else if (value == 'delete') {
+                            await _deleteLorebook(lorebook);
+                          }
+                        },
+                        itemBuilder: (context) => const [
+                          PopupMenuItem(value: 'edit', child: Text('编辑')),
+                          PopupMenuItem(value: 'delete', child: Text('删除')),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            const SizedBox(height: 72),
+          ],
+        ),
+      ),
     );
   }
 }

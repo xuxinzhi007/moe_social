@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../moe_toast.dart';
+import 'ai_brand_tokens.dart';
 
 // 消息内容类型
 enum MessageContentType {
-  text,      // 纯文本
-  thinking,  // 思考状态
-  code,      // 代码块
+  text, // 纯文本
+  thinking, // 思考状态
+  code, // 代码块
 }
 
 // 消息气泡组件
@@ -17,16 +18,18 @@ class AiMessageBubble extends StatefulWidget {
   final bool isUser;
   final bool isLoading;
   final VoidCallback? onContentExpanded;
+  final String? agentLabel;
 
   const AiMessageBubble({
-    Key? key,
+    super.key,
     required this.content,
     required this.contentType,
     this.language,
     required this.isUser,
     this.isLoading = false,
     this.onContentExpanded,
-  }) : super(key: key);
+    this.agentLabel,
+  });
 
   @override
   State<AiMessageBubble> createState() => _AiMessageBubbleState();
@@ -53,6 +56,42 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
         widget.onContentExpanded!();
       }
     });
+  }
+
+  Widget _buildAssistantAvatar() {
+    final label = widget.agentLabel?.trim();
+    if (label != null && label.isNotEmpty) {
+      return Container(
+        width: 32,
+        height: 32,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: AiBrandTokens.heroGradient,
+        ),
+        child: Text(
+          label.substring(0, 1).toUpperCase(),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      );
+    }
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AiBrandTokens.primary.withValues(alpha: 0.12),
+      ),
+      child: const Icon(
+        Icons.smart_toy_rounded,
+        size: 18,
+        color: AiBrandTokens.primary,
+      ),
+    );
   }
 
   // 渲染纯文本内容
@@ -85,8 +124,8 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
                 '展开',
                 style: TextStyle(
                   color: widget.isUser
-                      ? Colors.white.withOpacity(0.8)
-                      : Colors.blue,
+                      ? Colors.white.withValues(alpha: 0.85)
+                      : AiBrandTokens.primary,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
@@ -102,8 +141,8 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
                 '收起',
                 style: TextStyle(
                   color: widget.isUser
-                      ? Colors.white.withOpacity(0.8)
-                      : Colors.blue,
+                      ? Colors.white.withValues(alpha: 0.85)
+                      : AiBrandTokens.primary,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
@@ -117,8 +156,16 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
   // 渲染思考状态
   Widget _renderThinkingContent() {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        const Text('AI is thinking...', style: TextStyle(color: Colors.grey)),
+        Text(
+          '正在输入',
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
         const SizedBox(width: 8),
         const _TypingDotsIndicator(),
       ],
@@ -140,11 +187,11 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.2),
+                  color: Colors.grey.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  widget.language!, 
+                  widget.language!,
                   style: const TextStyle(
                     color: Colors.grey,
                     fontSize: 12,
@@ -156,12 +203,14 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.2),
+                  color: Colors.grey.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: _isCopying
-                    ? const Text('已复制', style: TextStyle(color: Colors.green, fontSize: 12))
-                    : const Text('复制', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    ? const Text('已复制',
+                        style: TextStyle(color: Colors.green, fontSize: 12))
+                    : const Text('复制',
+                        style: TextStyle(color: Colors.grey, fontSize: 12)),
               ),
             ),
           ],
@@ -197,57 +246,65 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isUser) ...[
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-              child: Icon(Icons.smart_toy_rounded, size: 18, color: Theme.of(context).primaryColor),
-            ),
+            _buildAssistantAvatar(),
             const SizedBox(width: 8),
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    gradient: isUser
-                        ? const LinearGradient(
-                            colors: [Color(0xFF8A2387), Color(0xFFE94057)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )
-                        : null,
+                    gradient: isUser ? AiBrandTokens.userBubbleGradient : null,
                     color: isUser
                         ? null
                         : widget.contentType == MessageContentType.code
                             ? const Color(0xFF1E1E1E)
-                            : Colors.white,
+                            : Colors.white.withValues(alpha: 0.96),
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(20),
                       topRight: const Radius.circular(20),
-                      bottomLeft: isUser ? const Radius.circular(20) : const Radius.circular(4),
-                      bottomRight: isUser ? const Radius.circular(4) : const Radius.circular(20),
+                      bottomLeft: isUser
+                          ? const Radius.circular(20)
+                          : const Radius.circular(4),
+                      bottomRight: isUser
+                          ? const Radius.circular(4)
+                          : const Radius.circular(20),
                     ),
-                    boxShadow: isUser || widget.contentType == MessageContentType.code
-                        ? [
-                            BoxShadow(
-                              color: (isUser ? const Color(0xFFE94057) : Colors.black).withOpacity(0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ]
-                        : [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
+                    border: !isUser &&
+                            widget.contentType != MessageContentType.code
+                        ? Border.all(
+                            color:
+                                AiBrandTokens.primary.withValues(alpha: 0.08),
+                          )
+                        : null,
+                    boxShadow:
+                        isUser || widget.contentType == MessageContentType.code
+                            ? [
+                                BoxShadow(
+                                  color: (isUser
+                                          ? AiBrandTokens.gradientCoral
+                                          : Colors.black)
+                                      .withValues(alpha: 0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ]
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
                   ),
                   child: widget.contentType == MessageContentType.text
                       ? _renderTextContent()
@@ -262,7 +319,7 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
             const SizedBox(width: 8),
             const CircleAvatar(
               radius: 16,
-              backgroundColor: Color(0xFFE94057),
+              backgroundColor: AiBrandTokens.gradientCoral,
               child: Icon(Icons.person_rounded, size: 18, color: Colors.white),
             ),
           ],
@@ -280,7 +337,8 @@ class _TypingDotsIndicator extends StatefulWidget {
   State<_TypingDotsIndicator> createState() => _TypingDotsIndicatorState();
 }
 
-class _TypingDotsIndicatorState extends State<_TypingDotsIndicator> with SingleTickerProviderStateMixin {
+class _TypingDotsIndicatorState extends State<_TypingDotsIndicator>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation1;
   late Animation<double> _animation2;
@@ -355,7 +413,7 @@ class _TypingDotsIndicatorState extends State<_TypingDotsIndicator> with SingleT
 
 // 点组件
 class Dot extends StatelessWidget {
-  const Dot({Key? key}) : super(key: key);
+  const Dot({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -363,7 +421,7 @@ class Dot extends StatelessWidget {
       width: 8,
       height: 8,
       decoration: const BoxDecoration(
-        color: Colors.grey,
+        color: AiBrandTokens.primary,
         shape: BoxShape.circle,
       ),
     );

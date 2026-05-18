@@ -1,16 +1,12 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 
-import '../../auth_service.dart';
 import '../../models/ai_agent.dart';
 import '../../models/user_memory.dart';
 import '../../models/user_memory_profile.dart';
-import '../../services/api_service.dart';
-import '../../services/llm_endpoint_config.dart';
-import '../../services/memory_service.dart';
+import '../../models/ai_memory.dart';
+import '../../models/ai_memory_profile.dart';
+import '../../services/ai_memory_orchestrator.dart';
 import '../../widgets/moe_toast.dart';
 
 class MemoryManagerPage extends StatefulWidget {
@@ -22,9 +18,15 @@ class MemoryManagerPage extends StatefulWidget {
   State<MemoryManagerPage> createState() => _MemoryManagerPageState();
 }
 
-class _MemoryManagerPageState extends State<MemoryManagerPage> {
+class _MemoryManagerPageState extends State<MemoryManagerPage>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
   List<UserMemory> _memories = [];
   List<UserMemoryProfile> _profiles = [];
+  List<AiMemory> _localMemories = [];
+  List<AiMemoryProfile> _localProfiles = [];
+  String _activeModeLabel = '未启用';
+  String _activeModeDescription = '';
   Map<String, dynamic>? _llmConfig;
   bool _terminalModeEnabled = false;
   bool _isLoading = true;
@@ -35,28 +37,36 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging && mounted) {
+        setState(() {});
+      }
+    });
     _load();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
     try {
-      final user = await AuthService.getUserInfo();
-      final paged = await MemoryService.getUserMemoriesPaged(user.id,
-          limit: 100, offset: 0);
-      final memories = (paged['items'] as List<UserMemory>? ?? const []);
-      memories.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-      final profiles = await MemoryService.getUserMemoryProfiles(user.id);
-      final terminal = await LlmEndpointConfig.isTerminalModeEnabled();
-      final llmConfig = await _loadLlmConfig();
-      final preview = _buildPromptPreview(memories);
+      final state = await AiMemoryOrchestrator().loadManagerState(widget.agent);
       if (mounted) {
         setState(() {
-          _memories = memories;
-          _profiles = profiles;
-          _terminalModeEnabled = terminal;
-          _llmConfig = llmConfig;
-          _promptPreview = preview;
+          _memories = state.accountMemories;
+          _profiles = state.accountProfiles;
+          _localMemories = state.localMemories;
+          _localProfiles = state.localProfiles;
+          _activeModeLabel = state.activeModeLabel;
+          _activeModeDescription = state.activeModeDescription;
+          _terminalModeEnabled = state.terminalModeEnabled;
+          _llmConfig = state.llmConfig;
+          _promptPreview = state.promptPreview;
           _isLoading = false;
         });
       }
@@ -72,54 +82,17 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
     }
   }
 
-  Future<Map<String, dynamic>> _loadLlmConfig() async {
-    final uri = Uri.parse('${ApiService.baseUrl}/api/llm/config');
-    ApiService.logDirectHttp('GET', uri);
-    final response = await http
-        .get(
-          uri,
-          headers: ApiService.mergeTunnelHeaders(uri, headers: {
-            if (ApiService.token case final t?) 'Authorization': 'Bearer $t',
-          }),
-        )
-        .timeout(const Duration(seconds: 10));
-    if (response.statusCode != 200) return const {};
-    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-    if (decoded is! Map || decoded['data'] is! Map) return const {};
-    return Map<String, dynamic>.from(decoded['data'] as Map);
-  }
-
-  String _buildPromptPreview(List<UserMemory> memories) {
-    final base = widget.agent.systemPrompt.isNotEmpty
-        ? widget.agent.systemPrompt
-        : '你是一位友好、智能的 AI 助手。';
-    final lines = memories.take(8).map((m) {
-      final type =
-          (m.memoryType?.isNotEmpty == true) ? m.memoryType! : 'general';
-      return '- [$type] ${m.value}';
-    }).join('\n');
-    if (lines.isEmpty) {
-      return '$base\n\n（当前暂无可注入记忆）';
-    }
-    return '$base\n\n用户长期背景与偏好（后端注入示意）：\n$lines';
-  }
-
   Future<void> _refreshPromptPreview({bool showLoading = true}) async {
     if (showLoading && mounted) setState(() => _isBuildingPrompt = true);
     try {
-      final user = await AuthService.getUserInfo();
-      final paged = await MemoryService.getUserMemoriesPaged(user.id,
-          limit: 100, offset: 0);
-      final memories = (paged['items'] as List<UserMemory>? ?? const []);
-      memories.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-      final profiles = await MemoryService.getUserMemoryProfiles(user.id);
-      final prompt = _buildPromptPreview(memories);
+      final prompt = await AiMemoryOrchestrator().buildPromptPreview(
+        agent: widget.agent,
+        basePrompt: widget.agent.systemPrompt.isNotEmpty
+            ? widget.agent.systemPrompt
+            : '你是一位友好、智能的 AI 助手。',
+      );
       if (mounted) {
-        setState(() {
-          _memories = memories;
-          _profiles = profiles;
-          _promptPreview = prompt;
-        });
+        setState(() => _promptPreview = prompt);
       }
     } catch (e) {
       if (mounted) {
@@ -150,7 +123,32 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
       ),
     );
     if (confirmed == true) {
-      await MemoryService.deleteUserMemoryByKey(memory.userId, memory.key);
+      await AiMemoryOrchestrator().deleteAccountMemory(memory);
+      await _load();
+    }
+  }
+
+  Future<void> _deleteLocal(AiMemory memory) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('删除本地记忆'),
+        content: Text('确定要删除这条本地记忆吗？\n\n"${memory.content}"'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await AiMemoryOrchestrator().deleteLocalMemory(memory.id);
       await _load();
     }
   }
@@ -176,9 +174,42 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
       ),
     );
     if (confirmed == true) {
-      if (_memories.isEmpty) return;
-      for (final m in _memories) {
-        await MemoryService.deleteUserMemoryByKey(m.userId, m.key);
+      if (_tabController.index == 0) {
+        if (_memories.isEmpty) return;
+        await AiMemoryOrchestrator().clearAllAccountMemories(_memories);
+      } else {
+        if (_localMemories.isEmpty) return;
+        for (final m in _localMemories) {
+          await AiMemoryOrchestrator().deleteLocalMemory(m.id);
+        }
+      }
+      await _load();
+    }
+  }
+
+  Future<void> _clearAllLocal() async {
+    if (_localMemories.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('清空本地记忆'),
+        content: Text('确定清空 ${_localMemories.length} 条本地角色记忆吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('全部清空'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      for (final m in _localMemories) {
+        await AiMemoryOrchestrator().deleteLocalMemory(m.id);
       }
       await _load();
     }
@@ -209,19 +240,37 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
           ],
         ),
         actions: [
-          if (_memories.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.delete_sweep_rounded),
-              tooltip: '清空全部记忆',
-              onPressed: _clearAll,
-            ),
+          IconButton(
+            icon: const Icon(Icons.delete_sweep_rounded),
+            tooltip: '清空当前 Tab 记忆',
+            onPressed: () {
+              if (_tabController.index == 0) {
+                _clearAll();
+              } else {
+                _clearAllLocal();
+              }
+            },
+          ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: [
+            Tab(text: '账号记忆 (${_memories.length})'),
+            Tab(text: '本地角色 (${_localMemories.length})'),
+          ],
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : CustomScrollView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: _buildModeCard(),
+                  ),
+                ),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -240,18 +289,34 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
                     child: _buildPromptPreviewCard(),
                   ),
                 ),
-                if (_memories.isEmpty)
+                if (_tabController.index == 0)
+                  if (_memories.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _buildEmpty(account: true),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, i) => _buildMemoryCard(_memories[i]),
+                          childCount: _memories.length,
+                        ),
+                      ),
+                    )
+                else if (_localMemories.isEmpty)
                   SliverFillRemaining(
                     hasScrollBody: false,
-                    child: _buildEmpty(),
+                    child: _buildEmpty(account: false),
                   )
                 else
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
-                        (context, i) => _buildMemoryCard(_memories[i]),
-                        childCount: _memories.length,
+                        (context, i) => _buildLocalMemoryCard(_localMemories[i]),
+                        childCount: _localMemories.length,
                       ),
                     ),
                   ),
@@ -260,7 +325,42 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
     );
   }
 
+  Widget _buildModeCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0x1A7F7FD5), Color(0x1491EAE4)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x337F7FD5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '当前聊天记忆模式：$_activeModeLabel',
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _activeModeDescription,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade700,
+              height: 1.45,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildProfilesCard() {
+    final isAccountTab = _tabController.index == 0;
+    final profileCount =
+        isAccountTab ? _profiles.length : _localProfiles.length;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -277,22 +377,26 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
               const Icon(Icons.auto_awesome_rounded, size: 18),
               const SizedBox(width: 8),
               Text(
-                '长期画像（${_profiles.length}）',
+                isAccountTab
+                    ? '账号画像（$profileCount）'
+                    : '本地画像（$profileCount）',
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ],
           ),
           const SizedBox(height: 6),
-          if (_profiles.isEmpty)
+          if (profileCount == 0)
             Text(
-              '还没有可展示画像。继续聊天后，后端会基于记忆逐步形成稳定画像。',
+              isAccountTab
+                  ? '还没有可展示画像。继续聊天后，服务端会基于记忆逐步形成稳定画像。'
+                  : '本地画像会在多轮对话后由系统自动整理。',
               style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 13,
                 height: 1.5,
               ),
             )
-          else
+          else if (isAccountTab)
             ..._profiles.map((profile) => Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Container(
@@ -336,7 +440,44 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
                       ],
                     ),
                   ),
-                )),
+                ))
+          else
+            ..._localProfiles.map(
+              (profile) => Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF7F8FC),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        profile.title.isNotEmpty
+                            ? profile.title
+                            : profile.profileType,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        profile.summary,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          height: 1.5,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -378,7 +519,7 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
           _buildKV('后端注入字符上限', maxRunes),
           const SizedBox(height: 8),
           Text(
-            '说明：本页仅展示后端状态，聊天主链路已不再使用本地 SQLite 记忆注入。',
+            '说明：服务端记忆在聊天时自动注入；关闭 Provider「服务端记忆」时使用本机智能体记忆。',
             style: TextStyle(
                 fontSize: 12, color: Colors.grey.shade600, height: 1.4),
           ),
@@ -496,7 +637,7 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
     );
   }
 
-  Widget _buildEmpty() {
+  Widget _buildEmpty({required bool account}) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -504,13 +645,16 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
           const Text('🧠', style: TextStyle(fontSize: 48)),
           const SizedBox(height: 16),
           Text(
-            '还没有任何账号记忆',
+            account ? '还没有任何账号记忆' : '还没有本地角色记忆',
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 8),
           Text(
-            '和 AI 聊天时，后端会自动提取并保存记忆。',
+            account
+                ? '和 AI 聊天时，服务端会自动提取并保存账号记忆。'
+                : '关闭服务端记忆时，对话会在此积累本机角色记忆。',
             style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -603,6 +747,92 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
     );
   }
 
+  Widget _buildLocalMemoryCard(AiMemory memory) {
+    final label = memory.category;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: _typeColor(label).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Center(
+                child: Text('📌', style: TextStyle(fontSize: 18)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    memory.content,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _typeColor(label).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: _typeColor(label),
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        _formatDateTime(memory.updatedAt),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                size: 20,
+                color: Colors.grey.shade400,
+              ),
+              onPressed: () => _deleteLocal(memory),
+              tooltip: '删除',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Color _typeColor(String type) {
     return switch (type) {
       'preference' => Colors.pinkAccent,
@@ -616,7 +846,13 @@ class _MemoryManagerPageState extends State<MemoryManagerPage> {
   String _formatDate(String dateStr) {
     final date = DateTime.tryParse(dateStr.replaceFirst(' ', 'T'));
     if (date == null) return dateStr;
-    final dt = date.toLocal();
-    return '${dt.month}/${dt.day} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    return _formatDateTime(date);
+  }
+
+  String _formatDateTime(DateTime dt) {
+    final local = dt.toLocal();
+    return '${local.month}/${local.day} '
+        '${local.hour.toString().padLeft(2, '0')}:'
+        '${local.minute.toString().padLeft(2, '0')}';
   }
 }

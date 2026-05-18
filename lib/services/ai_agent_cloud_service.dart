@@ -34,13 +34,46 @@ class AiAgentCloudService {
   }
 
   Future<List<AiLorebook>> getLorebooks() async {
+    final snapshot = await getLorebooksSnapshot();
+    return snapshot.lorebooks;
+  }
+
+  /// 单次拉取世界书列表与条目数量，避免列表页 N+1 重复请求云端。
+  Future<({List<AiLorebook> lorebooks, Map<String, int> entryCounts})>
+      getLorebooksSnapshot() async {
     final cloudLorebooks = await AiCloudConfigService().fetchLorebooks();
     if (cloudLorebooks != null && cloudLorebooks.isNotEmpty) {
-      return cloudLorebooks
+      final lorebooks = cloudLorebooks
           .map((e) => AiLorebook.fromMap(Map<String, dynamic>.from(e)))
           .toList();
+      final counts = <String, int>{};
+      for (final item in cloudLorebooks) {
+        final id = item['id']?.toString() ?? '';
+        if (id.isEmpty) continue;
+        final rawEntries = item['entries'];
+        if (rawEntries is List) {
+          counts[id] = rawEntries.length;
+        } else {
+          counts[id] = 0;
+        }
+      }
+      return (lorebooks: lorebooks, entryCounts: counts);
     }
-    return AiDbService().getLorebooks();
+
+    final local = await AiDbService().getLorebooks();
+    if (local.isEmpty) {
+      return (lorebooks: local, entryCounts: <String, int>{});
+    }
+    final counts = await Future.wait(
+      local.map((lorebook) async {
+        final entries = await AiDbService().getLorebookEntries(lorebook.id);
+        return MapEntry(lorebook.id, entries.length);
+      }),
+    );
+    return (
+      lorebooks: local,
+      entryCounts: Map<String, int>.fromEntries(counts),
+    );
   }
 
   Future<List<AiLorebookEntry>> getLorebookEntries(String lorebookId) async {

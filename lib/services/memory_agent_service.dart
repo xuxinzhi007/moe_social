@@ -75,6 +75,92 @@ class MemoryAgentService {
     return buffer.toString();
   }
 
+  /// 第三方 Provider + 服务端记忆：回合结束后提取 JSON 记忆并 Upsert 到后端。
+  Future<int> extractAndUpsertServerMemories({
+    required String userId,
+    required String userMessage,
+    required String aiResponse,
+    required String sessionId,
+    required String sourceMsgId,
+    required String model,
+  }) async {
+    if (userMessage.trim().isEmpty || aiResponse.trim().isEmpty) return 0;
+
+    final prompt = '请分析以下对话，提取关于用户的新的、永久性个人信息。\n'
+        '忽略临时状态与无意义闲聊。严格仅返回 JSON 数组，每项含 key（英文蛇形）与 value（用户语言）。\n'
+        '无新信息则返回 []。不要 Markdown 代码块。\n\n'
+        '用户：$userMessage\n助手：$aiResponse';
+
+    final raw = await _callModel(
+      model: model.trim().isNotEmpty ? model : 'llama3',
+      userPrompt: prompt,
+      temperature: 0.1,
+      timeout: const Duration(seconds: 45),
+    );
+    final items = _parseServerMemoryItems(raw);
+    if (items.isEmpty) return 0;
+
+    var saved = 0;
+    for (final item in items) {
+      final key = (item['key'] as String? ?? '').trim();
+      final value = (item['value'] as String? ?? '').trim();
+      if (key.isEmpty || value.isEmpty) continue;
+      try {
+        await MemoryService.upsertUserMemory(
+          userId: userId,
+          key: key,
+          value: value,
+          memoryType: (item['memory_type'] as String?)?.trim(),
+          confidence: (item['confidence'] as num?)?.toDouble(),
+          source: 'llm_extract_client',
+          sourceMsgId: sourceMsgId,
+          sessionId: sessionId,
+        );
+        saved++;
+      } catch (_) {}
+    }
+    return saved;
+  }
+
+  /// OpenClaw 式遗忘：超出容量时 prune 低价值、过旧条目。
+  Future<int> pruneStaleLocalMemories(String agentId,
+      {int maxKeep = 40}) async {
+    final memories = await _db.getMemories(agentId);
+    if (memories.length <= maxKeep) return 0;
+
+    final sorted = [...memories]..sort((a, b) {
+        final imp = a.importance.compareTo(b.importance);
+        if (imp != 0) return imp;
+        return a.updatedAt.compareTo(b.updatedAt);
+      });
+
+    final toRemove = sorted.take(memories.length - maxKeep);
+    var removed = 0;
+    for (final memory in toRemove) {
+      await _db.deleteMemory(memory.id);
+      removed++;
+    }
+    return removed;
+  }
+
+  List<Map<String, dynamic>> _parseServerMemoryItems(String response) {
+    var content = response.trim();
+    if (content.isEmpty || content == '[]') return const [];
+    content = content.replaceFirst(RegExp(r'^```json\s*'), '');
+    content = content.replaceFirst(RegExp(r'^```\s*'), '');
+    content = content.replaceFirst(RegExp(r'\s*```$'), '');
+    try {
+      final parsed = jsonDecode(content);
+      if (parsed is! List) return const [];
+      return parsed
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
   Future<MemoryAgentProcessResult> processConversationTurn({
     required AiAgent agent,
     required String sessionId,
@@ -111,6 +197,8 @@ class MemoryAgentService {
       profileCount = profiles.length;
     }
 
+    await pruneStaleLocalMemories(agent.id);
+
     return MemoryAgentProcessResult(
       newMemoryCount: newMemories.length,
       profileCount: profileCount,
@@ -124,7 +212,9 @@ class MemoryAgentService {
     required String aiResponse,
     required List<AiMemory> existingMemories,
   }) async {
-    if (userMessage.trim().isEmpty || aiResponse.trim().isEmpty) return const [];
+    if (userMessage.trim().isEmpty || aiResponse.trim().isEmpty) {
+      return const [];
+    }
     if (aiResponse.startsWith('Ollama 错误') ||
         aiResponse.startsWith('请求失败') ||
         aiResponse.startsWith('请求出错') ||
@@ -151,7 +241,8 @@ class MemoryAgentService {
     for (var i = 0; i < texts.length; i++) {
       final text = texts[i].trim();
       if (text.isEmpty) continue;
-      if (allKnown.any((m) => MemoryService.isDuplicateMemory(m.content, text))) {
+      if (allKnown
+          .any((m) => MemoryService.isDuplicateMemory(m.content, text))) {
         continue;
       }
       final now = DateTime.now();
@@ -206,8 +297,8 @@ class MemoryAgentService {
           profileType: (item['profile_type'] as String? ?? 'general').trim(),
           title: title,
           summary: summary,
-          confidence: ((item['confidence'] as num?)?.toDouble() ?? 0.7)
-              .clamp(0.0, 1.0),
+          confidence:
+              ((item['confidence'] as num?)?.toDouble() ?? 0.7).clamp(0.0, 1.0),
           updatedAt: now,
         ),
       );
