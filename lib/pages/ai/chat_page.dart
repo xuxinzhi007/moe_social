@@ -16,7 +16,6 @@ import '../../services/ai_lorebook_service.dart';
 import '../../services/ai_roleplay_prompt_builder.dart';
 import '../../services/ai_user_persona_service.dart';
 import '../../services/ai_memory_orchestrator.dart';
-import '../../services/memory_service.dart';
 import 'memory_manager_page.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_chat_session.dart';
@@ -31,7 +30,6 @@ import '../../widgets/ai/ai_chat_empty_state.dart';
 import '../../widgets/ai/message_bubble.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
-import '../../auth_service.dart';
 
 class ChatPage extends StatefulWidget {
   final AiAgent agent;
@@ -238,12 +236,11 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _loadMemoryState() async {
     try {
       final orchestrator = AiMemoryOrchestrator();
-      final preview = await orchestrator.loadChatMemoryPreview(widget.agent);
       final state = await orchestrator.loadManagerState(widget.agent);
       if (!mounted) return;
       setState(() {
-        _memoryMode = preview.mode;
-        _memoryModeLabel = preview.modeLabel;
+        _memoryMode = state.activeMode;
+        _memoryModeLabel = state.activeModeLabel;
         _memories = state.accountMemories;
         _localMemories = state.localMemories;
       });

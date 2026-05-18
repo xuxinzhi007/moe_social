@@ -64,7 +64,7 @@ class _AiLorebooksPageState extends State<AiLorebooksPage> {
       _syncError = null;
     });
     try {
-      final snapshot = await AiAgentCloudService().getLorebooksSnapshot();
+      final snapshot = await AiAgentCloudService().syncLorebooksFromCloud();
       if (!mounted) return;
       setState(() {
         _lorebooks = snapshot.lorebooks;
@@ -206,7 +206,8 @@ class _AiLorebooksPageState extends State<AiLorebooksPage> {
         const SizedBox(height: 6),
         Text(
           '无需等待云端同步，点一下即可创建完整世界书。',
-          style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.4),
+          style:
+              TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.4),
         ),
         const SizedBox(height: 12),
         ...AiStarterTemplates.lorebookTemplates.map((template) {
@@ -323,7 +324,8 @@ class _AiLorebooksPageState extends State<AiLorebooksPage> {
         ),
         child: Row(
           children: [
-            Icon(Icons.cloud_off_rounded, size: 18, color: Colors.orange.shade700),
+            Icon(Icons.cloud_off_rounded,
+                size: 18, color: Colors.orange.shade700),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -414,7 +416,8 @@ class _AiLorebooksPageState extends State<AiLorebooksPage> {
                     Text(
                       '可从上方模板一键创建，或使用右下角「新建」。',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey.shade600, height: 1.4),
+                      style:
+                          TextStyle(color: Colors.grey.shade600, height: 1.4),
                     ),
                   ],
                 ),
@@ -674,7 +677,8 @@ class _AiLorebookEditorPageState extends State<AiLorebookEditorPage> {
                   updatedAt: now,
                 );
                 setState(() {
-                  final idx = _entries.indexWhere((item) => item.id == entry.id);
+                  final idx =
+                      _entries.indexWhere((item) => item.id == entry.id);
                   if (idx == -1) {
                     _entries = [..._entries, entry];
                   } else {

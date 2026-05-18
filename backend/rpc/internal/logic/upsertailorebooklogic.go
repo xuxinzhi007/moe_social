@@ -24,7 +24,5 @@ func NewUpsertAiLorebookLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *UpsertAiLorebookLogic) UpsertAiLorebook(in *super.UpsertAiResourceReq) (*super.UpsertAiResourceResp, error) {
-	// todo: add your logic here and delete this line
-
-	return &super.UpsertAiResourceResp{}, nil
+	return NewAiResourcesLogic(l.ctx, l.svcCtx).upsert("lorebooks", in)
 }

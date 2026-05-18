@@ -24,7 +24,5 @@ func NewUpsertAiUserConfigLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *UpsertAiUserConfigLogic) UpsertAiUserConfig(in *super.UpsertAiUserConfigReq) (*super.UpsertAiUserConfigResp, error) {
-	// todo: add your logic here and delete this line
-
-	return &super.UpsertAiUserConfigResp{}, nil
+	return NewAiUserConfigLogic(l.ctx, l.svcCtx).Upsert(in)
 }

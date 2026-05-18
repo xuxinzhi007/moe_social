@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -23,18 +24,17 @@ class AiProviderService {
   static const String _webProfilesKey = 'ai_provider_profiles_web_json';
   static const String _lastSelectedProfileKey = 'ai_last_selected_provider_id';
 
-  String _apiKeyStorageKey(String profileId) => 'ai_provider_api_key_$profileId';
+  String _apiKeyStorageKey(String profileId) =>
+      'ai_provider_api_key_$profileId';
 
   Future<List<AiProviderProfile>> listProfiles() async {
+    final out = await _listLocalProfiles();
+    unawaited(_refreshCloudProfilesToLocal());
+    return out;
+  }
+
+  Future<List<AiProviderProfile>> _listLocalProfiles() async {
     final out = <AiProviderProfile>[AiProviderProfile.builtinBackend()];
-    final cloudProfiles = await AiCloudConfigService().fetchProviders();
-    if (cloudProfiles != null && cloudProfiles.isNotEmpty) {
-      out.addAll(
-        cloudProfiles
-            .map((e) => AiProviderProfile.fromMap(Map<String, dynamic>.from(e))),
-      );
-      return out;
-    }
     if (kIsWeb) {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_webProfilesKey);
@@ -43,9 +43,8 @@ class AiProviderService {
         final decoded = jsonDecode(raw);
         if (decoded is List) {
           out.addAll(
-            decoded
-                .whereType<Map>()
-                .map((e) => AiProviderProfile.fromMap(Map<String, dynamic>.from(e))),
+            decoded.whereType<Map>().map(
+                (e) => AiProviderProfile.fromMap(Map<String, dynamic>.from(e))),
           );
         }
       } catch (_) {}
@@ -54,6 +53,42 @@ class AiProviderService {
     final locals = await AiDbService().getProviderProfiles();
     out.addAll(locals);
     return out;
+  }
+
+  Future<void> _refreshCloudProfilesToLocal() async {
+    try {
+      final cloudProfiles = await AiCloudConfigService()
+          .fetchProviders()
+          .timeout(const Duration(seconds: 5));
+      if (cloudProfiles == null) return;
+      final parsed = cloudProfiles
+          .map((e) => AiProviderProfile.fromMap(Map<String, dynamic>.from(e)))
+          .toList();
+      await _saveProfilesToLocal(parsed);
+    } catch (_) {
+      // 静默回退到本地缓存。
+    }
+  }
+
+  Future<void> _saveProfilesToLocal(List<AiProviderProfile> profiles) async {
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _webProfilesKey,
+        jsonEncode(profiles.map((e) => e.toMap()).toList()),
+      );
+      return;
+    }
+    final db = AiDbService();
+    final existing = await db.getProviderProfiles();
+    final existingIds = existing.map((e) => e.id).toSet();
+    for (final profile in profiles) {
+      if (existingIds.contains(profile.id)) {
+        await db.updateProviderProfile(profile);
+      } else {
+        await db.insertProviderProfile(profile);
+      }
+    }
   }
 
   Future<AiProviderProfile> resolveProfile(String? id) async {
@@ -167,15 +202,19 @@ class AiProviderService {
   }
 
   Future<String?> readLastSelectedProfileId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final localValue = prefs.getString(_lastSelectedProfileKey)?.trim();
+    if (localValue != null && localValue.isNotEmpty) {
+      return localValue;
+    }
+
     final cloud = await AiCloudConfigService().fetch();
     final cloudValue =
         cloud?.preferences['last_selected_provider_id']?.toString().trim();
     if (cloudValue != null && cloudValue.isNotEmpty) {
+      await prefs.setString(_lastSelectedProfileKey, cloudValue);
       return cloudValue;
     }
-    final prefs = await SharedPreferences.getInstance();
-    final value = prefs.getString(_lastSelectedProfileKey)?.trim();
-    if (value == null || value.isEmpty) return null;
-    return value;
+    return null;
   }
 }

@@ -131,7 +131,9 @@ func (l *CreateAgentLogic) CreateAgent(req *types.LlmCreateAgentReq) (*types.Bas
 		lowErr := strings.ToLower(rawErr)
 		if strings.Contains(lowErr, "modelfile") ||
 			strings.Contains(lowErr, "unknown field") ||
-			strings.Contains(lowErr, "invalid character") {
+			strings.Contains(lowErr, "invalid character") ||
+			strings.Contains(lowErr, "neither 'from' or 'files' was specified") ||
+			strings.Contains(lowErr, "from or files") {
 			fallback := map[string]interface{}{
 				"model":  safeName,
 				"from":   baseModel,

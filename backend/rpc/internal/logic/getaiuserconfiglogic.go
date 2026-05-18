@@ -24,7 +24,5 @@ func NewGetAiUserConfigLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 }
 
 func (l *GetAiUserConfigLogic) GetAiUserConfig(in *super.GetAiUserConfigReq) (*super.GetAiUserConfigResp, error) {
-	// todo: add your logic here and delete this line
-
-	return &super.GetAiUserConfigResp{}, nil
+	return NewAiUserConfigLogic(l.ctx, l.svcCtx).Get(in)
 }

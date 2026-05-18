@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -198,76 +199,33 @@ class _AgentListPageState extends State<AgentListPage>
   Future<void> _loadAgents() async {
     setState(() => _isLoading = true);
     try {
-      var modelNames = <String>[];
-      try {
-        final uri = await LlmEndpointConfig.modelsUri();
-        ApiService.logDirectHttp('GET', uri);
-        final response = await http
-            .get(uri, headers: ApiService.mergeTunnelHeaders(uri))
-            .timeout(const Duration(seconds: 12));
-        if (response.statusCode == 200) {
-          final decodedBody = utf8.decode(response.bodyBytes);
-          final data = jsonDecode(decodedBody);
-          if (data is Map && data['models'] is List) {
-            final raw = data['models'] as List;
-            if (raw.whereType<String>().isNotEmpty) {
-              modelNames = raw.whereType<String>().toList();
-            } else {
-              modelNames = raw
-                  .whereType<Map>()
-                  .map((m) => m['name'])
-                  .whereType<String>()
-                  .toList();
-            }
-          }
-        }
-      } catch (_) {
-        // 保持静默：允许仅使用本地自定义智能体。
-      }
-
-      // 读取本地元数据（描述/提示词）作为可选增强，失败不阻塞页面。
-      List<AiAgent> localAgents = [];
+      var localAgents = <AiAgent>[];
       try {
         localAgents = await AiAgentCloudService()
-            .getAgents()
+            .getLocalAgents()
             .timeout(const Duration(seconds: 2));
       } catch (_) {}
-      final localByBackendModel = <String, AiAgent>{
-        for (final a in localAgents)
-          if (_isBackendProviderId(a.providerProfileId)) a.modelName: a,
-      };
 
-      final now = DateTime.now();
-      final agents = modelNames.map((model) {
-        final local = localByBackendModel[model];
-        if (local != null) return local;
-        return AiAgent(
-          id: model,
-          name: model,
-          description: _getModelDescription(model),
-          systemPrompt: AiPromptDefaults.defaultAgentSystemPrompt,
-          modelName: model,
-          createdAt: now,
-        );
-      }).toList();
-      for (final local in localAgents) {
-        final exists = agents.any((item) => item.id == local.id);
-        if (!exists) {
-          agents.add(local);
-        }
-      }
+      _applyAgents(
+          _buildAgentsFromModelsAndLocal(const <String>[], localAgents));
 
-      // 为每个智能体生成随机颜色
-      final colors = _generateAgentColors(agents);
+      unawaited(() async {
+        final cloudFuture = AiAgentCloudService()
+            .syncAgentsFromCloud()
+            .timeout(const Duration(seconds: 6));
+        final modelFuture = _fetchBackendModelNames();
 
-      if (!mounted) return;
-      setState(() {
-        _agents = agents;
-        _agentColors = colors;
-      });
-
-      // 加载后过滤智能体
-      _filterAgents();
+        List<AiAgent> cloudAgents = localAgents;
+        List<String> modelNames = const <String>[];
+        try {
+          cloudAgents = await cloudFuture;
+        } catch (_) {}
+        try {
+          modelNames = await modelFuture;
+        } catch (_) {}
+        if (!mounted) return;
+        _applyAgents(_buildAgentsFromModelsAndLocal(modelNames, cloudAgents));
+      }());
     } catch (e, st) {
       debugPrint('load agents failed: $e\n$st');
       if (!mounted) return;
@@ -280,6 +238,71 @@ class _AgentListPageState extends State<AgentListPage>
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  void _applyAgents(List<AiAgent> agents) {
+    if (!mounted) return;
+    final colors = _generateAgentColors(agents);
+    setState(() {
+      _agents = agents;
+      _agentColors = colors;
+    });
+    _filterAgents();
+  }
+
+  List<AiAgent> _buildAgentsFromModelsAndLocal(
+    List<String> modelNames,
+    List<AiAgent> localAgents,
+  ) {
+    final localByBackendModel = <String, AiAgent>{
+      for (final a in localAgents)
+        if (_isBackendProviderId(a.providerProfileId)) a.modelName: a,
+    };
+    final now = DateTime.now();
+    final agents = modelNames.map((model) {
+      final local = localByBackendModel[model];
+      if (local != null) return local;
+      return AiAgent(
+        id: model,
+        name: model,
+        description: _getModelDescription(model),
+        systemPrompt: AiPromptDefaults.defaultAgentSystemPrompt,
+        modelName: model,
+        createdAt: now,
+      );
+    }).toList();
+    for (final local in localAgents) {
+      final exists = agents.any((item) => item.id == local.id);
+      if (!exists) {
+        agents.add(local);
+      }
+    }
+    return agents;
+  }
+
+  Future<List<String>> _fetchBackendModelNames() async {
+    try {
+      final uri = await LlmEndpointConfig.modelsUri();
+      ApiService.logDirectHttp('GET', uri);
+      final response = await http
+          .get(uri, headers: ApiService.mergeTunnelHeaders(uri))
+          .timeout(const Duration(seconds: 6));
+      if (response.statusCode != 200) return const <String>[];
+      final decodedBody = utf8.decode(response.bodyBytes);
+      final data = jsonDecode(decodedBody);
+      if (data is! Map || data['models'] is! List) return const <String>[];
+      final raw = data['models'] as List;
+      if (raw.whereType<String>().isNotEmpty) {
+        return raw.whereType<String>().toList();
+      }
+      return raw
+          .whereType<Map>()
+          .map((m) => m['name'])
+          .whereType<String>()
+          .toList();
+    } catch (_) {
+      return const <String>[];
     }
   }
 
@@ -1986,7 +2009,7 @@ class _AgentListPageState extends State<AgentListPage>
     if (mounted) {
       MoeToast.success(
         context,
-        provider.isBuiltinBackend ? '已使用服务器模型创建会话' : '已使用自定义 Provider 创建智能体',
+        provider.isBuiltinBackend ? '已使用服务器模型创建会话' : '已使用自定义 Provider 创建角色卡',
       );
       Navigator.push(
         context,
@@ -2157,7 +2180,7 @@ class _AgentListPageState extends State<AgentListPage>
                     child: const Icon(Icons.edit_rounded,
                         color: Color(0xFF7F7FD5)),
                   ),
-                  title: const Text('编辑智能体',
+                  title: const Text('编辑角色卡',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   onTap: () async {
                     Navigator.pop(context);
