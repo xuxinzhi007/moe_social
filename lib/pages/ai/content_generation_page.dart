@@ -1,18 +1,16 @@
-import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import '../../services/api_service.dart';
 import '../../services/ai_chat_gateway_service.dart';
-import '../../services/llm_endpoint_config.dart';
-import '../../services/llm_response_parser.dart';
+import '../../services/ai_memory_orchestrator.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_chat_message.dart';
 import '../../models/ai_provider_profile.dart';
 import '../../widgets/fade_in_up.dart';
+import '../../widgets/ai/ai_brand_tokens.dart';
+import '../../widgets/ai/ai_chat_background.dart';
+import '../../widgets/ai/ai_chat_empty_state.dart';
 import '../../widgets/ai/message_bubble.dart';
 
 enum ContentType {
@@ -23,6 +21,22 @@ enum ContentType {
   article,
   story,
   poem,
+}
+
+class _ContentTypeMeta {
+  const _ContentTypeMeta({
+    required this.label,
+    required this.icon,
+    required this.hint,
+    required this.emptyHint,
+    required this.suggestions,
+  });
+
+  final String label;
+  final IconData icon;
+  final String hint;
+  final String emptyHint;
+  final List<String> suggestions;
 }
 
 class ContentGenerationPage extends StatefulWidget {
@@ -42,12 +56,62 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
   List<AiChatMessage> _messages = [];
   ContentType _selectedContentType = ContentType.text;
   bool _isGenerating = false;
-  double _generationProgress = 0.0;
   String _generationStatus = '';
 
-  // Image picker
   final ImagePicker _picker = ImagePicker();
   XFile? _selectedImage;
+
+  static const _typeMeta = <ContentType, _ContentTypeMeta>{
+    ContentType.text: _ContentTypeMeta(
+      label: '文本',
+      icon: Icons.notes_rounded,
+      hint: '描述你想生成的文本…',
+      emptyHint: '写一段简介、文案或说明，AI 会按你的要求扩写。',
+      suggestions: ['写一段产品简介', '帮我润色这段话', '生成三条朋友圈文案'],
+    ),
+    ContentType.image: _ContentTypeMeta(
+      label: '图像',
+      icon: Icons.image_rounded,
+      hint: '描述画面、风格与构图…',
+      emptyHint: '用文字描绘画面，便于后续图像生成或分镜设计。',
+      suggestions: ['赛博朋克城市夜景', '日系插画少女肖像', '极简扁平图标草图'],
+    ),
+    ContentType.video: _ContentTypeMeta(
+      label: '视频',
+      icon: Icons.movie_creation_outlined,
+      hint: '描述镜头、节奏与旁白…',
+      emptyHint: '从分镜脚本开始，让 AI 帮你搭好视频结构。',
+      suggestions: ['30 秒产品宣传分镜', 'Vlog 开场旁白脚本', '教程类视频大纲'],
+    ),
+    ContentType.code: _ContentTypeMeta(
+      label: '代码',
+      icon: Icons.code_rounded,
+      hint: '说明语言、功能与约束…',
+      emptyHint: '说清楚技术栈和需求，生成可运行的代码片段。',
+      suggestions: ['Flutter 列表分页示例', 'Go HTTP 中间件模板', 'SQL 查询优化建议'],
+    ),
+    ContentType.article: _ContentTypeMeta(
+      label: '文章',
+      icon: Icons.article_outlined,
+      hint: '输入主题、受众与篇幅…',
+      emptyHint: '给出主题与风格，生成结构清晰的长文。',
+      suggestions: ['写一篇技术博客大纲', '科普文章三段式结构', '活动招募公众号稿'],
+    ),
+    ContentType.story: _ContentTypeMeta(
+      label: '故事',
+      icon: Icons.auto_stories_outlined,
+      hint: '设定世界观与主角…',
+      emptyHint: '从人设和冲突出发，展开一段有张力的叙事。',
+      suggestions: ['奇幻冒险开篇', '悬疑短篇第一章', '治愈系日常小故事'],
+    ),
+    ContentType.poem: _ContentTypeMeta(
+      label: '诗歌',
+      icon: Icons.format_quote_rounded,
+      hint: '说明意象、情绪与体裁…',
+      emptyHint: '指定情绪与意象，生成有韵律感的诗句。',
+      suggestions: ['写一首关于星空的现代诗', '古风四句送别诗', '轻快童趣短诗'],
+    ),
+  };
 
   bool get _isBackendProviderAgent =>
       widget.agent.providerProfileId == null ||
@@ -56,10 +120,7 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
   String get _providerSourceLabel =>
       _isBackendProviderAgent ? '服务器 Ollama' : '我的 API';
 
-  @override
-  void initState() {
-    super.initState();
-  }
+  _ContentTypeMeta get _currentMeta => _typeMeta[_selectedContentType]!;
 
   @override
   void dispose() {
@@ -85,14 +146,13 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
     if (_isGenerating) return;
     final prompt = _controller.text.trim();
     if (prompt.isEmpty) return;
+    HapticFeedback.lightImpact();
 
     setState(() {
       _isGenerating = true;
-      _generationProgress = 0.0;
-      _generationStatus = '正在生成内容...';
+      _generationStatus = '正在生成内容…';
     });
 
-    // 添加用户消息
     final userMsg = AiChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       sessionId: 'content_generation',
@@ -108,10 +168,14 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
     _scrollToBottom();
 
     try {
-      // 构建内容生成请求
-      final content = await _callContentGenerationAPI(prompt, _selectedContentType);
-
-      // 添加AI回复
+      final content =
+          await _callContentGenerationAPI(prompt, _selectedContentType);
+      AiMemoryOrchestrator().learnFromTurnInBackground(
+        agent: widget.agent,
+        sessionId: 'content_generation',
+        userMessage: prompt,
+        aiResponse: content,
+      );
       final aiMsg = AiChatMessage(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         sessionId: 'content_generation',
@@ -119,36 +183,34 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
         content: content,
         createdAt: DateTime.now(),
       );
-
-      setState(() {
-        _messages.add(aiMsg);
-      });
+      if (!mounted) return;
+      setState(() => _messages.add(aiMsg));
     } catch (e) {
-      // 添加错误消息
       final errorMsg = AiChatMessage(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         sessionId: 'content_generation',
         role: 'assistant',
-        content: '生成失败: $e',
+        content: '生成失败，请稍后重试。',
         createdAt: DateTime.now(),
       );
-
-      setState(() {
-        _messages.add(errorMsg);
-      });
+      if (!mounted) return;
+      setState(() => _messages.add(errorMsg));
     } finally {
-      setState(() {
-        _isGenerating = false;
-        _generationProgress = 0.0;
-        _generationStatus = '';
-      });
-      _scrollToBottom();
+      if (mounted) {
+        setState(() {
+          _isGenerating = false;
+          _generationStatus = '';
+        });
+        _scrollToBottom();
+      }
     }
   }
 
-  Future<String> _callContentGenerationAPI(String prompt, ContentType contentType) async {
-    // 构建系统提示词
-    String systemPrompt = '';
+  Future<String> _callContentGenerationAPI(
+    String prompt,
+    ContentType contentType,
+  ) async {
+    String systemPrompt;
     switch (contentType) {
       case ContentType.text:
         systemPrompt = '你是一个专业的内容生成助手，能够根据用户的需求生成高质量的文本内容。';
@@ -173,55 +235,155 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
         break;
     }
 
+    final enriched = await AiMemoryOrchestrator().enrichSystemPrompt(
+      agent: widget.agent,
+      basePrompt: systemPrompt,
+      latestUserMessage: prompt,
+    );
     return AiChatGatewayService().sendChat(
       agent: widget.agent,
       messages: [
-        {'role': 'system', 'content': systemPrompt},
+        {'role': 'system', 'content': enriched},
         {'role': 'user', 'content': prompt},
       ],
     );
   }
 
   Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      setState(() {
-        _selectedImage = image;
-      });
+    final image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null && mounted) {
+      setState(() => _selectedImage = image);
     }
+  }
+
+  Widget _buildTypeHero() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: AiBrandTokens.heroGradient,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: AiBrandTokens.primary.withValues(alpha: 0.22),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(_currentMeta.icon, color: Colors.white),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${_currentMeta.label}创作',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _currentMeta.emptyHint,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: 12,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildContentTypeSelector() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           children: ContentType.values.map((type) {
+            final meta = _typeMeta[type]!;
             final isSelected = _selectedContentType == type;
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedContentType = type;
-                  _selectedImage = null;
-                });
-              },
-              child: Container(
-                margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF7F7FD5) : Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  _getContentTypeLabel(type),
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey.shade700,
-                    fontSize: 14,
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(999),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() {
+                      _selectedContentType = type;
+                      _selectedImage = null;
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient:
+                          isSelected ? AiBrandTokens.userBubbleGradient : null,
+                      color: isSelected ? null : const Color(0xFFF8F9FD),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: isSelected
+                            ? Colors.transparent
+                            : Colors.grey.shade200,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          meta.icon,
+                          size: 16,
+                          color:
+                              isSelected ? Colors.white : AiBrandTokens.primary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          meta.label,
+                          style: TextStyle(
+                            color: isSelected
+                                ? Colors.white
+                                : AiBrandTokens.titleColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -232,25 +394,31 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
     );
   }
 
-  String _getContentTypeLabel(ContentType type) {
-    switch (type) {
-      case ContentType.text:
-        return '文本';
-      case ContentType.image:
-        return '图像';
-      case ContentType.video:
-        return '视频';
-      case ContentType.code:
-        return '代码';
-      case ContentType.article:
-        return '文章';
-      case ContentType.story:
-        return '故事';
-      case ContentType.poem:
-        return '诗歌';
-      default:
-        return '文本';
+  Widget _buildMessageList() {
+    if (_messages.isEmpty && !_isGenerating) {
+      return AiChatEmptyState(
+        title: '开始你的${_currentMeta.label}创作',
+        subtitle: _currentMeta.emptyHint,
+        icon: _currentMeta.icon,
+        suggestions: _currentMeta.suggestions,
+        onSuggestionTap: (text) {
+          setState(() => _controller.text = text);
+          _focusNode.requestFocus();
+        },
+      );
     }
+    return ListView.builder(
+      controller: _scrollController,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: _messages.length + (_isGenerating ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (_isGenerating && index == _messages.length) {
+          return _buildTypingBubble();
+        }
+        return _buildMessageBubble(_messages[index]);
+      },
+    );
   }
 
   Widget _buildInputArea() {
@@ -259,10 +427,10 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
-          )
+          ),
         ],
       ),
       padding: EdgeInsets.only(
@@ -273,13 +441,14 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
       ),
       child: Column(
         children: [
-          if (_selectedContentType == ContentType.image && _selectedImage != null)
+          if (_selectedContentType == ContentType.image &&
+              _selectedImage != null)
             Container(
               margin: const EdgeInsets.only(bottom: 8),
               height: 100,
               width: double.infinity,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 child: Image.file(
                   File(_selectedImage!.path),
                   fit: BoxFit.cover,
@@ -294,14 +463,14 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
                   padding: const EdgeInsets.only(bottom: 2),
                   child: IconButton(
                     icon: const Icon(Icons.image_rounded),
-                    color: Colors.grey.shade600,
+                    color: AiBrandTokens.primary,
                     onPressed: _pickImage,
                   ),
                 ),
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F7FA),
+                    color: AiBrandTokens.chatBackground,
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(color: Colors.grey.shade200),
                   ),
@@ -312,10 +481,13 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
                     minLines: 1,
                     textInputAction: TextInputAction.send,
                     decoration: InputDecoration(
-                      hintText: _getInputHint(),
+                      hintText: _currentMeta.hint,
                       hintStyle: TextStyle(color: Colors.grey.shade400),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                     onSubmitted: (_) => _generateContent(),
                   ),
@@ -330,27 +502,23 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
                         height: 48,
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [Color(0xFF8A2387), Color(0xFFE94057)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                          gradient: AiBrandTokens.userBubbleGradient,
                         ),
                         child: const Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
+                          child: SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           ),
                         ),
                       )
                     : Container(
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [Color(0xFF8A2387), Color(0xFFE94057)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                          gradient: AiBrandTokens.userBubbleGradient,
                         ),
                         child: IconButton(
                           icon: const Icon(Icons.send_rounded, size: 20),
@@ -361,20 +529,23 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
               ),
             ],
           ),
-          if (_isGenerating)
+          if (_isGenerating && _generationStatus.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Column(
+              padding: const EdgeInsets.only(top: 10),
+              child: Row(
                 children: [
-                  LinearProgressIndicator(
-                    value: _generationProgress,
-                    backgroundColor: Colors.grey.shade200,
-                    color: const Color(0xFF7F7FD5),
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(width: 8),
                   Text(
                     _generationStatus,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                 ],
               ),
@@ -384,43 +555,18 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
     );
   }
 
-  String _getInputHint() {
-    switch (_selectedContentType) {
-      case ContentType.text:
-        return '输入文本生成需求...';
-      case ContentType.image:
-        return '输入图像描述...';
-      case ContentType.video:
-        return '输入视频脚本需求...';
-      case ContentType.code:
-        return '输入代码需求...';
-      case ContentType.article:
-        return '输入文章主题...';
-      case ContentType.story:
-        return '输入故事主题...';
-      case ContentType.poem:
-        return '输入诗歌主题...';
-      default:
-        return '输入内容需求...';
-    }
-  }
-
   Widget _buildMessageBubble(AiChatMessage message) {
     final isUser = message.role == 'user';
-    final timeStr = "${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}";
+    final timeStr =
+        '${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}';
 
-    // 检测内容类型
-    MessageContentType contentType = MessageContentType.text;
+    var contentType = MessageContentType.text;
     String? language;
-
-    // 简单的内容类型检测逻辑
     if (message.content.startsWith('```')) {
-      // 代码块
       contentType = MessageContentType.code;
-      // 提取语言
       final lines = message.content.split('\n');
-      if (lines.length > 1) {
-        final firstLine = lines[0].trim();
+      if (lines.isNotEmpty) {
+        final firstLine = lines.first.trim();
         if (firstLine.length > 3) {
           language = firstLine.substring(3).trim();
         }
@@ -432,13 +578,15 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
       duration: const Duration(milliseconds: 200),
       delay: const Duration(milliseconds: 50),
       child: Column(
-        crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment:
+            isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           AiMessageBubble(
             content: message.content,
             contentType: contentType,
             language: language,
             isUser: isUser,
+            agentLabel: isUser ? null : widget.agent.name,
             onContentExpanded: _scrollToBottom,
           ),
           Padding(
@@ -455,141 +603,126 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
     );
   }
 
+  Widget _buildTypingBubble() {
+    return AiMessageBubble(
+      content: '',
+      contentType: MessageContentType.thinking,
+      isUser: false,
+      agentLabel: widget.agent.name,
+    );
+  }
+
+  void _showAgentInfo() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.45,
+        minChildSize: 0.3,
+        maxChildSize: 0.8,
+        expand: false,
+        builder: (_, scrollCtrl) => ListView(
+          controller: scrollCtrl,
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: AiBrandTokens.heroGradient,
+                  ),
+                  child:
+                      const Icon(Icons.smart_toy_rounded, color: Colors.white),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.agent.name,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Text(
+                        '$_providerSourceLabel · ${widget.agent.modelName}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (widget.agent.description.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                widget.agent.description,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AiBrandTokens.chatBackground,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        foregroundColor: AiBrandTokens.titleColor,
+        elevation: 0,
         title: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               '内容生成',
-              style: const TextStyle(fontSize: 16),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AiBrandTokens.titleColor,
+              ),
             ),
             Text(
               '${widget.agent.name} · $_providerSourceLabel',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
           ],
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline_rounded),
-            tooltip: '查看智能体信息',
-            onPressed: () {
-              // 显示智能体信息
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                builder: (ctx) {
-                  return DraggableScrollableSheet(
-                    initialChildSize: 0.5,
-                    minChildSize: 0.3,
-                    maxChildSize: 0.85,
-                    expand: false,
-                    builder: (_, scrollCtrl) {
-                      return Column(
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(top: 12, bottom: 4),
-                            width: 40,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade300,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 22,
-                                  backgroundColor: Theme.of(ctx).primaryColor.withOpacity(0.12),
-                                  child: Icon(Icons.smart_toy_rounded, color: Theme.of(ctx).primaryColor),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(widget.agent.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-                                      if (widget.agent.description.isNotEmpty)
-                                        Text(widget.agent.description, style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
-                                      Text('来源：$_providerSourceLabel', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-                                      Text('模型：${widget.agent.modelName}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Divider(height: 1),
-                          Expanded(
-                            child: ListView(
-                              controller: scrollCtrl,
-                              padding: const EdgeInsets.all(20),
-                              children: [
-                                Row(
-                                  children: [
-                                    const Icon(Icons.subject_rounded, size: 16, color: Colors.grey),
-                                    const SizedBox(width: 6),
-                                    const Text('系统提示词', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey)),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF5F7FA),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.grey.shade200),
-                                  ),
-                                  child: widget.agent.systemPrompt.isEmpty
-                                      ? Text('未设置系统提示词', style: TextStyle(color: Colors.grey.shade400, fontSize: 14, fontStyle: FontStyle.italic))
-                                      : SelectableText(
-                                          widget.agent.systemPrompt,
-                                          style: const TextStyle(fontSize: 14, height: 1.6, color: Colors.black87),
-                                        ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-              );
-            },
+            tooltip: '智能体信息',
+            onPressed: _showAgentInfo,
           ),
         ],
       ),
       body: Column(
         children: [
+          _buildTypeHero(),
           _buildContentTypeSelector(),
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              itemCount: _messages.length + (_isGenerating ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (_isGenerating && index == _messages.length) {
-                  return _buildTypingBubble();
-                }
-                return _buildMessageBubble(_messages[index]);
-              },
-            ),
+            child: AiChatBackground(child: _buildMessageList()),
           ),
-          // flex:0 仅占内容高度；键盘收起时由 Expanded 占满余量。键盘弹出且余量不足时在此区域内滚动，避免底部溢出。
           Flexible(
             flex: 0,
             fit: FlexFit.loose,
@@ -600,14 +733,6 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildTypingBubble() {
-    return AiMessageBubble(
-      content: 'AI is thinking...',
-      contentType: MessageContentType.thinking,
-      isUser: false,
     );
   }
 }

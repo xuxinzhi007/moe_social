@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,23 +10,28 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
 import '../../services/ai_prompt_defaults.dart';
 import '../../services/llm_endpoint_config.dart';
-import '../../services/llm_response_parser.dart';
 import '../../services/ai_db_service.dart';
 import '../../services/ai_chat_gateway_service.dart';
 import '../../services/ai_lorebook_service.dart';
 import '../../services/ai_roleplay_prompt_builder.dart';
 import '../../services/ai_user_persona_service.dart';
+import '../../services/ai_memory_orchestrator.dart';
 import '../../services/memory_service.dart';
+import 'memory_manager_page.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_chat_session.dart';
 import '../../models/ai_chat_message.dart';
 import '../../models/ai_provider_profile.dart';
+import '../../models/ai_memory.dart';
 import '../../models/user_memory.dart';
 import '../../widgets/fade_in_up.dart';
+import '../../widgets/ai/ai_brand_tokens.dart';
+import '../../widgets/ai/ai_chat_background.dart';
+import '../../widgets/ai/ai_chat_empty_state.dart';
 import '../../widgets/ai/message_bubble.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../auth_service.dart';
-import '../profile/memory_timeline_page.dart';
 
 class ChatPage extends StatefulWidget {
   final AiAgent agent;
@@ -49,6 +53,9 @@ class _ChatPageState extends State<ChatPage> {
   AiChatSession? _currentSession;
   List<AiChatMessage> _messages = [];
   List<UserMemory> _memories = [];
+  List<AiMemory> _localMemories = [];
+  AiMemoryMode _memoryMode = AiMemoryMode.disabled;
+  String _memoryModeLabel = '未启用';
   String _systemPrompt = '';
   String _userPersona = '';
 
@@ -222,17 +229,24 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  int get _memoryPreviewCount {
+    if (_memoryMode == AiMemoryMode.local) return _localMemories.length;
+    if (_memoryMode == AiMemoryMode.disabled) return 0;
+    return _memories.length;
+  }
+
   Future<void> _loadMemoryState() async {
     try {
-      final user = await AuthService.getUserInfo();
-      final rawMemories = await MemoryService.getUserMemories(user.id);
-      final memories = MemoryService.filterUserFacingMemories(rawMemories);
-      memories.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-      if (mounted) {
-        setState(() {
-          _memories = memories;
-        });
-      }
+      final orchestrator = AiMemoryOrchestrator();
+      final preview = await orchestrator.loadChatMemoryPreview(widget.agent);
+      final state = await orchestrator.loadManagerState(widget.agent);
+      if (!mounted) return;
+      setState(() {
+        _memoryMode = preview.mode;
+        _memoryModeLabel = preview.modeLabel;
+        _memories = state.accountMemories;
+        _localMemories = state.localMemories;
+      });
     } catch (_) {
       // 记忆预览失败不影响主聊天链路
     }
@@ -395,6 +409,7 @@ class _ChatPageState extends State<ChatPage> {
     if (_isSending) return;
     final text = _controller.text.trim();
     if (text.isEmpty) return;
+    HapticFeedback.lightImpact();
 
     if (_currentSession == null) await _createNewSession();
 
@@ -437,7 +452,7 @@ class _ChatPageState extends State<ChatPage> {
       );
 
       // 后续可在 provider 层做更细粒度 prompt 组合；当前先完成角色卡基础层。
-      final enrichedSystemPrompt = _withNoAiSelfDisclosureRule(
+      var enrichedSystemPrompt = _withNoAiSelfDisclosureRule(
         AiRoleplayPromptBuilder.buildSystemPrompt(
           widget.agent,
           overrideSystemPrompt: _systemPrompt.trim().isNotEmpty
@@ -446,6 +461,11 @@ class _ChatPageState extends State<ChatPage> {
           userPersona: _userPersona,
           lorebookEntries: lorebookEntries,
         ),
+      );
+      enrichedSystemPrompt = await AiMemoryOrchestrator().enrichSystemPrompt(
+        agent: widget.agent,
+        basePrompt: enrichedSystemPrompt,
+        latestUserMessage: text,
       );
       history.insert(0, {'role': 'system', 'content': enrichedSystemPrompt});
 
@@ -457,44 +477,52 @@ class _ChatPageState extends State<ChatPage> {
         sourceMsgId: userMsg.id,
       );
       if (_wasManuallyStopped) return;
-        final assistantMsg = AiChatMessage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
+      final assistantMsg = AiChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        sessionId: _currentSession!.id,
+        role: 'assistant',
+        content: content,
+        createdAt: DateTime.now(),
+      );
+
+      if (_localPersistenceEnabled) {
+        await AiDbService().insertMessage(assistantMsg);
+      }
+
+      if (mounted) {
+        setState(() => _messages.add(assistantMsg));
+        unawaited(_persistWebCache());
+
+        AiMemoryOrchestrator().learnFromTurnInBackground(
+          agent: widget.agent,
           sessionId: _currentSession!.id,
-          role: 'assistant',
-          content: content,
-          createdAt: DateTime.now(),
+          userMessage: text,
+          aiResponse: content,
+          sourceMsgId: userMsg.id,
         );
+        unawaited(_loadMemoryState());
 
-        if (_localPersistenceEnabled) {
-          await AiDbService().insertMessage(assistantMsg);
-        }
-
-        if (mounted) {
-          setState(() => _messages.add(assistantMsg));
-          unawaited(_persistWebCache());
-
-          // 自动更新会话标题
-          if (_messages.length <= 2 && _currentSession!.title == '新对话') {
-            final newTitle =
-                text.length > 10 ? '${text.substring(0, 10)}...' : text;
-            final updatedSession = AiChatSession(
-              id: _currentSession!.id,
-              agentId: widget.agent.id,
-              title: newTitle,
-              updatedAt: DateTime.now(),
-            );
-            if (_localPersistenceEnabled) {
-              await AiDbService().updateSession(updatedSession);
-            }
-            setState(() {
-              _currentSession = updatedSession;
-              final idx =
-                  _sessions.indexWhere((s) => s.id == updatedSession.id);
-              if (idx != -1) _sessions[idx] = updatedSession;
-            });
-            unawaited(_persistWebCache());
+        // 自动更新会话标题
+        if (_messages.length <= 2 && _currentSession!.title == '新对话') {
+          final newTitle =
+              text.length > 10 ? '${text.substring(0, 10)}...' : text;
+          final updatedSession = AiChatSession(
+            id: _currentSession!.id,
+            agentId: widget.agent.id,
+            title: newTitle,
+            updatedAt: DateTime.now(),
+          );
+          if (_localPersistenceEnabled) {
+            await AiDbService().updateSession(updatedSession);
           }
+          setState(() {
+            _currentSession = updatedSession;
+            final idx = _sessions.indexWhere((s) => s.id == updatedSession.id);
+            if (idx != -1) _sessions[idx] = updatedSession;
+          });
+          unawaited(_persistWebCache());
         }
+      }
     } catch (e) {
       if (_wasManuallyStopped) return;
       await _appendError('请求出错: $e');
@@ -789,7 +817,7 @@ class _ChatPageState extends State<ChatPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const MemoryTimelinePage(),
+        builder: (_) => MemoryManagerPage(agent: widget.agent),
       ),
     ).then((_) => _loadMemoryState());
   }
@@ -1181,19 +1209,36 @@ class _ChatPageState extends State<ChatPage> {
               spacing: 8,
               runSpacing: 8,
               children: _quickReplies.map((reply) {
-                return GestureDetector(
-                  onTap: () => _selectQuickReply(reply),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F7FA),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Text(
-                      reply,
-                      style: const TextStyle(fontSize: 13),
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      _selectQuickReply(reply);
+                    },
+                    child: Ink(
+                      decoration: BoxDecoration(
+                        color: AiBrandTokens.pageBackground,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AiBrandTokens.primary.withValues(alpha: 0.16),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        child: Text(
+                          reply,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AiBrandTokens.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 );
@@ -1344,7 +1389,7 @@ class _ChatPageState extends State<ChatPage> {
                           const Text('🧠', style: TextStyle(fontSize: 14)),
                           const SizedBox(width: 6),
                           Text(
-                            '长期记忆（${_memories.length} 条）',
+                            '记忆 · $_memoryModeLabel（$_memoryPreviewCount 条）',
                             style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -1365,17 +1410,43 @@ class _ChatPageState extends State<ChatPage> {
                           ),
                         ],
                       ),
-                      if (_memories.isEmpty)
+                      if (_memoryPreviewCount == 0)
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
-                            '暂无账号记忆。继续聊天后，后端会自动提取并入库。',
+                            _memoryMode == AiMemoryMode.disabled
+                                ? '当前模式未启用记忆。可在 Provider 或终端设置中调整。'
+                                : _memoryMode == AiMemoryMode.local
+                                    ? '暂无本地角色记忆。继续对话后会自动学习。'
+                                    : '暂无账号记忆。继续聊天后，系统会自动提取并入库。',
                             style: TextStyle(
                                 color: Colors.grey.shade400,
                                 fontSize: 13,
                                 fontStyle: FontStyle.italic),
                           ),
                         )
+                      else if (_memoryMode == AiMemoryMode.local)
+                        ...(_localMemories.take(3).map((m) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('•', style: TextStyle(fontSize: 13)),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    '[${m.category}] ${m.content}',
+                                    style: const TextStyle(
+                                        fontSize: 13, color: Colors.black87),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }))
                       else
                         ...(_memories.take(3).map((m) {
                           final type = (m.memoryType?.isNotEmpty == true)
@@ -1401,7 +1472,7 @@ class _ChatPageState extends State<ChatPage> {
                             ),
                           );
                         })),
-                      if (_memories.length > 3)
+                      if (_memoryPreviewCount > 3)
                         Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: TextButton(
@@ -1409,7 +1480,7 @@ class _ChatPageState extends State<ChatPage> {
                               Navigator.pop(ctx);
                               _openMemoryManager();
                             },
-                            child: Text('查看全部 ${_memories.length} 条记忆'),
+                            child: Text('查看全部 $_memoryPreviewCount 条记忆'),
                           ),
                         ),
                     ],
@@ -1423,215 +1494,384 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_isSearching) {
-      return Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded),
-            onPressed: _toggleSearch,
-          ),
-          title: TextField(
-            controller: _searchController,
-            autofocus: true,
-            decoration: const InputDecoration(
-              hintText: '搜索消息...',
-              border: InputBorder.none,
-            ),
-            onChanged: _performSearch,
-          ),
-          elevation: 0,
-        ),
-        body: _buildSearchResults(),
-      );
-    }
+  bool get _showIdentityHero => !_isLoadingHistory && _messages.length <= 1;
 
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        title: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.agent.name,
-              style: const TextStyle(fontSize: 16),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            // AppBar 中间槽位宽度很窄（多颗 actions 时尤甚），必须对长文案 ellipsis
-            Row(
+  List<String> get _emptySuggestions {
+    final opening = widget.agent.openingMessage.trim();
+    if (opening.isNotEmpty) {
+      return [opening, ..._quickReplies.take(3)];
+    }
+    return _quickReplies.take(4).toList();
+  }
+
+  PreferredSizeWidget _buildChatAppBar({required bool searching}) {
+    return AppBar(
+      backgroundColor: Colors.white,
+      foregroundColor: AiBrandTokens.titleColor,
+      elevation: 0,
+      scrolledUnderElevation: 0.5,
+      leading: searching
+          ? IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              onPressed: _toggleSearch,
+            )
+          : null,
+      title: searching
+          ? TextField(
+              controller: _searchController,
+              autofocus: true,
+              decoration: const InputDecoration(
+                hintText: '搜索消息...',
+                border: InputBorder.none,
+              ),
+              onChanged: _performSearch,
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  widget.agent.name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AiBrandTokens.titleColor,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FutureBuilder<bool>(
+                        future: LlmEndpointConfig.isTerminalModeEnabled(),
+                        builder: (context, snapshot) {
+                          final terminal = snapshot.data == true;
+                          final sessionTitle =
+                              _currentSession?.title ?? '加载中...';
+                          final suffix = terminal ? ' · 终端同款' : '';
+                          return Text(
+                            '$_providerSourceLabel · $sessionTitle$suffix',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        },
+                      ),
+                    ),
+                    if (_memories.isNotEmpty) ...[
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AiBrandTokens.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '🧠$_memoryPreviewCount',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AiBrandTokens.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+      actions: searching
+          ? null
+          : [
+              IconButton(
+                icon: const Icon(Icons.search_rounded),
+                tooltip: '搜索消息',
+                onPressed: _toggleSearch,
+              ),
+              IconButton(
+                icon: const Icon(Icons.info_outline_rounded),
+                tooltip: '查看智能体信息',
+                onPressed: _showAgentInfo,
+              ),
+              Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.history_rounded),
+                  tooltip: '会话历史',
+                  onPressed: () => Scaffold.of(context).openEndDrawer(),
+                ),
+              ),
+            ],
+    );
+  }
+
+  Widget _buildSessionDrawer() {
+    return Drawer(
+      backgroundColor: AiBrandTokens.pageBackground,
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: MediaQuery.of(context).padding.top + 20,
+              bottom: 20,
+            ),
+            decoration: const BoxDecoration(
+              gradient: AiBrandTokens.heroGradient,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.smart_toy_rounded,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: FutureBuilder<bool>(
-                    future: LlmEndpointConfig.isTerminalModeEnabled(),
-                    builder: (context, snapshot) {
-                      final terminal = snapshot.data == true;
-                      final sessionTitle = _currentSession?.title ?? '加载中...';
-                      final suffix = terminal ? ' · 终端同款' : '';
-                      return Text(
-                        '$_providerSourceLabel · $sessionTitle$suffix',
-                        style:
-                            const TextStyle(fontSize: 12, color: Colors.grey),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.agent.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$_providerSourceLabel · ${widget.agent.modelName}',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.88),
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _drawerActionTile(
+            icon: Icons.add_comment_rounded,
+            label: '新对话',
+            color: AiBrandTokens.primary,
+            onTap: () {
+              Navigator.pop(context);
+              _createNewSession();
+            },
+          ),
+          _drawerActionTile(
+            icon: Icons.psychology_rounded,
+            label: '记忆库（$_memoryPreviewCount 条）',
+            color: const Color(0xFF5B8DEF),
+            onTap: () {
+              Navigator.pop(context);
+              _openMemoryManager();
+            },
+          ),
+          _drawerActionTile(
+            icon: Icons.person_outline_rounded,
+            label: '用户 Persona',
+            subtitle: _userPersona.isEmpty ? '未设置' : '已设置',
+            color: const Color(0xFF00A86B),
+            onTap: () {
+              Navigator.pop(context);
+              _editUserPersona();
+            },
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '历史会话',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: _sessions.isEmpty
+                ? Center(
+                    child: Text(
+                      '暂无历史会话',
+                      style: TextStyle(color: Colors.grey.shade500),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    itemCount: _sessions.length,
+                    itemBuilder: (context, index) {
+                      final session = _sessions[index];
+                      final isCurrent = session.id == _currentSession?.id;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        decoration: BoxDecoration(
+                          color: isCurrent
+                              ? AiBrandTokens.primary.withValues(alpha: 0.1)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isCurrent
+                                ? AiBrandTokens.primary.withValues(alpha: 0.3)
+                                : Colors.transparent,
+                          ),
+                        ),
+                        child: ListTile(
+                          dense: true,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          title: Text(
+                            session.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight:
+                                  isCurrent ? FontWeight.w700 : FontWeight.w500,
+                              color: isCurrent
+                                  ? AiBrandTokens.primary
+                                  : AiBrandTokens.titleColor,
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            _loadSession(session);
+                          },
+                          trailing: IconButton(
+                            icon: Icon(
+                              Icons.delete_outline_rounded,
+                              size: 18,
+                              color: Colors.grey.shade500,
+                            ),
+                            onPressed: () => _deleteSession(session.id),
+                          ),
+                        ),
                       );
                     },
                   ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _drawerActionTile({
+    required IconData icon,
+    required String label,
+    required Color color,
+    String? subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: color, size: 20),
+      ),
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: subtitle == null
+          ? null
+          : Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+      onTap: onTap,
+    );
+  }
+
+  Widget _buildMessageList() {
+    if (_isLoadingHistory) {
+      return const Center(child: MoeLoading());
+    }
+    if (_messages.isEmpty && !_isSending) {
+      return AiChatEmptyState(
+        title: '和 ${widget.agent.name} 打个招呼吧',
+        subtitle: widget.agent.description.trim().isNotEmpty
+            ? widget.agent.description
+            : '输入消息开始对话，或点选下方建议快速开场。',
+        icon: Icons.nightlife_rounded,
+        suggestions: _emptySuggestions,
+        onSuggestionTap: (text) {
+          setState(() => _controller.text = text);
+          _focusNode.requestFocus();
+        },
+      );
+    }
+    return ListView.builder(
+      controller: _scrollController,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      itemCount: _messages.length + (_isSending ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (_isSending && index == _messages.length) {
+          return _buildTypingBubble();
+        }
+        return _buildMessageBubble(_messages[index]);
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      resizeToAvoidBottomInset: true,
+      backgroundColor: AiBrandTokens.chatBackground,
+      appBar: _buildChatAppBar(searching: _isSearching),
+      endDrawer: _isSearching ? null : _buildSessionDrawer(),
+      body: _isSearching
+          ? _buildSearchResults()
+          : Column(
+              children: [
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeInOut,
+                  alignment: Alignment.topCenter,
+                  child: _showIdentityHero
+                      ? _buildIdentityHero()
+                      : const SizedBox.shrink(),
                 ),
-                if (_memories.isNotEmpty) ...[
-                  const SizedBox(width: 4),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: Colors.purple.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '🧠${_memories.length}',
-                      style: TextStyle(
-                          fontSize: 10, color: Colors.purple.shade700),
-                    ),
+                Expanded(
+                  child: AiChatBackground(child: _buildMessageList()),
+                ),
+                Flexible(
+                  flex: 0,
+                  fit: FlexFit.loose,
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    child: _buildInputArea(),
                   ),
-                ],
+                ),
               ],
             ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search_rounded),
-            tooltip: '搜索消息',
-            onPressed: _toggleSearch,
-          ),
-          IconButton(
-            icon: const Icon(Icons.info_outline_rounded),
-            tooltip: '查看智能体信息',
-            onPressed: _showAgentInfo,
-          ),
-          Builder(
-            builder: (context) => IconButton(
-              icon: const Icon(Icons.history_rounded),
-              onPressed: () => Scaffold.of(context).openEndDrawer(),
-            ),
-          ),
-        ],
-      ),
-      endDrawer: Drawer(
-        child: Column(
-          children: [
-            UserAccountsDrawerHeader(
-              decoration: BoxDecoration(color: Theme.of(context).primaryColor),
-              accountName: Text(widget.agent.name),
-              accountEmail:
-                  Text('$_providerSourceLabel · ${widget.agent.modelName}'),
-              currentAccountPicture: CircleAvatar(
-                backgroundColor: Colors.white,
-                child: Icon(Icons.smart_toy_rounded,
-                    color: Theme.of(context).primaryColor),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.add_comment_rounded),
-              title: const Text('新对话'),
-              onTap: () {
-                Navigator.pop(context);
-                _createNewSession();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.psychology_rounded),
-              title: Text('记忆库（${_memories.length} 条）'),
-              onTap: () {
-                Navigator.pop(context);
-                _openMemoryManager();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person_outline_rounded),
-              title: const Text('用户 Persona'),
-              subtitle: Text(
-                _userPersona.isEmpty ? '未设置' : '已设置',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                _editUserPersona();
-              },
-            ),
-            const Divider(),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _sessions.length,
-                itemBuilder: (context, index) {
-                  final session = _sessions[index];
-                  final isCurrent = session.id == _currentSession?.id;
-                  return ListTile(
-                    title: Text(
-                      session.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight:
-                            isCurrent ? FontWeight.bold : FontWeight.normal,
-                        color:
-                            isCurrent ? Theme.of(context).primaryColor : null,
-                      ),
-                    ),
-                    selected: isCurrent,
-                    onTap: () {
-                      Navigator.pop(context);
-                      _loadSession(session);
-                    },
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 18),
-                      onPressed: () => _deleteSession(session.id),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: Column(
-        children: [
-          _buildIdentityHero(),
-          Expanded(
-            child: _isLoadingHistory
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    controller: _scrollController,
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 20),
-                    itemCount: _messages.length + (_isSending ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (_isSending && index == _messages.length) {
-                        return _buildTypingBubble();
-                      }
-                      return _buildMessageBubble(_messages[index]);
-                    },
-                  ),
-          ),
-          // flex:0 仅占内容高度；键盘收起时由 Expanded 占满余量。键盘弹出且余量不足时在此区域内滚动，避免底部溢出。
-          Flexible(
-            flex: 0,
-            fit: FlexFit.loose,
-            child: SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              child: _buildInputArea(),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1665,77 +1905,84 @@ class _ChatPageState extends State<ChatPage> {
       key: ValueKey(message.id),
       duration: const Duration(milliseconds: 200),
       delay: const Duration(milliseconds: 50),
-      child: Column(
-        crossAxisAlignment:
-            isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          AiMessageBubble(
-            content: message.content,
-            contentType: contentType,
-            language: language,
-            isUser: isUser,
-            onContentExpanded: _scrollToBottom,
-          ),
-          if (isUser)
-            Padding(
-              padding: const EdgeInsets.only(top: 4, right: 4),
-              child: Text(
-                timeStr,
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-              ),
+      child: GestureDetector(
+        onLongPress: () {
+          HapticFeedback.mediumImpact();
+          _showMessageActions(message);
+        },
+        child: Column(
+          crossAxisAlignment:
+              isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            AiMessageBubble(
+              content: message.content,
+              contentType: contentType,
+              language: language,
+              isUser: isUser,
+              agentLabel: isUser ? null : widget.agent.name,
+              onContentExpanded: _scrollToBottom,
             ),
-          if (!isUser)
-            Padding(
-              padding: const EdgeInsets.only(top: 4, left: 48),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    timeStr,
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
-                  ),
-                  const SizedBox(width: 12),
-                  InkWell(
-                    onTap: () => _playTts(message.content, message.id),
-                    child: Icon(
-                      _isSpeaking && _speakingMessageId == message.id
-                          ? Icons.volume_off_rounded
-                          : Icons.volume_up_rounded,
-                      size: 16,
-                      color: Colors.grey.shade400,
+            if (isUser)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, right: 4),
+                child: Text(
+                  timeStr,
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                ),
+              ),
+            if (!isUser)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 48),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      timeStr,
+                      style:
+                          TextStyle(fontSize: 11, color: Colors.grey.shade400),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    InkWell(
+                      onTap: () => _playTts(message.content, message.id),
+                      child: Icon(
+                        _isSpeaking && _speakingMessageId == message.id
+                            ? Icons.volume_off_rounded
+                            : Icons.volume_up_rounded,
+                        size: 16,
+                        color: Colors.grey.shade400,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTypingBubble() {
     return AiMessageBubble(
-      content: 'AI is thinking...',
+      content: '',
       contentType: MessageContentType.thinking,
       isUser: false,
+      agentLabel: widget.agent.name,
     );
   }
 
   Widget _buildIdentityHero() {
     final promptReady = _systemPrompt.trim().isNotEmpty;
-    final memoryCount = _memories.length;
+    final memoryCount = _memoryPreviewCount;
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.fromLTRB(12, 10, 12, 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          colors: [Color(0x1A8A2387), Color(0x14E94057)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        gradient: AiBrandTokens.identityGradient,
+        border: Border.all(
+          color: AiBrandTokens.primary.withValues(alpha: 0.2),
         ),
-        border: Border.all(color: const Color(0x338A2387)),
       ),
       child: Row(
         children: [
@@ -1744,11 +1991,7 @@ class _ChatPageState extends State<ChatPage> {
             height: 34,
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [Color(0xFF8A2387), Color(0xFFE94057)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              gradient: AiBrandTokens.userBubbleGradient,
             ),
             child: const Icon(Icons.auto_awesome_rounded,
                 color: Colors.white, size: 18),
@@ -1779,14 +2022,16 @@ class _ChatPageState extends State<ChatPage> {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.85),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0x228A2387)),
+        border: Border.all(
+          color: AiBrandTokens.primary.withValues(alpha: 0.14),
+        ),
       ),
       child: Text(
         '$label · $value',
         style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF6C3A86),
+          color: AiBrandTokens.primary,
         ),
       ),
     );
@@ -1870,11 +2115,7 @@ class _ChatPageState extends State<ChatPage> {
                     : Container(
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [Color(0xFF8A2387), Color(0xFFE94057)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                          gradient: AiBrandTokens.userBubbleGradient,
                         ),
                         child: IconButton(
                           icon: const Icon(Icons.send_rounded, size: 20),
@@ -1887,64 +2128,6 @@ class _ChatPageState extends State<ChatPage> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _TypingDotsIndicator extends StatefulWidget {
-  const _TypingDotsIndicator();
-
-  @override
-  State<_TypingDotsIndicator> createState() => _TypingDotsIndicatorState();
-}
-
-class _TypingDotsIndicatorState extends State<_TypingDotsIndicator>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (_, __) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: List.generate(3, (i) {
-            final phase = (_ctrl.value + i / 3.0) % 1.0;
-            final y = phase < 0.5 ? -6.0 * math.sin(phase * math.pi * 2) : 0.0;
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 3),
-              child: Transform.translate(
-                offset: Offset(0, y),
-                child: Container(
-                  width: 7,
-                  height: 7,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade500,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            );
-          }),
-        );
-      },
     );
   }
 }

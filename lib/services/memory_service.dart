@@ -82,6 +82,118 @@ class MemoryService {
     await ApiService.delete('/api/user/$userId/memories?key=$encodedKey');
   }
 
+  /// 写入或更新用户记忆（服务端账号级）
+  static Future<UserMemory> upsertUserMemory({
+    required String userId,
+    required String key,
+    required String value,
+    String? memoryType,
+    double? confidence,
+    String? source,
+    String? sourceMsgId,
+    String? sessionId,
+  }) async {
+    final result = await ApiService.post(
+      '/api/user/$userId/memories',
+      body: {
+        'key': key,
+        'value': value,
+        if (memoryType != null && memoryType.isNotEmpty)
+          'memory_type': memoryType,
+        if (confidence != null) 'confidence': confidence,
+        if (source != null && source.isNotEmpty) 'source': source,
+        if (sourceMsgId != null && sourceMsgId.isNotEmpty)
+          'source_msg_id': sourceMsgId,
+        if (sessionId != null && sessionId.isNotEmpty) 'session_id': sessionId,
+      },
+    );
+    final data = Map<String, dynamic>.from(result['data'] ?? const {});
+    return UserMemory.fromJson(data);
+  }
+
+  /// 按对话相关性选取要注入的记忆（OpenClaw 式：关键词命中 + 新近度兜底）。
+  static List<UserMemory> selectRelevantUserMemories({
+    required List<UserMemory> memories,
+    String queryText = '',
+    int maxItems = 8,
+    int maxRunes = 520,
+  }) {
+    if (memories.isEmpty) return const [];
+    final safeMax = maxItems <= 0 ? 8 : maxItems;
+    final tokens = _extractQueryTokens(queryText);
+    final ranked = <_RankedUserMemory>[];
+
+    for (final memory in memories) {
+      if (isTechnicalMemory(memory)) continue;
+      final value = memory.value.trim();
+      if (value.isEmpty) continue;
+      final norm = normalizeMemoryText('$value ${memory.key}');
+      if (norm.isEmpty) continue;
+
+      var score = 0.0;
+      for (final token in tokens) {
+        if (norm.contains(token)) score += 2.0;
+      }
+      final updated = DateTime.tryParse(memory.updatedAt);
+      if (updated != null) {
+        final ageDays = DateTime.now().difference(updated).inDays;
+        score += (30 - ageDays.clamp(0, 30)) / 30.0;
+      }
+      ranked.add(_RankedUserMemory(memory: memory, score: score));
+    }
+
+    ranked.sort((a, b) => b.score.compareTo(a.score));
+
+    if (tokens.isNotEmpty) {
+      final hits = ranked.where((e) => e.score >= 2).toList();
+      if (hits.isNotEmpty) {
+        return _packUserMemories(hits, safeMax, maxRunes);
+      }
+    }
+
+    final recent = [...memories]
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return _packUserMemories(
+      recent.map((m) => _RankedUserMemory(memory: m, score: 0)).toList(),
+      safeMax,
+      maxRunes,
+    );
+  }
+
+  static List<UserMemory> _packUserMemories(
+    List<_RankedUserMemory> ranked,
+    int maxItems,
+    int maxRunes,
+  ) {
+    final out = <UserMemory>[];
+    var runes = 0;
+    final seen = <String>{};
+    for (final item in ranked) {
+      if (out.length >= maxItems) break;
+      final key = item.memory.key;
+      if (seen.contains(key)) continue;
+      final valueRunes = item.memory.value.runes.length;
+      if (runes + valueRunes > maxRunes && out.isNotEmpty) break;
+      seen.add(key);
+      runes += valueRunes;
+      out.add(item.memory);
+    }
+    return out;
+  }
+
+  static Set<String> _extractQueryTokens(String text) {
+    final tokens = <String>{};
+    final han = RegExp(r'[\u4e00-\u9fa5]{2,}');
+    final ascii = RegExp(r'[a-zA-Z0-9_]{2,}');
+    for (final match in han.allMatches(text)) {
+      tokens.add(match.group(0)!.toLowerCase());
+    }
+    for (final match in ascii.allMatches(text.toLowerCase())) {
+      tokens.add(match.group(0)!);
+    }
+    return tokens;
+  }
+
   /// 对记忆提交反馈（accept/reject/correct）
   static Future<UserMemory> submitUserMemoryFeedback({
     required String userId,
@@ -112,8 +224,7 @@ class MemoryService {
 
   /// 把已有记忆列表拼接到基础 system prompt 里（仅注入上下文，不要求 AI 打标签）
   ///
-  /// 记忆提取由独立的背景调用完成（见 ChatPage._extractMemoriesInBackground），
-  /// 主对话 prompt 保持简洁，对小模型更友好。
+  /// 记忆提取由 AiMemoryOrchestrator + MemoryAgentService 在回合结束后后台完成。
   static String buildPromptWithMemories(
     String basePrompt,
     List<AiMemory> memories,
@@ -245,4 +356,11 @@ class MemoryService {
     }
     return 3;
   }
+}
+
+class _RankedUserMemory {
+  final UserMemory memory;
+  final double score;
+
+  const _RankedUserMemory({required this.memory, required this.score});
 }

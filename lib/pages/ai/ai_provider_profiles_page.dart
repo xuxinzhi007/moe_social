@@ -189,7 +189,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                       const SizedBox(height: 8),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('启用服务端记忆（预留）'),
+                        title: const Text('启用服务端记忆'),
                         subtitle: const Text('当前仅内置后端 Ollama 会实际使用'),
                         value: useServerMemory,
                         onChanged: (value) {

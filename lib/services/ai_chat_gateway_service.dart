@@ -65,6 +65,8 @@ class AiChatGatewayService {
     final profile = await AiProviderService().resolveProfile(
       agent.providerProfileId,
     );
+    // useServerMemory：内置 Ollama 走 /api/llm/chat（注入+提取）；第三方在客户端注入/提取。
+    // 记忆编排见 AiMemoryOrchestrator。
     if (profile.isBackendOllama) {
       return _sendToBackendOllama(
         agent: agent,
@@ -95,7 +97,8 @@ class AiChatGatewayService {
           uri,
           headers: ApiService.mergeTunnelHeaders(uri, headers: {
             'Content-Type': 'application/json',
-            if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+            if (token != null && token.isNotEmpty)
+              'Authorization': 'Bearer $token',
           }),
           body: jsonEncode({
             'model': _effectiveModel(agent, AiProviderProfile.builtinBackend()),

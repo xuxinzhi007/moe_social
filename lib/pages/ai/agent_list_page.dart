@@ -17,8 +17,10 @@ import '../../models/ai_provider_profile.dart';
 import 'agent_editor_page.dart';
 import 'ai_lorebooks_page.dart';
 import 'ai_provider_profiles_page.dart';
+import 'character_card_plaza_page.dart';
 import 'chat_page.dart';
 import 'content_generation_page.dart';
+import 'memory_manager_page.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
@@ -31,7 +33,8 @@ class AgentListPage extends StatefulWidget {
   State<AgentListPage> createState() => _AgentListPageState();
 }
 
-class _AgentListPageState extends State<AgentListPage> with SingleTickerProviderStateMixin {
+class _AgentListPageState extends State<AgentListPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<AiAgent> _agents = [];
   List<AiAgent> _filteredAgents = [];
@@ -44,7 +47,7 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
   String _selectedSquareProviderId = AiProviderProfile.builtinBackendId;
   Map<String, Color> _agentColors = {};
   bool _showFab = true;
-  
+
   // 新增状态变量
   String _searchQuery = '';
   String _selectedCategory = '全部';
@@ -66,7 +69,7 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
     _loadProviderProfiles();
     _loadUsageCounts();
   }
-  
+
   Future<void> _loadUsageCounts() async {
     // 这里可以从本地存储或数据库加载使用频率数据
     // 暂时使用模拟数据
@@ -76,26 +79,28 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
       };
     });
   }
-  
+
   void _filterAgents() {
     setState(() {
       _filteredAgents = _agents.where((agent) {
         // 搜索过滤
-        final matchesSearch = _searchQuery.isEmpty || 
+        final matchesSearch = _searchQuery.isEmpty ||
             agent.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            agent.description.toLowerCase().contains(_searchQuery.toLowerCase());
-        
+            agent.description
+                .toLowerCase()
+                .contains(_searchQuery.toLowerCase());
+
         // 分类过滤
         final matchesCategory = _selectedCategory == '全部';
-        
+
         return matchesSearch && matchesCategory;
       }).toList();
-      
+
       // 排序
       _sortAgents();
     });
   }
-  
+
   void _sortAgents() {
     switch (_sortBy) {
       case '创建时间':
@@ -223,10 +228,9 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
       // 读取本地元数据（描述/提示词）作为可选增强，失败不阻塞页面。
       List<AiAgent> localAgents = [];
       try {
-        localAgents =
-            await AiAgentCloudService()
-                .getAgents()
-                .timeout(const Duration(seconds: 2));
+        localAgents = await AiAgentCloudService()
+            .getAgents()
+            .timeout(const Duration(seconds: 2));
       } catch (_) {}
       final localByBackendModel = <String, AiAgent>{
         for (final a in localAgents)
@@ -293,13 +297,13 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
       const Color(0xFFE8EAF6),
       const Color(0xFFF3E5F5),
     ];
-    
+
     for (final agent in agents) {
       final random = Random(agent.id.hashCode);
       final color = colorList[random.nextInt(colorList.length)];
       colors[agent.id] = color;
     }
-    
+
     return colors;
   }
 
@@ -330,6 +334,21 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
         backgroundColor: _pageBackground,
         elevation: 0,
         actions: [
+          IconButton(
+            tooltip: '角色卡广场',
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const CharacterCardPlazaPage(),
+                ),
+              );
+              if (mounted) {
+                await _loadAgents();
+              }
+            },
+            icon: const Icon(Icons.storefront_rounded),
+          ),
           IconButton(
             tooltip: '导入角色卡',
             onPressed: _showImportCharacterCardDialog,
@@ -526,9 +545,12 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                   spacing: 10,
                   runSpacing: 10,
                   children: [
-                    _heroChip('角色 ${_agents.length}', Icons.person_outline_rounded),
-                    _heroChip('Provider ${activeProviders}', Icons.hub_outlined),
-                    _heroChip('世界书 ${_lorebooksCountHint()}', Icons.menu_book_outlined),
+                    _heroChip(
+                        '角色 ${_agents.length}', Icons.person_outline_rounded),
+                    _heroChip(
+                        'Provider ${activeProviders}', Icons.hub_outlined),
+                    _heroChip('世界书 ${_lorebooksCountHint()}',
+                        Icons.menu_book_outlined),
                   ],
                 ),
               ],
@@ -660,34 +682,56 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
   Widget _buildQuickActionBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: _quickActionTile(
-              icon: Icons.auto_awesome_rounded,
-              title: '套用角色模板',
-              subtitle: '快速起一个 Tavern 骨架',
-              colors: const [_brandPrimary, _brandSecondary],
-              onTap: _createFromStarterTemplate,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: _quickActionTile(
+                  icon: Icons.storefront_rounded,
+                  title: '角色卡广场',
+                  subtitle: '推荐模板与我的角色',
+                  colors: const [_brandPrimary, _brandSecondary],
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CharacterCardPlazaPage(),
+                      ),
+                    );
+                    if (mounted) {
+                      await _loadAgents();
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _quickActionTile(
+                  icon: Icons.auto_awesome_rounded,
+                  title: '套用角色模板',
+                  subtitle: '快速起一个 Tavern 骨架',
+                  colors: const [Color(0xFF8A2387), _brandPrimary],
+                  onTap: _createFromStarterTemplate,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _quickActionTile(
-              icon: Icons.menu_book_rounded,
-              title: '新建世界书',
-              subtitle: '补地点、规则和人物关系',
-              colors: const [Color(0xFF5CA9E6), _brandAccent],
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AiLorebooksPage()),
-                );
-                if (mounted) {
-                  await _loadAgents();
-                }
-              },
-            ),
+          const SizedBox(height: 12),
+          _quickActionTile(
+            icon: Icons.menu_book_rounded,
+            title: '新建世界书',
+            subtitle: '补地点、规则和人物关系',
+            colors: const [Color(0xFF5CA9E6), _brandAccent],
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AiLorebooksPage()),
+              );
+              if (mounted) {
+                await _loadAgents();
+              }
+            },
           ),
         ],
       ),
@@ -810,7 +854,8 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                       .map(
                         (category) => DropdownMenuItem<String>(
                           value: category,
-                          child: Text(category, style: const TextStyle(fontSize: 12)),
+                          child: Text(category,
+                              style: const TextStyle(fontSize: 12)),
                         ),
                       )
                       .toList(),
@@ -844,7 +889,8 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                       .map(
                         (option) => DropdownMenuItem<String>(
                           value: option,
-                          child: Text(option, style: const TextStyle(fontSize: 12)),
+                          child: Text(option,
+                              style: const TextStyle(fontSize: 12)),
                         ),
                       )
                       .toList(),
@@ -1077,7 +1123,8 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
             ),
             child: Column(
               children: [
-                Icon(Icons.search_off_rounded, color: Colors.grey[300], size: 54),
+                Icon(Icons.search_off_rounded,
+                    color: Colors.grey[300], size: 54),
                 const SizedBox(height: 12),
                 Text(
                   '没有找到匹配的角色',
@@ -1108,259 +1155,272 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
             physics: const NeverScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             itemBuilder: (context, index) {
-                    final agent = _filteredAgents[index];
-                    final agentColor = _agentColors[agent.id] ?? _brandPrimary;
-                    final usageCount = _usageCounts[agent.id] ?? 0;
-                    final provider = _resolveProviderById(agent.providerProfileId);
-                    final isBackendProvider = provider.isBuiltinBackend;
-                    final providerColor = isBackendProvider
-                        ? const Color(0xFF5B8DEF)
-                        : const Color(0xFF00A86B);
-                    return FadeInUp(
-                      delay: Duration(milliseconds: 30 * (index % 8)),
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.08),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                          border: Border.all(
-                            color: agentColor.withOpacity(0.2),
-                            width: 1,
+              final agent = _filteredAgents[index];
+              final agentColor = _agentColors[agent.id] ?? _brandPrimary;
+              final usageCount = _usageCounts[agent.id] ?? 0;
+              final provider = _resolveProviderById(agent.providerProfileId);
+              final isBackendProvider = provider.isBuiltinBackend;
+              final providerColor = isBackendProvider
+                  ? const Color(0xFF5B8DEF)
+                  : const Color(0xFF00A86B);
+              return FadeInUp(
+                delay: Duration(milliseconds: 30 * (index % 8)),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: agentColor.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        // 更新使用频率
+                        setState(() {
+                          _usageCounts[agent.id] = (usageCount) + 1;
+                        });
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChatPage(agent: agent),
                           ),
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(16),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              // 更新使用频率
-                              setState(() {
-                                _usageCounts[agent.id] = (usageCount) + 1;
-                              });
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ChatPage(agent: agent),
+                        );
+                      },
+                      onLongPress: () => _showAgentOptions(agent),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            // 智能体头像
+                            Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    agentColor,
+                                    agentColor.withOpacity(0.7)
+                                  ],
                                 ),
-                              );
-                            },
-                            onLongPress: () => _showAgentOptions(agent),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Row(
-                                children: [
-                                  // 智能体头像
-                                  Container(
-                                    width: 52,
-                                    height: 52,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: [agentColor, agentColor.withOpacity(0.7)],
-                                      ),
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: agentColor.withOpacity(0.3),
-                                          blurRadius: 6,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Icon(
-                                      Icons.smart_toy_rounded,
-                                      color: Colors.white,
-                                      size: 28,
-                                    ),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: agentColor.withOpacity(0.3),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                agent.name,
-                                                style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Color(0xFF333333),
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            if (usageCount > 0)
-                                              Container(
-                                                margin: const EdgeInsets.only(left: 8),
-                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.grey[100],
-                                                  borderRadius: BorderRadius.circular(8),
-                                                ),
-                                                child: Text(
-                                                  '使用 $usageCount 次',
-                                                  style: TextStyle(
-                                                    fontSize: 10,
-                                                    color: Colors.grey[600],
-                                                  ),
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          agent.description,
-                                          style: TextStyle(
-                                            color: Colors.grey[600],
-                                            fontSize: 12,
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.smart_toy_rounded,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          agent.name,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF333333),
                                           ),
-                                          maxLines: 2,
+                                          maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                        const SizedBox(height: 6),
-                                        Wrap(
-                                          spacing: 6,
-                                          runSpacing: 6,
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: agentColor.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                              child: Text(
-                                                agent.modelName,
-                                                style: TextStyle(
-                                                  color: agentColor,
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
+                                      ),
+                                      if (usageCount > 0)
+                                        Container(
+                                          margin:
+                                              const EdgeInsets.only(left: 8),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[100],
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            '使用 $usageCount 次',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.grey[600],
                                             ),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                                vertical: 2,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: providerColor.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                              child: Text(
-                                                provider.name,
-                                                style: TextStyle(
-                                                  color: providerColor,
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                                vertical: 2,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.grey[100],
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                              child: Text(
-                                                _providerSourceLabel(provider),
-                                                style: TextStyle(
-                                                  color: Colors.grey[700],
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ),
-                                            Text(
-                                              '${agent.createdAt.year}-${agent.createdAt.month}-${agent.createdAt.day}',
-                                              style: TextStyle(
-                                                color: Colors.grey[400],
-                                                fontSize: 10,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
+                                          ),
                                         ),
-                                      ],
-                                    ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 8),
-                                  PopupMenuButton<String>(
-                                    tooltip: '更多操作',
-                                    onSelected: (value) async {
-                                      if (value == 'chat') {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => ChatPage(agent: agent),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    agent.description,
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 12,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 6,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: agentColor.withOpacity(0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          agent.modelName,
+                                          style: TextStyle(
+                                            color: agentColor,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
                                           ),
-                                        );
-                                        return;
-                                      }
-                                      if (value == 'generate') {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => ContentGenerationPage(agent: agent),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: providerColor.withOpacity(0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          provider.name,
+                                          style: TextStyle(
+                                            color: providerColor,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
                                           ),
-                                        );
-                                        return;
-                                      }
-                                      if (value == 'more') {
-                                        _showAgentOptions(agent);
-                                      }
-                                    },
-                                    itemBuilder: (_) => const [
-                                      PopupMenuItem<String>(
-                                        value: 'chat',
-                                        child: Text('进入聊天'),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
-                                      PopupMenuItem<String>(
-                                        value: 'generate',
-                                        child: Text('内容生成'),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[100],
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          _providerSourceLabel(provider),
+                                          style: TextStyle(
+                                            color: Colors.grey[700],
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
                                       ),
-                                      PopupMenuItem<String>(
-                                        value: 'more',
-                                        child: Text('更多操作'),
+                                      Text(
+                                        '${agent.createdAt.year}-${agent.createdAt.month}-${agent.createdAt.day}',
+                                        style: TextStyle(
+                                          color: Colors.grey[400],
+                                          fontSize: 10,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
-                                    child: const Icon(
-                                      Icons.more_horiz_rounded,
-                                      color: Colors.grey,
-                                      size: 18,
-                                    ),
                                   ),
                                 ],
                               ),
                             ),
-                          ),
+                            const SizedBox(width: 8),
+                            PopupMenuButton<String>(
+                              tooltip: '更多操作',
+                              onSelected: (value) async {
+                                if (value == 'chat') {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          ChatPage(agent: agent),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (value == 'generate') {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          ContentGenerationPage(agent: agent),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (value == 'more') {
+                                  _showAgentOptions(agent);
+                                }
+                              },
+                              itemBuilder: (_) => const [
+                                PopupMenuItem<String>(
+                                  value: 'chat',
+                                  child: Text('进入聊天'),
+                                ),
+                                PopupMenuItem<String>(
+                                  value: 'generate',
+                                  child: Text('内容生成'),
+                                ),
+                                PopupMenuItem<String>(
+                                  value: 'more',
+                                  child: Text('更多操作'),
+                                ),
+                              ],
+                              child: const Icon(
+                                Icons.more_horiz_rounded,
+                                color: Colors.grey,
+                                size: 18,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 ),
+              );
+            },
+          ),
       ],
     );
   }
@@ -1538,7 +1598,10 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                                     gradient: LinearGradient(
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
-                                      colors: [cardColor, cardColor.withOpacity(0.7)],
+                                      colors: [
+                                        cardColor,
+                                        cardColor.withOpacity(0.7)
+                                      ],
                                     ),
                                     shape: BoxShape.circle,
                                     boxShadow: [
@@ -1560,7 +1623,8 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Row(
@@ -1581,8 +1645,10 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                                           ),
                                           if (alreadyAdded)
                                             Container(
-                                              margin: const EdgeInsets.only(left: 8),
-                                              padding: const EdgeInsets.symmetric(
+                                              margin: const EdgeInsets.only(
+                                                  left: 8),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
                                                 horizontal: 6,
                                                 vertical: 2,
                                               ),
@@ -1758,7 +1824,8 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                       onChanged: (value) async {
                         if (value == null) return;
                         setState(() => _selectedSquareProviderId = value);
-                        await AiProviderService().saveLastSelectedProfileId(value);
+                        await AiProviderService()
+                            .saveLastSelectedProfileId(value);
                         await _loadSquareModels();
                       },
                     ),
@@ -1783,7 +1850,8 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                       _brandPrimary,
                     ),
                     _squareMetaChip('来源：$sourceLabel', Colors.blueGrey),
-                    _squareMetaChip('模型数：${_squareModels.length}', _brandSecondary),
+                    _squareMetaChip(
+                        '模型数：${_squareModels.length}', _brandSecondary),
                   ],
                 ),
               ),
@@ -1812,7 +1880,7 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
       ),
     );
   }
-  
+
   // 模型分类
   Map<String, List<String>> _categorizeModels(List<String> models) {
     final categories = <String, List<String>>{
@@ -1821,25 +1889,31 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
       '创意模型': [],
       '其他模型': [],
     };
-    
+
     for (final model in models) {
-      if (model.contains('llama') || model.contains('gemma') || model.contains('mistral')) {
+      if (model.contains('llama') ||
+          model.contains('gemma') ||
+          model.contains('mistral')) {
         categories['通用模型']!.add(model);
-      } else if (model.contains('code') || model.contains('math') || model.contains('scientific')) {
+      } else if (model.contains('code') ||
+          model.contains('math') ||
+          model.contains('scientific')) {
         categories['专业模型']!.add(model);
-      } else if (model.contains('creative') || model.contains('art') || model.contains('writing')) {
+      } else if (model.contains('creative') ||
+          model.contains('art') ||
+          model.contains('writing')) {
         categories['创意模型']!.add(model);
       } else {
         categories['其他模型']!.add(model);
       }
     }
-    
+
     // 移除空分类
     categories.removeWhere((key, value) => value.isEmpty);
-    
+
     return categories;
   }
-  
+
   // 获取模型描述
   String _getModelDescription(String model) {
     if (model.contains('llama')) {
@@ -1856,7 +1930,7 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
       return '通用AI模型，可用于多种任务';
     }
   }
-  
+
   // 获取模型大小
   String _getModelSize(String model) {
     if (model.contains('7b') || model.contains('8b')) {
@@ -1890,9 +1964,7 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
 
     // 后端统一模式下直接用模型构建会话入口，不强依赖本地入库。
     final agent = AiAgent(
-      id: provider.isBuiltinBackend
-          ? modelName
-          : '${provider.id}::$modelName',
+      id: provider.isBuiltinBackend ? modelName : '${provider.id}::$modelName',
       name: modelName,
       description: '基于 $modelName 的对话',
       systemPrompt: AiPromptDefaults.defaultAgentSystemPrompt,
@@ -1914,9 +1986,7 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
     if (mounted) {
       MoeToast.success(
         context,
-        provider.isBuiltinBackend
-            ? '已使用服务器模型创建会话'
-            : '已使用自定义 Provider 创建智能体',
+        provider.isBuiltinBackend ? '已使用服务器模型创建会话' : '已使用自定义 Provider 创建智能体',
       );
       Navigator.push(
         context,
@@ -2084,9 +2154,11 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                       color: const Color(0xFF7F7FD5).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.edit_rounded, color: Color(0xFF7F7FD5)),
+                    child: const Icon(Icons.edit_rounded,
+                        color: Color(0xFF7F7FD5)),
                   ),
-                  title: const Text('编辑智能体', style: TextStyle(fontWeight: FontWeight.bold)),
+                  title: const Text('编辑智能体',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   onTap: () async {
                     Navigator.pop(context);
                     HapticFeedback.lightImpact();
@@ -2110,14 +2182,41 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                     ),
                     child: const Icon(Icons.create_rounded, color: Colors.blue),
                   ),
-                  title: const Text('内容生成', style: TextStyle(fontWeight: FontWeight.bold)),
+                  title: const Text('内容生成',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   onTap: () {
                     Navigator.pop(context);
                     HapticFeedback.lightImpact();
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ContentGenerationPage(agent: agent),
+                        builder: (context) =>
+                            ContentGenerationPage(agent: agent),
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF5B8DEF).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.psychology_rounded,
+                      color: Color(0xFF5B8DEF),
+                    ),
+                  ),
+                  title: const Text('记忆库',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    HapticFeedback.lightImpact();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MemoryManagerPage(agent: agent),
                       ),
                     );
                   },
@@ -2151,42 +2250,51 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                       color: Colors.redAccent.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                    child: const Icon(Icons.delete_outline_rounded,
+                        color: Colors.redAccent),
                   ),
-                  title: const Text('删除智能体', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  title: const Text('删除智能体',
+                      style: TextStyle(
+                          color: Colors.redAccent,
+                          fontWeight: FontWeight.bold)),
                   onTap: () async {
                     Navigator.pop(context);
                     HapticFeedback.lightImpact();
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (context) => AlertDialog(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
                         title: const Text('确认删除'),
-                        content: Text('确定要删除智能体 "${agent.name}" 吗？所有相关聊天记录也将被删除。'),
+                        content:
+                            Text('确定要删除智能体 "${agent.name}" 吗？所有相关聊天记录也将被删除。'),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context, false),
-                            child: const Text('取消', style: TextStyle(color: Colors.grey)),
+                            child: const Text('取消',
+                                style: TextStyle(color: Colors.grey)),
                           ),
                           TextButton(
                             onPressed: () => Navigator.pop(context, true),
-                            child: const Text('删除', style: TextStyle(color: Colors.redAccent)),
+                            child: const Text('删除',
+                                style: TextStyle(color: Colors.redAccent)),
                           ),
                         ],
                       ),
                     );
                     if (confirm == true) {
-                      final isBackendAgent =
-                          (agent.providerProfileId == null ||
-                              agent.providerProfileId ==
-                                  AiProviderProfile.builtinBackendId);
+                      final isBackendAgent = (agent.providerProfileId == null ||
+                          agent.providerProfileId ==
+                              AiProviderProfile.builtinBackendId);
                       if (isBackendAgent) {
                         try {
-                          final uri = Uri.parse('${ApiService.baseUrl}/api/llm/models/delete');
+                          final uri = Uri.parse(
+                              '${ApiService.baseUrl}/api/llm/models/delete');
                           ApiService.logDirectHttp('POST', uri);
                           final response = await http.post(
                             uri,
-                            headers: ApiService.mergeTunnelHeaders(uri, headers: {
+                            headers:
+                                ApiService.mergeTunnelHeaders(uri, headers: {
                               'Content-Type': 'application/json',
                               if (ApiService.token case final t?)
                                 'Authorization': 'Bearer $t',
@@ -2196,7 +2304,8 @@ class _AgentListPageState extends State<AgentListPage> with SingleTickerProvider
                           if (response.statusCode != 200) {
                             throw Exception('删除失败(${response.statusCode})');
                           }
-                          final data = jsonDecode(utf8.decode(response.bodyBytes));
+                          final data =
+                              jsonDecode(utf8.decode(response.bodyBytes));
                           if (data is Map && data['success'] == false) {
                             throw Exception(data['message'] ?? '删除失败');
                           }
