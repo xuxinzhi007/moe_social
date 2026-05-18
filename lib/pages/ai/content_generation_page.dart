@@ -6,10 +6,12 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../../services/api_service.dart';
+import '../../services/ai_chat_gateway_service.dart';
 import '../../services/llm_endpoint_config.dart';
 import '../../services/llm_response_parser.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_chat_message.dart';
+import '../../models/ai_provider_profile.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/ai/message_bubble.dart';
 
@@ -46,6 +48,13 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
   // Image picker
   final ImagePicker _picker = ImagePicker();
   XFile? _selectedImage;
+
+  bool get _isBackendProviderAgent =>
+      widget.agent.providerProfileId == null ||
+      widget.agent.providerProfileId == AiProviderProfile.builtinBackendId;
+
+  String get _providerSourceLabel =>
+      _isBackendProviderAgent ? '服务器 Ollama' : '我的 API';
 
   @override
   void initState() {
@@ -138,15 +147,6 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
   }
 
   Future<String> _callContentGenerationAPI(String prompt, ContentType contentType) async {
-    final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
-    final uri = await LlmEndpointConfig.chatUri();
-    ApiService.logDirectHttp('POST', uri);
-    final token = ApiService.token;
-    final headers = ApiService.mergeTunnelHeaders(uri, headers: {
-      'Content-Type': 'application/json',
-      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-    });
-
     // 构建系统提示词
     String systemPrompt = '';
     switch (contentType) {
@@ -173,34 +173,13 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
         break;
     }
 
-    final response = await http
-        .post(
-          uri,
-          headers: headers,
-          body: jsonEncode({
-            'model': widget.agent.modelName,
-            'messages': [
-              {'role': 'system', 'content': systemPrompt},
-              {'role': 'user', 'content': prompt},
-            ],
-            // 统一要求非流式，避免 Web/Flutter 端把 NDJSON 当单个 JSON 解析时报错
-            'stream': false,
-          }),
-        )
-        .timeout(const Duration(seconds: 180));
-
-    if (response.statusCode == 200) {
-      final decodedBody = utf8.decode(response.bodyBytes).trim();
-      final data = LlmResponseParser.decodeJsonOrNdjson(decodedBody);
-      final content = LlmResponseParser.extractChatContent(
-        data,
-        terminalMode: terminalMode,
-      );
-      if (content.isNotEmpty) return content;
-      throw Exception('响应格式异常');
-    } else {
-      throw Exception('请求失败 (${response.statusCode})');
-    }
+    return AiChatGatewayService().sendChat(
+      agent: widget.agent,
+      messages: [
+        {'role': 'system', 'content': systemPrompt},
+        {'role': 'user', 'content': prompt},
+      ],
+    );
   }
 
   Future<void> _pickImage() async {
@@ -491,7 +470,7 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
               style: const TextStyle(fontSize: 16),
             ),
             Text(
-              widget.agent.name,
+              '${widget.agent.name} · $_providerSourceLabel',
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
@@ -543,6 +522,7 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
                                       Text(widget.agent.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                                       if (widget.agent.description.isNotEmpty)
                                         Text(widget.agent.description, style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                                      Text('来源：$_providerSourceLabel', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                                       Text('模型：${widget.agent.modelName}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                                     ],
                                   ),

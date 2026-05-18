@@ -5,6 +5,7 @@ go 1.25.5
 require (
 	github.com/AgoraIO-Community/go-tokenbuilder v1.3.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
+	github.com/google/pprof v0.0.0-20210720184732-4bb14d4b1be1
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/spf13/viper v1.21.0

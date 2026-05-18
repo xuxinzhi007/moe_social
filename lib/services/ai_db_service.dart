@@ -9,6 +9,9 @@ import '../models/ai_chat_message.dart';
 import '../models/ai_memory.dart';
 import '../models/ai_memory_profile.dart';
 import '../models/ai_memory_settings.dart';
+import '../models/ai_lorebook.dart';
+import '../models/ai_lorebook_entry.dart';
+import '../models/ai_provider_profile.dart';
 
 class AiDbService {
   static final AiDbService _instance = AiDbService._internal();
@@ -32,7 +35,7 @@ class AiDbService {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 6,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -69,9 +72,61 @@ class AiDbService {
         system_prompt TEXT,
         model_name TEXT,
         avatar_path TEXT,
+        provider_profile_id TEXT,
+        lorebook_id TEXT,
+        persona TEXT DEFAULT '',
+        scenario TEXT DEFAULT '',
+        opening_message TEXT DEFAULT '',
+        example_dialogues TEXT DEFAULT '',
         created_at INTEGER
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE provider_profiles(
+        id TEXT PRIMARY KEY,
+        name TEXT,
+        provider_type TEXT,
+        base_url TEXT,
+        default_model TEXT,
+        manual_models_json TEXT,
+        use_server_memory INTEGER DEFAULT 0,
+        supports_system_messages INTEGER DEFAULT 1,
+        supports_streaming INTEGER DEFAULT 1,
+        supports_vision INTEGER DEFAULT 0,
+        supports_tool_calls INTEGER DEFAULT 0,
+        created_at INTEGER,
+        updated_at INTEGER
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE lorebooks(
+        id TEXT PRIMARY KEY,
+        name TEXT,
+        description TEXT DEFAULT '',
+        created_at INTEGER,
+        updated_at INTEGER
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE lorebook_entries(
+        id TEXT PRIMARY KEY,
+        lorebook_id TEXT NOT NULL,
+        title TEXT,
+        content TEXT,
+        keywords_json TEXT DEFAULT '[]',
+        enabled INTEGER DEFAULT 1,
+        always_enabled INTEGER DEFAULT 0,
+        priority INTEGER DEFAULT 50,
+        created_at INTEGER,
+        updated_at INTEGER
+      )
+    ''');
+
+    await db.execute(
+        'CREATE INDEX idx_lorebook_entries_lorebook ON lorebook_entries(lorebook_id, priority DESC, updated_at DESC)');
 
     await db.execute('''
       CREATE TABLE sessions(
@@ -195,6 +250,127 @@ class AiDbService {
         )
       ''');
     }
+    if (oldVersion < 4) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS provider_profiles(
+          id TEXT PRIMARY KEY,
+          name TEXT,
+          provider_type TEXT,
+          base_url TEXT,
+          default_model TEXT,
+          manual_models_json TEXT,
+          use_server_memory INTEGER DEFAULT 0,
+          supports_system_messages INTEGER DEFAULT 1,
+          supports_streaming INTEGER DEFAULT 1,
+          supports_vision INTEGER DEFAULT 0,
+          supports_tool_calls INTEGER DEFAULT 0,
+          created_at INTEGER,
+          updated_at INTEGER
+        )
+      ''');
+      await _ensureColumn(
+        db,
+        table: 'agents',
+        column: 'provider_profile_id',
+        definition: 'TEXT',
+      );
+      await _ensureColumn(
+        db,
+        table: 'agents',
+        column: 'persona',
+        definition: "TEXT DEFAULT ''",
+      );
+      await _ensureColumn(
+        db,
+        table: 'agents',
+        column: 'scenario',
+        definition: "TEXT DEFAULT ''",
+      );
+      await _ensureColumn(
+        db,
+        table: 'agents',
+        column: 'opening_message',
+        definition: "TEXT DEFAULT ''",
+      );
+      await _ensureColumn(
+        db,
+        table: 'agents',
+        column: 'example_dialogues',
+        definition: "TEXT DEFAULT ''",
+      );
+    }
+    if (oldVersion < 5) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS lorebooks(
+          id TEXT PRIMARY KEY,
+          name TEXT,
+          description TEXT DEFAULT '',
+          created_at INTEGER,
+          updated_at INTEGER
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS lorebook_entries(
+          id TEXT PRIMARY KEY,
+          lorebook_id TEXT NOT NULL,
+          title TEXT,
+          content TEXT,
+          keywords_json TEXT DEFAULT '[]',
+          enabled INTEGER DEFAULT 1,
+          always_enabled INTEGER DEFAULT 0,
+          priority INTEGER DEFAULT 50,
+          created_at INTEGER,
+          updated_at INTEGER
+        )
+      ''');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_lorebook_entries_lorebook ON lorebook_entries(lorebook_id, priority DESC, updated_at DESC)');
+      await _ensureColumn(
+        db,
+        table: 'agents',
+        column: 'lorebook_id',
+        definition: 'TEXT',
+      );
+    }
+    if (oldVersion < 6) {
+      await _ensureColumn(
+        db,
+        table: 'provider_profiles',
+        column: 'supports_system_messages',
+        definition: 'INTEGER DEFAULT 1',
+      );
+      await _ensureColumn(
+        db,
+        table: 'provider_profiles',
+        column: 'supports_streaming',
+        definition: 'INTEGER DEFAULT 1',
+      );
+      await _ensureColumn(
+        db,
+        table: 'provider_profiles',
+        column: 'supports_vision',
+        definition: 'INTEGER DEFAULT 0',
+      );
+      await _ensureColumn(
+        db,
+        table: 'provider_profiles',
+        column: 'supports_tool_calls',
+        definition: 'INTEGER DEFAULT 0',
+      );
+    }
+  }
+
+  Future<void> _ensureColumn(
+    Database db, {
+    required String table,
+    required String column,
+    required String definition,
+  }) async {
+    final info = await db.rawQuery('PRAGMA table_info($table)');
+    final exists = info.any((row) => row['name'] == column);
+    if (!exists) {
+      await db.execute('ALTER TABLE $table ADD COLUMN $column $definition');
+    }
   }
 
   // ─── Agent Operations ────────────────────────────────────────────────────
@@ -233,6 +409,155 @@ class AiDbService {
     await db.delete('memories', where: 'agent_id = ?', whereArgs: [id]);
     await db.delete('memory_profiles', where: 'agent_id = ?', whereArgs: [id]);
     await db.delete('memory_settings', where: 'agent_id = ?', whereArgs: [id]);
+  }
+
+  // ─── Provider Operations ────────────────────────────────────────────────
+
+  Future<List<AiProviderProfile>> getProviderProfiles() async {
+    final db = await database;
+    final maps = await db.query(
+      'provider_profiles',
+      orderBy: 'updated_at DESC, created_at DESC',
+    );
+    return maps.map(AiProviderProfile.fromMap).toList();
+  }
+
+  Future<void> insertProviderProfile(AiProviderProfile profile) async {
+    final db = await database;
+    await db.insert(
+      'provider_profiles',
+      profile.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> updateProviderProfile(AiProviderProfile profile) async {
+    final db = await database;
+    await db.update(
+      'provider_profiles',
+      profile.toMap(),
+      where: 'id = ?',
+      whereArgs: [profile.id],
+    );
+  }
+
+  Future<void> deleteProviderProfile(String id) async {
+    final db = await database;
+    await db.delete('provider_profiles', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ─── Lorebook Operations ────────────────────────────────────────────────
+
+  Future<List<AiLorebook>> getLorebooks() async {
+    final db = await database;
+    final maps = await db.query(
+      'lorebooks',
+      orderBy: 'updated_at DESC, created_at DESC',
+    );
+    return maps.map(AiLorebook.fromMap).toList();
+  }
+
+  Future<AiLorebook?> getLorebook(String id) async {
+    final db = await database;
+    final maps = await db.query(
+      'lorebooks',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return AiLorebook.fromMap(maps.first);
+  }
+
+  Future<void> insertLorebook(AiLorebook lorebook) async {
+    final db = await database;
+    await db.insert(
+      'lorebooks',
+      lorebook.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> updateLorebook(AiLorebook lorebook) async {
+    final db = await database;
+    await db.update(
+      'lorebooks',
+      lorebook.toMap(),
+      where: 'id = ?',
+      whereArgs: [lorebook.id],
+    );
+  }
+
+  Future<void> deleteLorebook(String id) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete(
+        'lorebook_entries',
+        where: 'lorebook_id = ?',
+        whereArgs: [id],
+      );
+      await txn.rawUpdate(
+        'UPDATE agents SET lorebook_id = NULL WHERE lorebook_id = ?',
+        [id],
+      );
+      await txn.delete('lorebooks', where: 'id = ?', whereArgs: [id]);
+    });
+  }
+
+  Future<List<AiLorebookEntry>> getLorebookEntries(String lorebookId) async {
+    final db = await database;
+    final maps = await db.query(
+      'lorebook_entries',
+      where: 'lorebook_id = ?',
+      whereArgs: [lorebookId],
+      orderBy: 'priority DESC, updated_at DESC',
+    );
+    return maps.map(AiLorebookEntry.fromMap).toList();
+  }
+
+  Future<void> insertLorebookEntry(AiLorebookEntry entry) async {
+    final db = await database;
+    await db.insert(
+      'lorebook_entries',
+      entry.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> updateLorebookEntry(AiLorebookEntry entry) async {
+    final db = await database;
+    await db.update(
+      'lorebook_entries',
+      entry.toMap(),
+      where: 'id = ?',
+      whereArgs: [entry.id],
+    );
+  }
+
+  Future<void> replaceLorebookEntries(
+    String lorebookId,
+    List<AiLorebookEntry> entries,
+  ) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete(
+        'lorebook_entries',
+        where: 'lorebook_id = ?',
+        whereArgs: [lorebookId],
+      );
+      for (final entry in entries) {
+        await txn.insert(
+          'lorebook_entries',
+          entry.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
+  }
+
+  Future<void> deleteLorebookEntry(String id) async {
+    final db = await database;
+    await db.delete('lorebook_entries', where: 'id = ?', whereArgs: [id]);
   }
 
   // ─── Session Operations ──────────────────────────────────────────────────

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Moe RPC 性能监控</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --primary: #7f7fd5;
+      --primary2: #86a8e7;
+      --mint: #91eae4;
+      --orange: #ffb347;
+      --text: rgba(0, 0, 0, 0.87);
+      --muted: #888;
+      --danger: #e57373;
+      --ok: #66bb6a;
+      --shadow: 0 8px 24px rgba(127, 127, 213, 0.12);
+      --radius: 20px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      color: #fff;
+      padding: 24px 20px 28px;
+      box-shadow: var(--shadow);
+    }
+    header h1 { margin: 0 0 6px; font-size: 1.5rem; font-weight: 700; }
+    header p { margin: 0; opacity: 0.9; font-size: 0.9rem; }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-top: 16px;
+    }
+    .toolbar label { font-size: 0.85rem; opacity: 0.95; }
+    .toolbar input[type="text"] {
+      flex: 1;
+      min-width: 200px;
+      border: none;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+    }
+    .toolbar button, .chip-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      background: rgba(255,255,255,0.25);
+      color: #fff;
+      transition: background 0.2s;
+    }
+    .toolbar button:hover { background: rgba(255,255,255,0.4); }
+    .toolbar button.primary { background: #fff; color: var(--primary); font-weight: 600; }
+    main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 48px; }
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      font-size: 0.9rem;
+    }
+    .dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--muted);
+    }
+    .dot.ok { background: var(--ok); }
+    .dot.err { background: var(--danger); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .card h2 {
+      margin: 0 0 14px;
+      font-size: 1rem;
+      color: var(--primary);
+    }
+    .metric .label { font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+    .metric .value { font-size: 1.6rem; font-weight: 700; color: var(--primary); }
+    .metric .sub { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+    .bar-row { margin-bottom: 10px; }
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      margin-bottom: 4px;
+      gap: 8px;
+    }
+    .bar-label span:first-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 75%;
+    }
+    .bar-track {
+      height: 8px;
+      background: #eef1f6;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--primary), var(--mint));
+      transition: width 0.4s ease;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px 6px;
+      border-bottom: 1px solid #f0f2f5;
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; }
+    td.fn { word-break: break-all; font-family: ui-monospace, monospace; font-size: 0.78rem; }
+    .hint {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+    .commands {
+      background: #1e1e2e;
+      color: #e0e0e0;
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-family: ui-monospace, monospace;
+      font-size: 0.78rem;
+      line-height: 1.7;
+      overflow-x: auto;
+    }
+    .commands code { color: var(--mint); }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    @media (min-width: 800px) {
+      .two-col { grid-template-columns: 1fr 1fr; }
+    }
+    .empty { color: var(--muted); font-size: 0.9rem; padding: 12px 0; }
+    .alert {
+      background: #fff3e0;
+      border-left: 4px solid var(--orange);
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .sparkline {
+      height: 48px;
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      margin-top: 8px;
+    }
+    .sparkline div {
+      flex: 1;
+      background: linear-gradient(180deg, var(--primary2), var(--primary));
+      border-radius: 4px 4px 0 0;
+      min-height: 4px;
+      opacity: 0.85;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Moe RPC 性能监控</h1>
+    <p>可读指标 + 热点函数，不再直接看 pprof 二进制/原始堆转储</p>
+    <div class="toolbar">
+      <label for="baseUrl">监控地址</label>
+      <input id="baseUrl" type="text" value="http://127.0.0.1:6060" spellcheck="false" />
+      <button type="button" class="primary" id="btnRefresh">立即刷新</button>
+      <button type="button" id="btnAuto">自动刷新: 开</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="alert" id="setupHint">
+      使用前请先启动 RPC：<code>cd backend/rpc && go run super.go</code>。
+      然后用浏览器打开本文件（或通过本地静态服务访问）。
+    </div>
+
+    <div class="status-bar">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">等待连接…</span>
+      <span style="margin-left:auto;color:var(--muted)" id="lastUpdate"></span>
+    </div>
+
+    <section class="grid" id="metricsGrid"></section>
+
+    <div class="card" style="margin-bottom:16px">
+      <h2>堆内存趋势（最近采样）</h2>
+      <div class="sparkline" id="heapSpark"></div>
+      <p class="hint">曲线持续上升且 GC 后仍不降，可能存在内存泄漏。</p>
+    </div>
+
+    <div class="two-col">
+      <section class="card">
+        <h2>内存占用 Top（按函数）</h2>
+        <div id="heapTop"></div>
+        <p class="hint" id="heapHint"></p>
+      </section>
+      <section class="card">
+        <h2>Goroutine 概况</h2>
+        <div id="goroutineBox"></div>
+        <p class="hint" id="goroutineHint"></p>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:16px">
+      <h2>深度分析（终端命令）</h2>
+      <p class="hint">下面命令在「已启动 RPC」的机器上执行，会打开交互式火焰图/调用图：</p>
+      <pre class="commands" id="cmdBlock"></pre>
+    </section>
+  </main>
+
+  <script>
+    const history = { heap: [], maxPoints: 24 };
+    let autoTimer = null;
+    let autoOn = true;
+
+    const $ = (id) => document.getElementById(id);
+
+    function base() {
+      return $('baseUrl').value.replace(/\/$/, '');
+    }
+
+    async function fetchJSON(path) {
+      const res = await fetch(`${base()}${path}`);
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      return res.json();
+    }
+
+    function setStatus(ok, msg) {
+      $('statusDot').className = 'dot ' + (ok ? 'ok' : 'err');
+      $('statusText').textContent = msg;
+    }
+
+    function fmtMB(n) {
+      return (typeof n === 'number' ? n : 0).toFixed(2) + ' MB';
+    }
+
+    function renderMetrics(live) {
+      const m = live.memory || {};
+      const g = live.gc || {};
+      const items = [
+        { label: '当前分配', value: fmtMB(m.alloc_mb), sub: 'Alloc' },
+        { label: '堆在用', value: fmtMB(m.heap_inuse_mb), sub: 'HeapInuse' },
+        { label: '堆已申请', value: fmtMB(m.heap_sys_mb), sub: 'HeapSys' },
+        { label: '系统总占用', value: fmtMB(m.sys_mb), sub: 'Sys' },
+        { label: 'Goroutines', value: String(live.goroutines ?? '-'), sub: '并发协程数' },
+        { label: 'GC 次数', value: String(g.num_gc ?? 0), sub: '累计' },
+        { label: 'GC 总暂停', value: (g.pause_total_ms ?? 0).toFixed(1) + ' ms', sub: 'PauseTotal' },
+        { label: 'GC CPU 占比', value: ((g.gc_cpu_fraction ?? 0) * 100).toFixed(2) + '%', sub: 'GCCPUFraction' },
+      ];
+      $('metricsGrid').innerHTML = items.map((it) => `
+        <div class="card metric">
+          <div class="label">${it.label}</div>
+          <div class="value">${it.value}</div>
+          <div class="sub">${it.sub}</div>
+        </div>
+      `).join('');
+
+      history.heap.push(m.heap_inuse_mb || 0);
+      if (history.heap.length > history.maxPoints) history.heap.shift();
+      const max = Math.max(...history.heap, 1);
+      $('heapSpark').innerHTML = history.heap.map((v) =>
+        `<div style="height:${Math.max(8, (v / max) * 100)}%"></div>`
+      ).join('');
+    }
+
+    function renderHeapTop(data) {
+      const top = data.top || [];
+      if (!top.length) {
+        $('heapTop').innerHTML = '<p class="empty">暂无堆样本（服务刚启动时可能为空）</p>';
+        return;
+      }
+      const max = Math.max(...top.map((x) => x.inuse_mb), 0.01);
+      $('heapTop').innerHTML = top.map((row) => `
+        <div class="bar-row">
+          <div class="bar-label">
+            <span title="${row.function}">${row.function}</span>
+            <span>${row.inuse_mb.toFixed(2)} MB</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${(row.inuse_mb / max) * 100}%"></div>
+          </div>
+        </div>
+      `).join('');
+      $('heapHint').textContent = data.hint || '';
+    }
+
+    function renderGoroutine(data) {
+      const n = data.goroutines ?? 0;
+      let html = `<div class="metric" style="margin-bottom:12px">
+        <div class="label">当前 Goroutine 数量</div>
+        <div class="value">${n}</div>
+      </div>`;
+      const samples = data.sample_top || [];
+      if (samples.length) {
+        html += '<table><thead><tr><th>数量</th><th>代表性调用栈</th></tr></thead><tbody>';
+        html += samples.map((s) =>
+          `<tr><td>${s.count}</td><td class="fn">${escapeHtml(s.stack)}</td></tr>`
+        ).join('');
+        html += '</tbody></table>';
+      }
+      $('goroutineBox').innerHTML = html;
+      $('goroutineHint').textContent = data.hint || '';
+    }
+
+    function renderCommands() {
+      const b = base();
+      $('cmdBlock').innerHTML = [
+        '# 堆内存火焰图（浏览器）',
+        `go tool pprof -http=:8081 ${b}/debug/pprof/heap`,
+        '',
+        '# CPU 采样 30 秒',
+        `go tool pprof -http=:8082 ${b}/debug/pprof/profile?seconds=30`,
+        '',
+        '# Goroutine 泄漏排查',
+        `go tool pprof -http=:8083 ${b}/debug/pprof/goroutine`,
+      ].map((line) => line.startsWith('#') ? line : `<code>${line}</code>`).join('\n');
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    async function refresh() {
+      try {
+        const [live, heap, gr] = await Promise.all([
+          fetchJSON('/debug/live'),
+          fetchJSON('/debug/heap-top?limit=12'),
+          fetchJSON('/debug/goroutine-summary'),
+        ]);
+        renderMetrics(live);
+        renderHeapTop(heap);
+        renderGoroutine(gr);
+        renderCommands();
+        setStatus(true, '已连接 · ' + (live.timestamp || ''));
+        $('lastUpdate').textContent = '更新于 ' + new Date().toLocaleTimeString();
+        $('setupHint').style.display = 'none';
+      } catch (e) {
+        setStatus(false, '无法连接监控服务');
+        $('lastUpdate').textContent = '';
+        $('setupHint').style.display = 'block';
+        $('setupHint').innerHTML =
+          '连接失败：' + escapeHtml(e.message) +
+          '。请确认 <code>go run super.go</code> 已启动，且地址为 <code>http://127.0.0.1:6060</code>。';
+      }
+    }
+
+    function scheduleAuto() {
+      if (autoTimer) clearInterval(autoTimer);
+      if (autoOn) autoTimer = setInterval(refresh, 3000);
+    }
+
+    $('btnRefresh').addEventListener('click', refresh);
+    $('btnAuto').addEventListener('click', () => {
+      autoOn = !autoOn;
+      $('btnAuto').textContent = '自动刷新: ' + (autoOn ? '开' : '关');
+      scheduleAuto();
+    });
+    $('baseUrl').addEventListener('change', () => {
+      history.heap = [];
+      refresh();
+    });
+
+    renderCommands();
+    refresh();
+    scheduleAuto();
+  </script>
+</body>
+</html>

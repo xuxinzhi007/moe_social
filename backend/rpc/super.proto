@@ -724,6 +724,59 @@ message SubmitUserMemoryFeedbackResp {
   UserMemory memory = 1;
 }
 
+message AiJsonResourceItem {
+  string id = 1;
+  string payload_json = 2;
+}
+
+message ListAiResourceReq {
+  string user_id = 1;
+}
+
+message ListAiResourceResp {
+  repeated AiJsonResourceItem items = 1;
+}
+
+message UpsertAiResourceReq {
+  string user_id = 1;
+  string id = 2;
+  string payload_json = 3;
+}
+
+message UpsertAiResourceResp {
+  AiJsonResourceItem item = 1;
+}
+
+message DeleteAiResourceReq {
+  string user_id = 1;
+  string id = 2;
+}
+
+message DeleteAiResourceResp {
+  bool ok = 1;
+}
+
+message GetAiUserConfigReq {
+  string user_id = 1;
+}
+
+message GetAiUserConfigResp {
+  string user_persona = 1;
+  string preferences_json = 2;
+}
+
+message UpsertAiUserConfigReq {
+  string user_id = 1;
+  string user_persona = 2;
+  bool has_user_persona = 3;
+  string preferences_json = 4;
+}
+
+message UpsertAiUserConfigResp {
+  string user_persona = 1;
+  string preferences_json = 2;
+}
+
 // 好友申请（同意后互相关注）
 message FriendRequestView {
   string id = 1;
@@ -814,6 +867,17 @@ service Super {
   rpc GetUserMemoryProfiles(GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp);
   rpc DeleteUserMemory(DeleteUserMemoryReq) returns (DeleteUserMemoryResp);
   rpc SubmitUserMemoryFeedback(SubmitUserMemoryFeedbackReq) returns (SubmitUserMemoryFeedbackResp);
+  rpc ListAiProviders(ListAiResourceReq) returns (ListAiResourceResp);
+  rpc UpsertAiProvider(UpsertAiResourceReq) returns (UpsertAiResourceResp);
+  rpc DeleteAiProvider(DeleteAiResourceReq) returns (DeleteAiResourceResp);
+  rpc ListAiAgents(ListAiResourceReq) returns (ListAiResourceResp);
+  rpc UpsertAiAgent(UpsertAiResourceReq) returns (UpsertAiResourceResp);
+  rpc DeleteAiAgent(DeleteAiResourceReq) returns (DeleteAiResourceResp);
+  rpc ListAiLorebooks(ListAiResourceReq) returns (ListAiResourceResp);
+  rpc UpsertAiLorebook(UpsertAiResourceReq) returns (UpsertAiResourceResp);
+  rpc DeleteAiLorebook(DeleteAiResourceReq) returns (DeleteAiResourceResp);
+  rpc GetAiUserConfig(GetAiUserConfigReq) returns (GetAiUserConfigResp);
+  rpc UpsertAiUserConfig(UpsertAiUserConfigReq) returns (UpsertAiUserConfigResp);
   
   // VIP套餐相关服务
   rpc GetVipPlans(GetVipPlansReq) returns (GetVipPlansResp);

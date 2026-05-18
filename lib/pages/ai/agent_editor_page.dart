@@ -1,14 +1,21 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../../models/ai_agent.dart';
+import '../../models/ai_lorebook.dart';
+import '../../models/ai_provider_profile.dart';
 import '../../services/ai_db_service.dart';
+import '../../services/ai_agent_cloud_service.dart';
+import '../../services/ai_chat_gateway_service.dart';
+import '../../services/ai_provider_service.dart';
+import '../../services/ai_starter_templates.dart';
 import '../../services/api_service.dart';
 import '../../services/ai_prompt_defaults.dart';
 import '../../services/llm_endpoint_config.dart';
 import '../../widgets/moe_toast.dart';
+import 'ai_lorebooks_page.dart';
+import 'ai_provider_profiles_page.dart';
 
 class AgentEditorPage extends StatefulWidget {
   final AiAgent? agent;
@@ -24,12 +31,35 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   late TextEditingController _nameController;
   late TextEditingController _descController;
   late TextEditingController _promptController;
-  String _modelName = 'llama3:8b'; // 使用更常见的默认模型
+  late TextEditingController _modelNameController;
+  late TextEditingController _personaController;
+  late TextEditingController _scenarioController;
+  late TextEditingController _openingMessageController;
+  late TextEditingController _exampleDialoguesController;
   List<String> _models = [];
+  List<AiProviderProfile> _providerProfiles = [
+    AiProviderProfile.builtinBackend(),
+  ];
+  List<AiLorebook> _lorebooks = [];
+  String _providerProfileId = AiProviderProfile.builtinBackendId;
+  String? _lorebookId;
   bool _isLoadingModels = false;
   bool _isSaving = false;
   bool _createRealModel = true;
   bool _syncModelOnEdit = true;
+
+  bool get _isTemplateDraft =>
+      (widget.agent?.id.startsWith('template_') ?? false);
+
+  AiProviderProfile? get _selectedProvider {
+    for (final item in _providerProfiles) {
+      if (item.id == _providerProfileId) return item;
+    }
+    return AiProviderProfile.builtinBackend();
+  }
+
+  bool get _selectedProviderIsBackend =>
+      (_selectedProvider ?? AiProviderProfile.builtinBackend()).isBackendOllama;
 
   @override
   void initState() {
@@ -43,13 +73,22 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     _promptController = TextEditingController(
       text: initialPrompt,
     );
+    _modelNameController = TextEditingController(
+      text: agent?.modelName ?? 'llama3:8b',
+    );
+    _personaController = TextEditingController(text: agent?.persona ?? '');
+    _scenarioController = TextEditingController(text: agent?.scenario ?? '');
+    _openingMessageController =
+        TextEditingController(text: agent?.openingMessage ?? '');
+    _exampleDialoguesController =
+        TextEditingController(text: agent?.exampleDialogues ?? '');
     if (agent != null) {
-      _modelName = agent.modelName;
-      if (agent.systemPrompt.trim().isEmpty) {
-        _refreshPromptFromBackend(agent.modelName);
-      }
+      _providerProfileId =
+          agent.providerProfileId ?? AiProviderProfile.builtinBackendId;
+      _lorebookId = agent.lorebookId;
     }
-    _loadModels();
+    _loadProviders();
+    _loadLorebooks();
   }
 
   @override
@@ -57,46 +96,134 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     _nameController.dispose();
     _descController.dispose();
     _promptController.dispose();
+    _modelNameController.dispose();
+    _personaController.dispose();
+    _scenarioController.dispose();
+    _openingMessageController.dispose();
+    _exampleDialoguesController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadProviders() async {
+    final profiles = await AiProviderService().listProfiles();
+    final lastSelected = await AiProviderService().readLastSelectedProfileId();
+    if (!mounted) return;
+    setState(() {
+      _providerProfiles = profiles;
+      if (widget.agent == null &&
+          lastSelected != null &&
+          profiles.any((item) => item.id == lastSelected)) {
+        _providerProfileId = lastSelected;
+      }
+      final exists = profiles.any((item) => item.id == _providerProfileId);
+      if (!exists) {
+        _providerProfileId = AiProviderProfile.builtinBackendId;
+      }
+    });
+    await _loadModels();
+  }
+
+  Future<void> _loadLorebooks() async {
+    try {
+      final lorebooks = await AiDbService().getLorebooks();
+      if (!mounted) return;
+      setState(() {
+        _lorebooks = lorebooks;
+        final exists = lorebooks.any((item) => item.id == _lorebookId);
+        if (!exists) {
+          _lorebookId = null;
+        }
+      });
+    } catch (_) {
+      // Ignore local lorebook errors for now.
+    }
+  }
+
+  Future<void> _applyStarterTemplate() async {
+    final result = await showModalBottomSheet<AiStarterAgentTemplate>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              const Text(
+                '选择角色模板',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '模板会填充角色结构，便于你继续改成自己的风格。',
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 16),
+              ...AiStarterTemplates.agentTemplates.map(
+                (template) => Card(
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(16),
+                    title: Text(
+                      template.name,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        '${template.tagline}\n${template.description}',
+                        style: const TextStyle(height: 1.4),
+                      ),
+                    ),
+                    isThreeLine: true,
+                    onTap: () => Navigator.pop(ctx, template),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (result == null) return;
+    setState(() {
+      _nameController.text = result.name;
+      _descController.text = result.description;
+      _promptController.text = result.systemPrompt;
+      _personaController.text = result.persona;
+      _scenarioController.text = result.scenario;
+      _openingMessageController.text = result.openingMessage;
+      _exampleDialoguesController.text = result.exampleDialogues;
+    });
   }
 
   Future<void> _loadModels() async {
     setState(() => _isLoadingModels = true);
     try {
-      final uri = await LlmEndpointConfig.modelsUri();
-      ApiService.logDirectHttp('GET', uri);
-      final response = await http
-          .get(uri, headers: ApiService.mergeTunnelHeaders(uri))
-          .timeout(const Duration(seconds: 10));
-      if (response.statusCode == 200) {
-        final decodedBody = utf8.decode(response.bodyBytes);
-        final data = jsonDecode(decodedBody);
-        List<String> list = [];
-        if (data is Map && data['models'] is List) {
-          final raw = data['models'] as List;
-          if (raw.whereType<String>().isNotEmpty) {
-            list = raw.whereType<String>().toList();
-          } else {
-            list = raw
-                .whereType<Map>()
-                .map((m) => m['name'])
-                .whereType<String>()
-                .toList();
-          }
+      final profile =
+          _selectedProvider ?? AiProviderProfile.builtinBackend();
+      final models = await AiChatGatewayService().fetchModelsForProfile(profile);
+      if (!mounted) return;
+      setState(() {
+        _models = models;
+        if (_modelNameController.text.trim().isEmpty && _models.isNotEmpty) {
+          _modelNameController.text = _models.first;
         }
-        if (list.isNotEmpty) {
-          setState(() {
-            _models = list;
-            if (!_models.contains(_modelName)) {
-              _modelName = _models.first;
-            }
-          });
+        if (_models.isNotEmpty &&
+            !_models.contains(_modelNameController.text.trim()) &&
+            profile.isBackendOllama) {
+          _modelNameController.text = _models.first;
         }
+      });
+      if (_selectedProviderIsBackend &&
+          widget.agent != null &&
+          _promptController.text.trim().isEmpty &&
+          _modelNameController.text.trim().isNotEmpty) {
+        _refreshPromptFromBackend(_modelNameController.text.trim());
       }
     } catch (_) {
       // Ignore errors, use default or current
     } finally {
-      setState(() => _isLoadingModels = false);
+      if (mounted) setState(() => _isLoadingModels = false);
     }
   }
 
@@ -265,17 +392,22 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
     try {
+      final isNewAgent = widget.agent == null || _isTemplateDraft;
       final name = _nameController.text.trim();
       final desc = _descController.text.trim();
       final prompt = _promptController.text.trim();
+      final provider =
+          _selectedProvider ?? AiProviderProfile.builtinBackend();
 
-      String modelForChat = _modelName;
+      String modelForChat = _modelNameController.text.trim();
       String resolvedPromptForLocal = prompt;
 
-      final shouldCreateNew = widget.agent == null && _createRealModel;
-      final shouldSyncEdit = widget.agent != null && _syncModelOnEdit;
+      final shouldCreateNew =
+          provider.isBackendOllama && isNewAgent && _createRealModel;
+      final shouldSyncEdit =
+          provider.isBackendOllama && !isNewAgent && _syncModelOnEdit;
       if (shouldCreateNew || shouldSyncEdit) {
-        final baseModel = _modelName.trim();
+        final baseModel = _modelNameController.text.trim();
         if (baseModel.isEmpty) {
           throw Exception('请选择基础模型');
         }
@@ -307,32 +439,51 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
         }
       }
 
+      if (modelForChat.isEmpty) {
+        throw Exception('请输入模型 ID');
+      }
+
       final agent = AiAgent(
-        id: widget.agent?.id ?? modelForChat,
+        id: (!isNewAgent ? widget.agent?.id : null) ??
+            (shouldCreateNew
+                ? modelForChat
+                : DateTime.now().millisecondsSinceEpoch.toString()),
         name: name,
         description: desc,
         systemPrompt: resolvedPromptForLocal,
         modelName: modelForChat,
-        createdAt: widget.agent?.createdAt ?? DateTime.now(),
+        providerProfileId:
+            provider.isBuiltinBackend ? null : provider.id,
+        lorebookId: (_lorebookId?.trim().isNotEmpty ?? false) ? _lorebookId : null,
+        persona: _personaController.text.trim(),
+        scenario: _scenarioController.text.trim(),
+        openingMessage: _openingMessageController.text.trim(),
+        exampleDialogues: _exampleDialoguesController.text.trim(),
+        createdAt: isNewAgent ? DateTime.now() : (widget.agent?.createdAt ?? DateTime.now()),
       );
 
       // 本地库只作为补充元数据存储；写入失败不阻塞“后端模型”流程。
-      if (!kIsWeb) {
-        try {
-          if (widget.agent == null) {
-            await AiDbService().insertAgent(agent);
-          } else {
-            await AiDbService().updateAgent(agent);
-          }
-        } catch (_) {}
-      }
+      try {
+        if (isNewAgent) {
+          await AiDbService().insertAgent(agent);
+        } else {
+          await AiDbService().updateAgent(agent);
+        }
+        if (isNewAgent) {
+          await AiAgentCloudService().saveAgent(agent);
+        } else {
+          await AiAgentCloudService().updateAgent(agent);
+        }
+      } catch (_) {}
 
       if (mounted) {
         MoeToast.success(
           context,
-          widget.agent == null
+          isNewAgent
               ? '智能体创建成功'
-              : (_syncModelOnEdit ? '智能体已保存并同步模型' : '智能体已保存'),
+              : (_selectedProviderIsBackend && _syncModelOnEdit
+                  ? '智能体已保存并同步模型'
+                  : '智能体已保存'),
         );
         Navigator.pop(context, true);
       }
@@ -450,7 +601,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.agent == null ? '创建智能体' : '编辑智能体'),
+        title: Text((widget.agent == null || _isTemplateDraft) ? '创建智能体' : '编辑智能体'),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _save,
@@ -479,7 +630,109 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
               validator: (v) => v == null || v.trim().isEmpty ? '请输入名称' : null,
             ),
             const SizedBox(height: 16),
-            if (widget.agent == null)
+            FilledButton.tonalIcon(
+              onPressed: _isSaving ? null : _applyStarterTemplate,
+              icon: const Icon(Icons.auto_awesome_rounded),
+              label: const Text('套用默认角色模板'),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _providerProfiles.any(
+                      (item) => item.id == _providerProfileId,
+                    )
+                        ? _providerProfileId
+                        : AiProviderProfile.builtinBackendId,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Provider',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: _providerProfiles
+                        .map(
+                          (item) => DropdownMenuItem(
+                            value: item.id,
+                            child: Text(item.name, overflow: TextOverflow.ellipsis),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) async {
+                      if (value == null) return;
+                      setState(() => _providerProfileId = value);
+                      await AiProviderService().saveLastSelectedProfileId(value);
+                      await _loadModels();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AiProviderProfilesPage(),
+                      ),
+                    );
+                    await _loadProviders();
+                  },
+                  icon: const Icon(Icons.tune_rounded),
+                  label: const Text('管理'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String?>(
+                    value: _lorebooks.any((item) => item.id == _lorebookId)
+                        ? _lorebookId
+                        : null,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Lorebook',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('不绑定世界书'),
+                      ),
+                      ..._lorebooks.map(
+                        (item) => DropdownMenuItem<String?>(
+                          value: item.id,
+                          child: Text(
+                            item.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setState(() => _lorebookId = value);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AiLorebooksPage(),
+                      ),
+                    );
+                    await _loadLorebooks();
+                  },
+                  icon: const Icon(Icons.menu_book_outlined),
+                  label: const Text('管理'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (widget.agent == null && _selectedProviderIsBackend)
               SwitchListTile(
                 title: const Text('在 Ollama 中创建真实模型'),
                 subtitle: const Text('使用上面的基础模型和系统提示词创建可复用模型'),
@@ -488,7 +741,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                   setState(() => _createRealModel = v);
                 },
               ),
-            if (widget.agent != null)
+            if (widget.agent != null && _selectedProviderIsBackend)
               SwitchListTile(
                 title: const Text('同步更新到 Ollama 模型'),
                 subtitle: const Text('关闭后仅修改本地展示，开启后会重建模型使新提示词生效'),
@@ -509,18 +762,22 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _modelName,
+              value: _models.contains(_modelNameController.text.trim())
+                  ? _modelNameController.text.trim()
+                  : null,
               isExpanded: true,
               decoration: const InputDecoration(
-                labelText: '模型',
+                labelText: '模型列表',
                 border: OutlineInputBorder(),
               ),
               items: _models.isEmpty
                   ? [
                       DropdownMenuItem(
-                        value: _modelName,
+                        value: _modelNameController.text.trim(),
                         child: Text(
-                          _modelName,
+                          _modelNameController.text.trim().isEmpty
+                              ? '暂无可用模型'
+                              : _modelNameController.text.trim(),
                           overflow: TextOverflow.ellipsis,
                         ),
                       )
@@ -532,7 +789,9 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                       );
                     }).toList(),
               onChanged: (v) {
-                if (v != null) setState(() => _modelName = v);
+                if (v != null) {
+                  setState(() => _modelNameController.text = v);
+                }
               },
             ),
             if (_isLoadingModels)
@@ -542,9 +801,22 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                     style: TextStyle(color: Colors.grey, fontSize: 12)),
               ),
             const SizedBox(height: 16),
-            if (widget.agent != null) ...[
+            TextFormField(
+              controller: _modelNameController,
+              decoration: const InputDecoration(
+                labelText: '模型 ID',
+                hintText: '可手动输入模型，例如 gpt-4o-mini / deepseek-chat',
+                border: OutlineInputBorder(),
+              ),
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? '请输入模型 ID' : null,
+            ),
+            const SizedBox(height: 16),
+            if (widget.agent != null && _selectedProviderIsBackend) ...[
               _buildPromptPreview(
-                  widget.agent!.systemPrompt, widget.agent!.modelName),
+                widget.agent!.systemPrompt,
+                widget.agent!.modelName,
+              ),
               const SizedBox(height: 12),
             ],
             TextFormField(
@@ -555,6 +827,50 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                     widget.agent != null ? '修改系统提示词' : '系统提示词 (System Prompt)',
                 hintText: '设定智能体的人设、语气、擅长领域等...',
                 border: const OutlineInputBorder(),
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _personaController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: '角色人设',
+                hintText: '例如：温柔冷静的图书管理员，喜欢细致回答问题',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _scenarioController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: '场景设定',
+                hintText: '例如：你和用户正在深夜咖啡馆中聊天',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _openingMessageController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: '开场白',
+                hintText: '新会话开始时自动发送的第一句 assistant 消息',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _exampleDialoguesController,
+              maxLines: 6,
+              decoration: const InputDecoration(
+                labelText: '示例对话',
+                hintText: '用于约束角色语气与风格，可写多轮示例',
+                border: OutlineInputBorder(),
                 alignLabelWithHint: true,
               ),
             ),
