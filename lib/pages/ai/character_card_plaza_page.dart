@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 
 import '../../models/ai_agent.dart';
 import '../../services/ai_agent_cloud_service.dart';
+import '../../services/ai_character_card_service.dart';
 import '../../services/ai_starter_templates.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
+import '../../widgets/ai/ai_model_binding_sheet.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import 'agent_editor_page.dart';
@@ -20,39 +22,52 @@ class CharacterCardPlazaPage extends StatefulWidget {
 
 class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
   List<AiAgent> _myAgents = [];
+  List<AiAgent> _publicAgents = [];
   bool _loadingAgents = true;
+  bool _loadingPublic = true;
 
   @override
   void initState() {
     super.initState();
     _loadAgents();
+    _loadPublicAgents();
   }
 
   Future<void> _loadAgents() async {
+    if (mounted) setState(() => _loadingAgents = true);
     try {
-      final local = await AiAgentCloudService().getLocalAgents();
-      if (mounted && local.isNotEmpty) {
-        setState(() {
-          _myAgents = local;
-          _loadingAgents = false;
-        });
-      }
-    } catch (_) {}
-
-    if (mounted && _myAgents.isEmpty) {
-      setState(() => _loadingAgents = true);
-    }
-    try {
-      final agents = await AiAgentCloudService().syncAgentsFromCloud();
+      final agents = await AiAgentCloudService().getAgents();
       if (!mounted) return;
       setState(() {
         _myAgents = agents;
         _loadingAgents = false;
       });
     } catch (_) {
-      if (!mounted) return;
-      setState(() => _loadingAgents = false);
+      if (mounted) {
+        setState(() {
+          _myAgents = [];
+          _loadingAgents = false;
+        });
+      }
     }
+  }
+
+  Future<void> _loadPublicAgents() async {
+    if (mounted) setState(() => _loadingPublic = true);
+    try {
+      final agents = await AiAgentCloudService().fetchPublicAgents();
+      if (!mounted) return;
+      setState(() {
+        _publicAgents = agents;
+        _loadingPublic = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingPublic = false);
+    }
+  }
+
+  Future<void> _refreshAll() async {
+    await Future.wait([_loadAgents(), _loadPublicAgents()]);
   }
 
   Future<void> _useStarterTemplate(AiStarterAgentTemplate template) async {
@@ -66,7 +81,7 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
       MaterialPageRoute(builder: (_) => AgentEditorPage(agent: draft)),
     );
     if (created == true) {
-      await _loadAgents();
+      await _refreshAll();
     }
   }
 
@@ -75,6 +90,42 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
       context,
       MaterialPageRoute(builder: (_) => ChatPage(agent: agent)),
     );
+  }
+
+  /// 广场角色卡：先选本机 API/模型，保存到账号后进入聊天。
+  Future<void> _usePublicAgent(AiAgent agent) async {
+    HapticFeedback.lightImpact();
+    final binding = await AiModelBindingSheet.show(
+      context: context,
+      title: agent.name,
+      subtitle: agent.description.trim().isNotEmpty
+          ? agent.description
+          : '选择你自己的 API 与模型后开始对话',
+      suggestedModel: agent.modelName,
+    );
+    if (binding == null || !mounted) return;
+
+    final ready = AiCharacterCardService().cloneAgentForLocalUse(agent).copyWith(
+      modelName: binding.modelName,
+      providerProfileId:
+          binding.provider.isBuiltinBackend ? null : binding.provider.id,
+    );
+
+    try {
+      await AiAgentCloudService().saveAgent(ready);
+    } catch (e) {
+      if (mounted) {
+        MoeToast.error(context, '保存角色卡失败：$e');
+      }
+      return;
+    }
+
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ChatPage(agent: ready)),
+    );
+    await _refreshAll();
   }
 
   @override
@@ -86,7 +137,7 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
         backgroundColor: AiBrandTokens.pageBackground,
       ),
       body: RefreshIndicator(
-        onRefresh: _loadAgents,
+        onRefresh: _refreshAll,
         child: ListView(
           padding: const EdgeInsets.all(16),
           physics: const AlwaysScrollableScrollPhysics(),
@@ -97,7 +148,7 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
             const SizedBox(height: 10),
             ...AiStarterTemplates.agentTemplates.map(_buildStarterCard),
             const SizedBox(height: 24),
-            _sectionTitle('我的角色卡', '已创建或导入的角色'),
+            _sectionTitle('我的角色卡', '已保存到你账号下的角色 JSON'),
             const SizedBox(height: 10),
             if (_loadingAgents)
               const Padding(
@@ -109,9 +160,17 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
             else
               ..._myAgents.map(_buildMyAgentCard),
             const SizedBox(height: 24),
-            _sectionTitle('社区广场', '下载与分享角色卡'),
+            _sectionTitle('角色卡广场', '已发布到广场的角色（is_public）'),
             const SizedBox(height: 10),
-            _buildComingSoon(),
+            if (_loadingPublic)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: MoeLoading()),
+              )
+            else if (_publicAgents.isEmpty)
+              _buildPublicEmpty()
+            else
+              ..._publicAgents.map(_buildPublicAgentCard),
             const SizedBox(height: 32),
           ],
         ),
@@ -322,41 +381,66 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
     );
   }
 
-  Widget _buildComingSoon() {
+  Widget _buildPublicEmpty() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Icon(Icons.storefront_outlined, color: Colors.grey.shade500),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '社区角色卡即将上线',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '未来将支持浏览、下载与分享社区角色卡（SillyTavern 等格式规划中）。',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.35),
-                ),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              MoeToast.info(context, '社区广场开发中，敬请期待');
-            },
-            child: const Text('了解'),
+          Icon(Icons.public_rounded, size: 40, color: Colors.grey.shade400),
+          const SizedBox(height: 10),
+          const Text('广场还没有公开角色卡', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          Text(
+            '创建角色卡时开启「发布到角色卡广场」，保存后即可出现在这里。',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 13, height: 1.4),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPublicAgentCard(AiAgent agent) {
+    final author = (agent.authorName?.trim().isNotEmpty ?? false)
+        ? agent.authorName!
+        : '用户';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          leading: CircleAvatar(
+            backgroundColor: AiBrandTokens.secondary.withValues(alpha: 0.15),
+            child: Text(
+              agent.name.isNotEmpty ? agent.name[0] : '?',
+              style: const TextStyle(
+                color: AiBrandTokens.secondary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          title: Text(agent.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+          subtitle: Text(
+            '$author · ${agent.modelName}',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: FilledButton(
+            onPressed: () => _usePublicAgent(agent),
+            style: FilledButton.styleFrom(
+              backgroundColor: AiBrandTokens.secondary,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              minimumSize: const Size(0, 36),
+            ),
+            child: const Text('使用'),
+          ),
+        ),
       ),
     );
   }

@@ -8,6 +8,7 @@ import '../models/ai_agent.dart';
 import '../models/ai_memory.dart';
 import '../models/ai_memory_profile.dart';
 import '../models/user_memory.dart';
+import '../models/user_memory_display.dart';
 import '../models/user_memory_profile.dart';
 import 'ai_db_service.dart';
 import 'ai_provider_service.dart';
@@ -46,6 +47,7 @@ class AiMemoryManagerState {
   final String activeModeDescription;
   final List<UserMemory> accountMemories;
   final List<UserMemoryProfile> accountProfiles;
+  final UserMemoryDisplayData? display;
   final List<AiMemory> localMemories;
   final List<AiMemoryProfile> localProfiles;
   final String promptPreview;
@@ -58,6 +60,7 @@ class AiMemoryManagerState {
     required this.activeModeDescription,
     required this.accountMemories,
     required this.accountProfiles,
+    this.display,
     required this.localMemories,
     required this.localProfiles,
     required this.promptPreview,
@@ -82,26 +85,20 @@ class AiMemoryOrchestrator {
     if (await LlmEndpointConfig.isTerminalModeEnabled()) {
       return AiMemoryMode.disabled;
     }
-    final profile = await AiProviderService().resolveProfile(
-      agent.providerProfileId,
-    );
-    if (profile.useServerMemory || profile.isBackendOllama) {
-      return AiMemoryMode.server;
-    }
-    return AiMemoryMode.local;
+    // 产品路径：登录用户统一走后端记忆，不在客户端暴露 local/server 双轨。
+    return AiMemoryMode.server;
   }
 
   String modeLabel(AiMemoryMode mode) => switch (mode) {
-        AiMemoryMode.server => '账号记忆（云端）',
-        AiMemoryMode.local => '本地角色记忆',
-        AiMemoryMode.disabled => '记忆已关闭（调试模式）',
+        AiMemoryMode.server => '关于你的记忆',
+        AiMemoryMode.local => '关于你的记忆',
+        AiMemoryMode.disabled => '记忆未开启',
       };
 
   String modeDescription(AiMemoryMode mode) => switch (mode) {
-        AiMemoryMode.server =>
-          '当前聊天使用账号级 UserMemory，跨设备同步；内置 Ollama 由后端自动注入与提取。',
-        AiMemoryMode.local => '当前聊天使用本机 SQLite 角色记忆，仅本设备；回合后由智能体模型提取并整理画像。',
-        AiMemoryMode.disabled => '已开启终端 raw 模式，聊天不注入、不写入记忆。',
+        AiMemoryMode.server => '聊天时会自动参考你已保存的信息，无需手动设置。',
+        AiMemoryMode.local => '聊天时会自动参考你已保存的信息，无需手动设置。',
+        AiMemoryMode.disabled => '开发者调试模式已开启，记忆功能已暂停。',
       };
 
   // ─── 聊天 / 内容生成 ─────────────────────────────────────────────────────
@@ -149,14 +146,6 @@ class AiMemoryOrchestrator {
   /// 聊天抽屉等处的记忆数量预览。
   Future<AiMemoryChatPreview> loadChatMemoryPreview(AiAgent agent) async {
     final mode = await resolveMode(agent);
-    if (mode == AiMemoryMode.local) {
-      final local = await _db.getMemories(agent.id);
-      return AiMemoryChatPreview(
-        mode: mode,
-        count: local.length,
-        modeLabel: modeLabel(mode),
-      );
-    }
     if (mode == AiMemoryMode.disabled) {
       return AiMemoryChatPreview(
         mode: mode,
@@ -166,11 +155,10 @@ class AiMemoryOrchestrator {
     }
     try {
       final user = await AuthService.getUserInfo();
-      final raw = await MemoryService.getUserMemories(user.id);
-      final filtered = MemoryService.filterUserFacingMemories(raw);
+      final display = await MemoryService.getUserMemoriesDisplay(user.id);
       return AiMemoryChatPreview(
         mode: mode,
-        count: filtered.length,
+        count: display.total,
         modeLabel: modeLabel(mode),
       );
     } catch (_) {
@@ -186,38 +174,21 @@ class AiMemoryOrchestrator {
 
   Future<AiMemoryManagerState> loadManagerState(AiAgent agent) async {
     final mode = await resolveMode(agent);
-    final terminalFuture = LlmEndpointConfig.isTerminalModeEnabled();
-    final llmConfigFuture = _loadLlmConfig();
-    final localMemoriesFuture = _db.getMemories(agent.id);
-    final localProfilesFuture = _db.getMemoryProfiles(agent.id);
-    final accountFuture = mode == AiMemoryMode.server
-        ? _loadAccountMemoryState()
-        : Future.value(
-            (
-              memories: <UserMemory>[],
-              profiles: <UserMemoryProfile>[],
-            ),
-          );
-
-    final terminal = await terminalFuture;
-    final llmConfig = await llmConfigFuture;
-    final localMemories = await localMemoriesFuture;
-    final localProfiles = await localProfilesFuture;
-    final account = await accountFuture;
-
-    final basePrompt = agent.systemPrompt.isNotEmpty
-        ? agent.systemPrompt
-        : '你是一位友好、智能的 AI 助手。';
-    final promptPreview = mode == AiMemoryMode.server
-        ? await _injectServerMemories(
-            basePrompt,
-            '',
-            preloadedMemories: account.memories,
-          )
-        : await buildPromptPreview(
-            agent: agent,
-            basePrompt: basePrompt,
-          );
+    final terminal = await LlmEndpointConfig.isTerminalModeEnabled();
+    final ({
+      List<UserMemory> memories,
+      List<UserMemoryProfile> profiles,
+      UserMemoryDisplayData? display,
+    }) account;
+    if (mode == AiMemoryMode.disabled) {
+      account = (
+        memories: <UserMemory>[],
+        profiles: <UserMemoryProfile>[],
+        display: null,
+      );
+    } else {
+      account = await _loadAccountMemoryState();
+    }
 
     return AiMemoryManagerState(
       activeMode: mode,
@@ -225,11 +196,12 @@ class AiMemoryOrchestrator {
       activeModeDescription: modeDescription(mode),
       accountMemories: account.memories,
       accountProfiles: account.profiles,
-      localMemories: localMemories,
-      localProfiles: localProfiles,
-      promptPreview: promptPreview,
+      display: account.display,
+      localMemories: const [],
+      localProfiles: const [],
+      promptPreview: '',
       terminalModeEnabled: terminal,
-      llmConfig: llmConfig,
+      llmConfig: const {},
     );
   }
 
@@ -287,40 +259,17 @@ class AiMemoryOrchestrator {
       agent.providerProfileId,
     );
 
-    if (mode == AiMemoryMode.server) {
-      if (profile.isBackendOllama) return;
-      try {
-        final user = await AuthService.getUserInfo();
-        await _agent.extractAndUpsertServerMemories(
-          userId: user.id,
-          userMessage: userMessage,
-          aiResponse: aiResponse,
-          sessionId: sessionId,
-          sourceMsgId: sourceMsgId ?? '',
-          model: agent.modelName,
-        );
-      } catch (_) {}
-      return;
-    }
-
+    if (profile.isBackendOllama) return;
     try {
-      final result = await _agent.processConversationTurn(
-        agent: agent,
-        sessionId: sessionId,
+      final user = await AuthService.getUserInfo();
+      await _agent.extractAndUpsertServerMemories(
+        userId: user.id,
         userMessage: userMessage,
         aiResponse: aiResponse,
+        sessionId: sessionId,
+        sourceMsgId: sourceMsgId ?? '',
+        model: agent.modelName,
       );
-      final settings = await _agent.getOrCreateSettings(agent);
-      final turns = (_turnCounters[agent.id] ?? 0) + 1;
-      _turnCounters[agent.id] = turns;
-      if (settings.autoCurate &&
-          settings.curateEveryNTurns > 0 &&
-          turns % settings.curateEveryNTurns == 0) {
-        await _agent.curateProfiles(agent: agent, settings: settings);
-      }
-      if (result.newMemoryCount > 0) {
-        // 调用方可刷新预览
-      }
     } catch (_) {}
   }
 
@@ -385,27 +334,44 @@ class AiMemoryOrchestrator {
     }
   }
 
-  Future<({List<UserMemory> memories, List<UserMemoryProfile> profiles})>
-      _loadAccountMemoryState() async {
+  Future<
+      ({
+        List<UserMemory> memories,
+        List<UserMemoryProfile> profiles,
+        UserMemoryDisplayData? display,
+      })> _loadAccountMemoryState() async {
     try {
       final user = await AuthService.getUserInfo();
-      final futures = await Future.wait<dynamic>([
-        MemoryService.getUserMemoriesPaged(
-          user.id,
-          limit: 100,
-          offset: 0,
-        ),
-        MemoryService.getUserMemoryProfiles(user.id),
-      ]);
-      final paged = futures[0] as Map<String, dynamic>;
-      final profiles = futures[1] as List<UserMemoryProfile>;
-      final memories = (paged['items'] as List<UserMemory>? ?? const [])
-        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-      return (memories: memories, profiles: profiles);
+      final display = await MemoryService.getUserMemoriesDisplay(user.id);
+      final memories = display.items
+          .map(
+            (item) => UserMemory(
+              id: item.id,
+              userId: user.id,
+              key: item.key,
+              value: item.content,
+              memoryType: item.category,
+              createdAt: item.updatedAt,
+              updatedAt: item.updatedAt,
+            ),
+          )
+          .toList();
+      final profiles = display.profiles
+          .map(
+            (p) => UserMemoryProfile(
+              memoryType: p.title,
+              summary: p.summary,
+              itemCount: p.itemCount,
+              confidence: 0,
+            ),
+          )
+          .toList();
+      return (memories: memories, profiles: profiles, display: display);
     } catch (_) {
       return (
         memories: <UserMemory>[],
         profiles: <UserMemoryProfile>[],
+        display: null,
       );
     }
   }

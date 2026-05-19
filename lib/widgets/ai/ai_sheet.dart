@@ -97,11 +97,13 @@ abstract final class AiSheet {
   static Future<T?> showActions<T>({
     required BuildContext context,
     required String title,
+    String? subtitle,
     required List<AiSheetAction<T>> actions,
   }) {
     return show<T>(
       context: context,
       title: title,
+      subtitle: subtitle,
       initialChildSize: 0.45,
       minChildSize: 0.3,
       maxChildSize: 0.7,

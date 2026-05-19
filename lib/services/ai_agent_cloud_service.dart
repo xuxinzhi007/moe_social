@@ -1,58 +1,66 @@
+import '../auth_service.dart';
 import '../models/ai_agent.dart';
 import '../models/ai_lorebook.dart';
 import '../models/ai_lorebook_entry.dart';
 import 'ai_cloud_config_service.dart';
 import 'ai_db_service.dart';
 
+/// 角色卡（AiAgent）以服务器 `GET/PUT/DELETE /api/ai/agents` 为唯一数据源。
+/// 本地 SQLite 仅用于聊天会话/消息等，不再缓存角色卡列表。
 class AiAgentCloudService {
   AiAgentCloudService._();
 
   static final AiAgentCloudService _instance = AiAgentCloudService._();
   factory AiAgentCloudService() => _instance;
 
-  Future<List<AiAgent>> getLocalAgents() {
-    return AiDbService().getAgents();
-  }
-
   Future<List<AiAgent>> getAgents() async {
-    final localAgents = await AiDbService().getAgents();
-    if (localAgents.isNotEmpty) {
-      return localAgents;
-    }
-    final cloudAgents = await AiCloudConfigService().fetchAgents();
-    if (cloudAgents != null && cloudAgents.isNotEmpty) {
-      return cloudAgents.map(AiAgent.fromMap).toList();
-    }
-    return localAgents;
-  }
-
-  Future<List<AiAgent>> syncAgentsFromCloud() async {
     final cloudAgents = await AiCloudConfigService().fetchAgents();
     if (cloudAgents == null) {
-      throw Exception('云端角色卡同步失败');
-    }
-    if (cloudAgents.isEmpty) {
-      return AiDbService().getAgents();
+      throw Exception('加载角色卡失败');
     }
     return cloudAgents.map(AiAgent.fromMap).toList();
   }
 
+  /// 从服务器拉取最新角色卡列表（不写本地）。
+  Future<List<AiAgent>> syncAgentsFromCloud() => getAgents();
+
+  Future<List<AiAgent>> fetchPublicAgents({int limit = 50}) async {
+    final raw = await AiCloudConfigService().fetchPublicAgents(limit: limit);
+    if (raw == null) return const [];
+    return raw.map(AiAgent.fromMap).toList();
+  }
+
   Future<void> saveAgent(AiAgent agent) async {
-    await AiDbService().insertAgent(agent);
-    await AiCloudConfigService().upsertAgent(agent.toMap());
+    final record = await _withServerMetadata(agent, isNew: true);
+    await AiCloudConfigService().upsertAgent(record.toMap());
   }
 
   Future<void> updateAgent(AiAgent agent) async {
-    await AiDbService().updateAgent(agent);
-    await AiCloudConfigService().upsertAgent(agent.toMap());
+    final record = await _withServerMetadata(agent, isNew: false);
+    await AiCloudConfigService().upsertAgent(record.toMap());
   }
 
+  @Deprecated('Use saveAgent / updateAgent')
   Future<void> syncAgentToCloud(AiAgent agent) async {
-    await AiCloudConfigService().upsertAgent(agent.toMap());
+    final record = await _withServerMetadata(agent, isNew: false);
+    await AiCloudConfigService().upsertAgent(record.toMap());
+  }
+
+  Future<AiAgent> _withServerMetadata(AiAgent agent, {required bool isNew}) async {
+    final now = DateTime.now();
+    String? creator = agent.createdByUserId;
+    if (isNew) {
+      try {
+        creator = await AuthService.getUserId();
+      } catch (_) {}
+    }
+    return agent.copyWith(
+      createdByUserId: creator,
+      updatedAt: now,
+    );
   }
 
   Future<void> deleteAgent(String agentId) async {
-    await AiDbService().deleteAgent(agentId);
     await AiCloudConfigService().deleteAgent(agentId);
   }
 

@@ -918,7 +918,7 @@ class _HomePageState extends State<HomePage>
       return _buildUnifiedStatePanel(
         icon: Icons.star_border_rounded,
         title: '关注的人还没有发动态',
-        subtitle: '先去兴趣社区逛逛话题，或在发现里认识新的同好 ~(｡•ᴗ•｡)~',
+        subtitle: '先去兴趣社区逛逛话题，或在探索里认识新的同好 ~(｡•ᴗ•｡)~',
         accentColor: const Color(0xFFFFB347),
         action: SizedBox(
           width: double.infinity,
@@ -960,7 +960,7 @@ class _HomePageState extends State<HomePage>
     return _buildUnifiedStatePanel(
       icon: Icons.auto_awesome_rounded,
       title: inTopic ? '#$topicName 下暂时还没有动态' : '这里还是空的耶',
-      subtitle: inTopic ? '换个小话题看看，或自己发帖带上这个标签吧。' : '发一条动态记录今天，或去发现页用话题认识同好。',
+      subtitle: inTopic ? '换个小话题看看，或自己发帖带上这个标签吧。' : '发一条动态记录今天，或去探索页用话题认识同好。',
       accentColor: const Color(0xFF7F7FD5),
       action: SizedBox(
         width: double.infinity,

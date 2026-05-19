@@ -10,18 +10,17 @@ import 'ai_provider_service.dart';
 
 class AiCharacterCardImportResult {
   final AiAgent agent;
-  final AiProviderProfile? providerProfile;
   final AiLorebook? lorebook;
   final List<String> notices;
 
   const AiCharacterCardImportResult({
     required this.agent,
-    this.providerProfile,
     this.lorebook,
     this.notices = const [],
   });
 }
 
+/// 角色卡导入/导出：仅共享人设与世界观，不共享 API Key / Provider 账号。
 class AiCharacterCardService {
   AiCharacterCardService._();
 
@@ -29,17 +28,24 @@ class AiCharacterCardService {
   factory AiCharacterCardService() => _instance;
 
   static const String cardType = 'moe_social_character_card';
-  static const int cardVersion = 1;
+  static const int cardVersion = 2;
+
+  /// 复制他人公开角色卡到本账号草稿（清空 Provider / Lorebook 绑定）。
+  AiAgent cloneAgentForLocalUse(AiAgent source) {
+    final now = DateTime.now();
+    return source.copyWith(
+      id: 'agent_${now.microsecondsSinceEpoch}',
+      providerProfileId: null,
+      lorebookId: null,
+      createdByUserId: null,
+      isPublic: false,
+      createdAt: now,
+      updatedAt: null,
+    );
+  }
 
   Future<String> exportCharacterCardJson(AiAgent agent) async {
-    AiProviderProfile? providerProfile;
-    final providerId = agent.providerProfileId?.trim() ?? '';
-    if (providerId.isNotEmpty) {
-      final resolved = await AiProviderService().resolveProfile(providerId);
-      if (!resolved.isBuiltinBackend) {
-        providerProfile = resolved;
-      }
-    }
+    final modelBinding = await _buildModelBinding(agent);
 
     AiLorebook? lorebook;
     List<AiLorebookEntry> lorebookEntries = const [];
@@ -55,9 +61,11 @@ class AiCharacterCardService {
       'card_type': cardType,
       'version': cardVersion,
       'exported_at': DateTime.now().toIso8601String(),
+      'portable': true,
+      'notes':
+          '角色卡仅含人设与推荐模型；使用方需在本机选择 API 来源并填写 Key，不会使用导出者的账号或额度。',
       'agent': _agentToCardMap(agent),
-      if (providerProfile != null)
-        'provider_profile': _providerToCardMap(providerProfile),
+      'model_binding': modelBinding,
       if (lorebook != null)
         'lorebook': _lorebookToCardMap(
           lorebook,
@@ -87,17 +95,18 @@ class AiCharacterCardService {
       throw Exception('角色卡缺少 agent 字段');
     }
     final agentMap = Map<String, dynamic>.from(agentRaw);
-    final notices = <String>[];
+    final notices = <String>[
+      '已导入人设；请在本机选择 API 来源并填写 Key',
+    ];
     final now = DateTime.now();
 
-    AiProviderProfile? importedProvider;
-    final providerRaw = root['provider_profile'];
-    if (providerRaw is Map) {
-      importedProvider = await _importProviderProfile(
-        Map<String, dynamic>.from(providerRaw),
-        now: now,
-      );
-      notices.add('Provider 已导入，但不包含 API Key，请手动补充');
+    final binding = _resolveModelBinding(root, agentMap);
+    if (binding.suggestedModel.isNotEmpty &&
+        _safeString(agentMap['model_name']).isEmpty) {
+      agentMap['model_name'] = binding.suggestedModel;
+    }
+    if (binding.notice != null) {
+      notices.add(binding.notice!);
     }
 
     AiLorebook? importedLorebook;
@@ -109,32 +118,16 @@ class AiCharacterCardService {
       );
     }
 
-    String? providerProfileId;
-    if (importedProvider != null) {
-      providerProfileId =
-          importedProvider.isBuiltinBackend ? null : importedProvider.id;
-    } else {
-      final requestedProviderId =
-          (agentMap['provider_profile_id'] ?? '').toString().trim();
-      if (requestedProviderId.isNotEmpty &&
-          requestedProviderId != AiProviderProfile.builtinBackendId) {
-        final existing =
-            await AiProviderService().resolveProfile(requestedProviderId);
-        if (!existing.isBuiltinBackend) {
-          providerProfileId = existing.id;
-        } else {
-          notices.add('原角色卡未附带可用 Provider，导入后需要手动重新选择');
-        }
-      }
-    }
-
     final importedAgent = AiAgent(
-      id: 'agent_import_${DateTime.now().microsecondsSinceEpoch}',
+      id: 'agent_import_${now.microsecondsSinceEpoch}',
       name: _safeString(agentMap['name'], fallback: '导入角色'),
       description: _safeString(agentMap['description']),
       systemPrompt: _safeString(agentMap['system_prompt']),
-      modelName: _safeString(agentMap['model_name']),
-      providerProfileId: providerProfileId,
+      modelName: _safeString(
+        agentMap['model_name'],
+        fallback: binding.suggestedModel,
+      ),
+      providerProfileId: null,
       lorebookId: importedLorebook?.id,
       persona: _safeString(agentMap['persona']),
       scenario: _safeString(agentMap['scenario']),
@@ -147,10 +140,78 @@ class AiCharacterCardService {
 
     return AiCharacterCardImportResult(
       agent: importedAgent,
-      providerProfile: importedProvider,
       lorebook: importedLorebook,
       notices: notices,
     );
+  }
+
+  Future<Map<String, dynamic>> _buildModelBinding(AiAgent agent) async {
+    final binding = <String, dynamic>{
+      'suggested_model': agent.modelName.trim(),
+    };
+
+    final providerId = agent.providerProfileId?.trim() ?? '';
+    if (providerId.isEmpty) {
+      binding['provider_type'] = AiProviderType.backendOllama.value;
+      binding['provider_label'] = '内置 Ollama';
+      return binding;
+    }
+
+    try {
+      final profile = await AiProviderService().resolveProfile(providerId);
+      if (!profile.isBuiltinBackend) {
+        binding['provider_type'] = profile.providerType.value;
+        binding['provider_label'] = profile.name;
+      } else {
+        binding['provider_type'] = AiProviderType.backendOllama.value;
+        binding['provider_label'] = '内置 Ollama';
+      }
+    } catch (_) {
+      binding['provider_type'] = AiProviderType.openAiCompatible.value;
+    }
+
+    return binding;
+  }
+
+  _ResolvedModelBinding _resolveModelBinding(
+    Map<String, dynamic> root,
+    Map<String, dynamic> agentMap,
+  ) {
+    final bindingRaw = root['model_binding'];
+    if (bindingRaw is Map) {
+      final map = Map<String, dynamic>.from(bindingRaw);
+      return _ResolvedModelBinding(
+        suggestedModel: _safeString(map['suggested_model']),
+        notice: _hintFromBinding(map),
+      );
+    }
+
+    // v1 兼容：旧卡可能带 provider_profile（含 base_url），仅提取模型建议，不导入 Provider。
+    final legacyProvider = root['provider_profile'];
+    if (legacyProvider is Map) {
+      final map = Map<String, dynamic>.from(legacyProvider);
+      final model = _safeString(agentMap['model_name']).isNotEmpty
+          ? _safeString(agentMap['model_name'])
+          : _safeString(map['default_model']);
+      return _ResolvedModelBinding(
+        suggestedModel: model,
+        notice:
+            '旧版卡片含第三方 API 地址，已跳过导入；请使用你自己的 API 来源（推荐模型：${model.isEmpty ? "见编辑器" : model}）',
+      );
+    }
+
+    return _ResolvedModelBinding(
+      suggestedModel: _safeString(agentMap['model_name']),
+    );
+  }
+
+  String? _hintFromBinding(Map<String, dynamic> binding) {
+    final model = _safeString(binding['suggested_model']);
+    final label = _safeString(binding['provider_label']);
+    if (model.isEmpty && label.isEmpty) return null;
+    if (label.isEmpty) return '推荐模型：$model';
+    if (model.isEmpty) return '原创建者常用来源：$label（需在本机自行配置）';
+    return '推荐模型：$model；原创建者常用来源：$label（需在本机自行配置）';
   }
 
   Map<String, dynamic> _agentToCardMap(AiAgent agent) {
@@ -159,26 +220,10 @@ class AiCharacterCardService {
       'description': agent.description,
       'system_prompt': agent.systemPrompt,
       'model_name': agent.modelName,
-      'provider_profile_id': agent.providerProfileId,
       'persona': agent.persona,
       'scenario': agent.scenario,
       'opening_message': agent.openingMessage,
       'example_dialogues': agent.exampleDialogues,
-    };
-  }
-
-  Map<String, dynamic> _providerToCardMap(AiProviderProfile profile) {
-    return {
-      'name': profile.name,
-      'provider_type': profile.providerType.value,
-      'base_url': profile.baseUrl,
-      'default_model': profile.defaultModel,
-      'manual_models': profile.manualModels,
-      'use_server_memory': profile.useServerMemory,
-      'supports_system_messages': profile.supportsSystemMessages,
-      'supports_streaming': profile.supportsStreaming,
-      'supports_vision': profile.supportsVision,
-      'supports_tool_calls': profile.supportsToolCalls,
     };
   }
 
@@ -202,44 +247,6 @@ class AiCharacterCardService {
       'always_enabled': entry.alwaysEnabled,
       'priority': entry.priority,
     };
-  }
-
-  Future<AiProviderProfile> _importProviderProfile(
-    Map<String, dynamic> raw, {
-    required DateTime now,
-  }) async {
-    final existingProfiles = await AiProviderService().listProfiles();
-    final baseName = _safeString(raw['name'], fallback: '导入 Provider');
-    final profile = AiProviderProfile(
-      id: 'provider_import_${DateTime.now().microsecondsSinceEpoch}',
-      name: _buildUniqueName(
-        baseName,
-        existingProfiles.map((e) => e.name).toSet(),
-      ),
-      providerType: AiProviderType.fromValue(
-        _safeString(
-          raw['provider_type'],
-          fallback: AiProviderType.openAiCompatible.value,
-        ),
-      ),
-      baseUrl: _safeString(raw['base_url']),
-      defaultModel: _safeString(raw['default_model']),
-      manualModels: _stringList(raw['manual_models']),
-      useServerMemory: raw['use_server_memory'] == true ||
-          raw['use_server_memory'] == 1,
-      supportsSystemMessages: raw['supports_system_messages'] != false &&
-          raw['supports_system_messages'] != 0,
-      supportsStreaming: raw['supports_streaming'] != false &&
-          raw['supports_streaming'] != 0,
-      supportsVision: raw['supports_vision'] == true ||
-          raw['supports_vision'] == 1,
-      supportsToolCalls: raw['supports_tool_calls'] == true ||
-          raw['supports_tool_calls'] == 1,
-      createdAt: now,
-      updatedAt: now,
-    );
-    await AiProviderService().saveProfile(profile);
-    return profile;
   }
 
   Future<AiLorebook?> _importLorebook(
@@ -317,4 +324,14 @@ class AiCharacterCardService {
         .where((e) => e.isNotEmpty)
         .toList();
   }
+}
+
+class _ResolvedModelBinding {
+  const _ResolvedModelBinding({
+    required this.suggestedModel,
+    this.notice,
+  });
+
+  final String suggestedModel;
+  final String? notice;
 }

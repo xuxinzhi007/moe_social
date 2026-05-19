@@ -457,7 +457,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
               ),
               const SizedBox(height: 16),
               Text(
-                '暂无会话\n在好友或发现里发起聊天后会出现在这里。',
+                '暂无会话\n在好友或探索里发起聊天后会出现在这里。',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,

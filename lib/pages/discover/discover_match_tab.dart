@@ -1,0 +1,842 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../../auth_service.dart';
+import '../../models/topic_tag.dart';
+import '../../services/api_service.dart';
+import '../../services/chat_push_service.dart';
+import '../../services/match_suggestion_service.dart';
+import '../../widgets/ai/ai_brand_tokens.dart';
+import '../../widgets/avatar_image.dart';
+import '../../widgets/moe_loading.dart';
+import '../../widgets/moe_toast.dart';
+
+/// 探索页 · 同好：在线匹配、话题推荐与结果展示。
+class DiscoverMatchTab extends StatefulWidget {
+  const DiscoverMatchTab({super.key});
+
+  @override
+  State<DiscoverMatchTab> createState() => _DiscoverMatchTabState();
+}
+
+class _DiscoverMatchTabState extends State<DiscoverMatchTab>
+    with SingleTickerProviderStateMixin {
+  final Set<String> _selectedTagIds = {};
+  List<MatchCandidate> _candidates = [];
+  bool _loading = false;
+  bool _hasSearched = false;
+  String? _matchErrorMessage;
+  DateTime? _lastOfflineMatchAt;
+  static const Duration _offlineMatchThrottle = Duration(milliseconds: 800);
+
+  StreamSubscription<Map<String, dynamic>>? _matchSub;
+  bool _onlineMatching = false;
+  String? _onlineMatchHint;
+
+  AnimationController? _pulseCtrl;
+  Animation<double>? _pulseAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _matchSub = ChatPushService.matchEventsStream.listen(_onMatchEvent);
+    _initPulseAnimation();
+  }
+
+  void _initPulseAnimation() {
+    _pulseCtrl = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _pulseAnim = Tween<double>(begin: 1.0, end: 1.06).animate(
+      CurvedAnimation(parent: _pulseCtrl!, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _matchSub?.cancel();
+    if (_onlineMatching) ChatPushService.sendMatchCancel();
+    _pulseCtrl?.dispose();
+    super.dispose();
+  }
+
+  bool get _animationsEnabled {
+    return MediaQuery.maybeOf(context)?.disableAnimations != true;
+  }
+
+  void _onMatchEvent(Map<String, dynamic> e) {
+    if (!mounted) return;
+    final t = e['type']?.toString();
+    if (t == 'match_waiting') {
+      setState(() => _onlineMatchHint = '排队中，请稍候…');
+      return;
+    }
+    if (t == 'match_cancelled') {
+      setState(() {
+        _onlineMatching = false;
+        _onlineMatchHint = null;
+      });
+      _pulseCtrl?.stop();
+      return;
+    }
+    if (t == 'match_found') {
+      final peer = e['peer_id']?.toString();
+      setState(() {
+        _onlineMatching = false;
+        _onlineMatchHint = null;
+      });
+      _pulseCtrl?.stop();
+      if (peer != null && peer.isNotEmpty) _openDirectChatWith(peer);
+    }
+  }
+
+  Future<void> _toggleTopicTag(String tagId) async {
+    HapticFeedback.lightImpact();
+    setState(() {
+      if (_selectedTagIds.contains(tagId)) {
+        _selectedTagIds.remove(tagId);
+      } else {
+        _selectedTagIds.add(tagId);
+      }
+    });
+    if (_hasSearched && !_loading) {
+      await _runOfflineMatch();
+    }
+  }
+
+  Future<void> _openDirectChatWith(String peerId) async {
+    try {
+      final u = await ApiService.getUserInfo(peerId);
+      if (!mounted) return;
+      await Navigator.pushNamed(context, '/direct-chat', arguments: {
+        'userId': u.id,
+        'username': u.username,
+        'avatar': u.avatar,
+      });
+    } catch (_) {
+      if (mounted) MoeToast.error(context, '无法打开聊天，请稍后重试');
+    }
+  }
+
+  Future<void> _toggleOnlineMatch() async {
+    if (!AuthService.isLoggedIn) {
+      MoeToast.error(context, '请先登录后再试');
+      return;
+    }
+    HapticFeedback.heavyImpact();
+    if (_onlineMatching) {
+      ChatPushService.sendMatchCancel();
+      setState(() {
+        _onlineMatching = false;
+        _onlineMatchHint = null;
+      });
+      _pulseCtrl?.stop();
+      return;
+    }
+    ChatPushService.start();
+    setState(() {
+      _onlineMatching = true;
+      _onlineMatchHint = '正在连接匹配…';
+    });
+    if (_animationsEnabled) {
+      _pulseCtrl?.repeat(reverse: true);
+    }
+    ChatPushService.sendMatchJoin();
+  }
+
+  Future<void> _runOfflineMatch() async {
+    if (!AuthService.isLoggedIn) {
+      MoeToast.error(context, '请先登录后再试');
+      return;
+    }
+    if (_loading) return;
+    final now = DateTime.now();
+    final lastTriggeredAt = _lastOfflineMatchAt;
+    if (lastTriggeredAt != null &&
+        now.difference(lastTriggeredAt) < _offlineMatchThrottle) {
+      return;
+    }
+    _lastOfflineMatchAt = now;
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _loading = true;
+      _hasSearched = true;
+      _matchErrorMessage = null;
+    });
+    try {
+      final list = await MatchSuggestionService.suggest(
+        preferredTagIds: _selectedTagIds,
+        maxResults: 24,
+      );
+      if (!mounted) return;
+      setState(() {
+        _candidates = list;
+        _loading = false;
+        _matchErrorMessage = null;
+      });
+      if (list.isEmpty) {
+        MoeToast.error(context, '暂时没有合适推荐，换个标签或稍后再试');
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _candidates = [];
+        _loading = false;
+        _matchErrorMessage = '匹配加载失败，请检查网络后重试';
+      });
+      MoeToast.error(context, '加载失败，请检查网络');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      slivers: [
+        SliverToBoxAdapter(child: _buildOnlineMatchHero()),
+        SliverToBoxAdapter(child: _buildTopicsSection()),
+        SliverToBoxAdapter(child: _buildMatchButton()),
+        _buildResultsSection(),
+        const SliverToBoxAdapter(child: SizedBox(height: 48)),
+      ],
+    );
+  }
+
+  Widget _buildOnlineMatchHero() {
+    final matchingGradient = const [
+      Color(0xFFFC6076),
+      Color(0xFFFF9A44),
+    ];
+    final idleGradient = [
+      AiBrandTokens.primary,
+      AiBrandTokens.secondary,
+    ];
+
+    Widget card = GestureDetector(
+      onTap: _toggleOnlineMatch,
+      child: Container(
+        height: 156,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: _onlineMatching ? matchingGradient : idleGradient,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: (_onlineMatching ? matchingGradient.first : idleGradient.first)
+                  .withValues(alpha: 0.35),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -24,
+              right: -16,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.08),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _onlineMatching
+                              ? Icons.wifi_rounded
+                              : Icons.favorite_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _onlineMatching ? '匹配中…' : '在线实时匹配',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              _onlineMatchHint ??
+                                  (_onlineMatching
+                                      ? '请保持在此页等待'
+                                      : '与另一位用户实时配对，开始私聊'),
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.85),
+                                fontSize: 12,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 9,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.45),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _onlineMatching
+                                  ? Icons.close_rounded
+                                  : Icons.bolt_rounded,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _onlineMatching ? '取消排队' : '立即加入',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (_onlineMatching) ...[
+                        const SizedBox(width: 12),
+                        const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (_onlineMatching && _animationsEnabled && _pulseAnim != null) {
+      card = AnimatedBuilder(
+        animation: _pulseAnim!,
+        builder: (_, child) => Transform.scale(
+          scale: _pulseAnim!.value,
+          child: child,
+        ),
+        child: card,
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      child: card,
+    );
+  }
+
+  Widget _buildTopicsSection() {
+    final tags = TopicTag.officialTags;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                '按话题找同好',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AiBrandTokens.titleColor,
+                ),
+              ),
+              const Spacer(),
+              if (_selectedTagIds.isNotEmpty)
+                TextButton(
+                  onPressed: () async {
+                    setState(() => _selectedTagIds.clear());
+                    if (_hasSearched && !_loading) {
+                      await _runOfflineMatch();
+                    }
+                  },
+                  style: TextButton.styleFrom(
+                    minimumSize: Size.zero,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    foregroundColor: Colors.grey,
+                  ),
+                  child: const Text('清除', style: TextStyle(fontSize: 12)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _selectedTagIds.isEmpty
+                ? '不选也可以，会从站内随机推荐新面孔'
+                : '已选 ${_selectedTagIds.length} 个话题（已自动刷新推荐）',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: tags.map((tag) {
+              final sel = _selectedTagIds.contains(tag.id);
+              return ChoiceChip(
+                label: Text(
+                  '#${tag.name}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: sel ? Colors.white : const Color(0xFF333333),
+                  ),
+                ),
+                selected: sel,
+                onSelected: (_) => _toggleTopicTag(tag.id),
+                selectedColor: tag.color,
+                backgroundColor: Colors.white,
+                side: BorderSide(
+                  color: sel ? tag.color : Colors.grey.shade200,
+                ),
+                pressElevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMatchButton() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: FilledButton.icon(
+        onPressed: _loading ? null : _runOfflineMatch,
+        style: FilledButton.styleFrom(
+          backgroundColor: AiBrandTokens.primary,
+          minimumSize: const Size(double.infinity, 50),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 0,
+        ),
+        icon: _loading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Icon(Icons.auto_awesome_rounded, size: 20),
+        label: Text(
+          _loading
+              ? '推荐中…'
+              : (_selectedTagIds.isEmpty ? '随机发现新面孔' : '根据话题推荐同好'),
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultsSection() {
+    if (!_hasSearched) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+    if (_loading) {
+      return const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 32),
+          child: Center(child: MoeSmallLoading(size: 28)),
+        ),
+      );
+    }
+    if (_matchErrorMessage != null) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+          child: _buildFailureState(),
+        ),
+      );
+    }
+    if (_candidates.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+          child: _buildNoResultState(),
+        ),
+      );
+    }
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      sliver: SliverToBoxAdapter(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '找到 ${_candidates.length} 位可能感兴趣的人',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: AiBrandTokens.titleColor,
+              ),
+            ),
+            const SizedBox(height: 12),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.75,
+              ),
+              itemCount: _candidates.length,
+              itemBuilder: (_, i) =>
+                  _MatchCandidateCard(candidate: _candidates[i]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFailureState() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFFE0DB)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF9A44).withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.wifi_off_rounded,
+                color: Color(0xFFFF9A44), size: 24),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '这次推荐没有成功',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: AiBrandTokens.titleColor,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _matchErrorMessage ?? '网络波动可能导致请求失败',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: _loading ? null : _runOfflineMatch,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AiBrandTokens.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('重试'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _loading
+                      ? null
+                      : () {
+                          setState(() {
+                            _matchErrorMessage = null;
+                            _hasSearched = false;
+                            _candidates = [];
+                          });
+                        },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AiBrandTokens.primary,
+                    side: const BorderSide(color: AiBrandTokens.primary),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: const Icon(Icons.tune_rounded, size: 18),
+                  label: const Text('重新选择'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoResultState() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.search_off_rounded, size: 48, color: Colors.grey.shade300),
+          const SizedBox(height: 12),
+          Text(
+            '没有找到合适的同好',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+              color: AiBrandTokens.titleColor,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '可以刷新一次，或试试在线实时匹配',
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: _loading ? null : _runOfflineMatch,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AiBrandTokens.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('刷新推荐'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _loading
+                      ? null
+                      : () {
+                          setState(() => _selectedTagIds.clear());
+                          _runOfflineMatch();
+                        },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AiBrandTokens.primary,
+                    side: const BorderSide(color: AiBrandTokens.primary),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: const Icon(Icons.shuffle_rounded, size: 18),
+                  label: const Text('随机策略'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: _onlineMatching ? null : _toggleOnlineMatch,
+            style: TextButton.styleFrom(
+              foregroundColor: AiBrandTokens.primary,
+              textStyle: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            icon: const Icon(Icons.favorite_rounded, size: 18),
+            label: const Text('试试在线实时匹配'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MatchCandidateCard extends StatelessWidget {
+  const _MatchCandidateCard({required this.candidate});
+
+  final MatchCandidate candidate;
+
+  @override
+  Widget build(BuildContext context) {
+    final tags = candidate.matchedTagNames.take(2).toList();
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(context, '/user-profile', arguments: {
+        'userId': candidate.userId,
+        'userName': candidate.username,
+        'userAvatar': candidate.userAvatar,
+        'heroTag': 'match_${candidate.userId}',
+      }),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Hero(
+                tag: 'match_${candidate.userId}',
+                child: NetworkAvatarImage(
+                  imageUrl: candidate.userAvatar,
+                  radius: 26,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                candidate.username,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AiBrandTokens.titleColor,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (tags.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 3,
+                  runSpacing: 3,
+                  children: tags
+                      .map(
+                        (name) => Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AiBrandTokens.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '#$name',
+                            style: const TextStyle(
+                              fontSize: 9,
+                              color: AiBrandTokens.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+              const Spacer(),
+              GestureDetector(
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  '/direct-chat',
+                  arguments: {
+                    'userId': candidate.userId,
+                    'username': candidate.username,
+                    'avatar': candidate.userAvatar,
+                  },
+                ),
+                child: Container(
+                  height: 28,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AiBrandTokens.primary,
+                        AiBrandTokens.secondary,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.chat_bubble_outline_rounded,
+                            color: Colors.white, size: 11),
+                        SizedBox(width: 3),
+                        Text(
+                          '打招呼',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

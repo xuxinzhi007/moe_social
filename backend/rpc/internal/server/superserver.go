@@ -154,6 +154,11 @@ func (s *SuperServer) ListAiAgents(ctx context.Context, in *super.ListAiResource
 	return l.ListAiAgents(in)
 }
 
+func (s *SuperServer) ListPublicAiAgents(ctx context.Context, in *super.ListPublicAiAgentsReq) (*super.ListAiResourceResp, error) {
+	l := logic.NewListPublicAiAgentsLogic(ctx, s.svcCtx)
+	return l.ListPublicAiAgents(in)
+}
+
 func (s *SuperServer) UpsertAiAgent(ctx context.Context, in *super.UpsertAiResourceReq) (*super.UpsertAiResourceResp, error) {
 	l := logic.NewUpsertAiAgentLogic(ctx, s.svcCtx)
 	return l.UpsertAiAgent(in)

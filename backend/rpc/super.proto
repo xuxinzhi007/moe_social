@@ -784,6 +784,11 @@ message ListAiResourceResp {
   repeated AiJsonResourceItem items = 1;
 }
 
+// 广场：拉取各用户 agents_json 中 is_public=true 的角色卡。
+message ListPublicAiAgentsReq {
+  int32 limit = 1;
+}
+
 message UpsertAiResourceReq {
   string user_id = 1;
   string id = 2;
@@ -923,6 +928,7 @@ service Super {
   rpc UpsertAiProvider(UpsertAiResourceReq) returns (UpsertAiResourceResp);
   rpc DeleteAiProvider(DeleteAiResourceReq) returns (DeleteAiResourceResp);
   rpc ListAiAgents(ListAiResourceReq) returns (ListAiResourceResp);
+  rpc ListPublicAiAgents(ListPublicAiAgentsReq) returns (ListAiResourceResp);
   rpc UpsertAiAgent(UpsertAiResourceReq) returns (UpsertAiResourceResp);
   rpc DeleteAiAgent(DeleteAiResourceReq) returns (DeleteAiResourceResp);
   rpc ListAiLorebooks(ListAiResourceReq) returns (ListAiResourceResp);

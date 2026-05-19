@@ -56,6 +56,20 @@ class AiProviderProfile {
   bool get isOpenAiCompatible =>
       providerType == AiProviderType.openAiCompatible;
 
+  /// 当 /models 不可用时，用于下拉与「模型来源」列表的回退模型 ID。
+  List<String> get effectiveModelIds {
+    final ids = <String>{};
+    final def = defaultModel.trim();
+    if (def.isNotEmpty) ids.add(def);
+    for (final raw in manualModels) {
+      final id = raw.trim();
+      if (id.isNotEmpty) ids.add(id);
+    }
+    return ids.toList();
+  }
+
+  bool get hasConfiguredModels => effectiveModelIds.isNotEmpty;
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

@@ -35,7 +35,7 @@ class AiDbService {
 
     return await openDatabase(
       path,
-      version: 6,
+      version: 8,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -78,7 +78,11 @@ class AiDbService {
         scenario TEXT DEFAULT '',
         opening_message TEXT DEFAULT '',
         example_dialogues TEXT DEFAULT '',
-        created_at INTEGER
+        created_at INTEGER,
+        created_by_user_id TEXT,
+        updated_at INTEGER,
+        is_public INTEGER DEFAULT 0,
+        author_name TEXT
       )
     ''');
 
@@ -329,6 +333,34 @@ class AiDbService {
         db,
         table: 'agents',
         column: 'lorebook_id',
+        definition: 'TEXT',
+      );
+    }
+    if (oldVersion < 7) {
+      await _ensureColumn(
+        db,
+        table: 'agents',
+        column: 'created_by_user_id',
+        definition: 'TEXT',
+      );
+      await _ensureColumn(
+        db,
+        table: 'agents',
+        column: 'updated_at',
+        definition: 'INTEGER',
+      );
+    }
+    if (oldVersion < 8) {
+      await _ensureColumn(
+        db,
+        table: 'agents',
+        column: 'is_public',
+        definition: 'INTEGER DEFAULT 0',
+      );
+      await _ensureColumn(
+        db,
+        table: 'agents',
+        column: 'author_name',
         definition: 'TEXT',
       );
     }

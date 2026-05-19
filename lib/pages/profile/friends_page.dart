@@ -994,7 +994,7 @@ class _FriendsPageState extends State<FriendsPage>
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '用对方的邮箱或 10 位 Moe 号发出申请；也可以先去发现页按话题认识新朋友。',
+                          '用对方的邮箱或 10 位 Moe 号发出申请；也可以先去探索页按话题认识新朋友。',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 14,

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../models/ai_memory.dart';
 import '../models/user_memory.dart';
+import '../models/user_memory_display.dart';
 import '../models/user_memory_profile.dart';
 import 'api_service.dart';
 
@@ -60,6 +61,15 @@ class MemoryService {
     final items = paged['items'];
     if (items is List<UserMemory>) return items;
     return const [];
+  }
+
+  /// 获取面向用户展示的记忆数据（后端已过滤技术项并生成标题/分类）。
+  static Future<UserMemoryDisplayData> getUserMemoriesDisplay(String userId) async {
+    final result = await ApiService.get(
+      '/api/user/$userId/memories/display',
+    );
+    final data = Map<String, dynamic>.from(result['data'] ?? const {});
+    return UserMemoryDisplayData.fromJson(data);
   }
 
   /// 获取后端聚合画像摘要

@@ -12,7 +12,7 @@ import (
 
 func TestBuildFeishuAgentEventCard(t *testing.T) {
 	card := buildFeishuAgentEventCard(FeishuAgentEvent{
-		Action: FeishuAgentCreated,
+		Action:          FeishuAgentCreated,
 		UserName:        "测试用户",
 		UserID:          "42",
 		AgentID:         "agent_1",

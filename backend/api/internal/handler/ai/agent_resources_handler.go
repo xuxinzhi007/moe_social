@@ -3,6 +3,7 @@ package ai
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	ailogic "backend/api/internal/logic/ai"
 	"backend/api/internal/svc"
@@ -20,6 +21,28 @@ func ListAgentsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		l := ailogic.NewResourceLogic(r.Context(), svcCtx)
 		resp, err := l.ListAgents(userID)
+		if err != nil {
+			httpx.ErrorCtx(r.Context(), w, err)
+			return
+		}
+		httpx.OkJsonCtx(r.Context(), w, resp)
+	}
+}
+
+func ListPublicAgentsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if _, err := parseUserID(r); err != nil {
+			httpx.ErrorCtx(r.Context(), w, err)
+			return
+		}
+		limit := int32(50)
+		if raw := r.URL.Query().Get("limit"); raw != "" {
+			if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+				limit = int32(n)
+			}
+		}
+		l := ailogic.NewResourceLogic(r.Context(), svcCtx)
+		resp, err := l.ListPublicAgents(limit)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
