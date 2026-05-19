@@ -1,10 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
-import '../../services/api_service.dart';
 import '../../services/ai_character_card_service.dart';
 import '../../services/ai_chat_gateway_service.dart';
 import '../../services/ai_agent_cloud_service.dart';
@@ -829,33 +826,7 @@ class _AgentListPageState extends State<AgentListPage>
     );
     if (confirm != true || !mounted) return;
 
-    final isBackendAgent = agent.providerProfileId == null ||
-        agent.providerProfileId == AiProviderProfile.builtinBackendId;
-    if (isBackendAgent) {
-      try {
-        final uri = Uri.parse('${ApiService.baseUrl}/api/llm/models/delete');
-        ApiService.logDirectHttp('POST', uri);
-        final response = await http.post(
-          uri,
-          headers: ApiService.mergeTunnelHeaders(uri, headers: {
-            'Content-Type': 'application/json',
-            if (ApiService.token case final t?) 'Authorization': 'Bearer $t',
-          }),
-          body: jsonEncode({'model': agent.modelName}),
-        );
-        if (response.statusCode != 200) {
-          throw Exception('删除失败(${response.statusCode})');
-        }
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
-        if (data is Map && data['success'] == false) {
-          throw Exception(data['message'] ?? '删除失败');
-        }
-      } catch (e) {
-        if (mounted) MoeToast.error(context, '删除后端模型失败：$e');
-        return;
-      }
-    }
-
+    // 角色卡仅为服务器 JSON；model_name 是聊天用的模型 ID，不等于 Ollama 里创建的模型。
     try {
       await AiAgentCloudService().deleteAgent(agent.id);
     } catch (e) {
