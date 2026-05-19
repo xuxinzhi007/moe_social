@@ -18,6 +18,8 @@ import '../../services/ai_roleplay_prompt_builder.dart';
 import '../../services/ai_user_persona_service.dart';
 import '../../services/ai_memory_orchestrator.dart';
 import '../../services/ai_tts_helper.dart';
+import '../../utils/ai_chat_message_utils.dart';
+import '../../utils/ai_chat_quick_replies.dart';
 import 'memory_manager_page.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_chat_session.dart';
@@ -81,20 +83,20 @@ class _ChatPageState extends State<ChatPage> {
 
   // Quick Replies
   bool _showQuickReplies = false;
-  List<String> _quickReplies = [
-    '你好，今天过得怎么样？',
-    '能帮我解释一下这个概念吗？',
-    '有什么好的建议吗？',
-    '如何提高学习效率？',
-    '推荐一些好书给我吧',
-    '帮我制定一个计划',
-  ];
+  late List<String> _quickReplies;
+
+  /// 用户上滑阅读时为 false，避免新消息强行滚底。
+  bool _stickToBottom = true;
+  static const double _scrollStickThreshold = 96;
 
   // Message Marking
   Set<String> _markedMessages = {};
 
   // Edit Message
   String? _editingMessageId;
+
+  String? _streamingMessageId;
+  Timer? _typewriterTimer;
 
   bool get _isBackendProviderAgent =>
       widget.agent.providerProfileId == null ||
@@ -107,6 +109,8 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
     _ttsHelper = AiTtsHelper(_tts);
+    _quickReplies = buildAgentQuickReplies(widget.agent);
+    _scrollController.addListener(_onScroll);
     _systemPrompt = widget.agent.systemPrompt.trim().isNotEmpty
         ? widget.agent.systemPrompt
         : AiPromptDefaults.defaultAgentSystemPrompt;
@@ -125,6 +129,8 @@ class _ChatPageState extends State<ChatPage> {
     if (!_localPersistenceEnabled) {
       unawaited(_persistWebCache());
     }
+    _scrollController.removeListener(_onScroll);
+    _cancelTypewriter();
     _controller.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
@@ -181,7 +187,10 @@ class _ChatPageState extends State<ChatPage> {
               }
               _isLoadingHistory = false;
             });
-            _scrollToBottom();
+            _scrollToBottom(force: true);
+            if (_messages.isEmpty) {
+              unawaited(_seedOpeningMessageIfNeeded(current));
+            }
             return;
           }
         }
@@ -383,7 +392,7 @@ class _ChatPageState extends State<ChatPage> {
     if (_messages.isNotEmpty) return;
     setState(() => _messages = [greeting]);
     unawaited(_persistWebCache());
-    _scrollToBottom();
+    _scrollToBottom(force: true);
   }
 
   Future<void> _loadSession(AiChatSession session) async {
@@ -398,9 +407,13 @@ class _ChatPageState extends State<ChatPage> {
       setState(() {
         _messages = messages;
         _isLoadingHistory = false;
+        _stickToBottom = true;
       });
-      _scrollToBottom();
+      _scrollToBottom(force: true);
       unawaited(_persistWebCache());
+      if (messages.isEmpty) {
+        unawaited(_seedOpeningMessageIfNeeded(session));
+      }
     }
   }
 
@@ -447,16 +460,102 @@ class _ChatPageState extends State<ChatPage> {
       _controller.clear();
       _isSending = true;
       _wasManuallyStopped = false;
+      _stickToBottom = true;
     });
-    _scrollToBottom();
+    _scrollToBottom(force: true);
     if (_localPersistenceEnabled) {
       await AiDbService().insertMessage(userMsg);
     }
 
+    await _fetchAssistantReply(userMsg, titleSeed: text);
+  }
+
+  void _cancelTypewriter() {
+    _typewriterTimer?.cancel();
+    _typewriterTimer = null;
+  }
+
+  void _updateMessageContent(String messageId, String content) {
+    final index = _messages.indexWhere((m) => m.id == messageId);
+    if (index < 0) return;
+    final old = _messages[index];
+    _messages[index] = AiChatMessage(
+      id: old.id,
+      sessionId: old.sessionId,
+      role: old.role,
+      content: content,
+      createdAt: old.createdAt,
+    );
+  }
+
+  Future<void> _revealTypewriter(String messageId, String fullText) async {
+    _cancelTypewriter();
+    if (fullText.isEmpty) {
+      _updateMessageContent(messageId, fullText);
+      if (mounted) setState(() {});
+      return;
+    }
+    final animate = fullText.length <= 1400;
+    if (!animate) {
+      _updateMessageContent(messageId, fullText);
+      if (mounted) setState(() {});
+      return;
+    }
+
+    var index = 0;
+    final completer = Completer<void>();
+    _typewriterTimer = Timer.periodic(const Duration(milliseconds: 14), (timer) {
+      if (!mounted || _wasManuallyStopped) {
+        timer.cancel();
+        completer.complete();
+        return;
+      }
+      index += 2;
+      if (index >= fullText.length) {
+        index = fullText.length;
+        timer.cancel();
+      }
+      _updateMessageContent(messageId, fullText.substring(0, index));
+      if (mounted) setState(() {});
+      _scrollToBottom();
+      if (index >= fullText.length) {
+        completer.complete();
+      }
+    });
+    return completer.future;
+  }
+
+  void _insertStreamingPlaceholder() {
+    final id = 'stream_${DateTime.now().millisecondsSinceEpoch}';
+    _streamingMessageId = id;
+    _messages.add(
+      AiChatMessage(
+        id: id,
+        sessionId: _currentSession!.id,
+        role: 'assistant',
+        content: '',
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
+  Future<void> _fetchAssistantReply(
+    AiChatMessage userMsg, {
+    String? titleSeed,
+  }) async {
+    final text = userMsg.content;
+    _cancelTypewriter();
+    if (mounted) {
+      setState(() {
+        _insertStreamingPlaceholder();
+      });
+      _scrollToBottom(force: true);
+    }
+    final streamId = _streamingMessageId;
     try {
-      // ── 构建对话历史（排除 system 角色，避免重复） ──────────────────
       final history = _messages
           .where((m) => m.role != 'system')
+          .where((m) => !(m.role == 'assistant' && m.content.trim().isEmpty))
           .map((m) => {'role': m.role, 'content': m.content})
           .toList();
 
@@ -469,7 +568,6 @@ class _ChatPageState extends State<ChatPage> {
             .toList(),
       );
 
-      // 后续可在 provider 层做更细粒度 prompt 组合；当前先完成角色卡基础层。
       var enrichedSystemPrompt = _withNoAiSelfDisclosureRule(
         AiRoleplayPromptBuilder.buildSystemPrompt(
           widget.agent,
@@ -495,61 +593,154 @@ class _ChatPageState extends State<ChatPage> {
         sourceMsgId: userMsg.id,
       );
       if (_wasManuallyStopped) return;
-      final assistantMsg = AiChatMessage(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        sessionId: _currentSession!.id,
-        role: 'assistant',
-        content: content,
-        createdAt: DateTime.now(),
-      );
 
-      if (_localPersistenceEnabled) {
-        await AiDbService().insertMessage(assistantMsg);
-      }
-
-      if (mounted) {
-        setState(() => _messages.add(assistantMsg));
-        unawaited(_persistWebCache());
-
-        AiMemoryOrchestrator().learnFromTurnInBackground(
-          agent: widget.agent,
-          sessionId: _currentSession!.id,
-          userMessage: text,
-          aiResponse: content,
-          sourceMsgId: userMsg.id,
-        );
-        unawaited(_loadMemoryState());
-
-        // 自动更新会话标题
-        if (_messages.length <= 2 && _currentSession!.title == '新对话') {
-          final newTitle =
-              text.length > 10 ? '${text.substring(0, 10)}...' : text;
-          final updatedSession = AiChatSession(
-            id: _currentSession!.id,
-            agentId: widget.agent.id,
-            title: newTitle,
-            updatedAt: DateTime.now(),
-          );
-          if (_localPersistenceEnabled) {
-            await AiDbService().updateSession(updatedSession);
-          }
-          setState(() {
-            _currentSession = updatedSession;
-            final idx = _sessions.indexWhere((s) => s.id == updatedSession.id);
-            if (idx != -1) _sessions[idx] = updatedSession;
-          });
-          unawaited(_persistWebCache());
+      if (streamId != null && _messages.any((m) => m.id == streamId)) {
+        await _revealTypewriter(streamId, content);
+        if (_wasManuallyStopped) return;
+        final assistantMsg = _messages.firstWhere((m) => m.id == streamId);
+        if (_localPersistenceEnabled) {
+          await AiDbService().insertMessage(assistantMsg);
         }
+      } else {
+        final assistantMsg = AiChatMessage(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          sessionId: _currentSession!.id,
+          role: 'assistant',
+          content: content,
+          createdAt: DateTime.now(),
+        );
+        if (_localPersistenceEnabled) {
+          await AiDbService().insertMessage(assistantMsg);
+        }
+        if (!mounted) return;
+        setState(() => _messages.add(assistantMsg));
+      }
+      _streamingMessageId = null;
+      if (mounted) setState(() {});
+      unawaited(_persistWebCache());
+
+      AiMemoryOrchestrator().learnFromTurnInBackground(
+        agent: widget.agent,
+        sessionId: _currentSession!.id,
+        userMessage: text,
+        aiResponse: content,
+        sourceMsgId: userMsg.id,
+      );
+      unawaited(_loadMemoryState());
+
+      final seed = titleSeed ?? text;
+      if (_messages.length <= 2 && _currentSession!.title == '新对话') {
+        final newTitle = seed.length > 10 ? '${seed.substring(0, 10)}...' : seed;
+        final updatedSession = AiChatSession(
+          id: _currentSession!.id,
+          agentId: widget.agent.id,
+          title: newTitle,
+          updatedAt: DateTime.now(),
+        );
+        if (_localPersistenceEnabled) {
+          await AiDbService().updateSession(updatedSession);
+        }
+        if (!mounted) return;
+        setState(() {
+          _currentSession = updatedSession;
+          final idx = _sessions.indexWhere((s) => s.id == updatedSession.id);
+          if (idx != -1) _sessions[idx] = updatedSession;
+        });
+        unawaited(_persistWebCache());
       }
     } catch (e) {
       if (_wasManuallyStopped) return;
+      if (streamId != null) {
+        _messages.removeWhere((m) => m.id == streamId);
+        _streamingMessageId = null;
+      }
+      if (mounted) setState(() {});
       await _appendError(AiChatGatewayService.userFacingError(e));
     } finally {
+      _cancelTypewriter();
+      _streamingMessageId = null;
       if (mounted) {
         setState(() => _isSending = false);
         _scrollToBottom();
       }
     }
+  }
+
+  Future<void> _continueAssistantMessage(AiChatMessage message) async {
+    if (_isSending || message.role != 'assistant') return;
+    if (!_isLastAssistantMessage(message)) {
+      MoeToast.error(context, '只能继续最后一条 AI 回复');
+      return;
+    }
+    final userMsg = AiChatMessage(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      sessionId: _currentSession!.id,
+      role: 'user',
+      content: '请继续写下去',
+      createdAt: DateTime.now(),
+    );
+    if (_localPersistenceEnabled) {
+      await AiDbService().insertMessage(userMsg);
+    }
+    if (!mounted) return;
+    setState(() {
+      _messages.add(userMsg);
+      _isSending = true;
+      _wasManuallyStopped = false;
+      _stickToBottom = true;
+    });
+    _scrollToBottom(force: true);
+    await _fetchAssistantReply(userMsg);
+  }
+
+  Future<void> _regenerateAssistantMessage(AiChatMessage message) async {
+    if (_isSending || message.role != 'assistant') return;
+    if (!_isLastAssistantMessage(message)) {
+      MoeToast.error(context, '只能重新生成最后一条 AI 回复');
+      return;
+    }
+    final userMsg = _userMessageBefore(message.id);
+    if (userMsg == null) {
+      MoeToast.error(context, '找不到对应的用户消息');
+      return;
+    }
+
+    if (_localPersistenceEnabled) {
+      await AiDbService().deleteMessage(message.id);
+    }
+    if (!mounted) return;
+    setState(() {
+      _messages.removeWhere((m) => m.id == message.id);
+      _isSending = true;
+      _wasManuallyStopped = false;
+      _stickToBottom = true;
+    });
+    _scrollToBottom(force: true);
+    await _fetchAssistantReply(userMsg);
+  }
+
+  Future<void> _retryAfterError(AiChatMessage errorMessage) async {
+    if (_isSending || !AiChatMessageUtils.looksLikeErrorContent(errorMessage.content)) {
+      return;
+    }
+    final userMsg = _userMessageBefore(errorMessage.id);
+    if (userMsg == null) {
+      MoeToast.error(context, '找不到上一条用户消息，无法重试');
+      return;
+    }
+
+    if (_localPersistenceEnabled) {
+      await AiDbService().deleteMessage(errorMessage.id);
+    }
+    if (!mounted) return;
+    setState(() {
+      _messages.removeWhere((m) => m.id == errorMessage.id);
+      _isSending = true;
+      _wasManuallyStopped = false;
+      _stickToBottom = true;
+    });
+    _scrollToBottom(force: true);
+    await _fetchAssistantReply(userMsg);
   }
 
   String _withNoAiSelfDisclosureRule(String prompt) {
@@ -721,16 +912,101 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  void _scrollToBottom() {
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    final atBottom =
+        pos.maxScrollExtent - pos.pixels <= _scrollStickThreshold;
+    if (_stickToBottom != atBottom) {
+      setState(() => _stickToBottom = atBottom);
+    }
+  }
+
+  void _scrollToBottom({bool force = false}) {
+    if (!force && !_stickToBottom) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
+      if (!_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     });
+  }
+
+  AiChatMessage? get _lastAssistantMessage {
+    for (var i = _messages.length - 1; i >= 0; i--) {
+      if (_messages[i].role == 'assistant') return _messages[i];
+    }
+    return null;
+  }
+
+  bool _isSameCalendarDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  bool _shouldShowDateHeader(int index) {
+    if (index <= 0 || index >= _messages.length) return index == 0;
+    return !_isSameCalendarDay(
+      _messages[index].createdAt,
+      _messages[index - 1].createdAt,
+    );
+  }
+
+  String _dateLabelFor(DateTime dt) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(dt.year, dt.month, dt.day);
+    if (day == today) return '今天';
+    if (day == today.subtract(const Duration(days: 1))) return '昨天';
+    if (dt.year == now.year) return '${dt.month}月${dt.day}日';
+    return '${dt.year}年${dt.month}月${dt.day}日';
+  }
+
+  Widget _buildDateSeparator(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12, top: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Divider(
+              color: Colors.grey.shade300,
+              height: 1,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
+              label,
+              style: AiTheme.caption.copyWith(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Divider(
+              color: Colors.grey.shade300,
+              height: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _isLastAssistantMessage(AiChatMessage message) {
+    final last = _lastAssistantMessage;
+    return last != null && last.id == message.id;
+  }
+
+  AiChatMessage? _userMessageBefore(String assistantId) {
+    final idx = _messages.indexWhere((m) => m.id == assistantId);
+    if (idx <= 0) return null;
+    for (var i = idx - 1; i >= 0; i--) {
+      if (_messages[i].role == 'user') return _messages[i];
+    }
+    return null;
   }
 
   void _scrollToMessage(String messageId) {
@@ -830,23 +1106,34 @@ class _ChatPageState extends State<ChatPage> {
   void _stopGeneration() {
     if (!_isSending) return;
     _wasManuallyStopped = true;
-    final now = DateTime.now();
-    final msg = AiChatMessage(
-      id: now.millisecondsSinceEpoch.toString(),
-      sessionId: _currentSession!.id,
-      role: 'assistant',
-      content: '已手动停止生成',
-      createdAt: now,
-    );
-    if (_localPersistenceEnabled) {
-      AiDbService().insertMessage(msg);
-    }
+    _cancelTypewriter();
+    final streamId = _streamingMessageId;
     if (mounted) {
       setState(() {
-        _messages.add(msg);
+        if (streamId != null) {
+          final idx = _messages.indexWhere((m) => m.id == streamId);
+          if (idx >= 0) {
+            final partial = _messages[idx].content.trim();
+            if (partial.isEmpty) {
+              _messages.removeAt(idx);
+            }
+          }
+          _streamingMessageId = null;
+        } else {
+          final now = DateTime.now();
+          _messages.add(
+            AiChatMessage(
+              id: now.millisecondsSinceEpoch.toString(),
+              sessionId: _currentSession!.id,
+              role: 'assistant',
+              content: '已手动停止生成',
+              createdAt: now,
+            ),
+          );
+        }
         _isSending = false;
       });
-      _scrollToBottom();
+      _scrollToBottom(force: true);
     }
   }
 
@@ -918,6 +1205,52 @@ class _ChatPageState extends State<ChatPage> {
                     MoeToast.success(context, '已复制到剪贴板');
                   },
                 ),
+                if (message.role == 'assistant' &&
+                    _isLastAssistantMessage(message) &&
+                    !AiChatMessageUtils.looksLikeErrorContent(message.content)) ...[
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AiBrandTokens.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.refresh_rounded,
+                        color: AiBrandTokens.primary,
+                      ),
+                    ),
+                    title: const Text(
+                      '重新生成',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _regenerateAssistantMessage(message);
+                    },
+                  ),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF5B8DEF).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.more_horiz_rounded,
+                        color: Color(0xFF5B8DEF),
+                      ),
+                    ),
+                    title: const Text(
+                      '继续生成',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _continueAssistantMessage(message);
+                    },
+                  ),
+                ],
                 if (message.role == 'user') ...[
                   ListTile(
                     leading: Container(
@@ -1841,12 +2174,21 @@ class _ChatPageState extends State<ChatPage> {
       controller: _scrollController,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      itemCount: _messages.length + (_isSending ? 1 : 0),
+      itemCount:
+          _messages.length + (_isSending && _streamingMessageId == null ? 1 : 0),
       itemBuilder: (context, index) {
         if (_isSending && index == _messages.length) {
           return _buildTypingBubble();
         }
-        return _buildMessageBubble(_messages[index]);
+        final message = _messages[index];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_shouldShowDateHeader(index))
+              _buildDateSeparator(_dateLabelFor(message.createdAt)),
+            _buildMessageBubble(message, index: index),
+          ],
+        );
       },
     );
   }
@@ -1873,6 +2215,7 @@ class _ChatPageState extends State<ChatPage> {
                 Expanded(
                   child: AiChatBackground(child: _buildMessageList()),
                 ),
+                if (_isSending) _buildGeneratingBanner(),
                 Flexible(
                   flex: 0,
                   fit: FlexFit.loose,
@@ -1886,16 +2229,65 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  Widget _buildMessageBubble(AiChatMessage message) {
+  Widget _buildGeneratingBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: AiBrandTokens.primary.withValues(alpha: 0.06),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AiBrandTokens.primary.withValues(alpha: 0.85),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '${widget.agent.name} 正在回复…',
+              style: AiTheme.caption.copyWith(
+                color: AiBrandTokens.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: _stopGeneration,
+            style: TextButton.styleFrom(
+              foregroundColor: AiTheme.danger,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text('停止'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessageBubble(AiChatMessage message, {required int index}) {
     final isUser = message.role == 'user';
+    final isError = !isUser &&
+        AiChatMessageUtils.looksLikeErrorContent(message.content);
     final timeStr =
         "${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}";
 
+    final sameRoleAbove =
+        index > 0 && _messages[index - 1].role == message.role;
+    final hideAvatar = sameRoleAbove;
+    final compactTop = sameRoleAbove;
+
     MessageContentType contentType = MessageContentType.text;
-    if (message.content == 'AI is thinking...') {
+    if (message.content == 'AI is thinking...' ||
+        (message.id == _streamingMessageId && message.content.isEmpty)) {
       contentType = MessageContentType.thinking;
     }
     final useRichFormat = !isUser &&
+        !isError &&
         contentType == MessageContentType.text &&
         message.content.trim().isNotEmpty;
 
@@ -1912,14 +2304,75 @@ class _ChatPageState extends State<ChatPage> {
           crossAxisAlignment:
               isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            AiMessageBubble(
-              content: message.content,
-              contentType: contentType,
-              isUser: isUser,
-              richFormat: useRichFormat,
-              agentLabel: isUser ? null : widget.agent.name,
-              onContentExpanded: _scrollToBottom,
-            ),
+            if (isError)
+              Padding(
+                padding: const EdgeInsets.only(left: 40, bottom: 6),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AiTheme.danger.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AiTheme.danger.withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline_rounded,
+                            size: 18,
+                            color: AiTheme.danger.withValues(alpha: 0.9),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '发送失败',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: AiTheme.danger.withValues(alpha: 0.95),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        message.content,
+                        style: AiTheme.body.copyWith(height: 1.45),
+                      ),
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: FilledButton.tonalIcon(
+                          onPressed: _isSending
+                              ? null
+                              : () => _retryAfterError(message),
+                          icon: const Icon(Icons.refresh_rounded, size: 18),
+                          label: const Text('重试'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor:
+                                AiBrandTokens.primary.withValues(alpha: 0.12),
+                            foregroundColor: AiBrandTokens.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              AiMessageBubble(
+                content: message.content,
+                contentType: contentType,
+                isUser: isUser,
+                richFormat: useRichFormat,
+                hideAvatar: hideAvatar,
+                compactTop: compactTop,
+                agentLabel: isUser ? null : widget.agent.name,
+                onContentExpanded: () => _scrollToBottom(force: true),
+              ),
             if (isUser)
               Padding(
                 padding: const EdgeInsets.only(top: 4, right: 4),
@@ -1928,7 +2381,7 @@ class _ChatPageState extends State<ChatPage> {
                   style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                 ),
               ),
-            if (!isUser)
+            if (!isUser && !isError)
               Padding(
                 padding: const EdgeInsets.only(top: 4, left: 48),
                 child: Row(
@@ -1939,6 +2392,25 @@ class _ChatPageState extends State<ChatPage> {
                       style:
                           TextStyle(fontSize: 11, color: Colors.grey.shade400),
                     ),
+                    if (_isLastAssistantMessage(message)) ...[
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: _isSending
+                            ? null
+                            : () => _regenerateAssistantMessage(message),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.refresh_rounded,
+                            size: 16,
+                            color: _isSending
+                                ? Colors.grey.shade400
+                                : AiBrandTokens.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(width: 8),
                     Material(
                       color: Colors.transparent,
@@ -1961,6 +2433,14 @@ class _ChatPageState extends State<ChatPage> {
                       ),
                     ),
                   ],
+                ),
+              ),
+            if (!isUser && isError)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 48),
+                child: Text(
+                  timeStr,
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
                 ),
               ),
           ],
@@ -2055,7 +2535,7 @@ class _ChatPageState extends State<ChatPage> {
       onToggleListening: _toggleListening,
       onToggleQuickReplies: _toggleQuickReplies,
       onSend: _sendMessage,
-      onStop: _stopGeneration,
+      stopControlInBanner: true,
       quickRepliesPanel: _buildQuickReplies(),
     );
   }

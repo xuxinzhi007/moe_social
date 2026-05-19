@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
+import '../../utils/ai_chat_message_utils.dart';
 import '../../utils/ai_message_format_parser.dart';
 import '../moe_toast.dart';
 import 'ai_brand_tokens.dart';
@@ -21,7 +22,8 @@ class AiRichMessageBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final blocks = parseAiMessageContent(content);
+    final formatted = AiChatMessageUtils.formatRoleplayContent(content);
+    final blocks = parseAiMessageContent(formatted);
     final textColor = isUser ? Colors.white : Colors.black87;
 
     if (blocks.length == 1 && blocks.first.kind == AiMessageBlockKind.text) {
@@ -84,8 +86,11 @@ class _MarkdownSegment extends StatelessWidget {
         fontWeight: FontWeight.w700,
       ),
       em: TextStyle(
-        color: textColor.withValues(alpha: 0.92),
+        color: isUser
+            ? textColor.withValues(alpha: 0.9)
+            : Colors.grey.shade600,
         fontStyle: FontStyle.italic,
+        height: 1.5,
       ),
       code: TextStyle(
         color: isUser ? Colors.white : AiBrandTokens.primary,
