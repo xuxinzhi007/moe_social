@@ -34,6 +34,8 @@ enum _TavernMenuAction { plaza, importCard, lorebooks, providers }
 
 enum _AgentCardAction { edit, memory, export, delete }
 
+enum _CharacterCardExportMode { file, clipboard }
+
 class AgentListPage extends StatefulWidget {
   const AgentListPage({super.key});
 
@@ -636,46 +638,94 @@ class _AgentListPageState extends State<AgentListPage>
     }
   }
 
+  Future<void> _finishCharacterCardImport(
+    AiCharacterCardImportResult result,
+  ) async {
+    await _reloadPageData();
+    if (!mounted) return;
+    final noticeText = result.notices.isEmpty
+        ? ''
+        : '；${result.notices.join('；')}';
+    MoeToast.success(
+      context,
+      '角色卡已导入：${result.agent.name}$noticeText',
+    );
+  }
+
   Future<void> _showImportCharacterCardDialog() async {
     final controller = TextEditingController();
     var isImporting = false;
+    final exportDirHint =
+        await AiCharacterCardService().exportDirectoryPath();
+    if (!mounted) return;
 
     await AiSheet.show<void>(
       context: context,
       title: '导入角色卡',
-      subtitle: '支持角色字段、Provider 骨架、Lorebook',
+      subtitle: '支持 JSON 文件、粘贴内容；含人设与世界书，不含 API Key',
       child: StatefulBuilder(
         builder: (ctx, setLocalState) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            FilledButton.tonalIcon(
+              onPressed: isImporting
+                  ? null
+                  : () async {
+                      setLocalState(() => isImporting = true);
+                      try {
+                        final result = await AiCharacterCardService()
+                            .importCharacterCardFromFilePicker();
+                        if (!ctx.mounted) return;
+                        Navigator.pop(ctx);
+                        await _finishCharacterCardImport(result);
+                      } catch (e) {
+                        if (!mounted) return;
+                        final msg =
+                            e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+                        if (msg.contains('已取消')) return;
+                        MoeToast.error(context, msg);
+                      } finally {
+                        if (ctx.mounted) {
+                          setLocalState(() => isImporting = false);
+                        }
+                      }
+                    },
+              icon: const Icon(Icons.folder_open_rounded),
+              label: const Text('从 JSON 文件导入'),
+            ),
+            const SizedBox(height: 12),
             TextField(
               controller: controller,
               minLines: 10,
               maxLines: 16,
               decoration: AiTheme.inputDecoration(
-                hintText: '粘贴角色卡 JSON',
+                hintText: '或粘贴从其他平台导出的角色卡 JSON',
                 alignLabelWithHint: true,
               ),
             ),
             const SizedBox(height: 12),
             FilledButton.tonalIcon(
-              onPressed: () async {
-                final data = await Clipboard.getData('text/plain');
-                final text = data?.text?.trim() ?? '';
-                if (text.isEmpty) {
-                  if (mounted) {
-                    MoeToast.error(context, '剪贴板里没有可用内容');
-                  }
-                  return;
-                }
-                setLocalState(() => controller.text = text);
-              },
+              onPressed: isImporting
+                  ? null
+                  : () async {
+                      final data = await Clipboard.getData('text/plain');
+                      final text = data?.text?.trim() ?? '';
+                      if (text.isEmpty) {
+                        if (mounted) {
+                          MoeToast.error(context, '剪贴板里没有可用内容');
+                        }
+                        return;
+                      }
+                      setLocalState(() => controller.text = text);
+                    },
               icon: const Icon(Icons.content_paste_rounded),
               label: const Text('从剪贴板粘贴'),
             ),
             const SizedBox(height: 8),
             Text(
-              '导入仅含人设与推荐模型，不含 API Key；请在本机选择模型来源。',
+              exportDirHint == null
+                  ? '导入仅含人设与推荐模型；导出文件名为「角色名_card.json」。'
+                  : '本应用导出目录：\n$exportDirHint\n（桌面端选文件时会优先打开此目录）',
               style: AiTheme.caption,
             ),
             const SizedBox(height: 20),
@@ -696,7 +746,7 @@ class _AgentListPageState extends State<AgentListPage>
                         : () async {
                             final raw = controller.text.trim();
                             if (raw.isEmpty) {
-                              MoeToast.error(context, '请先粘贴角色卡 JSON');
+                              MoeToast.error(context, '请先粘贴角色卡内容');
                               return;
                             }
                             setLocalState(() => isImporting = true);
@@ -706,18 +756,12 @@ class _AgentListPageState extends State<AgentListPage>
                               if (!ctx.mounted) return;
                               Navigator.pop(ctx);
                               if (!mounted) return;
-                              await _reloadPageData();
-                              if (!mounted) return;
-                              final noticeText = result.notices.isEmpty
-                                  ? ''
-                                  : '；${result.notices.join('；')}';
-                              MoeToast.success(
-                                context,
-                                '角色卡已导入：${result.agent.name}$noticeText',
-                              );
+                              await _finishCharacterCardImport(result);
                             } catch (e) {
                               if (mounted) {
-                                MoeToast.error(context, e.toString());
+                                final msg = e.toString().replaceFirst(
+                                    RegExp(r'^Exception:\s*'), '');
+                                MoeToast.error(context, msg);
                               }
                             } finally {
                               if (ctx.mounted) {
@@ -745,10 +789,50 @@ class _AgentListPageState extends State<AgentListPage>
   }
 
   Future<void> _exportCharacterCard(AiAgent agent) async {
-    final raw = await AiCharacterCardService().exportCharacterCardJson(agent);
-    await Clipboard.setData(ClipboardData(text: raw));
-    if (!mounted) return;
-    MoeToast.success(context, '角色卡 JSON 已复制到剪贴板');
+    final mode = await AiSheet.showActions<_CharacterCardExportMode>(
+      context: context,
+      title: '导出角色卡',
+      subtitle: '导出文件便于备份；复制适合快速粘贴导入',
+      actions: const [
+        AiSheetAction(
+          icon: Icons.ios_share_rounded,
+          label: '导出为文件',
+          subtitle: '通过系统分享保存到本机或其它应用',
+          value: _CharacterCardExportMode.file,
+        ),
+        AiSheetAction(
+          icon: Icons.content_copy_rounded,
+          label: '复制到剪贴板',
+          subtitle: '适合在其它设备上粘贴导入',
+          value: _CharacterCardExportMode.clipboard,
+        ),
+      ],
+    );
+    if (!mounted || mode == null) return;
+
+    try {
+      final service = AiCharacterCardService();
+      switch (mode) {
+        case _CharacterCardExportMode.file:
+          final savedPath = await service.shareCharacterCardFile(agent);
+          if (!mounted) return;
+          final fileLabel = savedPath.contains(RegExp(r'[/\\]'))
+              ? savedPath.split(RegExp(r'[/\\]')).last
+              : savedPath;
+          MoeToast.success(
+            context,
+            '已导出 $fileLabel，可在分享面板另存到下载目录',
+          );
+        case _CharacterCardExportMode.clipboard:
+          await service.copyCharacterCardToClipboard(agent);
+          if (!mounted) return;
+          MoeToast.success(context, '角色卡内容已复制到剪贴板');
+      }
+    } catch (_) {
+      if (mounted) {
+        MoeToast.error(context, '导出失败，请重试');
+      }
+    }
   }
 
   Future<void> _showAgentOptions(AiAgent agent) async {

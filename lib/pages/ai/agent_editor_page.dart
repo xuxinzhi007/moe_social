@@ -56,6 +56,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   bool _syncModelOnEdit = false;
   bool _showAdvancedFields = false;
   bool _publishToPlaza = false;
+  bool _pageActive = true;
 
   bool get _isEphemeralDraft =>
       widget.agent != null &&
@@ -108,6 +109,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
 
   @override
   void dispose() {
+    _pageActive = false;
     _nameController.dispose();
     _descController.dispose();
     _promptController.dispose();
@@ -127,7 +129,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       (item) => item.id == _providerProfileId,
       orElse: () => AiProviderProfile.builtinBackend(),
     );
-    if (!mounted) return;
+    if (!mounted || !_pageActive) return;
     setState(() {
       _providerProfiles = profiles;
       if (widget.agent == null &&
@@ -161,7 +163,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   Future<void> _loadLorebooks() async {
     try {
       final lorebooks = await AiDbService().getLorebooks();
-      if (!mounted) return;
+      if (!mounted || !_pageActive) return;
       setState(() {
         _lorebooks = lorebooks;
         final exists = lorebooks.any((item) => item.id == _lorebookId);
@@ -219,7 +221,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       },
     );
 
-    if (result == null) return;
+    if (result == null || !mounted || !_pageActive) return;
     setState(() {
       _nameController.text = result.name;
       _descController.text = result.description;
@@ -243,12 +245,12 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       return;
     }
 
-    if (mounted) setState(() => _isLoadingModels = true);
+    if (mounted && _pageActive) setState(() => _isLoadingModels = true);
     try {
       final models = await AiChatGatewayService()
           .fetchModelsForProfile(profile)
           .timeout(const Duration(seconds: 5));
-      if (!mounted) return;
+      if (!mounted || !_pageActive) return;
       setState(() {
         if (models.isNotEmpty) {
           _models = models;
@@ -268,11 +270,11 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
         unawaited(_refreshPromptFromBackend(_modelNameController.text.trim()));
       }
     } catch (_) {
-      if (mounted && _models.isEmpty && localIds.isNotEmpty) {
+      if (mounted && _pageActive && _models.isEmpty && localIds.isNotEmpty) {
         setState(() => _models = localIds);
       }
     } finally {
-      if (mounted) setState(() => _isLoadingModels = false);
+      if (mounted && _pageActive) setState(() => _isLoadingModels = false);
     }
   }
 
@@ -325,6 +327,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
+          key: ValueKey('prompt-preview-$modelName'),
           tilePadding: const EdgeInsets.symmetric(horizontal: 14),
           childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
           leading: const Icon(Icons.visibility_outlined,
@@ -437,9 +440,30 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     );
   }
 
+  String _userFacingSaveError(Object e) {
+    final raw = e.toString();
+    if (raw.contains('请输入')) {
+      return raw.replaceFirst('Exception: ', '');
+    }
+    if (raw.contains('JSON') ||
+        raw.contains('FormatException') ||
+        raw.contains('SocketException') ||
+        raw.contains('ClientException')) {
+      return '保存失败，请检查网络或填写内容后重试';
+    }
+    const prefix = 'Exception: ';
+    if (raw.startsWith(prefix)) {
+      final inner = raw.substring(prefix.length);
+      if (inner.length < 80 && !inner.contains('{')) return inner;
+    }
+    return '保存失败，请稍后重试';
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_pageActive) return;
     setState(() => _isSaving = true);
+    var didPop = false;
     try {
       final isNewAgent = widget.agent == null || _isEphemeralDraft;
       final name = _nameController.text.trim();
@@ -453,12 +477,10 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
         throw Exception('请输入绑定模型 ID');
       }
 
-      final shouldCreateOllamaModel = provider.isBackendOllama &&
-          isNewAgent &&
-          _createRealModel;
-      final shouldSyncOllamaModel = provider.isBackendOllama &&
-          !isNewAgent &&
-          _syncModelOnEdit;
+      final shouldCreateOllamaModel =
+          provider.isBackendOllama && isNewAgent && _createRealModel;
+      final shouldSyncOllamaModel =
+          provider.isBackendOllama && !isNewAgent && _syncModelOnEdit;
 
       final agent = AiAgent(
         id: (!isNewAgent ? widget.agent?.id : null) ??
@@ -488,11 +510,13 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
         await AiAgentCloudService().updateAgent(agent);
       }
 
-      if (mounted) {
+      if (mounted && _pageActive) {
         MoeToast.success(
           context,
           isNewAgent ? '角色卡已保存' : '修改已保存',
         );
+        _pageActive = false;
+        didPop = true;
         Navigator.pop(context, true);
       }
 
@@ -509,11 +533,11 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
         );
       }
     } catch (e) {
-      if (mounted) {
-        MoeToast.error(context, e.toString());
+      if (mounted && _pageActive) {
+        MoeToast.error(context, _userFacingSaveError(e));
       }
     } finally {
-      if (mounted) {
+      if (mounted && _pageActive && !didPop) {
         setState(() => _isSaving = false);
       }
     }
@@ -696,20 +720,63 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     );
   }
 
+  Widget _buildSaveBar(bool isCreate) {
+    return Material(
+      color: AiBrandTokens.pageBackground,
+      elevation: 8,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AiTheme.pagePadding,
+            8,
+            AiTheme.pagePadding,
+            12,
+          ),
+          child: SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              style: AiTheme.primaryButtonStyle(),
+              onPressed: _isSaving ? null : _save,
+              child: _isSaving
+                  ? const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        Text('正在保存…'),
+                      ],
+                    )
+                  : Text(isCreate ? '保存角色卡' : '保存修改'),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isCreate = widget.agent == null || _isEphemeralDraft;
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
     return AiScaffold(
       title: isCreate ? '创建角色卡' : '编辑角色卡',
       subtitle: '保存到账号（服务器）',
-      body: Column(
-        children: [
-          Expanded(
-            child: Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.only(bottom: 16),
-                children: [
+      bottomNavigationBar: _buildSaveBar(isCreate),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: EdgeInsets.only(bottom: 16 + bottomInset),
+          children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AiTheme.pagePadding,
@@ -738,8 +805,8 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                     Expanded(
                       child: Text(
                         _selectedProviderIsBackend
-                            ? '角色卡是一条 JSON：创建者、时间、人设与绑定模型。默认不会在 Ollama 新建模型。'
-                            : '角色卡是一条 JSON，与 Ollama 无关。聊天时把其中的模型 ID 发给中转站即可。',
+                            ? '角色卡会保存你的人设与绑定模型，并同步到你的账号。默认不会在服务器新建 Ollama 模型。'
+                            : '角色卡保存人设与模型绑定；开始聊天时将使用你选择的 API 与模型。',
                         style: AiTheme.body.copyWith(fontSize: 13),
                       ),
                     ),
@@ -857,9 +924,8 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                     labelText: '绑定模型 ID',
                     hintText: 'gpt-4o-mini / deepseek-chat / gpt-5.3-codex',
                   ),
-                  validator: (v) => v == null || v.trim().isEmpty
-                      ? '请输入绑定模型 ID'
-                      : null,
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? '请输入绑定模型 ID' : null,
                   onChanged: (_) => setState(() {}),
                 ),
                 if (_isLoadingModels)
@@ -886,7 +952,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                   contentPadding: EdgeInsets.zero,
                   title: const Text('发布到角色卡广场'),
                   subtitle: const Text(
-                    '开启后其他用户可在广场看到此角色卡（仍是一条 JSON 记录）',
+                    '开启后，其他用户可在角色卡广场发现并使用这个角色',
                   ),
                   value: _publishToPlaza,
                   activeThumbColor: AiBrandTokens.primary,
@@ -898,8 +964,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                       ? _lorebookId
                       : null,
                   isExpanded: true,
-                  decoration:
-                      AiTheme.inputDecoration(labelText: '世界书（可选）'),
+                  decoration: AiTheme.inputDecoration(labelText: '世界书（可选）'),
                   items: [
                     const DropdownMenuItem<String?>(
                       value: null,
@@ -955,17 +1020,19 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
               ],
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AiTheme.pagePadding),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: AiTheme.pagePadding),
               child: AiSurfaceCard(
                 child: Column(
                   children: [
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: Text('高级选项', style: AiTheme.title.copyWith(fontSize: 16)),
+                      title: Text('高级选项',
+                          style: AiTheme.title.copyWith(fontSize: 16)),
                       subtitle: Text(
                         _selectedProviderIsBackend
                             ? '系统提示词、示例对话；可选同步到服务器 Ollama'
-                            : '系统提示词、示例对话（仅保存在身份卡 JSON）',
+                            : '系统提示词、示例对话等进阶设定',
                         style: AiTheme.caption,
                       ),
                       trailing: Icon(
@@ -1004,7 +1071,8 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                           onChanged: (v) =>
                               setState(() => _syncModelOnEdit = v),
                         ),
-                      if (widget.agent != null && _selectedProviderIsBackend) ...[
+                      if (widget.agent != null &&
+                          _selectedProviderIsBackend) ...[
                         _buildPromptPreview(
                           widget.agent!.systemPrompt,
                           widget.agent!.modelName,
@@ -1035,46 +1103,8 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                 ),
               ),
             ),
-                ],
-              ),
-            ),
-          ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AiTheme.pagePadding,
-                8,
-                AiTheme.pagePadding,
-                12,
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  style: AiTheme.primaryButtonStyle(),
-                  onPressed: _isSaving ? null : _save,
-                  child: _isSaving
-                      ? const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            Text('正在保存…'),
-                          ],
-                        )
-                      : Text(isCreate ? '保存角色卡' : '保存修改'),
-                ),
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

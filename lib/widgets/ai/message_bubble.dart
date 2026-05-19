@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../moe_toast.dart';
 import 'ai_brand_tokens.dart';
+import 'ai_rich_message_body.dart';
 
 // 消息内容类型
 enum MessageContentType {
@@ -19,6 +20,7 @@ class AiMessageBubble extends StatefulWidget {
   final bool isLoading;
   final VoidCallback? onContentExpanded;
   final String? agentLabel;
+  final bool richFormat;
 
   const AiMessageBubble({
     super.key,
@@ -29,6 +31,7 @@ class AiMessageBubble extends StatefulWidget {
     this.isLoading = false,
     this.onContentExpanded,
     this.agentLabel,
+    this.richFormat = false,
   });
 
   @override
@@ -96,6 +99,14 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
 
   // 渲染纯文本内容
   Widget _renderTextContent() {
+    if (widget.richFormat) {
+      return AiRichMessageBody(
+        content: widget.content,
+        isUser: widget.isUser,
+        onExpanded: widget.onContentExpanded,
+      );
+    }
+
     final textColor = widget.isUser ? Colors.white : Colors.black87;
     final text = widget.content;
     // 助手长文默认全文展示（由外层 ListView 滚动）；仅用户侧保留「多行折叠 + 展开」省屏。
@@ -242,9 +253,10 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
   @override
   Widget build(BuildContext context) {
     final isUser = widget.isUser;
+    final maxBubbleWidth = MediaQuery.sizeOf(context).width * 0.82;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 12),
+      margin: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment:
             isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
@@ -255,7 +267,9 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
             const SizedBox(width: 8),
           ],
           Flexible(
-            child: Column(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxBubbleWidth),
+              child: Column(
               crossAxisAlignment:
                   isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
@@ -263,7 +277,16 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    gradient: isUser ? AiBrandTokens.userBubbleGradient : null,
+                    gradient: isUser
+                        ? const LinearGradient(
+                            colors: [
+                              AiBrandTokens.primary,
+                              AiBrandTokens.secondary,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : null,
                     color: isUser
                         ? null
                         : widget.contentType == MessageContentType.code
@@ -291,9 +314,9 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
                             ? [
                                 BoxShadow(
                                   color: (isUser
-                                          ? AiBrandTokens.gradientCoral
+                                          ? AiBrandTokens.primary
                                           : Colors.black)
-                                      .withValues(alpha: 0.1),
+                                      .withValues(alpha: 0.12),
                                   blurRadius: 8,
                                   offset: const Offset(0, 3),
                                 ),
@@ -314,13 +337,15 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
                 ),
               ],
             ),
+            ),
           ),
           if (isUser) ...[
             const SizedBox(width: 8),
-            const CircleAvatar(
+            CircleAvatar(
               radius: 16,
-              backgroundColor: AiBrandTokens.gradientCoral,
-              child: Icon(Icons.person_rounded, size: 18, color: Colors.white),
+              backgroundColor: AiBrandTokens.secondary,
+              child: Icon(Icons.person_rounded,
+                  size: 18, color: Colors.white.withValues(alpha: 0.95)),
             ),
           ],
         ],

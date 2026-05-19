@@ -105,11 +105,13 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
     );
     if (binding == null || !mounted) return;
 
-    final ready = AiCharacterCardService().cloneAgentForLocalUse(agent).copyWith(
-      modelName: binding.modelName,
-      providerProfileId:
-          binding.provider.isBuiltinBackend ? null : binding.provider.id,
-    );
+    final ready =
+        AiCharacterCardService().cloneAgentForLocalUse(agent).copyWith(
+              modelName: binding.modelName,
+              providerProfileId: binding.provider.isBuiltinBackend
+                  ? null
+                  : binding.provider.id,
+            );
 
     try {
       await AiAgentCloudService().saveAgent(ready);
@@ -148,7 +150,7 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
             const SizedBox(height: 10),
             ...AiStarterTemplates.agentTemplates.map(_buildStarterCard),
             const SizedBox(height: 24),
-            _sectionTitle('我的角色卡', '已保存到你账号下的角色 JSON'),
+            _sectionTitle('我的角色卡', '已保存到你账号下的角色'),
             const SizedBox(height: 10),
             if (_loadingAgents)
               const Padding(
@@ -160,7 +162,7 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
             else
               ..._myAgents.map(_buildMyAgentCard),
             const SizedBox(height: 24),
-            _sectionTitle('角色卡广场', '已发布到广场的角色（is_public）'),
+            _sectionTitle('角色卡广场', '已发布到广场、可供他人使用的角色'),
             const SizedBox(height: 10),
             if (_loadingPublic)
               const Padding(
@@ -314,15 +316,14 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
   Widget _buildMyAgentCard(AiAgent agent) {
     final subtitle = agent.description.trim().isNotEmpty
         ? agent.description
-        : (agent.persona.trim().isNotEmpty
-            ? agent.persona
-            : '暂无简介');
+        : (agent.persona.trim().isNotEmpty ? agent.persona : '暂无简介');
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Card(
         margin: EdgeInsets.zero,
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           leading: CircleAvatar(
             backgroundColor: AiBrandTokens.primary.withValues(alpha: 0.15),
             child: Text(
@@ -367,12 +368,13 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
       ),
       child: Column(
         children: [
-          Icon(Icons.person_outline_rounded, size: 40, color: Colors.grey.shade400),
+          Icon(Icons.person_outline_rounded,
+              size: 40, color: Colors.grey.shade400),
           const SizedBox(height: 10),
           const Text('还没有角色卡', style: TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
           Text(
-            '从上方推荐模板创建，或在 AI 酒馆主页导入 JSON。',
+            '从上方推荐模板创建，或在 AI 酒馆主页导入角色卡。',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
           ),
@@ -393,12 +395,14 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
         children: [
           Icon(Icons.public_rounded, size: 40, color: Colors.grey.shade400),
           const SizedBox(height: 10),
-          const Text('广场还没有公开角色卡', style: TextStyle(fontWeight: FontWeight.w600)),
+          const Text('广场还没有公开角色卡',
+              style: TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
           Text(
             '创建角色卡时开启「发布到角色卡广场」，保存后即可出现在这里。',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 13, height: 1.4),
+            style: TextStyle(
+                color: Colors.grey.shade600, fontSize: 13, height: 1.4),
           ),
         ],
       ),
@@ -414,7 +418,8 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
       child: Card(
         margin: EdgeInsets.zero,
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           leading: CircleAvatar(
             backgroundColor: AiBrandTokens.secondary.withValues(alpha: 0.15),
             child: Text(
@@ -425,7 +430,8 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
               ),
             ),
           ),
-          title: Text(agent.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+          title: Text(agent.name,
+              style: const TextStyle(fontWeight: FontWeight.w600)),
           subtitle: Text(
             '$author · ${agent.modelName}',
             maxLines: 2,

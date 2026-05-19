@@ -163,24 +163,36 @@ class AiProviderService {
     if (profileId.isEmpty) return '';
     final key = _apiKeyStorageKey(profileId);
     try {
+      String raw;
       if (kIsWeb) {
         final prefs = await SharedPreferences.getInstance();
-        return prefs.getString(key) ?? '';
+        raw = prefs.getString(key) ?? '';
+      } else {
+        raw = await _secureStorage.read(key: key) ?? '';
       }
-      return await _secureStorage.read(key: key) ?? '';
+      return normalizeApiKey(raw);
     } catch (_) {
       return '';
     }
   }
 
+  static String normalizeApiKey(String raw) {
+    var key = raw.trim();
+    if (key.toLowerCase().startsWith('bearer ')) {
+      key = key.substring(7).trim();
+    }
+    return key;
+  }
+
   Future<void> writeApiKey(String profileId, String value) async {
     final key = _apiKeyStorageKey(profileId);
+    final normalized = normalizeApiKey(value);
     if (kIsWeb) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(key, value);
+      await prefs.setString(key, normalized);
       return;
     }
-    await _secureStorage.write(key: key, value: value);
+    await _secureStorage.write(key: key, value: normalized);
   }
 
   Future<void> deleteApiKey(String profileId) async {
