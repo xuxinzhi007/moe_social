@@ -17,6 +17,7 @@ import '../../services/ai_lorebook_service.dart';
 import '../../services/ai_roleplay_prompt_builder.dart';
 import '../../services/ai_user_persona_service.dart';
 import '../../services/ai_memory_orchestrator.dart';
+import '../../services/ai_chat_session_prefs.dart';
 import '../../services/ai_tts_helper.dart';
 import '../../utils/ai_chat_message_utils.dart';
 import '../../utils/ai_chat_quick_replies.dart';
@@ -34,6 +35,7 @@ import '../../widgets/ai/ai_theme.dart';
 import '../../widgets/ai/ai_chat_empty_state.dart';
 import '../../widgets/ai/message_bubble.dart';
 import '../../widgets/ai/ai_chat_composer.dart';
+import '../../widgets/ai/ai_chat_settings_sheet.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 
@@ -59,6 +61,9 @@ class _ChatPageState extends State<ChatPage> {
   List<UserMemory> _memories = [];
   AiMemoryMode _memoryMode = AiMemoryMode.disabled;
   String _memoryHeadline = '关于你的记忆';
+  AiMemoryEnrichResult? _memoryEnrichResult;
+  double _temperature = 0.85;
+  bool _terminalModeEnabled = false;
   String _systemPrompt = '';
   String _userPersona = '';
 
@@ -116,6 +121,7 @@ class _ChatPageState extends State<ChatPage> {
         : AiPromptDefaults.defaultAgentSystemPrompt;
     _initVoice();
     _loadMemoryState();
+    _loadChatPrefs();
     _loadUserPersona();
     if (_localPersistenceEnabled) {
       _loadSessions();
@@ -264,10 +270,12 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _loadMemoryState() async {
     try {
+      final terminal = await LlmEndpointConfig.isTerminalModeEnabled();
       final orchestrator = AiMemoryOrchestrator();
       final state = await orchestrator.loadManagerState(widget.agent);
       if (!mounted) return;
       setState(() {
+        _terminalModeEnabled = terminal;
         _memoryMode = state.activeMode;
         _memoryHeadline = state.display?.headline.isNotEmpty == true
             ? state.display!.headline
@@ -277,6 +285,39 @@ class _ChatPageState extends State<ChatPage> {
     } catch (_) {
       // 记忆预览失败不影响主聊天链路
     }
+  }
+
+  Future<void> _loadChatPrefs() async {
+    final temp = await AiChatSessionPrefs.temperature(widget.agent.id);
+    if (!mounted) return;
+    setState(() => _temperature = temp);
+  }
+
+  void _scheduleMemoryRefresh() {
+    Future<void>.delayed(const Duration(seconds: 3), () {
+      if (!mounted) return;
+      unawaited(_loadMemoryState());
+    });
+  }
+
+  Future<void> _openChatSettings() async {
+    final status = _memoryEnrichResult ??
+        await AiMemoryOrchestrator().enrichSystemPromptWithMeta(
+          agent: widget.agent,
+          basePrompt: _systemPrompt,
+        );
+    if (!mounted) return;
+    await AiChatSettingsSheet.show(
+      context: context,
+      agent: widget.agent,
+      temperature: _temperature,
+      memoryStatus: status,
+      onOpenMemoryManager: _openMemoryManager,
+      onTemperatureChanged: (v) {
+        if (!mounted) return;
+        setState(() => _temperature = v);
+      },
+    );
   }
 
   Future<void> _loadUserPersona() async {
@@ -539,6 +580,20 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  /// 发给模型 API 的对话历史：排除失败气泡、流式占位与 system 行。
+  List<Map<String, String>> _buildChatApiHistory() {
+    return _messages
+        .where((m) => m.role != 'system')
+        .where((m) => m.id != _streamingMessageId)
+        .where((m) => !(m.role == 'assistant' && m.content.trim().isEmpty))
+        .where(
+          (m) => !(m.role == 'assistant' &&
+              AiChatMessageUtils.looksLikeErrorContent(m.content)),
+        )
+        .map((m) => {'role': m.role, 'content': m.content})
+        .toList();
+  }
+
   Future<void> _fetchAssistantReply(
     AiChatMessage userMsg, {
     String? titleSeed,
@@ -553,11 +608,7 @@ class _ChatPageState extends State<ChatPage> {
     }
     final streamId = _streamingMessageId;
     try {
-      final history = _messages
-          .where((m) => m.role != 'system')
-          .where((m) => !(m.role == 'assistant' && m.content.trim().isEmpty))
-          .map((m) => {'role': m.role, 'content': m.content})
-          .toList();
+      final history = _buildChatApiHistory();
 
       final lorebookEntries = await AiLorebookService().resolveEntriesForAgent(
         agent: widget.agent,
@@ -578,11 +629,15 @@ class _ChatPageState extends State<ChatPage> {
           lorebookEntries: lorebookEntries,
         ),
       );
-      enrichedSystemPrompt = await AiMemoryOrchestrator().enrichSystemPrompt(
+      final memoryMeta = await AiMemoryOrchestrator().enrichSystemPromptWithMeta(
         agent: widget.agent,
         basePrompt: enrichedSystemPrompt,
         latestUserMessage: text,
       );
+      enrichedSystemPrompt = memoryMeta.prompt;
+      if (mounted) {
+        setState(() => _memoryEnrichResult = memoryMeta);
+      }
       history.insert(0, {'role': 'system', 'content': enrichedSystemPrompt});
 
       if (_wasManuallyStopped) return;
@@ -591,6 +646,7 @@ class _ChatPageState extends State<ChatPage> {
         messages: history,
         sessionId: _currentSession?.id,
         sourceMsgId: userMsg.id,
+        temperature: _temperature,
       );
       if (_wasManuallyStopped) return;
 
@@ -626,7 +682,7 @@ class _ChatPageState extends State<ChatPage> {
         aiResponse: content,
         sourceMsgId: userMsg.id,
       );
-      unawaited(_loadMemoryState());
+      _scheduleMemoryRefresh();
 
       final seed = titleSeed ?? text;
       if (_messages.length <= 2 && _currentSession!.title == '新对话') {
@@ -1935,6 +1991,11 @@ class _ChatPageState extends State<ChatPage> {
           ? null
           : [
               IconButton(
+                icon: const Icon(Icons.tune_rounded),
+                tooltip: '对话设置',
+                onPressed: _openChatSettings,
+              ),
+              IconButton(
                 icon: const Icon(Icons.search_rounded),
                 tooltip: '搜索消息',
                 onPressed: _toggleSearch,
@@ -2212,6 +2273,7 @@ class _ChatPageState extends State<ChatPage> {
                       ? _buildIdentityHero()
                       : const SizedBox.shrink(),
                 ),
+                if (_terminalModeEnabled) _buildTerminalModeBanner(),
                 Expanded(
                   child: AiChatBackground(child: _buildMessageList()),
                 ),
@@ -2226,6 +2288,30 @@ class _ChatPageState extends State<ChatPage> {
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _buildTerminalModeBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      color: Colors.orange.shade50,
+      child: Row(
+        children: [
+          Icon(Icons.bug_report_outlined, size: 18, color: Colors.orange.shade800),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '终端调试模式：记忆注入与自动提取已关闭',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.orange.shade900,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -2492,7 +2578,16 @@ class _ChatPageState extends State<ChatPage> {
                 _buildIdentityChip('人设', promptReady ? '已启用' : '未设置'),
                 if (_userPersona.trim().isNotEmpty)
                   _buildIdentityChip('Persona', '已挂载'),
-                _buildIdentityChip('记忆', '$memoryCount 条'),
+                _buildIdentityChip(
+                  '记忆',
+                  _memoryEnrichResult != null
+                      ? (_memoryEnrichResult!.injectedByServer
+                          ? '服务端·$memoryCount条'
+                          : _memoryEnrichResult!.injectedCount > 0
+                              ? '已注入${_memoryEnrichResult!.injectedCount}条'
+                              : '$memoryCount 条')
+                      : '$memoryCount 条',
+                ),
                 if (_isSyncingModelPrompt) _buildIdentityChip('状态', '同步中'),
               ],
             ),

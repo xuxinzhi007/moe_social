@@ -27,6 +27,25 @@ enum AiMemoryMode {
   disabled,
 }
 
+/// 单次对话 system prompt 记忆注入结果（供聊天页展示状态）。
+class AiMemoryEnrichResult {
+  final String prompt;
+  final int injectedCount;
+  final int availableCount;
+  final AiMemoryMode mode;
+  final bool injectedByServer;
+  final String statusLine;
+
+  const AiMemoryEnrichResult({
+    required this.prompt,
+    required this.injectedCount,
+    required this.availableCount,
+    required this.mode,
+    required this.injectedByServer,
+    required this.statusLine,
+  });
+}
+
 /// 聊天页记忆预览（抽屉角标等）。
 class AiMemoryChatPreview {
   final AiMemoryMode mode;
@@ -108,21 +127,107 @@ class AiMemoryOrchestrator {
     required String basePrompt,
     String latestUserMessage = '',
   }) async {
+    final result = await enrichSystemPromptWithMeta(
+      agent: agent,
+      basePrompt: basePrompt,
+      latestUserMessage: latestUserMessage,
+    );
+    return result.prompt;
+  }
+
+  Future<AiMemoryEnrichResult> enrichSystemPromptWithMeta({
+    required AiAgent agent,
+    required String basePrompt,
+    String latestUserMessage = '',
+  }) async {
     final mode = await resolveMode(agent);
-    if (mode == AiMemoryMode.disabled) return basePrompt;
+    if (mode == AiMemoryMode.disabled) {
+      return AiMemoryEnrichResult(
+        prompt: basePrompt,
+        injectedCount: 0,
+        availableCount: 0,
+        mode: mode,
+        injectedByServer: false,
+        statusLine: modeDescription(mode),
+      );
+    }
+
+    if (!await _isUserAuthenticated()) {
+      return AiMemoryEnrichResult(
+        prompt: basePrompt,
+        injectedCount: 0,
+        availableCount: 0,
+        mode: mode,
+        injectedByServer: false,
+        statusLine: '请先登录账号，记忆才会在对话中生效',
+      );
+    }
+
+    final available = await _loadUserFacingMemories();
+    final availableCount = available.length;
 
     final profile = await AiProviderService().resolveProfile(
       agent.providerProfileId,
     );
     if (mode == AiMemoryMode.server && profile.isBackendOllama) {
-      return basePrompt;
+      final line = availableCount > 0
+          ? '已保存 $availableCount 条记忆，将由服务端在发送时自动注入'
+          : '暂无已保存记忆，多聊几轮后会自动记住你的偏好';
+      return AiMemoryEnrichResult(
+        prompt: basePrompt,
+        injectedCount: 0,
+        availableCount: availableCount,
+        mode: mode,
+        injectedByServer: true,
+        statusLine: line,
+      );
     }
 
     if (mode == AiMemoryMode.server) {
-      return _injectServerMemories(basePrompt, latestUserMessage);
+      var injected = MemoryService.selectRelevantUserMemories(
+        memories: available,
+        queryText: latestUserMessage,
+      );
+      if (injected.isEmpty && available.isNotEmpty) {
+        final recent = [...available]
+          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+        injected = recent.take(3).toList();
+      }
+      if (injected.isEmpty) {
+        return AiMemoryEnrichResult(
+          prompt: basePrompt,
+          injectedCount: 0,
+          availableCount: availableCount,
+          mode: mode,
+          injectedByServer: false,
+          statusLine: '继续聊天后，AI 会自动记住你的偏好与重要信息',
+        );
+      }
+      final prompt = await _injectServerMemories(
+        basePrompt,
+        latestUserMessage,
+        preloadedMemories: available,
+        selectedMemories: injected,
+      );
+      return AiMemoryEnrichResult(
+        prompt: prompt,
+        injectedCount: injected.length,
+        availableCount: availableCount,
+        mode: mode,
+        injectedByServer: false,
+        statusLine: '已向模型注入 ${injected.length} 条相关记忆',
+      );
     }
 
-    return _agent.buildInjectedPrompt(agent);
+    final prompt = await _agent.buildInjectedPrompt(agent);
+    return AiMemoryEnrichResult(
+      prompt: prompt,
+      injectedCount: 0,
+      availableCount: availableCount,
+      mode: mode,
+      injectedByServer: false,
+      statusLine: '使用本地记忆模式',
+    );
   }
 
   void learnFromTurnInBackground({
@@ -259,7 +364,11 @@ class AiMemoryOrchestrator {
       agent.providerProfileId,
     );
 
-    if (profile.isBackendOllama) return;
+    if (profile.isBackendOllama) {
+      // 服务端 /api/llm/chat 在回合结束后异步提取记忆。
+      return;
+    }
+    if (!await _isUserAuthenticated()) return;
     try {
       final user = await AuthService.getUserInfo();
       await _agent.extractAndUpsertServerMemories(
@@ -273,27 +382,54 @@ class AiMemoryOrchestrator {
     } catch (_) {}
   }
 
+  Future<bool> _isUserAuthenticated() async {
+    final token = ApiService.token;
+    return token != null && token.trim().isNotEmpty;
+  }
+
+  Future<List<UserMemory>> _loadUserFacingMemories() async {
+    try {
+      final user = await AuthService.getUserInfo();
+      final display = await MemoryService.getUserMemoriesDisplay(user.id);
+      return display.items
+          .map(
+            (item) => UserMemory(
+              id: item.id,
+              userId: user.id,
+              key: item.key,
+              value: item.content,
+              memoryType: item.category,
+              createdAt: item.updatedAt,
+              updatedAt: item.updatedAt,
+            ),
+          )
+          .toList();
+    } catch (_) {
+      try {
+        final user = await AuthService.getUserInfo();
+        final raw = await MemoryService.getUserMemories(user.id);
+        return MemoryService.filterUserFacingMemories(raw);
+      } catch (_) {
+        return const [];
+      }
+    }
+  }
+
   Future<String> _injectServerMemories(
     String basePrompt,
     String latestUserMessage, {
     List<UserMemory>? preloadedMemories,
+    List<UserMemory>? selectedMemories,
   }) async {
     try {
-      final filtered = preloadedMemories == null
-          ? () async {
-              final user = await AuthService.getUserInfo();
-              final raw = await MemoryService.getUserMemories(user.id);
-              return MemoryService.filterUserFacingMemories(raw);
-            }()
-          : Future.value(
-              MemoryService.filterUserFacingMemories(preloadedMemories),
-            );
-      final resolved = await filtered;
+      final resolved = preloadedMemories ??
+          await _loadUserFacingMemories();
       if (resolved.isEmpty) return basePrompt;
-      final selected = MemoryService.selectRelevantUserMemories(
-        memories: resolved,
-        queryText: latestUserMessage,
-      );
+      final selected = selectedMemories ??
+          MemoryService.selectRelevantUserMemories(
+            memories: resolved,
+            queryText: latestUserMessage,
+          );
       if (selected.isEmpty) return basePrompt;
 
       final buffer = StringBuffer();

@@ -8,10 +8,12 @@ class AiChatMessageUtils {
     'API 认证失败',
     'Provider 请求失败',
     '模型服务请求失败',
+    '模型服务返回',
     '响应格式异常',
     '请先在「模型来源」',
     'Ollama 错误',
     '请求超时',
+    'openai_error',
   ];
 
   /// 将整行中文括号动作转为 Markdown 斜体，便于与对话区分。

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/ai_agent.dart';
@@ -27,13 +28,17 @@ class AiChatGatewayService {
         raw.toLowerCase().contains('invalid api key')) {
       return 'API 认证失败：请在「模型来源」检查该 Provider 的 API Key 是否已填写且有效';
     }
-    final messageMatch = RegExp(r'"message"\s*:\s*"([^"]+)"').firstMatch(raw);
-    if (messageMatch != null) {
-      final msg = messageMatch.group(1)!.trim();
-      if (msg.isNotEmpty) return '请求失败：$msg';
+    final parsed = _parseProviderErrorPayload(raw);
+    if (parsed != null) return parsed;
+    if (raw.contains('Provider 空回复')) {
+      return '模型返回了空回复：接口已成功，但未生成可见文字。'
+          'Codex 做角色扮演时较常见，建议换 gpt-5.2 / gpt-5.4 或新建对话。';
     }
     if (raw.startsWith('Provider 请求失败')) {
-      return '模型服务请求失败，请检查 API 地址、模型 ID 与 Key';
+      return '模型服务请求失败，请检查 API 地址、模型 ID 与 Key（详情见调试日志）';
+    }
+    if (raw.startsWith('Provider 响应格式异常')) {
+      return '模型返回了空回复或无法解析的内容。Codex 类模型不适合角色扮演时会出现，建议换 gpt-5.2 或新建对话';
     }
     if (raw.contains('SocketException') ||
         raw.contains('ClientException') ||
@@ -41,9 +46,63 @@ class AiChatGatewayService {
       return '无法连接模型服务，请检查网络与 API 地址';
     }
     if (raw.length > 120) {
-      return '请求失败，请稍后重试';
+      return '请求失败，请稍后重试（详情见调试日志）';
     }
     return raw;
+  }
+
+  static String? _parseProviderErrorPayload(String raw) {
+    final jsonStart = raw.indexOf('{');
+    if (jsonStart < 0) return null;
+    try {
+      final decoded = jsonDecode(raw.substring(jsonStart));
+      if (decoded is! Map) return null;
+      final nested = decoded['error'];
+      if (nested is Map) {
+        final msg = (nested['message'] ?? nested['msg'] ?? '').toString().trim();
+        final code = (nested['code'] ?? nested['type'] ?? '').toString().trim();
+        return _friendlyProviderMessage(
+          msg.isNotEmpty ? msg : code,
+          code,
+        );
+      }
+      final top = (decoded['message'] ?? decoded['msg'] ?? '').toString().trim();
+      if (top.isNotEmpty) {
+        return _friendlyProviderMessage(top, '');
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  static String _friendlyProviderMessage(String message, String code) {
+    final combined = '$message $code'.toLowerCase();
+    if (combined.contains('openai_error')) {
+      return '模型服务返回 openai_error：多为 API Key、余额不足或模型 ID 不可用。'
+          '「模型来源」里测试连接成功只说明 Key 有效，请确认角色绑定的模型（如 gpt-5.2）在 Xbai 已开通。';
+    }
+    if (message.isNotEmpty) return '请求失败：$message';
+    if (code.isNotEmpty) return '请求失败：$code';
+    return '模型服务请求失败，请稍后重试';
+  }
+
+  static void _logProviderFailure({
+    required Uri uri,
+    required int statusCode,
+    required String body,
+    required String model,
+    int? messageCount,
+    int? systemChars,
+  }) {
+    if (!kDebugMode) return;
+    final preview =
+        body.length > 1200 ? '${body.substring(0, 1200)}…' : body;
+    debugPrint(
+      '❌ [Provider] chat/completions failed '
+      'status=$statusCode model=$model '
+      'messages=$messageCount systemChars=$systemChars '
+      'url=$uri',
+    );
+    debugPrint('❌ [Provider] response: $preview');
   }
 
   Future<List<String>> fetchModelsForAgent(AiAgent agent) async {
@@ -104,6 +163,8 @@ class AiChatGatewayService {
     required List<Map<String, String>> messages,
     String? sessionId,
     String? sourceMsgId,
+    double? temperature,
+    double? topP,
   }) async {
     final profile = await AiProviderService().resolveProfile(
       agent.providerProfileId,
@@ -116,12 +177,16 @@ class AiChatGatewayService {
         messages: messages,
         sessionId: sessionId,
         sourceMsgId: sourceMsgId,
+        temperature: temperature,
+        topP: topP,
       );
     }
     return _sendToOpenAiCompatible(
       profile: profile,
       model: _effectiveModel(agent, profile),
       messages: messages,
+      temperature: temperature,
+      topP: topP,
     );
   }
 
@@ -130,6 +195,8 @@ class AiChatGatewayService {
     required List<Map<String, String>> messages,
     String? sessionId,
     String? sourceMsgId,
+    double? temperature,
+    double? topP,
   }) async {
     final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
     final uri = await LlmEndpointConfig.chatUri();
@@ -149,6 +216,8 @@ class AiChatGatewayService {
             'session_id': sessionId,
             'source_msg_id': sourceMsgId,
             if (terminalMode) 'stream': false,
+            if (temperature != null && temperature > 0) 'temperature': temperature,
+            if (topP != null && topP > 0) 'top_p': topP,
           }),
         )
         .timeout(const Duration(seconds: 180));
@@ -171,10 +240,42 @@ class AiChatGatewayService {
     throw Exception('响应格式异常');
   }
 
+  /// Codex / o 系列等推理模型通常不接受自定义 temperature，强行传入会 400。
+  static bool supportsSamplingParams(String model) {
+    final id = model.trim().toLowerCase();
+    if (id.contains('codex')) return false;
+    if (RegExp(r'\bo[0-9](?:-|$|/)').hasMatch(id)) return false;
+    if (id.contains('reasoning')) return false;
+    return true;
+  }
+
+  Map<String, dynamic> _openAiChatBody({
+    required String model,
+    required List<Map<String, String>> messages,
+    required bool stream,
+    double? temperature,
+    double? topP,
+  }) {
+    final body = <String, dynamic>{
+      'model': model,
+      'messages': messages,
+      'stream': stream,
+    };
+    if (supportsSamplingParams(model)) {
+      if (temperature != null && temperature >= 0) {
+        body['temperature'] = temperature;
+      }
+      if (topP != null && topP > 0) body['top_p'] = topP;
+    }
+    return body;
+  }
+
   Future<String> _sendToOpenAiCompatible({
     required AiProviderProfile profile,
     required String model,
     required List<Map<String, String>> messages,
+    double? temperature,
+    double? topP,
   }) async {
     final apiKey = await AiProviderService().readApiKey(profile.id);
     if (apiKey.trim().isEmpty) {
@@ -184,19 +285,35 @@ class AiChatGatewayService {
     }
     final uri =
         Uri.parse('${_normalizeBaseUrl(profile.baseUrl)}/chat/completions');
+    ApiService.logDirectHttp('POST', uri);
     final headers = await _buildProviderHeaders(profile, uri: uri);
     final payloadMessages = profile.supportsSystemMessages
         ? messages
         : _foldSystemMessagesIntoConversation(messages);
+    final systemChars = payloadMessages
+        .where((m) => m['role'] == 'system')
+        .fold<int>(0, (sum, m) => sum + (m['content'] ?? '').length);
+    final sendTemp = supportsSamplingParams(model) ? temperature : null;
+    if (kDebugMode) {
+      debugPrint(
+        '📤 [Provider] chat model=$model messages=${payloadMessages.length} '
+        'stream=${profile.supportsStreaming} systemChars=$systemChars '
+        'temperature=${sendTemp ?? 'default'}',
+      );
+    }
     final response = await http
         .post(
           uri,
           headers: headers,
-          body: jsonEncode({
-            'model': model,
-            'messages': payloadMessages,
-            'stream': profile.supportsStreaming,
-          }),
+          body: jsonEncode(
+            _openAiChatBody(
+              model: model,
+              messages: payloadMessages,
+              stream: profile.supportsStreaming,
+              temperature: temperature,
+              topP: topP,
+            ),
+          ),
         )
         .timeout(const Duration(seconds: 180));
 
@@ -207,11 +324,15 @@ class AiChatGatewayService {
           .post(
             uri,
             headers: headers,
-            body: jsonEncode({
-              'model': model,
-              'messages': fallbackMessages,
-              'stream': profile.supportsStreaming,
-            }),
+            body: jsonEncode(
+              _openAiChatBody(
+                model: model,
+                messages: fallbackMessages,
+                stream: profile.supportsStreaming,
+                temperature: temperature,
+                topP: topP,
+              ),
+            ),
           )
           .timeout(const Duration(seconds: 180));
       if (retry.statusCode == 200) {
@@ -221,18 +342,55 @@ class AiChatGatewayService {
         throw Exception('Provider 响应格式异常');
       }
       final retryBody = utf8.decode(retry.bodyBytes);
+      _logProviderFailure(
+        uri: uri,
+        statusCode: retry.statusCode,
+        body: retryBody,
+        model: model,
+        messageCount: fallbackMessages.length,
+        systemChars: systemChars,
+      );
       throw Exception('Provider 请求失败 (${retry.statusCode}): $retryBody');
     }
 
+    final body = utf8.decode(response.bodyBytes);
     if (response.statusCode != 200) {
-      final body = utf8.decode(response.bodyBytes);
+      _logProviderFailure(
+        uri: uri,
+        statusCode: response.statusCode,
+        body: body,
+        model: model,
+        messageCount: payloadMessages.length,
+        systemChars: systemChars,
+      );
       throw Exception('Provider 请求失败 (${response.statusCode}): $body');
     }
 
-    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    final decoded = jsonDecode(body);
+    if (decoded is Map && decoded['error'] != null) {
+      _logProviderFailure(
+        uri: uri,
+        statusCode: response.statusCode,
+        body: body,
+        model: model,
+        messageCount: payloadMessages.length,
+        systemChars: systemChars,
+      );
+      throw Exception('Provider 请求失败 (200): $body');
+    }
     final content = _extractOpenAiCompatibleContent(decoded);
     if (content.isEmpty) {
-      throw Exception('Provider 响应格式异常');
+      _logProviderFailure(
+        uri: uri,
+        statusCode: response.statusCode,
+        body: body,
+        model: model,
+        messageCount: payloadMessages.length,
+        systemChars: systemChars,
+      );
+      throw Exception(
+        'Provider 空回复: 模型 $model 返回 HTTP 200 但 content 为空（可能不适合当前对话场景）',
+      );
     }
     return content;
   }
@@ -277,7 +435,7 @@ class AiChatGatewayService {
     final message = first['message'];
     if (message is! Map) return '';
     final content = message['content'];
-    if (content is String) return content.trim();
+    if (content is String && content.trim().isNotEmpty) return content.trim();
     if (content is List) {
       final buffer = StringBuffer();
       for (final part in content) {
@@ -285,7 +443,11 @@ class AiChatGatewayService {
           buffer.write(part['text']);
         }
       }
-      return buffer.toString().trim();
+      if (buffer.isNotEmpty) return buffer.toString().trim();
+    }
+    for (final key in ['reasoning_content', 'reasoning']) {
+      final alt = message[key];
+      if (alt is String && alt.trim().isNotEmpty) return alt.trim();
     }
     return '';
   }
