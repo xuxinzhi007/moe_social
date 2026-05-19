@@ -12,7 +12,6 @@ class Gift {
   final int popularity; // 人气值，用于排序
   /// 当前用户在背包中拥有数量（来自 `/api/gifts?user_id=`）
   final int ownedQuantity;
-  final String? svgPath; // SVG文件路径
 
   const Gift({
     required this.id,
@@ -22,7 +21,6 @@ class Gift {
     required this.price,
     required this.color,
     required this.category,
-    this.svgPath,
     this.popularity = 0,
     this.ownedQuantity = 0,
   });
@@ -62,7 +60,6 @@ class Gift {
       price: 0.1,
       color: Color(0xFFE91E63),
       category: GiftCategory.emotion,
-      svgPath: 'assets/svg/heart.svg',
       popularity: 100,
     ),
     Gift(
@@ -73,7 +70,6 @@ class Gift {
       price: 0.5,
       color: Color(0xFFE57373),
       category: GiftCategory.emotion,
-      svgPath: 'assets/svg/flower.svg',
       popularity: 95,
     ),
     Gift(
@@ -84,7 +80,6 @@ class Gift {
       price: 0.2,
       color: Color(0xFF42A5F5),
       category: GiftCategory.emotion,
-      svgPath: 'assets/svg/thumbsup.svg',
       popularity: 90,
     ),
     Gift(
@@ -95,7 +90,6 @@ class Gift {
       price: 0.3,
       color: Color(0xFFFFB74D),
       category: GiftCategory.emotion,
-      svgPath: 'assets/svg/clap.svg',
       popularity: 85,
     ),
     Gift(
@@ -106,7 +100,6 @@ class Gift {
       price: 0.8,
       color: Color(0xFF81C784),
       category: GiftCategory.emotion,
-      svgPath: 'assets/svg/hug.svg',
       popularity: 80,
     ),
 
@@ -119,7 +112,6 @@ class Gift {
       price: 2.0,
       color: Color(0xFF8D6E63),
       category: GiftCategory.food,
-      svgPath: 'assets/svg/coffee.svg',
       popularity: 75,
     ),
     Gift(
@@ -130,7 +122,6 @@ class Gift {
       price: 5.0,
       color: Color(0xFFBA68C8),
       category: GiftCategory.food,
-      svgPath: 'assets/svg/cake.svg',
       popularity: 70,
     ),
     Gift(
@@ -141,7 +132,6 @@ class Gift {
       price: 3.0,
       color: Color(0xFF4FC3F7),
       category: GiftCategory.food,
-      svgPath: 'assets/svg/ice_cream.svg',
       popularity: 65,
     ),
     Gift(
@@ -152,7 +142,6 @@ class Gift {
       price: 8.0,
       color: Color(0xFFFFD54F),
       category: GiftCategory.food,
-      svgPath: 'assets/svg/wine.svg',
       popularity: 60,
     ),
 
@@ -165,7 +154,6 @@ class Gift {
       price: 50.0,
       color: Color(0xFF64B5F6),
       category: GiftCategory.luxury,
-      svgPath: 'assets/svg/diamond.svg',
       popularity: 95,
     ),
     Gift(
@@ -176,7 +164,6 @@ class Gift {
       price: 100.0,
       color: Color(0xFFFFD700),
       category: GiftCategory.luxury,
-      svgPath: 'assets/svg/crown.svg',
       popularity: 90,
     ),
     Gift(
@@ -187,7 +174,6 @@ class Gift {
       price: 200.0,
       color: Color(0xFFFF5722),
       category: GiftCategory.luxury,
-      svgPath: 'assets/svg/rocket.svg',
       popularity: 85,
     ),
     Gift(
@@ -198,7 +184,6 @@ class Gift {
       price: 30.0,
       color: Color(0xFF9C27B0),
       category: GiftCategory.special,
-      svgPath: 'assets/svg/rainbow.svg',
       popularity: 75,
     ),
     Gift(
@@ -209,7 +194,6 @@ class Gift {
       price: 20.0,
       color: Color(0xFFE040FB),
       category: GiftCategory.special,
-      svgPath: 'assets/svg/fireworks.svg',
       popularity: 80,
     ),
     Gift(
@@ -220,7 +204,6 @@ class Gift {
       price: 66.6,
       color: Color(0xFFAB47BC),
       category: GiftCategory.special,
-      svgPath: 'assets/svg/unicorn.svg',
       popularity: 70,
     ),
   ];
@@ -237,18 +220,6 @@ class Gift {
     final emoji = rawIcon.startsWith('http') || rawIcon.isEmpty ? '🎁' : rawIcon;
     final price = (json['price'] as num?)?.toDouble() ?? 0;
 
-    // 尝试获取SVG路径（如果后端提供）
-    String? svgPath;
-    if (json.containsKey('svg_path') && json['svg_path'] != null) {
-      svgPath = json['svg_path'] as String?;
-    } else {
-      // 尝试根据ID生成SVG路径
-      final id = json['id']?.toString() ?? '';
-      if (id.isNotEmpty) {
-        svgPath = 'assets/svg/$id.svg';
-      }
-    }
-
     return Gift(
       id: json['id']?.toString() ?? '',
       name: (json['name'] as String?)?.trim().isNotEmpty == true
@@ -259,7 +230,6 @@ class Gift {
       price: price,
       color: const Color(0xFFFFB347),
       category: GiftCategory.special,
-      svgPath: svgPath,
       popularity: 0,
       ownedQuantity: (json['owned_quantity'] as num?)?.toInt() ?? 0,
     );
@@ -278,7 +248,6 @@ class Gift {
         (c) => c.name == json['category'],
         orElse: () => GiftCategory.emotion,
       ),
-      svgPath: json['svg_path'] as String?,
       popularity: json['popularity'] as int? ?? 0,
       ownedQuantity: (json['owned_quantity'] as num?)?.toInt() ?? 0,
     );
@@ -294,7 +263,6 @@ class Gift {
       'price': price,
       'color': color.toARGB32(),
       'category': category.name,
-      'svg_path': svgPath,
       'popularity': popularity,
       'owned_quantity': ownedQuantity,
     };

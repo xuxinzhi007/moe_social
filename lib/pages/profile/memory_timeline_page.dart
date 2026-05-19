@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/user_memory.dart';
-import '../../models/user_memory_profile.dart';
+import '../../models/user_memory_display.dart';
 import '../../services/memory_service.dart';
 import '../../auth_service.dart';
 import 'package:intl/intl.dart';
@@ -14,8 +14,8 @@ class MemoryTimelinePage extends StatefulWidget {
 }
 
 class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
+  UserMemoryDisplayData? _display;
   List<UserMemory> _memories = [];
-  List<UserMemoryProfile> _profiles = [];
   bool _isLoading = true;
   String? _error;
   bool _hasMore = false;
@@ -35,21 +35,25 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
       });
 
       final user = await AuthService.getUserInfo();
-      final paged = await MemoryService.getUserMemoriesPaged(
-        user.id,
-        limit: 100,
-        offset: 0,
-      );
-      final rawMemories = (paged['items'] as List<UserMemory>? ?? const []);
-      final memories = MemoryService.filterUserFacingMemories(rawMemories);
-      final profiles = await MemoryService.getUserMemoryProfiles(user.id);
-      // Sort memories by created_at descending (newest first)
-      memories.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final display = await MemoryService.getUserMemoriesDisplay(user.id);
+      final memories = display.items
+          .map(
+            (item) => UserMemory(
+              id: item.id,
+              userId: user.id,
+              key: item.key,
+              value: item.content,
+              memoryType: item.category,
+              createdAt: item.updatedAt,
+              updatedAt: item.updatedAt,
+            ),
+          )
+          .toList();
       setState(() {
+        _display = display;
         _memories = memories;
-        _profiles = profiles;
-        _hasMore = paged['has_more'] == true;
-        _total = memories.length;
+        _hasMore = false;
+        _total = display.total;
       });
     } catch (e) {
       setState(() {
@@ -67,7 +71,7 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('删除记忆'),
-        content: Text('确定要删除这条记忆吗？\nKey: ${memory.key}'),
+        content: Text('确定要删除「${memory.value}」吗？'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -202,7 +206,7 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title:
-            const Text('模型记忆线', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('关于你的记忆', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -240,7 +244,8 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
       );
     }
 
-    if (_memories.isEmpty && _profiles.isEmpty) {
+    final profiles = _display?.profiles ?? const [];
+    if (_memories.isEmpty && profiles.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -256,7 +261,15 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _buildProfileCard(_profiles),
+        if (_display?.headline.isNotEmpty == true)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              _display!.headline,
+              style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+            ),
+          ),
+        _buildProfileCard(profiles),
         const SizedBox(height: 12),
         if (_memories.isEmpty)
           Card(
@@ -277,7 +290,7 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
     );
   }
 
-  Widget _buildProfileCard(List<UserMemoryProfile> profiles) {
+  Widget _buildProfileCard(List<UserMemoryDisplayProfile> profiles) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -292,16 +305,12 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
                     size: 18, color: Theme.of(context).primaryColor),
                 const SizedBox(width: 8),
                 const Text(
-                  '账号画像摘要（后端记忆聚合）',
+                  'AI 对你的了解',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              '当前账号的画像由数据库记忆实时聚合，跨端共享，不依赖本地缓存。',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
             const SizedBox(height: 10),
             if (profiles.isEmpty)
               Text(
@@ -323,7 +332,7 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${p.memoryType} · ${p.itemCount}条',
+                          p.title,
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -345,12 +354,11 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
                 ),
               ),
             const SizedBox(height: 6),
-            Text(
-              _hasMore
-                  ? '已加载 ${_memories.length}/$_total 条，更多请分页查看。'
-                  : '共 $_total 条账号记忆。',
-              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-            ),
+            if (_total > 0)
+              Text(
+                '共 $_total 条',
+                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+              ),
           ],
         ),
       ),
@@ -369,15 +377,12 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
           children: [
             Row(
               children: [
-                Icon(Icons.vpn_key_rounded,
-                    size: 16, color: Theme.of(context).primaryColor),
-                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    memory.key,
+                    memory.memoryType ?? '了解',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 15,
                     ),
                   ),
                 ),
@@ -395,44 +400,9 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
               memory.value,
               style: const TextStyle(fontSize: 15, height: 1.5),
             ),
-            if ((memory.source?.isNotEmpty == true) ||
-                (memory.sessionId?.isNotEmpty == true) ||
-                (memory.sourceMsgId?.isNotEmpty == true)) ...[
-              const SizedBox(height: 8),
-              Text(
-                [
-                  if (memory.source?.isNotEmpty == true) '来源: ${memory.source}',
-                  if (memory.sessionId?.isNotEmpty == true)
-                    '会话: ${memory.sessionId}',
-                  if (memory.sourceMsgId?.isNotEmpty == true)
-                    '消息: ${memory.sourceMsgId}',
-                ].join('  |  '),
-                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-              ),
-            ],
             const SizedBox(height: 12),
             Row(
               children: [
-                if (memory.memoryType != null && memory.memoryType!.isNotEmpty)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEEF2FF),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      memory.memoryType!,
-                      style: const TextStyle(
-                          fontSize: 11, color: Color(0xFF4F46E5)),
-                    ),
-                  ),
-                const SizedBox(width: 8),
-                if (memory.confidence != null)
-                  Text(
-                    '置信度 ${(memory.confidence! * 100).clamp(0, 100).toStringAsFixed(0)}%',
-                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-                  ),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.thumb_up_alt_outlined, size: 18),

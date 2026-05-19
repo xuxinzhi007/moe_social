@@ -11,6 +11,7 @@ import '../../services/api_service.dart';
 import '../../services/ai_prompt_defaults.dart';
 import '../../services/llm_endpoint_config.dart';
 import '../../services/ai_db_service.dart';
+import '../../services/ai_agent_cloud_service.dart';
 import '../../services/ai_chat_gateway_service.dart';
 import '../../services/ai_lorebook_service.dart';
 import '../../services/ai_roleplay_prompt_builder.dart';
@@ -21,7 +22,6 @@ import '../../models/ai_agent.dart';
 import '../../models/ai_chat_session.dart';
 import '../../models/ai_chat_message.dart';
 import '../../models/ai_provider_profile.dart';
-import '../../models/ai_memory.dart';
 import '../../models/user_memory.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
@@ -52,9 +52,8 @@ class _ChatPageState extends State<ChatPage> {
   AiChatSession? _currentSession;
   List<AiChatMessage> _messages = [];
   List<UserMemory> _memories = [];
-  List<AiMemory> _localMemories = [];
   AiMemoryMode _memoryMode = AiMemoryMode.disabled;
-  String _memoryModeLabel = '未启用';
+  String _memoryHeadline = '关于你的记忆';
   String _systemPrompt = '';
   String _userPersona = '';
 
@@ -229,7 +228,6 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   int get _memoryPreviewCount {
-    if (_memoryMode == AiMemoryMode.local) return _localMemories.length;
     if (_memoryMode == AiMemoryMode.disabled) return 0;
     return _memories.length;
   }
@@ -241,9 +239,10 @@ class _ChatPageState extends State<ChatPage> {
       if (!mounted) return;
       setState(() {
         _memoryMode = state.activeMode;
-        _memoryModeLabel = state.activeModeLabel;
+        _memoryHeadline = state.display?.headline.isNotEmpty == true
+            ? state.display!.headline
+            : state.activeModeLabel;
         _memories = state.accountMemories;
-        _localMemories = state.localMemories;
       });
     } catch (_) {
       // 记忆预览失败不影响主聊天链路
@@ -592,21 +591,50 @@ class _ChatPageState extends State<ChatPage> {
       _systemPrompt = nextPrompt;
     });
     unawaited(_persistWebCache());
+    await _persistAgentSystemPrompt(nextPrompt);
+
+    if (!_isBackendProviderAgent) {
+      await _createNewSession();
+      if (!mounted) return;
+      MoeToast.success(context, '系统提示词已写入角色卡（已开启新对话）');
+      return;
+    }
+
     setState(() => _isSyncingModelPrompt = true);
     try {
       await _syncPromptToOllamaModel(nextPrompt);
-      // 提示词更新后自动开启新会话，避免旧会话历史干扰新风格。
       await _createNewSession();
       if (!mounted) return;
-      MoeToast.success(context, '系统提示词已更新并同步到模型（已开启新对话）');
+      MoeToast.success(context, '系统提示词已更新并同步到 Ollama 模型（已开启新对话）');
     } catch (e) {
       if (!mounted) return;
-      MoeToast.error(context, '提示词已保存，但同步模型失败：$e');
+      MoeToast.error(context, '提示词已保存到角色卡，但同步 Ollama 失败：$e');
     } finally {
       if (mounted) {
         setState(() => _isSyncingModelPrompt = false);
       }
     }
+  }
+
+  Future<void> _persistAgentSystemPrompt(String prompt) async {
+    final updated = AiAgent(
+      id: widget.agent.id,
+      name: widget.agent.name,
+      description: widget.agent.description,
+      systemPrompt: prompt,
+      modelName: widget.agent.modelName,
+      avatarPath: widget.agent.avatarPath,
+      providerProfileId: widget.agent.providerProfileId,
+      lorebookId: widget.agent.lorebookId,
+      persona: widget.agent.persona,
+      scenario: widget.agent.scenario,
+      openingMessage: widget.agent.openingMessage,
+      exampleDialogues: widget.agent.exampleDialogues,
+      createdAt: widget.agent.createdAt,
+    );
+    try {
+      await AiAgentCloudService().updateAgent(updated);
+    } catch (_) {}
   }
 
   Future<void> _syncPromptToOllamaModel(String prompt) async {
@@ -1386,12 +1414,17 @@ class _ChatPageState extends State<ChatPage> {
                         children: [
                           const Text('🧠', style: TextStyle(fontSize: 14)),
                           const SizedBox(width: 6),
-                          Text(
-                            '记忆 · $_memoryModeLabel（$_memoryPreviewCount 条）',
-                            style: const TextStyle(
+                          Expanded(
+                            child: Text(
+                              _memoryPreviewCount > 0
+                                  ? '$_memoryHeadline（$_memoryPreviewCount 条）'
+                                  : _memoryHeadline,
+                              style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.grey),
+                                color: Colors.grey,
+                              ),
+                            ),
                           ),
                           const Spacer(),
                           TextButton(
@@ -1413,43 +1446,19 @@ class _ChatPageState extends State<ChatPage> {
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
                             _memoryMode == AiMemoryMode.disabled
-                                ? '当前模式未启用记忆。可在 Provider 或终端设置中调整。'
-                                : _memoryMode == AiMemoryMode.local
-                                    ? '暂无本地角色记忆。继续对话后会自动学习。'
-                                    : '暂无账号记忆。继续聊天后，系统会自动提取并入库。',
+                                ? '记忆功能已暂停。'
+                                : '继续聊天后，AI 会自动记住你的偏好与重要信息。',
                             style: TextStyle(
                                 color: Colors.grey.shade400,
                                 fontSize: 13,
                                 fontStyle: FontStyle.italic),
                           ),
                         )
-                      else if (_memoryMode == AiMemoryMode.local)
-                        ...(_localMemories.take(3).map((m) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('•', style: TextStyle(fontSize: 13)),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    '[${m.category}] ${m.content}',
-                                    style: const TextStyle(
-                                        fontSize: 13, color: Colors.black87),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }))
                       else
                         ...(_memories.take(3).map((m) {
-                          final type = (m.memoryType?.isNotEmpty == true)
+                          final label = (m.memoryType?.isNotEmpty == true)
                               ? m.memoryType!
-                              : 'general';
+                              : '了解';
                           return Padding(
                             padding: const EdgeInsets.only(top: 6),
                             child: Row(
@@ -1459,7 +1468,7 @@ class _ChatPageState extends State<ChatPage> {
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
-                                    '[$type] ${m.value}',
+                                    '$label · ${m.value}',
                                     style: const TextStyle(
                                         fontSize: 13, color: Colors.black87),
                                     maxLines: 2,

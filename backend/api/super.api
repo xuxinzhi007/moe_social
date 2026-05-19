@@ -38,6 +38,9 @@ type User {
 	// 与 moe_no 一致，个人中心展示账号请优先用本字段或 moe_no；查询、鉴权仍用 Id
 	DisplayUserId          string `json:"display_user_id"`
 	MessageRetentionChoice int    `json:"message_retention_choice"` // 0=自动；7 或 30 为用户自选（见文档）
+	FeishuEmail            string `json:"feishu_email,optional"`
+	FeishuName             string `json:"feishu_name,optional"`
+	FeishuBound            bool   `json:"feishu_bound,optional"`
 }
 
 // VIP套餐相关结构

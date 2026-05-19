@@ -45,6 +45,7 @@ const (
 	Super_UpsertAiProvider_FullMethodName           = "/super.Super/UpsertAiProvider"
 	Super_DeleteAiProvider_FullMethodName           = "/super.Super/DeleteAiProvider"
 	Super_ListAiAgents_FullMethodName               = "/super.Super/ListAiAgents"
+	Super_ListPublicAiAgents_FullMethodName         = "/super.Super/ListPublicAiAgents"
 	Super_UpsertAiAgent_FullMethodName              = "/super.Super/UpsertAiAgent"
 	Super_DeleteAiAgent_FullMethodName              = "/super.Super/DeleteAiAgent"
 	Super_ListAiLorebooks_FullMethodName            = "/super.Super/ListAiLorebooks"
@@ -153,6 +154,7 @@ type SuperClient interface {
 	UpsertAiProvider(ctx context.Context, in *UpsertAiResourceReq, opts ...grpc.CallOption) (*UpsertAiResourceResp, error)
 	DeleteAiProvider(ctx context.Context, in *DeleteAiResourceReq, opts ...grpc.CallOption) (*DeleteAiResourceResp, error)
 	ListAiAgents(ctx context.Context, in *ListAiResourceReq, opts ...grpc.CallOption) (*ListAiResourceResp, error)
+	ListPublicAiAgents(ctx context.Context, in *ListPublicAiAgentsReq, opts ...grpc.CallOption) (*ListAiResourceResp, error)
 	UpsertAiAgent(ctx context.Context, in *UpsertAiResourceReq, opts ...grpc.CallOption) (*UpsertAiResourceResp, error)
 	DeleteAiAgent(ctx context.Context, in *DeleteAiResourceReq, opts ...grpc.CallOption) (*DeleteAiResourceResp, error)
 	ListAiLorebooks(ctx context.Context, in *ListAiResourceReq, opts ...grpc.CallOption) (*ListAiResourceResp, error)
@@ -506,6 +508,16 @@ func (c *superClient) ListAiAgents(ctx context.Context, in *ListAiResourceReq, o
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListAiResourceResp)
 	err := c.cc.Invoke(ctx, Super_ListAiAgents_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) ListPublicAiAgents(ctx context.Context, in *ListPublicAiAgentsReq, opts ...grpc.CallOption) (*ListAiResourceResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAiResourceResp)
+	err := c.cc.Invoke(ctx, Super_ListPublicAiAgents_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1275,6 +1287,7 @@ type SuperServer interface {
 	UpsertAiProvider(context.Context, *UpsertAiResourceReq) (*UpsertAiResourceResp, error)
 	DeleteAiProvider(context.Context, *DeleteAiResourceReq) (*DeleteAiResourceResp, error)
 	ListAiAgents(context.Context, *ListAiResourceReq) (*ListAiResourceResp, error)
+	ListPublicAiAgents(context.Context, *ListPublicAiAgentsReq) (*ListAiResourceResp, error)
 	UpsertAiAgent(context.Context, *UpsertAiResourceReq) (*UpsertAiResourceResp, error)
 	DeleteAiAgent(context.Context, *DeleteAiResourceReq) (*DeleteAiResourceResp, error)
 	ListAiLorebooks(context.Context, *ListAiResourceReq) (*ListAiResourceResp, error)
@@ -1451,6 +1464,9 @@ func (UnimplementedSuperServer) DeleteAiProvider(context.Context, *DeleteAiResou
 }
 func (UnimplementedSuperServer) ListAiAgents(context.Context, *ListAiResourceReq) (*ListAiResourceResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListAiAgents not implemented")
+}
+func (UnimplementedSuperServer) ListPublicAiAgents(context.Context, *ListPublicAiAgentsReq) (*ListAiResourceResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListPublicAiAgents not implemented")
 }
 func (UnimplementedSuperServer) UpsertAiAgent(context.Context, *UpsertAiResourceReq) (*UpsertAiResourceResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpsertAiAgent not implemented")
@@ -2156,6 +2172,24 @@ func _Super_ListAiAgents_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SuperServer).ListAiAgents(ctx, req.(*ListAiResourceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_ListPublicAiAgents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPublicAiAgentsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).ListPublicAiAgents(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_ListPublicAiAgents_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).ListPublicAiAgents(ctx, req.(*ListPublicAiAgentsReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3584,6 +3618,10 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListAiAgents",
 			Handler:    _Super_ListAiAgents_Handler,
+		},
+		{
+			MethodName: "ListPublicAiAgents",
+			Handler:    _Super_ListPublicAiAgents_Handler,
 		},
 		{
 			MethodName: "UpsertAiAgent",

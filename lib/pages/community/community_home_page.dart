@@ -8,7 +8,7 @@ import 'interest_groups_page.dart';
 import 'topic_discussions_page.dart';
 
 /// 兴趣社区：与「首页」关系 — 首页是个人/关注信息流；此处是 **群组 + 话题帖子流 + 广场形态筛选**。
-/// 「发现」负责 AI/小游戏/匹配等扩展能力，与社区入口在 [DiscoverPage] 中互相链出，避免重复堆叠。
+/// 「探索」负责 AI/小游戏/匹配等扩展能力；同好匹配与玩法在 [DiscoverPage] 内分区展示。
 class CommunityHomePage extends StatefulWidget {
   const CommunityHomePage({super.key});
 

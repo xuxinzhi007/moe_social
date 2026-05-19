@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/ai_provider_profile.dart';
 import '../../services/ai_chat_gateway_service.dart';
 import '../../services/ai_provider_connectivity_cache.dart';
+import '../../services/ai_provider_detector.dart';
 import '../../services/ai_provider_service.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_confirm_sheet.dart';
@@ -90,8 +91,11 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
     var supportsVision = initial?.supportsVision ?? false;
     var supportsToolCalls = initial?.supportsToolCalls ?? false;
     var testing = false;
+    var detecting = false;
     String? testResult;
     bool? testSuccess;
+    String? detectResult;
+    bool? detectSuccess;
 
     if (!mounted) return;
 
@@ -201,10 +205,22 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                   modelCount: models.length,
                 );
               }
+              if (models.isNotEmpty) {
+                final existing = manualModelsController.text
+                    .split('\n')
+                    .map((e) => e.trim())
+                    .where((e) => e.isNotEmpty)
+                    .toSet();
+                existing.addAll(models);
+                manualModelsController.text = existing.join('\n');
+                if (defaultModelController.text.trim().isEmpty) {
+                  defaultModelController.text = models.first;
+                }
+              }
               setLocalState(() {
                 testResult = models.isEmpty
-                    ? '连接成功，但未返回模型列表；请填写手动模型列表'
-                    : '连接成功，获取到 ${models.length} 个模型';
+                    ? '连接成功，但未返回模型列表；已可填写默认/手动模型后保存'
+                    : '连接成功，获取到 ${models.length} 个模型（已填入列表）';
               });
             } catch (e) {
               testSuccess = false;
@@ -240,9 +256,67 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
               ? AiTheme.bodyMuted
               : (testSuccess! ? AiTheme.success : AiTheme.danger);
 
+          Future<void> runDetect() async {
+            setLocalState(() {
+              detecting = true;
+              detectResult = null;
+              detectSuccess = null;
+            });
+            try {
+              final result = await AiProviderDetector.detect(
+                baseUrl: baseUrlController.text.trim(),
+                apiKey: apiKeyController.text.trim(),
+                previewProfileId: initial?.id,
+              );
+              detectSuccess = result.success;
+              baseUrlController.text = result.normalizedBaseUrl;
+              providerType = result.suggestedType;
+              if (result.suggestedName != null &&
+                  (nameController.text.trim().isEmpty ||
+                      nameController.text.trim() == '我的中转站')) {
+                nameController.text = result.suggestedName!;
+              }
+              if (result.models.isNotEmpty) {
+                final existing = manualModelsController.text
+                    .split('\n')
+                    .map((e) => e.trim())
+                    .where((e) => e.isNotEmpty)
+                    .toSet();
+                existing.addAll(result.models);
+                manualModelsController.text = existing.join('\n');
+                if (defaultModelController.text.trim().isEmpty) {
+                  defaultModelController.text = result.models.first;
+                }
+              }
+              setLocalState(() => detectResult = result.message);
+            } catch (e) {
+              detectSuccess = false;
+              setLocalState(() => detectResult = '识别失败：$e');
+            } finally {
+              setLocalState(() => detecting = false);
+            }
+          }
+
+          final detectColor = detectSuccess == null
+              ? AiTheme.bodyMuted
+              : (detectSuccess! ? AiTheme.success : AiTheme.danger);
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AiBrandTokens.primary.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(AiTheme.radiusMd),
+                ),
+                child: Text(
+                  '连接成功但模型列表为空时：在下方填写「默认模型」或「手动模型」（一行一个），'
+                  '即可创建角色卡。聊天时 App 会带着该模型 ID 调用中转站，无需在服务端新建模型。',
+                  style: AiTheme.caption.copyWith(height: 1.45),
+                ),
+              ),
+              const SizedBox(height: 12),
               DropdownButtonFormField<AiProviderType>(
                 value: providerType,
                 decoration: AiTheme.inputDecoration(labelText: '类型'),
@@ -272,9 +346,38 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                 controller: baseUrlController,
                 decoration: AiTheme.inputDecoration(
                   labelText: 'Base URL',
-                  hintText: 'https://your-gateway/v1',
+                  hintText: 'https://your-gateway 或 .../v1',
                 ),
               ),
+              const SizedBox(height: 8),
+              FilledButton.tonalIcon(
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(44),
+                ),
+                onPressed: detecting ? null : runDetect,
+                icon: detecting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.auto_fix_high_rounded),
+                label: Text(detecting ? '识别中…' : '智能识别 API 类型'),
+              ),
+              if (detectResult != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: detectColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(AiTheme.radiusMd),
+                  ),
+                  child: Text(
+                    detectResult!,
+                    style: AiTheme.caption.copyWith(color: detectColor),
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               TextField(
                 controller: apiKeyController,
@@ -285,8 +388,15 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
               TextField(
                 controller: defaultModelController,
                 decoration: AiTheme.inputDecoration(
-                  labelText: '默认模型',
+                  labelText: '默认模型 ID（必填其一）',
                   hintText: 'gpt-4o-mini / deepseek-chat',
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 6, left: 4),
+                child: Text(
+                  '创建角色卡与聊天时优先使用；/models 为空时靠它工作',
+                  style: AiTheme.caption,
                 ),
               ),
               const SizedBox(height: 12),
@@ -295,9 +405,16 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                 minLines: 3,
                 maxLines: 6,
                 decoration: AiTheme.inputDecoration(
-                  labelText: '手动模型列表',
-                  hintText: '一行一个；/models 不可用时回退',
+                  labelText: '手动模型列表（可选，一行一个）',
+                  hintText: 'gpt-4o\nclaude-3-5-sonnet\ndeepseek-chat',
                   alignLabelWithHint: true,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 6, left: 4),
+                child: Text(
+                  '智能识别或测试连接可自动填入；供「模型来源」Tab 展示',
+                  style: AiTheme.caption,
                 ),
               ),
               const SizedBox(height: 8),
@@ -405,7 +522,9 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
       title: profile.name,
       subtitle: profile.isBuiltinBackend
           ? '使用当前后端 Ollama 与记忆链路'
-          : 'Base URL: ${profile.baseUrl}\n默认模型: ${profile.defaultModel.isEmpty ? '未设置' : profile.defaultModel}',
+          : 'Base URL: ${profile.baseUrl}\n'
+              '默认模型: ${profile.defaultModel.isEmpty ? '未设置（需在编辑页填写）' : profile.defaultModel}'
+              '${profile.manualModels.isEmpty ? '' : '\n手动模型: ${profile.manualModels.length} 个'}',
       tags: [profile.providerType.label],
       statusDot: AiStatusDot(status: status, label: statusLabel),
       leading: CircleAvatar(
@@ -459,8 +578,9 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                 children: [
                   AiSurfaceCard(
                     child: Text(
-                      '支持内置 Ollama 与 OpenAI 兼容中转站。\n'
-                      '角色卡、Lorebook、JSON 导入导出已可用；流式输出即将支持。\n'
+                      '支持内置 Ollama 与 OpenAI 兼容中转站（OpenRouter / OneAPI / NewAPI 等）。\n'
+                      '很多中转站 /models 为空：填写「默认模型」或「手动模型」即可使用。\n'
+                      '可用「智能识别」自动规范化 Base URL 并探测类型。\n'
                       'API Key 仅保存在本机，不会上传服务器。',
                       style: AiTheme.body,
                     ),

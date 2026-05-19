@@ -7,7 +7,6 @@ import '../../services/ai_memory_orchestrator.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_chat_message.dart';
 import '../../models/ai_provider_profile.dart';
-import '../../widgets/fade_in_up.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_chat_background.dart';
 import '../../widgets/ai/ai_chat_empty_state.dart';
@@ -573,11 +572,8 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
       }
     }
 
-    return FadeInUp(
-      key: ValueKey(message.id),
-      duration: const Duration(milliseconds: 200),
-      delay: const Duration(milliseconds: 50),
-      child: Column(
+    return Column(
+        key: ValueKey(message.id),
         crossAxisAlignment:
             isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
@@ -599,7 +595,6 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
             ),
           ),
         ],
-      ),
     );
   }
 

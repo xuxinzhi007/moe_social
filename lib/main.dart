@@ -47,7 +47,7 @@ import 'services/startup_update_service.dart';
 import 'pages/gallery/cloud_gallery_page.dart';
 import 'pages/profile/friends_page.dart';
 import 'pages/discover/discover_page.dart';
-import 'pages/discover/match_page.dart';
+import 'pages/discover/explore_match_redirect_page.dart';
 import 'pages/chat/direct_chat_page.dart';
 import 'pages/chat/conversations_page.dart';
 import 'providers/theme_provider.dart';
@@ -66,7 +66,6 @@ import 'pages/checkin/checkin_page.dart';
 import 'pages/settings/virtual_avatar_settings_page.dart';
 import 'pages/settings/message_retention_settings_page.dart';
 import 'utils/startup_manager.dart';
-import 'utils/async_svg_manager.dart';
 import 'utils/webview_platform_init.dart';
 import 'widgets/splash_screen.dart';
 
@@ -238,11 +237,6 @@ class SplashScreenWrapper extends StatelessWidget {
             await PushNotificationService.initialize(AuthService.navigatorKey);
           }
         },
-        critical: false,
-      ),
-      StartupTask(
-        name: 'SVG Resources',
-        task: () => AsyncSvgManager().preloadAll(),
         critical: false,
       ),
     ]);
@@ -419,7 +413,7 @@ class _MyAppState extends State<MyApp> {
             return CommunityPostDetailPage(
                 postId: postId, initialPost: initial);
           },
-          '/match': (context) => const MatchPage(),
+          '/match': (context) => const ExploreMatchRedirectPage(),
           '/messages': (context) => const ConversationsPage(),
           '/direct-chat': (context) {
             final args = ModalRoute.of(context)?.settings.arguments;
@@ -533,7 +527,7 @@ class _MainPageState extends State<MainPage> {
           NavigationDestination(
             icon: Icon(Icons.explore_outlined),
             selectedIcon: Icon(Icons.explore_rounded),
-            label: '发现',
+            label: '探索',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

@@ -66,6 +66,74 @@ func (l *AiResourcesLogic) list(field string, in *super.ListAiResourceReq) (*sup
 	return resp, nil
 }
 
+func (l *AiResourcesLogic) listPublicAgents(in *super.ListPublicAiAgentsReq) (*super.ListAiResourceResp, error) {
+	limit := int(in.GetLimit())
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+
+	var configs []model.AiUserConfig
+	if err := l.svcCtx.DB.Find(&configs).Error; err != nil {
+		return nil, errorx.Internal(fmt.Sprintf("list public agents failed: %v", err))
+	}
+
+	resp := &super.ListAiResourceResp{Items: make([]*super.AiJsonResourceItem, 0)}
+	for _, cfg := range configs {
+		if len(resp.Items) >= limit {
+			break
+		}
+		agents := decodeAIJSONArray(cfg.AgentsJSON)
+		for _, item := range agents {
+			if len(resp.Items) >= limit {
+				break
+			}
+			if !agentIsPublic(item) {
+				continue
+			}
+			if _, ok := item["created_by_user_id"]; !ok {
+				item["created_by_user_id"] = fmt.Sprint(cfg.UserID)
+			}
+			if name := l.resolveUserDisplayName(cfg.UserID); name != "" {
+				item["author_name"] = name
+			}
+			payload, err := mustJSON(item)
+			if err != nil {
+				return nil, err
+			}
+			resp.Items = append(resp.Items, &super.AiJsonResourceItem{
+				Id:          fmt.Sprint(item["id"]),
+				PayloadJson: payload,
+			})
+		}
+	}
+	return resp, nil
+}
+
+func agentIsPublic(item map[string]interface{}) bool {
+	raw, ok := item["is_public"]
+	if !ok {
+		return false
+	}
+	switch v := raw.(type) {
+	case bool:
+		return v
+	case string:
+		s := strings.TrimSpace(strings.ToLower(v))
+		return s == "true" || s == "1" || s == "yes"
+	case float64:
+		return v != 0
+	case int:
+		return v != 0
+	case int64:
+		return v != 0
+	default:
+		return false
+	}
+}
+
 func (l *AiResourcesLogic) upsert(field string, in *super.UpsertAiResourceReq) (*super.UpsertAiResourceResp, error) {
 	userID, err := parseAIUserID(in.UserId)
 	if err != nil {
