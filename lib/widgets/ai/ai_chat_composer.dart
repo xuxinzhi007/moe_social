@@ -20,6 +20,8 @@ class AiChatComposer extends StatefulWidget {
     this.quickRepliesPanel,
     this.canSend = true,
     this.agentName,
+    /// 为 true 时生成中不在输入框内显示停止钮（由顶部状态条承担）。
+    this.stopControlInBanner = true,
   });
 
   final TextEditingController controller;
@@ -34,6 +36,7 @@ class AiChatComposer extends StatefulWidget {
   final VoidCallback? onStop;
   final Widget? quickRepliesPanel;
   final String? agentName;
+  final bool stopControlInBanner;
 
   @override
   State<AiChatComposer> createState() => _AiChatComposerState();
@@ -69,6 +72,7 @@ class _AiChatComposerState extends State<AiChatComposer> {
   bool get _hasText => widget.controller.text.trim().isNotEmpty;
 
   String get _hintText {
+    if (widget.isSending) return '等待回复中…';
     if (widget.isListening) return '正在聆听…';
     return '输入消息…';
   }
@@ -99,7 +103,7 @@ class _AiChatComposerState extends State<AiChatComposer> {
               ),
             ],
           ),
-          padding: EdgeInsets.fromLTRB(12, 10, 12, bottom + 8),
+          padding: EdgeInsets.fromLTRB(12, 6, 12, bottom + 6),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -108,12 +112,14 @@ class _AiChatComposerState extends State<AiChatComposer> {
                 curve: Curves.easeOut,
                 decoration: BoxDecoration(
                   color: const Color(0xFFF7F8FC),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: _focused
-                        ? AiBrandTokens.primary.withValues(alpha: 0.45)
-                        : AiBrandTokens.primary.withValues(alpha: 0.14),
-                    width: _focused ? 1.5 : 1,
+                    color: widget.isSending
+                        ? AiBrandTokens.primary.withValues(alpha: 0.2)
+                        : _focused
+                            ? AiBrandTokens.primary.withValues(alpha: 0.45)
+                            : AiBrandTokens.primary.withValues(alpha: 0.14),
+                    width: _focused && !widget.isSending ? 1.5 : 1,
                   ),
                 ),
                 child: Row(
@@ -123,26 +129,27 @@ class _AiChatComposerState extends State<AiChatComposer> {
                       child: TextField(
                         controller: widget.controller,
                         focusNode: widget.focusNode,
-                        maxLines: 8,
+                        enabled: !widget.isSending,
+                        maxLines: 5,
                         minLines: 1,
                         keyboardType: TextInputType.multiline,
                         textInputAction: TextInputAction.newline,
                         style: AiTheme.body.copyWith(
-                          fontSize: 16,
-                          height: 1.4,
+                          fontSize: 15,
+                          height: 1.35,
                         ),
                         decoration: InputDecoration(
                           hintText: _hintText,
                           hintStyle: TextStyle(
                             color: Colors.grey.shade500,
-                            fontSize: 16,
+                            fontSize: 15,
                           ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.fromLTRB(
-                            16,
-                            14,
-                            8,
-                            14,
+                            12,
+                            10,
+                            4,
+                            10,
                           ),
                         ),
                         onSubmitted: (_) {
@@ -155,20 +162,19 @@ class _AiChatComposerState extends State<AiChatComposer> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 6, 6, 6),
-                      child: _SendButton(
-                        size: 40,
-                        isSending: widget.isSending,
-                        enabled:
-                            widget.canSend && (_hasText || widget.isSending),
-                        onSend: widget.onSend,
-                        onStop: widget.onStop,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(0, 4, 4, 4),
+                      child: widget.isSending && widget.stopControlInBanner
+                          ? const _SendingSlot()
+                          : _SendButton(
+                              size: 34,
+                              enabled: widget.canSend && _hasText,
+                              onSend: widget.onSend,
+                            ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Row(
                 children: [
                   _ToolbarIcon(
@@ -243,7 +249,7 @@ class _ToolbarIcon extends StatelessWidget {
         },
         borderRadius: BorderRadius.circular(10),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -265,52 +271,42 @@ class _ToolbarIcon extends StatelessWidget {
   }
 }
 
-class _SendButton extends StatelessWidget {
-  const _SendButton({
-    required this.size,
-    required this.isSending,
-    required this.enabled,
-    required this.onSend,
-    this.onStop,
-  });
-
-  final double size;
-  final bool isSending;
-  final bool enabled;
-  final VoidCallback onSend;
-  final VoidCallback? onStop;
+/// 生成中占位：停止统一在顶部状态条，此处仅保留对齐占位。
+class _SendingSlot extends StatelessWidget {
+  const _SendingSlot();
 
   @override
   Widget build(BuildContext context) {
-    if (isSending) {
-      return Tooltip(
-        message: '停止生成',
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onStop,
-            customBorder: const CircleBorder(),
-            child: Ink(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AiTheme.danger.withValues(alpha: 0.12),
-                border: Border.all(
-                  color: AiTheme.danger.withValues(alpha: 0.35),
-                ),
-              ),
-              child: Icon(
-                Icons.stop_rounded,
-                color: AiTheme.danger,
-                size: size * 0.52,
-              ),
-            ),
+    return SizedBox(
+      width: 34,
+      height: 34,
+      child: Center(
+        child: SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AiBrandTokens.primary.withValues(alpha: 0.55),
           ),
         ),
-      );
-    }
+      ),
+    );
+  }
+}
 
+class _SendButton extends StatelessWidget {
+  const _SendButton({
+    required this.size,
+    required this.enabled,
+    required this.onSend,
+  });
+
+  final double size;
+  final bool enabled;
+  final VoidCallback onSend;
+
+  @override
+  Widget build(BuildContext context) {
     final active = enabled;
     return Tooltip(
       message: '发送',

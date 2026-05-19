@@ -21,6 +21,8 @@ class AiMessageBubble extends StatefulWidget {
   final VoidCallback? onContentExpanded;
   final String? agentLabel;
   final bool richFormat;
+  final bool hideAvatar;
+  final bool compactTop;
 
   const AiMessageBubble({
     super.key,
@@ -32,6 +34,8 @@ class AiMessageBubble extends StatefulWidget {
     this.onContentExpanded,
     this.agentLabel,
     this.richFormat = false,
+    this.hideAvatar = false,
+    this.compactTop = false,
   });
 
   @override
@@ -256,14 +260,16 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
     final maxBubbleWidth = MediaQuery.sizeOf(context).width * 0.82;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: EdgeInsets.only(top: widget.compactTop ? 2 : 8, bottom: 6),
       child: Row(
         mainAxisAlignment:
             isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isUser) ...[
-            _buildAssistantAvatar(),
+            widget.hideAvatar
+                ? const SizedBox(width: 40)
+                : _buildAssistantAvatar(),
             const SizedBox(width: 8),
           ],
           Flexible(
@@ -339,7 +345,7 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
             ),
             ),
           ),
-          if (isUser) ...[
+          if (isUser && !widget.hideAvatar) ...[
             const SizedBox(width: 8),
             CircleAvatar(
               radius: 16,
