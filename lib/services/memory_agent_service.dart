@@ -91,28 +91,71 @@ class MemoryAgentService {
         '无新信息则返回 []。不要 Markdown 代码块。\n\n'
         '用户：$userMessage\n助手：$aiResponse';
 
-    final raw = await _callModel(
-      model: model.trim().isNotEmpty ? model : 'llama3',
-      userPrompt: prompt,
-      temperature: 0.1,
-      timeout: const Duration(seconds: 45),
+    var saved = 0;
+    try {
+      final raw = await _callModel(
+        model: model.trim().isNotEmpty ? model : 'llama3',
+        userPrompt: prompt,
+        temperature: 0.1,
+        timeout: const Duration(seconds: 45),
+      );
+      final items = _parseServerMemoryItems(raw);
+      for (final item in items) {
+        final key = (item['key'] as String? ?? '').trim();
+        final value = (item['value'] as String? ?? '').trim();
+        if (key.isEmpty || value.isEmpty) continue;
+        try {
+          await MemoryService.upsertUserMemory(
+            userId: userId,
+            key: key,
+            value: value,
+            memoryType: (item['memory_type'] as String?)?.trim(),
+            confidence: (item['confidence'] as num?)?.toDouble(),
+            source: 'llm_extract_client',
+            sourceMsgId: sourceMsgId,
+            sessionId: sessionId,
+          );
+          saved++;
+        } catch (_) {}
+      }
+    } catch (_) {}
+
+    saved += await _upsertTaggedMemories(
+      userId: userId,
+      userMessage: userMessage,
+      aiResponse: aiResponse,
+      sessionId: sessionId,
+      sourceMsgId: sourceMsgId,
     );
-    final items = _parseServerMemoryItems(raw);
-    if (items.isEmpty) return 0;
+    return saved;
+  }
+
+  Future<int> _upsertTaggedMemories({
+    required String userId,
+    required String userMessage,
+    required String aiResponse,
+    required String sessionId,
+    required String sourceMsgId,
+  }) async {
+    final texts = <String>{
+      ...MemoryService.extractMemories(userMessage),
+      ...MemoryService.extractMemories(aiResponse),
+    };
+    if (texts.isEmpty) return 0;
 
     var saved = 0;
-    for (final item in items) {
-      final key = (item['key'] as String? ?? '').trim();
-      final value = (item['value'] as String? ?? '').trim();
-      if (key.isEmpty || value.isEmpty) continue;
+    for (final text in texts) {
+      final value = text.trim();
+      if (value.isEmpty) continue;
+      final norm = MemoryService.normalizeMemoryText(value);
+      final key = 'tag_${norm.hashCode.abs()}';
       try {
         await MemoryService.upsertUserMemory(
           userId: userId,
           key: key,
           value: value,
-          memoryType: (item['memory_type'] as String?)?.trim(),
-          confidence: (item['confidence'] as num?)?.toDouble(),
-          source: 'llm_extract_client',
+          memoryType: MemoryService.inferCategory(value),
+          source: 'tag_extract',
           sourceMsgId: sourceMsgId,
           sessionId: sessionId,
         );
