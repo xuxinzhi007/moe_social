@@ -82,6 +82,7 @@ class _AgentListPageState extends State<AgentListPage>
   }
 
   void _filterAgents() {
+    if (!mounted) return;
     setState(() {
       _filteredAgents = _agents.where((agent) {
         // 搜索过滤
@@ -203,10 +204,12 @@ class _AgentListPageState extends State<AgentListPage>
 
   Future<void> _reloadPageData() async {
     await _loadProviderProfiles();
+    if (!mounted) return;
     await _loadAgents();
   }
 
   Future<void> _loadAgents() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final cloudAgents = await AiAgentCloudService()
@@ -464,8 +467,8 @@ class _AgentListPageState extends State<AgentListPage>
           context,
           MaterialPageRoute(builder: (context) => const AgentEditorPage()),
         );
-        if (result == true) {
-          _loadAgents();
+        if (result == true && mounted) {
+          await _loadAgents();
         }
       },
       backgroundColor: _brandPrimary,
@@ -482,7 +485,7 @@ class _AgentListPageState extends State<AgentListPage>
       context,
       MaterialPageRoute(builder: (context) => AgentEditorPage(agent: agent)),
     );
-    if (result == true) {
+    if (result == true && mounted) {
       await _loadAgents();
     }
   }
@@ -680,8 +683,7 @@ class _AgentListPageState extends State<AgentListPage>
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed:
-                        isImporting ? null : () => Navigator.pop(ctx),
+                    onPressed: isImporting ? null : () => Navigator.pop(ctx),
                     child: const Text('取消'),
                   ),
                 ),
@@ -703,6 +705,7 @@ class _AgentListPageState extends State<AgentListPage>
                                   .importCharacterCardJson(raw);
                               if (!ctx.mounted) return;
                               Navigator.pop(ctx);
+                              if (!mounted) return;
                               await _reloadPageData();
                               if (!mounted) return;
                               final noticeText = result.notices.isEmpty
@@ -788,7 +791,7 @@ class _AgentListPageState extends State<AgentListPage>
             builder: (context) => AgentEditorPage(agent: agent),
           ),
         );
-        if (result == true) {
+        if (result == true && mounted) {
           await _loadAgents();
         }
       case _AgentCardAction.memory:
@@ -833,7 +836,9 @@ class _AgentListPageState extends State<AgentListPage>
       if (mounted) MoeToast.error(context, '删除角色卡失败：$e');
       return;
     }
-    await _loadAgents();
+    if (mounted) {
+      await _loadAgents();
+    }
     if (mounted) {
       MoeToast.success(context, '角色卡已删除');
     }
