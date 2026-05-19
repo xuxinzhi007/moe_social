@@ -83,8 +83,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
           ? ''
           : await AiProviderService().readApiKey(initial.id),
     );
-    var providerType =
-        initial?.providerType ?? AiProviderType.openAiCompatible;
+    var providerType = initial?.providerType ?? AiProviderType.openAiCompatible;
     var useServerMemory = initial?.useServerMemory ?? false;
     var supportsSystemMessages = initial?.supportsSystemMessages ?? true;
     var supportsStreaming = initial?.supportsStreaming ?? false;
@@ -198,6 +197,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
               );
               final models =
                   await AiChatGatewayService().fetchModelsForProfile(temp);
+              if (!ctx.mounted) return;
               testSuccess = true;
               if (initial?.id != null) {
                 await AiProviderConnectivityCache.saveSuccess(
@@ -227,12 +227,16 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
               if (initial?.id != null) {
                 await AiProviderConnectivityCache.saveFailure(initial!.id);
               }
-              setLocalState(() => testResult = '测试失败：$e');
+              if (ctx.mounted) {
+                setLocalState(() => testResult = '测试失败：$e');
+              }
             } finally {
               if (initial == null) {
                 await AiProviderService().deleteApiKey(previewId);
               }
-              setLocalState(() => testing = false);
+              if (ctx.mounted) {
+                setLocalState(() => testing = false);
+              }
             }
           }
 
@@ -244,7 +248,8 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
           }) {
             return SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: Text(title, style: AiTheme.body.copyWith(fontWeight: FontWeight.w600)),
+              title: Text(title,
+                  style: AiTheme.body.copyWith(fontWeight: FontWeight.w600)),
               subtitle: Text(subtitle, style: AiTheme.caption),
               value: value,
               activeColor: AiBrandTokens.primary,
@@ -268,6 +273,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                 apiKey: apiKeyController.text.trim(),
                 previewProfileId: initial?.id,
               );
+              if (!ctx.mounted) return;
               detectSuccess = result.success;
               baseUrlController.text = result.normalizedBaseUrl;
               providerType = result.suggestedType;
@@ -291,9 +297,13 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
               setLocalState(() => detectResult = result.message);
             } catch (e) {
               detectSuccess = false;
-              setLocalState(() => detectResult = '识别失败：$e');
+              if (ctx.mounted) {
+                setLocalState(() => detectResult = '识别失败：$e');
+              }
             } finally {
-              setLocalState(() => detecting = false);
+              if (ctx.mounted) {
+                setLocalState(() => detecting = false);
+              }
             }
           }
 
