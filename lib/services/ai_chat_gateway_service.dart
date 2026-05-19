@@ -16,6 +16,36 @@ class AiChatGatewayService {
   static final AiChatGatewayService _instance = AiChatGatewayService._();
   factory AiChatGatewayService() => _instance;
 
+  /// 将 Provider / 网络异常转为用户可读文案（聊天页展示）。
+  static String userFacingError(Object error) {
+    final raw = error.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+    if (raw.contains('请先在「模型来源」')) return raw;
+    if (raw.contains('401') ||
+        raw.contains('403') ||
+        raw.contains('未提供令牌') ||
+        raw.toLowerCase().contains('unauthorized') ||
+        raw.toLowerCase().contains('invalid api key')) {
+      return 'API 认证失败：请在「模型来源」检查该 Provider 的 API Key 是否已填写且有效';
+    }
+    final messageMatch = RegExp(r'"message"\s*:\s*"([^"]+)"').firstMatch(raw);
+    if (messageMatch != null) {
+      final msg = messageMatch.group(1)!.trim();
+      if (msg.isNotEmpty) return '请求失败：$msg';
+    }
+    if (raw.startsWith('Provider 请求失败')) {
+      return '模型服务请求失败，请检查 API 地址、模型 ID 与 Key';
+    }
+    if (raw.contains('SocketException') ||
+        raw.contains('ClientException') ||
+        raw.contains('Connection refused')) {
+      return '无法连接模型服务，请检查网络与 API 地址';
+    }
+    if (raw.length > 120) {
+      return '请求失败，请稍后重试';
+    }
+    return raw;
+  }
+
   Future<List<String>> fetchModelsForAgent(AiAgent agent) async {
     final profile = await AiProviderService().resolveProfile(
       agent.providerProfileId,
@@ -38,6 +68,12 @@ class AiChatGatewayService {
         return _extractModelNames(decoded);
       }
 
+      final apiKey = await AiProviderService().readApiKey(profile.id);
+      if (apiKey.trim().isEmpty) {
+        throw Exception(
+          '请先在「模型来源」中为「${profile.name}」填写 API Key',
+        );
+      }
       final uri = Uri.parse('${_normalizeBaseUrl(profile.baseUrl)}/models');
       final response = await http
           .get(uri, headers: await _buildProviderHeaders(profile, uri: uri))
@@ -140,6 +176,12 @@ class AiChatGatewayService {
     required String model,
     required List<Map<String, String>> messages,
   }) async {
+    final apiKey = await AiProviderService().readApiKey(profile.id);
+    if (apiKey.trim().isEmpty) {
+      throw Exception(
+        '请先在「模型来源」中为「${profile.name}」填写 API Key，再开始聊天',
+      );
+    }
     final uri =
         Uri.parse('${_normalizeBaseUrl(profile.baseUrl)}/chat/completions');
     final headers = await _buildProviderHeaders(profile, uri: uri);
@@ -199,10 +241,12 @@ class AiChatGatewayService {
     AiProviderProfile profile, {
     Uri? uri,
   }) async {
-    final apiKey = await AiProviderService().readApiKey(profile.id);
+    final apiKey = _normalizeApiKey(
+      await AiProviderService().readApiKey(profile.id),
+    );
     final baseHeaders = {
       'Content-Type': 'application/json',
-      if (apiKey.trim().isNotEmpty) 'Authorization': 'Bearer ${apiKey.trim()}',
+      if (apiKey.isNotEmpty) 'Authorization': 'Bearer $apiKey',
     };
     if (uri != null) {
       return ApiService.mergeTunnelHeaders(uri, headers: baseHeaders);
@@ -244,6 +288,14 @@ class AiChatGatewayService {
       return buffer.toString().trim();
     }
     return '';
+  }
+
+  String _normalizeApiKey(String raw) {
+    var key = raw.trim();
+    if (key.toLowerCase().startsWith('bearer ')) {
+      key = key.substring(7).trim();
+    }
+    return key;
   }
 
   String _normalizeBaseUrl(String raw) {

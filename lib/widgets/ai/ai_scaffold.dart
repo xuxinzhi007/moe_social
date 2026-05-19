@@ -11,10 +11,12 @@ class AiScaffold extends StatelessWidget {
     this.subtitle,
     this.actions,
     this.floatingActionButton,
+    this.bottomNavigationBar,
     this.bottom,
     this.syncStatus,
     this.syncLabel,
     this.backgroundColor,
+    this.resizeToAvoidBottomInset = true,
   });
 
   final String title;
@@ -22,15 +24,19 @@ class AiScaffold extends StatelessWidget {
   final Widget body;
   final List<Widget>? actions;
   final Widget? floatingActionButton;
+  final Widget? bottomNavigationBar;
   final PreferredSizeWidget? bottom;
   final AiSyncStatus? syncStatus;
   final String? syncLabel;
   final Color? backgroundColor;
+  final bool resizeToAvoidBottomInset;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor ?? AiBrandTokens.pageBackground,
+      resizeToAvoidBottomInset: resizeToAvoidBottomInset,
+      bottomNavigationBar: bottomNavigationBar,
       appBar: AppBar(
         title: subtitle == null
             ? Text(title)

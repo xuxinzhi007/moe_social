@@ -17,6 +17,7 @@ import '../../services/ai_lorebook_service.dart';
 import '../../services/ai_roleplay_prompt_builder.dart';
 import '../../services/ai_user_persona_service.dart';
 import '../../services/ai_memory_orchestrator.dart';
+import '../../services/ai_tts_helper.dart';
 import 'memory_manager_page.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_chat_session.dart';
@@ -27,8 +28,10 @@ import '../../widgets/fade_in_up.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_typing_indicator.dart';
 import '../../widgets/ai/ai_chat_background.dart';
+import '../../widgets/ai/ai_theme.dart';
 import '../../widgets/ai/ai_chat_empty_state.dart';
 import '../../widgets/ai/message_bubble.dart';
+import '../../widgets/ai/ai_chat_composer.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 
@@ -67,6 +70,7 @@ class _ChatPageState extends State<ChatPage> {
   bool _speechAvailable = false;
   bool _isListening = false;
   final FlutterTts _tts = FlutterTts();
+  late final AiTtsHelper _ttsHelper;
   bool _isSpeaking = false;
   String? _speakingMessageId;
 
@@ -102,6 +106,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
+    _ttsHelper = AiTtsHelper(_tts);
     _systemPrompt = widget.agent.systemPrompt.trim().isNotEmpty
         ? widget.agent.systemPrompt
         : AiPromptDefaults.defaultAgentSystemPrompt;
@@ -207,10 +212,26 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _initVoice() async {
     try {
       _speechAvailable = await _speech.initialize();
-      await _tts.setLanguage('zh-CN');
-      _tts.setCompletionHandler(() {
-        if (mounted) setState(() => _isSpeaking = false);
-      });
+    } catch (_) {}
+    try {
+      await _ttsHelper.initialize();
+      _ttsHelper.bindHandlers(
+        onComplete: () {
+          if (!mounted) return;
+          setState(() {
+            _isSpeaking = false;
+            _speakingMessageId = null;
+          });
+        },
+        onError: (_) {
+          if (!mounted) return;
+          setState(() {
+            _isSpeaking = false;
+            _speakingMessageId = null;
+          });
+          MoeToast.error(context, '语音播放失败，请检查系统 TTS 是否可用');
+        },
+      );
     } catch (_) {}
   }
 
@@ -522,7 +543,7 @@ class _ChatPageState extends State<ChatPage> {
       }
     } catch (e) {
       if (_wasManuallyStopped) return;
-      await _appendError('请求出错: $e');
+      await _appendError(AiChatGatewayService.userFacingError(e));
     } finally {
       if (mounted) {
         setState(() => _isSending = false);
@@ -735,7 +756,8 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _playTts(String text, String msgId) async {
     if (_isSpeaking && _speakingMessageId == msgId) {
-      await _tts.stop();
+      await _ttsHelper.stop();
+      if (!mounted) return;
       setState(() {
         _isSpeaking = false;
         _speakingMessageId = null;
@@ -744,31 +766,20 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     try {
-      await _tts.stop();
+      if (!mounted) return;
       setState(() {
         _isSpeaking = true;
         _speakingMessageId = msgId;
       });
-
-      await _tts.speak(text);
-
-      // 监听播放完成
-      _tts.setCompletionHandler(() {
-        if (mounted) {
-          setState(() {
-            _isSpeaking = false;
-            _speakingMessageId = null;
-          });
-        }
-      });
+      await _ttsHelper.speak(text);
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isSpeaking = false;
-          _speakingMessageId = null;
-        });
-        MoeToast.error(context, '语音播放失败：${e.toString()}');
-      }
+      if (!mounted) return;
+      setState(() {
+        _isSpeaking = false;
+        _speakingMessageId = null;
+      });
+      final msg = e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+      MoeToast.error(context, msg.isEmpty ? '语音播放失败' : msg);
     }
   }
 
@@ -1216,57 +1227,50 @@ class _ChatPageState extends State<ChatPage> {
     return Visibility(
       visible: _showQuickReplies,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AiBrandTokens.pageBackground.withValues(alpha: 0.95),
           border: Border(
-            top: BorderSide(color: Colors.grey.shade200),
+            top: BorderSide(
+              color: AiBrandTokens.primary.withValues(alpha: 0.08),
+            ),
           ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '快捷回复',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              style: AiTheme.caption.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AiBrandTokens.primary,
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: _quickReplies.map((reply) {
-                return Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      _selectQuickReply(reply);
-                    },
-                    child: Ink(
-                      decoration: BoxDecoration(
-                        color: AiBrandTokens.pageBackground,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: AiBrandTokens.primary.withValues(alpha: 0.16),
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        child: Text(
-                          reply,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AiBrandTokens.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
+                return ActionChip(
+                  label: Text(
+                    reply,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
+                  backgroundColor: Colors.white,
+                  side: BorderSide(
+                    color: AiBrandTokens.primary.withValues(alpha: 0.2),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    _selectQuickReply(reply);
+                  },
                 );
               }).toList(),
             ),
@@ -1887,26 +1891,13 @@ class _ChatPageState extends State<ChatPage> {
     final timeStr =
         "${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}";
 
-    // 检测内容类型
     MessageContentType contentType = MessageContentType.text;
-    String? language;
-
-    // 简单的内容类型检测逻辑
-    if (message.content.startsWith('```')) {
-      // 代码块
-      contentType = MessageContentType.code;
-      // 提取语言
-      final lines = message.content.split('\n');
-      if (lines.length > 1) {
-        final firstLine = lines[0].trim();
-        if (firstLine.length > 3) {
-          language = firstLine.substring(3).trim();
-        }
-      }
-    } else if (message.content == 'AI is thinking...') {
-      // 思考状态
+    if (message.content == 'AI is thinking...') {
       contentType = MessageContentType.thinking;
     }
+    final useRichFormat = !isUser &&
+        contentType == MessageContentType.text &&
+        message.content.trim().isNotEmpty;
 
     return FadeInUp(
       key: ValueKey(message.id),
@@ -1924,8 +1915,8 @@ class _ChatPageState extends State<ChatPage> {
             AiMessageBubble(
               content: message.content,
               contentType: contentType,
-              language: language,
               isUser: isUser,
+              richFormat: useRichFormat,
               agentLabel: isUser ? null : widget.agent.name,
               onContentExpanded: _scrollToBottom,
             ),
@@ -1948,15 +1939,25 @@ class _ChatPageState extends State<ChatPage> {
                       style:
                           TextStyle(fontSize: 11, color: Colors.grey.shade400),
                     ),
-                    const SizedBox(width: 12),
-                    InkWell(
-                      onTap: () => _playTts(message.content, message.id),
-                      child: Icon(
-                        _isSpeaking && _speakingMessageId == message.id
-                            ? Icons.volume_off_rounded
-                            : Icons.volume_up_rounded,
-                        size: 16,
-                        color: Colors.grey.shade400,
+                    const SizedBox(width: 8),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () => _playTts(message.content, message.id),
+                        child: Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: Icon(
+                            _isSpeaking && _speakingMessageId == message.id
+                                ? Icons.stop_circle_outlined
+                                : Icons.volume_up_rounded,
+                            size: 18,
+                            color:
+                                _isSpeaking && _speakingMessageId == message.id
+                                    ? AiBrandTokens.primary
+                                    : Colors.grey.shade500,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -2043,96 +2044,19 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget _buildInputArea() {
-    return Column(
-      children: [
-        _buildQuickReplies(),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, -2),
-              )
-            ],
-          ),
-          padding: EdgeInsets.only(
-            left: 12,
-            right: 12,
-            top: 12,
-            bottom: MediaQuery.of(context).padding.bottom + 12,
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: IconButton(
-                  icon: Icon(_isListening ? Icons.mic_off : Icons.mic_rounded),
-                  color: _isListening ? Colors.red : Colors.grey.shade600,
-                  onPressed: _toggleListening,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: IconButton(
-                  icon: Icon(_showQuickReplies
-                      ? Icons.keyboard_rounded
-                      : Icons.chat_bubble_outline_rounded),
-                  color: Colors.grey.shade600,
-                  onPressed: _toggleQuickReplies,
-                ),
-              ),
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F7FA),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: TextField(
-                    controller: _controller,
-                    focusNode: _focusNode,
-                    maxLines: 4,
-                    minLines: 1,
-                    textInputAction: TextInputAction.send,
-                    decoration: InputDecoration(
-                      hintText: _isListening ? '请说话...' : '输入消息...',
-                      hintStyle: TextStyle(color: Colors.grey.shade400),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                    ),
-                    onSubmitted: (_) => _sendMessage(),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: _isSending
-                    ? IconButton(
-                        icon: const Icon(Icons.stop_circle_rounded),
-                        color: Colors.redAccent,
-                        onPressed: _stopGeneration,
-                      )
-                    : Container(
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: AiBrandTokens.userBubbleGradient,
-                        ),
-                        child: IconButton(
-                          icon: const Icon(Icons.send_rounded, size: 20),
-                          color: Colors.white,
-                          onPressed: _sendMessage,
-                        ),
-                      ),
-              ),
-            ],
-          ),
-        ),
-      ],
+    return AiChatComposer(
+      controller: _controller,
+      focusNode: _focusNode,
+      agentName: widget.agent.name,
+      isListening: _isListening,
+      isSending: _isSending,
+      showQuickReplies: _showQuickReplies,
+      canSend: !_isSending,
+      onToggleListening: _toggleListening,
+      onToggleQuickReplies: _toggleQuickReplies,
+      onSend: _sendMessage,
+      onStop: _stopGeneration,
+      quickRepliesPanel: _buildQuickReplies(),
     );
   }
 }

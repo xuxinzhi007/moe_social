@@ -1,6 +1,12 @@
 import 'dart:convert';
 
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../models/ai_agent.dart';
+import 'ai_character_card_storage.dart' as card_storage;
 import '../models/ai_lorebook.dart';
 import '../models/ai_lorebook_entry.dart';
 import '../models/ai_provider_profile.dart';
@@ -29,6 +35,12 @@ class AiCharacterCardService {
 
   static const String cardType = 'moe_social_character_card';
   static const int cardVersion = 2;
+  static const String exportSubdir = 'character_cards';
+
+  /// 应用内角色卡导出目录（便于备份与再次导入）。
+  Future<String?> exportDirectoryPath() async {
+    return card_storage.characterCardExportDirectory();
+  }
 
   /// 复制他人公开角色卡到本账号草稿（清空 Provider / Lorebook 绑定）。
   AiAgent cloneAgentForLocalUse(AiAgent source) {
@@ -62,8 +74,7 @@ class AiCharacterCardService {
       'version': cardVersion,
       'exported_at': DateTime.now().toIso8601String(),
       'portable': true,
-      'notes':
-          '角色卡仅含人设与推荐模型；使用方需在本机选择 API 来源并填写 Key，不会使用导出者的账号或额度。',
+      'notes': '角色卡仅含人设与推荐模型；使用方需在本机选择 API 来源并填写 Key，不会使用导出者的账号或额度。',
       'agent': _agentToCardMap(agent),
       'model_binding': modelBinding,
       if (lorebook != null)
@@ -76,6 +87,80 @@ class AiCharacterCardService {
     return const JsonEncoder.withIndent('  ').convert(payload);
   }
 
+  String exportFileName(AiAgent agent) {
+    final safeName = agent.name
+        .trim()
+        .replaceAll(RegExp(r'[\\/:*?"<>|\s]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
+    final base = safeName.isEmpty ? 'character' : safeName;
+    return '${base}_card.json';
+  }
+
+  /// 写入应用内导出目录，返回实际保存路径（文件名含角色名）。
+  Future<String> saveCharacterCardToExportDir(AiAgent agent) async {
+    final raw = await exportCharacterCardJson(agent);
+    return card_storage.writeCharacterCardExport(
+      fileName: exportFileName(agent),
+      content: raw,
+    );
+  }
+
+  /// 导出为文件：先以角色名保存到应用目录，再唤起系统分享/另存。
+  Future<String> shareCharacterCardFile(AiAgent agent) async {
+    final fileName = exportFileName(agent);
+    if (kIsWeb) {
+      final raw = await exportCharacterCardJson(agent);
+      await Share.share(raw, subject: '角色卡：${agent.name}');
+      return fileName;
+    }
+    final savedPath = await saveCharacterCardToExportDir(agent);
+    await Share.shareXFiles(
+      [XFile(savedPath)],
+      subject: '导出角色卡：${agent.name}',
+    );
+    return savedPath;
+  }
+
+  Future<void> copyCharacterCardToClipboard(AiAgent agent) async {
+    final raw = await exportCharacterCardJson(agent);
+    await Clipboard.setData(ClipboardData(text: raw));
+  }
+
+  /// 从系统文件选择器读取 JSON 角色卡（桌面端默认打开应用导出目录）。
+  Future<AiCharacterCardImportResult> importCharacterCardFromFilePicker() async {
+    final exportDir = await exportDirectoryPath();
+    final initialDirectory =
+        card_storage.desktopPickerInitialDirectory(exportDir);
+
+    final picked = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['json'],
+      dialogTitle: '选择角色卡 JSON 文件',
+      withData: kIsWeb,
+      initialDirectory: initialDirectory,
+    );
+    if (picked == null || picked.files.isEmpty) {
+      throw _ImportCancelled();
+    }
+
+    final file = picked.files.single;
+    final raw = await _readPickedFileContent(file);
+    return importCharacterCardJson(raw);
+  }
+
+  Future<String> _readPickedFileContent(PlatformFile file) async {
+    final path = file.path?.trim();
+    if (path != null && path.isNotEmpty) {
+      return card_storage.readFileAtPath(path);
+    }
+    final bytes = file.bytes;
+    if (bytes != null && bytes.isNotEmpty) {
+      return utf8.decode(bytes);
+    }
+    throw Exception('无法读取所选文件');
+  }
+
   Future<AiCharacterCardImportResult> importCharacterCardJson(
     String rawJson,
   ) async {
@@ -83,16 +168,16 @@ class AiCharacterCardService {
     try {
       decoded = jsonDecode(rawJson);
     } catch (_) {
-      throw Exception('角色卡 JSON 解析失败');
+      throw Exception('角色卡内容无法识别，请检查复制是否完整');
     }
     if (decoded is! Map) {
-      throw Exception('角色卡格式无效');
+      throw Exception('这不是有效的角色卡文件');
     }
 
     final root = Map<String, dynamic>.from(decoded);
     final agentRaw = root['agent'];
     if (agentRaw is! Map) {
-      throw Exception('角色卡缺少 agent 字段');
+      throw Exception('角色卡内容不完整，缺少角色信息');
     }
     final agentMap = Map<String, dynamic>.from(agentRaw);
     final notices = <String>[
@@ -324,6 +409,11 @@ class AiCharacterCardService {
         .where((e) => e.isNotEmpty)
         .toList();
   }
+}
+
+class _ImportCancelled implements Exception {
+  @override
+  String toString() => '已取消选择文件';
 }
 
 class _ResolvedModelBinding {
