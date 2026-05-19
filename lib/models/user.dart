@@ -5,6 +5,12 @@ class User {
   final String id;
   final String username;
   final String email;
+  /// 绑定的企业飞书邮箱（用于接收自建应用机器人通知）
+  final String feishuEmail;
+  /// 飞书 OAuth 显示名
+  final String feishuName;
+  /// 是否已通过飞书 OAuth 登录绑定
+  final bool feishuBound;
   /// 10 位数字 Moe 号（登录账号之一）
   final String moeNo;
   /// 对外展示 ID（与后端 `display_user_id`，一般为 Moe 号）
@@ -33,6 +39,9 @@ class User {
     required this.id,
     required this.username,
     required this.email,
+    this.feishuEmail = '',
+    this.feishuName = '',
+    this.feishuBound = false,
     this.moeNo = '',
     this.displayUserId = '',
     this.messageRetentionChoice = 0,
@@ -65,6 +74,9 @@ class User {
       id: _coerceId(json['id']),
       username: json['username'] as String? ?? '',
       email: json['email'] as String? ?? '',
+      feishuEmail: json['feishu_email'] as String? ?? '',
+      feishuName: json['feishu_name'] as String? ?? '',
+      feishuBound: json['feishu_bound'] as bool? ?? false,
       moeNo: json['moe_no'] as String? ?? '',
       displayUserId: json['display_user_id'] as String? ??
           json['moe_no'] as String? ??
@@ -96,6 +108,9 @@ class User {
       'id': id,
       'username': username,
       'email': email,
+      'feishu_email': feishuEmail,
+      'feishu_name': feishuName,
+      'feishu_bound': feishuBound,
       'moe_no': moeNo,
       'display_user_id': displayUserId,
       'message_retention_choice': messageRetentionChoice,
@@ -141,6 +156,8 @@ class User {
     String? id,
     String? username,
     String? email,
+    String? feishuEmail,
+    bool clearFeishuEmail = false,
     String? moeNo,
     String? displayUserId,
     int? messageRetentionChoice,
@@ -165,6 +182,8 @@ class User {
       id: id ?? this.id,
       username: username ?? this.username,
       email: email ?? this.email,
+      feishuEmail:
+          clearFeishuEmail ? '' : (feishuEmail ?? this.feishuEmail),
       moeNo: moeNo ?? this.moeNo,
       displayUserId: displayUserId ?? this.displayUserId,
       messageRetentionChoice:

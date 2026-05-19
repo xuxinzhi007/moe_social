@@ -31,7 +31,54 @@ message User {
   string display_user_id = 19;
   // 0=自动（YAML+VIP）；7 或 30 为用户在设置里自选的私信保留天数（仅影响新消息）
   int32 message_retention_choice = 20;
+  // 绑定的企业飞书邮箱（receive_id_type=email）
+  string feishu_email = 21;
+  // 飞书 OAuth 显示名（通知卡片「操作者」会附带）
+  string feishu_name = 22;
+  // 是否已通过飞书 OAuth 绑定
+  bool feishu_bound = 23;
 }
+
+message FeishuAuthorizeURLReq {
+  string state = 1;
+}
+
+message FeishuAuthorizeURLResp {
+  string authorize_url = 1;
+}
+
+message FeishuLoginReq {
+  string code = 1;
+}
+
+message FeishuLoginResp {
+  User user = 1;
+  string token = 2;
+  bool is_new_user = 3;
+}
+
+message BindFeishuReq {
+  string user_id = 1;
+  string feishu_email = 2;
+}
+
+message BindFeishuResp {
+  User user = 1;
+}
+
+message UnbindFeishuReq {
+  string user_id = 1;
+}
+
+message UnbindFeishuResp {
+  User user = 1;
+}
+
+message SendFeishuTestCardReq {
+  string user_id = 1;
+}
+
+message SendFeishuTestCardResp {}
 
 // 用户注册请求
 message RegisterReq {
@@ -862,6 +909,11 @@ service Super {
   rpc UpdateUserVip(UpdateUserVipReq) returns (UpdateUserVipResp);
   rpc GetUsers(GetUsersReq) returns (GetUsersResp);
   rpc GetUserCount(GetUserCountReq) returns (GetUserCountResp);
+  rpc BindFeishu(BindFeishuReq) returns (BindFeishuResp);
+  rpc UnbindFeishu(UnbindFeishuReq) returns (UnbindFeishuResp);
+  rpc SendFeishuTestCard(SendFeishuTestCardReq) returns (SendFeishuTestCardResp);
+  rpc FeishuAuthorizeURL(FeishuAuthorizeURLReq) returns (FeishuAuthorizeURLResp);
+  rpc FeishuLogin(FeishuLoginReq) returns (FeishuLoginResp);
   rpc UpsertUserMemory(UpsertUserMemoryReq) returns (UpsertUserMemoryResp);
   rpc GetUserMemories(GetUserMemoriesReq) returns (GetUserMemoriesResp);
   rpc GetUserMemoryProfiles(GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp);

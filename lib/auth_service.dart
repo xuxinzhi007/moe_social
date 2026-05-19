@@ -139,6 +139,41 @@ class AuthService {
     return AuthResult.failure('登录失败，请稍后重试');
   }
 
+  /// 飞书 OAuth：用授权码登录；未注册则自动注册并绑定 open_id / 邮箱 / 显示名。
+  static Future<AuthResult> loginWithFeishu(String code) async {
+    try {
+      final result = await ApiService.feishuLogin(code);
+      final data = result['data'];
+      if (data is! Map<String, dynamic>) {
+        return AuthResult.failure('飞书登录响应异常');
+      }
+      final userData = data['user'];
+      if (userData is! Map<String, dynamic>) {
+        return AuthResult.failure('飞书登录响应异常');
+      }
+      _currentUser = userData['id'] as String;
+      _token = data['token'] as String;
+
+      await _saveAuthData();
+      final prefs = await SharedPreferences.getInstance();
+      await _purgeAllUserInfoCaches(prefs);
+
+      final email = (userData['email'] as String?)?.trim() ?? '';
+      if (email.isNotEmpty && !email.endsWith('@feishu.oauth.local')) {
+        await prefs.setString(_lastLoginAccountKey, email);
+      }
+
+      ApiService.setToken(_token);
+      PresenceService.start();
+      ChatPushService.start();
+      return AuthResult.success();
+    } on ApiException catch (e) {
+      return AuthResult.failure(e.message);
+    } catch (e) {
+      return AuthResult.failure('飞书登录失败: $e');
+    }
+  }
+
   static Future<AuthResult> register(
       String username, String email, String password) async {
     try {

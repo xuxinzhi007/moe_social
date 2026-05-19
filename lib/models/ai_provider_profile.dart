@@ -44,7 +44,7 @@ class AiProviderProfile {
     required this.manualModels,
     required this.useServerMemory,
     this.supportsSystemMessages = true,
-    this.supportsStreaming = true,
+    this.supportsStreaming = false,
     this.supportsVision = false,
     this.supportsToolCalls = false,
     required this.createdAt,

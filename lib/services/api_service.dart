@@ -19,6 +19,7 @@ import '../models/checkin_status.dart';
 import '../models/checkin_record.dart';
 import '../models/checkin_data.dart';
 import '../models/exp_log.dart';
+import '../models/feishu_public_config.dart';
 import 'remote_api_config_service.dart';
 import '../utils/jwt_exp.dart';
 import '../utils/config.dart' as moe_launch_config;
@@ -1082,6 +1083,77 @@ class ApiService {
     }
     // 不可达：循环内要么 return 要么 rethrow；保留以满足静态返回类型
     throw ApiException('获取用户信息失败', 503);
+  }
+
+  /// 绑定企业飞书邮箱（用于自建应用机器人 IM 通知）。
+  static Future<User> bindFeishuEmail(String feishuEmail) async {
+    final result = await _request(
+      '/api/user/feishu/bind',
+      method: 'PUT',
+      body: {'feishu_email': feishuEmail.trim()},
+    );
+    final data = result['data'];
+    if (data is! Map<String, dynamic>) {
+      throw ApiException('飞书绑定响应格式异常', 500);
+    }
+    return User.fromJson(data);
+  }
+
+  /// 解除飞书绑定。
+  static Future<User> unbindFeishuEmail() async {
+    final result = await _request(
+      '/api/user/feishu/bind',
+      method: 'DELETE',
+    );
+    final data = result['data'];
+    if (data is! Map<String, dynamic>) {
+      throw ApiException('飞书解绑响应格式异常', 500);
+    }
+    return User.fromJson(data);
+  }
+
+  /// 向当前用户绑定的飞书邮箱发送测试消息卡片。
+  static Future<void> sendFeishuTestCard() async {
+    await _request(
+      '/api/user/feishu/test-card',
+      method: 'POST',
+    );
+  }
+
+  /// 飞书公开配置（邀请链接、说明文案，无需登录）。
+  static Future<FeishuPublicConfig> getFeishuPublicConfig() async {
+    final result = await _request('/api/auth/feishu/public-config');
+    final data = result['data'];
+    if (data is Map<String, dynamic>) {
+      return FeishuPublicConfig.fromJson(data);
+    }
+    return const FeishuPublicConfig();
+  }
+
+  /// 获取飞书 OAuth 授权页 URL（登录页 WebView 使用）。
+  /// [state] Web 端传当前页 origin，授权成功后服务端跳回并带上 feishu_code。
+  static Future<String> getFeishuAuthorizeUrl({required String state}) async {
+    final result = await _request(
+      '/api/auth/feishu/authorize-url?state=${Uri.encodeQueryComponent(state)}',
+    );
+    final data = result['data'];
+    if (data is! Map<String, dynamic>) {
+      throw ApiException('飞书授权地址响应格式异常', 500);
+    }
+    final url = (data['authorize_url'] as String?)?.trim() ?? '';
+    if (url.isEmpty) {
+      throw ApiException('飞书授权地址为空', 500);
+    }
+    return url;
+  }
+
+  /// 飞书 OAuth 登录（code 换 JWT）。
+  static Future<Map<String, dynamic>> feishuLogin(String code) async {
+    return _request(
+      '/api/auth/feishu/login',
+      method: 'POST',
+      body: {'code': code.trim()},
+    );
   }
 
   // 更新用户信息

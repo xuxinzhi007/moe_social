@@ -2,6 +2,7 @@ package logic
 
 import (
 	"strconv"
+	"strings"
 
 	"backend/model"
 	"backend/rpc/pb/super"
@@ -41,5 +42,8 @@ func modelUserToProto(user *model.User) *super.User {
 		ReceivedGiftValue:        user.ReceivedGiftValue,
 		DisplayUserId:            user.MoeNo,
 		MessageRetentionChoice:   int32(user.MessageRetentionChoice),
+		FeishuEmail:              user.FeishuEmail,
+		FeishuName:               user.FeishuName,
+		FeishuBound:              user.FeishuOpenID != nil && strings.TrimSpace(*user.FeishuOpenID) != "",
 	}
 }
