@@ -79,7 +79,10 @@ func (l *SendPrivateMessageLogic) SendPrivateMessage(in *super.SendPrivateMessag
 		ExpiresAt:     time.Now().Add(time.Duration(days) * 24 * time.Hour),
 	}
 	if len(paths) > 0 {
-		b, _ := json.Marshal(paths)
+		b, err := json.Marshal(paths)
+		if err != nil {
+			return nil, errors.New("invalid image paths")
+		}
 		row.ImagePaths = string(b)
 	} else {
 		row.ImagePaths = "[]"

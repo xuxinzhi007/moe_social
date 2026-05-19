@@ -153,46 +153,15 @@ App 内置了更新检测功能：
 默认情况下，每次构建使用临时签名，导致新版本无法覆盖旧版本（需卸载重装）。
 配置固定签名后即可实现平滑更新。
 
-#### 🔐 当前项目签名信息
+完整步骤、GitHub Secrets、密码管理方式见 **[docs/dev/android-release-signing.md](docs/dev/android-release-signing.md)**（含敏感信息，勿公开仓库）。
 
-| 项目 | 值 |
-|------|-----|
-| 签名文件 | `android/app/release.jks` |
-| 密钥别名 (Key Alias) | `key` |
-| 密钥库密码 (Store Password) | `moe123456` |
-| 密钥密码 (Key Password) | `moe123456` |
+简要说明：
 
-#### 📋 GitHub Secrets 配置
+1. 将 `release.jks` 放在 `android/app/`
+2. 设置环境变量 `KEYSTORE_PASSWORD`、`KEY_PASSWORD`（或配置 GitHub Actions Secrets）
+3. Release 构建即可与已发布版本覆盖安装
 
-在 GitHub 仓库 **Settings → Secrets and variables → Actions** 中添加以下 Secrets：
-
-| Secret Name | 说明 |
-|-------------|------|
-| `KEYSTORE_BASE64` | 签名文件的 Base64 编码 |
-| `KEYSTORE_PASSWORD` | `moe123456` |
-| `KEY_PASSWORD` | `moe123456` |
-
-**生成 KEYSTORE_BASE64 的方法**（PowerShell）：
-```powershell
-[Convert]::ToBase64String([IO.File]::ReadAllBytes("android/app/release.jks"))
-```
-
-#### 🔄 在新电脑上配置
-
-1. 将 `release.jks` 文件复制到新电脑的 `android/app/` 目录
-2. 或者从 GitHub Secrets 解码还原：
-   ```bash
-   # Linux/macOS
-   echo "KEYSTORE_BASE64内容" | base64 -d > android/app/release.jks
-   ```
-
-#### 📝 重新生成签名（如果需要）
-
-```bash
-keytool -genkey -v -keystore android/app/release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias key -storepass moe123456 -keypass moe123456 -dname "CN=MoeSocial, OU=MoeSocial, O=MoeSocial, L=Shanghai, S=Shanghai, C=CN"
-```
-
-> ⚠️ **注意**：重新生成签名后，用户需要卸载旧版本才能安装新版本。建议保管好签名文件，不要轻易重新生成。
+> ⚠️ 重新生成 keystore 后，用户通常需卸载旧版才能安装，请妥善保管签名文件。
 
 ### 5. App 内更新功能
 

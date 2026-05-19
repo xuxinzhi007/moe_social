@@ -1,6 +1,8 @@
 package svc
 
 import (
+	"fmt"
+
 	"backend/rpc/internal/config"
 	"backend/utils"
 
@@ -16,6 +18,9 @@ func NewServiceContext(c config.Config, autoMigrate bool) *ServiceContext {
 	// 初始化配置
 	if err := utils.InitConfig(); err != nil {
 		panic(err)
+	}
+	if err := utils.LoadJWTFromViper(); err != nil {
+		panic(fmt.Sprintf("JWT 配置无效: %v", err))
 	}
 
 	// 初始化数据库连接（autoMigrate：见 rpc main 的 -migrate）

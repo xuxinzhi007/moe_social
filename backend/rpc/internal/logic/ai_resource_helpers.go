@@ -2,11 +2,13 @@ package logic
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 
 	"backend/model"
 	"backend/rpc/internal/errorx"
+
 	"gorm.io/gorm"
 )
 
@@ -55,10 +57,13 @@ func decodeAIJSONArray(raw string) []map[string]interface{} {
 	return out
 }
 
-func encodeAIJSONArray(items []map[string]interface{}) string {
+func encodeAIJSONArray(items []map[string]interface{}) (string, error) {
 	if items == nil {
 		items = []map[string]interface{}{}
 	}
-	raw, _ := json.Marshal(items)
-	return string(raw)
+	raw, err := json.Marshal(items)
+	if err != nil {
+		return "", errorx.Internal(fmt.Sprintf("encode AI resource json failed: %v", err))
+	}
+	return string(raw), nil
 }

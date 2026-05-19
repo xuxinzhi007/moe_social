@@ -54,9 +54,13 @@ func (l *AiResourcesLogic) list(field string, in *super.ListAiResourceReq) (*sup
 	items := decodeAIJSONArray(raw)
 	resp := &super.ListAiResourceResp{Items: make([]*super.AiJsonResourceItem, 0, len(items))}
 	for _, item := range items {
+		payload, err := mustJSON(item)
+		if err != nil {
+			return nil, err
+		}
 		resp.Items = append(resp.Items, &super.AiJsonResourceItem{
 			Id:          fmt.Sprint(item["id"]),
-			PayloadJson: mustJSON(item),
+			PayloadJson: payload,
 		})
 	}
 	return resp, nil
@@ -88,7 +92,11 @@ func (l *AiResourcesLogic) upsert(field string, in *super.UpsertAiResourceReq) (
 	if !replaced {
 		items = append(items, item)
 	}
-	setField(cfg, field, encodeAIJSONArray(items))
+	encoded, err := encodeAIJSONArray(items)
+	if err != nil {
+		return nil, err
+	}
+	setField(cfg, field, encoded)
 	if err := l.svcCtx.DB.Save(cfg).Error; err != nil {
 		return nil, errorx.Internal(fmt.Sprintf("save AI config failed: %v", err))
 	}
@@ -119,7 +127,11 @@ func (l *AiResourcesLogic) delete(field string, in *super.DeleteAiResourceReq) (
 			next = append(next, item)
 		}
 	}
-	setField(cfg, field, encodeAIJSONArray(next))
+	encoded, err := encodeAIJSONArray(next)
+	if err != nil {
+		return nil, err
+	}
+	setField(cfg, field, encoded)
 	if err := l.svcCtx.DB.Save(cfg).Error; err != nil {
 		return nil, errorx.Internal(fmt.Sprintf("save AI config failed: %v", err))
 	}
@@ -150,9 +162,12 @@ func setField(cfg *model.AiUserConfig, field, value string) {
 	}
 }
 
-func mustJSON(v interface{}) string {
-	raw, _ := json.Marshal(v)
-	return string(raw)
+func mustJSON(v interface{}) (string, error) {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		return "", errorx.Internal(fmt.Sprintf("encode AI resource item failed: %v", err))
+	}
+	return string(raw), nil
 }
 
 func (l *AiResourcesLogic) notifyAgentCreated(userID uint, item map[string]interface{}) {
