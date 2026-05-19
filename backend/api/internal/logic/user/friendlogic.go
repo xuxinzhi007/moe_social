@@ -78,6 +78,9 @@ func rpcUserToTypes(u *super.User) types.User {
 		ReceivedGiftValue:      u.ReceivedGiftValue,
 		Inventory:              u.Inventory,
 		EquippedFrameId:        u.EquippedFrameId,
+		FeishuEmail:            u.GetFeishuEmail(),
+		FeishuName:             u.GetFeishuName(),
+		FeishuBound:            u.GetFeishuBound(),
 	}
 }
 

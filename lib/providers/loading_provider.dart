@@ -180,6 +180,7 @@ class LoadingProvider extends ChangeNotifier {
 /// 操作类型常量
 class LoadingKeys {
   static const String login = 'login';
+  static const String feishuLogin = 'feishuLogin';
   static const String register = 'register';
   static const String createPost = 'createPost';
   static const String uploadImage = 'uploadImage';

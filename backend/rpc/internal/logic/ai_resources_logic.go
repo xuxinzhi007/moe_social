@@ -100,8 +100,12 @@ func (l *AiResourcesLogic) upsert(field string, in *super.UpsertAiResourceReq) (
 	if err := l.svcCtx.DB.Save(cfg).Error; err != nil {
 		return nil, errorx.Internal(fmt.Sprintf("save AI config failed: %v", err))
 	}
-	if field == "agents" && !replaced {
-		l.notifyAgentCreated(userID, item)
+	if field == "agents" {
+		if !replaced {
+			l.notifyAgentEvent(userID, item, utils.FeishuAgentCreated)
+		} else {
+			l.notifyAgentEvent(userID, item, utils.FeishuAgentUpdated)
+		}
 	}
 	return &super.UpsertAiResourceResp{
 		Item: &super.AiJsonResourceItem{
@@ -121,11 +125,14 @@ func (l *AiResourcesLogic) delete(field string, in *super.DeleteAiResourceReq) (
 		return nil, errorx.Internal(fmt.Sprintf("read AI config failed: %v", err))
 	}
 	items := decodeAIJSONArray(selectField(cfg, field))
+	var deletedItem map[string]interface{}
 	next := make([]map[string]interface{}, 0, len(items))
 	for _, item := range items {
-		if fmt.Sprint(item["id"]) != in.Id {
-			next = append(next, item)
+		if fmt.Sprint(item["id"]) == in.Id {
+			deletedItem = item
+			continue
 		}
+		next = append(next, item)
 	}
 	encoded, err := encodeAIJSONArray(next)
 	if err != nil {
@@ -134,6 +141,9 @@ func (l *AiResourcesLogic) delete(field string, in *super.DeleteAiResourceReq) (
 	setField(cfg, field, encoded)
 	if err := l.svcCtx.DB.Save(cfg).Error; err != nil {
 		return nil, errorx.Internal(fmt.Sprintf("save AI config failed: %v", err))
+	}
+	if field == "agents" && deletedItem != nil {
+		l.notifyAgentEvent(userID, deletedItem, utils.FeishuAgentDeleted)
 	}
 	return &super.DeleteAiResourceResp{Ok: true}, nil
 }
@@ -170,20 +180,22 @@ func mustJSON(v interface{}) (string, error) {
 	return string(raw), nil
 }
 
-func (l *AiResourcesLogic) notifyAgentCreated(userID uint, item map[string]interface{}) {
+func (l *AiResourcesLogic) notifyAgentEvent(userID uint, item map[string]interface{}, action utils.FeishuAgentAction) {
 	agentID := fmt.Sprint(item["id"])
 	agentName := stringValue(item["name"])
 	modelName := stringValue(item["model_name"])
 	description := stringValue(item["description"])
 	providerProfile := stringValue(item["provider_profile_id"])
-	createdAt := parseAgentCreatedAt(item["created_at"])
+	eventAt := parseAgentCreatedAt(item["created_at"])
 	userName := l.resolveUserDisplayName(userID)
+	feishuEmail := l.resolveUserFeishuEmail(userID)
 
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 		defer cancel()
 
-		err := utils.SendFeishuAgentCreatedNotification(ctx, utils.FeishuAgentCreatedNotification{
+		err := utils.SendFeishuAgentEventNotification(ctx, utils.FeishuAgentEvent{
+			Action:          action,
 			UserName:        userName,
 			UserID:          fmt.Sprint(userID),
 			AgentID:         agentID,
@@ -191,23 +203,40 @@ func (l *AiResourcesLogic) notifyAgentCreated(userID uint, item map[string]inter
 			Description:     description,
 			ModelName:       modelName,
 			ProviderProfile: providerProfile,
-			CreatedAt:       createdAt,
-		})
+			EventAt:         eventAt,
+		}, feishuEmail)
 		if err != nil {
-			l.Errorf("feishu agent-created notification failed: %v", err)
+			l.Errorf("feishu agent %s notification failed: %v", action, err)
 		}
 	}()
 }
 
+func (l *AiResourcesLogic) resolveUserFeishuEmail(userID uint) string {
+	var user model.User
+	if err := l.svcCtx.DB.Select("feishu_email").First(&user, userID).Error; err == nil {
+		return strings.TrimSpace(user.FeishuEmail)
+	}
+	return ""
+}
+
 func (l *AiResourcesLogic) resolveUserDisplayName(userID uint) string {
 	var user model.User
-	if err := l.svcCtx.DB.Select("id", "username", "email").First(&user, userID).Error; err == nil {
-		if strings.TrimSpace(user.Username) != "" {
-			return user.Username
-		}
-		if strings.TrimSpace(user.Email) != "" {
-			return user.Email
-		}
+	if err := l.svcCtx.DB.Select("id", "username", "email", "feishu_name").First(&user, userID).Error; err != nil {
+		return fmt.Sprintf("user#%d", userID)
+	}
+	username := strings.TrimSpace(user.Username)
+	feishuName := strings.TrimSpace(user.FeishuName)
+	if username != "" && feishuName != "" && username != feishuName {
+		return username + "（飞书：" + feishuName + "）"
+	}
+	if username != "" {
+		return username
+	}
+	if feishuName != "" {
+		return feishuName
+	}
+	if strings.TrimSpace(user.Email) != "" {
+		return user.Email
 	}
 	return fmt.Sprintf("user#%d", userID)
 }

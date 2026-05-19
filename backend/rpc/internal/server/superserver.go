@@ -84,6 +84,31 @@ func (s *SuperServer) GetUserCount(ctx context.Context, in *super.GetUserCountRe
 	return l.GetUserCount(in)
 }
 
+func (s *SuperServer) BindFeishu(ctx context.Context, in *super.BindFeishuReq) (*super.BindFeishuResp, error) {
+	l := logic.NewBindFeishuLogic(ctx, s.svcCtx)
+	return l.BindFeishu(in)
+}
+
+func (s *SuperServer) UnbindFeishu(ctx context.Context, in *super.UnbindFeishuReq) (*super.UnbindFeishuResp, error) {
+	l := logic.NewUnbindFeishuLogic(ctx, s.svcCtx)
+	return l.UnbindFeishu(in)
+}
+
+func (s *SuperServer) SendFeishuTestCard(ctx context.Context, in *super.SendFeishuTestCardReq) (*super.SendFeishuTestCardResp, error) {
+	l := logic.NewSendFeishuTestCardLogic(ctx, s.svcCtx)
+	return l.SendFeishuTestCard(in)
+}
+
+func (s *SuperServer) FeishuAuthorizeURL(ctx context.Context, in *super.FeishuAuthorizeURLReq) (*super.FeishuAuthorizeURLResp, error) {
+	l := logic.NewFeishuAuthorizeURLLogic(ctx, s.svcCtx)
+	return l.FeishuAuthorizeURL(in)
+}
+
+func (s *SuperServer) FeishuLogin(ctx context.Context, in *super.FeishuLoginReq) (*super.FeishuLoginResp, error) {
+	l := logic.NewFeishuLoginLogic(ctx, s.svcCtx)
+	return l.FeishuLogin(in)
+}
+
 func (s *SuperServer) UpsertUserMemory(ctx context.Context, in *super.UpsertUserMemoryReq) (*super.UpsertUserMemoryResp, error) {
 	l := logic.NewUpsertUserMemoryLogic(ctx, s.svcCtx)
 	return l.UpsertUserMemory(in)

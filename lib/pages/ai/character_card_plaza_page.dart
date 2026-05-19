@@ -29,9 +29,21 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
   }
 
   Future<void> _loadAgents() async {
-    setState(() => _loadingAgents = true);
     try {
-      final agents = await AiAgentCloudService().getAgents();
+      final local = await AiAgentCloudService().getLocalAgents();
+      if (mounted && local.isNotEmpty) {
+        setState(() {
+          _myAgents = local;
+          _loadingAgents = false;
+        });
+      }
+    } catch (_) {}
+
+    if (mounted && _myAgents.isEmpty) {
+      setState(() => _loadingAgents = true);
+    }
+    try {
+      final agents = await AiAgentCloudService().syncAgentsFromCloud();
       if (!mounted) return;
       setState(() {
         _myAgents = agents;

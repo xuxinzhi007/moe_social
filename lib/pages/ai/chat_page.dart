@@ -25,6 +25,7 @@ import '../../models/ai_memory.dart';
 import '../../models/user_memory.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
+import '../../widgets/ai/ai_typing_indicator.dart';
 import '../../widgets/ai/ai_chat_background.dart';
 import '../../widgets/ai/ai_chat_empty_state.dart';
 import '../../widgets/ai/message_bubble.dart';
@@ -1959,11 +1960,9 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget _buildTypingBubble() {
-    return AiMessageBubble(
-      content: '',
-      contentType: MessageContentType.thinking,
-      isUser: false,
-      agentLabel: widget.agent.name,
+    return const Padding(
+      padding: EdgeInsets.only(bottom: 8),
+      child: AiTypingIndicator(),
     );
   }
 

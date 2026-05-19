@@ -55,5 +55,23 @@
 	<string>我们需要访问您的位置信息以获取网络状态和定位</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>lark</string>
+		<string>feishu</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.example.moe_social.feishu</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>moesocial</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

@@ -1412,6 +1412,9 @@ type User struct {
 	EquippedFrameId        string  `json:"equipped_frame_id"`
 	DisplayUserId          string  `json:"display_user_id"`
 	MessageRetentionChoice int     `json:"message_retention_choice"` // 0=自动；7 或 30 为用户自选（见文档）
+	FeishuEmail            string  `json:"feishu_email,omitempty"`   // 绑定的企业飞书邮箱
+	FeishuName             string  `json:"feishu_name,omitempty"`    // 飞书 OAuth 显示名
+	FeishuBound            bool    `json:"feishu_bound,omitempty"`   // 是否飞书 OAuth 登录绑定
 }
 
 type UserAvatar struct {

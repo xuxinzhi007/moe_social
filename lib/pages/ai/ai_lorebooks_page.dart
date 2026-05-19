@@ -7,6 +7,7 @@ import '../../services/ai_agent_cloud_service.dart';
 import '../../services/ai_db_service.dart';
 import '../../services/ai_starter_templates.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
+import '../../widgets/ai/ai_confirm_sheet.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 
@@ -86,25 +87,14 @@ class _AiLorebooksPageState extends State<AiLorebooksPage> {
   }
 
   Future<void> _deleteLorebook(AiLorebook lorebook) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AiConfirmSheet.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('删除 Lorebook'),
-        content: Text('确定删除「${lorebook.name}」及其全部设定条目吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
+      title: '删除 Lorebook',
+      message: '确定删除「${lorebook.name}」及其全部设定条目吗？',
+      confirmLabel: '删除',
+      isDanger: true,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
     await AiAgentCloudService().deleteLorebook(lorebook.id);
     if (!mounted) return;
     MoeToast.success(context, 'Lorebook 已删除');

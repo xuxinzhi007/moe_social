@@ -67,12 +67,14 @@ import 'pages/settings/virtual_avatar_settings_page.dart';
 import 'pages/settings/message_retention_settings_page.dart';
 import 'utils/startup_manager.dart';
 import 'utils/async_svg_manager.dart';
+import 'utils/webview_platform_init.dart';
 import 'widgets/splash_screen.dart';
 
 void main() {
   // ensureInitialized 与 runApp 必须在同一 Zone（与 runZonedGuarded 一致），否则 Web 上会报 Zone mismatch。
   runZonedGuarded(() {
     WidgetsFlutterBinding.ensureInitialized();
+    ensureWebViewPlatformInitialized();
 
     RiveNative.init().then((_) {
       _setupErrorHandlers();

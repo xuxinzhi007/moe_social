@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/ai_agent.dart';
 import '../models/ai_provider_profile.dart';
+import 'ai_models_cache_service.dart';
 import 'ai_provider_service.dart';
 import 'api_service.dart';
 import 'llm_endpoint_config.dart';
@@ -46,8 +47,14 @@ class AiChatGatewayService {
       }
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
       final names = _extractModelNames(decoded);
-      if (names.isNotEmpty) return names;
+      if (names.isNotEmpty) {
+        await AiModelsCacheService().write(profile.id, names);
+        return names;
+      }
     } catch (_) {}
+
+    final cached = await AiModelsCacheService().read(profile.id);
+    if (cached.isNotEmpty) return cached;
 
     final fallback = <String>[
       if (profile.defaultModel.trim().isNotEmpty) profile.defaultModel.trim(),
@@ -244,6 +251,14 @@ class AiChatGatewayService {
     while (value.endsWith('/')) {
       value = value.substring(0, value.length - 1);
     }
+    if (value.isNotEmpty && !value.endsWith('/v1')) {
+      final lower = value.toLowerCase();
+      if (!lower.endsWith('/v1/chat/completions') &&
+          !lower.contains('/v1/') &&
+          !lower.endsWith('/v1')) {
+        value = '$value/v1';
+      }
+    }
     return value;
   }
 
@@ -256,8 +271,7 @@ class AiChatGatewayService {
   bool _providerRejectsSystemMessages(List<int> bodyBytes) {
     final body = utf8.decode(bodyBytes).toLowerCase();
     return body.contains('system messages are not allowed') ||
-        body.contains('"detail":"system messages are not allowed"') ||
-        body.contains('invalid_request_error');
+        body.contains('"detail":"system messages are not allowed"');
   }
 
   List<Map<String, String>> _foldSystemMessagesIntoConversation(

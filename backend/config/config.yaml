@@ -15,10 +15,30 @@ api:
   # go-zero REST 超时（毫秒）。LLM 首次加载模型可能较慢，建议 >= 180000
   timeout_ms: 600000
 
+# 飞书：企业自建应用机器人（非群自定义 Webhook）
+# 1. 开放平台创建企业自建应用，拿到 App ID / App Secret
+# 2. 开通权限：im:message、im:message:send_as_bot
+# 3. 发到指定同事：receive_id_type=email，receive_id 填其企业飞书邮箱（须为本租户成员）
+# 4. 发到群会话：receive_id_type=chat_id，receive_id 填 oc_xxx，且需先把机器人拉进群
 feishu:
-  enabled: true  # true / false
-  webhook_url: "cli_aa805993a6a3dcc4"
-  secret: "YCNyyGx73ZWBa7S3vyjUveJq6ortsaIb"
+  enabled: true
+  app_id: "cli_aa805993a6a3dcc4"
+  app_secret: "YCNyyGx73ZWBa7S3vyjUveJq6ortsaIb"
+  receive_id: "xinzhi.xu@feishu.cn"  # 企业飞书邮箱，或 chat_id / open_id 等
+  receive_id_type: "email"             # email | chat_id | open_id | user_id | union_id
+  # OAuth 登录（须在飞书开放平台配置相同 redirect_uri）
+  # 须与飞书开放平台「重定向 URL」完全一致。Chrome 调试 API 在本地用 127.0.0.1；真机用 47.106...
+  redirect_uri: "http://127.0.0.1:8888/api/auth/feishu/callback"
+  # redirect_uri: "http://47.106.175.49:8888/api/auth/feishu/callback"
+  oauth_scope: "contact:user.email:readonly"
+  # Web 跳回以 OAuth state（当前页 origin）为准；此项仅作兜底
+  app_return_url: ""
+  # 尝试把 OAuth 用户加入飞书通讯录（需管理员开通 contact 写权限 + 部门 ID）
+  auto_add_to_directory: false
+  default_department_id: ""  # 例：od-xxxxxxxx（一般不启用，用邀请链接即可）
+  # 可选：企业邀请链接（管理后台 → 邀请成员 → 企业链接），供 App「申请加入企业」
+  enterprise_invite_url: "https://xcnwo3uyqh3i.feishu.cn/invite/member/b1FV8k8WIKA"
+  enterprise_notice: "机器人仅可向企业内成员发送通知。如需推送，可申请加入企业；不加入也可正常使用 App。"
 
 #本地
 

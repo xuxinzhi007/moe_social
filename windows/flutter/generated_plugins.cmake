@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   agora_rtc_engine
+  app_links
   battery_plus
   file_selector_windows
   flutter_secure_storage_windows

@@ -122,6 +122,8 @@ func main() {
 	handler.RegisterLlmRawRoutes(server, ctx)
 	handler.RegisterAiConfigRoutes(server, ctx)
 	handler.RegisterAiResourceRoutes(server, ctx)
+	handler.RegisterFeishuRoutes(server, ctx)
+	handler.RegisterFeishuAuthRoutes(server, ctx)
 	// 非 goctl 生成：Swagger 文档入口
 	handler.RegisterSwaggerRoutes(server)
 

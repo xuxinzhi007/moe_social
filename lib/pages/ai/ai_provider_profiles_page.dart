@@ -2,8 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../../models/ai_provider_profile.dart';
 import '../../services/ai_chat_gateway_service.dart';
+import '../../services/ai_provider_connectivity_cache.dart';
 import '../../services/ai_provider_service.dart';
-import '../../widgets/moe_loading.dart';
+import '../../widgets/ai/ai_brand_tokens.dart';
+import '../../widgets/ai/ai_confirm_sheet.dart';
+import '../../widgets/ai/ai_list_tile_card.dart';
+import '../../widgets/ai/ai_loading_skeleton.dart';
+import '../../widgets/ai/ai_scaffold.dart';
+import '../../widgets/ai/ai_sheet.dart';
+import '../../widgets/ai/ai_status_dot.dart';
+import '../../widgets/ai/ai_surface_card.dart';
+import '../../widgets/ai/ai_theme.dart';
 import '../../widgets/moe_toast.dart';
 
 class AiProviderProfilesPage extends StatefulWidget {
@@ -15,7 +24,9 @@ class AiProviderProfilesPage extends StatefulWidget {
 
 class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
   List<AiProviderProfile> _profiles = [];
-  bool _loading = true;
+  bool _initialLoading = true;
+  bool _syncingCloud = false;
+  final Map<String, ProviderConnectivityState?> _connectivity = {};
 
   @override
   void initState() {
@@ -24,254 +35,84 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    if (_profiles.isEmpty) {
+      setState(() => _initialLoading = true);
+    } else {
+      setState(() => _syncingCloud = true);
+    }
     final profiles = await AiProviderService().listProfiles();
+    final conn = <String, ProviderConnectivityState?>{};
+    for (final p in profiles) {
+      if (!p.isBuiltinBackend) {
+        conn[p.id] = await AiProviderConnectivityCache.read(p.id);
+      }
+    }
     if (!mounted) return;
     setState(() {
       _profiles = profiles;
-      _loading = false;
+      _connectivity
+        ..clear()
+        ..addAll(conn);
+      _initialLoading = false;
+      _syncingCloud = false;
     });
+  }
+
+  AiSyncStatus _statusFor(AiProviderProfile profile) {
+    if (profile.isBuiltinBackend) return AiSyncStatus.success;
+    final state = _connectivity[profile.id];
+    if (state == null) return AiSyncStatus.idle;
+    return state.isSuccess ? AiSyncStatus.success : AiSyncStatus.error;
   }
 
   Future<void> _showEditor({AiProviderProfile? initial}) async {
     final isEditing = initial != null && !initial.isBuiltinBackend;
     final nameController =
         TextEditingController(text: initial?.name ?? '我的中转站');
-    final baseUrlController =
-        TextEditingController(text: initial?.baseUrl ?? 'https://your-gateway/v1');
+    final baseUrlController = TextEditingController(
+      text: initial?.baseUrl ?? 'https://your-gateway/v1',
+    );
     final defaultModelController =
         TextEditingController(text: initial?.defaultModel ?? '');
     final manualModelsController = TextEditingController(
       text: (initial?.manualModels ?? const <String>[]).join('\n'),
     );
     final apiKeyController = TextEditingController(
-      text: initial == null ? '' : await AiProviderService().readApiKey(initial.id),
+      text: initial == null
+          ? ''
+          : await AiProviderService().readApiKey(initial.id),
     );
-    var providerType = initial?.providerType ?? AiProviderType.openAiCompatible;
+    var providerType =
+        initial?.providerType ?? AiProviderType.openAiCompatible;
     var useServerMemory = initial?.useServerMemory ?? false;
     var supportsSystemMessages = initial?.supportsSystemMessages ?? true;
-    var supportsStreaming = initial?.supportsStreaming ?? true;
+    var supportsStreaming = initial?.supportsStreaming ?? false;
     var supportsVision = initial?.supportsVision ?? false;
     var supportsToolCalls = initial?.supportsToolCalls ?? false;
     var testing = false;
     String? testResult;
+    bool? testSuccess;
 
     if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setLocalState) {
-            Future<void> runTest() async {
-              setLocalState(() {
-                testing = true;
-                testResult = null;
-              });
-              const previewId = 'preview_provider_test';
-              try {
-                final temp = AiProviderProfile(
-                  id: initial?.id ?? previewId,
-                  name: nameController.text.trim().isEmpty
-                      ? '预览 Provider'
-                      : nameController.text.trim(),
-                  providerType: providerType,
-                  baseUrl: baseUrlController.text.trim(),
-                  defaultModel: defaultModelController.text.trim(),
-                  manualModels: manualModelsController.text
-                      .split('\n')
-                      .map((e) => e.trim())
-                      .where((e) => e.isNotEmpty)
-                      .toList(),
-                  useServerMemory: useServerMemory,
-                  supportsSystemMessages: supportsSystemMessages,
-                  supportsStreaming: supportsStreaming,
-                  supportsVision: supportsVision,
-                  supportsToolCalls: supportsToolCalls,
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                );
-                await AiProviderService().writeApiKey(
-                  temp.id,
-                  apiKeyController.text.trim(),
-                );
-                final models = await AiChatGatewayService()
-                    .fetchModelsForProfile(temp);
-                setLocalState(() {
-                  testResult = models.isEmpty
-                      ? '连接成功，但未返回模型列表；可改用手动模型列表'
-                      : '连接成功，获取到 ${models.length} 个模型';
-                });
-              } catch (e) {
-                setLocalState(() => testResult = '测试失败：$e');
-              } finally {
-                if (initial == null) {
-                  await AiProviderService().deleteApiKey(previewId);
-                }
-                setLocalState(() => testing = false);
-              }
-            }
 
-            return AlertDialog(
-              title: Text(isEditing ? '编辑 Provider' : '新增 Provider'),
-              content: SizedBox(
-                width: 520,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      DropdownButtonFormField<AiProviderType>(
-                        value: providerType,
-                        decoration: const InputDecoration(
-                          labelText: '类型',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: AiProviderType.values
-                            .map(
-                              (item) => DropdownMenuItem(
-                                value: item,
-                                child: Text(item.label),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          if (value == null) return;
-                          setLocalState(() => providerType = value);
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: nameController,
-                        decoration: const InputDecoration(
-                          labelText: '名称',
-                          hintText: '例如：OpenRouter / NewAPI / OneAPI',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: baseUrlController,
-                        decoration: const InputDecoration(
-                          labelText: 'Base URL',
-                          hintText: '例如：https://your-gateway/v1',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: apiKeyController,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          labelText: 'API Key',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: defaultModelController,
-                        decoration: const InputDecoration(
-                          labelText: '默认模型',
-                          hintText: '例如：gpt-4o-mini / deepseek-chat',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: manualModelsController,
-                        minLines: 3,
-                        maxLines: 6,
-                        decoration: const InputDecoration(
-                          labelText: '手动模型列表',
-                          hintText: '一行一个模型 ID；当 /models 不可用时回退使用',
-                          border: OutlineInputBorder(),
-                          alignLabelWithHint: true,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('启用服务端记忆'),
-                        subtitle: const Text('当前仅内置后端 Ollama 会实际使用'),
-                        value: useServerMemory,
-                        onChanged: (value) {
-                          setLocalState(() => useServerMemory = value);
-                        },
-                      ),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('支持 System Message'),
-                        subtitle: const Text('若关闭，将把系统提示词折叠进首条对话上下文'),
-                        value: supportsSystemMessages,
-                        onChanged: (value) {
-                          setLocalState(() => supportsSystemMessages = value);
-                        },
-                      ),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('支持流式输出'),
-                        subtitle: const Text('当前主要用于记录 Provider 能力，后续可接入流式 UI'),
-                        value: supportsStreaming,
-                        onChanged: (value) {
-                          setLocalState(() => supportsStreaming = value);
-                        },
-                      ),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('支持图像输入'),
-                        subtitle: const Text('用于后续多模态能力判断'),
-                        value: supportsVision,
-                        onChanged: (value) {
-                          setLocalState(() => supportsVision = value);
-                        },
-                      ),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('支持工具调用'),
-                        subtitle: const Text('用于后续 function/tool calls 扩展'),
-                        value: supportsToolCalls,
-                        onChanged: (value) {
-                          setLocalState(() => supportsToolCalls = value);
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: FilledButton.tonalIcon(
-                          onPressed: testing ? null : runTest,
-                          icon: testing
-                              ? const SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.wifi_tethering_rounded),
-                          label: Text(testing ? '测试中...' : '测试连接'),
-                        ),
-                      ),
-                      if (testResult != null) ...[
-                        const SizedBox(height: 8),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF7F7FD5).withOpacity(0.07),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            testResult!,
-                            style: const TextStyle(fontSize: 12, height: 1.4),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
+    await AiSheet.show<void>(
+      context: context,
+      title: isEditing ? '编辑 Provider' : '新增 Provider',
+      subtitle: 'OpenAI 兼容中转站 / OpenRouter / OneAPI 等',
+      footer: StatefulBuilder(
+        builder: (ctx, setFooterState) {
+          return Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
                   onPressed: () => Navigator.pop(ctx),
                   child: const Text('取消'),
                 ),
-                FilledButton(
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  style: AiTheme.primaryButtonStyle(),
                   onPressed: () async {
                     final name = nameController.text.trim();
                     final baseUrl = baseUrlController.text.trim();
@@ -303,39 +144,249 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                       profile,
                       apiKey: apiKeyController.text.trim(),
                     );
+                    if (testSuccess == true) {
+                      await AiProviderConnectivityCache.saveSuccess(profile.id);
+                    }
                     if (!ctx.mounted) return;
                     Navigator.pop(ctx);
                   },
                   child: const Text('保存'),
                 ),
-              ],
+              ),
+            ],
+          );
+        },
+      ),
+      child: StatefulBuilder(
+        builder: (ctx, setLocalState) {
+          Future<void> runTest() async {
+            setLocalState(() {
+              testing = true;
+              testResult = null;
+              testSuccess = null;
+            });
+            const previewId = 'preview_provider_test';
+            try {
+              final temp = AiProviderProfile(
+                id: initial?.id ?? previewId,
+                name: nameController.text.trim().isEmpty
+                    ? '预览 Provider'
+                    : nameController.text.trim(),
+                providerType: providerType,
+                baseUrl: baseUrlController.text.trim(),
+                defaultModel: defaultModelController.text.trim(),
+                manualModels: manualModelsController.text
+                    .split('\n')
+                    .map((e) => e.trim())
+                    .where((e) => e.isNotEmpty)
+                    .toList(),
+                useServerMemory: useServerMemory,
+                supportsSystemMessages: supportsSystemMessages,
+                supportsStreaming: supportsStreaming,
+                supportsVision: supportsVision,
+                supportsToolCalls: supportsToolCalls,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              );
+              await AiProviderService().writeApiKey(
+                temp.id,
+                apiKeyController.text.trim(),
+              );
+              final models =
+                  await AiChatGatewayService().fetchModelsForProfile(temp);
+              testSuccess = true;
+              if (initial?.id != null) {
+                await AiProviderConnectivityCache.saveSuccess(
+                  initial!.id,
+                  modelCount: models.length,
+                );
+              }
+              setLocalState(() {
+                testResult = models.isEmpty
+                    ? '连接成功，但未返回模型列表；请填写手动模型列表'
+                    : '连接成功，获取到 ${models.length} 个模型';
+              });
+            } catch (e) {
+              testSuccess = false;
+              if (initial?.id != null) {
+                await AiProviderConnectivityCache.saveFailure(initial!.id);
+              }
+              setLocalState(() => testResult = '测试失败：$e');
+            } finally {
+              if (initial == null) {
+                await AiProviderService().deleteApiKey(previewId);
+              }
+              setLocalState(() => testing = false);
+            }
+          }
+
+          Widget switchTile({
+            required String title,
+            required String subtitle,
+            required bool value,
+            required ValueChanged<bool> onChanged,
+          }) {
+            return SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(title, style: AiTheme.body.copyWith(fontWeight: FontWeight.w600)),
+              subtitle: Text(subtitle, style: AiTheme.caption),
+              value: value,
+              activeColor: AiBrandTokens.primary,
+              onChanged: onChanged,
             );
-          },
-        );
-      },
+          }
+
+          final resultColor = testSuccess == null
+              ? AiTheme.bodyMuted
+              : (testSuccess! ? AiTheme.success : AiTheme.danger);
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DropdownButtonFormField<AiProviderType>(
+                value: providerType,
+                decoration: AiTheme.inputDecoration(labelText: '类型'),
+                items: AiProviderType.values
+                    .map(
+                      (item) => DropdownMenuItem(
+                        value: item,
+                        child: Text(item.label),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setLocalState(() => providerType = value);
+                },
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: nameController,
+                decoration: AiTheme.inputDecoration(
+                  labelText: '名称',
+                  hintText: 'OpenRouter / NewAPI / OneAPI',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: baseUrlController,
+                decoration: AiTheme.inputDecoration(
+                  labelText: 'Base URL',
+                  hintText: 'https://your-gateway/v1',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: apiKeyController,
+                obscureText: true,
+                decoration: AiTheme.inputDecoration(labelText: 'API Key'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: defaultModelController,
+                decoration: AiTheme.inputDecoration(
+                  labelText: '默认模型',
+                  hintText: 'gpt-4o-mini / deepseek-chat',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: manualModelsController,
+                minLines: 3,
+                maxLines: 6,
+                decoration: AiTheme.inputDecoration(
+                  labelText: '手动模型列表',
+                  hintText: '一行一个；/models 不可用时回退',
+                  alignLabelWithHint: true,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text('能力开关', style: AiTheme.title.copyWith(fontSize: 16)),
+              const SizedBox(height: 4),
+              switchTile(
+                title: '服务端记忆',
+                subtitle: '仅内置后端 Ollama 实际生效；中转站走客户端记忆',
+                value: useServerMemory,
+                onChanged: (v) => setLocalState(() => useServerMemory = v),
+              ),
+              switchTile(
+                title: 'System Message',
+                subtitle: '关闭时将系统提示词折叠进首条用户消息',
+                value: supportsSystemMessages,
+                onChanged: (v) =>
+                    setLocalState(() => supportsSystemMessages = v),
+              ),
+              switchTile(
+                title: '流式输出',
+                subtitle: '即将支持；当前请保持关闭',
+                value: supportsStreaming,
+                onChanged: (v) => setLocalState(() => supportsStreaming = v),
+              ),
+              switchTile(
+                title: '图像输入',
+                subtitle: '预留多模态能力',
+                value: supportsVision,
+                onChanged: (v) => setLocalState(() => supportsVision = v),
+              ),
+              switchTile(
+                title: '工具调用',
+                subtitle: '预留 function / tool calls',
+                value: supportsToolCalls,
+                onChanged: (v) => setLocalState(() => supportsToolCalls = v),
+              ),
+              const SizedBox(height: 8),
+              FilledButton.tonalIcon(
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(44),
+                ),
+                onPressed: testing ? null : runTest,
+                icon: testing
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.wifi_tethering_rounded),
+                label: Text(testing ? '测试中…' : '测试连接'),
+              ),
+              if (testResult != null) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: resultColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(AiTheme.radiusMd),
+                  ),
+                  child: Text(
+                    testResult!,
+                    style: AiTheme.caption.copyWith(color: resultColor),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+            ],
+          );
+        },
+      ),
     );
+
+    nameController.dispose();
+    baseUrlController.dispose();
+    defaultModelController.dispose();
+    manualModelsController.dispose();
+    apiKeyController.dispose();
     await _load();
   }
 
   Future<void> _delete(AiProviderProfile profile) async {
-    final ok = await showDialog<bool>(
+    final ok = await AiConfirmSheet.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('删除 Provider'),
-        content: Text('确定删除 "${profile.name}" 吗？已引用它的智能体需要重新选择 Provider。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
+      title: '删除 Provider',
+      message: '确定删除「${profile.name}」吗？已引用它的角色需要重新选择来源。',
+      confirmLabel: '删除',
+      isDanger: true,
     );
-    if (ok != true) return;
+    if (!ok) return;
     await AiProviderService().deleteProfile(profile.id);
     await _load();
     if (mounted) {
@@ -344,118 +395,80 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
   }
 
   Widget _buildCard(AiProviderProfile profile) {
-    final typeLabel = profile.providerType.label;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
+    final status = _statusFor(profile);
+    String? statusLabel;
+    if (!profile.isBuiltinBackend && _connectivity[profile.id] != null) {
+      statusLabel = _connectivity[profile.id]!.isSuccess ? '已连通' : '连接失败';
+    }
+
+    return AiListTileCard(
+      title: profile.name,
+      subtitle: profile.isBuiltinBackend
+          ? '使用当前后端 Ollama 与记忆链路'
+          : 'Base URL: ${profile.baseUrl}\n默认模型: ${profile.defaultModel.isEmpty ? '未设置' : profile.defaultModel}',
+      tags: [profile.providerType.label],
+      statusDot: AiStatusDot(status: status, label: statusLabel),
+      leading: CircleAvatar(
+        backgroundColor: profile.isBuiltinBackend
+            ? AiBrandTokens.primary.withValues(alpha: 0.12)
+            : AiBrandTokens.secondary.withValues(alpha: 0.14),
+        child: Icon(
+          profile.isBuiltinBackend ? Icons.hub_rounded : Icons.api_rounded,
+          color: profile.isBuiltinBackend
+              ? AiBrandTokens.primary
+              : AiBrandTokens.secondary,
+        ),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: profile.isBuiltinBackend
-              ? const Color(0xFF7F7FD5).withOpacity(0.12)
-              : const Color(0xFF86A8E7).withOpacity(0.14),
-          child: Icon(
-            profile.isBuiltinBackend ? Icons.hub_rounded : Icons.api_rounded,
-            color: profile.isBuiltinBackend
-                ? const Color(0xFF7F7FD5)
-                : const Color(0xFF1976D2),
-          ),
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                profile.name,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
+      trailing: profile.isBuiltinBackend
+          ? null
+          : PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'edit') {
+                  _showEditor(initial: profile);
+                } else if (value == 'delete') {
+                  _delete(profile);
+                }
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'edit', child: Text('编辑')),
+                PopupMenuItem(value: 'delete', child: Text('删除')),
+              ],
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: const Color(0xFF7F7FD5).withOpacity(0.08),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                typeLabel,
-                style: const TextStyle(fontSize: 11),
-              ),
-            ),
-          ],
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Text(
-            profile.isBuiltinBackend
-                ? '使用当前后端 LLM 配置与记忆链路'
-                : 'Base URL: ${profile.baseUrl}\n默认模型: ${profile.defaultModel.isEmpty ? '未设置' : profile.defaultModel}',
-            style: const TextStyle(height: 1.4),
-          ),
-        ),
-        trailing: profile.isBuiltinBackend
-            ? null
-            : PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'edit') {
-                    _showEditor(initial: profile);
-                    return;
-                  }
-                  if (value == 'delete') {
-                    _delete(profile);
-                  }
-                },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'edit', child: Text('编辑')),
-                  PopupMenuItem(value: 'delete', child: Text('删除')),
-                ],
-              ),
-      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        title: const Text('AI Provider 管理'),
-      ),
+    return AiScaffold(
+      title: '模型来源',
+      syncStatus: _syncingCloud ? AiSyncStatus.syncing : AiSyncStatus.idle,
+      syncLabel: _syncingCloud ? '正在同步云端配置…' : null,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showEditor(),
+        backgroundColor: AiBrandTokens.primary,
         icon: const Icon(Icons.add_rounded),
         label: const Text('新增 Provider'),
       ),
-      body: _loading
-          ? const Center(child: MoeLoading())
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
+      body: _initialLoading
+          ? const AiLoadingSkeleton()
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(
+                padding: const EdgeInsets.all(AiTheme.pagePadding),
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  AiSurfaceCard(
+                    child: Text(
+                      '支持内置 Ollama 与 OpenAI 兼容中转站。\n'
+                      '角色卡、Lorebook、JSON 导入导出已可用；流式输出即将支持。\n'
+                      'API Key 仅保存在本机，不会上传服务器。',
+                      style: AiTheme.body,
+                    ),
                   ),
-                  child: const Text(
-                    '当前第一阶段支持：\n'
-                    '1. 内置后端 Ollama\n'
-                    '2. OpenAI 兼容接口（中转站 / OpenRouter / OneAPI / NewAPI 等）\n\n'
-                    '后续再补世界书、角色卡导入导出、分支会话。',
-                    style: TextStyle(height: 1.5),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ..._profiles.map(_buildCard),
-              ],
+                  ..._profiles.map(_buildCard),
+                  const SizedBox(height: 80),
+                ],
+              ),
             ),
     );
   }

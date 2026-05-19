@@ -25,6 +25,15 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.moe_social/feishu").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "isInstalled" -> {
+                    result.success(isFeishuInstalled())
+                }
+                else -> result.notImplemented()
+            }
+        }
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.moe_social/app_update").setMethodCallHandler { call, result ->
             when (call.method) {
                 "compareApkSignatureWithInstalled" -> {
@@ -69,6 +78,23 @@ class MainActivity : FlutterActivity() {
 
 
 
+    }
+
+    private fun isFeishuInstalled(): Boolean {
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager.getPackageInfo(
+                    "com.ss.android.lark",
+                    PackageManager.PackageInfoFlags.of(0),
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.getPackageInfo("com.ss.android.lark", 0)
+            }
+            true
+        } catch (_: PackageManager.NameNotFoundException) {
+            false
+        }
     }
 
     private fun compareApkSigningWithInstalled(apkPath: String): Map<String, Any?> {

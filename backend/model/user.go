@@ -17,6 +17,9 @@ type User struct {
 	MessageRetentionChoice int `gorm:"default:0" json:"message_retention_choice"`
 	Password        string         `gorm:"size:100;not null" json:"-"`
 	Email           string         `gorm:"uniqueIndex;size:100;not null" json:"email"`
+	FeishuEmail     string         `gorm:"size:100" json:"feishu_email"`   // 企业飞书邮箱，用于自建应用 IM 通知
+	FeishuOpenID    *string        `gorm:"uniqueIndex;size:64" json:"-"`   // 飞书 open_id，OAuth 登录主键（空则不写入）
+	FeishuName      string         `gorm:"size:100" json:"feishu_name"`    // 飞书显示名（OAuth 拉取）
 	Avatar          string         `gorm:"type:text" json:"avatar"`   // 头像URL，支持长URL（如base64 data URI）
 	Signature       string         `gorm:"size:100" json:"signature"` // 个性签名，最多100字符
 	Gender          string         `gorm:"size:10" json:"gender"`     // 性别：male/female/secret

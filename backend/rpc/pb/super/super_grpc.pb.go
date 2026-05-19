@@ -31,6 +31,11 @@ const (
 	Super_UpdateUserVip_FullMethodName              = "/super.Super/UpdateUserVip"
 	Super_GetUsers_FullMethodName                   = "/super.Super/GetUsers"
 	Super_GetUserCount_FullMethodName               = "/super.Super/GetUserCount"
+	Super_BindFeishu_FullMethodName                 = "/super.Super/BindFeishu"
+	Super_UnbindFeishu_FullMethodName               = "/super.Super/UnbindFeishu"
+	Super_SendFeishuTestCard_FullMethodName         = "/super.Super/SendFeishuTestCard"
+	Super_FeishuAuthorizeURL_FullMethodName         = "/super.Super/FeishuAuthorizeURL"
+	Super_FeishuLogin_FullMethodName                = "/super.Super/FeishuLogin"
 	Super_UpsertUserMemory_FullMethodName           = "/super.Super/UpsertUserMemory"
 	Super_GetUserMemories_FullMethodName            = "/super.Super/GetUserMemories"
 	Super_GetUserMemoryProfiles_FullMethodName      = "/super.Super/GetUserMemoryProfiles"
@@ -134,6 +139,11 @@ type SuperClient interface {
 	UpdateUserVip(ctx context.Context, in *UpdateUserVipReq, opts ...grpc.CallOption) (*UpdateUserVipResp, error)
 	GetUsers(ctx context.Context, in *GetUsersReq, opts ...grpc.CallOption) (*GetUsersResp, error)
 	GetUserCount(ctx context.Context, in *GetUserCountReq, opts ...grpc.CallOption) (*GetUserCountResp, error)
+	BindFeishu(ctx context.Context, in *BindFeishuReq, opts ...grpc.CallOption) (*BindFeishuResp, error)
+	UnbindFeishu(ctx context.Context, in *UnbindFeishuReq, opts ...grpc.CallOption) (*UnbindFeishuResp, error)
+	SendFeishuTestCard(ctx context.Context, in *SendFeishuTestCardReq, opts ...grpc.CallOption) (*SendFeishuTestCardResp, error)
+	FeishuAuthorizeURL(ctx context.Context, in *FeishuAuthorizeURLReq, opts ...grpc.CallOption) (*FeishuAuthorizeURLResp, error)
+	FeishuLogin(ctx context.Context, in *FeishuLoginReq, opts ...grpc.CallOption) (*FeishuLoginResp, error)
 	UpsertUserMemory(ctx context.Context, in *UpsertUserMemoryReq, opts ...grpc.CallOption) (*UpsertUserMemoryResp, error)
 	GetUserMemories(ctx context.Context, in *GetUserMemoriesReq, opts ...grpc.CallOption) (*GetUserMemoriesResp, error)
 	GetUserMemoryProfiles(ctx context.Context, in *GetUserMemoryProfilesReq, opts ...grpc.CallOption) (*GetUserMemoryProfilesResp, error)
@@ -356,6 +366,56 @@ func (c *superClient) GetUserCount(ctx context.Context, in *GetUserCountReq, opt
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetUserCountResp)
 	err := c.cc.Invoke(ctx, Super_GetUserCount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) BindFeishu(ctx context.Context, in *BindFeishuReq, opts ...grpc.CallOption) (*BindFeishuResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BindFeishuResp)
+	err := c.cc.Invoke(ctx, Super_BindFeishu_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) UnbindFeishu(ctx context.Context, in *UnbindFeishuReq, opts ...grpc.CallOption) (*UnbindFeishuResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UnbindFeishuResp)
+	err := c.cc.Invoke(ctx, Super_UnbindFeishu_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) SendFeishuTestCard(ctx context.Context, in *SendFeishuTestCardReq, opts ...grpc.CallOption) (*SendFeishuTestCardResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendFeishuTestCardResp)
+	err := c.cc.Invoke(ctx, Super_SendFeishuTestCard_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) FeishuAuthorizeURL(ctx context.Context, in *FeishuAuthorizeURLReq, opts ...grpc.CallOption) (*FeishuAuthorizeURLResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FeishuAuthorizeURLResp)
+	err := c.cc.Invoke(ctx, Super_FeishuAuthorizeURL_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) FeishuLogin(ctx context.Context, in *FeishuLoginReq, opts ...grpc.CallOption) (*FeishuLoginResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FeishuLoginResp)
+	err := c.cc.Invoke(ctx, Super_FeishuLogin_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1201,6 +1261,11 @@ type SuperServer interface {
 	UpdateUserVip(context.Context, *UpdateUserVipReq) (*UpdateUserVipResp, error)
 	GetUsers(context.Context, *GetUsersReq) (*GetUsersResp, error)
 	GetUserCount(context.Context, *GetUserCountReq) (*GetUserCountResp, error)
+	BindFeishu(context.Context, *BindFeishuReq) (*BindFeishuResp, error)
+	UnbindFeishu(context.Context, *UnbindFeishuReq) (*UnbindFeishuResp, error)
+	SendFeishuTestCard(context.Context, *SendFeishuTestCardReq) (*SendFeishuTestCardResp, error)
+	FeishuAuthorizeURL(context.Context, *FeishuAuthorizeURLReq) (*FeishuAuthorizeURLResp, error)
+	FeishuLogin(context.Context, *FeishuLoginReq) (*FeishuLoginResp, error)
 	UpsertUserMemory(context.Context, *UpsertUserMemoryReq) (*UpsertUserMemoryResp, error)
 	GetUserMemories(context.Context, *GetUserMemoriesReq) (*GetUserMemoriesResp, error)
 	GetUserMemoryProfiles(context.Context, *GetUserMemoryProfilesReq) (*GetUserMemoryProfilesResp, error)
@@ -1344,6 +1409,21 @@ func (UnimplementedSuperServer) GetUsers(context.Context, *GetUsersReq) (*GetUse
 }
 func (UnimplementedSuperServer) GetUserCount(context.Context, *GetUserCountReq) (*GetUserCountResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUserCount not implemented")
+}
+func (UnimplementedSuperServer) BindFeishu(context.Context, *BindFeishuReq) (*BindFeishuResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method BindFeishu not implemented")
+}
+func (UnimplementedSuperServer) UnbindFeishu(context.Context, *UnbindFeishuReq) (*UnbindFeishuResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method UnbindFeishu not implemented")
+}
+func (UnimplementedSuperServer) SendFeishuTestCard(context.Context, *SendFeishuTestCardReq) (*SendFeishuTestCardResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendFeishuTestCard not implemented")
+}
+func (UnimplementedSuperServer) FeishuAuthorizeURL(context.Context, *FeishuAuthorizeURLReq) (*FeishuAuthorizeURLResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method FeishuAuthorizeURL not implemented")
+}
+func (UnimplementedSuperServer) FeishuLogin(context.Context, *FeishuLoginReq) (*FeishuLoginResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method FeishuLogin not implemented")
 }
 func (UnimplementedSuperServer) UpsertUserMemory(context.Context, *UpsertUserMemoryReq) (*UpsertUserMemoryResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpsertUserMemory not implemented")
@@ -1824,6 +1904,96 @@ func _Super_GetUserCount_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SuperServer).GetUserCount(ctx, req.(*GetUserCountReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_BindFeishu_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BindFeishuReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).BindFeishu(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_BindFeishu_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).BindFeishu(ctx, req.(*BindFeishuReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_UnbindFeishu_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnbindFeishuReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).UnbindFeishu(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_UnbindFeishu_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).UnbindFeishu(ctx, req.(*UnbindFeishuReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_SendFeishuTestCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendFeishuTestCardReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).SendFeishuTestCard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_SendFeishuTestCard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).SendFeishuTestCard(ctx, req.(*SendFeishuTestCardReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_FeishuAuthorizeURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FeishuAuthorizeURLReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).FeishuAuthorizeURL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_FeishuAuthorizeURL_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).FeishuAuthorizeURL(ctx, req.(*FeishuAuthorizeURLReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_FeishuLogin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FeishuLoginReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).FeishuLogin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_FeishuLogin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).FeishuLogin(ctx, req.(*FeishuLoginReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3358,6 +3528,26 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserCount",
 			Handler:    _Super_GetUserCount_Handler,
+		},
+		{
+			MethodName: "BindFeishu",
+			Handler:    _Super_BindFeishu_Handler,
+		},
+		{
+			MethodName: "UnbindFeishu",
+			Handler:    _Super_UnbindFeishu_Handler,
+		},
+		{
+			MethodName: "SendFeishuTestCard",
+			Handler:    _Super_SendFeishuTestCard_Handler,
+		},
+		{
+			MethodName: "FeishuAuthorizeURL",
+			Handler:    _Super_FeishuAuthorizeURL_Handler,
+		},
+		{
+			MethodName: "FeishuLogin",
+			Handler:    _Super_FeishuLogin_Handler,
 		},
 		{
 			MethodName: "UpsertUserMemory",

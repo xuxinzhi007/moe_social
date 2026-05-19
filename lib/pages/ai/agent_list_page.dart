@@ -22,6 +22,11 @@ import 'character_card_plaza_page.dart';
 import 'chat_page.dart';
 import 'content_generation_page.dart';
 import 'memory_manager_page.dart';
+import '../../services/ai_agent_usage_service.dart';
+import '../../services/ai_models_cache_service.dart';
+import '../../widgets/ai/ai_empty_state.dart';
+import '../../widgets/ai/ai_sheet.dart';
+import '../../widgets/ai/ai_theme.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
@@ -51,9 +56,7 @@ class _AgentListPageState extends State<AgentListPage>
 
   // 新增状态变量
   String _searchQuery = '';
-  String _selectedCategory = '全部';
   String _sortBy = '创建时间';
-  List<String> _categories = ['全部', '工作', '娱乐', '学习', '创意', '其他'];
   List<String> _sortOptions = ['创建时间', '名称', '使用频率'];
   Map<String, int> _usageCounts = {};
 
@@ -72,13 +75,9 @@ class _AgentListPageState extends State<AgentListPage>
   }
 
   Future<void> _loadUsageCounts() async {
-    // 这里可以从本地存储或数据库加载使用频率数据
-    // 暂时使用模拟数据
-    setState(() {
-      _usageCounts = {
-        // 模拟数据，实际应从存储中加载
-      };
-    });
+    final counts = await AiAgentUsageService().loadCounts();
+    if (!mounted) return;
+    setState(() => _usageCounts = counts);
   }
 
   void _filterAgents() {
@@ -91,10 +90,7 @@ class _AgentListPageState extends State<AgentListPage>
                 .toLowerCase()
                 .contains(_searchQuery.toLowerCase());
 
-        // 分类过滤
-        final matchesCategory = _selectedCategory == '全部';
-
-        return matchesSearch && matchesCategory;
+        return matchesSearch;
       }).toList();
 
       // 排序
@@ -173,17 +169,27 @@ class _AgentListPageState extends State<AgentListPage>
   }
 
   Future<void> _loadSquareModels() async {
+    final profileId = _selectedSquareProviderId;
+    final cached = await AiModelsCacheService().read(profileId);
+    if (cached.isNotEmpty && mounted) {
+      setState(() => _squareModels = cached);
+    }
     if (mounted) setState(() => _isLoadingSquareModels = true);
     try {
       final models = await AiChatGatewayService()
           .fetchModelsForProfile(_selectedSquareProvider);
+      if (models.isNotEmpty) {
+        await AiModelsCacheService().write(profileId, models);
+      }
       if (!mounted) return;
       setState(() {
         _squareModels = models.toSet().toList();
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _squareModels = []);
+      if (_squareModels.isEmpty) {
+        setState(() => _squareModels = []);
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoadingSquareModels = false);
@@ -861,78 +867,36 @@ class _AgentListPageState extends State<AgentListPage>
             },
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  value: _selectedCategory,
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() {
-                      _selectedCategory = value;
-                      _filterAgents();
-                    });
-                  },
-                  items: _categories
-                      .map(
-                        (category) => DropdownMenuItem<String>(
-                          value: category,
-                          child: Text(category,
-                              style: const TextStyle(fontSize: 12)),
-                        ),
-                      )
-                      .toList(),
-                  decoration: InputDecoration(
-                    labelText: '分类',
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFFF8F9FD),
+          DropdownButtonFormField<String>(
+            value: _sortBy,
+            onChanged: (value) {
+              if (value == null) return;
+              setState(() {
+                _sortBy = value;
+                _filterAgents();
+              });
+            },
+            items: _sortOptions
+                .map(
+                  (option) => DropdownMenuItem<String>(
+                    value: option,
+                    child: Text(option, style: const TextStyle(fontSize: 12)),
                   ),
-                ),
+                )
+                .toList(),
+            decoration: InputDecoration(
+              labelText: '排序',
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  value: _sortBy,
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() {
-                      _sortBy = value;
-                      _filterAgents();
-                    });
-                  },
-                  items: _sortOptions
-                      .map(
-                        (option) => DropdownMenuItem<String>(
-                          value: option,
-                          child: Text(option,
-                              style: const TextStyle(fontSize: 12)),
-                        ),
-                      )
-                      .toList(),
-                  decoration: InputDecoration(
-                    labelText: '排序',
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFFF8F9FD),
-                  ),
-                ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
               ),
-            ],
+              filled: true,
+              fillColor: const Color(0xFFF8F9FD),
+            ),
           ),
         ],
       ),
@@ -1046,80 +1010,20 @@ class _AgentListPageState extends State<AgentListPage>
             title: '从这里开始',
             subtitle: '先套模板或挑模型，再逐步补全角色、场景和世界书。',
           ),
-          Container(
-            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+          AiEmptyState(
+            icon: Icons.nightlife_rounded,
+            title: '还没有角色进驻你的酒馆',
+            subtitle:
+                '创建角色、套用模板，或导入 JSON；再绑定模型来源与世界书。',
+            primaryAction: AiEmptyStateAction(
+              label: '新建角色',
+              icon: Icons.add_rounded,
+              onPressed: () => _openAgentEditor(),
             ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [_brandPrimary, _brandSecondary],
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.nightlife_rounded,
-                    size: 68,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 22),
-                const Text(
-                  '还没有角色进驻你的酒馆',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1F2430),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '你可以直接创建角色，也可以先套用默认模板，再慢慢把人设、开场白、Lorebook 和模型来源补完整。',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    height: 1.6,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    FilledButton.icon(
-                      onPressed: () => _openAgentEditor(),
-                      icon: const Icon(Icons.add_rounded),
-                      label: const Text('新建角色'),
-                    ),
-                    FilledButton.tonalIcon(
-                      onPressed: _createFromStarterTemplate,
-                      icon: const Icon(Icons.auto_awesome_rounded),
-                      label: const Text('使用模板'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () => _tabController.animateTo(1),
-                      icon: const Icon(Icons.travel_explore_rounded),
-                      label: const Text('去挑模型'),
-                    ),
-                  ],
-                ),
-              ],
+            secondaryAction: AiEmptyStateAction(
+              label: '使用模板',
+              icon: Icons.auto_awesome_rounded,
+              onPressed: _createFromStarterTemplate,
             ),
           ),
         ],
@@ -1162,11 +1066,10 @@ class _AgentListPageState extends State<AgentListPage>
                   onPressed: () {
                     setState(() {
                       _searchQuery = '';
-                      _selectedCategory = '全部';
                       _filterAgents();
                     });
                   },
-                  child: const Text('清除筛选'),
+                  child: const Text('清除搜索'),
                 ),
               ],
             ),
@@ -1212,9 +1115,9 @@ class _AgentListPageState extends State<AgentListPage>
                       borderRadius: BorderRadius.circular(16),
                       onTap: () {
                         HapticFeedback.lightImpact();
-                        // 更新使用频率
+                        unawaited(AiAgentUsageService().increment(agent.id));
                         setState(() {
-                          _usageCounts[agent.id] = (usageCount) + 1;
+                          _usageCounts[agent.id] = usageCount + 1;
                         });
                         Navigator.push(
                           context,
@@ -2022,107 +1925,101 @@ class _AgentListPageState extends State<AgentListPage>
     final controller = TextEditingController();
     var isImporting = false;
 
-    await showDialog<void>(
+    await AiSheet.show<void>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocalState) => AlertDialog(
-          title: const Text('导入角色卡'),
-          content: SizedBox(
-            width: 560,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+      title: '导入角色卡',
+      subtitle: '支持角色字段、Provider 骨架、Lorebook',
+      child: StatefulBuilder(
+        builder: (ctx, setLocalState) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: controller,
+              minLines: 10,
+              maxLines: 16,
+              decoration: AiTheme.inputDecoration(
+                hintText: '粘贴角色卡 JSON',
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              onPressed: () async {
+                final data = await Clipboard.getData('text/plain');
+                final text = data?.text?.trim() ?? '';
+                if (text.isEmpty) {
+                  if (mounted) {
+                    MoeToast.error(context, '剪贴板里没有可用内容');
+                  }
+                  return;
+                }
+                setLocalState(() => controller.text = text);
+              },
+              icon: const Icon(Icons.content_paste_rounded),
+              label: const Text('从剪贴板粘贴'),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '导入后可继续编辑人设、模型来源与世界书。',
+              style: AiTheme.caption,
+            ),
+            const SizedBox(height: 20),
+            Row(
               children: [
-                TextField(
-                  controller: controller,
-                  minLines: 10,
-                  maxLines: 16,
-                  decoration: const InputDecoration(
-                    hintText: '粘贴角色卡 JSON',
-                    border: OutlineInputBorder(),
-                    alignLabelWithHint: true,
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed:
+                        isImporting ? null : () => Navigator.pop(ctx),
+                    child: const Text('取消'),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      FilledButton.tonalIcon(
-                        onPressed: () async {
-                          final data = await Clipboard.getData('text/plain');
-                          final text = data?.text?.trim() ?? '';
-                          if (text.isEmpty) {
-                            if (mounted) {
-                              MoeToast.error(context, '剪贴板里没有可用内容');
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    style: AiTheme.primaryButtonStyle(),
+                    onPressed: isImporting
+                        ? null
+                        : () async {
+                            final raw = controller.text.trim();
+                            if (raw.isEmpty) {
+                              MoeToast.error(context, '请先粘贴角色卡 JSON');
+                              return;
                             }
-                            return;
-                          }
-                          controller.text = text;
-                        },
-                        icon: const Icon(Icons.content_paste_rounded),
-                        label: const Text('从剪贴板粘贴'),
-                      ),
-                      Text(
-                        '支持导入角色基础字段、Provider 骨架、Lorebook 设定',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+                            setLocalState(() => isImporting = true);
+                            try {
+                              final result = await AiCharacterCardService()
+                                  .importCharacterCardJson(raw);
+                              if (!ctx.mounted) return;
+                              Navigator.pop(ctx);
+                              await _reloadPageData();
+                              if (!mounted) return;
+                              final noticeText = result.notices.isEmpty
+                                  ? ''
+                                  : '；${result.notices.join('；')}';
+                              MoeToast.success(
+                                context,
+                                '角色卡已导入：${result.agent.name}$noticeText',
+                              );
+                            } catch (e) {
+                              if (mounted) {
+                                MoeToast.error(context, e.toString());
+                              }
+                            } finally {
+                              if (ctx.mounted) {
+                                setLocalState(() => isImporting = false);
+                              }
+                            }
+                          },
+                    child: isImporting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('导入'),
                   ),
                 ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: isImporting ? null : () => Navigator.pop(ctx),
-              child: const Text('取消'),
-            ),
-            FilledButton(
-              onPressed: isImporting
-                  ? null
-                  : () async {
-                      final raw = controller.text.trim();
-                      if (raw.isEmpty) {
-                        MoeToast.error(context, '请先粘贴角色卡 JSON');
-                        return;
-                      }
-                      setLocalState(() => isImporting = true);
-                      try {
-                        final result = await AiCharacterCardService()
-                            .importCharacterCardJson(raw);
-                        if (!ctx.mounted) return;
-                        Navigator.pop(ctx);
-                        await _reloadPageData();
-                        if (!mounted) return;
-                        final noticeText = result.notices.isEmpty
-                            ? ''
-                            : '；${result.notices.join('；')}';
-                        MoeToast.success(
-                          context,
-                          '角色卡已导入：${result.agent.name}$noticeText',
-                        );
-                      } catch (e) {
-                        if (mounted) {
-                          MoeToast.error(context, e.toString());
-                        }
-                      } finally {
-                        if (ctx.mounted) {
-                          setLocalState(() => isImporting = false);
-                        }
-                      }
-                    },
-              child: isImporting
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('导入'),
             ),
           ],
         ),

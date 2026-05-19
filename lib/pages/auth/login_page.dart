@@ -1,8 +1,9 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show kIsWeb, listEquals;
 import 'package:flutter/material.dart';
 import '../../auth_service.dart';
+import '../../services/api_service.dart';
 import '../../services/achievement_hooks.dart';
 import '../../utils/validators.dart';
 import 'forgot_password_page.dart';
@@ -15,6 +16,11 @@ import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_input_field.dart';
 import '../../widgets/auth_background.dart';
 import '../../widgets/email_completion_bubble.dart';
+import '../../widgets/feishu_enterprise_invite_banner.dart';
+import '../../utils/feishu_app_launcher.dart';
+import '../../utils/feishu_oauth_helper.dart';
+import '../../utils/feishu_web_history.dart';
+import '../../utils/feishu_web_redirect.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -34,6 +40,7 @@ class _LoginPageState extends State<LoginPage> {
   final Color _primaryColor = const Color(0xFF7F7FD5);
   final ValueNotifier<List<String>> _emailCompletions =
       ValueNotifier<List<String>>(const []);
+  StreamSubscription<Uri>? _feishuLinkSub;
 
   @override
   void initState() {
@@ -41,6 +48,58 @@ class _LoginPageState extends State<LoginPage> {
     _emailController.addListener(_onEmailTextChanged);
     _emailFocus.addListener(_onEmailFocusChanged);
     _prefillLastAccount();
+    if (!kIsWeb) {
+      _feishuLinkSub = FeishuAppLauncher.uriLinkStream.listen((uri) {
+        if (!FeishuAppLauncher.isFeishuOAuthReturnUri(uri)) return;
+        unawaited(_completeFeishuLoginWithCode(readFeishuCodeFromUri(uri)));
+      });
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_tryResumeFeishuOAuthFromUrl());
+      if (!kIsWeb) unawaited(_tryResumeFeishuOAuthFromDeepLink());
+    });
+  }
+
+  /// Web：服务端 302 到 `/?feishu_code=` 后在此页 loading 并完成登录。
+  Future<void> _tryResumeFeishuOAuthFromUrl() async {
+    if (!kIsWeb) return;
+    final code = readFeishuCodeFromCurrentUrl();
+    if (code == null || code.isEmpty) return;
+    clearFeishuCodeFromBrowserUrl();
+    await _completeFeishuLoginWithCode(code);
+  }
+
+  /// App：飞书授权后 302 到 `moesocial://feishu/oauth?feishu_code=`。
+  Future<void> _tryResumeFeishuOAuthFromDeepLink() async {
+    if (kIsWeb) return;
+    final uri = await FeishuAppLauncher.getInitialOAuthUri();
+    final code = readFeishuCodeFromUri(uri);
+    if (code == null || code.isEmpty) return;
+    await _completeFeishuLoginWithCode(code);
+  }
+
+  Future<void> _completeFeishuLoginWithCode(String? code) async {
+    if (code == null || code.isEmpty || !mounted) return;
+    final loadingProvider = context.read<LoadingProvider>();
+    await loadingProvider.executeOperation<AuthResult>(
+      operation: () => AuthService.loginWithFeishu(code),
+      key: LoadingKeys.feishuLogin,
+      onSuccess: (authResult) {
+        if (!mounted) return;
+        if (!authResult.success) {
+          MoeToast.error(
+            context,
+            authResult.errorMessage ?? '飞书登录失败',
+          );
+          return;
+        }
+        unawaited(_onFeishuLoginSuccess());
+      },
+      onError: (_) {
+        if (!mounted) return;
+        MoeToast.error(context, '飞书登录异常，请稍后重试');
+      },
+    );
   }
 
   void _onEmailTextChanged() {
@@ -80,6 +139,53 @@ class _LoginPageState extends State<LoginPage> {
     final acc = await AuthService.getLastLoginAccount();
     if (!mounted || acc == null || acc.isEmpty) return;
     _emailController.text = acc;
+  }
+
+  Future<void> _feishuLogin() async {
+    if (kIsWeb) {
+      try {
+        final url = await ApiService.getFeishuAuthorizeUrl(
+          state: buildFeishuOAuthState(),
+        );
+        navigateBrowserToFeishuAuthorize(url);
+      } catch (e) {
+        if (mounted) MoeToast.error(context, '无法打开飞书授权：$e');
+      }
+      return;
+    }
+
+    final installed = await FeishuAppLauncher.isFeishuInstalled();
+    if (!mounted) return;
+    if (!installed) {
+      MoeToast.error(context, '未安装飞书 App，请先安装飞书客户端');
+      return;
+    }
+
+    try {
+      final url = await ApiService.getFeishuAuthorizeUrl(
+        state: buildFeishuOAuthState(),
+      );
+      final opened = await FeishuAppLauncher.openOAuthAuthorize(url);
+      if (!mounted) return;
+      if (!opened) {
+        MoeToast.error(context, '无法打开飞书，请稍后重试');
+      }
+    } catch (e) {
+      if (mounted) MoeToast.error(context, '无法打开飞书授权：$e');
+    }
+  }
+
+  Future<void> _onFeishuLoginSuccess() async {
+    try {
+      context.read<NotificationProvider>().init();
+    } catch (_) {}
+    final uid = AuthService.currentUser;
+    if (uid != null) {
+      unawaited(AchievementHooks.ensureReady(uid));
+    }
+    if (!mounted) return;
+    MoeToast.success(context, '飞书登录成功');
+    Navigator.pushReplacementNamed(context, '/home');
   }
 
   Future<void> _login() async {
@@ -181,7 +287,10 @@ class _LoginPageState extends State<LoginPage> {
               FadeInUp(
                 delay: const Duration(milliseconds: 200),
                 duration: const Duration(milliseconds: 800),
-                child: Form(
+                child: OperationLoadingWidget(
+                  operationKey: LoadingKeys.feishuLogin,
+                  loadingText: '正在完成飞书登录…',
+                  child: Form(
                   key: _formKey,
                   child: Column(
                     children: [
@@ -302,8 +411,33 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: OutlinedButton.icon(
+                          onPressed: () => unawaited(_feishuLogin()),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF3370FF),
+                            side: const BorderSide(color: Color(0xFF3370FF)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(28),
+                            ),
+                          ),
+                          icon: const Icon(Icons.hub_outlined, size: 22),
+                          label: const Text(
+                            '飞书登录 / 注册',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const FeishuEnterpriseInviteBanner(compact: true),
                     ],
                   ),
+                ),
                 ),
               ),
 
@@ -353,6 +487,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void dispose() {
+    _feishuLinkSub?.cancel();
     _emailFocus.removeListener(_onEmailFocusChanged);
     _emailController.removeListener(_onEmailTextChanged);
     _emailCompletionDebounce?.cancel();

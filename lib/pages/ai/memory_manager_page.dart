@@ -7,6 +7,8 @@ import '../../models/user_memory_profile.dart';
 import '../../models/ai_memory.dart';
 import '../../models/ai_memory_profile.dart';
 import '../../services/ai_memory_orchestrator.dart';
+import '../../widgets/ai/ai_brand_tokens.dart';
+import '../../widgets/ai/ai_confirm_sheet.dart';
 import '../../widgets/moe_toast.dart';
 
 class MemoryManagerPage extends StatefulWidget {
@@ -104,76 +106,43 @@ class _MemoryManagerPageState extends State<MemoryManagerPage>
   }
 
   Future<void> _delete(UserMemory memory) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AiConfirmSheet.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('删除记忆'),
-        content: Text('确定要删除这条记忆吗？\n\n"${memory.value}"'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
+      title: '删除记忆',
+      message: '确定要删除这条记忆吗？\n\n"${memory.value}"',
+      confirmLabel: '删除',
+      isDanger: true,
     );
-    if (confirmed == true) {
+    if (confirmed) {
       await AiMemoryOrchestrator().deleteAccountMemory(memory);
       await _load();
     }
   }
 
   Future<void> _deleteLocal(AiMemory memory) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AiConfirmSheet.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('删除本地记忆'),
-        content: Text('确定要删除这条本地记忆吗？\n\n"${memory.content}"'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
+      title: '删除本地记忆',
+      message: '确定要删除这条本地记忆吗？\n\n"${memory.content}"',
+      confirmLabel: '删除',
+      isDanger: true,
     );
-    if (confirmed == true) {
+    if (confirmed) {
       await AiMemoryOrchestrator().deleteLocalMemory(memory.id);
       await _load();
     }
   }
 
   Future<void> _clearAll() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AiConfirmSheet.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('清空所有记忆'),
-        content: Text(
-            '确定要清空「${widget.agent.name}」的所有 ${_memories.length} 条记忆吗？\n此操作不可撤销。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('全部清空'),
-          ),
-        ],
-      ),
+      title: '清空所有记忆',
+      message:
+          '确定要清空「${widget.agent.name}」的所有 ${_memories.length} 条记忆吗？\n此操作不可撤销。',
+      confirmLabel: '全部清空',
+      isDanger: true,
     );
-    if (confirmed == true) {
+    if (confirmed) {
       if (_tabController.index == 0) {
         if (_memories.isEmpty) return;
         await AiMemoryOrchestrator().clearAllAccountMemories(_memories);
@@ -189,25 +158,14 @@ class _MemoryManagerPageState extends State<MemoryManagerPage>
 
   Future<void> _clearAllLocal() async {
     if (_localMemories.isEmpty) return;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AiConfirmSheet.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('清空本地记忆'),
-        content: Text('确定清空 ${_localMemories.length} 条本地角色记忆吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('全部清空'),
-          ),
-        ],
-      ),
+      title: '清空本地记忆',
+      message: '确定清空 ${_localMemories.length} 条本地角色记忆吗？',
+      confirmLabel: '全部清空',
+      isDanger: true,
     );
-    if (confirmed == true) {
+    if (confirmed) {
       for (final m in _localMemories) {
         await AiMemoryOrchestrator().deleteLocalMemory(m.id);
       }
@@ -224,7 +182,7 @@ class _MemoryManagerPageState extends State<MemoryManagerPage>
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AiBrandTokens.chatBackground,
       appBar: AppBar(
         title: Column(
           mainAxisSize: MainAxisSize.min,
