@@ -62,26 +62,29 @@ func (l *ResourceLogic) upsert(userID uint, kind string, item map[string]interfa
 	if id == "" {
 		return []map[string]interface{}{}, common.HandleError(fmt.Errorf("missing resource id"))
 	}
-	raw, _ := json.Marshal(item)
+	raw, err := json.Marshal(item)
+	if err != nil {
+		return []map[string]interface{}{}, common.HandleError(fmt.Errorf("marshal resource payload: %w", err))
+	}
 	req := &super.UpsertAiResourceReq{
 		UserId:      strconv.FormatUint(uint64(userID), 10),
 		Id:          id,
 		PayloadJson: string(raw),
 	}
 
-	var err error
+	var rpcErr error
 	switch kind {
 	case "providers":
-		_, err = l.svcCtx.SuperRpcClient.UpsertAiProvider(l.ctx, req)
+		_, rpcErr = l.svcCtx.SuperRpcClient.UpsertAiProvider(l.ctx, req)
 	case "agents":
-		_, err = l.svcCtx.SuperRpcClient.UpsertAiAgent(l.ctx, req)
+		_, rpcErr = l.svcCtx.SuperRpcClient.UpsertAiAgent(l.ctx, req)
 	case "lorebooks":
-		_, err = l.svcCtx.SuperRpcClient.UpsertAiLorebook(l.ctx, req)
+		_, rpcErr = l.svcCtx.SuperRpcClient.UpsertAiLorebook(l.ctx, req)
 	default:
 		return []map[string]interface{}{}, common.HandleError(fmt.Errorf("unknown ai resource kind: %s", kind))
 	}
-	if err != nil {
-		return []map[string]interface{}{}, common.HandleRPCError(err, "")
+	if rpcErr != nil {
+		return []map[string]interface{}{}, common.HandleRPCError(rpcErr, "")
 	}
 
 	return l.list(userID, kind)

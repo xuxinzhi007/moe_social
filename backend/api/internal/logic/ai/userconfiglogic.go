@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"backend/api/internal/common"
@@ -50,7 +51,12 @@ func (l *UserConfigLogic) Get(userID uint) (*types.AiUserConfigResp, error) {
 func (l *UserConfigLogic) Upsert(userID uint, req *types.AiUserConfigReq) (*types.AiUserConfigResp, error) {
 	var preferencesJSON string
 	if req.Preferences != nil {
-		raw, _ := json.Marshal(req.Preferences)
+		raw, err := json.Marshal(req.Preferences)
+		if err != nil {
+			return &types.AiUserConfigResp{
+				BaseResp: common.HandleError(fmt.Errorf("marshal preferences: %w", err)),
+			}, nil
+		}
 		preferencesJSON = string(raw)
 	}
 	resp, err := l.svcCtx.SuperRpcClient.UpsertAiUserConfig(l.ctx, &super.UpsertAiUserConfigReq{

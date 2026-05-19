@@ -7,11 +7,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecret = []byte("u8K9x2L1n4Q7v5Z0m3P6r9Y2b5X8j1W4")
-
-// 访问令牌有效期（与 api/etc/super.yaml 中 Auth.AccessExpire 保持一致，单位：秒应对齐为 5 天）
-var jwtExpireTime = 5 * 24 * time.Hour
-
 // CustomClaims 自定义JWT声明结构体
 type CustomClaims struct {
 	UserID   uint   `json:"user_id"`
@@ -21,36 +16,43 @@ type CustomClaims struct {
 
 // GenerateToken 生成JWT Token
 func GenerateToken(userID uint, username string) (string, error) {
-	// 创建声明
+	key, err := jwtSigningKey()
+	if err != nil {
+		return "", err
+	}
+
+	jwtCfgMu.RLock()
+	expire := jwtExpire
+	jwtCfgMu.RUnlock()
+
 	claims := CustomClaims{
 		UserID:   userID,
 		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(jwtExpireTime)), // 过期时间
-			IssuedAt:  jwt.NewNumericDate(time.Now()),                    // 签发时间
-			NotBefore: jwt.NewNumericDate(time.Now()),                    // 生效时间
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expire)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now()),
 		},
 	}
 
-	// 创建Token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// 签名并获取完整的编码后的字符串
-	return token.SignedString(jwtSecret)
+	return token.SignedString(key)
 }
 
 // ParseToken 解析JWT Token
 func ParseToken(tokenString string) (*CustomClaims, error) {
-	// 解析Token
-	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
-	})
-
+	key, err := jwtSigningKey()
 	if err != nil {
 		return nil, err
 	}
 
-	// 验证Token并获取声明
+	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return key, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	if claims, ok := token.Claims.(*CustomClaims); ok && token.Valid {
 		return claims, nil
 	}

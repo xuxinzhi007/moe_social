@@ -6,6 +6,11 @@ server:
 # 说明：
 # - backend/api（go-zero）默认读 backend/api/etc/super*.yaml
 # - 现在 backend/api 会额外尝试读取本文件，用于覆盖部分参数（找不到会自动跳过）
+# - JWT 密钥唯一配置处：auth.access_secret（也可用环境变量 MOE_AUTH_ACCESS_SECRET 覆盖）
+auth:
+  access_secret: "u8K9x2L1n4Q7v5Z0m3P6r9Y2b5X8j1W4"
+  access_expire_seconds: 432000  # 5 天
+
 api:
   # go-zero REST 超时（毫秒）。LLM 首次加载模型可能较慢，建议 >= 180000
   timeout_ms: 600000

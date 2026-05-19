@@ -30,7 +30,9 @@ const (
 	maxInjectedMemoryItems = 8
 	maxInjectedMemoryRunes = 520
 	fallbackMemoryItems    = 2
-	memoryCacheTTL         = 30 * time.Second
+	memoryCacheTTL              = 30 * time.Second
+	maxUserMemoryCacheEntries   = 512
+	backgroundMemoryTaskTimeout = 60 * time.Second
 )
 
 const coreConversationGuardrails = "你是一个社交应用中的中文助手。你的目标是真正理解用户需求，并给出自然、具体、可执行的中文回答。\n\n你需要：\n1. 主动结合当前消息和完整历史对话来理解用户真正想做什么，而不是只按字面意思机械回复。\n2. 当用户表达不清晰或有多种可能理解时，先用一两句简短话语确认或澄清需求，再继续回答。\n3. 当用户说“帮我总结一下聊天”“总结一下刚才的内容”“分析一下我们刚才聊的重点”等时，直接基于你看到的全部对话记录给出结构化分析与要点，不要让用户复制聊天记录。\n4. 当用户询问如何实现某个功能或写代码时，请给出具体步骤和示例，而不是泛泛而谈。\n5. 不要说“作为AI”“我是AI助手”“我只是模型/程序”等自我限制话术；用户问“你是谁/你叫什么”时，直接自然回答，不暴露模型身份。\n\n当用户提到“刚才”“之前”“上面说的”等表达时，需要基于完整聊天记录理解含义并回答。"
@@ -154,11 +156,46 @@ func getCachedUserMemories(userID string) ([]*super.UserMemory, bool) {
 
 func setCachedUserMemories(userID string, items []*super.UserMemory) {
 	userMemoryCache.Lock()
+	defer userMemoryCache.Unlock()
+	evictUserMemoryCacheLocked()
+	if len(userMemoryCache.data) >= maxUserMemoryCacheEntries {
+		evictOldestUserMemoryCacheEntryLocked()
+	}
 	userMemoryCache.data[userID] = cachedMemories{
 		items:     items,
 		expiresAt: time.Now().Add(memoryCacheTTL),
 	}
-	userMemoryCache.Unlock()
+}
+
+func evictUserMemoryCacheLocked() {
+	now := time.Now()
+	for id, entry := range userMemoryCache.data {
+		if now.After(entry.expiresAt) {
+			delete(userMemoryCache.data, id)
+		}
+	}
+}
+
+func evictOldestUserMemoryCacheEntryLocked() {
+	var oldestID string
+	var oldestExpiry time.Time
+	for id, entry := range userMemoryCache.data {
+		if oldestID == "" || entry.expiresAt.Before(oldestExpiry) {
+			oldestID = id
+			oldestExpiry = entry.expiresAt
+		}
+	}
+	if oldestID != "" {
+		delete(userMemoryCache.data, oldestID)
+	}
+}
+
+func backgroundMemoryExtractContext(timeoutSeconds int) (context.Context, context.CancelFunc) {
+	d := time.Duration(timeoutSeconds) * time.Second
+	if d <= 0 || d > backgroundMemoryTaskTimeout {
+		d = backgroundMemoryTaskTimeout
+	}
+	return context.WithTimeout(context.Background(), d)
 }
 
 func invalidateCachedUserMemories(userID string) {
@@ -542,7 +579,8 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 				}
 
 				go func(uid, model, baseUrl, sid, msgID string, timeout int, msgs []ollamaMessage) {
-					bgCtx := context.Background()
+					bgCtx, cancel := backgroundMemoryExtractContext(timeout)
+					defer cancel()
 					l.extractAndSaveMemories(bgCtx, uid, model, baseUrl, timeout, sid, msgID, msgs)
 				}(userIDForLog, memoryModel, baseUrl, sessionID, sourceMsgID, timeoutSeconds, fullMessages)
 			}
@@ -752,8 +790,8 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		}
 
 		go func(uid, model, baseUrl, sid, msgID string, timeout int, msgs []ollamaMessage) {
-			bgCtx := context.Background()
-			// Create a new detached logger/logic context if needed, but simple function call is enough
+			bgCtx, cancel := backgroundMemoryExtractContext(timeout)
+			defer cancel()
 			l.extractAndSaveMemories(bgCtx, uid, model, baseUrl, timeout, sid, msgID, msgs)
 		}(userIDForLog, req.Model, baseUrl, sessionID, sourceMsgID, timeoutSeconds, fullMessages)
 	}

@@ -62,7 +62,11 @@ func (l *UpdatePostLogic) UpdatePost(in *super.UpdatePostReq) (*super.UpdatePost
 		if len(in.Images) == 0 {
 			p.Images = "[]"
 		} else {
-			imagesJSON, _ := json.Marshal(in.Images)
+			imagesJSON, err := json.Marshal(in.Images)
+			if err != nil {
+				l.Error("序列化图片列表失败: ", err)
+				return nil, errorx.InvalidArgument("invalid images")
+			}
 			p.Images = string(imagesJSON)
 		}
 	}

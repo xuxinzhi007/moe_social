@@ -3,12 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"backend/api/internal/config"
 	"backend/api/internal/handler"
 	"backend/api/internal/svc"
+	"backend/utils"
 
 	"github.com/spf13/viper"
 	"github.com/zeromicro/go-zero/core/conf"
@@ -62,6 +65,14 @@ func applyUnifiedConfigOverrides(c *config.Config) {
 	if n := firstPositiveInt64(v, "image.max_bytes", "image.maxbytes"); n > 0 {
 		c.Image.MaxBytes = n
 	}
+	if secret := strings.TrimSpace(os.Getenv("MOE_AUTH_ACCESS_SECRET")); secret != "" {
+		c.Auth.AccessSecret = secret
+	} else if secret := firstNonEmptyString(v, "auth.access_secret"); secret != "" {
+		c.Auth.AccessSecret = secret
+	}
+	if exp := v.GetInt64("auth.access_expire_seconds"); exp > 0 {
+		c.Auth.AccessExpire = exp
+	}
 }
 
 func firstNonEmptyString(v *viper.Viper, keys ...string) string {
@@ -88,6 +99,9 @@ func main() {
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 	applyUnifiedConfigOverrides(&c)
+	if err := utils.ConfigureJWT(c.Auth.AccessSecret, c.Auth.AccessExpire); err != nil {
+		log.Fatalf("JWT 配置无效: %v（请在 backend/config/config.yaml 设置 auth.access_secret）", err)
+	}
 
 	// 使用go-zero内置的CORS支持，允许所有来源（开发环境）
 	server := rest.MustNewServer(c.RestConf, rest.WithCustomCors(
