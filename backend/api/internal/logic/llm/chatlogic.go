@@ -445,26 +445,44 @@ func mergePersonaAndFallbackMemories(ranked []rankedMemory) []string {
 func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err error) {
 	sessionID := strings.TrimSpace(req.SessionId)
 	sourceMsgID := strings.TrimSpace(req.SourceMsgId)
-	var memoryLines []string
+	var memoryBlock string
 	var userIDForLog string
-	if v := l.ctx.Value("user_id"); v != nil {
+	if !req.ClientMemoryApplied {
+		if v := l.ctx.Value("user_id"); v != nil {
+			if userID, ok := v.(string); ok && userID != "" {
+				userIDForLog = userID
+				var memories []*super.UserMemory
+				if cached, hit := getCachedUserMemories(userID); hit {
+					memories = cached
+					l.Infof("memory cache hit user_id=%s total=%d", userID, len(cached))
+				} else {
+					rpcResp, err := l.svcCtx.SuperRpcClient.GetUserMemories(l.ctx, &super.GetUserMemoriesReq{
+						UserId: userID,
+					})
+					if err != nil {
+						l.Errorf("GetUserMemories failed: %v", err)
+					} else {
+						memories = rpcResp.Memories
+						setCachedUserMemories(userID, memories)
+						l.Infof("memory cache miss user_id=%s total=%d", userID, len(memories))
+					}
+				}
+				var profiles []*super.UserMemoryProfile
+				if profResp, err := l.svcCtx.SuperRpcClient.GetUserMemoryProfiles(l.ctx, &super.GetUserMemoryProfilesReq{
+					UserId: userID,
+					Limit:  8,
+				}); err != nil {
+					l.Errorf("GetUserMemoryProfiles failed: %v", err)
+				} else {
+					profiles = profResp.Profiles
+				}
+				memoryBlock = buildOpenClawMemoryBlock(memories, profiles, req.Messages)
+			}
+		}
+	} else if v := l.ctx.Value("user_id"); v != nil {
 		if userID, ok := v.(string); ok && userID != "" {
 			userIDForLog = userID
-			if cached, hit := getCachedUserMemories(userID); hit {
-				memoryLines = selectRelevantMemoryLines(cached, req.Messages)
-				l.Infof("memory cache hit user_id=%s total=%d selected=%d", userID, len(cached), len(memoryLines))
-			} else {
-				rpcResp, err := l.svcCtx.SuperRpcClient.GetUserMemories(l.ctx, &super.GetUserMemoriesReq{
-					UserId: userID,
-				})
-				if err != nil {
-					l.Errorf("GetUserMemories failed: %v", err)
-				} else {
-					setCachedUserMemories(userID, rpcResp.Memories)
-					memoryLines = selectRelevantMemoryLines(rpcResp.Memories, req.Messages)
-					l.Infof("memory cache miss user_id=%s total=%d selected=%d", userID, len(rpcResp.Memories), len(memoryLines))
-				}
-			}
+			l.Infof("memory inject skipped (client_memory_applied), user_id=%s", userID)
 		}
 	}
 
@@ -486,8 +504,8 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		systemContent = coreConversationGuardrails
 	}
 
-	if len(memoryLines) > 0 {
-		systemContent = systemContent + "\n\n用户的长期背景与偏好信息如下，请在回答时适当参考：\n- " + strings.Join(memoryLines, "\n- ")
+	if strings.TrimSpace(memoryBlock) != "" {
+		systemContent = systemContent + "\n\n" + memoryBlock
 	}
 
 	messages := make([]ollamaMessage, 0, len(req.Messages)+1)
@@ -508,7 +526,7 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 	}
 
 	if userIDForLog != "" {
-		l.Infof("llm chat with memory, user_id=%s, model=%s, messages=%d, memory_lines=%d", userIDForLog, req.Model, len(req.Messages), len(memoryLines))
+		l.Infof("llm chat with memory, user_id=%s, model=%s, messages=%d, memory_block_chars=%d", userIDForLog, req.Model, len(req.Messages), len([]rune(memoryBlock)))
 	} else {
 		l.Infof("llm chat without memory, model=%s, messages=%d", req.Model, len(req.Messages))
 	}
@@ -568,6 +586,9 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 
 	if needsSummary {
 		history := messages[1:]
+		if userIDForLog != "" && len(history) > 0 {
+			l.memoryFlushBeforeCompact(userIDForLog, sessionID, sourceMsgID, history)
+		}
 		summary, sumErr := l.summarizeMessages(memoryModel, baseUrl, timeoutSeconds, client, history)
 		if sumErr == nil && strings.TrimSpace(summary) != "" {
 			if userIDForLog != "" {
@@ -629,6 +650,10 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		}
 		oldMessages := make([]ollamaMessage, oldEnd-1)
 		copy(oldMessages, messages[1:oldEnd])
+
+		if userIDForLog != "" {
+			l.memoryFlushBeforeCompact(userIDForLog, sessionID, sourceMsgID, oldMessages)
+		}
 
 		summary, sumErr := l.summarizeMessages(memoryModel, baseUrl, timeoutSeconds, client, oldMessages)
 		if sumErr != nil {
@@ -953,6 +978,13 @@ type memoryItem struct {
 }
 
 func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, baseUrl string, timeoutSeconds int, sessionID, sourceMsgID string, history []ollamaMessage) {
+	l.extractAndSaveMemoriesWithSource(ctx, userID, model, baseUrl, timeoutSeconds, sessionID, sourceMsgID, history, "llm_extract")
+}
+
+func (l *ChatLogic) extractAndSaveMemoriesWithSource(ctx context.Context, userID, model, baseUrl string, timeoutSeconds int, sessionID, sourceMsgID string, history []ollamaMessage, source string) {
+	if strings.TrimSpace(source) == "" {
+		source = "llm_extract"
+	}
 	// Only analyze if history is significant enough
 	// 降低门槛，只要有对话就尝试（system + user + assistant >= 3）
 	if len(history) < 2 {
@@ -1091,7 +1123,7 @@ func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, b
 				Value:       item.Value,
 				MemoryType:  item.MemoryType,
 				Confidence:  item.Confidence,
-				Source:      "llm_extract",
+				Source:      source,
 				SourceMsgId: sourceMsgID,
 				SessionId:   sessionID,
 			})

@@ -19,106 +19,111 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Super_Register_FullMethodName                   = "/super.Super/Register"
-	Super_Login_FullMethodName                      = "/super.Super/Login"
-	Super_GetUserInfo_FullMethodName                = "/super.Super/GetUserInfo"
-	Super_GetUser_FullMethodName                    = "/super.Super/GetUser"
-	Super_GetUserByEmail_FullMethodName             = "/super.Super/GetUserByEmail"
-	Super_UpdateUserInfo_FullMethodName             = "/super.Super/UpdateUserInfo"
-	Super_UpdateUserPassword_FullMethodName         = "/super.Super/UpdateUserPassword"
-	Super_ResetPassword_FullMethodName              = "/super.Super/ResetPassword"
-	Super_DeleteUser_FullMethodName                 = "/super.Super/DeleteUser"
-	Super_UpdateUserVip_FullMethodName              = "/super.Super/UpdateUserVip"
-	Super_GetUsers_FullMethodName                   = "/super.Super/GetUsers"
-	Super_GetUserCount_FullMethodName               = "/super.Super/GetUserCount"
-	Super_BindFeishu_FullMethodName                 = "/super.Super/BindFeishu"
-	Super_UnbindFeishu_FullMethodName               = "/super.Super/UnbindFeishu"
-	Super_SendFeishuTestCard_FullMethodName         = "/super.Super/SendFeishuTestCard"
-	Super_FeishuAuthorizeURL_FullMethodName         = "/super.Super/FeishuAuthorizeURL"
-	Super_FeishuLogin_FullMethodName                = "/super.Super/FeishuLogin"
-	Super_UpsertUserMemory_FullMethodName           = "/super.Super/UpsertUserMemory"
-	Super_GetUserMemories_FullMethodName            = "/super.Super/GetUserMemories"
-	Super_GetUserMemoryProfiles_FullMethodName      = "/super.Super/GetUserMemoryProfiles"
-	Super_DeleteUserMemory_FullMethodName           = "/super.Super/DeleteUserMemory"
-	Super_SubmitUserMemoryFeedback_FullMethodName   = "/super.Super/SubmitUserMemoryFeedback"
-	Super_ListAiProviders_FullMethodName            = "/super.Super/ListAiProviders"
-	Super_UpsertAiProvider_FullMethodName           = "/super.Super/UpsertAiProvider"
-	Super_DeleteAiProvider_FullMethodName           = "/super.Super/DeleteAiProvider"
-	Super_ListAiAgents_FullMethodName               = "/super.Super/ListAiAgents"
-	Super_ListPublicAiAgents_FullMethodName         = "/super.Super/ListPublicAiAgents"
-	Super_UpsertAiAgent_FullMethodName              = "/super.Super/UpsertAiAgent"
-	Super_DeleteAiAgent_FullMethodName              = "/super.Super/DeleteAiAgent"
-	Super_ListAiLorebooks_FullMethodName            = "/super.Super/ListAiLorebooks"
-	Super_UpsertAiLorebook_FullMethodName           = "/super.Super/UpsertAiLorebook"
-	Super_DeleteAiLorebook_FullMethodName           = "/super.Super/DeleteAiLorebook"
-	Super_GetAiUserConfig_FullMethodName            = "/super.Super/GetAiUserConfig"
-	Super_UpsertAiUserConfig_FullMethodName         = "/super.Super/UpsertAiUserConfig"
-	Super_GetVipPlans_FullMethodName                = "/super.Super/GetVipPlans"
-	Super_GetVipPlan_FullMethodName                 = "/super.Super/GetVipPlan"
-	Super_CreateVipPlan_FullMethodName              = "/super.Super/CreateVipPlan"
-	Super_CreateVipOrder_FullMethodName             = "/super.Super/CreateVipOrder"
-	Super_GetVipOrders_FullMethodName               = "/super.Super/GetVipOrders"
-	Super_GetVipRecords_FullMethodName              = "/super.Super/GetVipRecords"
-	Super_GetUserActiveVipRecord_FullMethodName     = "/super.Super/GetUserActiveVipRecord"
-	Super_GetUserVipStatus_FullMethodName           = "/super.Super/GetUserVipStatus"
-	Super_CheckUserVip_FullMethodName               = "/super.Super/CheckUserVip"
-	Super_UpdateAutoRenew_FullMethodName            = "/super.Super/UpdateAutoRenew"
-	Super_SyncUserVipStatus_FullMethodName          = "/super.Super/SyncUserVipStatus"
-	Super_GetPosts_FullMethodName                   = "/super.Super/GetPosts"
-	Super_GetPost_FullMethodName                    = "/super.Super/GetPost"
-	Super_CreatePost_FullMethodName                 = "/super.Super/CreatePost"
-	Super_UpdatePost_FullMethodName                 = "/super.Super/UpdatePost"
-	Super_DeletePost_FullMethodName                 = "/super.Super/DeletePost"
-	Super_ReportPost_FullMethodName                 = "/super.Super/ReportPost"
-	Super_LikePost_FullMethodName                   = "/super.Super/LikePost"
-	Super_GetPostComments_FullMethodName            = "/super.Super/GetPostComments"
-	Super_CreateComment_FullMethodName              = "/super.Super/CreateComment"
-	Super_LikeComment_FullMethodName                = "/super.Super/LikeComment"
-	Super_GetNotifications_FullMethodName           = "/super.Super/GetNotifications"
-	Super_GetUnreadCount_FullMethodName             = "/super.Super/GetUnreadCount"
-	Super_ReadNotification_FullMethodName           = "/super.Super/ReadNotification"
-	Super_ReadAllNotifications_FullMethodName       = "/super.Super/ReadAllNotifications"
-	Super_CreateNotification_FullMethodName         = "/super.Super/CreateNotification"
-	Super_SendPrivateMessage_FullMethodName         = "/super.Super/SendPrivateMessage"
-	Super_ListPrivateMessages_FullMethodName        = "/super.Super/ListPrivateMessages"
-	Super_ListPrivateConversations_FullMethodName   = "/super.Super/ListPrivateConversations"
-	Super_Recharge_FullMethodName                   = "/super.Super/Recharge"
-	Super_GetTransactions_FullMethodName            = "/super.Super/GetTransactions"
-	Super_GetTransaction_FullMethodName             = "/super.Super/GetTransaction"
-	Super_FollowUser_FullMethodName                 = "/super.Super/FollowUser"
-	Super_UnfollowUser_FullMethodName               = "/super.Super/UnfollowUser"
-	Super_GetFollowings_FullMethodName              = "/super.Super/GetFollowings"
-	Super_GetFollowers_FullMethodName               = "/super.Super/GetFollowers"
-	Super_CheckFollow_FullMethodName                = "/super.Super/CheckFollow"
-	Super_SendFriendRequest_FullMethodName          = "/super.Super/SendFriendRequest"
-	Super_ListIncomingFriendRequests_FullMethodName = "/super.Super/ListIncomingFriendRequests"
-	Super_ListOutgoingFriendRequests_FullMethodName = "/super.Super/ListOutgoingFriendRequests"
-	Super_AcceptFriendRequest_FullMethodName        = "/super.Super/AcceptFriendRequest"
-	Super_RejectFriendRequest_FullMethodName        = "/super.Super/RejectFriendRequest"
-	Super_ListFriends_FullMethodName                = "/super.Super/ListFriends"
-	Super_GetFriendRelation_FullMethodName          = "/super.Super/GetFriendRelation"
-	Super_GetUserAvatar_FullMethodName              = "/super.Super/GetUserAvatar"
-	Super_UpdateUserAvatar_FullMethodName           = "/super.Super/UpdateUserAvatar"
-	Super_CheckIn_FullMethodName                    = "/super.Super/CheckIn"
-	Super_GetUserLevel_FullMethodName               = "/super.Super/GetUserLevel"
-	Super_GetCheckInStatus_FullMethodName           = "/super.Super/GetCheckInStatus"
-	Super_GetCheckInHistory_FullMethodName          = "/super.Super/GetCheckInHistory"
-	Super_GetExpLogs_FullMethodName                 = "/super.Super/GetExpLogs"
-	Super_CreateGroup_FullMethodName                = "/super.Super/CreateGroup"
-	Super_GetGroup_FullMethodName                   = "/super.Super/GetGroup"
-	Super_GetGroups_FullMethodName                  = "/super.Super/GetGroups"
-	Super_UpdateGroup_FullMethodName                = "/super.Super/UpdateGroup"
-	Super_DeleteGroup_FullMethodName                = "/super.Super/DeleteGroup"
-	Super_JoinGroup_FullMethodName                  = "/super.Super/JoinGroup"
-	Super_LeaveGroup_FullMethodName                 = "/super.Super/LeaveGroup"
-	Super_GetGroupMembers_FullMethodName            = "/super.Super/GetGroupMembers"
-	Super_GetUserGroups_FullMethodName              = "/super.Super/GetUserGroups"
-	Super_GetGifts_FullMethodName                   = "/super.Super/GetGifts"
-	Super_GetGift_FullMethodName                    = "/super.Super/GetGift"
-	Super_SendGift_FullMethodName                   = "/super.Super/SendGift"
-	Super_GetGiftRecords_FullMethodName             = "/super.Super/GetGiftRecords"
-	Super_PurchaseGift_FullMethodName               = "/super.Super/PurchaseGift"
-	Super_GetGiftPurchaseOrders_FullMethodName      = "/super.Super/GetGiftPurchaseOrders"
+	Super_Register_FullMethodName                    = "/super.Super/Register"
+	Super_Login_FullMethodName                       = "/super.Super/Login"
+	Super_GetUserInfo_FullMethodName                 = "/super.Super/GetUserInfo"
+	Super_GetUser_FullMethodName                     = "/super.Super/GetUser"
+	Super_GetUserByEmail_FullMethodName              = "/super.Super/GetUserByEmail"
+	Super_UpdateUserInfo_FullMethodName              = "/super.Super/UpdateUserInfo"
+	Super_UpdateUserPassword_FullMethodName          = "/super.Super/UpdateUserPassword"
+	Super_ResetPassword_FullMethodName               = "/super.Super/ResetPassword"
+	Super_DeleteUser_FullMethodName                  = "/super.Super/DeleteUser"
+	Super_UpdateUserVip_FullMethodName               = "/super.Super/UpdateUserVip"
+	Super_GetUsers_FullMethodName                    = "/super.Super/GetUsers"
+	Super_GetUserCount_FullMethodName                = "/super.Super/GetUserCount"
+	Super_BindFeishu_FullMethodName                  = "/super.Super/BindFeishu"
+	Super_UnbindFeishu_FullMethodName                = "/super.Super/UnbindFeishu"
+	Super_SendFeishuTestCard_FullMethodName          = "/super.Super/SendFeishuTestCard"
+	Super_FeishuAuthorizeURL_FullMethodName          = "/super.Super/FeishuAuthorizeURL"
+	Super_FeishuLogin_FullMethodName                 = "/super.Super/FeishuLogin"
+	Super_UpsertUserMemory_FullMethodName            = "/super.Super/UpsertUserMemory"
+	Super_GetUserMemories_FullMethodName             = "/super.Super/GetUserMemories"
+	Super_GetUserMemoryProfiles_FullMethodName       = "/super.Super/GetUserMemoryProfiles"
+	Super_DeleteUserMemory_FullMethodName            = "/super.Super/DeleteUserMemory"
+	Super_SubmitUserMemoryFeedback_FullMethodName    = "/super.Super/SubmitUserMemoryFeedback"
+	Super_SyncUserDevice_FullMethodName              = "/super.Super/SyncUserDevice"
+	Super_ListUserDevices_FullMethodName             = "/super.Super/ListUserDevices"
+	Super_ListUserMemoryEmbeddings_FullMethodName    = "/super.Super/ListUserMemoryEmbeddings"
+	Super_UpsertUserMemoryEmbedding_FullMethodName   = "/super.Super/UpsertUserMemoryEmbedding"
+	Super_RebuildUserMemoryEmbeddings_FullMethodName = "/super.Super/RebuildUserMemoryEmbeddings"
+	Super_ListAiProviders_FullMethodName             = "/super.Super/ListAiProviders"
+	Super_UpsertAiProvider_FullMethodName            = "/super.Super/UpsertAiProvider"
+	Super_DeleteAiProvider_FullMethodName            = "/super.Super/DeleteAiProvider"
+	Super_ListAiAgents_FullMethodName                = "/super.Super/ListAiAgents"
+	Super_ListPublicAiAgents_FullMethodName          = "/super.Super/ListPublicAiAgents"
+	Super_UpsertAiAgent_FullMethodName               = "/super.Super/UpsertAiAgent"
+	Super_DeleteAiAgent_FullMethodName               = "/super.Super/DeleteAiAgent"
+	Super_ListAiLorebooks_FullMethodName             = "/super.Super/ListAiLorebooks"
+	Super_UpsertAiLorebook_FullMethodName            = "/super.Super/UpsertAiLorebook"
+	Super_DeleteAiLorebook_FullMethodName            = "/super.Super/DeleteAiLorebook"
+	Super_GetAiUserConfig_FullMethodName             = "/super.Super/GetAiUserConfig"
+	Super_UpsertAiUserConfig_FullMethodName          = "/super.Super/UpsertAiUserConfig"
+	Super_GetVipPlans_FullMethodName                 = "/super.Super/GetVipPlans"
+	Super_GetVipPlan_FullMethodName                  = "/super.Super/GetVipPlan"
+	Super_CreateVipPlan_FullMethodName               = "/super.Super/CreateVipPlan"
+	Super_CreateVipOrder_FullMethodName              = "/super.Super/CreateVipOrder"
+	Super_GetVipOrders_FullMethodName                = "/super.Super/GetVipOrders"
+	Super_GetVipRecords_FullMethodName               = "/super.Super/GetVipRecords"
+	Super_GetUserActiveVipRecord_FullMethodName      = "/super.Super/GetUserActiveVipRecord"
+	Super_GetUserVipStatus_FullMethodName            = "/super.Super/GetUserVipStatus"
+	Super_CheckUserVip_FullMethodName                = "/super.Super/CheckUserVip"
+	Super_UpdateAutoRenew_FullMethodName             = "/super.Super/UpdateAutoRenew"
+	Super_SyncUserVipStatus_FullMethodName           = "/super.Super/SyncUserVipStatus"
+	Super_GetPosts_FullMethodName                    = "/super.Super/GetPosts"
+	Super_GetPost_FullMethodName                     = "/super.Super/GetPost"
+	Super_CreatePost_FullMethodName                  = "/super.Super/CreatePost"
+	Super_UpdatePost_FullMethodName                  = "/super.Super/UpdatePost"
+	Super_DeletePost_FullMethodName                  = "/super.Super/DeletePost"
+	Super_ReportPost_FullMethodName                  = "/super.Super/ReportPost"
+	Super_LikePost_FullMethodName                    = "/super.Super/LikePost"
+	Super_GetPostComments_FullMethodName             = "/super.Super/GetPostComments"
+	Super_CreateComment_FullMethodName               = "/super.Super/CreateComment"
+	Super_LikeComment_FullMethodName                 = "/super.Super/LikeComment"
+	Super_GetNotifications_FullMethodName            = "/super.Super/GetNotifications"
+	Super_GetUnreadCount_FullMethodName              = "/super.Super/GetUnreadCount"
+	Super_ReadNotification_FullMethodName            = "/super.Super/ReadNotification"
+	Super_ReadAllNotifications_FullMethodName        = "/super.Super/ReadAllNotifications"
+	Super_CreateNotification_FullMethodName          = "/super.Super/CreateNotification"
+	Super_SendPrivateMessage_FullMethodName          = "/super.Super/SendPrivateMessage"
+	Super_ListPrivateMessages_FullMethodName         = "/super.Super/ListPrivateMessages"
+	Super_ListPrivateConversations_FullMethodName    = "/super.Super/ListPrivateConversations"
+	Super_Recharge_FullMethodName                    = "/super.Super/Recharge"
+	Super_GetTransactions_FullMethodName             = "/super.Super/GetTransactions"
+	Super_GetTransaction_FullMethodName              = "/super.Super/GetTransaction"
+	Super_FollowUser_FullMethodName                  = "/super.Super/FollowUser"
+	Super_UnfollowUser_FullMethodName                = "/super.Super/UnfollowUser"
+	Super_GetFollowings_FullMethodName               = "/super.Super/GetFollowings"
+	Super_GetFollowers_FullMethodName                = "/super.Super/GetFollowers"
+	Super_CheckFollow_FullMethodName                 = "/super.Super/CheckFollow"
+	Super_SendFriendRequest_FullMethodName           = "/super.Super/SendFriendRequest"
+	Super_ListIncomingFriendRequests_FullMethodName  = "/super.Super/ListIncomingFriendRequests"
+	Super_ListOutgoingFriendRequests_FullMethodName  = "/super.Super/ListOutgoingFriendRequests"
+	Super_AcceptFriendRequest_FullMethodName         = "/super.Super/AcceptFriendRequest"
+	Super_RejectFriendRequest_FullMethodName         = "/super.Super/RejectFriendRequest"
+	Super_ListFriends_FullMethodName                 = "/super.Super/ListFriends"
+	Super_GetFriendRelation_FullMethodName           = "/super.Super/GetFriendRelation"
+	Super_GetUserAvatar_FullMethodName               = "/super.Super/GetUserAvatar"
+	Super_UpdateUserAvatar_FullMethodName            = "/super.Super/UpdateUserAvatar"
+	Super_CheckIn_FullMethodName                     = "/super.Super/CheckIn"
+	Super_GetUserLevel_FullMethodName                = "/super.Super/GetUserLevel"
+	Super_GetCheckInStatus_FullMethodName            = "/super.Super/GetCheckInStatus"
+	Super_GetCheckInHistory_FullMethodName           = "/super.Super/GetCheckInHistory"
+	Super_GetExpLogs_FullMethodName                  = "/super.Super/GetExpLogs"
+	Super_CreateGroup_FullMethodName                 = "/super.Super/CreateGroup"
+	Super_GetGroup_FullMethodName                    = "/super.Super/GetGroup"
+	Super_GetGroups_FullMethodName                   = "/super.Super/GetGroups"
+	Super_UpdateGroup_FullMethodName                 = "/super.Super/UpdateGroup"
+	Super_DeleteGroup_FullMethodName                 = "/super.Super/DeleteGroup"
+	Super_JoinGroup_FullMethodName                   = "/super.Super/JoinGroup"
+	Super_LeaveGroup_FullMethodName                  = "/super.Super/LeaveGroup"
+	Super_GetGroupMembers_FullMethodName             = "/super.Super/GetGroupMembers"
+	Super_GetUserGroups_FullMethodName               = "/super.Super/GetUserGroups"
+	Super_GetGifts_FullMethodName                    = "/super.Super/GetGifts"
+	Super_GetGift_FullMethodName                     = "/super.Super/GetGift"
+	Super_SendGift_FullMethodName                    = "/super.Super/SendGift"
+	Super_GetGiftRecords_FullMethodName              = "/super.Super/GetGiftRecords"
+	Super_PurchaseGift_FullMethodName                = "/super.Super/PurchaseGift"
+	Super_GetGiftPurchaseOrders_FullMethodName       = "/super.Super/GetGiftPurchaseOrders"
 )
 
 // SuperClient is the client API for Super service.
@@ -150,6 +155,11 @@ type SuperClient interface {
 	GetUserMemoryProfiles(ctx context.Context, in *GetUserMemoryProfilesReq, opts ...grpc.CallOption) (*GetUserMemoryProfilesResp, error)
 	DeleteUserMemory(ctx context.Context, in *DeleteUserMemoryReq, opts ...grpc.CallOption) (*DeleteUserMemoryResp, error)
 	SubmitUserMemoryFeedback(ctx context.Context, in *SubmitUserMemoryFeedbackReq, opts ...grpc.CallOption) (*SubmitUserMemoryFeedbackResp, error)
+	SyncUserDevice(ctx context.Context, in *SyncUserDeviceReq, opts ...grpc.CallOption) (*SyncUserDeviceResp, error)
+	ListUserDevices(ctx context.Context, in *ListUserDevicesReq, opts ...grpc.CallOption) (*ListUserDevicesResp, error)
+	ListUserMemoryEmbeddings(ctx context.Context, in *ListUserMemoryEmbeddingsReq, opts ...grpc.CallOption) (*ListUserMemoryEmbeddingsResp, error)
+	UpsertUserMemoryEmbedding(ctx context.Context, in *UpsertUserMemoryEmbeddingReq, opts ...grpc.CallOption) (*UpsertUserMemoryEmbeddingResp, error)
+	RebuildUserMemoryEmbeddings(ctx context.Context, in *RebuildUserMemoryEmbeddingsReq, opts ...grpc.CallOption) (*RebuildUserMemoryEmbeddingsResp, error)
 	ListAiProviders(ctx context.Context, in *ListAiResourceReq, opts ...grpc.CallOption) (*ListAiResourceResp, error)
 	UpsertAiProvider(ctx context.Context, in *UpsertAiResourceReq, opts ...grpc.CallOption) (*UpsertAiResourceResp, error)
 	DeleteAiProvider(ctx context.Context, in *DeleteAiResourceReq, opts ...grpc.CallOption) (*DeleteAiResourceResp, error)
@@ -468,6 +478,56 @@ func (c *superClient) SubmitUserMemoryFeedback(ctx context.Context, in *SubmitUs
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SubmitUserMemoryFeedbackResp)
 	err := c.cc.Invoke(ctx, Super_SubmitUserMemoryFeedback_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) SyncUserDevice(ctx context.Context, in *SyncUserDeviceReq, opts ...grpc.CallOption) (*SyncUserDeviceResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SyncUserDeviceResp)
+	err := c.cc.Invoke(ctx, Super_SyncUserDevice_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) ListUserDevices(ctx context.Context, in *ListUserDevicesReq, opts ...grpc.CallOption) (*ListUserDevicesResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListUserDevicesResp)
+	err := c.cc.Invoke(ctx, Super_ListUserDevices_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) ListUserMemoryEmbeddings(ctx context.Context, in *ListUserMemoryEmbeddingsReq, opts ...grpc.CallOption) (*ListUserMemoryEmbeddingsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListUserMemoryEmbeddingsResp)
+	err := c.cc.Invoke(ctx, Super_ListUserMemoryEmbeddings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) UpsertUserMemoryEmbedding(ctx context.Context, in *UpsertUserMemoryEmbeddingReq, opts ...grpc.CallOption) (*UpsertUserMemoryEmbeddingResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpsertUserMemoryEmbeddingResp)
+	err := c.cc.Invoke(ctx, Super_UpsertUserMemoryEmbedding_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) RebuildUserMemoryEmbeddings(ctx context.Context, in *RebuildUserMemoryEmbeddingsReq, opts ...grpc.CallOption) (*RebuildUserMemoryEmbeddingsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RebuildUserMemoryEmbeddingsResp)
+	err := c.cc.Invoke(ctx, Super_RebuildUserMemoryEmbeddings_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1283,6 +1343,11 @@ type SuperServer interface {
 	GetUserMemoryProfiles(context.Context, *GetUserMemoryProfilesReq) (*GetUserMemoryProfilesResp, error)
 	DeleteUserMemory(context.Context, *DeleteUserMemoryReq) (*DeleteUserMemoryResp, error)
 	SubmitUserMemoryFeedback(context.Context, *SubmitUserMemoryFeedbackReq) (*SubmitUserMemoryFeedbackResp, error)
+	SyncUserDevice(context.Context, *SyncUserDeviceReq) (*SyncUserDeviceResp, error)
+	ListUserDevices(context.Context, *ListUserDevicesReq) (*ListUserDevicesResp, error)
+	ListUserMemoryEmbeddings(context.Context, *ListUserMemoryEmbeddingsReq) (*ListUserMemoryEmbeddingsResp, error)
+	UpsertUserMemoryEmbedding(context.Context, *UpsertUserMemoryEmbeddingReq) (*UpsertUserMemoryEmbeddingResp, error)
+	RebuildUserMemoryEmbeddings(context.Context, *RebuildUserMemoryEmbeddingsReq) (*RebuildUserMemoryEmbeddingsResp, error)
 	ListAiProviders(context.Context, *ListAiResourceReq) (*ListAiResourceResp, error)
 	UpsertAiProvider(context.Context, *UpsertAiResourceReq) (*UpsertAiResourceResp, error)
 	DeleteAiProvider(context.Context, *DeleteAiResourceReq) (*DeleteAiResourceResp, error)
@@ -1452,6 +1517,21 @@ func (UnimplementedSuperServer) DeleteUserMemory(context.Context, *DeleteUserMem
 }
 func (UnimplementedSuperServer) SubmitUserMemoryFeedback(context.Context, *SubmitUserMemoryFeedbackReq) (*SubmitUserMemoryFeedbackResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method SubmitUserMemoryFeedback not implemented")
+}
+func (UnimplementedSuperServer) SyncUserDevice(context.Context, *SyncUserDeviceReq) (*SyncUserDeviceResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method SyncUserDevice not implemented")
+}
+func (UnimplementedSuperServer) ListUserDevices(context.Context, *ListUserDevicesReq) (*ListUserDevicesResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListUserDevices not implemented")
+}
+func (UnimplementedSuperServer) ListUserMemoryEmbeddings(context.Context, *ListUserMemoryEmbeddingsReq) (*ListUserMemoryEmbeddingsResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListUserMemoryEmbeddings not implemented")
+}
+func (UnimplementedSuperServer) UpsertUserMemoryEmbedding(context.Context, *UpsertUserMemoryEmbeddingReq) (*UpsertUserMemoryEmbeddingResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpsertUserMemoryEmbedding not implemented")
+}
+func (UnimplementedSuperServer) RebuildUserMemoryEmbeddings(context.Context, *RebuildUserMemoryEmbeddingsReq) (*RebuildUserMemoryEmbeddingsResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method RebuildUserMemoryEmbeddings not implemented")
 }
 func (UnimplementedSuperServer) ListAiProviders(context.Context, *ListAiResourceReq) (*ListAiResourceResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListAiProviders not implemented")
@@ -2100,6 +2180,96 @@ func _Super_SubmitUserMemoryFeedback_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SuperServer).SubmitUserMemoryFeedback(ctx, req.(*SubmitUserMemoryFeedbackReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_SyncUserDevice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncUserDeviceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).SyncUserDevice(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_SyncUserDevice_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).SyncUserDevice(ctx, req.(*SyncUserDeviceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_ListUserDevices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUserDevicesReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).ListUserDevices(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_ListUserDevices_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).ListUserDevices(ctx, req.(*ListUserDevicesReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_ListUserMemoryEmbeddings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUserMemoryEmbeddingsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).ListUserMemoryEmbeddings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_ListUserMemoryEmbeddings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).ListUserMemoryEmbeddings(ctx, req.(*ListUserMemoryEmbeddingsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_UpsertUserMemoryEmbedding_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertUserMemoryEmbeddingReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).UpsertUserMemoryEmbedding(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_UpsertUserMemoryEmbedding_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).UpsertUserMemoryEmbedding(ctx, req.(*UpsertUserMemoryEmbeddingReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_RebuildUserMemoryEmbeddings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RebuildUserMemoryEmbeddingsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).RebuildUserMemoryEmbeddings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_RebuildUserMemoryEmbeddings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).RebuildUserMemoryEmbeddings(ctx, req.(*RebuildUserMemoryEmbeddingsReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3602,6 +3772,26 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SubmitUserMemoryFeedback",
 			Handler:    _Super_SubmitUserMemoryFeedback_Handler,
+		},
+		{
+			MethodName: "SyncUserDevice",
+			Handler:    _Super_SyncUserDevice_Handler,
+		},
+		{
+			MethodName: "ListUserDevices",
+			Handler:    _Super_ListUserDevices_Handler,
+		},
+		{
+			MethodName: "ListUserMemoryEmbeddings",
+			Handler:    _Super_ListUserMemoryEmbeddings_Handler,
+		},
+		{
+			MethodName: "UpsertUserMemoryEmbedding",
+			Handler:    _Super_UpsertUserMemoryEmbedding_Handler,
+		},
+		{
+			MethodName: "RebuildUserMemoryEmbeddings",
+			Handler:    _Super_RebuildUserMemoryEmbeddings_Handler,
 		},
 		{
 			MethodName: "ListAiProviders",

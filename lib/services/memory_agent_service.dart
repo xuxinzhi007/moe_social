@@ -1,14 +1,18 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 import '../models/ai_agent.dart';
 import '../models/ai_memory.dart';
 import '../models/ai_memory_profile.dart';
 import '../models/ai_memory_settings.dart';
+import '../models/ai_provider_profile.dart';
 import 'ai_db_service.dart';
-import 'api_service.dart';
-import 'llm_endpoint_config.dart';
+import 'ai_memory_learn_result.dart';
+import 'llm_memory_config_service.dart';
+import 'memory_extract_llm_client.dart';
+import 'memory_daily_note.dart';
+import 'memory_heuristic_extract.dart';
 import 'memory_service.dart';
 
 class MemoryAgentProcessResult {
@@ -75,29 +79,52 @@ class MemoryAgentService {
     return buffer.toString();
   }
 
-  /// 第三方 Provider + 服务端记忆：回合结束后提取 JSON 记忆并 Upsert 到后端。
-  Future<int> extractAndUpsertServerMemories({
+  /// 账号级记忆：回合结束后提取并 Upsert（优先当前聊天中转站，回退 Ollama）。
+  Future<AiMemoryLearnResult> extractAndUpsertServerMemories({
     required String userId,
     required String userMessage,
     required String aiResponse,
     required String sessionId,
     required String sourceMsgId,
-    required String model,
+    String? model,
+    AiProviderProfile? providerProfile,
+    String? chatModel,
   }) async {
-    if (userMessage.trim().isEmpty || aiResponse.trim().isEmpty) return 0;
+    if (userMessage.trim().isEmpty || aiResponse.trim().isEmpty) {
+      return const AiMemoryLearnResult();
+    }
 
-    final prompt = '请分析以下对话，提取关于用户的新的、永久性个人信息。\n'
-        '忽略临时状态与无意义闲聊。严格仅返回 JSON 数组，每项含 key（英文蛇形）与 value（用户语言）。\n'
-        '无新信息则返回 []。不要 Markdown 代码块。\n\n'
-        '用户：$userMessage\n助手：$aiResponse';
+    final ollamaModel = await LlmMemoryConfigService().resolveMemoryModel(
+      fallback: model?.trim() ?? '',
+    );
+    final relayModel = _resolveRelayExtractModel(
+      providerProfile: providerProfile,
+      chatModel: chatModel,
+    );
 
     var saved = 0;
+    saved += await _upsertHeuristicMemories(
+      userId: userId,
+      userMessage: userMessage,
+      sessionId: sessionId,
+      sourceMsgId: sourceMsgId,
+    );
+
+    final prompt = '请分析以下对话，提取关于「用户本人」的新的、永久性信息。\n'
+        '应提取：用户昵称/改名、偏好、职业、关系等。使用英文蛇形 key（如 user_nickname、user_preference）。\n'
+        '不要提取：AI 角色自报名字、当晚临时扮演设定、纯闲聊。\n'
+        '严格仅返回 JSON 数组，每项含 key 与 value。无新信息返回 []。不要 Markdown。\n\n'
+        '用户：$userMessage\n助手：$aiResponse';
+
+    String? extractError;
     try {
-      final raw = await _callModel(
-        model: model.trim().isNotEmpty ? model : 'llama3',
+      final raw = await MemoryExtractLlmClient.complete(
+        relayProfile: providerProfile?.isOpenAiCompatible == true
+            ? providerProfile
+            : null,
+        relayModel: relayModel,
+        ollamaModel: ollamaModel,
         userPrompt: prompt,
-        temperature: 0.1,
-        timeout: const Duration(seconds: 45),
       );
       final items = _parseServerMemoryItems(raw);
       for (final item in items) {
@@ -118,7 +145,15 @@ class MemoryAgentService {
           saved++;
         } catch (_) {}
       }
-    } catch (_) {}
+      if (kDebugMode && saved > 0) {
+        debugPrint('🧠 [Memory] llm extract upsert saved=$saved');
+      }
+    } catch (e) {
+      extractError = e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+      if (kDebugMode) {
+        debugPrint('🧠 [Memory] llm extract failed: $extractError');
+      }
+    }
 
     saved += await _upsertTaggedMemories(
       userId: userId,
@@ -127,6 +162,79 @@ class MemoryAgentService {
       sessionId: sessionId,
       sourceMsgId: sourceMsgId,
     );
+
+    try {
+      final u = userMessage.trim();
+      final a = aiResponse.trim();
+      if (u.isNotEmpty || a.isNotEmpty) {
+        final snippet = StringBuffer('回合');
+        if (u.isNotEmpty) {
+          snippet.write(' 用户:${_truncate(u, 80)}');
+        }
+        if (a.isNotEmpty) {
+          snippet.write(' 助手:${_truncate(a, 120)}');
+        }
+        await MemoryDailyNote.appendObservation(
+          userId,
+          snippet.toString(),
+          sessionId: sessionId,
+          sourceMsgId: sourceMsgId,
+        );
+      }
+    } catch (_) {}
+
+    if (saved == 0 && extractError != null) {
+      return AiMemoryLearnResult(
+        savedCount: 0,
+        errorMessage: '未能从对话中提取新记忆：$extractError',
+      );
+    }
+    return AiMemoryLearnResult(savedCount: saved);
+  }
+
+  String _resolveRelayExtractModel({
+    AiProviderProfile? providerProfile,
+    String? chatModel,
+  }) {
+    final fromAgent = chatModel?.trim() ?? '';
+    if (fromAgent.isNotEmpty) return fromAgent;
+    final def = providerProfile?.defaultModel.trim() ?? '';
+    if (def.isNotEmpty) return def;
+    final manual = providerProfile?.effectiveModelIds ?? const [];
+    if (manual.isNotEmpty) return manual.first;
+    return '';
+  }
+
+  Future<int> _upsertHeuristicMemories({
+    required String userId,
+    required String userMessage,
+    required String sessionId,
+    required String sourceMsgId,
+  }) async {
+    final items = MemoryHeuristicExtract.fromUserMessage(userMessage);
+    if (items.isEmpty) return 0;
+
+    var saved = 0;
+    for (final item in items) {
+      final key = item['key'] ?? '';
+      final value = item['value'] ?? '';
+      if (key.isEmpty || value.isEmpty) continue;
+      try {
+        await MemoryService.upsertUserMemory(
+          userId: userId,
+          key: key,
+          value: value,
+          memoryType: item['memory_type'],
+          source: 'heuristic_extract',
+          sourceMsgId: sourceMsgId,
+          sessionId: sessionId,
+        );
+        saved++;
+        if (kDebugMode) {
+          debugPrint('🧠 [Memory] heuristic saved key=$key value=$value');
+        }
+      } catch (_) {}
+    }
     return saved;
   }
 
@@ -354,51 +462,25 @@ class MemoryAgentService {
     return await _db.getMemoryProfiles(agent.id);
   }
 
+  static String _truncate(String s, int max) {
+    final r = s.runes.toList();
+    if (r.length <= max) return s;
+    return '${String.fromCharCodes(r.take(max))}…';
+  }
+
+  /// 本地 Agent 记忆整理（仅后端 Ollama）。
   Future<String> _callModel({
     required String model,
     required String userPrompt,
     required double temperature,
     required Duration timeout,
   }) async {
-    final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
-    final uri = await LlmEndpointConfig.chatUri();
-    ApiService.logDirectHttp('POST', uri);
-    final token = ApiService.token;
-    final headers = ApiService.mergeTunnelHeaders(uri, headers: {
-      'Content-Type': 'application/json',
-      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-    });
-
-    final response = await http
-        .post(
-          uri,
-          headers: headers,
-          body: jsonEncode({
-            'model': model,
-            'messages': [
-              {'role': 'user', 'content': userPrompt},
-            ],
-            'temperature': temperature,
-            if (terminalMode) 'stream': false,
-          }),
-        )
-        .timeout(timeout);
-
-    if (response.statusCode != 200) {
-      throw Exception('模型调用失败: ${response.statusCode}');
-    }
-
-    final data = jsonDecode(utf8.decode(response.bodyBytes));
-    if (terminalMode) {
-      final message = data is Map ? data['message'] : null;
-      if (message is Map && message['content'] is String) {
-        return message['content'] as String;
-      }
-    } else {
-      if (data is Map && data['content'] is String) {
-        return data['content'] as String;
-      }
-    }
-    return '';
+    return MemoryExtractLlmClient.complete(
+      relayProfile: null,
+      relayModel: '',
+      ollamaModel: model,
+      userPrompt: userPrompt,
+      timeout: timeout,
+    );
   }
 }

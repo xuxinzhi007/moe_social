@@ -6,6 +6,7 @@ import (
 	"unicode"
 
 	"backend/api/internal/types"
+	"backend/model"
 	"backend/rpc/pb/super"
 )
 
@@ -33,9 +34,7 @@ type UserMemoryDisplayItem struct {
 }
 
 func isTechnicalUserMemory(key, source string) bool {
-	k := strings.ToLower(strings.TrimSpace(key))
-	s := strings.ToLower(strings.TrimSpace(source))
-	return strings.HasPrefix(k, "device_info:") || s == "device_sync"
+	return model.IsTechnicalUserMemory(key, source)
 }
 
 func isNoiseMemoryValue(value string) bool {

@@ -254,6 +254,12 @@ type DeletePostResp struct {
 	BaseResp
 }
 
+type SearchUserMemoriesReq struct {
+	UserId string `path:"user_id"`
+	Q      string `form:"q,optional"`
+	Limit  int    `form:"limit,optional,default=8"`
+}
+
 type DeleteUserMemoryReq struct {
 	UserId string `path:"user_id"`
 	Key    string `form:"key"`
@@ -962,11 +968,12 @@ type ListPrivateMessagesResp struct {
 }
 
 type LlmChatReq struct {
-	Model         string       `json:"model"`
-	Messages      []LlmMessage `json:"messages"`
-	SessionId     string       `json:"session_id,optional"`
-	SourceMsgId   string       `json:"source_msg_id,optional"`
-	Stream        bool         `json:"stream,optional"`
+	Model                 string       `json:"model"`
+	Messages              []LlmMessage `json:"messages"`
+	SessionId             string       `json:"session_id,optional"`
+	SourceMsgId           string       `json:"source_msg_id,optional"`
+	ClientMemoryApplied   bool         `json:"client_memory_applied,optional"`
+	Stream                bool         `json:"stream,optional"`
 	Temperature   float64      `json:"temperature,optional"`
 	TopP          float64      `json:"top_p,optional"`
 	MaxTokens     int          `json:"max_tokens,optional"`

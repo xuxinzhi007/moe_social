@@ -126,39 +126,64 @@ class _AiChatComposerState extends State<AiChatComposer> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Expanded(
-                      child: TextField(
-                        controller: widget.controller,
-                        focusNode: widget.focusNode,
-                        enabled: !widget.isSending,
-                        maxLines: 5,
-                        minLines: 1,
-                        keyboardType: TextInputType.multiline,
-                        textInputAction: TextInputAction.newline,
-                        style: AiTheme.body.copyWith(
-                          fontSize: 15,
-                          height: 1.35,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: _hintText,
-                          hintStyle: TextStyle(
-                            color: Colors.grey.shade500,
-                            fontSize: 15,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.fromLTRB(
-                            12,
-                            10,
-                            4,
-                            10,
-                          ),
-                        ),
-                        onSubmitted: (_) {
+                      child: Focus(
+                        onKeyEvent: (node, event) {
+                          if (event is! KeyDownEvent) {
+                            return KeyEventResult.ignored;
+                          }
+                          if (event.logicalKey != LogicalKeyboardKey.enter) {
+                            return KeyEventResult.ignored;
+                          }
+                          final shift = HardwareKeyboard.instance
+                                  .isLogicalKeyPressed(
+                                LogicalKeyboardKey.shiftLeft,
+                              ) ||
+                              HardwareKeyboard.instance.isLogicalKeyPressed(
+                                LogicalKeyboardKey.shiftRight,
+                              );
+                          if (shift) return KeyEventResult.ignored;
                           if (!widget.isSending &&
                               widget.canSend &&
                               _hasText) {
                             widget.onSend();
+                            return KeyEventResult.handled;
                           }
+                          return KeyEventResult.ignored;
                         },
+                        child: TextField(
+                          controller: widget.controller,
+                          focusNode: widget.focusNode,
+                          enabled: !widget.isSending,
+                          maxLines: 5,
+                          minLines: 1,
+                          keyboardType: TextInputType.multiline,
+                          textInputAction: TextInputAction.send,
+                          style: AiTheme.body.copyWith(
+                            fontSize: 15,
+                            height: 1.35,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: _hintText,
+                            hintStyle: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontSize: 15,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.fromLTRB(
+                              12,
+                              10,
+                              4,
+                              10,
+                            ),
+                          ),
+                          onSubmitted: (_) {
+                            if (!widget.isSending &&
+                                widget.canSend &&
+                                _hasText) {
+                              widget.onSend();
+                            }
+                          },
+                        ),
                       ),
                     ),
                     Padding(

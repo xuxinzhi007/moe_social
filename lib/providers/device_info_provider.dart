@@ -12,7 +12,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../auth_service.dart';
-import '../services/api_service.dart';
+import '../services/device_service.dart';
 
 /// 设备信息：服务端仅做「轻量上报」（版本/平台/匿名设备 id）；
 /// 定位、WiFi 名、电量等只在本地用于天气与设置页展示，不上传。
@@ -189,15 +189,7 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
         'last_seen': DateTime.now().toUtc().toIso8601String(),
       };
 
-      await ApiService.post(
-        '/api/user/$userId/memories',
-        body: {
-          'key': 'device_info:$_deviceId',
-          'value': json.encode(info),
-          'source': 'device_sync',
-          'memory_type': 'fact',
-        },
-      );
+      await DeviceService.syncDevice(userId, info);
       _lastServerSyncAt = DateTime.now();
     } catch (_) {}
   }

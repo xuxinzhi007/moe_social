@@ -80,6 +80,10 @@ class ChatPushService {
     _globalContext = context;
   }
 
+  static void clearGlobalContext() {
+    _globalContext = null;
+  }
+
   static void start() {
     _connect();
   }

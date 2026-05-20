@@ -312,6 +312,7 @@ class _ChatPageState extends State<ChatPage> {
       agent: widget.agent,
       temperature: _temperature,
       memoryStatus: status,
+      turnStats: AiMemoryOrchestrator().turnStats,
       onOpenMemoryManager: _openMemoryManager,
       onTemperatureChanged: (v) {
         if (!mounted) return;
@@ -681,8 +682,18 @@ class _ChatPageState extends State<ChatPage> {
         userMessage: text,
         aiResponse: content,
         sourceMsgId: userMsg.id,
+        onComplete: (result) {
+          if (!mounted) return;
+          if (result.errorMessage != null &&
+              result.errorMessage!.trim().isNotEmpty &&
+              result.savedCount == 0) {
+            MoeToast.info(context, result.errorMessage!);
+          } else if (result.savedCount > 0) {
+            MoeToast.success(context, '已记住 ${result.savedCount} 条新信息');
+          }
+          _scheduleMemoryRefresh();
+        },
       );
-      _scheduleMemoryRefresh();
 
       final seed = titleSeed ?? text;
       if (_messages.length <= 2 && _currentSession!.title == '新对话') {
@@ -2581,11 +2592,9 @@ class _ChatPageState extends State<ChatPage> {
                 _buildIdentityChip(
                   '记忆',
                   _memoryEnrichResult != null
-                      ? (_memoryEnrichResult!.injectedByServer
-                          ? '服务端·$memoryCount条'
-                          : _memoryEnrichResult!.injectedCount > 0
-                              ? '已注入${_memoryEnrichResult!.injectedCount}条'
-                              : '$memoryCount 条')
+                      ? (_memoryEnrichResult!.injectedCount > 0
+                          ? '已参考${_memoryEnrichResult!.injectedCount}条'
+                          : '$memoryCount 条')
                       : '$memoryCount 条',
                 ),
                 if (_isSyncingModelPrompt) _buildIdentityChip('状态', '同步中'),

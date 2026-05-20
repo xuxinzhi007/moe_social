@@ -96,7 +96,7 @@ private_message:
 
 #线上ip ：
 
-#database:
+# database:
 #  host: "47.106.175.49"
 #  port: 3306
 #  user: "root"
@@ -107,6 +107,30 @@ private_message:
 #  loc: "Local"
 
 #本地ip :
+
+# 用户记忆 Phase 2：混合检索 + 多路 embedding（不偏向单一厂商，按链式回退）
+memory:
+  search:
+    hybrid_enabled: true
+    vector_weight: 0.7
+    keyword_weight: 0.3
+  embedding:
+    # 默认链：先 Ollama（ollama.base_url），再 OpenAI 兼容中转（需同时配置 base_url + api_key）
+    ollama_model: nomic-embed-text
+    openai_base_url: ""   # 例：https://api.openai.com/v1 或你的中转 /v1
+    openai_api_key: ""   # 也可用环境变量 MOE_MEMORY_EMBED_API_KEY
+    openai_model: text-embedding-3-small
+    # 显式优先级（可选）；配置后覆盖默认链
+    # providers:
+    #   - type: ollama
+    #     base_url: "http://127.0.0.1:11434"
+    #     model: nomic-embed-text
+    #     priority: 1
+    #   - type: openai_compatible
+    #     base_url: "https://your-relay/v1"
+    #     api_key_env: MOE_MEMORY_EMBED_API_KEY
+    #     model: text-embedding-3-small
+    #     priority: 2
 
 database:
   host: "127.0.0.1"

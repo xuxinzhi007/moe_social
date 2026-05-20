@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Moe Social · 文档导航</title>
+  <style>
+    :root {
+      --bg: #0b0d12;
+      --surface: #141820;
+      --border: #2a3348;
+      --text: #e9ecf3;
+      --muted: #8d97ab;
+      --accent: #6b8cff;
+      --accent2: #3dd6c3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, "PingFang SC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 2rem 1.5rem 3rem;
+      max-width: 920px;
+      margin-inline: auto;
+    }
+    h1 { font-size: 1.5rem; margin: 0 0 0.35rem; }
+    .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+    section { margin-bottom: 1.75rem; }
+    h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin: 0 0 0.65rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.35rem;
+    }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      padding: 0.75rem 1rem;
+    }
+    li a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    li a:hover { color: var(--accent2); }
+    li .desc { display: block; font-size: 0.82rem; color: var(--muted); margin-top: 0.25rem; }
+    li .path { font-family: ui-monospace, monospace; font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
+    .tip {
+      background: rgba(107, 140, 255, 0.08);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .tip code { color: var(--accent2); }
+    footer { margin-top: 2rem; font-size: 0.78rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <h1>Moe Social 文档导航</h1>
+  <p class="sub">集中打开项目内 HTML 与常用设计文档，避免逐个找文件。</p>
+
+  <div class="tip">
+    本地预览：<code>cd docs && python3 -m http.server 8765</code> →
+    <a href="http://localhost:8765/index.html" style="color:var(--accent)">http://localhost:8765/index.html</a>
+  </div>
+
+  <section>
+    <h2>交互页面（HTML）</h2>
+    <ul>
+      <li>
+        <a href="dev/memory-system-dashboard.html">记忆系统监控台</a>
+        <span class="desc">工作流验证、混合检索、设备/记忆分离、API 追踪</span>
+        <span class="path">docs/dev/memory-system-dashboard.html</span>
+      </li>
+      <li>
+        <a href="../monitor.html">RPC 性能监控</a>
+        <span class="desc">后端 RPC 调用耗时与统计（仓库根目录）</span>
+        <span class="path">monitor.html</span>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>变更与验收（Markdown）</h2>
+    <ul>
+      <li>
+        <a href="dev/记忆系统-2026-05-20-变更整理.md">记忆系统 · 2026-05-20 变更整理</a>
+        <span class="desc">本次迭代汇总：设备分离、Phase 1/2、API、配置、验收</span>
+        <span class="path">docs/dev/记忆系统-2026-05-20-变更整理.md</span>
+      </li>
+      <li>
+        <a href="dev/用户级记忆统一改造验收脚本.md">用户级记忆 · E2E 验收脚本</a>
+        <span class="desc">含混合检索 Case G、设备分离 Case H</span>
+        <span class="path">docs/dev/用户级记忆统一改造验收脚本.md</span>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>设计文档（Markdown）</h2>
+    <ul>
+      <li>
+        <a href="dev/用户记忆系统-OpenClaw式演进设计.md">用户记忆系统 · OpenClaw 式演进</a>
+        <span class="desc">架构 SSOT、路径 A/B、Phase 2 混合检索</span>
+        <span class="path">docs/dev/用户记忆系统-OpenClaw式演进设计.md</span>
+      </li>
+      <li>
+        <a href="dev/记忆系统-开源对标调研.md">记忆系统 · 开源对标调研</a>
+        <span class="desc">OpenClaw / SillyTavern 能力与差距</span>
+        <span class="path">docs/dev/记忆系统-开源对标调研.md</span>
+      </li>
+      <li>
+        <a href="dev/memory/README.md">记忆模块地图</a>
+        <span class="desc">backend/pkg/memory 与 lib/memory 目录说明</span>
+        <span class="path">docs/dev/memory/README.md</span>
+      </li>
+    </ul>
+  </section>
+
+  <footer>
+    Flutter Web 壳 <code>web/index.html</code> 由构建产物使用，不在此导航列出。
+  </footer>
+</body>
+</html>
