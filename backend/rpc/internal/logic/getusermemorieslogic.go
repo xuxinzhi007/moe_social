@@ -50,16 +50,19 @@ func (l *GetUserMemoriesLogic) GetUserMemories(in *super.GetUserMemoriesReq) (*s
 		offset = 0
 	}
 
-	var total int64
-	if err := l.svcCtx.DB.Model(&model.UserMemory{}).
+	memScope := l.svcCtx.DB.Model(&model.UserMemory{}).
 		Where("user_id = ?", uint(userID)).
-		Count(&total).Error; err != nil {
+		Where("`key` NOT LIKE ?", "device_info:%").
+		Where("source <> ?", "device_sync")
+
+	var total int64
+	if err := memScope.Count(&total).Error; err != nil {
 		l.Error("统计用户记忆总数失败: ", err)
 		return nil, errorx.Internal("查询用户记忆列表失败")
 	}
 
 	var memories []model.UserMemory
-	if err := l.svcCtx.DB.Where("user_id = ?", uint(userID)).
+	if err := memScope.
 		Order("updated_at desc").
 		Offset(offset).
 		Limit(limit).

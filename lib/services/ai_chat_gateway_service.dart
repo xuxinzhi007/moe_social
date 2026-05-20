@@ -5,8 +5,10 @@ import 'package:http/http.dart' as http;
 
 import '../models/ai_agent.dart';
 import '../models/ai_provider_profile.dart';
+import 'ai_memory_tools.dart';
 import 'ai_models_cache_service.dart';
 import 'ai_provider_service.dart';
+import 'ai_tool_runtime.dart';
 import 'api_service.dart';
 import 'llm_endpoint_config.dart';
 import 'llm_response_parser.dart';
@@ -169,8 +171,7 @@ class AiChatGatewayService {
     final profile = await AiProviderService().resolveProfile(
       agent.providerProfileId,
     );
-    // useServerMemory：内置 Ollama 走 /api/llm/chat（注入+提取）；第三方在客户端注入/提取。
-    // 记忆编排见 AiMemoryOrchestrator。
+    // 记忆注入由 AiMemoryOrchestrator 在 messages 中完成；Ollama 请求标记 client_memory_applied 避免服务端重复注入。
     if (profile.isBackendOllama) {
       return _sendToBackendOllama(
         agent: agent,
@@ -181,9 +182,29 @@ class AiChatGatewayService {
         topP: topP,
       );
     }
+    final model = _effectiveModel(agent, profile);
+    if (profile.supportsToolCalls) {
+      final userId = await AiMemoryTools.resolveUserId();
+      if (userId != null) {
+        try {
+          return await _sendToOpenAiCompatibleWithTools(
+            profile: profile,
+            model: model,
+            messages: messages,
+            userId: userId,
+            temperature: temperature,
+            topP: topP,
+          );
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('🔧 [Tool] fallback without tools: $e');
+          }
+        }
+      }
+    }
     return _sendToOpenAiCompatible(
       profile: profile,
-      model: _effectiveModel(agent, profile),
+      model: model,
       messages: messages,
       temperature: temperature,
       topP: topP,
@@ -215,6 +236,7 @@ class AiChatGatewayService {
             'messages': messages,
             'session_id': sessionId,
             'source_msg_id': sourceMsgId,
+            'client_memory_applied': true,
             if (terminalMode) 'stream': false,
             if (temperature != null && temperature > 0) 'temperature': temperature,
             if (topP != null && topP > 0) 'top_p': topP,
@@ -251,16 +273,21 @@ class AiChatGatewayService {
 
   Map<String, dynamic> _openAiChatBody({
     required String model,
-    required List<Map<String, String>> messages,
+    required List<Map<String, dynamic>> messages,
     required bool stream,
     double? temperature,
     double? topP,
+    List<Map<String, dynamic>>? tools,
   }) {
     final body = <String, dynamic>{
       'model': model,
       'messages': messages,
       'stream': stream,
     };
+    if (tools != null && tools.isNotEmpty) {
+      body['tools'] = tools;
+      body['tool_choice'] = 'auto';
+    }
     if (supportsSamplingParams(model)) {
       if (temperature != null && temperature >= 0) {
         body['temperature'] = temperature;
@@ -268,6 +295,132 @@ class AiChatGatewayService {
       if (topP != null && topP > 0) body['top_p'] = topP;
     }
     return body;
+  }
+
+  List<Map<String, dynamic>> _toDynamicMessages(
+    List<Map<String, String>> messages,
+  ) =>
+      messages
+          .map(
+            (m) => {
+              'role': m['role'] ?? '',
+              'content': m['content'] ?? '',
+            },
+          )
+          .toList();
+
+  Future<String> _sendToOpenAiCompatibleWithTools({
+    required AiProviderProfile profile,
+    required String model,
+    required List<Map<String, String>> messages,
+    required String userId,
+    double? temperature,
+    double? topP,
+  }) async {
+    final apiKey = await AiProviderService().readApiKey(profile.id);
+    if (apiKey.trim().isEmpty) {
+      throw Exception(
+        '请先在「模型来源」中为「${profile.name}」填写 API Key，再开始聊天',
+      );
+    }
+    final uri =
+        Uri.parse('${_normalizeBaseUrl(profile.baseUrl)}/chat/completions');
+    final headers = await _buildProviderHeaders(profile, uri: uri);
+    final tools = AiToolRuntime.definitionsForMemory();
+    var working = profile.supportsSystemMessages
+        ? _toDynamicMessages(messages)
+        : _toDynamicMessages(_foldSystemMessagesIntoConversation(messages));
+
+    for (var round = 0; round < AiToolRuntime.maxRounds; round++) {
+      if (kDebugMode) {
+        debugPrint('🔧 [Tool] round=${round + 1} messages=${working.length}');
+      }
+      final response = await http
+          .post(
+            uri,
+            headers: headers,
+            body: jsonEncode(
+              _openAiChatBody(
+                model: model,
+                messages: working,
+                stream: false,
+                temperature: temperature,
+                topP: topP,
+                tools: tools,
+              ),
+            ),
+          )
+          .timeout(const Duration(seconds: 180));
+
+      final body = utf8.decode(response.bodyBytes);
+      if (response.statusCode != 200) {
+        throw Exception('Provider 请求失败 (${response.statusCode}): $body');
+      }
+
+      final decoded = jsonDecode(body);
+      if (decoded is! Map) {
+        throw Exception('Provider 响应格式异常');
+      }
+
+      final toolCalls = _extractToolCalls(decoded);
+      if (toolCalls.isNotEmpty) {
+        final assistantMsg = _extractAssistantMessageMap(decoded);
+        if (assistantMsg != null) {
+          working.add(assistantMsg);
+        }
+        for (final call in toolCalls) {
+          final result = await AiToolRuntime.execute(
+            name: call.name,
+            argumentsJson: call.argumentsJson,
+            userId: userId,
+          );
+          working.add({
+            'role': 'tool',
+            'tool_call_id': call.id,
+            'content': result,
+          });
+        }
+        continue;
+      }
+
+      final content = _extractOpenAiCompatibleContent(decoded);
+      if (content.isNotEmpty) return content;
+      throw Exception('Provider 工具调用后仍无可见回复');
+    }
+    throw Exception('Provider 工具调用轮次已达上限');
+  }
+
+  List<_OpenAiToolCall> _extractToolCalls(Map<dynamic, dynamic> decoded) {
+    final choices = decoded['choices'];
+    if (choices is! List || choices.isEmpty) return const [];
+    final first = choices.first;
+    if (first is! Map) return const [];
+    final message = first['message'];
+    if (message is! Map) return const [];
+    final raw = message['tool_calls'];
+    if (raw is! List) return const [];
+    final out = <_OpenAiToolCall>[];
+    for (final item in raw) {
+      if (item is! Map) continue;
+      final id = (item['id'] ?? '').toString();
+      final fn = item['function'];
+      if (fn is! Map) continue;
+      final name = (fn['name'] ?? '').toString();
+      final args = (fn['arguments'] ?? '{}').toString();
+      if (name.isEmpty) continue;
+      out.add(_OpenAiToolCall(id: id, name: name, argumentsJson: args));
+    }
+    return out;
+  }
+
+  Map<String, dynamic>? _extractAssistantMessageMap(Map<dynamic, dynamic> decoded) {
+    final choices = decoded['choices'];
+    if (choices is! List || choices.isEmpty) return null;
+    final first = choices.first;
+    if (first is! Map) return null;
+    final message = first['message'];
+    if (message is! Map) return null;
+    return Map<String, dynamic>.from(message);
   }
 
   Future<String> _sendToOpenAiCompatible({
@@ -290,6 +443,7 @@ class AiChatGatewayService {
     final payloadMessages = profile.supportsSystemMessages
         ? messages
         : _foldSystemMessagesIntoConversation(messages);
+    final dynamicMessages = _toDynamicMessages(payloadMessages);
     final systemChars = payloadMessages
         .where((m) => m['role'] == 'system')
         .fold<int>(0, (sum, m) => sum + (m['content'] ?? '').length);
@@ -308,7 +462,7 @@ class AiChatGatewayService {
           body: jsonEncode(
             _openAiChatBody(
               model: model,
-              messages: payloadMessages,
+              messages: dynamicMessages,
               stream: profile.supportsStreaming,
               temperature: temperature,
               topP: topP,
@@ -327,7 +481,7 @@ class AiChatGatewayService {
             body: jsonEncode(
               _openAiChatBody(
                 model: model,
-                messages: fallbackMessages,
+                messages: _toDynamicMessages(fallbackMessages),
                 stream: profile.supportsStreaming,
                 temperature: temperature,
                 topP: topP,
@@ -534,4 +688,16 @@ class AiChatGatewayService {
       ...normalized,
     ];
   }
+}
+
+class _OpenAiToolCall {
+  final String id;
+  final String name;
+  final String argumentsJson;
+
+  const _OpenAiToolCall({
+    required this.id,
+    required this.name,
+    required this.argumentsJson,
+  });
 }

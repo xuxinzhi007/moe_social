@@ -11,10 +11,12 @@ import '../models/user_memory.dart';
 import '../models/user_memory_display.dart';
 import '../models/user_memory_profile.dart';
 import 'ai_db_service.dart';
+import 'ai_memory_learn_result.dart';
 import 'ai_provider_service.dart';
 import 'api_service.dart';
 import 'llm_endpoint_config.dart';
 import 'memory_agent_service.dart';
+import 'memory_daily_note.dart';
 import 'memory_service.dart';
 
 /// 记忆子系统路由（参考 OpenClaw：画像为源、检索注入、回合后写入、定期整理）。
@@ -97,6 +99,10 @@ class AiMemoryOrchestrator {
   final MemoryAgentService _agent = MemoryAgentService();
   final AiDbService _db = AiDbService();
   final Map<String, int> _turnCounters = {};
+  AiMemoryTurnStats _turnStats = const AiMemoryTurnStats();
+
+  /// 上一回合注入/写入统计（供设置 Sheet 展示）。
+  AiMemoryTurnStats get turnStats => _turnStats;
 
   // ─── 模式 ───────────────────────────────────────────────────────────────
 
@@ -163,59 +169,46 @@ class AiMemoryOrchestrator {
       );
     }
 
-    final available = await _loadUserFacingMemories();
-    final availableCount = available.length;
-
-    final profile = await AiProviderService().resolveProfile(
-      agent.providerProfileId,
-    );
-    if (mode == AiMemoryMode.server && profile.isBackendOllama) {
-      final line = availableCount > 0
-          ? '已保存 $availableCount 条记忆，将由服务端在发送时自动注入'
-          : '暂无已保存记忆，多聊几轮后会自动记住你的偏好';
-      return AiMemoryEnrichResult(
-        prompt: basePrompt,
-        injectedCount: 0,
-        availableCount: availableCount,
-        mode: mode,
-        injectedByServer: true,
-        statusLine: line,
-      );
-    }
+    final account = await _loadAccountMemoryState();
+    final availableCount = account.memories.length;
+    final profile = await AiProviderService().resolveProfile(agent.providerProfileId);
+    final memoryToolsAdvanced =
+        profile.supportsToolCalls && !profile.isBackendOllama;
 
     if (mode == AiMemoryMode.server) {
-      var injected = MemoryService.selectRelevantUserMemories(
-        memories: available,
-        queryText: latestUserMessage,
+      final injected = await _queryMemoriesForInject(
+        query: latestUserMessage,
+        fallbackMemories: account.memories,
       );
-      if (injected.isEmpty && available.isNotEmpty) {
-        final recent = [...available]
-          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-        injected = recent.take(3).toList();
-      }
-      if (injected.isEmpty) {
-        return AiMemoryEnrichResult(
-          prompt: basePrompt,
-          injectedCount: 0,
-          availableCount: availableCount,
-          mode: mode,
-          injectedByServer: false,
-          statusLine: '继续聊天后，AI 会自动记住你的偏好与重要信息',
-        );
-      }
-      final prompt = await _injectServerMemories(
+      final hasBootstrap = account.display != null &&
+          account.display!.profiles.any((p) => p.summary.trim().isNotEmpty);
+
+      final prompt = await _composeMemoryPrompt(
         basePrompt,
-        latestUserMessage,
-        preloadedMemories: available,
+        display: account.display,
         selectedMemories: injected,
+        memoryToolsAdvanced: memoryToolsAdvanced,
+      );
+      final injectedCount = injected.length;
+      _turnStats = AiMemoryTurnStats(
+        lastInjectedCount: injectedCount,
+        lastSavedCount: _turnStats.lastSavedCount,
+        lastLearnError: _turnStats.lastLearnError,
+        updatedAt: DateTime.now(),
       );
       return AiMemoryEnrichResult(
         prompt: prompt,
-        injectedCount: injected.length,
+        injectedCount: injectedCount,
         availableCount: availableCount,
         mode: mode,
         injectedByServer: false,
-        statusLine: '已向模型注入 ${injected.length} 条相关记忆',
+        statusLine: injectedCount > 0
+            ? '已从记忆库查询并参考 $injectedCount 条'
+            : (hasBootstrap
+                ? '已加载用户画像摘要'
+                : (availableCount > 0
+                    ? '记忆库共 $availableCount 条，本句暂无强相关命中'
+                    : '继续聊天后会自动写入记忆库')),
       );
     }
 
@@ -236,6 +229,7 @@ class AiMemoryOrchestrator {
     required String userMessage,
     required String aiResponse,
     String? sourceMsgId,
+    void Function(AiMemoryLearnResult result)? onComplete,
   }) {
     unawaited(
       _learnFromTurn(
@@ -244,6 +238,7 @@ class AiMemoryOrchestrator {
         userMessage: userMessage,
         aiResponse: aiResponse,
         sourceMsgId: sourceMsgId,
+        onComplete: onComplete,
       ),
     );
   }
@@ -353,6 +348,7 @@ class AiMemoryOrchestrator {
     required String userMessage,
     required String aiResponse,
     String? sourceMsgId,
+    void Function(AiMemoryLearnResult result)? onComplete,
   }) async {
     if (userMessage.trim().isEmpty || aiResponse.trim().isEmpty) return;
     if (_isErrorLikeResponse(aiResponse)) return;
@@ -365,21 +361,34 @@ class AiMemoryOrchestrator {
     );
 
     if (profile.isBackendOllama) {
-      // 服务端 /api/llm/chat 在回合结束后异步提取记忆。
+      // 主聊天仍走 /api/llm/chat，由服务端异步提取；避免客户端重复提取。
       return;
     }
     if (!await _isUserAuthenticated()) return;
+    AiMemoryLearnResult result = const AiMemoryLearnResult();
     try {
       final user = await AuthService.getUserInfo();
-      await _agent.extractAndUpsertServerMemories(
+      result = await _agent.extractAndUpsertServerMemories(
         userId: user.id,
         userMessage: userMessage,
         aiResponse: aiResponse,
         sessionId: sessionId,
         sourceMsgId: sourceMsgId ?? '',
-        model: agent.modelName,
+        providerProfile: profile,
+        chatModel: agent.modelName,
       );
-    } catch (_) {}
+    } catch (e) {
+      result = AiMemoryLearnResult(
+        errorMessage: e.toString().replaceFirst(RegExp(r'^Exception:\s*'), ''),
+      );
+    }
+    _turnStats = AiMemoryTurnStats(
+      lastInjectedCount: _turnStats.lastInjectedCount,
+      lastSavedCount: result.savedCount,
+      lastLearnError: result.errorMessage,
+      updatedAt: DateTime.now(),
+    );
+    onComplete?.call(result);
   }
 
   Future<bool> _isUserAuthenticated() async {
@@ -415,38 +424,88 @@ class AiMemoryOrchestrator {
     }
   }
 
-  Future<String> _injectServerMemories(
-    String basePrompt,
-    String latestUserMessage, {
-    List<UserMemory>? preloadedMemories,
-    List<UserMemory>? selectedMemories,
+  /// 默认路径：后端记忆文本库检索（1 次 HTTP，不增加聊天轮次）。
+  Future<List<UserMemory>> _queryMemoriesForInject({
+    required String query,
+    required List<UserMemory> fallbackMemories,
   }) async {
     try {
-      final resolved = preloadedMemories ??
-          await _loadUserFacingMemories();
-      if (resolved.isEmpty) return basePrompt;
-      final selected = selectedMemories ??
-          MemoryService.selectRelevantUserMemories(
-            memories: resolved,
-            queryText: latestUserMessage,
-          );
-      if (selected.isEmpty) return basePrompt;
-
-      final buffer = StringBuffer();
-      buffer.write(
-        basePrompt.isNotEmpty ? basePrompt : '你是一位友好、智能的 AI 助手。',
+      final user = await AuthService.getUserInfo();
+      return await MemoryService.searchUserMemories(
+        user.id,
+        query: query,
+        limit: 8,
       );
-      buffer.write('\n\n用户的长期背景与偏好信息如下，请在回答时适当参考：\n');
-      for (final memory in selected) {
+    } catch (_) {
+      var injected = MemoryService.selectRelevantUserMemories(
+        memories: fallbackMemories,
+        queryText: query,
+      );
+      if (injected.isEmpty && fallbackMemories.isNotEmpty) {
+        final recent = [...fallbackMemories]
+          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+        injected = recent.take(3).toList();
+      }
+      return injected;
+    }
+  }
+
+  Future<String> _composeMemoryPrompt(
+    String basePrompt, {
+    UserMemoryDisplayData? display,
+    required List<UserMemory> selectedMemories,
+    bool memoryToolsAdvanced = false,
+  }) async {
+    final buffer = StringBuffer();
+    buffer.write(
+      basePrompt.isNotEmpty ? basePrompt : '你是一位友好、智能的 AI 助手。',
+    );
+
+    final profiles = display?.profiles ?? const [];
+    final profileLines = profiles
+        .where((p) => p.summary.trim().isNotEmpty)
+        .take(6)
+        .map((p) => '- ${p.title}：${p.summary.trim()}')
+        .toList();
+    if (profileLines.isNotEmpty) {
+      buffer.write('\n\n=== 用户长期画像（精选层 / MEMORY）===\n');
+      buffer.writeAll(profileLines, '\n');
+      buffer.write('\n');
+    }
+
+    var hasDaily = false;
+    try {
+      final user = await AuthService.getUserInfo();
+      final daily = await MemoryDailyNote.loadRecent(user.id);
+      if (daily.isNotEmpty) {
+        hasDaily = true;
+        buffer.write('\n=== 近期日记（工作记忆，今日/昨日）===\n');
+        for (final d in daily) {
+          buffer.write('[${d.date}]\n${d.body}\n');
+        }
+      }
+    } catch (_) {}
+
+    if (selectedMemories.isNotEmpty) {
+      buffer.write('\n=== 与本句相关的记忆检索 ===\n');
+      for (final memory in selectedMemories) {
         buffer.write('- ${memory.value}\n');
       }
+    }
+
+    if (profileLines.isNotEmpty || hasDaily || selectedMemories.isNotEmpty) {
       buffer.write(
         '\n请把这些信息当作你已经了解的用户背景，在合适的时候自然参考，不要机械复述。',
       );
-      return buffer.toString();
-    } catch (_) {
-      return basePrompt;
     }
+    if (memoryToolsAdvanced) {
+      buffer.write(
+        '\n\n【高级】已开启模型多轮工具（仍以上方自动注入为准，不足时可调用）：'
+        ' memory_search、memory_get、memory_save、memory_list、memory_read_daily、memory_delete。'
+        ' 不要编造记忆库中不存在的内容；写入用户事实用 memory_save。',
+      );
+    }
+    return buffer.toString();
   }
 
   Future<Map<String, dynamic>> _loadLlmConfig() async {

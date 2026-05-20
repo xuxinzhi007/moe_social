@@ -155,7 +155,8 @@ void _setupErrorHandlers() {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  '提示：这通常不是接口数据问题，而是布局约束导致的 RenderBox 未完成 layout。\n请把控制台里最早出现的那条异常（不是后面一堆 hasSize 重复）截图发我。',
+                  '提示：若刚热重载(R)后出现，请先关掉所有底部弹窗，再浏览器硬刷新或重新 flutter run。\n'
+                  '常见原因：弹窗里的输入框 controller 已释放、或动画组件热重载未重建。',
                   style: TextStyle(
                       color: Colors.grey[600], fontSize: 12, height: 1.35),
                 ),
@@ -473,8 +474,15 @@ class _MainPageState extends State<MainPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    ChatPushService.setGlobalContext(context);
+  }
+
+  @override
   void dispose() {
     _mainNav.removeListener(_onMainNavRequested);
+    ChatPushService.clearGlobalContext();
     super.dispose();
   }
 
@@ -490,8 +498,6 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    ChatPushService.setGlobalContext(context);
-
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,

@@ -487,6 +487,12 @@ type GetUserMemoriesReq {
 	Offset int    `form:"offset,default=0"`
 }
 
+type SearchUserMemoriesReq {
+	UserId string `path:"user_id"`
+	Q      string `form:"q,optional"`
+	Limit  int    `form:"limit,optional,default=8"`
+}
+
 type GetUserMemoryProfilesReq {
 	UserId string `path:"user_id"`
 	Limit  int    `form:"limit,default=6"`
@@ -926,6 +932,9 @@ service Super {
 	@handler getUserMemories
 	get /api/user/:user_id/memories (GetUserMemoriesReq) returns (GetUserMemoriesResp)
 
+	@handler searchUserMemories
+	get /api/user/:user_id/memories/search (SearchUserMemoriesReq)
+
 	@handler getUserMemoryProfiles
 	get /api/user/:user_id/memories/profiles (GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp)
 
@@ -1304,11 +1313,12 @@ type LlmMessage {
 }
 
 type LlmChatReq {
-	Model         string       `json:"model"`
-	Messages      []LlmMessage `json:"messages"`
-	SessionId     string       `json:"session_id,optional"`
-	SourceMsgId   string       `json:"source_msg_id,optional"`
-	Stream        bool         `json:"stream,optional"`
+	Model               string       `json:"model"`
+	Messages            []LlmMessage `json:"messages"`
+	SessionId           string       `json:"session_id,optional"`
+	SourceMsgId         string       `json:"source_msg_id,optional"`
+	ClientMemoryApplied bool         `json:"client_memory_applied,optional"`
+	Stream              bool         `json:"stream,optional"`
 	Temperature   float64      `json:"temperature,optional"`
 	TopP          float64      `json:"top_p,optional"`
 	MaxTokens     int          `json:"max_tokens,optional"`

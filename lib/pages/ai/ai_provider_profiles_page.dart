@@ -98,7 +98,16 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
 
     if (!mounted) return;
 
-    await AiSheet.show<void>(
+    void disposeControllers() {
+      nameController.dispose();
+      baseUrlController.dispose();
+      defaultModelController.dispose();
+      manualModelsController.dispose();
+      apiKeyController.dispose();
+    }
+
+    try {
+      await AiSheet.show<void>(
       context: context,
       title: isEditing ? '编辑 Provider' : '新增 Provider',
       subtitle: 'OpenAI 兼容中转站 / OpenRouter / OneAPI 等',
@@ -431,12 +440,6 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
               Text('能力开关', style: AiTheme.title.copyWith(fontSize: 16)),
               const SizedBox(height: 4),
               switchTile(
-                title: '服务端记忆',
-                subtitle: '仅内置后端 Ollama 实际生效；中转站走客户端记忆',
-                value: useServerMemory,
-                onChanged: (v) => setLocalState(() => useServerMemory = v),
-              ),
-              switchTile(
                 title: 'System Message',
                 subtitle: '关闭时将系统提示词折叠进首条用户消息',
                 value: supportsSystemMessages,
@@ -456,8 +459,9 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                 onChanged: (v) => setLocalState(() => supportsVision = v),
               ),
               switchTile(
-                title: '工具调用',
-                subtitle: '预留 function / tool calls',
+                title: '高级：模型多轮工具检索',
+                subtitle:
+                    '默认关闭。日常自动注入记忆（1 次聊天）。开启后模型可调用 memory_search/get/save/list 等工具，约多 1～3 轮中转，且需 API 支持 tools',
                 value: supportsToolCalls,
                 onChanged: (v) => setLocalState(() => supportsToolCalls = v),
               ),
@@ -496,13 +500,13 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
         },
       ),
     );
-
-    nameController.dispose();
-    baseUrlController.dispose();
-    defaultModelController.dispose();
-    manualModelsController.dispose();
-    apiKeyController.dispose();
-    await _load();
+    } finally {
+      // 等弹窗路由完全卸载后再 dispose，避免热重载/关闭瞬间 TextField 仍持有 controller
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        disposeControllers();
+      });
+    }
+    if (mounted) await _load();
   }
 
   Future<void> _delete(AiProviderProfile profile) async {

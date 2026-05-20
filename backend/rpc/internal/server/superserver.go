@@ -134,6 +134,31 @@ func (s *SuperServer) SubmitUserMemoryFeedback(ctx context.Context, in *super.Su
 	return l.SubmitUserMemoryFeedback(in)
 }
 
+func (s *SuperServer) SyncUserDevice(ctx context.Context, in *super.SyncUserDeviceReq) (*super.SyncUserDeviceResp, error) {
+	l := logic.NewSyncUserDeviceLogic(ctx, s.svcCtx)
+	return l.SyncUserDevice(in)
+}
+
+func (s *SuperServer) ListUserDevices(ctx context.Context, in *super.ListUserDevicesReq) (*super.ListUserDevicesResp, error) {
+	l := logic.NewListUserDevicesLogic(ctx, s.svcCtx)
+	return l.ListUserDevices(in)
+}
+
+func (s *SuperServer) ListUserMemoryEmbeddings(ctx context.Context, in *super.ListUserMemoryEmbeddingsReq) (*super.ListUserMemoryEmbeddingsResp, error) {
+	l := logic.NewListUserMemoryEmbeddingsLogic(ctx, s.svcCtx)
+	return l.ListUserMemoryEmbeddings(in)
+}
+
+func (s *SuperServer) UpsertUserMemoryEmbedding(ctx context.Context, in *super.UpsertUserMemoryEmbeddingReq) (*super.UpsertUserMemoryEmbeddingResp, error) {
+	l := logic.NewUpsertUserMemoryEmbeddingLogic(ctx, s.svcCtx)
+	return l.UpsertUserMemoryEmbedding(in)
+}
+
+func (s *SuperServer) RebuildUserMemoryEmbeddings(ctx context.Context, in *super.RebuildUserMemoryEmbeddingsReq) (*super.RebuildUserMemoryEmbeddingsResp, error) {
+	l := logic.NewRebuildUserMemoryEmbeddingsLogic(ctx, s.svcCtx)
+	return l.RebuildUserMemoryEmbeddings(in)
+}
+
 func (s *SuperServer) ListAiProviders(ctx context.Context, in *super.ListAiResourceReq) (*super.ListAiResourceResp, error) {
 	l := logic.NewListAiProvidersLogic(ctx, s.svcCtx)
 	return l.ListAiProviders(in)

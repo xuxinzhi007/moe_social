@@ -19,6 +19,16 @@ func RegisterMemoryDisplayRoutes(server *rest.Server, serverCtx *svc.ServiceCont
 				Path:    "/api/user/:user_id/memories/display",
 				Handler: user.GetUserMemoriesDisplayHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/user/:user_id/memories/search",
+				Handler: user.SearchUserMemoriesHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/user/:user_id/memories/reindex",
+				Handler: user.RebuildUserMemoryEmbeddingsHandler(serverCtx),
+			},
 		},
 	)
 }

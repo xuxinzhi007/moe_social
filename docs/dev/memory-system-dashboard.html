@@ -3,238 +3,365 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>记忆数据查询看板 · Moe Social</title>
+  <title>记忆系统监控台 · Moe Social</title>
   <style>
     :root {
-      --bg: #0c0e14;
-      --surface: #151922;
-      --surface2: #1e2433;
-      --border: #2a3144;
-      --text: #e6e9f0;
+      --bg: #0a0c10;
+      --surface: #12151c;
+      --surface2: #1a1f2a;
+      --surface3: #232a38;
+      --border: #2e3648;
+      --text: #e8ebf2;
       --muted: #8b95a8;
       --accent: #6b8cff;
       --accent2: #3dd6c3;
       --warn: #f5c542;
       --ok: #5fd38d;
       --danger: #f07070;
+      --idle: #5a6478;
     }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: system-ui, "PingFang SC", sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
-    header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); background: var(--surface); }
-    header h1 { margin: 0; font-size: 1.25rem; }
-    header p { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.85rem; }
+    body { margin: 0; font-family: system-ui, "PingFang SC", sans-serif; background: var(--bg); color: var(--text); font-size: 13px; line-height: 1.45; }
+    header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, #12151c 0%, #1a2235 100%); }
+    header h1 { margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem; }
+    header h1 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--idle); }
+    header h1 .dot.live { background: var(--ok); box-shadow: 0 0 8px var(--ok); animation: pulse 2s infinite; }
+    @keyframes pulse { 50% { opacity: 0.5; } }
+    header p { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.8rem; }
     .conn {
-      padding: 1rem 1.5rem;
-      background: var(--surface2);
-      border-bottom: 1px solid var(--border);
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr auto;
-      gap: 0.75rem;
-      align-items: end;
+      padding: 0.85rem 1.25rem; background: var(--surface2); border-bottom: 1px solid var(--border);
+      display: grid; grid-template-columns: 1.2fr 1fr 1fr auto auto; gap: 0.6rem; align-items: end;
     }
-    @media (max-width: 900px) { .conn { grid-template-columns: 1fr; } }
-    label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 0.25rem; }
+    @media (max-width: 1100px) { .conn { grid-template-columns: 1fr 1fr; } }
+    label { display: block; font-size: 0.7rem; color: var(--muted); margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.03em; }
     input, select, textarea {
-      width: 100%; padding: 0.45rem 0.6rem; border-radius: 6px;
-      border: 1px solid var(--border); background: var(--bg); color: var(--text);
+      width: 100%; padding: 0.4rem 0.55rem; border-radius: 6px;
+      border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.8rem;
     }
-    textarea { min-height: 52px; font-family: ui-monospace, monospace; font-size: 0.75rem; resize: vertical; }
-    .btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    textarea { min-height: 44px; font-family: ui-monospace, monospace; font-size: 0.72rem; resize: vertical; }
     button {
-      padding: 0.45rem 0.85rem; border-radius: 6px; border: 1px solid var(--border);
-      background: var(--surface); color: var(--text); cursor: pointer; font-size: 0.85rem;
+      padding: 0.4rem 0.75rem; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text); cursor: pointer; font-size: 0.8rem; white-space: nowrap;
     }
-    button.primary { background: var(--accent); color: #0c0e14; border-color: var(--accent); font-weight: 600; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .status-bar {
-      padding: 0.5rem 1.5rem; font-size: 0.8rem; color: var(--muted);
-      border-bottom: 1px solid var(--border);
-    }
-    .status-bar.error { color: var(--danger); background: rgba(240,112,112,0.08); }
+    button:hover:not(:disabled) { border-color: var(--accent); }
+    button.primary { background: var(--accent); color: #0a0c10; border-color: var(--accent); font-weight: 600; }
+    button.ok { background: rgba(95,211,141,0.15); border-color: var(--ok); color: var(--ok); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .status-bar { padding: 0.45rem 1.25rem; font-size: 0.78rem; color: var(--muted); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+    .status-bar.error { color: var(--danger); background: rgba(240,112,112,0.06); }
     .status-bar.ok { color: var(--ok); }
-    nav { display: flex; gap: 0.5rem; padding: 0.5rem 1.5rem; border-bottom: 1px solid var(--border); }
-    nav button.active { background: var(--accent2); color: #0c0e14; border-color: var(--accent2); }
-    main { padding: 1rem 1.5rem 2rem; max-width: 1400px; margin: 0 auto; }
+    nav { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0.45rem 1.25rem; border-bottom: 1px solid var(--border); background: var(--surface); }
+    nav button { font-size: 0.78rem; }
+    nav button.active { background: var(--accent2); color: #0a0c10; border-color: var(--accent2); font-weight: 600; }
+    main { padding: 1rem 1.25rem 2.5rem; max-width: 1480px; margin: 0 auto; }
     section.panel { display: none; }
     section.panel.active { display: block; }
-    .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
-    .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem; }
-    .stat .n { font-size: 1.5rem; font-weight: 700; color: var(--accent2); }
-    .stat .l { font-size: 0.75rem; color: var(--muted); }
-    .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; align-items: center; }
-    .toolbar input, .toolbar select { width: auto; min-width: 120px; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-bottom: 1rem; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-    th, td { padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
-    th { color: var(--muted); position: sticky; top: 0; background: var(--surface); }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+    @media (max-width: 900px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+    .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.6rem; margin-bottom: 1rem; }
+    .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem; }
+    .stat .n { font-size: 1.35rem; font-weight: 700; color: var(--accent2); font-variant-numeric: tabular-nums; }
+    .stat .l { font-size: 0.68rem; color: var(--muted); margin-top: 0.15rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 1rem; }
+    .card h3 { margin: 0 0 0.6rem; font-size: 0.92rem; }
+    .hint { font-size: 0.78rem; color: var(--muted); margin: 0.35rem 0; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.6rem; align-items: center; }
+    .toolbar input, .toolbar select { width: auto; min-width: 100px; max-width: 200px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.76rem; }
+    th, td { padding: 0.4rem 0.45rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { color: var(--muted); position: sticky; top: 0; background: var(--surface); z-index: 1; }
     tr:hover td { background: var(--surface2); }
-    tr.selected td { background: rgba(107,140,255,0.15); }
-    .table-wrap { max-height: 420px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
-    .badge { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
+    tr.selected td { background: rgba(107,140,255,0.12); }
+    .table-wrap { max-height: 360px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
+    .badge { display: inline-block; padding: 0.08rem 0.35rem; border-radius: 4px; font-size: 0.65rem; font-weight: 600; margin-right: 0.2rem; }
     .b-tech { background: #3a3a50; color: #aaa; }
     .b-persona { background: rgba(61,214,195,0.2); color: var(--accent2); }
+    .b-heur { background: rgba(245,197,66,0.2); color: var(--warn); }
     .b-extract { background: rgba(107,140,255,0.2); color: var(--accent); }
-    .b-feedback { background: rgba(245,197,66,0.2); color: var(--warn); }
+    .b-tag { background: rgba(180,140,255,0.2); color: #c9b0ff; }
     .b-device { background: rgba(139,149,168,0.2); color: var(--muted); }
-    .b-low { background: rgba(240,112,112,0.15); color: var(--danger); }
-    .detail { font-family: ui-monospace, monospace; font-size: 0.78rem; white-space: pre-wrap; word-break: break-all; }
-    .profiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem; }
-    .profile-card { background: var(--surface2); border-radius: 8px; padding: 0.75rem; border: 1px solid var(--border); }
-    .profile-card h4 { margin: 0 0 0.35rem; font-size: 0.85rem; color: var(--accent2); }
-    .hint { font-size: 0.8rem; color: var(--muted); margin: 0.5rem 0; }
-    .inject-preview { background: var(--bg); padding: 0.75rem; border-radius: 8px; border: 1px dashed var(--border); font-size: 0.8rem; }
-    .split { display: grid; grid-template-columns: 1fr 320px; gap: 1rem; }
+    .detail, pre.trace { font-family: ui-monospace, "SF Mono", monospace; font-size: 0.72rem; white-space: pre-wrap; word-break: break-all; }
+    pre.trace { background: var(--bg); padding: 0.65rem; border-radius: 8px; border: 1px solid var(--border); max-height: 280px; overflow: auto; margin: 0; }
+    .split { display: grid; grid-template-columns: 1fr 300px; gap: 1rem; }
     @media (max-width: 1000px) { .split { grid-template-columns: 1fr; } }
-    code { background: var(--surface2); padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.85em; }
-    .conf-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 2px; }
+    code { background: var(--surface3); padding: 0.08rem 0.28rem; border-radius: 3px; font-size: 0.85em; }
+
+    /* Pipeline */
+    .pipeline { display: flex; flex-direction: column; gap: 0.5rem; }
+    .pipe-step {
+      display: grid; grid-template-columns: 36px 1fr auto; gap: 0.75rem; align-items: start;
+      padding: 0.65rem 0.75rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+      cursor: pointer; transition: border-color 0.15s;
+    }
+    .pipe-step:hover { border-color: var(--accent); }
+    .pipe-step.active { border-color: var(--accent2); background: rgba(61,214,195,0.06); }
+    .pipe-step .num { width: 28px; height: 28px; border-radius: 50%; background: var(--surface3); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; color: var(--accent2); }
+    .pipe-step.ok .num { background: rgba(95,211,141,0.2); color: var(--ok); }
+    .pipe-step.err .num { background: rgba(240,112,112,0.2); color: var(--danger); }
+    .pipe-step .meta { font-size: 0.7rem; color: var(--muted); margin-top: 0.2rem; }
+    .pipe-arrow { text-align: center; color: var(--border); font-size: 0.85rem; line-height: 1; }
+
+    /* Activity log */
+    .log { max-height: 220px; overflow-y: auto; font-family: ui-monospace, monospace; font-size: 0.7rem; background: var(--bg); border-radius: 8px; border: 1px solid var(--border); padding: 0.5rem; }
+    .log-line { padding: 0.15rem 0; border-bottom: 1px solid rgba(46,54,72,0.5); }
+    .log-line .t { color: var(--muted); }
+    .log-line.ok { color: var(--ok); }
+    .log-line.err { color: var(--danger); }
+    .log-line.api { color: var(--accent); }
+
+    /* API trace */
+    .trace-item { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.5rem; overflow: hidden; }
+    .trace-head { padding: 0.4rem 0.6rem; background: var(--surface2); font-size: 0.72rem; cursor: pointer; display: flex; justify-content: space-between; gap: 0.5rem; }
+    .trace-head .ms { color: var(--accent2); }
+    .trace-head.err { color: var(--danger); }
+    .trace-body { display: none; padding: 0.5rem; background: var(--bg); font-size: 0.68rem; max-height: 200px; overflow: auto; }
+    .trace-item.open .trace-body { display: block; }
+
+    .profiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.6rem; }
+    .profile-card { background: var(--surface2); border-radius: 8px; padding: 0.65rem; border: 1px solid var(--border); }
+    .compare-box { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    @media (max-width: 800px) { .compare-box { grid-template-columns: 1fr; } }
+    .inject-result { background: var(--bg); padding: 0.65rem; border-radius: 8px; border: 1px dashed var(--border); font-size: 0.78rem; min-height: 80px; }
+    .trigger-table { width: 100%; font-size: 0.78rem; }
+    .trigger-table td:first-child { width: 28%; color: var(--accent2); font-weight: 500; }
+    .conf-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 2px; }
     .conf-bar i { display: block; height: 100%; background: var(--accent2); border-radius: 2px; }
   </style>
 </head>
 <body>
   <header>
-    <h1>记忆数据查询看板</h1>
-    <p>连接后端 API，查询账号下已保存的 UserMemory、聚合画像与注入模拟（非仅文档说明）</p>
+    <h1><span class="dot" id="liveDot"></span> 记忆系统监控台</h1>
+    <p>真实 API · 工作流可点击验证 · Phase 2 混合检索 + 向量重索引 ·
+      <a href="../index.html" style="color:var(--accent)">文档导航</a> ·
+      <a href="记忆系统-2026-05-20-变更整理.md" style="color:var(--accent)">变更整理</a> ·
+      SSOT：<code>用户记忆系统-OpenClaw式演进设计.md</code></p>
   </header>
 
   <div class="conn">
     <div>
-      <label>API 地址（含协议）</label>
+      <label>API Base</label>
       <input id="apiBase" type="text" placeholder="http://127.0.0.1:8888" />
     </div>
     <div>
-      <label>登录（邮箱或用户名 + 密码）</label>
-      <div style="display:flex;gap:0.35rem">
-        <input id="loginId" type="text" placeholder="email 或 username" style="flex:1" />
+      <label>登录</label>
+      <div style="display:flex;gap:0.3rem">
+        <input id="loginId" type="text" placeholder="email / username" style="flex:1" />
         <input id="loginPwd" type="password" placeholder="密码" style="flex:1" />
       </div>
     </div>
     <div>
-      <label>Bearer Token（可粘贴，优先于登录）</label>
-      <textarea id="token" placeholder="从 App 调试或登录后自动填入"></textarea>
+      <label>Bearer Token</label>
+      <textarea id="token" rows="2" placeholder="登录后自动填入或粘贴 JWT"></textarea>
     </div>
-    <div class="btn-row">
-      <button type="button" class="primary" id="btnConnect">连接并加载</button>
-      <button type="button" id="btnLogin">仅登录</button>
+    <div>
+      <label>自动刷新</label>
+      <select id="autoRefresh">
+        <option value="0">关闭</option>
+        <option value="15">15 秒</option>
+        <option value="30">30 秒</option>
+        <option value="60">60 秒</option>
+      </select>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:0.35rem">
+      <button type="button" class="primary" id="btnConnect">连接并全量拉取</button>
+      <button type="button" id="btnHealth">健康检查</button>
     </div>
   </div>
 
-  <div class="status-bar" id="statusBar">请配置 API 与 Token 后点击「连接并加载」。页面需通过 <code>http://localhost</code> 打开以避免 CORS（见底部说明）。
-  </div>
+  <div class="status-bar" id="statusBar">未连接 · 请配置 API 后点击「连接并全量拉取」</div>
 
   <nav>
-    <button type="button" class="active" data-panel="live">记忆数据</button>
-    <button type="button" data-panel="inject">注入模拟</button>
+    <button type="button" class="active" data-panel="monitor">总览监控</button>
+    <button type="button" data-panel="pipeline">工作流验证</button>
+    <button type="button" data-panel="data">记忆数据</button>
+    <button type="button" data-panel="verify">检索 / 注入验证</button>
+    <button type="button" data-panel="trace">API 追踪</button>
+    <button type="button" data-panel="triggers">写入触发规则</button>
     <button type="button" data-panel="config">运行时配置</button>
-    <button type="button" data-panel="docs">架构说明</button>
   </nav>
 
   <main>
-    <!-- 实时数据 -->
-    <section id="live" class="panel active">
+    <!-- 总览 -->
+    <section id="monitor" class="panel active">
       <div class="stats" id="stats"></div>
+      <div class="grid2">
+        <div class="card">
+          <h3>实时活动日志</h3>
+          <div class="log" id="activityLog"></div>
+        </div>
+        <div class="card">
+          <h3>数据概览（source 分布）</h3>
+          <pre class="trace" id="sourceBreakdown">—</pre>
+          <h3 style="margin-top:0.75rem">display vs 原始列表</h3>
+          <p class="hint" id="displayCompareHint">连接后点击「对比 display API」</p>
+          <button type="button" id="btnCompareDisplay">对比 display API</button>
+        </div>
+      </div>
+    </section>
 
+    <!-- 工作流 -->
+    <section id="pipeline" class="panel">
+      <div class="card">
+        <h3>统一记忆管道（点击步骤 → 执行真实 API 并记录结果）</h3>
+        <p class="hint">路径 A 默认：编排层 search + 注入（0 次额外聊天）。路径 B 高级：模型 tool_calls（本页不发起聊天）。</p>
+        <div class="pipeline" id="pipelineSteps"></div>
+        <div style="margin-top:1rem">
+          <h3 style="font-size:0.85rem">本步骤 API 响应</h3>
+          <pre class="trace" id="pipelineResult">点击上方步骤执行</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- 数据 -->
+    <section id="data" class="panel">
       <div class="card">
         <div class="toolbar">
-          <input type="search" id="filterSearch" placeholder="搜索 key / value…" />
+          <input type="search" id="filterSearch" placeholder="搜索 key/value" />
           <select id="filterSource"><option value="">全部 source</option></select>
-          <select id="filterType"><option value="">全部 memory_type</option></select>
-          <select id="filterCategory">
-            <option value="">全部分类</option>
-            <option value="facing">用户可见</option>
-            <option value="technical">技术记忆 device_*</option>
-            <option value="persona">人格/偏好类</option>
-            <option value="low_conf">低置信 &lt; 0.35</option>
-          </select>
-          <label style="display:flex;align-items:center;gap:0.35rem;color:var(--muted)">
-            <input type="checkbox" id="filterShowTechnical" /> 显示技术记忆
+          <select id="filterType"><option value="">全部 type</option></select>
+          <label style="display:flex;align-items:center;gap:0.3rem;color:var(--muted);font-size:0.75rem">
+            <input type="checkbox" id="filterShowTechnical" /> 技术记忆
           </label>
           <button type="button" id="btnRefresh">刷新</button>
           <button type="button" id="btnExport">导出 JSON</button>
         </div>
         <div class="split">
           <div>
-            <p class="hint" id="tableHint">尚未加载数据</p>
+            <p class="hint" id="tableHint">—</p>
             <div class="table-wrap">
               <table>
-                <thead>
-                  <tr>
-                    <th>key</th>
-                    <th>value</th>
-                    <th>type</th>
-                    <th>conf</th>
-                    <th>source</th>
-                    <th>更新</th>
-                  </tr>
-                </thead>
+                <thead><tr><th>key</th><th>value</th><th>type</th><th>conf</th><th>source</th><th>更新</th></tr></thead>
                 <tbody id="memoryTable"></tbody>
               </table>
             </div>
           </div>
           <div class="card" style="margin:0">
-            <h3 style="margin:0 0 0.5rem;font-size:0.95rem">条目详情</h3>
-            <div id="detailPanel" class="detail" style="color:var(--muted)">点击表格行查看完整字段</div>
-            <div class="btn-row" style="margin-top:0.75rem" id="detailActions" hidden>
-              <button type="button" data-fb="accept">反馈 accept</button>
-              <button type="button" data-fb="reject">反馈 reject</button>
+            <h3 style="margin:0 0 0.4rem;font-size:0.88rem">条目详情</h3>
+            <div id="detailPanel" class="detail" style="color:var(--muted)">点击行查看</div>
+            <div class="toolbar" style="margin-top:0.5rem" id="detailActions" hidden>
+              <button type="button" data-fb="accept">accept</button>
+              <button type="button" data-fb="reject">reject</button>
               <button type="button" id="btnDelete" style="color:var(--danger)">删除</button>
             </div>
           </div>
         </div>
       </div>
-
       <div class="card">
-        <h3 style="margin:0 0 0.75rem">聚合画像 profiles</h3>
-        <div id="profilesGrid" class="profiles-grid"><span class="hint">加载后显示</span></div>
+        <h3>聚合画像 profiles</h3>
+        <div id="profilesGrid" class="profiles-grid"><span class="hint">—</span></div>
       </div>
     </section>
 
-    <!-- 注入模拟 -->
-    <section id="inject" class="panel">
-      <div class="card">
-        <h3 style="margin:0 0 0.5rem">模拟本次对话会注入哪些记忆</h3>
-        <p class="hint">算法与后端 <code>selectRelevantMemoryLines</code> / 客户端 <code>selectRelevantUserMemories</code> 同口径（8 条 / 520 rune）。</p>
-        <label>模拟用户消息（用于关键词召回）</label>
-        <textarea id="injectQuery" rows="3" placeholder="例如：我喜欢画画，下周去北京"></textarea>
-        <div class="btn-row" style="margin:0.5rem 0">
-          <button type="button" class="primary" id="btnSimInject">计算注入集</button>
+    <!-- 验证 -->
+    <section id="verify" class="panel">
+      <div class="grid2">
+        <div class="card">
+          <h3>① 后端检索 API（与 App 默认注入同口径）</h3>
+          <label>查询词 q（模拟用户本句）</label>
+          <input id="searchQuery" type="text" placeholder="例如：新新 我叫什么 喜欢拿铁" />
+          <div class="toolbar" style="margin-top:0.4rem">
+            <button type="button" class="primary" id="btnSearch">GET /memories/search（混合）</button>
+            <button type="button" class="ok" id="btnReindex" title="重建 user_memory_embeddings">POST /memories/reindex</button>
+            <input id="searchLimit" type="number" value="8" min="1" max="20" style="width:64px" title="limit" />
+          </div>
+          <div id="searchResult" class="inject-result" style="margin-top:0.5rem">—</div>
         </div>
-        <div id="injectResult" class="inject-preview">请先加载记忆数据</div>
+        <div class="card">
+          <h3>② 客户端注入模拟（本地算法对照）</h3>
+          <textarea id="injectQuery" rows="2" placeholder="同上，用于对照 search API 与本地算法差异"></textarea>
+          <button type="button" id="btnSimInject" style="margin-top:0.4rem">本地算法模拟注入集</button>
+          <div id="injectResult" class="inject-result" style="margin-top:0.5rem">—</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>③ 写入验证（真实 Upsert）</h3>
+        <p class="hint">向服务端写入一条测试记忆，source=<code>dashboard_test</code>，可在「记忆数据」页刷新确认。</p>
+        <div class="grid3">
+          <div><label>key</label><input id="testKey" value="dashboard_test_key" /></div>
+          <div><label>value</label><input id="testValue" value="监控台写入测试" /></div>
+          <div><label>memory_type</label><input id="testType" value="fact" /></div>
+        </div>
+        <button type="button" class="ok" id="btnTestUpsert" style="margin-top:0.5rem">POST upsert 测试记忆</button>
+        <pre class="trace" id="upsertResult" style="margin-top:0.5rem">—</pre>
+      </div>
+      <div class="card">
+        <h3>④ 规则提取预览（不写库，仅前端匹配）</h3>
+        <input id="heuristicInput" type="text" placeholder="我改名叫新新 / 记住：我喜欢拿铁" />
+        <button type="button" id="btnHeuristic" style="margin-top:0.4rem">模拟 heuristic_extract</button>
+        <pre class="trace" id="heuristicResult" style="margin-top:0.5rem">—</pre>
       </div>
     </section>
 
-    <!-- 配置 -->
+    <!-- API 追踪 -->
+    <section id="trace" class="panel">
+      <div class="card">
+        <div class="toolbar">
+          <h3 style="margin:0">最近 API 请求（真实 request/response）</h3>
+          <button type="button" id="btnClearTrace">清空</button>
+        </div>
+        <div id="apiTraceList"></div>
+      </div>
+    </section>
+
+    <!-- 触发规则 -->
+    <section id="triggers" class="panel">
+      <div class="card">
+        <h3>何时写入记忆库？（当前实现）</h3>
+        <table class="trigger-table">
+          <tr><td>触发时机</td><td>每轮聊天 AI 回复成功后（已登录）</td></tr>
+          <tr><td>heuristic_extract</td><td>用户句匹配：我改名叫 / 叫我 / 请记住我叫 / 记住：我喜欢… → 立即 upsert</td></tr>
+          <tr><td>tag_extract</td><td>用户或 AI 文本含 <code>[记忆:内容]</code> → upsert</td></tr>
+          <tr><td>llm_extract_client</td><td>中转模型（失败回退 Ollama）分析对话 JSON → upsert</td></tr>
+          <tr><td>不写入</td><td><code>你现在叫xxx</code>（改 AI 角色名）、纯闲聊、提取返回 []</td></tr>
+          <tr><td>device_sync</td><td>设备同步，展示层过滤，不计入 display total</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <h3>何时读取记忆？</h3>
+        <table class="trigger-table">
+          <tr><td>默认（路径 A）</td><td>发消息前 <code>GET /memories/search?q=用户本句</code> → 混合检索注入（+0 次聊天）</td></tr>
+          <tr><td>向量索引</td><td>记忆 upsert 后异步 embed；无索引时 search 自动 rebuild；可 <code>POST /memories/reindex</code></td></tr>
+          <tr><td>高级（路径 B）</td><td>tools：<code>memory_search</code> / <code>memory_list?query=</code> / <code>memory_get</code> 等</td></tr>
+        </table>
+      </div>
+    </section>
+
     <section id="config" class="panel">
       <div class="card">
-        <h3 style="margin:0 0 0.5rem">GET /api/llm/config</h3>
-        <button type="button" id="btnLoadConfig">拉取配置</button>
-        <pre id="configJson" class="detail" style="margin-top:0.75rem">—</pre>
-      </div>
-    </section>
-
-    <!-- 简要文档 -->
-    <section id="docs" class="panel">
-      <div class="card">
-        <h3 style="margin:0">双轨记忆</h3>
-        <ul>
-          <li><strong>账号记忆</strong>（本页可查）：PostgreSQL <code>user_memories</code>，API <code>GET /api/user/:id/memories</code></li>
-          <li><strong>本地角色记忆</strong>：SQLite，仅 App 内 <code>memory_manager_page</code>，浏览器无法直接读取</li>
-        </ul>
-        <p>编排：<code>AiMemoryOrchestrator</code> · 文档：<code>docs/dev/ollama/用户级记忆统一文档.md</code></p>
+        <h3>GET /api/llm/config</h3>
+        <button type="button" id="btnLoadConfig">拉取</button>
+        <pre class="trace" id="configJson" style="margin-top:0.5rem">—</pre>
       </div>
     </section>
   </main>
 
-  <footer style="padding:1rem 1.5rem;border-top:1px solid var(--border);color:var(--muted);font-size:0.8rem">
-    <strong>如何打开：</strong>在项目目录执行
-    <code>cd docs/dev && python3 -m http.server 8765</code>，
-    浏览器访问 <code>http://localhost:8765/memory-system-dashboard.html</code>。
-    API 需允许浏览器 Origin（项目已配 CORS）。Token 可从登录获取，或 App 调试里复制 Bearer。
-    默认 API 读取 <code>lib/config/moe_api.json</code> 中的地址（自动补 http://）。
+  <footer style="padding:0.85rem 1.25rem;border-top:1px solid var(--border);color:var(--muted);font-size:0.72rem">
+    <a href="../index.html" style="color:var(--accent)">← 文档导航</a> ·
+    启动：<code>cd docs && python3 -m http.server 8765</code> →
+    <a href="http://localhost:8765/index.html" style="color:var(--accent)">index</a> ·
+    <a href="http://localhost:8765/dev/memory-system-dashboard.html" style="color:var(--accent)">监控台</a>
+    · API 需 CORS · 默认读取 <code>lib/config/moe_api.json</code> 或 localhost:8888
   </footer>
 
   <script>
-    const DEFAULT_API = "http://47.106.175.49:8888";
-    const STORAGE_KEY = "moe_memory_dashboard_v2";
+    const DEFAULT_API = "http://127.0.0.1:8888";
+    const STORAGE_KEY = "moe_memory_dashboard_v3";
+
+    const PIPELINE_STEPS = [
+      { id: "login", title: "鉴权", desc: "JWT / 登录", method: "POST", path: "/api/user/login", run: async (s) => s.token ? { ok: true, note: "已有 token", user_id: s.userId } : null },
+      { id: "list", title: "L1 对话记忆", desc: "GET memories（已排除 device_sync）", method: "GET", path: "/api/user/:id/memories", run: async (s) => s.fetchAllMemories() },
+      { id: "devices", title: "设备登记", desc: "GET devices（独立于记忆表）", method: "GET", path: "/api/user/:id/devices", run: async (s) => s.apiFetch(`/api/user/${s.userId}/devices?limit=50`) },
+      { id: "display", title: "L1 展示层", desc: "GET display（过滤技术项）", method: "GET", path: "/api/user/:id/memories/display", run: async (s) => s.apiFetch(`/api/user/${s.userId}/memories/display`) },
+      { id: "search", title: "L2 混合检索", desc: "关键词+向量（Ollama/中转 embedding 链）", method: "GET", path: "/api/user/:id/memories/search", run: async (s) => {
+          const q = encodeURIComponent($("searchQuery").value.trim() || "测试");
+          return s.apiFetch(`/api/user/${s.userId}/memories/search?q=${q}&limit=8`);
+        }},
+      { id: "reindex", title: "向量重索引", desc: "POST reindex 学习/全量重建", method: "POST", path: "/api/user/:id/memories/reindex", run: async (s) =>
+          s.apiFetch(`/api/user/${s.userId}/memories/reindex`, { method: "POST" }) },
+      { id: "profiles", title: "L1 画像", desc: "GET profiles", method: "GET", path: "/api/user/:id/memories/profiles", run: async (s) => s.apiFetch(`/api/user/${s.userId}/memories/profiles?limit=12`) },
+      { id: "config", title: "提取配置", desc: "memory_model", method: "GET", path: "/api/llm/config", run: async (s) => s.apiFetch("/api/llm/config") },
+    ];
 
     let state = {
       apiBase: DEFAULT_API,
@@ -242,10 +369,13 @@
       userId: "",
       username: "",
       memories: [],
+      display: null,
       profiles: [],
       total: 0,
       selected: null,
       lastFetchAt: null,
+      apiTraces: [],
+      refreshTimer: null,
     };
 
     const $ = (id) => document.getElementById(id);
@@ -255,17 +385,17 @@
         apiBase: state.apiBase,
         token: state.token,
         loginId: $("loginId").value,
+        autoRefresh: $("autoRefresh").value,
       }));
     }
 
     function loadLocal() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
-        const o = JSON.parse(raw);
+        const o = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
         if (o.apiBase) $("apiBase").value = o.apiBase;
         if (o.token) $("token").value = o.token;
         if (o.loginId) $("loginId").value = o.loginId;
+        if (o.autoRefresh) $("autoRefresh").value = o.autoRefresh;
       } catch (_) {}
       if (!$("apiBase").value) $("apiBase").value = DEFAULT_API;
     }
@@ -277,7 +407,9 @@
         if (!r.ok) return;
         const j = await r.json();
         if (j.api_base_url) $("apiBase").value = normalizeBase(j.api_base_url);
-      } catch (_) {}
+      } catch (_) {
+        $("apiBase").value = DEFAULT_API;
+      }
     }
 
     function normalizeBase(url) {
@@ -288,22 +420,38 @@
     }
 
     function setStatus(msg, type = "") {
-      const el = $("statusBar");
-      el.textContent = msg;
-      el.className = "status-bar" + (type ? " " + type : "");
+      $("statusBar").textContent = msg;
+      $("statusBar").className = "status-bar" + (type ? " " + type : "");
+      $("liveDot").className = "dot" + (type === "ok" ? " live" : "");
+    }
+
+    function log(msg, type = "") {
+      const el = $("activityLog");
+      const line = document.createElement("div");
+      line.className = "log-line " + type;
+      const t = new Date().toLocaleTimeString();
+      line.innerHTML = `<span class="t">[${t}]</span> ${escHtml(msg)}`;
+      el.prepend(line);
+      while (el.children.length > 80) el.removeChild(el.lastChild);
+    }
+
+    function escHtml(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
     }
 
     function parseJwt(token) {
       try {
         const parts = token.replace(/^Bearer\s+/i, "").trim().split(".");
         if (parts.length !== 3) return null;
-        let payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-        const pad = payload.length % 4;
-        if (pad) payload += "=".repeat(4 - pad);
-        return JSON.parse(atob(payload));
-      } catch (_) {
-        return null;
-      }
+        let p = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+        const pad = p.length % 4;
+        if (pad) p += "=".repeat(4 - pad);
+        return JSON.parse(atob(p));
+      } catch (_) { return null; }
     }
 
     function isTechnical(m) {
@@ -312,30 +460,20 @@
       return k.startsWith("device_info:") || s === "device_sync";
     }
 
-    function isPersona(m) {
-      const t = (m.memory_type || "").toLowerCase();
-      const k = (m.key || "").toLowerCase();
-      const types = ["relationship", "preference", "persona", "identity", "profile"];
-      if (types.includes(t)) return true;
-      const hints = ["prefer", "relationship", "nickname", "interest", "偏好", "关系", "称呼", "兴趣"];
-      return hints.some((h) => k.includes(h));
-    }
-
     function sourceBadge(source) {
-      const s = (source || "unknown").toLowerCase();
+      const s = (source || "").toLowerCase();
       if (s.includes("device")) return "b-device";
-      if (s.includes("feedback") || s === "manual_correct") return "b-feedback";
+      if (s.includes("heuristic")) return "b-heur";
+      if (s.includes("tag")) return "b-tag";
+      if (s.includes("dashboard")) return "b-persona";
       if (s.includes("llm") || s.includes("extract")) return "b-extract";
       return "b-extract";
     }
 
-    function classifyMemory(m) {
-      const tags = [];
-      if (isTechnical(m)) tags.push({ cls: "b-tech", text: "技术" });
-      if (isPersona(m)) tags.push({ cls: "b-persona", text: "人格" });
-      const c = m.confidence ?? 0.6;
-      if (c < 0.35) tags.push({ cls: "b-low", text: "低置信" });
-      return tags;
+    function pushTrace(entry) {
+      state.apiTraces.unshift(entry);
+      if (state.apiTraces.length > 40) state.apiTraces.pop();
+      renderTraces();
     }
 
     async function apiFetch(path, options = {}) {
@@ -343,34 +481,66 @@
       const url = base + path;
       const headers = { Accept: "application/json", ...(options.headers || {}) };
       if (state.token) headers.Authorization = "Bearer " + state.token.replace(/^Bearer\s+/i, "");
-      const res = await fetch(url, { ...options, headers });
-      const text = await res.text();
-      let json;
-      try { json = JSON.parse(text); } catch { json = { raw: text }; }
-      if (!res.ok) {
-        const msg = json.message || json.msg || res.statusText || text.slice(0, 200);
-        throw new Error(`HTTP ${res.status}: ${msg}`);
+      const t0 = performance.now();
+      let res, text, json;
+      try {
+        res = await fetch(url, { ...options, headers });
+        text = await res.text();
+        try { json = JSON.parse(text); } catch { json = { raw: text }; }
+        const ms = Math.round(performance.now() - t0);
+        const ok = res.ok && json.success !== false && !(json.code && json.code !== 200 && json.code !== 0);
+        pushTrace({
+          time: new Date().toISOString(),
+          method: options.method || "GET",
+          path,
+          status: res.status,
+          ms,
+          ok,
+          requestBody: options.body,
+          response: json,
+        });
+        log(`${options.method || "GET"} ${path} → ${res.status} ${ms}ms`, ok ? "ok api" : "err");
+        if (!res.ok) throw new Error(json.message || json.msg || res.statusText || text.slice(0, 120));
+        if (json.success === false || (json.code && json.code !== 200 && json.code !== 0)) {
+          throw new Error(json.message || "API 返回失败");
+        }
+        return json;
+      } catch (e) {
+        const ms = Math.round(performance.now() - t0);
+        if (!state.apiTraces[0] || state.apiTraces[0].path !== path) {
+          pushTrace({ time: new Date().toISOString(), method: options.method || "GET", path, status: 0, ms, ok: false, error: e.message, requestBody: options.body });
+        }
+        throw e;
       }
-      if (json.success === false || (json.code && json.code !== 200 && json.code !== 0)) {
-        throw new Error(json.message || "API 返回失败");
-      }
-      return json;
     }
+
+    state.apiFetch = apiFetch;
+    state.fetchAllMemories = async function () {
+      const all = [];
+      let offset = 0, hasMore = true;
+      while (hasMore) {
+        const json = await apiFetch(`/api/user/${state.userId}/memories?limit=100&offset=${offset}`);
+        const batch = json.data || [];
+        all.push(...batch);
+        hasMore = json.has_more === true;
+        offset += 100;
+        if (!batch.length) break;
+      }
+      return { items: all, total: all.length };
+    };
 
     async function login() {
       const email = $("loginId").value.trim();
       const password = $("loginPwd").value;
-      if (!email || !password) throw new Error("请填写登录账号与密码");
-      const body = email.includes("@")
-        ? { email, password }
-        : { username: email, password };
+      if (!email || !password) throw new Error("请填写账号密码");
+      const body = email.includes("@") ? { email, password } : { username: email, password };
       const json = await apiFetch("/api/user/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       const data = json.data || {};
-      if (!data.token) throw new Error("登录响应无 token");
+      if (!data.token) throw new Error("无 token");
       state.token = data.token;
       $("token").value = data.token;
       const user = data.user || {};
@@ -382,394 +552,425 @@
       return json;
     }
 
-    function applyTokenFromInput() {
+    function applyToken() {
       const t = $("token").value.trim();
-      if (!t) throw new Error("请填写 Token 或先登录");
+      if (!t) throw new Error("需要 Token");
       state.token = t;
       const claims = parseJwt(t);
-      if (claims && claims.user_id) {
+      if (claims?.user_id) {
         state.userId = String(claims.user_id);
         state.username = claims.username || "";
       }
       saveLocal();
     }
 
-    async function fetchMemoriesPage(offset, limit) {
-      const uid = state.userId || "0";
-      return apiFetch(`/api/user/${uid}/memories?limit=${limit}&offset=${offset}`);
-    }
-
-    async function fetchAllMemories() {
-      const all = [];
-      let offset = 0;
-      const limit = 100;
-      let total = 0;
-      let hasMore = true;
-      while (hasMore) {
-        const json = await fetchMemoriesPage(offset, limit);
-        const batch = json.data || [];
-        all.push(...batch);
-        total = json.total ?? all.length;
-        hasMore = json.has_more === true;
-        offset += limit;
-        if (batch.length === 0) break;
-      }
-      return { items: all, total };
-    }
-
-    async function fetchProfiles() {
-      const uid = state.userId || "0";
-      const json = await apiFetch(`/api/user/${uid}/memories/profiles?limit=20`);
-      return json.data || [];
-    }
-
-    function buildStats(memories) {
-      const bySource = {};
-      const byType = {};
-      let technical = 0, persona = 0, lowConf = 0;
-      for (const m of memories) {
+    function buildStats() {
+      const bySource = {}, byType = {};
+      let technical = 0;
+      for (const m of state.memories) {
         const s = m.source || "unknown";
         const t = m.memory_type || "fact";
         bySource[s] = (bySource[s] || 0) + 1;
         byType[t] = (byType[t] || 0) + 1;
         if (isTechnical(m)) technical++;
-        if (isPersona(m)) persona++;
-        if ((m.confidence ?? 0.6) < 0.35) lowConf++;
       }
-      return { bySource, byType, technical, persona, lowConf };
+      return { bySource, byType, technical, facing: state.memories.length - technical };
     }
 
     function renderStats() {
-      const st = buildStats(state.memories);
-      const facing = state.memories.filter((m) => !isTechnical(m)).length;
+      const st = buildStats();
+      const dispTotal = state.display?.total ?? "—";
       $("stats").innerHTML = `
-        <div class="stat"><div class="n">${state.total}</div><div class="l">服务端总数 total</div></div>
-        <div class="stat"><div class="n">${state.memories.length}</div><div class="l">已拉取条数</div></div>
-        <div class="stat"><div class="n">${facing}</div><div class="l">用户可见（非 device）</div></div>
+        <div class="stat"><div class="n">${state.total}</div><div class="l">RPC 拉取条数</div></div>
+        <div class="stat"><div class="n">${st.facing}</div><div class="l">用户可见（非 device）</div></div>
+        <div class="stat"><div class="n">${dispTotal}</div><div class="l">display.total</div></div>
         <div class="stat"><div class="n">${st.technical}</div><div class="l">技术记忆</div></div>
-<div class="stat"><div class="n">${st.persona}</div><div class="l">人格/偏好类</div></div>
-        <div class="stat"><div class="n">${st.lowConf}</div><div class="l">低置信 &lt;0.35</div></div>
-        <div class="stat"><div class="n" style="font-size:0.9rem">${state.userId || "—"}</div><div class="l">user_id ${state.username ? "· " + state.username : ""}</div></div>
+        <div class="stat"><div class="n">${state.profiles.length}</div><div class="l">profile 类型</div></div>
+        <div class="stat"><div class="n" style="font-size:0.85rem">${state.userId || "—"}</div><div class="l">${state.username || "user"}</div></div>
+        <div class="stat"><div class="n" style="font-size:0.85rem;color:var(--muted)">${state.lastFetchAt ? state.lastFetchAt.toLocaleTimeString() : "—"}</div><div class="l">上次同步</div></div>
       `;
+      $("sourceBreakdown").textContent = JSON.stringify({ bySource: st.bySource, byType: st.byType }, null, 2);
       fillFilterOptions(st);
     }
 
     function fillFilterOptions(st) {
-      const srcSel = $("filterSource");
-      const typeSel = $("filterType");
-      const srcVal = srcSel.value;
-      const typeVal = typeSel.value;
+      const srcSel = $("filterSource"), typeSel = $("filterType");
+      const sv = srcSel.value, tv = typeSel.value;
       srcSel.innerHTML = '<option value="">全部 source</option>';
-      typeSel.innerHTML = '<option value="">全部 memory_type</option>';
+      typeSel.innerHTML = '<option value="">全部 type</option>';
       Object.keys(st.bySource).sort().forEach((s) => {
         srcSel.innerHTML += `<option value="${esc(s)}">${esc(s)} (${st.bySource[s]})</option>`;
       });
       Object.keys(st.byType).sort().forEach((t) => {
         typeSel.innerHTML += `<option value="${esc(t)}">${esc(t)} (${st.byType[t]})</option>`;
       });
-      srcSel.value = srcVal;
-      typeSel.value = typeVal;
+      srcSel.value = sv; typeSel.value = tv;
     }
 
-    function esc(s) {
-      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
-    }
-
-    function truncate(s, n) {
-      if (!s) return "";
-      return s.length > n ? s.slice(0, n) + "…" : s;
-    }
-
-    function getFilteredMemories() {
+    function getFiltered() {
       const q = $("filterSearch").value.trim().toLowerCase();
       const src = $("filterSource").value;
       const typ = $("filterType").value;
-      const cat = $("filterCategory").value;
       const showTech = $("filterShowTechnical").checked;
-
       return state.memories.filter((m) => {
         if (!showTech && isTechnical(m)) return false;
         if (src && (m.source || "") !== src) return false;
         if (typ && (m.memory_type || "fact") !== typ) return false;
-        if (cat === "technical" && !isTechnical(m)) return false;
-        if (cat === "facing" && isTechnical(m)) return false;
-        if (cat === "persona" && !isPersona(m)) return false;
-        if (cat === "low_conf" && (m.confidence ?? 0.6) >= 0.35) return false;
-        if (q) {
-          const hay = `${m.key} ${m.value}`.toLowerCase();
-          if (!hay.includes(q)) return false;
-        }
+        if (q && !`${m.key} ${m.value}`.toLowerCase().includes(q)) return false;
         return true;
       });
     }
 
+    function truncate(s, n) { return !s ? "" : s.length > n ? s.slice(0, n) + "…" : s; }
+
     function renderTable() {
-      const rows = getFilteredMemories();
-      $("tableHint").textContent = `显示 ${rows.length} / ${state.memories.length} 条` +
-        (state.lastFetchAt ? ` · 更新于 ${state.lastFetchAt.toLocaleTimeString()}` : "");
+      const rows = getFiltered();
+      $("tableHint").textContent = `显示 ${rows.length} / ${state.memories.length} 条`;
       const tbody = $("memoryTable");
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted)">无匹配数据</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted)">无数据</td></tr>';
         return;
       }
       tbody.innerHTML = rows.map((m) => {
-        const tags = classifyMemory(m).map((t) => `<span class="badge ${t.cls}">${t.text}</span>`).join(" ");
         const conf = m.confidence ?? 0.6;
-        const sel = state.selected && state.selected.id === m.id ? "selected" : "";
+        const sel = state.selected?.id === m.id ? "selected" : "";
         return `<tr class="${sel}" data-id="${esc(m.id)}">
-          <td><code>${esc(m.key)}</code> ${tags}</td>
-          <td>${esc(truncate(m.value, 80))}</td>
+          <td><code>${esc(m.key)}</code> ${isTechnical(m) ? '<span class="badge b-tech">技术</span>' : ""}</td>
+          <td>${esc(truncate(m.value, 70))}</td>
           <td>${esc(m.memory_type || "—")}</td>
-          <td>${conf.toFixed(2)}<div class="conf-bar"><i style="width:${Math.round(conf * 100)}%"></i></div></td>
+          <td>${conf.toFixed(2)}</td>
           <td><span class="badge ${sourceBadge(m.source)}">${esc(m.source || "—")}</span></td>
-          <td>${esc((m.updated_at || "").replace("T", " ").slice(0, 19))}</td>
+          <td>${esc((m.updated_at || "").slice(0, 19))}</td>
         </tr>`;
       }).join("");
-
       tbody.querySelectorAll("tr[data-id]").forEach((tr) => {
-        tr.addEventListener("click", () => {
+        tr.onclick = () => {
           const id = tr.getAttribute("data-id");
-          state.selected = state.memories.find((m) => String(m.id) === id) || null;
+          state.selected = state.memories.find((m) => String(m.id) === id);
           renderTable();
-          renderDetail();
-        });
+          $("detailPanel").textContent = state.selected ? JSON.stringify(state.selected, null, 2) : "—";
+          $("detailActions").hidden = !state.selected;
+        };
       });
     }
 
-    function renderDetail() {
-      const panel = $("detailPanel");
-      const actions = $("detailActions");
-      if (!state.selected) {
-        panel.textContent = "点击表格行查看完整字段";
-        actions.hidden = true;
-        return;
-      }
-      actions.hidden = false;
-      panel.textContent = JSON.stringify(state.selected, null, 2);
-    }
-
     function renderProfiles() {
-      const grid = $("profilesGrid");
-      if (!state.profiles.length) {
-        grid.innerHTML = '<span class="hint">无画像缓存（可能尚未聚合）</span>';
-        return;
-      }
-      grid.innerHTML = state.profiles.map((p) => `
+      const g = $("profilesGrid");
+      if (!state.profiles.length) { g.innerHTML = '<span class="hint">无 profiles</span>'; return; }
+      g.innerHTML = state.profiles.map((p) => `
         <div class="profile-card">
-          <h4>${esc(p.memory_type || "general")} · ${p.item_count ?? 0} 条</h4>
-          <p style="margin:0.35rem 0;font-size:0.85rem">${esc(p.summary || "")}</p>
-          <div style="font-size:0.75rem;color:var(--muted)">confidence ${(p.confidence ?? 0).toFixed(2)}</div>
+          <strong>${esc(p.memory_type || p.title || "?")}</strong> · ${p.item_count ?? 0} 条
+          <p style="margin:0.3rem 0;font-size:0.8rem">${esc(p.summary || "")}</p>
         </div>
       `).join("");
     }
 
-    // ── 注入模拟（与 MemoryService / chatlogic 同口径简化版）──
-    function normalizeText(s) {
-      return (s || "").toLowerCase().replace(/\s+/g, " ").trim();
-    }
-
-    function extractTokens(text) {
-      const tokens = new Set();
-      const han = text.match(/[\u4e00-\u9fa5]{2,}/g) || [];
-      const en = text.toLowerCase().match(/[a-z0-9_]{2,}/g) || [];
-      han.forEach((t) => tokens.add(t.toLowerCase()));
-      en.forEach((t) => tokens.add(t));
-      return [...tokens];
-    }
-
-    function isNoiseValue(value) {
-      const n = normalizeText(value);
-      const noise = ["-", "无", "未知", "unknown", "n/a", "none", "null"];
-      return !n || noise.includes(n);
-    }
-
-    function selectRelevantMemories(memories, queryText, maxItems = 8, maxRunes = 520) {
-      const tokens = extractTokens(queryText);
-      const ranked = [];
-      const seen = new Set();
-
-      memories.forEach((m, i) => {
-        if (isTechnical(m)) return;
-        const value = (m.value || "").trim();
-        if (!value || isNoiseValue(value)) return;
-        const line = `${m.key}: ${value}`;
-        const norm = normalizeText(line);
-        if (seen.has(norm)) return;
-        seen.add(norm);
-
-        let score = 1;
-        if (i < 5) score += 2;
-        const joined = normalizeText(`${m.key} ${value}`);
-        let matched = false;
-        for (const t of tokens) {
-          if (joined.includes(t)) { score += 3; matched = true; }
-        }
-        if (isPersona(m)) score += 1;
-        ranked.push({ m, line, score, index: i, matched, persona: isPersona(m) });
+    function renderTraces() {
+      const el = $("apiTraceList");
+      if (!state.apiTraces.length) { el.innerHTML = '<p class="hint">暂无请求记录</p>'; return; }
+      el.innerHTML = state.apiTraces.map((t, i) => `
+        <div class="trace-item" data-i="${i}">
+          <div class="trace-head ${t.ok ? "" : "err"}">
+            <span>${esc(t.method)} ${esc(t.path)} → ${t.status || "ERR"}</span>
+            <span class="ms">${t.ms}ms · ${t.time.slice(11, 19)}</span>
+          </div>
+          <div class="trace-body">${esc(JSON.stringify(t.error ? { error: t.error } : t.response, null, 2))}</div>
+        </div>
+      `).join("");
+      el.querySelectorAll(".trace-item").forEach((item) => {
+        item.querySelector(".trace-head").onclick = () => item.classList.toggle("open");
       });
-
-      ranked.sort((a, b) => b.score - a.score || a.index - b.index);
-
-      const hasHit = tokens.length > 0 && ranked.some((r) => r.matched);
-      let candidates = ranked;
-      if (!tokens.length || !hasHit) {
-        const persona = ranked.filter((r) => r.persona).slice(0, 3);
-        const recent = [...ranked].sort((a, b) => (b.m.updated_at || "").localeCompare(a.m.updated_at || "")).slice(0, 2);
-        const map = new Map();
-        [...persona, ...recent].forEach((r) => map.set(r.line, r));
-        candidates = [...map.values()];
-      }
-
-      const out = [];
-      let runes = 0;
-      const used = new Set();
-      for (const r of candidates) {
-        if (out.length >= maxItems) break;
-        if (used.has(r.line)) continue;
-        const lr = [...r.line].length;
-        if (runes + lr > maxRunes && out.length > 0) break;
-        used.add(r.line);
-        runes += lr;
-        out.push(r);
-      }
-      return { selected: out, tokens, hasHit };
     }
 
-    function runInjectSim() {
-      if (!state.memories.length) {
-        $("injectResult").textContent = "请先在「记忆数据」页连接并加载";
-        return;
+    function renderPipeline() {
+      const el = $("pipelineSteps");
+      el.innerHTML = PIPELINE_STEPS.map((step, i) => `
+        ${i > 0 ? '<div class="pipe-arrow">↓</div>' : ""}
+        <div class="pipe-step" data-step="${step.id}">
+          <div class="num">${i + 1}</div>
+          <div>
+            <strong>${esc(step.title)}</strong> — ${esc(step.desc)}
+            <div class="meta">${esc(step.method)} ${esc(step.path)}</div>
+          </div>
+          <button type="button" class="run-step" data-step="${step.id}">执行</button>
+        </div>
+      `).join("");
+      el.querySelectorAll(".run-step").forEach((btn) => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          runPipelineStep(btn.dataset.step);
+        };
+      });
+    }
+
+    async function runPipelineStep(stepId) {
+      const step = PIPELINE_STEPS.find((s) => s.id === stepId);
+      if (!step) return;
+      state.apiBase = normalizeBase($("apiBase").value);
+      try {
+        if (!state.token && stepId !== "login") applyToken();
+        if (stepId === "login" && !$("token").value.trim()) await login();
+        else if (!state.userId && stepId !== "login") applyToken();
+        if (!state.userId && stepId !== "login") throw new Error("无 user_id");
+
+        $("pipelineResult").textContent = "请求中…";
+        let result;
+        if (step.run) {
+          result = await step.run(state);
+          if (stepId === "list" && result?.items) {
+            state.memories = result.items;
+            state.total = result.items.length;
+          }
+          if (stepId === "display") state.display = result.data || result;
+          if (stepId === "profiles") state.profiles = result.data || [];
+        }
+        document.querySelectorAll(".pipe-step").forEach((el) => {
+          el.classList.toggle("ok", el.dataset.step === stepId);
+          el.classList.toggle("err", false);
+        });
+        $("pipelineResult").textContent = JSON.stringify(result, null, 2);
+        if (stepId === "list" || stepId === "display" || stepId === "profiles") {
+          renderStats(); renderTable(); renderProfiles();
+        }
+        setStatus(`步骤 ${step.title} 成功`, "ok");
+      } catch (e) {
+        document.querySelectorAll(`.pipe-step[data-step="${stepId}"]`)?.classList.add("err");
+        $("pipelineResult").textContent = e.message;
+        setStatus(e.message, "error");
       }
-      const q = $("injectQuery").value;
-      const facing = state.memories.filter((m) => !isTechnical(m));
-      const { selected, tokens, hasHit } = selectRelevantMemories(facing, q);
-      if (!selected.length) {
-        $("injectResult").innerHTML = "<p>无记忆可注入（或均被过滤为噪声/技术项）</p>";
-        return;
-      }
-      $("injectResult").innerHTML = `
-        <p><strong>关键词</strong>：${tokens.length ? tokens.join(", ") : "（无）"}
-        · <strong>命中模式</strong>：${hasHit ? "关键词命中" : "新近/人格兜底"}</p>
-        <ol>${selected.map((r) => `<li><code>${esc(r.line)}</code> <span style="color:var(--muted)">score=${r.score}</span></li>`).join("")}</ol>
-        <p class="hint">将拼入 system：「用户的长期背景与偏好信息如下…」+ 上述条目（最多 8 条 / 520 字）</p>
-      `;
     }
 
     async function connectAndLoad() {
       state.apiBase = normalizeBase($("apiBase").value);
       $("apiBase").value = state.apiBase;
-
-      const hasToken = $("token").value.trim();
-      if (hasToken) applyTokenFromInput();
+      if ($("token").value.trim()) applyToken();
       else await login();
+      if (!state.userId) throw new Error("无 user_id");
 
-      if (!state.userId) {
-        const claims = parseJwt(state.token);
-        if (claims?.user_id) state.userId = String(claims.user_id);
-      }
-      if (!state.userId) throw new Error("无法解析 user_id，请检查 Token");
-
-      setStatus("正在拉取记忆列表…");
-      const { items, total } = await fetchAllMemories();
+      log("全量拉取开始", "api");
+      const { items } = await state.fetchAllMemories();
       state.memories = items;
-      state.total = total;
-      state.profiles = await fetchProfiles();
+      state.total = items.length;
+      try {
+        const disp = await apiFetch(`/api/user/${state.userId}/memories/display`);
+        state.display = disp.data || disp;
+      } catch (e) { log("display 失败: " + e.message, "err"); }
+      try {
+        const prof = await apiFetch(`/api/user/${state.userId}/memories/profiles?limit=20`);
+        state.profiles = prof.data || [];
+      } catch (e) { log("profiles 失败: " + e.message, "err"); }
       state.lastFetchAt = new Date();
-
       renderStats();
-      populateFilters();
       renderTable();
       renderProfiles();
-      renderDetail();
-
-      setStatus(`已加载 user_id=${state.userId}：${items.length} 条记忆，${state.profiles.length} 个画像类型 · ${state.lastFetchAt.toLocaleString()}`, "ok");
+      setupAutoRefresh();
+      setStatus(`已同步 ${items.length} 条 · user ${state.userId} · ${state.lastFetchAt.toLocaleTimeString()}`, "ok");
+      log(`全量拉取完成 ${items.length} 条`, "ok");
     }
 
-    function populateFilters() {
-      fillFilterOptions(buildStats(state.memories));
-    }
-
-    async function submitFeedback(type) {
-      if (!state.selected) return;
-      let body = { feedback_type: type };
-      if (type === "correct") {
-        const v = prompt("纠正后的 value：", state.selected.value);
-        if (v == null) return;
-        body.corrected_value = v;
+    function setupAutoRefresh() {
+      if (state.refreshTimer) clearInterval(state.refreshTimer);
+      const sec = parseInt($("autoRefresh").value, 10);
+      if (sec > 0) {
+        state.refreshTimer = setInterval(() => {
+          connectAndLoad().catch((e) => log("自动刷新失败: " + e.message, "err"));
+        }, sec * 1000);
+        log(`自动刷新每 ${sec}s`, "api");
       }
-      const uid = state.userId || "0";
-      await apiFetch(`/api/user/${uid}/memories/feedback`, {
+      saveLocal();
+    }
+
+    async function healthCheck() {
+      state.apiBase = normalizeBase($("apiBase").value);
+      const t0 = performance.now();
+      try {
+        await fetch(state.apiBase + "/api/llm/config", { method: "GET", mode: "cors" });
+        setStatus(`API 可达 ${Math.round(performance.now() - t0)}ms（未鉴权探测）`, "ok");
+      } catch (e) {
+        setStatus("API 不可达: " + e.message + " · 确认 backend 已启动且 CORS", "error");
+      }
+    }
+
+    async function compareDisplay() {
+      if (!state.userId) throw new Error("先连接");
+      const disp = await apiFetch(`/api/user/${state.userId}/memories/display`);
+      const d = disp.data || {};
+      const rawFacing = state.memories.filter((m) => !isTechnical(m)).length;
+      $("displayCompareHint").textContent =
+        `原始列表用户可见 ${rawFacing} 条 · display.total=${d.total ?? 0} · headline=${d.headline || ""}`;
+      state.display = d;
+      log(`display.total=${d.total} vs raw facing=${rawFacing}`, "ok");
+    }
+
+    async function runSearch() {
+      if (!state.userId) throw new Error("先连接");
+      const q = encodeURIComponent($("searchQuery").value.trim());
+      const limit = $("searchLimit").value || 8;
+      const json = await apiFetch(`/api/user/${state.userId}/memories/search?q=${q}&limit=${limit}`);
+      const d = json.data || {};
+      const items = d.items || [];
+      $("searchResult").innerHTML = `
+        <p><strong>query</strong>: ${esc(d.query || "")} · <strong>命中</strong>: ${items.length}</p>
+        <ol>${items.map((it) => `<li><code>${esc(it.key)}</code>: ${esc(it.content || it.title || "")}</li>`).join("") || "<li>无</li>"}</ol>`;
+      log(`search 命中 ${items.length}`, items.length ? "ok" : "");
+    }
+
+    async function runReindex() {
+      if (!state.userId) throw new Error("先连接");
+      const json = await apiFetch(`/api/user/${state.userId}/memories/reindex`, { method: "POST" });
+      const d = json.data || json;
+      $("searchResult").innerHTML = `
+        <p><strong>reindex</strong> indexed=${d.indexed ?? 0}</p>
+        <p>provider: <code>${esc(d.provider || "")}</code> · model: <code>${esc(d.model || "")}</code></p>
+        <p class="hint">完成后可再次 search 验证混合检索</p>`;
+      log(`reindex indexed=${d.indexed} provider=${d.provider}`, "ok");
+    }
+
+    function normalizeText(s) {
+      return (s || "").toLowerCase().replace(/[^\w\s\u4e00-\u9fa5]/g, " ").replace(/\s+/g, " ").trim();
+    }
+    function extractTokens(text) {
+      const tokens = new Set();
+      (text.match(/[\u4e00-\u9fa5]{2,}/g) || []).forEach((t) => tokens.add(t.toLowerCase()));
+      (text.toLowerCase().match(/[a-z0-9_]{2,}/g) || []).forEach((t) => tokens.add(t));
+      return [...tokens];
+    }
+    function selectLocal(memories, queryText) {
+      const tokens = extractTokens(queryText);
+      const ranked = [];
+      memories.forEach((m, i) => {
+        if (isTechnical(m)) return;
+        const line = `${m.key}: ${m.value}`;
+        const norm = normalizeText(line);
+        let score = 1;
+        for (const t of tokens) if (norm.includes(t)) score += 3;
+        ranked.push({ line, score, m });
+      });
+      ranked.sort((a, b) => b.score - a.score);
+      return ranked.slice(0, 8);
+    }
+    function runInjectSim() {
+      const facing = state.memories.filter((m) => !isTechnical(m));
+      const sel = selectLocal(facing, $("injectQuery").value);
+      $("injectResult").innerHTML = sel.length
+        ? `<ol>${sel.map((r) => `<li><code>${esc(r.line)}</code> score=${r.score}</li>`).join("")}</ol><p class="hint">本地算法对照，应与 search API 大致一致</p>`
+        : "<p>无命中</p>";
+    }
+
+    function runHeuristicPreview() {
+      const text = $("heuristicInput").value.trim();
+      const items = [];
+      if (!/^你(?:现在|以后|今晚)?(?:叫|是)/.test(text)) {
+        const patterns = [
+          [/我(?:现在|已经|又)?改(?:了|成)?名(?:叫|为|成)?[「"“]?([^」"”\s，。!！?？]+)/, "user_nickname"],
+          [/我(?:现在)?叫[「"“]?([^」"”\s，。!！?？]+)/, "user_nickname"],
+          [/(?:请)?叫我[「"“]?([^」"”\s，。!！?？]+)/, "user_nickname"],
+          [/请记住[，,]?我(?:叫|是)[「"“]?([^」"”\s，。!！?？]+)/, "user_nickname"],
+        ];
+        for (const [re, key] of patterns) {
+          const m = text.match(re);
+          if (m?.[1]) { items.push({ key, value: m[1], memory_type: key === "user_nickname" ? "identity" : "fact", source: "heuristic_extract" }); break; }
+        }
+        const pref = text.match(/记住[：:]?\s*(?:我)?(?:喜欢|爱|讨厌)([^，。!！?？]{1,40})/);
+        if (pref?.[1]) items.push({ key: "user_preference", value: pref[1].trim(), memory_type: "preference", source: "heuristic_extract" });
+      }
+      $("heuristicResult").textContent = items.length
+        ? JSON.stringify(items, null, 2) + "\n\n→ 回合结束后会 POST upsert（无需固定格式除上述句式）"
+        : "未匹配规则（仍会走 LLM 提取）";
+    }
+
+    async function testUpsert() {
+      if (!state.userId) throw new Error("先连接");
+      const body = {
+        key: $("testKey").value.trim(),
+        value: $("testValue").value.trim(),
+        memory_type: $("testType").value.trim() || "fact",
+        source: "dashboard_test",
+      };
+      const json = await apiFetch(`/api/user/${state.userId}/memories`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: state.selected.key, ...body }),
+        body: JSON.stringify(body),
       });
-      setStatus(`反馈 ${type} 已提交，正在刷新…`, "ok");
+      $("upsertResult").textContent = JSON.stringify(json, null, 2);
+      log("测试 upsert 成功", "ok");
       await connectAndLoad();
     }
 
     async function deleteSelected() {
-      if (!state.selected) return;
-      if (!confirm(`删除记忆 key=${state.selected.key}？`)) return;
-      const uid = state.userId || "0";
-      const key = encodeURIComponent(state.selected.key);
-      await apiFetch(`/api/user/${uid}/memories?key=${key}`, { method: "DELETE" });
+      if (!state.selected || !confirm("删除 " + state.selected.key + "?")) return;
+      await apiFetch(`/api/user/${state.userId}/memories?key=${encodeURIComponent(state.selected.key)}`, { method: "DELETE" });
       state.selected = null;
-      setStatus("已删除，正在刷新…", "ok");
       await connectAndLoad();
     }
 
-    async function loadConfig() {
-      const json = await apiFetch("/api/llm/config");
-      $("configJson").textContent = JSON.stringify(json.data ?? json, null, 2);
+    async function submitFeedback(type) {
+      if (!state.selected) return;
+      const body = { key: state.selected.key, feedback_type: type };
+      if (type === "correct") {
+        const v = prompt("纠正 value", state.selected.value);
+        if (v == null) return;
+        body.corrected_value = v;
+      }
+      await apiFetch(`/api/user/${state.userId}/memories/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      await connectAndLoad();
     }
 
     function exportJson() {
       const blob = new Blob([JSON.stringify({
         exported_at: new Date().toISOString(),
         user_id: state.userId,
-        total: state.total,
-        memories: getFilteredMemories(),
+        memories: getFiltered(),
+        display: state.display,
         profiles: state.profiles,
+        traces: state.apiTraces.slice(0, 10),
       }, null, 2)], { type: "application/json" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `memories_${state.userId || "export"}_${Date.now()}.json`;
+      a.download = `memory_monitor_${state.userId}_${Date.now()}.json`;
       a.click();
     }
 
-    // ── 事件 ──
     document.querySelectorAll("nav button").forEach((btn) => {
-      btn.addEventListener("click", () => {
+      btn.onclick = () => {
         document.querySelectorAll("nav button").forEach((b) => b.classList.remove("active"));
         document.querySelectorAll("section.panel").forEach((s) => s.classList.remove("active"));
         btn.classList.add("active");
         $(btn.dataset.panel).classList.add("active");
-      });
+      };
     });
 
-    $("btnConnect").addEventListener("click", () => connectAndLoad().catch((e) => setStatus(e.message, "error")));
-    $("btnLogin").addEventListener("click", () => {
-      state.apiBase = normalizeBase($("apiBase").value);
-      login().then(() => setStatus(`登录成功 user_id=${state.userId}`, "ok")).catch((e) => setStatus(e.message, "error"));
-    });
-    $("btnRefresh").addEventListener("click", () => connectAndLoad().catch((e) => setStatus(e.message, "error")));
-    $("btnExport").addEventListener("click", exportJson);
-    $("btnSimInject").addEventListener("click", runInjectSim);
-    $("btnLoadConfig").addEventListener("click", () => loadConfig().catch((e) => setStatus(e.message, "error")));
-
-    ["filterSearch", "filterSource", "filterType", "filterCategory", "filterShowTechnical"].forEach((id) => {
+    $("btnConnect").onclick = () => connectAndLoad().catch((e) => setStatus(e.message, "error"));
+    $("btnHealth").onclick = () => healthCheck();
+    $("btnRefresh").onclick = () => connectAndLoad().catch((e) => setStatus(e.message, "error"));
+    $("btnExport").onclick = exportJson;
+    $("btnCompareDisplay").onclick = () => compareDisplay().catch((e) => setStatus(e.message, "error"));
+    $("btnSearch").onclick = () => runSearch().catch((e) => setStatus(e.message, "error"));
+    $("btnReindex").onclick = () => runReindex().catch((e) => setStatus(e.message, "error"));
+    $("btnSimInject").onclick = runInjectSim;
+    $("btnHeuristic").onclick = runHeuristicPreview;
+    $("btnTestUpsert").onclick = () => testUpsert().catch((e) => setStatus(e.message, "error"));
+    $("btnLoadConfig").onclick = () => apiFetch("/api/llm/config").then((j) => { $("configJson").textContent = JSON.stringify(j.data ?? j, null, 2); }).catch((e) => setStatus(e.message, "error"));
+    $("btnClearTrace").onclick = () => { state.apiTraces = []; renderTraces(); };
+    $("autoRefresh").onchange = setupAutoRefresh;
+    ["filterSearch", "filterSource", "filterType", "filterShowTechnical"].forEach((id) => {
       $(id).addEventListener("input", renderTable);
       $(id).addEventListener("change", renderTable);
     });
-
-    $("detailActions").addEventListener("click", (e) => {
-      const fb = e.target.dataset?.fb;
-      if (fb) submitFeedback(fb).catch((err) => setStatus(err.message, "error"));
-    });
-    $("btnDelete").addEventListener("click", () => deleteSelected().catch((e) => setStatus(e.message, "error")));
+    $("detailActions").onclick = (e) => {
+      if (e.target.dataset?.fb) submitFeedback(e.target.dataset.fb).catch((err) => setStatus(err.message, "error"));
+    };
+    $("btnDelete").onclick = () => deleteSelected().catch((e) => setStatus(e.message, "error"));
 
     loadLocal();
     tryLoadProjectApiConfig();
+    renderPipeline();
+    renderTraces();
+    log("监控台就绪", "ok");
   </script>
 </body>
 </html>

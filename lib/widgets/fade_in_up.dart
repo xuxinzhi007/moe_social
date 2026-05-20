@@ -26,6 +26,18 @@ class _FadeInUpState extends State<FadeInUp> with SingleTickerProviderStateMixin
   @override
   void initState() {
     super.initState();
+    _setupController();
+  }
+
+  /// 热重载时 AnimationController 可能已 dispose，需重建避免 Transition addListener 断言。
+  @override
+  void reassemble() {
+    super.reassemble();
+    _controller.dispose();
+    _setupController();
+  }
+
+  void _setupController() {
     _controller = AnimationController(
       vsync: this,
       duration: widget.duration,
@@ -35,8 +47,6 @@ class _FadeInUpState extends State<FadeInUp> with SingleTickerProviderStateMixin
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
 
-    // 使用像素位移而不是 SlideTransition（FractionalTranslation）
-    // 这样在 Web/复杂布局下更不容易触发 RenderFractionalTranslation 的 hasSize 断言
     _translateYAnimation = Tween<double>(begin: widget.offset, end: 0.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );

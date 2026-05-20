@@ -771,6 +771,86 @@ message SubmitUserMemoryFeedbackResp {
   UserMemory memory = 1;
 }
 
+message UserDeviceRecord {
+  string id = 1;
+  string user_id = 2;
+  string device_id = 3;
+  string platform = 4;
+  string os_version = 5;
+  string app_version = 6;
+  string device_name = 7;
+  string payload_json = 8;
+  string last_seen = 9;
+  string created_at = 10;
+  string updated_at = 11;
+}
+
+message SyncUserDeviceReq {
+  string user_id = 1;
+  string device_id = 2;
+  string platform = 3;
+  string os_version = 4;
+  string app_version = 5;
+  string device_name = 6;
+  string payload_json = 7;
+  string last_seen = 8;
+}
+
+message SyncUserDeviceResp {
+  UserDeviceRecord device = 1;
+}
+
+message ListUserDevicesReq {
+  string user_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message ListUserDevicesResp {
+  repeated UserDeviceRecord devices = 1;
+  int64 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  bool has_more = 5;
+}
+
+message UserMemoryEmbeddingItem {
+  string memory_key = 1;
+  repeated float values = 2;
+  string provider = 3;
+  string model = 4;
+}
+
+message ListUserMemoryEmbeddingsReq {
+  string user_id = 1;
+}
+
+message ListUserMemoryEmbeddingsResp {
+  repeated UserMemoryEmbeddingItem items = 1;
+}
+
+message UpsertUserMemoryEmbeddingReq {
+  string user_id = 1;
+  string memory_key = 2;
+  repeated float values = 3;
+  string provider = 4;
+  string model = 5;
+  string chunk_text = 6;
+}
+
+message UpsertUserMemoryEmbeddingResp {
+}
+
+message RebuildUserMemoryEmbeddingsReq {
+  string user_id = 1;
+}
+
+message RebuildUserMemoryEmbeddingsResp {
+  int32 indexed = 1;
+  string provider = 2;
+  string model = 3;
+}
+
 message AiJsonResourceItem {
   string id = 1;
   string payload_json = 2;
@@ -924,6 +1004,11 @@ service Super {
   rpc GetUserMemoryProfiles(GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp);
   rpc DeleteUserMemory(DeleteUserMemoryReq) returns (DeleteUserMemoryResp);
   rpc SubmitUserMemoryFeedback(SubmitUserMemoryFeedbackReq) returns (SubmitUserMemoryFeedbackResp);
+  rpc SyncUserDevice(SyncUserDeviceReq) returns (SyncUserDeviceResp);
+  rpc ListUserDevices(ListUserDevicesReq) returns (ListUserDevicesResp);
+  rpc ListUserMemoryEmbeddings(ListUserMemoryEmbeddingsReq) returns (ListUserMemoryEmbeddingsResp);
+  rpc UpsertUserMemoryEmbedding(UpsertUserMemoryEmbeddingReq) returns (UpsertUserMemoryEmbeddingResp);
+  rpc RebuildUserMemoryEmbeddings(RebuildUserMemoryEmbeddingsReq) returns (RebuildUserMemoryEmbeddingsResp);
   rpc ListAiProviders(ListAiResourceReq) returns (ListAiResourceResp);
   rpc UpsertAiProvider(UpsertAiResourceReq) returns (UpsertAiResourceResp);
   rpc DeleteAiProvider(DeleteAiResourceReq) returns (DeleteAiResourceResp);

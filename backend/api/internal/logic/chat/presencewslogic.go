@@ -18,17 +18,61 @@ import (
 
 // 全局在线状态连接映射
 var (
-	presenceConnections = make(map[string]*websocket.Conn)
+	presenceConnections      = make(map[string]*presenceConn)
 	presenceConnectionsMutex sync.RWMutex
-	onlineUsers = make(map[string]bool)
-	onlineUsersMutex sync.RWMutex
+	onlineUsers              = make(map[string]bool)
+	onlineUsersMutex         sync.RWMutex
 )
+
+type presenceConn struct {
+	writeMu sync.Mutex // gorilla/websocket：同一 Conn 禁止并发 WriteMessage
+	conn    *websocket.Conn
+}
+
+func (pc *presenceConn) writeJSON(data interface{}) bool {
+	if pc == nil {
+		return false
+	}
+	msgData, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	return pc.writeText(msgData)
+}
+
+func (pc *presenceConn) writeText(msgData []byte) bool {
+	if pc == nil {
+		return false
+	}
+	pc.writeMu.Lock()
+	defer pc.writeMu.Unlock()
+	if pc.conn == nil {
+		return false
+	}
+	_ = pc.conn.SetWriteDeadline(time.Now().Add(8 * time.Second))
+	if err := pc.conn.WriteMessage(websocket.TextMessage, msgData); err != nil {
+		return false
+	}
+	return true
+}
+
+func (pc *presenceConn) close() {
+	if pc == nil {
+		return
+	}
+	pc.writeMu.Lock()
+	defer pc.writeMu.Unlock()
+	if pc.conn != nil {
+		_ = pc.conn.Close()
+		pc.conn = nil
+	}
+}
 
 // 在线状态消息结构
 type PresenceMessage struct {
-	Type       string   `json:"type"`
-	UserID     string   `json:"user_id,omitempty"`
-	Online     bool     `json:"online,omitempty"`
+	Type          string   `json:"type"`
+	UserID        string   `json:"user_id,omitempty"`
+	Online        bool     `json:"online,omitempty"`
 	OnlineUserIDs []string `json:"online_user_ids,omitempty"`
 }
 
@@ -92,9 +136,14 @@ func (l *PresenceWsLogic) PresenceWs() error {
 		return nil
 	}
 
-	// 存储用户连接
+	member := &presenceConn{conn: conn}
+
+	// 同用户重连时关闭旧连接，避免旧 goroutine 与新连接并发写
 	presenceConnectionsMutex.Lock()
-	presenceConnections[userID] = conn
+	if old, exists := presenceConnections[userID]; exists && old != nil {
+		old.close()
+	}
+	presenceConnections[userID] = member
 	presenceConnectionsMutex.Unlock()
 
 	// 更新在线状态
@@ -111,16 +160,18 @@ func (l *PresenceWsLogic) PresenceWs() error {
 	l.broadcastPresence(userID, true)
 
 	// 处理消息
-	go l.handleConnection(userID, conn)
+	go l.handleConnection(userID, member)
 
 	return nil
 }
 
 // 处理 WebSocket 连接
-func (l *PresenceWsLogic) handleConnection(userID string, conn *websocket.Conn) {
+func (l *PresenceWsLogic) handleConnection(userID string, member *presenceConn) {
 	defer func() {
 		presenceConnectionsMutex.Lock()
-		delete(presenceConnections, userID)
+		if current, ok := presenceConnections[userID]; ok && current == member {
+			delete(presenceConnections, userID)
+		}
 		presenceConnectionsMutex.Unlock()
 
 		// 更新在线状态
@@ -128,22 +179,31 @@ func (l *PresenceWsLogic) handleConnection(userID string, conn *websocket.Conn) 
 		delete(onlineUsers, userID)
 		onlineUsersMutex.Unlock()
 
-		conn.Close()
+		member.close()
 		l.Logger.Infof("Presence user %s disconnected", userID)
 
 		// 广播用户下线通知
 		l.broadcastPresence(userID, false)
 	}()
 
+	if member.conn == nil {
+		return
+	}
+
 	// 设置读取超时
-	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-	conn.SetPongHandler(func(string) error {
-		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	_ = member.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	member.conn.SetPongHandler(func(string) error {
+		if member.conn != nil {
+			_ = member.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		}
 		return nil
 	})
 
 	for {
-		_, message, err := conn.ReadMessage()
+		if member.conn == nil {
+			break
+		}
+		_, message, err := member.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				l.Logger.Errorf("WebSocket error: %v", err)
@@ -196,7 +256,7 @@ func (l *PresenceWsLogic) sendPresenceSnapshot(userID string) {
 	onlineUsersMutex.RUnlock()
 
 	message := PresenceMessage{
-		Type:       "presence_snapshot",
+		Type:          "presence_snapshot",
 		OnlineUserIDs: userIDs,
 	}
 
@@ -211,56 +271,47 @@ func (l *PresenceWsLogic) broadcastPresence(userID string, online bool) {
 		Online: online,
 	}
 
+	msgData, err := json.Marshal(message)
+	if err != nil {
+		l.Logger.Errorf("Error marshaling presence message: %v", err)
+		return
+	}
+
 	presenceConnectionsMutex.RLock()
-	for id, conn := range presenceConnections {
-		if id == userID {
+	recipients := make([]*presenceConn, 0, len(presenceConnections))
+	for id, pc := range presenceConnections {
+		if id == userID || pc == nil {
 			continue
 		}
-
-		msgData, err := json.Marshal(message)
-		if err != nil {
-			l.Logger.Errorf("Error marshaling presence message: %v", err)
-			continue
-		}
-
-		err = conn.WriteMessage(websocket.TextMessage, msgData)
-		if err != nil {
-			l.Logger.Errorf("Error sending presence message to %s: %v", id, err)
-			// 移除无效连接
-			presenceConnectionsMutex.RUnlock()
-			presenceConnectionsMutex.Lock()
-			delete(presenceConnections, id)
-			presenceConnectionsMutex.Unlock()
-			presenceConnectionsMutex.RLock()
-		}
+		recipients = append(recipients, pc)
 	}
 	presenceConnectionsMutex.RUnlock()
+
+	for _, pc := range recipients {
+		if !pc.writeText(msgData) {
+			l.Logger.Errorf("Error sending presence broadcast")
+		}
+	}
 }
 
 // 发送消息给指定用户
 func (l *PresenceWsLogic) sendToUser(userID string, data interface{}) bool {
 	presenceConnectionsMutex.RLock()
-	conn, ok := presenceConnections[userID]
+	pc, ok := presenceConnections[userID]
 	presenceConnectionsMutex.RUnlock()
 
-	if !ok {
+	if !ok || pc == nil {
 		return false
 	}
 
-	msgData, err := json.Marshal(data)
-	if err != nil {
-		l.Logger.Errorf("Error marshaling message: %v", err)
-		return false
-	}
-
-	err = conn.WriteMessage(websocket.TextMessage, msgData)
-	if err != nil {
-		l.Logger.Errorf("Error sending message to %s: %v", userID, err)
-		// 移除无效连接
+	if !pc.writeJSON(data) {
+		l.Logger.Errorf("Error sending message to %s", userID)
 		presenceConnectionsMutex.Lock()
-		delete(presenceConnections, userID)
+		if current, exists := presenceConnections[userID]; exists && current == pc {
+			delete(presenceConnections, userID)
+		}
 		presenceConnectionsMutex.Unlock()
-		conn.Close()
+		pc.close()
 		return false
 	}
 

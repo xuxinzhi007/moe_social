@@ -8,7 +8,7 @@ import 'api_service.dart';
 
 /// MemoryService 包含两类功能：
 ///
-/// 1. 【用户后端记忆】 - 通过后端 API 存取用户级别的 key-value 记忆（设备信息等）
+/// 1. 【用户后端记忆】 - 对话长期记忆（设备信息见 [DeviceService]）
 /// 2. 【AI 聊天长期记忆】 - 纯本地工具方法，用于把记忆注入 system prompt，
 ///    以及从 AI 回复中解析 [记忆:xxx] 标签
 class MemoryService {
@@ -61,6 +61,33 @@ class MemoryService {
     final items = paged['items'];
     if (items is List<UserMemory>) return items;
     return const [];
+  }
+
+  /// 记忆文本库检索（SSOT：后端 `/memories/search`，编排层与 memory_search 工具共用）。
+  static Future<List<UserMemory>> searchUserMemories(
+    String userId, {
+    required String query,
+    int limit = 8,
+  }) async {
+    final safeLimit = limit.clamp(1, 20);
+    final encodedQ = Uri.encodeQueryComponent(query.trim());
+    final result = await ApiService.get(
+      '/api/user/$userId/memories/search?q=$encodedQ&limit=$safeLimit',
+    );
+    final data = Map<String, dynamic>.from(result['data'] ?? const {});
+    final List<dynamic> list = data['items'] ?? [];
+    return list.map((json) {
+      final item = Map<String, dynamic>.from(json as Map);
+      return UserMemory(
+        id: (item['id'] as String?) ?? '',
+        userId: userId,
+        key: (item['key'] as String?) ?? '',
+        value: (item['content'] as String?) ?? '',
+        memoryType: (item['category'] as String?) ?? '',
+        createdAt: (item['updated_at'] as String?) ?? '',
+        updatedAt: (item['updated_at'] as String?) ?? '',
+      );
+    }).toList();
   }
 
   /// 获取面向用户展示的记忆数据（后端已过滤技术项并生成标题/分类）。

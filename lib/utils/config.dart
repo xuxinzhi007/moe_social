@@ -18,7 +18,7 @@
 
 class AppConfig {
   /// false = 开发（[developmentUrl]）；true = 生产（[productionUrl]）
-  static const bool isProduction = true;
+  static const bool isProduction = false;
 
   /// 生产环境 API 根（无末尾 /）
   static const String productionUrl = 'http://47.106.175.49:8888';

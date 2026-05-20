@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import '../../../auth_service.dart';
-import '../../../services/memory_service.dart';
+import '../../../services/device_service.dart';
 import '../../../providers/device_info_provider.dart';
 import '../../../widgets/settings/setting_item.dart';
 import '../../../widgets/fade_in_up.dart';
@@ -199,17 +199,14 @@ class DeviceStorageModule extends StatelessWidget {
 
   Future<List<_RemoteDeviceInfo>> _loadRemoteDevices(BuildContext context) async {
     final userId = await AuthService.getUserId();
-    final memories = await MemoryService.getUserMemories(userId);
+    final records = await DeviceService.listUserDevices(userId);
     final List<_RemoteDeviceInfo> devices = [];
     final deviceInfo = Provider.of<DeviceInfoProvider>(context, listen: false);
     final currentId = deviceInfo.deviceId;
 
-    for (final memory in memories) {
-      if (!memory.key.startsWith('device_info:')) {
-        continue;
-      }
+    for (final record in records) {
       try {
-        final value = json.decode(memory.value) as Map<String, dynamic>;
+        final value = DeviceService.payloadFromRecord(record);
         final deviceId = (value['device_id'] as String?) ?? '';
         final platform = (value['platform'] as String?) ?? '';
         final osVersion = (value['os_version'] as String?) ?? '';
@@ -244,7 +241,9 @@ class DeviceStorageModule extends StatelessWidget {
 
         devices.add(
           _RemoteDeviceInfo(
-            deviceId: deviceId.isNotEmpty ? deviceId : memory.id,
+            deviceId: deviceId.isNotEmpty
+                ? deviceId
+                : (record['device_id'] as String? ?? ''),
             name: deviceName,
             platform: platform,
             osVersion: osVersion,

@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"backend/model"
 	"backend/rpc/internal/errorx"
@@ -34,6 +35,12 @@ func (l *UpsertUserMemoryLogic) UpsertUserMemory(in *super.UpsertUserMemoryReq) 
 	if in.Key == "" {
 		return nil, errorx.InvalidArgument("key不能为空")
 	}
+	if strings.TrimSpace(in.Value) == "" {
+		return nil, errorx.InvalidArgument("value不能为空")
+	}
+	if model.IsTechnicalUserMemory(in.Key, in.Source) {
+		return nil, errorx.InvalidArgument("设备信息请使用设备同步接口 /devices/sync，不可写入用户记忆")
+	}
 
 	userID, err := strconv.Atoi(in.UserId)
 	if err != nil {
@@ -53,22 +60,48 @@ func (l *UpsertUserMemoryLogic) UpsertUserMemory(in *super.UpsertUserMemoryReq) 
 	db := l.svcCtx.DB.Where("user_id = ? AND `key` = ?", uint(userID), in.Key).First(&memory)
 	if db.Error != nil {
 		if db.Error == gorm.ErrRecordNotFound {
-			memory = model.UserMemory{
-				UserID:      uint(userID),
-				Key:         in.Key,
-				Value:       in.Value,
-				MemoryType:  memoryType,
-				Confidence:  confidence,
-				Source:      source,
-				SourceMsgID: sourceMsgID,
-				SessionID:   sessionID,
-			}
-			if err := l.svcCtx.DB.Create(&memory).Error; err != nil {
-				l.Error("创建用户记忆失败: ", err)
-				return nil, errorx.Internal("创建用户记忆失败")
+			// 软删除记录仍占用 (user_id, key) 唯一索引，需恢复而非 INSERT。
+			var deleted model.UserMemory
+			if err := l.svcCtx.DB.Unscoped().
+				Where("user_id = ? AND `key` = ?", uint(userID), in.Key).
+				First(&deleted).Error; err == nil {
+				memory = deleted
+				memory.DeletedAt = gorm.DeletedAt{}
+				memory.Value = in.Value
+				memory.MemoryType = memoryType
+				memory.Confidence = confidence
+				memory.Source = source
+				if sourceMsgID != "" {
+					memory.SourceMsgID = sourceMsgID
+				}
+				if sessionID != "" {
+					memory.SessionID = sessionID
+				}
+				if err := l.svcCtx.DB.Unscoped().Save(&memory).Error; err != nil {
+					l.Errorf("恢复用户记忆失败: %v", err)
+					return nil, errorx.Internal("创建用户记忆失败")
+				}
+			} else if err == gorm.ErrRecordNotFound {
+				memory = model.UserMemory{
+					UserID:      uint(userID),
+					Key:         in.Key,
+					Value:       in.Value,
+					MemoryType:  memoryType,
+					Confidence:  confidence,
+					Source:      source,
+					SourceMsgID: sourceMsgID,
+					SessionID:   sessionID,
+				}
+				if err := l.svcCtx.DB.Omit("User").Create(&memory).Error; err != nil {
+					l.Errorf("创建用户记忆失败: %v", err)
+					return nil, errorx.Internal("创建用户记忆失败")
+				}
+			} else {
+				l.Errorf("查询用户记忆失败: %v", err)
+				return nil, errorx.Internal("查询用户记忆失败")
 			}
 		} else {
-			l.Error("查询用户记忆失败: ", db.Error)
+			l.Errorf("查询用户记忆失败: %v", db.Error)
 			return nil, errorx.Internal("查询用户记忆失败")
 		}
 	} else {
@@ -111,6 +144,7 @@ func (l *UpsertUserMemoryLogic) UpsertUserMemory(in *super.UpsertUserMemoryReq) 
 	}
 
 	triggerUserMemoryProfileRebuildAsync(l.svcCtx.DB, uint(userID), l.Logger)
+	indexMemoryEmbeddingAsync(l.svcCtx.DB, uint(userID), memory.Key, memory.Value, memory.Source, l.Logger)
 
 	return &super.UpsertUserMemoryResp{
 		Memory: &super.UserMemory{
