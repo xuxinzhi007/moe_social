@@ -1,5 +1,7 @@
 # 🤖 AutoGLM 智能助手系统
 
+> 文档索引：[docs/autoglm/README.md](./README.md) · 历史优化文档见 [docs/archive/autoglm/](../archive/autoglm/)
+
 ## 📋 系统概述
 
 AutoGLM是集成在Moe Social应用中的AI驱动智能助手系统，能够通过自然语言命令自动执行各种手机操作。系统采用Flutter前端 + Kotlin原生服务 + 大模型API的三层架构设计。

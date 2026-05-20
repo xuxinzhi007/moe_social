@@ -1,16 +1,105 @@
-# Moe Social 文档
+# Moe Social 文档中心
 
-## 记忆系统（推荐入口）
+> **原则**：只维护少量「当前有效」文档；过时方案迁入 [`archive/`](./archive/)，原路径保留短跳转 stub。  
+> **本地预览**：`cd docs && python3 -m http.server 8765` → [index.html](./index.html)
 
-| 文档 | 说明 |
+## 快速入口
+
+| 我想… | 去看 |
+|--------|------|
+| 查记忆系统架构 / API | [dev/用户记忆系统-OpenClaw式演进设计.md](./dev/用户记忆系统-OpenClaw式演进设计.md) |
+| 验收记忆 / 混合检索 | [dev/用户级记忆统一改造验收脚本.md](./dev/用户级记忆统一改造验收脚本.md) · [memory-system-dashboard.html](./dev/memory-system-dashboard.html) |
+| 本地跑起来 | [dev/环境配置说明.md](./dev/环境配置说明.md) · [dev/快速调试步骤.md](./dev/快速调试步骤.md) |
+| 产品优先级与 AI 酒馆 | [product/项目开发总览与当前优先级-2026-05-18.md](./product/项目开发总览与当前优先级-2026-05-18.md) · [product/AI酒馆化改造方案.md](./product/AI酒馆化改造方案.md) |
+| 开发规范 | [guidelines/项目开发规范.md](./guidelines/项目开发规范.md) · [../code_review.md](../code_review.md) |
+| 历史 / 过时文档 | [archive/README.md](./archive/README.md) |
+
+---
+
+## 目录结构
+
+```
+docs/
+├── README.md          ← 本文件（总索引）
+├── index.html         ← 浏览器导航
+├── archive/           ← 已归档，勿作主维护
+├── dev/               ← 开发、联调、记忆 SSOT
+├── product/           ← 产品方案与 UI
+├── planning/          ← 待实施规划
+├── features/          ← 功能说明
+├── guidelines/        ← 规范与 Codex 指南
+├── autoglm/           ← AutoGLM 子系统
+├── testing/           ← 测试清单
+└── specs/             ← 专项需求规格
+```
+
+各子目录均有 `README.md` 索引（`dev/`、`product/`、`archive/` 等）。
+
+---
+
+## 记忆系统（精简，避免重复读 4 份）
+
+| 优先级 | 文档 | 说明 |
+|--------|------|------|
+| 1 | [用户记忆系统-OpenClaw式演进设计.md](./dev/用户记忆系统-OpenClaw式演进设计.md) | **SSOT**：架构、API、路径 A/B |
+| 2 | [记忆系统-2026-05-20-变更整理.md](./dev/记忆系统-2026-05-20-变更整理.md) | 近期变更与验收（增量） |
+| 3 | [记忆系统-开源对标调研.md](./dev/记忆系统-开源对标调研.md) | 对标与 Phase 3+ 路线 |
+| 4 | [memory/README.md](./dev/memory/README.md) | 代码目录地图 |
+
+~~Ollama 记忆三文档~~ → 已归档至 [archive/memory/](./archive/memory/)
+
+---
+
+## 开发与联调
+
+详见 [dev/README.md](./dev/README.md)。
+
+常用：环境、快速调试、API 调试、打包、飞书 OAuth、私信流程、安全 backlog。
+
+---
+
+## 产品与设计
+
+详见 [product/README.md](./product/README.md)。
+
+主入口：**项目开发总览**、**AI 酒馆化改造方案**；带日期的 `*-2026-05-*.md` 为方案快照。
+
+---
+
+## 其他子系统
+
+| 目录 | 入口 |
 |------|------|
-| [index.html](./index.html) | **HTML / Markdown 导航**（本地 `python3 -m http.server 8765`） |
-| [dev/用户记忆系统-OpenClaw式演进设计.md](./dev/用户记忆系统-OpenClaw式演进设计.md) | 架构 SSOT |
-| [dev/记忆系统-2026-05-20-变更整理.md](./dev/记忆系统-2026-05-20-变更整理.md) | 2026-05-20 变更汇总 |
-| [dev/memory-system-dashboard.html](./dev/memory-system-dashboard.html) | 记忆监控台（真实 API） |
-| [dev/用户级记忆统一改造验收脚本.md](./dev/用户级记忆统一改造验收脚本.md) | E2E 验收 |
+| AutoGLM | [autoglm/AutoGLM_README.md](./autoglm/AutoGLM_README.md) |
+| 功能指南 | [features/NEW_FEATURES_GUIDE.md](./features/NEW_FEATURES_GUIDE.md) |
+| 测试 | [testing/E2E测试清单.md](./testing/E2E测试清单.md) |
+| 后端私信 | [../backend/docs/private_messages.md](../backend/docs/private_messages.md) |
+| RPC 监控 | [../monitor.html](../monitor.html)（仓库根目录） |
 
-## 其他
+---
 
-- 产品 / 功能文档见 `docs/product`、`docs/features`
-- 历史 Ollama 记忆文档见 `docs/dev/ollama*`（新功能以 OpenClaw SSOT 为准）
+## 仓库根目录散落文档
+
+以下在 `docs/` 外，多为**一次性分析**或子模块说明，未纳入归档流程；按需查阅：
+
+| 文件 | 说明 |
+|------|------|
+| `code_review.md` | Code review 标准 |
+| `backend/CORS配置说明.md` | CORS |
+| `backend/待完成事项.md` | 后端待办 |
+| `ACHIEVEMENT_SYSTEM_OPTIMIZATION.md` 等 | 专项优化记录 |
+
+新文档请优先放入 `docs/<category>/`，避免在仓库根目录堆积。
+
+---
+
+## 文档维护约定
+
+1. **一个主题一份 SSOT**，其余只写增量或归档。  
+2. **方案落地后**：更新 SSOT 变更记录，将旧方案移入 `archive/` 并留 stub。  
+3. **文件名带日期**表示快照，须在 `product/README` 或文首注明是否仍有效。  
+4. **记忆、设备、AI Provider** 禁止再开并行架构文档。
+
+---
+
+最后整理：2026-05-20

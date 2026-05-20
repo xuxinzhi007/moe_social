@@ -1,5 +1,7 @@
 # Moe Social AI 酒馆化改造方案
 
+> **文档索引**：[docs/README.md](../README.md) · **记忆（账号级）**：[用户记忆系统-OpenClaw式演进设计.md](../dev/用户记忆系统-OpenClaw式演进设计.md)（与 Lorebook 分工见该文）
+
 日期：2026-05-18
 
 ## 0. 当前落地进度

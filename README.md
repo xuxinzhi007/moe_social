@@ -83,7 +83,7 @@ flutter doctor
 
 ### 项目文档
 
-说明类 Markdown 已集中在 **`docs/`** 目录，并按主题分子文件夹；总索引见 **[docs/README.md](docs/README.md)**（开发环境、产品需求、测试记录、AutoGLM、后端旁注等）。后端实现说明仍在 **`backend/*.md`**，与 Go 代码同目录。
+说明类 Markdown 集中在 **`docs/`**：总索引 **[docs/README.md](docs/README.md)**，浏览器导航 **[docs/index.html](docs/index.html)**。过时文档在 **`docs/archive/`**（原路径保留短跳转）。记忆系统 SSOT：[用户记忆系统-OpenClaw式演进设计.md](docs/dev/用户记忆系统-OpenClaw式演进设计.md)。后端旁注仍在 **`backend/*.md`**。
 
 ### 生产构建
 

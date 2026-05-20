@@ -6,130 +6,119 @@
   <title>Moe Social · 文档导航</title>
   <style>
     :root {
-      --bg: #0b0d12;
-      --surface: #141820;
-      --border: #2a3348;
-      --text: #e9ecf3;
-      --muted: #8d97ab;
-      --accent: #6b8cff;
-      --accent2: #3dd6c3;
+      --bg: #0b0d12; --surface: #141820; --border: #2a3348;
+      --text: #e9ecf3; --muted: #8d97ab; --accent: #6b8cff; --accent2: #3dd6c3;
+      --archive: #9a7bcc;
     }
     * { box-sizing: border-box; }
     body {
-      margin: 0;
-      font-family: system-ui, "PingFang SC", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-      padding: 2rem 1.5rem 3rem;
-      max-width: 920px;
-      margin-inline: auto;
+      margin: 0; font-family: system-ui, "PingFang SC", sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.5;
+      padding: 2rem 1.5rem 3rem; max-width: 960px; margin-inline: auto;
     }
     h1 { font-size: 1.5rem; margin: 0 0 0.35rem; }
-    .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
-    section { margin-bottom: 1.75rem; }
-    h2 {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      margin: 0 0 0.65rem;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 0.35rem;
+    .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.25rem; }
+    .tip {
+      background: rgba(107,140,255,0.08); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.85rem; color: var(--muted); margin-bottom: 1.5rem;
     }
+    .tip a { color: var(--accent); }
+    .tip code { color: var(--accent2); }
+    section { margin-bottom: 1.6rem; }
+    h2 {
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--muted); margin: 0 0 0.6rem; border-bottom: 1px solid var(--border); padding-bottom: 0.35rem;
+    }
+    h2 .tag { font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 4px; margin-left: 0.4rem; vertical-align: middle; }
+    h2 .tag.live { background: rgba(61,214,195,0.2); color: var(--accent2); }
+    h2 .tag.arc { background: rgba(154,123,204,0.2); color: var(--archive); }
     ul { list-style: none; padding: 0; margin: 0; }
     li {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      margin-bottom: 0.5rem;
-      padding: 0.75rem 1rem;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      margin-bottom: 0.45rem; padding: 0.65rem 0.9rem;
     }
-    li a {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 1rem;
-    }
+    li a { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.95rem; }
     li a:hover { color: var(--accent2); }
-    li .desc { display: block; font-size: 0.82rem; color: var(--muted); margin-top: 0.25rem; }
-    li .path { font-family: ui-monospace, monospace; font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
-    .tip {
-      background: rgba(107, 140, 255, 0.08);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.85rem 1rem;
-      font-size: 0.85rem;
-      color: var(--muted);
-    }
-    .tip code { color: var(--accent2); }
+    li .desc { display: block; font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+    li .path { font-family: ui-monospace, monospace; font-size: 0.68rem; color: var(--muted); margin-top: 0.15rem; }
+    li.archived { opacity: 0.75; border-style: dashed; }
     footer { margin-top: 2rem; font-size: 0.78rem; color: var(--muted); }
+    footer a { color: var(--accent); }
   </style>
 </head>
 <body>
   <h1>Moe Social 文档导航</h1>
-  <p class="sub">集中打开项目内 HTML 与常用设计文档，避免逐个找文件。</p>
+  <p class="sub">当前有效文档集中入口；过时文档已迁入 <code>docs/archive/</code>。</p>
 
   <div class="tip">
-    本地预览：<code>cd docs && python3 -m http.server 8765</code> →
-    <a href="http://localhost:8765/index.html" style="color:var(--accent)">http://localhost:8765/index.html</a>
+    预览：<code>cd docs && python3 -m http.server 8765</code> ·
+    Markdown 总索引：<a href="README.md">README.md</a>
   </div>
 
   <section>
-    <h2>交互页面（HTML）</h2>
+    <h2>快速入口 <span class="tag live">推荐</span></h2>
     <ul>
-      <li>
-        <a href="dev/memory-system-dashboard.html">记忆系统监控台</a>
-        <span class="desc">工作流验证、混合检索、设备/记忆分离、API 追踪</span>
-        <span class="path">docs/dev/memory-system-dashboard.html</span>
-      </li>
-      <li>
-        <a href="../monitor.html">RPC 性能监控</a>
-        <span class="desc">后端 RPC 调用耗时与统计（仓库根目录）</span>
-        <span class="path">monitor.html</span>
-      </li>
+      <li><a href="README.md">文档中心 README</a><span class="desc">总索引与维护约定</span></li>
+      <li><a href="dev/环境配置说明.md">环境配置</a><span class="desc">本地 / 线上</span></li>
+      <li><a href="dev/快速调试步骤.md">快速调试</a><span class="desc">Flutter 运行</span></li>
+      <li><a href="product/项目开发总览与当前优先级-2026-05-18.md">项目开发总览</a><span class="desc">产品线与优先级</span></li>
+      <li><a href="guidelines/项目开发规范.md">项目开发规范</a></li>
     </ul>
   </section>
 
   <section>
-    <h2>变更与验收（Markdown）</h2>
+    <h2>记忆系统 <span class="tag live">SSOT</span></h2>
     <ul>
-      <li>
-        <a href="dev/记忆系统-2026-05-20-变更整理.md">记忆系统 · 2026-05-20 变更整理</a>
-        <span class="desc">本次迭代汇总：设备分离、Phase 1/2、API、配置、验收</span>
-        <span class="path">docs/dev/记忆系统-2026-05-20-变更整理.md</span>
-      </li>
-      <li>
-        <a href="dev/用户级记忆统一改造验收脚本.md">用户级记忆 · E2E 验收脚本</a>
-        <span class="desc">含混合检索 Case G、设备分离 Case H</span>
-        <span class="path">docs/dev/用户级记忆统一改造验收脚本.md</span>
-      </li>
+      <li><a href="dev/用户记忆系统-OpenClaw式演进设计.md">OpenClaw 式演进设计（架构 SSOT）</a></li>
+      <li><a href="dev/记忆系统-2026-05-20-变更整理.md">2026-05-20 变更整理</a></li>
+      <li><a href="dev/memory-system-dashboard.html">记忆监控台</a><span class="desc">混合检索 · reindex · API 追踪</span></li>
+      <li><a href="dev/用户级记忆统一改造验收脚本.md">E2E 验收脚本</a></li>
+      <li><a href="dev/记忆系统-开源对标调研.md">开源对标调研</a></li>
+      <li class="archived"><a href="archive/README.md">archive/memory（历史 Ollama 文档）</a></li>
     </ul>
   </section>
 
   <section>
-    <h2>设计文档（Markdown）</h2>
+    <h2>开发与联调</h2>
     <ul>
-      <li>
-        <a href="dev/用户记忆系统-OpenClaw式演进设计.md">用户记忆系统 · OpenClaw 式演进</a>
-        <span class="desc">架构 SSOT、路径 A/B、Phase 2 混合检索</span>
-        <span class="path">docs/dev/用户记忆系统-OpenClaw式演进设计.md</span>
-      </li>
-      <li>
-        <a href="dev/记忆系统-开源对标调研.md">记忆系统 · 开源对标调研</a>
-        <span class="desc">OpenClaw / SillyTavern 能力与差距</span>
-        <span class="path">docs/dev/记忆系统-开源对标调研.md</span>
-      </li>
-      <li>
-        <a href="dev/memory/README.md">记忆模块地图</a>
-        <span class="desc">backend/pkg/memory 与 lib/memory 目录说明</span>
-        <span class="path">docs/dev/memory/README.md</span>
-      </li>
+      <li><a href="dev/README.md">dev/ 目录索引</a></li>
+      <li><a href="dev/API调试指南.md">API 调试指南</a></li>
+      <li><a href="dev/打包流程.md">打包流程</a></li>
+      <li><a href="dev/飞书OAuth授权验证指南.md">飞书 OAuth</a></li>
+      <li><a href="../monitor.html">RPC 性能监控</a><span class="path">monitor.html（仓库根）</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>产品与设计</h2>
+    <ul>
+      <li><a href="product/README.md">product/ 目录索引</a></li>
+      <li><a href="product/AI酒馆化改造方案.md">AI 酒馆化改造方案</a></li>
+      <li><a href="product/UI设计规范.md">UI 设计规范</a></li>
+      <li><a href="planning/充值系统实现计划.md">充值系统实现计划</a></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>子系统</h2>
+    <ul>
+      <li><a href="autoglm/AutoGLM_README.md">AutoGLM</a></li>
+      <li><a href="features/NEW_FEATURES_GUIDE.md">新功能指南</a></li>
+      <li><a href="testing/E2E测试清单.md">E2E 测试清单</a></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>归档区 <span class="tag arc">只读追溯</span></h2>
+    <ul>
+      <li><a href="archive/README.md">archive/README.md</a><span class="desc">过时方案、快照报告、早期计划</span></li>
     </ul>
   </section>
 
   <footer>
-    Flutter Web 壳 <code>web/index.html</code> 由构建产物使用，不在此导航列出。
+    Codex 指南：<a href="guidelines/Codex启动指南-前端.md">前端</a> ·
+    <a href="guidelines/Codex启动指南-后端.md">后端</a> ·
+    仓库 <a href="../AGENTS.md">AGENTS.md</a>
   </footer>
 </body>
 </html>
