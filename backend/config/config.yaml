@@ -64,7 +64,10 @@ ollama:
 # 换域名时：改此处 + 更新 GitHub 上 lib/config/moe_api.json（或 MOE_API_CONFIG_URL），通常无需改 Dart。
 # 服务器到期改回本地：把下面改成 http://127.0.0.1:8888（或你的局域网 IP），并注释/切换下方 database 为本地块。
 app_client:
-  public_api_base_url: "http://47.106.175.49:8888"
+#  public_api_base_url: "http://47.106.175.49:8888"
+  public_api_base_url: "http://127.0.0.1:8888"
+
+
 
 # 可选：覆盖 api/etc/super.yaml 里的 Image（不配置则完全沿用 super.yaml）。
 

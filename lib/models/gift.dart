@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 
-/// 虚拟礼物模型
+/// 礼物展示模型（目录与价格来自后端，客户端不做商品定义）。
 class Gift {
   final String id;
   final String name;
   final String emoji;
   final String description;
-  final double price; // 礼物价格
+  final double price;
   final Color color;
   final GiftCategory category;
-  final int popularity; // 人气值，用于排序
-  /// 当前用户在背包中拥有数量（来自 `/api/gifts?user_id=`）
+  final int sortOrder;
   final int ownedQuantity;
 
   const Gift({
@@ -21,7 +20,7 @@ class Gift {
     required this.price,
     required this.color,
     required this.category,
-    this.popularity = 0,
+    this.sortOrder = 0,
     this.ownedQuantity = 0,
   });
 
@@ -33,7 +32,7 @@ class Gift {
     double? price,
     Color? color,
     GiftCategory? category,
-    int? popularity,
+    int? sortOrder,
     int? ownedQuantity,
   }) {
     return Gift(
@@ -44,181 +43,23 @@ class Gift {
       price: price ?? this.price,
       color: color ?? this.color,
       category: category ?? this.category,
-      popularity: popularity ?? this.popularity,
+      sortOrder: sortOrder ?? this.sortOrder,
       ownedQuantity: ownedQuantity ?? this.ownedQuantity,
     );
   }
 
-  // 预定义的礼物列表
-  static const List<Gift> defaultGifts = [
-    // 基础礼物 (0.1 - 1.0)
-    Gift(
-      id: 'heart',
-      name: '爱心',
-      emoji: '❤️',
-      description: '传递温暖的爱意',
-      price: 0.1,
-      color: Color(0xFFE91E63),
-      category: GiftCategory.emotion,
-      popularity: 100,
-    ),
-    Gift(
-      id: 'flower',
-      name: '鲜花',
-      emoji: '🌹',
-      description: '美丽的玫瑰花',
-      price: 0.5,
-      color: Color(0xFFE57373),
-      category: GiftCategory.emotion,
-      popularity: 95,
-    ),
-    Gift(
-      id: 'thumbsup',
-      name: '点赞',
-      emoji: '👍',
-      description: '给你一个大大的赞',
-      price: 0.2,
-      color: Color(0xFF42A5F5),
-      category: GiftCategory.emotion,
-      popularity: 90,
-    ),
-    Gift(
-      id: 'clap',
-      name: '掌声',
-      emoji: '👏',
-      description: '为你精彩的分享鼓掌',
-      price: 0.3,
-      color: Color(0xFFFFB74D),
-      category: GiftCategory.emotion,
-      popularity: 85,
-    ),
-    Gift(
-      id: 'hug',
-      name: '拥抱',
-      emoji: '🤗',
-      description: '给你一个温暖的拥抱',
-      price: 0.8,
-      color: Color(0xFF81C784),
-      category: GiftCategory.emotion,
-      popularity: 80,
-    ),
-
-    // 食物礼物 (1.0 - 5.0)
-    Gift(
-      id: 'coffee',
-      name: '咖啡',
-      emoji: '☕',
-      description: '香浓的咖啡为你提神',
-      price: 2.0,
-      color: Color(0xFF8D6E63),
-      category: GiftCategory.food,
-      popularity: 75,
-    ),
-    Gift(
-      id: 'cake',
-      name: '蛋糕',
-      emoji: '🎂',
-      description: '甜蜜的生日蛋糕',
-      price: 5.0,
-      color: Color(0xFFBA68C8),
-      category: GiftCategory.food,
-      popularity: 70,
-    ),
-    Gift(
-      id: 'ice_cream',
-      name: '冰淇淋',
-      emoji: '🍦',
-      description: '清爽的冰淇淋',
-      price: 3.0,
-      color: Color(0xFF4FC3F7),
-      category: GiftCategory.food,
-      popularity: 65,
-    ),
-    Gift(
-      id: 'wine',
-      name: '香槟',
-      emoji: '🍾',
-      description: '庆祝时刻的香槟',
-      price: 8.0,
-      color: Color(0xFFFFD54F),
-      category: GiftCategory.food,
-      popularity: 60,
-    ),
-
-    // 奢华礼物 (10.0+)
-    Gift(
-      id: 'diamond',
-      name: '钻石',
-      emoji: '💎',
-      description: '闪闪发光的钻石',
-      price: 50.0,
-      color: Color(0xFF64B5F6),
-      category: GiftCategory.luxury,
-      popularity: 95,
-    ),
-    Gift(
-      id: 'crown',
-      name: '皇冠',
-      emoji: '👑',
-      description: '尊贵的皇冠',
-      price: 100.0,
-      color: Color(0xFFFFD700),
-      category: GiftCategory.luxury,
-      popularity: 90,
-    ),
-    Gift(
-      id: 'rocket',
-      name: '火箭',
-      emoji: '🚀',
-      description: '让你的内容飞向太空',
-      price: 200.0,
-      color: Color(0xFFFF5722),
-      category: GiftCategory.luxury,
-      popularity: 85,
-    ),
-    Gift(
-      id: 'rainbow',
-      name: '彩虹',
-      emoji: '🌈',
-      description: '七彩斑斓的彩虹',
-      price: 30.0,
-      color: Color(0xFF9C27B0),
-      category: GiftCategory.special,
-      popularity: 75,
-    ),
-    Gift(
-      id: 'fireworks',
-      name: '烟花',
-      emoji: '🎆',
-      description: '绚烂的烟花表演',
-      price: 20.0,
-      color: Color(0xFFE040FB),
-      category: GiftCategory.special,
-      popularity: 80,
-    ),
-    Gift(
-      id: 'unicorn',
-      name: '独角兽',
-      emoji: '🦄',
-      description: '神奇的独角兽',
-      price: 66.6,
-      color: Color(0xFFAB47BC),
-      category: GiftCategory.special,
-      popularity: 70,
-    ),
-  ];
-
-  /// 后端送礼接口按 **数据库 uint 主键** 解析 [id]；内置 [defaultGifts] 使用英文 slug，不能用于扣费送礼。
+  /// 后端送礼/购买接口使用数据库主键字符串。
   bool get canSendViaBackendApi {
     final n = int.tryParse(id);
     return n != null && n > 0;
   }
 
-  /// 后端 `/api/gifts` 返回的条目（无 emoji 字段，用 [icon] 或占位）
+  /// `GET /api/gifts` 条目
   factory Gift.fromCatalogApi(Map<String, dynamic> json) {
     final rawIcon = json['icon'] as String? ?? '';
     final emoji = rawIcon.startsWith('http') || rawIcon.isEmpty ? '🎁' : rawIcon;
     final price = (json['price'] as num?)?.toDouble() ?? 0;
+    final category = GiftCategory.fromApi(json['category'] as String?);
 
     return Gift(
       id: json['id']?.toString() ?? '',
@@ -228,32 +69,33 @@ class Gift {
       emoji: emoji,
       description: json['description'] as String? ?? '',
       price: price,
-      color: const Color(0xFFFFB347),
-      category: GiftCategory.special,
-      popularity: 0,
+      color: colorForCategory(category),
+      category: category,
+      sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
       ownedQuantity: (json['owned_quantity'] as num?)?.toInt() ?? 0,
     );
   }
 
-  // 从JSON创建实例
   factory Gift.fromJson(Map<String, dynamic> json) {
+    final category = GiftCategory.fromApi(json['category'] as String?);
+    final rawIcon = json['emoji'] as String? ?? json['icon'] as String? ?? '';
+    final emoji = rawIcon.startsWith('http') || rawIcon.isEmpty ? '🎁' : rawIcon;
+
     return Gift(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      emoji: json['emoji'] as String,
-      description: json['description'] as String,
-      price: (json['price'] as num).toDouble(),
-      color: Color(json['color'] as int),
-      category: GiftCategory.values.firstWhere(
-        (c) => c.name == json['category'],
-        orElse: () => GiftCategory.emotion,
-      ),
-      popularity: json['popularity'] as int? ?? 0,
+      id: json['id']?.toString() ?? '',
+      name: json['name'] as String? ?? '礼物',
+      emoji: emoji,
+      description: json['description'] as String? ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0,
+      color: json['color'] is int
+          ? Color(json['color'] as int)
+          : colorForCategory(category),
+      category: category,
+      sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
       ownedQuantity: (json['owned_quantity'] as num?)?.toInt() ?? 0,
     );
   }
 
-  // 转换为JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -261,53 +103,23 @@ class Gift {
       'emoji': emoji,
       'description': description,
       'price': price,
-      'color': color.toARGB32(),
-      'category': category.name,
-      'popularity': popularity,
+      'category': category.apiValue,
+      'sort_order': sortOrder,
       'owned_quantity': ownedQuantity,
     };
   }
 
-  // 根据ID查找礼物
-  static Gift? findById(String id) {
-    try {
-      return defaultGifts.firstWhere((gift) => gift.id == id);
-    } catch (e) {
-      return null;
+  static Color colorForCategory(GiftCategory category) {
+    switch (category) {
+      case GiftCategory.emotion:
+        return const Color(0xFFE91E63);
+      case GiftCategory.food:
+        return const Color(0xFF8D6E63);
+      case GiftCategory.luxury:
+        return const Color(0xFFFFD700);
+      case GiftCategory.special:
+        return const Color(0xFF9C27B0);
     }
-  }
-
-  // 根据价格范围获取礼物
-  static List<Gift> getGiftsByPriceRange(double minPrice, double maxPrice) {
-    return defaultGifts
-        .where((gift) => gift.price >= minPrice && gift.price <= maxPrice)
-        .toList();
-  }
-
-  // 根据分类获取礼物
-  static List<Gift> getGiftsByCategory(GiftCategory category) {
-    return defaultGifts.where((gift) => gift.category == category).toList();
-  }
-
-  // 获取热门礼物
-  static List<Gift> getPopularGifts({int limit = 6}) {
-    final sortedGifts = List<Gift>.from(defaultGifts);
-    sortedGifts.sort((a, b) => b.popularity.compareTo(a.popularity));
-    return sortedGifts.take(limit).toList();
-  }
-
-  // 获取免费礼物
-  static List<Gift> getFreeGifts() {
-    return defaultGifts.where((gift) => gift.price == 0.0).toList();
-  }
-
-  // 获取按价格排序的礼物
-  static List<Gift> getGiftsSortedByPrice({bool ascending = true}) {
-    final sortedGifts = List<Gift>.from(defaultGifts);
-    sortedGifts.sort((a, b) => ascending
-        ? a.price.compareTo(b.price)
-        : b.price.compareTo(a.price));
-    return sortedGifts;
   }
 
   @override
@@ -321,10 +133,11 @@ class Gift {
   @override
   int get hashCode => Object.hash(id, ownedQuantity);
 
+  /// 动效档位按后端整数价格划分。
   GiftLevel get level {
-    if (price < 1.0) return GiftLevel.basic;
-    if (price < 10.0) return GiftLevel.medium;
-    if (price < 50.0) return GiftLevel.advanced;
+    if (price < 5) return GiftLevel.basic;
+    if (price < 20) return GiftLevel.medium;
+    if (price < 50) return GiftLevel.advanced;
     return GiftLevel.luxury;
   }
 
@@ -381,7 +194,6 @@ class Gift {
   }
 }
 
-/// 礼物等级枚举
 enum GiftLevel {
   basic('基础', 0),
   medium('中等', 1),
@@ -394,29 +206,50 @@ enum GiftLevel {
   final int priority;
 }
 
-/// 礼物分类枚举
 enum GiftCategory {
-  emotion('情感', '❤️'),
-  food('美食', '🍰'),
-  luxury('奢华', '💎'),
-  special('特殊', '🌟');
+  emotion('情感', 'emotion'),
+  food('美食', 'food'),
+  luxury('奢华', 'luxury'),
+  special('特殊', 'special');
 
-  const GiftCategory(this.displayName, this.icon);
+  const GiftCategory(this.displayName, this.apiValue);
 
   final String displayName;
-  final String icon;
+  final String apiValue;
+
+  String get icon {
+    switch (this) {
+      case GiftCategory.emotion:
+        return '❤️';
+      case GiftCategory.food:
+        return '🍰';
+      case GiftCategory.luxury:
+        return '💎';
+      case GiftCategory.special:
+        return '🌟';
+    }
+  }
+
+  static GiftCategory fromApi(String? raw) {
+    final key = (raw ?? '').trim().toLowerCase();
+    for (final c in GiftCategory.values) {
+      if (c.apiValue == key) return c;
+    }
+    return GiftCategory.special;
+  }
 }
 
-/// 礼物记录模型（用于记录发送/接收礼物的历史）
+/// 礼物赠送记录（若接口嵌套 gift 对象则一并解析）。
 class GiftRecord {
   final String id;
   final String giftId;
   final String senderId;
   final String receiverId;
-  final String targetType; // 'post' 或 'user'
-  final String targetId; // 帖子ID或用户ID
-  final double amount; // 支付金额
+  final String targetType;
+  final String targetId;
+  final double amount;
   final DateTime createdAt;
+  final Gift? giftDetail;
 
   GiftRecord({
     required this.id,
@@ -427,26 +260,33 @@ class GiftRecord {
     required this.targetId,
     required this.amount,
     required this.createdAt,
+    this.giftDetail,
   });
 
-  // 获取礼物信息
-  Gift? get gift => Gift.findById(giftId);
+  Gift? get gift => giftDetail;
 
-  // 从JSON创建实例
   factory GiftRecord.fromJson(Map<String, dynamic> json) {
+    Gift? nested;
+    final rawGift = json['gift'];
+    if (rawGift is Map) {
+      nested = Gift.fromCatalogApi(Map<String, dynamic>.from(rawGift));
+    }
+
     return GiftRecord(
-      id: json['id'] as String,
-      giftId: json['gift_id'] as String,
-      senderId: json['sender_id'] as String,
-      receiverId: json['receiver_id'] as String,
-      targetType: json['target_type'] as String,
-      targetId: json['target_id'] as String,
-      amount: (json['amount'] as num).toDouble(),
-      createdAt: DateTime.parse(json['created_at'] as String),
+      id: json['id']?.toString() ?? '',
+      giftId: json['gift_id']?.toString() ?? nested?.id ?? '',
+      senderId: json['sender_id']?.toString() ?? json['from_user_id']?.toString() ?? '',
+      receiverId:
+          json['receiver_id']?.toString() ?? json['to_user_id']?.toString() ?? '',
+      targetType: json['target_type'] as String? ?? 'user',
+      targetId: json['target_id']?.toString() ?? '',
+      amount: (json['amount'] as num?)?.toDouble() ?? 0,
+      createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ??
+          DateTime.now(),
+      giftDetail: nested,
     );
   }
 
-  // 转换为JSON
   Map<String, dynamic> toJson() {
     return {
       'gift_id': giftId,

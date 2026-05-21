@@ -1460,6 +1460,9 @@ message Gift {
   string updated_at = 7;
   // 当 GetGiftsReq.viewer_user_id 传入时，为该用户在本礼物的背包数量
   int32 owned_quantity = 8;
+  // 展示分类：emotion / food / luxury / special
+  string category = 9;
+  int32 sort_order = 10;
 }
 
 message GiftRecord {

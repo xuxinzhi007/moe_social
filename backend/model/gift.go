@@ -4,13 +4,15 @@ import (
 	"time"
 )
 
-// Gift 礼物模型
+// Gift 礼物模型（目录由 seed / 运营维护，客户端只读展示）
 type Gift struct {
 	ID          uint      `gorm:"primarykey" json:"id"`
 	Name        string    `gorm:"size:50;not null" json:"name"`
 	Price       int       `gorm:"not null" json:"price"`
 	Icon        string    `gorm:"size:255" json:"icon"`
 	Description string    `gorm:"size:255" json:"description"`
+	Category    string    `gorm:"size:20;not null;default:special" json:"category"`
+	SortOrder   int       `gorm:"not null;default:0" json:"sort_order"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
