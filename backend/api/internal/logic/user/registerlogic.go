@@ -38,8 +38,14 @@ func (l *RegisterLogic) Register(req *types.RegisterReq) (resp *types.RegisterRe
 		}, nil
 	}
 
-	return &types.RegisterResp{
+	resp = &types.RegisterResp{
 		BaseResp: common.HandleRPCError(nil, "注册成功"),
-		Data:     rpcUserToTypes(rpcResp.User),
-	}, nil
+	}
+	if rpcResp.User != nil {
+		resp.Data = types.RegisterData{
+			User:  rpcUserToTypes(rpcResp.User),
+			Token: rpcResp.Token,
+		}
+	}
+	return resp, nil
 }

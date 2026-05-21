@@ -511,6 +511,28 @@ type SubmitUserMemoryFeedbackReq {
 	Reason         string `json:"reason,optional"` // 用户备注
 }
 
+type RebuildUserMemoryEmbeddingsReq {
+	UserId string `path:"user_id"`
+}
+
+// 用户设备（与记忆表分离，须在本文件声明以便 goctl 生成 routes）
+type SyncUserDeviceReq {
+	UserId      string `path:"user_id"`
+	DeviceId    string `json:"device_id"`
+	Platform    string `json:"platform,optional"`
+	OSVersion   string `json:"os_version,optional"`
+	AppVersion  string `json:"app_version,optional"`
+	DeviceName  string `json:"device_name,optional"`
+	LastSeen    string `json:"last_seen,optional"`
+	PayloadJSON string `json:"payload_json,optional"`
+}
+
+type ListUserDevicesReq {
+	UserId string `path:"user_id"`
+	Limit  int    `form:"limit,default=50"`
+	Offset int    `form:"offset,default=0"`
+}
+
 // 帖子相关请求
 type GetPostsReq {
 	Page         int    `form:"page,default=1"`
@@ -589,9 +611,14 @@ type RechargeReq {
 type EmptyResp {}
 
 // 用户相关响应
+type RegisterData {
+	User  User   `json:"user"`
+	Token string `json:"token"`
+}
+
 type RegisterResp {
 	BaseResp
-	Data User `json:"data"`
+	Data RegisterData `json:"data"`
 }
 
 type LoginData {
@@ -753,6 +780,190 @@ type DeleteUserMemoryResp {
 type SubmitUserMemoryFeedbackResp {
 	BaseResp
 	Data UserMemory `json:"data"`
+}
+
+type UserMemoryDisplayProfile {
+	Title     string `json:"title"`
+	Summary   string `json:"summary"`
+	ItemCount int    `json:"item_count"`
+}
+
+type UserMemoryDisplayItem {
+	ID        string `json:"id"`
+	Key       string `json:"key"`
+	Title     string `json:"title"`
+	Content   string `json:"content"`
+	Category  string `json:"category"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+type UserMemoryDisplayData {
+	Headline string                     `json:"headline"`
+	Profiles []UserMemoryDisplayProfile `json:"profiles"`
+	Items    []UserMemoryDisplayItem    `json:"items"`
+	Total    int                        `json:"total"`
+}
+
+type GetUserMemoriesDisplayResp {
+	BaseResp
+	Data UserMemoryDisplayData `json:"data"`
+}
+
+type SearchUserMemoriesData {
+	Query string                  `json:"query"`
+	Items []UserMemoryDisplayItem `json:"items"`
+	Total int                     `json:"total"`
+}
+
+type SearchUserMemoriesResp {
+	BaseResp
+	Data SearchUserMemoriesData `json:"data"`
+}
+
+type UserDeviceRecord {
+	Id          string `json:"id"`
+	UserId      string `json:"user_id"`
+	DeviceId    string `json:"device_id"`
+	Platform    string `json:"platform"`
+	OSVersion   string `json:"os_version"`
+	AppVersion  string `json:"app_version"`
+	DeviceName  string `json:"device_name"`
+	PayloadJSON string `json:"payload_json"`
+	LastSeen    string `json:"last_seen"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
+}
+
+type SyncUserDeviceResp {
+	BaseResp
+	Data UserDeviceRecord `json:"data"`
+}
+
+type ListUserDevicesResp {
+	BaseResp
+	Data    []UserDeviceRecord `json:"data"`
+	Total   int64              `json:"total"`
+	Limit   int                `json:"limit"`
+	Offset  int                `json:"offset"`
+	HasMore bool               `json:"has_more"`
+}
+
+// 飞书 OAuth / 绑定（须在 super.api 声明，由 goctl 生成 routes）
+type FeishuAuthorizeURLReq {
+	State string `form:"state,optional"`
+}
+
+type FeishuAuthorizeURLResp {
+	BaseResp
+	Data FeishuAuthorizeURLData `json:"data,omitempty"`
+}
+
+type FeishuAuthorizeURLData {
+	AuthorizeURL string `json:"authorize_url"`
+}
+
+type FeishuLoginReq {
+	Code string `json:"code"`
+}
+
+type FeishuLoginResp {
+	BaseResp
+	Data FeishuLoginData `json:"data,omitempty"`
+}
+
+type FeishuLoginData {
+	User      User   `json:"user"`
+	Token     string `json:"token"`
+	IsNewUser bool   `json:"is_new_user"`
+}
+
+type FeishuOAuthCallbackReq {
+	Code  string `form:"code,optional"`
+	State string `form:"state,optional"`
+}
+
+type FeishuPublicConfigResp {
+	BaseResp
+	Data FeishuPublicConfigData `json:"data,omitempty"`
+}
+
+type FeishuPublicConfigData {
+	Enabled             bool   `json:"enabled"`
+	EnterpriseInviteURL string `json:"enterprise_invite_url,omitempty"`
+	Notice              string `json:"notice,omitempty"`
+}
+
+type BindFeishuReq {
+	FeishuEmail string `json:"feishu_email"`
+}
+
+type BindFeishuResp {
+	BaseResp
+	Data User `json:"data,omitempty"`
+}
+
+type UnbindFeishuResp {
+	BaseResp
+	Data User `json:"data,omitempty"`
+}
+
+type SendFeishuTestCardResp {
+	BaseResp
+}
+
+// AI 用户配置与资源（须在 super.api 声明，由 goctl 生成 routes）
+type AiUserConfigReq {
+	ProviderProfiles []map[string]interface{} `json:"provider_profiles,optional"`
+	Agents           []map[string]interface{} `json:"agents,optional"`
+	Lorebooks        []map[string]interface{} `json:"lorebooks,optional"`
+	UserPersona      string                   `json:"user_persona,optional"`
+	HasUserPersona   bool                     `json:"has_user_persona,optional"`
+	Preferences      map[string]interface{}   `json:"preferences,optional"`
+}
+
+type AiUserConfigData {
+	ProviderProfiles []map[string]interface{} `json:"provider_profiles"`
+	Agents           []map[string]interface{} `json:"agents"`
+	Lorebooks        []map[string]interface{} `json:"lorebooks"`
+	UserPersona      string                   `json:"user_persona"`
+	Preferences      map[string]interface{}   `json:"preferences"`
+}
+
+type AiUserConfigResp {
+	BaseResp
+	Data AiUserConfigData `json:"data"`
+}
+
+type AiProviderProfilesResp {
+	BaseResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type AiAgentsResp {
+	BaseResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type AiLorebooksResp {
+	BaseResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type AiResourceUpsertReq {
+	Data map[string]interface{} `json:"data"`
+}
+
+type AiLorebookUpsertReq {
+	Data    map[string]interface{}   `json:"data"`
+	Entries []map[string]interface{} `json:"entries,optional"`
+}
+
+type AiResourceDeleteReq {
+	Id string `form:"id"`
+}
+
+type ListPublicAiAgentsReq {
+	Limit int `form:"limit,optional,default=50"`
 }
 
 // 嵌套类型定义
@@ -933,7 +1144,13 @@ service Super {
 	get /api/user/:user_id/memories (GetUserMemoriesReq) returns (GetUserMemoriesResp)
 
 	@handler searchUserMemories
-	get /api/user/:user_id/memories/search (SearchUserMemoriesReq)
+	get /api/user/:user_id/memories/search (SearchUserMemoriesReq) returns (SearchUserMemoriesResp)
+
+	@handler getUserMemoriesDisplay
+	get /api/user/:user_id/memories/display (GetUserMemoriesReq) returns (GetUserMemoriesDisplayResp)
+
+	@handler rebuildUserMemoryEmbeddings
+	post /api/user/:user_id/memories/reindex (RebuildUserMemoryEmbeddingsReq)
 
 	@handler getUserMemoryProfiles
 	get /api/user/:user_id/memories/profiles (GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp)
@@ -943,6 +1160,25 @@ service Super {
 
 	@handler submitUserMemoryFeedback
 	post /api/user/:user_id/memories/feedback (SubmitUserMemoryFeedbackReq) returns (SubmitUserMemoryFeedbackResp)
+
+	@handler syncUserDevice
+	post /api/user/:user_id/devices/sync (SyncUserDeviceReq) returns (SyncUserDeviceResp)
+
+	@handler listUserDevices
+	get /api/user/:user_id/devices (ListUserDevicesReq) returns (ListUserDevicesResp)
+
+	// 飞书 OAuth（无需 JWT）
+	@handler feishuAuthorizeURL
+	get /api/auth/feishu/authorize-url (FeishuAuthorizeURLReq) returns (FeishuAuthorizeURLResp)
+
+	@handler feishuLogin
+	post /api/auth/feishu/login (FeishuLoginReq) returns (FeishuLoginResp)
+
+	@handler feishuOAuthCallback
+	get /api/auth/feishu/callback (FeishuOAuthCallbackReq)
+
+	@handler feishuPublicConfig
+	get /api/auth/feishu/public-config (EmptyReq) returns (FeishuPublicConfigResp)
 
 	// 关注相关API
 	@handler followUser
@@ -1319,10 +1555,10 @@ type LlmChatReq {
 	SourceMsgId         string       `json:"source_msg_id,optional"`
 	ClientMemoryApplied bool         `json:"client_memory_applied,optional"`
 	Stream              bool         `json:"stream,optional"`
-	Temperature   float64      `json:"temperature,optional"`
-	TopP          float64      `json:"top_p,optional"`
-	MaxTokens     int          `json:"max_tokens,optional"`
-	RepeatPenalty float64      `json:"repeat_penalty,optional"`
+	Temperature         float64      `json:"temperature,optional"`
+	TopP                float64      `json:"top_p,optional"`
+	MaxTokens           int          `json:"max_tokens,optional"`
+	RepeatPenalty       float64      `json:"repeat_penalty,optional"`
 }
 
 type LlmChatResp {
@@ -1375,6 +1611,90 @@ service Super {
 	// 发送聊天消息
 	@handler chat
 	post /api/llm/chat (LlmChatReq) returns (LlmChatResp)
+
+	// Ollama 原样转发（终端同款，无服务端记忆注入）
+	@handler modelsRaw
+	get /api/llm/models/raw (EmptyReq)
+
+	@handler config
+	get /api/llm/config (EmptyReq)
+
+	@handler chatRaw
+	post /api/llm/chat/raw (EmptyReq)
+
+	@handler showRaw
+	post /api/llm/show/raw (EmptyReq)
+}
+
+// 飞书账号绑定（需 JWT）
+@server (
+	group: user
+	jwt:   Auth
+)
+service Super {
+	@handler bindFeishu
+	put /api/user/feishu/bind (BindFeishuReq) returns (BindFeishuResp)
+
+	@handler unbindFeishu
+	delete /api/user/feishu/bind (EmptyReq) returns (UnbindFeishuResp)
+
+	@handler sendFeishuTestCard
+	post /api/user/feishu/test-card (EmptyReq) returns (SendFeishuTestCardResp)
+}
+
+// AI 配置与资源（需 JWT）
+@server (
+	group: ai
+	jwt:   Auth
+)
+service Super {
+	@handler getUserConfig
+	get /api/ai/config (EmptyReq) returns (AiUserConfigResp)
+
+	@handler upsertUserConfig
+	put /api/ai/config (AiUserConfigReq) returns (AiUserConfigResp)
+
+	@handler listProviders
+	get /api/ai/providers (EmptyReq) returns (AiProviderProfilesResp)
+
+	@handler upsertProvider
+	put /api/ai/providers (AiResourceUpsertReq) returns (BaseResp)
+
+	@handler deleteProvider
+	delete /api/ai/providers (AiResourceDeleteReq) returns (BaseResp)
+
+	@handler listAgents
+	get /api/ai/agents (EmptyReq) returns (AiAgentsResp)
+
+	@handler listPublicAgents
+	get /api/ai/agents/public (ListPublicAiAgentsReq) returns (AiAgentsResp)
+
+	@handler upsertAgent
+	put /api/ai/agents (AiResourceUpsertReq) returns (BaseResp)
+
+	@handler deleteAgent
+	delete /api/ai/agents (AiResourceDeleteReq) returns (BaseResp)
+
+	@handler listLorebooks
+	get /api/ai/lorebooks (EmptyReq) returns (AiLorebooksResp)
+
+	@handler upsertLorebook
+	put /api/ai/lorebooks (AiLorebookUpsertReq) returns (BaseResp)
+
+	@handler deleteLorebook
+	delete /api/ai/lorebooks (AiResourceDeleteReq) returns (BaseResp)
+}
+
+// Swagger 文档（静态 UI + OpenAPI JSON）
+@server (
+	group: doc
+)
+service Super {
+	@handler swaggerUi
+	get /swagger (EmptyReq)
+
+	@handler swaggerDoc
+	get /swagger/doc.json (EmptyReq)
 }
 
 // 图片上传相关结构

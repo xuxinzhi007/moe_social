@@ -136,6 +136,7 @@ func autoMigrate() error {
 		&model.UserMemoryProfileCache{},
 		&model.UserDevice{},
 		&model.UserMemoryEmbedding{},
+		&model.UserMemoryRelation{},
 		&model.AiUserConfig{},
 		// 签到等级系统
 		&model.UserLevel{},

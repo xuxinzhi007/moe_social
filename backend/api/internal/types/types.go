@@ -3,6 +3,56 @@
 
 package types
 
+type AiAgentsResp struct {
+	BaseResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type AiLorebookUpsertReq struct {
+	Data    map[string]interface{}   `json:"data"`
+	Entries []map[string]interface{} `json:"entries,optional"`
+}
+
+type AiLorebooksResp struct {
+	BaseResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type AiProviderProfilesResp struct {
+	BaseResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type AiResourceDeleteReq struct {
+	Id string `form:"id"`
+}
+
+type AiResourceUpsertReq struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type AiUserConfigData struct {
+	ProviderProfiles []map[string]interface{} `json:"provider_profiles"`
+	Agents           []map[string]interface{} `json:"agents"`
+	Lorebooks        []map[string]interface{} `json:"lorebooks"`
+	UserPersona      string                   `json:"user_persona"`
+	Preferences      map[string]interface{}   `json:"preferences"`
+}
+
+type AiUserConfigReq struct {
+	ProviderProfiles []map[string]interface{} `json:"provider_profiles,optional"`
+	Agents           []map[string]interface{} `json:"agents,optional"`
+	Lorebooks        []map[string]interface{} `json:"lorebooks,optional"`
+	UserPersona      string                   `json:"user_persona,optional"`
+	HasUserPersona   bool                     `json:"has_user_persona,optional"`
+	Preferences      map[string]interface{}   `json:"preferences,optional"`
+}
+
+type AiUserConfigResp struct {
+	BaseResp
+	Data AiUserConfigData `json:"data"`
+}
+
 type AvatarOutfit struct {
 	Id          string       `json:"id"`
 	Name        string       `json:"name"`
@@ -28,6 +78,15 @@ type BaseResp struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Success bool   `json:"success"`
+}
+
+type BindFeishuReq struct {
+	FeishuEmail string `json:"feishu_email"`
+}
+
+type BindFeishuResp struct {
+	BaseResp
+	Data User `json:"data,omitempty"`
 }
 
 type BroadcastNotificationReq struct {
@@ -254,12 +313,6 @@ type DeletePostResp struct {
 	BaseResp
 }
 
-type SearchUserMemoriesReq struct {
-	UserId string `path:"user_id"`
-	Q      string `form:"q,optional"`
-	Limit  int    `form:"limit,optional,default=8"`
-}
-
 type DeleteUserMemoryReq struct {
 	UserId string `path:"user_id"`
 	Key    string `form:"key"`
@@ -318,6 +371,50 @@ type FavoriteEmojiPackReq struct {
 
 type FavoriteEmojiPackResp struct {
 	BaseResp
+}
+
+type FeishuAuthorizeURLData struct {
+	AuthorizeURL string `json:"authorize_url"`
+}
+
+type FeishuAuthorizeURLReq struct {
+	State string `form:"state,optional"`
+}
+
+type FeishuAuthorizeURLResp struct {
+	BaseResp
+	Data FeishuAuthorizeURLData `json:"data,omitempty"`
+}
+
+type FeishuLoginData struct {
+	User      User   `json:"user"`
+	Token     string `json:"token"`
+	IsNewUser bool   `json:"is_new_user"`
+}
+
+type FeishuLoginReq struct {
+	Code string `json:"code"`
+}
+
+type FeishuLoginResp struct {
+	BaseResp
+	Data FeishuLoginData `json:"data,omitempty"`
+}
+
+type FeishuOAuthCallbackReq struct {
+	Code  string `form:"code,optional"`
+	State string `form:"state,optional"`
+}
+
+type FeishuPublicConfigData struct {
+	Enabled             bool   `json:"enabled"`
+	EnterpriseInviteURL string `json:"enterprise_invite_url,omitempty"`
+	Notice              string `json:"notice,omitempty"`
+}
+
+type FeishuPublicConfigResp struct {
+	BaseResp
+	Data FeishuPublicConfigData `json:"data,omitempty"`
 }
 
 type FollowUserReq struct {
@@ -734,6 +831,11 @@ type GetUserLevelResp struct {
 	Data UserLevelInfo `json:"data"`
 }
 
+type GetUserMemoriesDisplayResp struct {
+	BaseResp
+	Data UserMemoryDisplayData `json:"data"`
+}
+
 type GetUserMemoriesReq struct {
 	UserId string `path:"user_id"`
 	Limit  int    `form:"limit,default=50"`
@@ -967,17 +1069,36 @@ type ListPrivateMessagesResp struct {
 	HasMore bool                 `json:"has_more"`
 }
 
+type ListPublicAiAgentsReq struct {
+	Limit int `form:"limit,optional,default=50"`
+}
+
+type ListUserDevicesReq struct {
+	UserId string `path:"user_id"`
+	Limit  int    `form:"limit,default=50"`
+	Offset int    `form:"offset,default=0"`
+}
+
+type ListUserDevicesResp struct {
+	BaseResp
+	Data    []UserDeviceRecord `json:"data"`
+	Total   int64              `json:"total"`
+	Limit   int                `json:"limit"`
+	Offset  int                `json:"offset"`
+	HasMore bool               `json:"has_more"`
+}
+
 type LlmChatReq struct {
-	Model                 string       `json:"model"`
-	Messages              []LlmMessage `json:"messages"`
-	SessionId             string       `json:"session_id,optional"`
-	SourceMsgId           string       `json:"source_msg_id,optional"`
-	ClientMemoryApplied   bool         `json:"client_memory_applied,optional"`
-	Stream                bool         `json:"stream,optional"`
-	Temperature   float64      `json:"temperature,optional"`
-	TopP          float64      `json:"top_p,optional"`
-	MaxTokens     int          `json:"max_tokens,optional"`
-	RepeatPenalty float64      `json:"repeat_penalty,optional"`
+	Model               string       `json:"model"`
+	Messages            []LlmMessage `json:"messages"`
+	SessionId           string       `json:"session_id,optional"`
+	SourceMsgId         string       `json:"source_msg_id,optional"`
+	ClientMemoryApplied bool         `json:"client_memory_applied,optional"`
+	Stream              bool         `json:"stream,optional"`
+	Temperature         float64      `json:"temperature,optional"`
+	TopP                float64      `json:"top_p,optional"`
+	MaxTokens           int          `json:"max_tokens,optional"`
+	RepeatPenalty       float64      `json:"repeat_penalty,optional"`
 }
 
 type LlmChatResp struct {
@@ -1142,6 +1263,10 @@ type ReadNotificationReq struct {
 	UserId string `json:"user_id"`
 }
 
+type RebuildUserMemoryEmbeddingsReq struct {
+	UserId string `path:"user_id"`
+}
+
 type RechargeReq struct {
 	UserId      string  `path:"user_id"`
 	Amount      float64 `json:"amount"`
@@ -1162,6 +1287,11 @@ type RefreshTokenResp struct {
 	Data RefreshTokenData `json:"data"`
 }
 
+type RegisterData struct {
+	User  User   `json:"user"`
+	Token string `json:"token"`
+}
+
 type RegisterReq struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -1170,7 +1300,7 @@ type RegisterReq struct {
 
 type RegisterResp struct {
 	BaseResp
-	Data User `json:"data"`
+	Data RegisterData `json:"data"`
 }
 
 type ReportPostReq struct {
@@ -1192,10 +1322,31 @@ type ResetPasswordResp struct {
 	BaseResp
 }
 
+type SearchUserMemoriesData struct {
+	Query string                  `json:"query"`
+	Items []UserMemoryDisplayItem `json:"items"`
+	Total int                     `json:"total"`
+}
+
+type SearchUserMemoriesReq struct {
+	UserId string `path:"user_id"`
+	Q      string `form:"q,optional"`
+	Limit  int    `form:"limit,optional,default=8"`
+}
+
+type SearchUserMemoriesResp struct {
+	BaseResp
+	Data SearchUserMemoriesData `json:"data"`
+}
+
 type SendBatchNotificationReq struct {
 	UserIDs []string    `json:"user_ids"`
 	Type    string      `json:"type"`
 	Data    interface{} `json:"data"`
+}
+
+type SendFeishuTestCardResp struct {
+	BaseResp
 }
 
 type SendFriendRequestReq struct {
@@ -1252,6 +1403,22 @@ type SubmitUserMemoryFeedbackResp struct {
 	Data UserMemory `json:"data"`
 }
 
+type SyncUserDeviceReq struct {
+	UserId      string `path:"user_id"`
+	DeviceId    string `json:"device_id"`
+	Platform    string `json:"platform,optional"`
+	OSVersion   string `json:"os_version,optional"`
+	AppVersion  string `json:"app_version,optional"`
+	DeviceName  string `json:"device_name,optional"`
+	LastSeen    string `json:"last_seen,optional"`
+	PayloadJSON string `json:"payload_json,optional"`
+}
+
+type SyncUserDeviceResp struct {
+	BaseResp
+	Data UserDeviceRecord `json:"data"`
+}
+
 type SyncUserVipStatusData struct {
 	IsVip     bool   `json:"is_vip"`
 	ExpiresAt string `json:"expires_at"`
@@ -1281,6 +1448,11 @@ type Transaction struct {
 	Description string  `json:"description"`
 	Status      string  `json:"status"`
 	CreatedAt   string  `json:"created_at"`
+}
+
+type UnbindFeishuResp struct {
+	BaseResp
+	Data User `json:"data,omitempty"`
 }
 
 type UnfollowUserReq struct {
@@ -1431,6 +1603,20 @@ type UserAvatar struct {
 	OwnedOutfits  []string     `json:"owned_outfits"`
 }
 
+type UserDeviceRecord struct {
+	Id          string `json:"id"`
+	UserId      string `json:"user_id"`
+	DeviceId    string `json:"device_id"`
+	Platform    string `json:"platform"`
+	OSVersion   string `json:"os_version"`
+	AppVersion  string `json:"app_version"`
+	DeviceName  string `json:"device_name"`
+	PayloadJSON string `json:"payload_json"`
+	LastSeen    string `json:"last_seen"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
+}
+
 type UserLevelInfo struct {
 	Level        int     `json:"level"`
 	Experience   int     `json:"experience"`
@@ -1453,6 +1639,28 @@ type UserMemory struct {
 	SessionId   string  `json:"session_id,optional"`
 	CreatedAt   string  `json:"created_at"`
 	UpdatedAt   string  `json:"updated_at"`
+}
+
+type UserMemoryDisplayData struct {
+	Headline string                     `json:"headline"`
+	Profiles []UserMemoryDisplayProfile `json:"profiles"`
+	Items    []UserMemoryDisplayItem    `json:"items"`
+	Total    int                        `json:"total"`
+}
+
+type UserMemoryDisplayItem struct {
+	ID        string `json:"id"`
+	Key       string `json:"key"`
+	Title     string `json:"title"`
+	Content   string `json:"content"`
+	Category  string `json:"category"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+type UserMemoryDisplayProfile struct {
+	Title     string `json:"title"`
+	Summary   string `json:"summary"`
+	ItemCount int    `json:"item_count"`
 }
 
 type UserMemoryProfile struct {

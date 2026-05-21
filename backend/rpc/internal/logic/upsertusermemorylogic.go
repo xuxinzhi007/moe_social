@@ -145,6 +145,7 @@ func (l *UpsertUserMemoryLogic) UpsertUserMemory(in *super.UpsertUserMemoryReq) 
 
 	triggerUserMemoryProfileRebuildAsync(l.svcCtx.DB, uint(userID), l.Logger)
 	indexMemoryEmbeddingAsync(l.svcCtx.DB, uint(userID), memory.Key, memory.Value, memory.Source, l.Logger)
+	triggerMemoryRelationsSyncAsync(l.svcCtx.DB, uint(userID), l.Logger)
 
 	return &super.UpsertUserMemoryResp{
 		Memory: &super.UserMemory{

@@ -23,6 +23,21 @@ type HybridConfig struct {
 	KeywordWeight float64
 }
 
+// RerankConfig 重排序（pkg/memory 域配置镜像）。
+type RerankConfig struct {
+	Enabled   bool
+	TopK      int
+	MMRLambda float64
+}
+
+// GraphConfig 图谱扩展配置镜像。
+type GraphConfig struct {
+	Enabled   bool
+	Hops      int
+	Boost     float64
+	MaxExpand int
+}
+
 // LoadProviders 从 backend/config/config.yaml（viper）加载，按 Priority 升序尝试。
 func LoadProviders(ollamaBaseURL string) []ProviderConfig {
 	_ = ensureViper()
@@ -102,6 +117,36 @@ func LoadHybridConfig() HybridConfig {
 		cfg.KeywordWeight = w
 	}
 	return cfg
+}
+
+// LoadEnhanceConfig 混合 + rerank + graph 一站式配置（供 API 检索）。
+func LoadEnhanceConfig() (HybridConfig, RerankConfig, GraphConfig) {
+	_ = ensureViper()
+	hc := LoadHybridConfig()
+	rc := RerankConfig{Enabled: true, TopK: 24, MMRLambda: 0.7}
+	gc := GraphConfig{Enabled: true, Hops: 1, Boost: 0.35, MaxExpand: 6}
+	if viper.IsSet("memory.search.rerank_enabled") {
+		rc.Enabled = viper.GetBool("memory.search.rerank_enabled")
+	}
+	if k := viper.GetInt("memory.search.rerank_top_k"); k > 0 {
+		rc.TopK = k
+	}
+	if l := viper.GetFloat64("memory.search.rerank_mmr_lambda"); l > 0 {
+		rc.MMRLambda = l
+	}
+	if viper.IsSet("memory.search.graph_enabled") {
+		gc.Enabled = viper.GetBool("memory.search.graph_enabled")
+	}
+	if h := viper.GetInt("memory.search.graph_hops"); h > 0 {
+		gc.Hops = h
+	}
+	if b := viper.GetFloat64("memory.search.graph_boost"); b > 0 {
+		gc.Boost = b
+	}
+	if m := viper.GetInt("memory.search.graph_max_expand"); m > 0 {
+		gc.MaxExpand = m
+	}
+	return hc, rc, gc
 }
 
 func mapToProvider(m map[string]any) ProviderConfig {

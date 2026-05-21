@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import '../../auth_service.dart';
+import '../../services/achievement_hooks.dart';
 import '../../utils/validators.dart';
 import '../../widgets/fade_in_up.dart';
 import 'package:provider/provider.dart';
 import '../../providers/loading_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../widgets/app_message_widget.dart';
 import '../../widgets/moe_input_field.dart';
 import '../../widgets/auth_background.dart';
@@ -112,8 +114,16 @@ class _RegisterPageState extends State<RegisterPage> {
           );
           if (!mounted) return;
         }
+        try {
+          context.read<NotificationProvider>().init();
+        } catch (_) {}
+        final uid = AuthService.currentUser;
+        if (uid != null) {
+          unawaited(AchievementHooks.ensureReady(uid));
+        }
+        if (!mounted) return;
         MoeToast.success(context, '欢迎加入 Moe Social！(≧∇≦)/');
-        Navigator.pop(context);
+        Navigator.pushReplacementNamed(context, '/home');
       },
       onError: (_) {
         if (!mounted) return;
