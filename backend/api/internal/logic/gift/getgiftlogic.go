@@ -57,6 +57,8 @@ func (l *GetGiftLogic) GetGift(req *types.GetGiftReq) (resp *types.GetGiftResp, 
 			Description: rpcResp.Gift.Description,
 			CreatedAt:   rpcResp.Gift.CreatedAt,
 			UpdatedAt:   rpcResp.Gift.UpdatedAt,
+			Category:    rpcResp.Gift.Category,
+			SortOrder:   int(rpcResp.Gift.SortOrder),
 		},
 	}, nil
 }

@@ -42,7 +42,8 @@ func (l *GetGiftsLogic) GetGifts(in *super.GetGiftsReq) (*super.GetGiftsResp, er
 	db.Model(&model.Gift{}).Count(&total)
 
 	offset := (int(page) - 1) * int(pageSize)
-	db.Offset(offset).Limit(int(pageSize)).Find(&gifts)
+	db.Order("sort_order ASC, price ASC, id ASC").
+		Offset(offset).Limit(int(pageSize)).Find(&gifts)
 
 	stockByGift := map[uint]int32{}
 	viewer := in.GetViewerUserId()
@@ -65,14 +66,16 @@ func (l *GetGiftsLogic) GetGifts(in *super.GetGiftsReq) (*super.GetGiftsResp, er
 	giftList := make([]*super.Gift, len(gifts))
 	for i, gift := range gifts {
 		giftList[i] = &super.Gift{
-			Id:             uint64(gift.ID),
-			Name:           gift.Name,
-			Price:          int32(gift.Price),
-			Icon:           gift.Icon,
-			Description:    gift.Description,
-			CreatedAt:      gift.CreatedAt.Format("2006-01-02 15:04:05"),
-			UpdatedAt:      gift.UpdatedAt.Format("2006-01-02 15:04:05"),
-			OwnedQuantity:  stockByGift[gift.ID],
+			Id:            uint64(gift.ID),
+			Name:          gift.Name,
+			Price:         int32(gift.Price),
+			Icon:          gift.Icon,
+			Description:   gift.Description,
+			CreatedAt:     gift.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:     gift.UpdatedAt.Format("2006-01-02 15:04:05"),
+			OwnedQuantity: stockByGift[gift.ID],
+			Category:      gift.Category,
+			SortOrder:     int32(gift.SortOrder),
 		}
 	}
 

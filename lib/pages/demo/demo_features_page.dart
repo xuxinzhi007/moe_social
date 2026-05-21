@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../models/topic_tag.dart';
 import '../../models/gift.dart';
+import '../../services/gift_catalog_service.dart';
+import '../../widgets/moe_loading.dart';
 import '../../models/achievement_badge.dart';
 import '../../widgets/topic_tag_selector.dart';
 import '../../widgets/achievement_badge_display.dart';
@@ -18,11 +20,36 @@ class DemoFeaturesPage extends StatefulWidget {
 class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
   List<TopicTag> _selectedTopicTags = [];
   final List<AchievementBadge> _userBadges = [];
+  List<Gift> _demoGifts = [];
+  bool _giftsLoading = true;
+  String? _giftsLoadError;
 
   @override
   void initState() {
     super.initState();
     _loadUserBadges();
+    _loadDemoGifts();
+  }
+
+  Future<void> _loadDemoGifts() async {
+    setState(() {
+      _giftsLoading = true;
+      _giftsLoadError = null;
+    });
+    try {
+      final catalog = await GiftCatalogService.fetch(pageSize: 80);
+      if (!mounted) return;
+      setState(() {
+        _demoGifts = GiftCatalogService.pickPreviewSamples(catalog, limit: 6);
+        _giftsLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _giftsLoading = false;
+        _giftsLoadError = '无法加载礼物列表，请确认后端已启动并已执行 migrate';
+      });
+    }
   }
 
   void _loadUserBadges() {
@@ -220,10 +247,40 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  if (_giftsLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Column(
+                        children: [
+                          MoeSmallLoading(size: 28),
+                          SizedBox(height: 8),
+                          Text('从服务端加载礼物…'),
+                        ],
+                      ),
+                    )
+                  else if (_giftsLoadError != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Column(
+                        children: [
+                          Text(
+                            _giftsLoadError!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: _loadDemoGifts,
+                            child: const Text('重试'),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
                   Wrap(
                     spacing: 12,
                     runSpacing: 12,
-                    children: Gift.getPopularGifts(limit: 6).map((gift) {
+                    children: _demoGifts.map((gift) {
                       return GestureDetector(
                         onTap: () => _showGiftAnimation(gift),
                         child: Container(

@@ -148,6 +148,8 @@ func autoMigrate() error {
 		// 礼物和社区相关
 		&model.Gift{},
 		&model.GiftRecord{},
+		&model.UserGiftStock{},
+		&model.GiftPurchaseOrder{},
 		&model.Group{},
 		&model.GroupMember{},
 		&model.GroupPost{},

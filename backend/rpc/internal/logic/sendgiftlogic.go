@@ -179,6 +179,8 @@ func (l *SendGiftLogic) SendGift(in *super.SendGiftReq) (*super.SendGiftResp, er
 				Price:       int32(gift.Price),
 				Icon:        gift.Icon,
 				Description: gift.Description,
+				Category:    gift.Category,
+				SortOrder:   int32(gift.SortOrder),
 			},
 			Quantity:  int32(record.Quantity),
 			CreatedAt: record.CreatedAt.Format("2006-01-02 15:04:05"),

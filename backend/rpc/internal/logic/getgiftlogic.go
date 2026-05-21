@@ -52,8 +52,10 @@ func (l *GetGiftLogic) GetGift(in *super.GetGiftReq) (*super.GetGiftResp, error)
 			Price:       int32(gift.Price),
 			Icon:        gift.Icon,
 			Description: gift.Description,
-			CreatedAt:  gift.CreatedAt.Format("2006-01-02 15:04:05"),
-			UpdatedAt:  gift.UpdatedAt.Format("2006-01-02 15:04:05"),
+			CreatedAt:     gift.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:     gift.UpdatedAt.Format("2006-01-02 15:04:05"),
+			Category:      gift.Category,
+			SortOrder:     int32(gift.SortOrder),
 		},
 	}, nil
 }

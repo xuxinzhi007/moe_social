@@ -2074,6 +2074,8 @@ type Gift {
 	CreatedAt     string `json:"created_at"`
 	UpdatedAt     string `json:"updated_at"`
 	OwnedQuantity int    `json:"owned_quantity,optional"`
+	Category      string `json:"category,optional"`
+	SortOrder     int    `json:"sort_order,optional"`
 }
 
 type GiftRecord {

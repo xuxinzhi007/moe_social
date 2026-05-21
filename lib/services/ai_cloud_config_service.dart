@@ -94,7 +94,8 @@ class AiCloudConfigService {
   }
 
   /// 广场：各用户已发布（is_public=true）的角色卡 JSON 列表。
-  Future<List<Map<String, dynamic>>?> fetchPublicAgents({int limit = 50}) async {
+  Future<List<Map<String, dynamic>>?> fetchPublicAgents(
+      {int limit = 50}) async {
     try {
       final resp = await ApiService.get(
         '/api/ai/agents/public?limit=$limit',

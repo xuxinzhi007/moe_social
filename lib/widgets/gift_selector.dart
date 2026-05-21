@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/gift.dart';
 import '../auth_service.dart';
 import '../services/api_service.dart';
+import '../services/gift_catalog_service.dart';
 import '../utils/error_handler.dart';
 import 'moe_loading.dart';
 import 'gift_haptic.dart';
@@ -60,13 +61,12 @@ class _GiftSelectorState extends State<GiftSelector>
   Future<void> _loadGiftCatalog() async {
     try {
       final uid = AuthService.currentUser;
-      final rows = await ApiService.getGifts(
+      final parsed = await GiftCatalogService.fetch(
         page: 1,
         pageSize: 80,
         viewerUserId: uid,
       );
       if (!mounted) return;
-      final parsed = rows.map(Gift.fromCatalogApi).toList();
       setState(() {
         _serverGifts = parsed;
         _giftCatalogResolved = true;
