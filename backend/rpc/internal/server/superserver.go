@@ -159,6 +159,11 @@ func (s *SuperServer) RebuildUserMemoryEmbeddings(ctx context.Context, in *super
 	return l.RebuildUserMemoryEmbeddings(in)
 }
 
+func (s *SuperServer) ListUserMemoryRelations(ctx context.Context, in *super.ListUserMemoryRelationsReq) (*super.ListUserMemoryRelationsResp, error) {
+	l := logic.NewListUserMemoryRelationsLogic(ctx, s.svcCtx)
+	return l.ListUserMemoryRelations(in)
+}
+
 func (s *SuperServer) ListAiProviders(ctx context.Context, in *super.ListAiResourceReq) (*super.ListAiResourceResp, error) {
 	l := logic.NewListAiProvidersLogic(ctx, s.svcCtx)
 	return l.ListAiProviders(in)

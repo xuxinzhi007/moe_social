@@ -76,6 +76,8 @@ func (l *RebuildUserMemoryEmbeddingsLogic) RebuildUserMemoryEmbeddings(in *super
 		}
 	}
 
+	triggerMemoryRelationsSyncAsync(l.svcCtx.DB, userID, l.Logger)
+
 	return &super.RebuildUserMemoryEmbeddingsResp{
 		Indexed:  int32(len(vecs)),
 		Provider: provider,

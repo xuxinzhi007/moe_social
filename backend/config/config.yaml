@@ -96,15 +96,15 @@ private_message:
 
 #线上ip ：
 
-# database:
-#  host: "47.106.175.49"
-#  port: 3306
-#  user: "root"
-#  password: "123456xxZ."
-#  dbname: "go_react_demo"
-#  charset: "utf8mb4"
-#  parseTime: true
-#  loc: "Local"
+database:
+ host: "47.106.175.49"
+ port: 3306
+ user: "root"
+ password: "123456xxZ."
+ dbname: "go_react_demo"
+ charset: "utf8mb4"
+ parseTime: true
+ loc: "Local"
 
 #本地ip :
 
@@ -114,6 +114,14 @@ memory:
     hybrid_enabled: true
     vector_weight: 0.7
     keyword_weight: 0.3
+    # Phase 3：Mem0 风格 rerank + 图谱扩展
+    rerank_enabled: true
+    rerank_top_k: 24
+    rerank_mmr_lambda: 0.7
+    graph_enabled: true
+    graph_hops: 1
+    graph_boost: 0.35
+    graph_max_expand: 6
   embedding:
     # 默认链：先 Ollama（ollama.base_url），再 OpenAI 兼容中转（需同时配置 base_url + api_key）
     ollama_model: nomic-embed-text
@@ -132,12 +140,12 @@ memory:
     #     model: text-embedding-3-small
     #     priority: 2
 
-database:
-  host: "127.0.0.1"
-  port: 3306
-  user: "root"
-  password: "123456"
-  dbname: "go_react_demo"
-  charset: "utf8mb4"
-  parseTime: true
-  loc: "Local"
+# database:
+#   host: "127.0.0.1"
+#   port: 3306
+#   user: "root"
+#   password: "123456"
+#   dbname: "go_react_demo"
+#   charset: "utf8mb4"
+#   parseTime: true
+#   loc: "Local"

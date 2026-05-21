@@ -115,6 +115,25 @@ flowchart TB
 
 配置见 `backend/config/config.yaml` 的 `memory.search` / `memory.embedding` 段。
 
+### 2.2 Phase 3：图谱 + Rerank（Mem0 风格，已落地）
+
+检索流水线（`HybridSearchEnhanced`）：
+
+```mermaid
+flowchart LR
+  Q[用户 query] --> H[混合分 关键词+向量]
+  H --> G[图谱 1-hop 扩展]
+  G --> R[Rerank MMR+新近度+置信度]
+  R --> OUT[Top-K 注入]
+```
+
+| 能力 | 实现 |
+|------|------|
+| **Rerank** | `pkg/memory/rerank.go`：MMR 去相似、30 天新近度、置信度、key 命中加分 |
+| **图谱** | `user_memory_relations` + 规则推断（同 type / identity / preference 簇）；search 时扩展邻居 |
+| **同步** | 记忆 upsert / reindex 后异步 `syncMemoryRelations` |
+| **配置** | `memory.search.rerank_*`、`memory.search.graph_*` |
+
 ---
 
 ## 3. 默认对话流程（路径 A）
@@ -166,7 +185,11 @@ Provider 开关：**「高级：模型多轮工具检索」**（`supports_tool_c
 | 文件 | 层 |
 |------|-----|
 | `backend/pkg/memory/search.go` | L1 关键词检索 |
-| `backend/pkg/memory/hybrid.go` | L1 混合检索打分 |
+| `backend/pkg/memory/hybrid.go` | L1 混合检索入口 |
+| `backend/pkg/memory/enhanced_search.go` | L1 混合→图谱→rerank 流水线 |
+| `backend/pkg/memory/rerank.go` | L1 MMR rerank |
+| `backend/pkg/memory/graph.go` | L1 图谱构建与扩展 |
+| `backend/model/user_memory_relation.go` | 图谱边持久化 |
 | `backend/pkg/memory/embed/` | L1 embedding 链 |
 | `backend/.../memory_hybrid_search.go` | L2 API 混合 search |
 | `backend/.../memory_search.go` | L2 API 展示结构 |
@@ -209,7 +232,7 @@ cd docs && python3 -m http.server 8765
 | OpenClaw | 双层记忆、混合检索、compaction 前 flush、注入预算 | 双层 + **混合检索** + flush；注入预算待做 |
 | SillyTavern | Lorebook 触发、对话向量 RAG | Lore 已有；消息 RAG 未做 |
 
-**建议优先级**：~~P0 混合检索~~（Phase 2 已落地）→ P1 注入预算与 scope → P2 对话 RAG（独立子系统）。
+**建议优先级**：~~P0 混合检索~~、~~P0 轻量图谱/rerank~~（Phase 3 已落地）→ P1 注入预算与 scope → P2 对话 RAG（独立子系统）。
 
 ---
 
@@ -237,3 +260,4 @@ cd docs && python3 -m http.server 8765
 | 2026-05-20 | **OpenClaw Phase 1**：双层注入、日记层、`pre_compact_flush`、bootstrap 预算 |
 | 2026-05-20 | **Phase 2**：混合检索、Ollama/中转 embedding 链、异步索引、`POST /memories/reindex`、`memory_list?query=`、`docs/index.html` |
 | 2026-05-20 | [记忆系统-2026-05-20-变更整理.md](./记忆系统-2026-05-20-变更整理.md) 变更汇总与文档同步 |
+| 2026-05-20 | **Phase 3**：图谱 `user_memory_relations`、MMR rerank、`HybridSearchEnhanced` |

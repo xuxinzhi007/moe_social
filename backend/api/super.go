@@ -118,16 +118,6 @@ func main() {
 
 	ctx := svc.NewServiceContext(c)
 	handler.RegisterHandlers(server, ctx)
-	// 非 goctl 生成：避免 routes.go 被覆盖时丢失 LLM raw 转发
-	handler.RegisterLlmRawRoutes(server, ctx)
-	handler.RegisterMemoryDisplayRoutes(server, ctx)
-	handler.RegisterUserDeviceRoutes(server, ctx)
-	handler.RegisterAiConfigRoutes(server, ctx)
-	handler.RegisterAiResourceRoutes(server, ctx)
-	handler.RegisterFeishuRoutes(server, ctx)
-	handler.RegisterFeishuAuthRoutes(server, ctx)
-	// 非 goctl 生成：Swagger 文档入口
-	handler.RegisterSwaggerRoutes(server)
 
 	fmt.Printf("Effective image config: local_dir=%s public_base_url=%s max_bytes=%d\n",
 		c.Image.LocalDir, c.Image.PublicBaseUrl, c.Image.MaxBytes)

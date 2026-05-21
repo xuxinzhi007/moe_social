@@ -46,6 +46,7 @@ const (
 	Super_ListUserMemoryEmbeddings_FullMethodName    = "/super.Super/ListUserMemoryEmbeddings"
 	Super_UpsertUserMemoryEmbedding_FullMethodName   = "/super.Super/UpsertUserMemoryEmbedding"
 	Super_RebuildUserMemoryEmbeddings_FullMethodName = "/super.Super/RebuildUserMemoryEmbeddings"
+	Super_ListUserMemoryRelations_FullMethodName     = "/super.Super/ListUserMemoryRelations"
 	Super_ListAiProviders_FullMethodName             = "/super.Super/ListAiProviders"
 	Super_UpsertAiProvider_FullMethodName            = "/super.Super/UpsertAiProvider"
 	Super_DeleteAiProvider_FullMethodName            = "/super.Super/DeleteAiProvider"
@@ -160,6 +161,7 @@ type SuperClient interface {
 	ListUserMemoryEmbeddings(ctx context.Context, in *ListUserMemoryEmbeddingsReq, opts ...grpc.CallOption) (*ListUserMemoryEmbeddingsResp, error)
 	UpsertUserMemoryEmbedding(ctx context.Context, in *UpsertUserMemoryEmbeddingReq, opts ...grpc.CallOption) (*UpsertUserMemoryEmbeddingResp, error)
 	RebuildUserMemoryEmbeddings(ctx context.Context, in *RebuildUserMemoryEmbeddingsReq, opts ...grpc.CallOption) (*RebuildUserMemoryEmbeddingsResp, error)
+	ListUserMemoryRelations(ctx context.Context, in *ListUserMemoryRelationsReq, opts ...grpc.CallOption) (*ListUserMemoryRelationsResp, error)
 	ListAiProviders(ctx context.Context, in *ListAiResourceReq, opts ...grpc.CallOption) (*ListAiResourceResp, error)
 	UpsertAiProvider(ctx context.Context, in *UpsertAiResourceReq, opts ...grpc.CallOption) (*UpsertAiResourceResp, error)
 	DeleteAiProvider(ctx context.Context, in *DeleteAiResourceReq, opts ...grpc.CallOption) (*DeleteAiResourceResp, error)
@@ -528,6 +530,16 @@ func (c *superClient) RebuildUserMemoryEmbeddings(ctx context.Context, in *Rebui
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RebuildUserMemoryEmbeddingsResp)
 	err := c.cc.Invoke(ctx, Super_RebuildUserMemoryEmbeddings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) ListUserMemoryRelations(ctx context.Context, in *ListUserMemoryRelationsReq, opts ...grpc.CallOption) (*ListUserMemoryRelationsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListUserMemoryRelationsResp)
+	err := c.cc.Invoke(ctx, Super_ListUserMemoryRelations_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1348,6 +1360,7 @@ type SuperServer interface {
 	ListUserMemoryEmbeddings(context.Context, *ListUserMemoryEmbeddingsReq) (*ListUserMemoryEmbeddingsResp, error)
 	UpsertUserMemoryEmbedding(context.Context, *UpsertUserMemoryEmbeddingReq) (*UpsertUserMemoryEmbeddingResp, error)
 	RebuildUserMemoryEmbeddings(context.Context, *RebuildUserMemoryEmbeddingsReq) (*RebuildUserMemoryEmbeddingsResp, error)
+	ListUserMemoryRelations(context.Context, *ListUserMemoryRelationsReq) (*ListUserMemoryRelationsResp, error)
 	ListAiProviders(context.Context, *ListAiResourceReq) (*ListAiResourceResp, error)
 	UpsertAiProvider(context.Context, *UpsertAiResourceReq) (*UpsertAiResourceResp, error)
 	DeleteAiProvider(context.Context, *DeleteAiResourceReq) (*DeleteAiResourceResp, error)
@@ -1532,6 +1545,9 @@ func (UnimplementedSuperServer) UpsertUserMemoryEmbedding(context.Context, *Upse
 }
 func (UnimplementedSuperServer) RebuildUserMemoryEmbeddings(context.Context, *RebuildUserMemoryEmbeddingsReq) (*RebuildUserMemoryEmbeddingsResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method RebuildUserMemoryEmbeddings not implemented")
+}
+func (UnimplementedSuperServer) ListUserMemoryRelations(context.Context, *ListUserMemoryRelationsReq) (*ListUserMemoryRelationsResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListUserMemoryRelations not implemented")
 }
 func (UnimplementedSuperServer) ListAiProviders(context.Context, *ListAiResourceReq) (*ListAiResourceResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListAiProviders not implemented")
@@ -2270,6 +2286,24 @@ func _Super_RebuildUserMemoryEmbeddings_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SuperServer).RebuildUserMemoryEmbeddings(ctx, req.(*RebuildUserMemoryEmbeddingsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_ListUserMemoryRelations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUserMemoryRelationsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).ListUserMemoryRelations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_ListUserMemoryRelations_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).ListUserMemoryRelations(ctx, req.(*ListUserMemoryRelationsReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3792,6 +3826,10 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RebuildUserMemoryEmbeddings",
 			Handler:    _Super_RebuildUserMemoryEmbeddings_Handler,
+		},
+		{
+			MethodName: "ListUserMemoryRelations",
+			Handler:    _Super_ListUserMemoryRelations_Handler,
 		},
 		{
 			MethodName: "ListAiProviders",

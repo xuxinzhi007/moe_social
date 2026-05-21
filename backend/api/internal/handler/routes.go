@@ -6,6 +6,7 @@ package handler
 import (
 	"net/http"
 
+	ai "backend/api/internal/handler/ai"
 	appcfg "backend/api/internal/handler/appcfg"
 	avatar "backend/api/internal/handler/avatar"
 	chat "backend/api/internal/handler/chat"
@@ -13,6 +14,7 @@ import (
 	comment "backend/api/internal/handler/comment"
 	community "backend/api/internal/handler/community"
 	content "backend/api/internal/handler/content"
+	doc "backend/api/internal/handler/doc"
 	emoji "backend/api/internal/handler/emoji"
 	gift "backend/api/internal/handler/gift"
 	image "backend/api/internal/handler/image"
@@ -29,6 +31,72 @@ import (
 )
 
 func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/ai/agents",
+				Handler: ai.ListAgentsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/ai/agents",
+				Handler: ai.UpsertAgentHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/ai/agents",
+				Handler: ai.DeleteAgentHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/ai/agents/public",
+				Handler: ai.ListPublicAgentsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/ai/config",
+				Handler: ai.GetUserConfigHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/ai/config",
+				Handler: ai.UpsertUserConfigHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/ai/lorebooks",
+				Handler: ai.ListLorebooksHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/ai/lorebooks",
+				Handler: ai.UpsertLorebookHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/ai/lorebooks",
+				Handler: ai.DeleteLorebookHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/ai/providers",
+				Handler: ai.ListProvidersHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/ai/providers",
+				Handler: ai.UpsertProviderHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/ai/providers",
+				Handler: ai.DeleteProviderHandler(serverCtx),
+			},
+		},
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+	)
+
 	server.AddRoutes(
 		[]rest.Route{
 			{
@@ -237,6 +305,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
+				Path:    "/swagger",
+				Handler: doc.SwaggerUiHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/swagger/doc.json",
+				Handler: doc.SwaggerDocHandler(serverCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/emoji/packs",
 				Handler: emoji.GetEmojiPacksHandler(serverCtx),
 			},
@@ -336,6 +419,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: llm.ChatHandler(serverCtx),
 			},
 			{
+				Method:  http.MethodPost,
+				Path:    "/api/llm/chat/raw",
+				Handler: llm.ChatRawHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/llm/config",
+				Handler: llm.ConfigHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodGet,
 				Path:    "/api/llm/models",
 				Handler: llm.ModelsHandler(serverCtx),
@@ -349,6 +442,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodPost,
 				Path:    "/api/llm/models/download",
 				Handler: llm.DownloadModelHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/llm/models/raw",
+				Handler: llm.ModelsRawHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/llm/show/raw",
+				Handler: llm.ShowRawHandler(serverCtx),
 			},
 		},
 	)
@@ -463,6 +566,26 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
+				Path:    "/api/auth/feishu/authorize-url",
+				Handler: user.FeishuAuthorizeURLHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/auth/feishu/callback",
+				Handler: user.FeishuOAuthCallbackHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/auth/feishu/login",
+				Handler: user.FeishuLoginHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/auth/feishu/public-config",
+				Handler: user.FeishuPublicConfigHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/transactions/:transaction_id",
 				Handler: user.GetTransactionHandler(serverCtx),
 			},
@@ -490,6 +613,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/user/:user_id/detail",
 				Handler: user.GetUserHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/user/:user_id/devices",
+				Handler: user.ListUserDevicesHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/user/:user_id/devices/sync",
+				Handler: user.SyncUserDeviceHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodPost,
@@ -562,6 +695,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: user.DeleteUserMemoryHandler(serverCtx),
 			},
 			{
+				Method:  http.MethodGet,
+				Path:    "/api/user/:user_id/memories/display",
+				Handler: user.GetUserMemoriesDisplayHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodPost,
 				Path:    "/api/user/:user_id/memories/feedback",
 				Handler: user.SubmitUserMemoryFeedbackHandler(serverCtx),
@@ -570,6 +708,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/user/:user_id/memories/profiles",
 				Handler: user.GetUserMemoryProfilesHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/user/:user_id/memories/reindex",
+				Handler: user.RebuildUserMemoryEmbeddingsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/user/:user_id/memories/search",
+				Handler: user.SearchUserMemoriesHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodPut,
@@ -667,6 +815,27 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: user.GetUserCountHandler(serverCtx),
 			},
 		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/user/feishu/bind",
+				Handler: user.BindFeishuHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/user/feishu/bind",
+				Handler: user.UnbindFeishuHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/user/feishu/test-card",
+				Handler: user.SendFeishuTestCardHandler(serverCtx),
+			},
+		},
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 	)
 
 	server.AddRoutes(

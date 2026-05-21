@@ -16,8 +16,24 @@ func DefaultHybridConfig() HybridConfig {
 	return HybridConfig{VectorWeight: 0.7, KeywordWeight: 0.3}
 }
 
-// HybridSearch 关键词分 + 向量余弦分融合（任一路缺失则自动降权）。
+// HybridSearch 关键词分 + 向量余弦分融合；默认走 HybridSearchEnhanced（含图谱+rerank）。
 func HybridSearch(
+	records []Record,
+	query string,
+	queryVec []float32,
+	embeddings map[string][]float32,
+	limit int,
+	cfg HybridConfig,
+) SearchResult {
+	return HybridSearchEnhanced(records, query, queryVec, embeddings, nil, limit, EnhanceConfig{
+		Hybrid: cfg,
+		Rerank: DefaultRerankConfig(),
+		Graph:  DefaultGraphConfig(),
+	})
+}
+
+// hybridSearchCore 仅混合分，不图谱/rerank（测试或显式关闭增强时用）。
+func hybridSearchCore(
 	records []Record,
 	query string,
 	queryVec []float32,

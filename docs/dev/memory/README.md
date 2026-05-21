@@ -64,6 +64,8 @@ OpenClaw / SillyTavern 调研与演进优先级：
 |----|------|
 | `pkg/memory` 检索 / 过滤 / 画像 | ✅ |
 | `pkg/memory` 混合检索 + embed 链 | ✅ |
+| 图谱 `user_memory_relations` + graph expand | ✅ |
+| MMR rerank | ✅ |
 | API search → `HybridSearchUserFacingMemories` | ✅ |
 | `user_memory_embeddings` + RPC 向量 CRUD | ✅ |
 | 设备表 `user_devices` 与记忆分离 | ✅ |

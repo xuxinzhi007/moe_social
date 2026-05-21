@@ -177,12 +177,40 @@ class AuthService {
   static Future<AuthResult> register(
       String username, String email, String password) async {
     try {
-      final result = await ApiService.register(username, email, password);
+      final normalizedEmail = email.trim().toLowerCase();
+      final result = await ApiService.register(
+        username.trim(),
+        normalizedEmail,
+        password,
+      );
       final data = result['data'];
-      String? moe;
-      if (data is Map<String, dynamic>) {
-        moe = data['moe_no'] as String?;
+      if (data is! Map<String, dynamic>) {
+        return AuthResult.failure('注册响应异常');
       }
+      final userData = data['user'];
+      if (userData is! Map<String, dynamic>) {
+        return AuthResult.failure('注册响应异常');
+      }
+      final token = data['token'];
+      if (token is! String || token.isEmpty) {
+        return AuthResult.failure('注册响应异常');
+      }
+
+      _currentUser = userData['id'] as String;
+      _token = token;
+
+      await _saveAuthData();
+      final prefs = await SharedPreferences.getInstance();
+      await _purgeAllUserInfoCaches(prefs);
+      if (normalizedEmail.isNotEmpty) {
+        await prefs.setString(_lastLoginAccountKey, normalizedEmail);
+      }
+
+      ApiService.setToken(_token);
+      PresenceService.start();
+      ChatPushService.start();
+
+      final moe = userData['moe_no'] as String?;
       return AuthResult.success(moeNo: moe);
     } on ApiException catch (e) {
       return AuthResult.failure(e.message);

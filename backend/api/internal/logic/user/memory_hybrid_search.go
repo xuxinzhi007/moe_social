@@ -12,7 +12,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-// HybridSearchUserFacingMemories Phase 2：关键词 + 向量混合检索（多 embedding 提供方链）。
+// HybridSearchUserFacingMemories Phase 2+3：混合检索 → 图谱扩展 → rerank。
 func HybridSearchUserFacingMemories(
 	ctx context.Context,
 	svcCtx *svc.ServiceContext,
@@ -23,7 +23,7 @@ func HybridSearchUserFacingMemories(
 ) SearchUserMemoriesResult {
 	logger := logx.WithContext(ctx)
 	records := memory.RecordsFromSuper(memories)
-	hcfg := embed.LoadHybridConfig()
+	hcfg, _, _ := embed.LoadEnhanceConfig()
 	if !hcfg.Enabled {
 		return SearchUserFacingMemories(memories, query, limit)
 	}
@@ -64,6 +64,8 @@ func HybridSearchUserFacingMemories(
 		}
 	}
 
+	relations := loadMemoryRelations(ctx, svcCtx, userID)
+
 	var queryVec []float32
 	if q := strings.TrimSpace(query); q != "" {
 		chain := embed.NewChain(embed.LoadProviders(svcCtx.Config.Ollama.BaseUrl))
@@ -76,21 +78,17 @@ func HybridSearchUserFacingMemories(
 		}
 	}
 
-	if len(embMap) == 0 || len(queryVec) == 0 {
-		return SearchUserFacingMemories(memories, query, limit)
-	}
-
-	res := memory.HybridSearch(
+	ec := loadMemoryEnhanceConfig()
+	res := memory.HybridSearchEnhanced(
 		records,
 		query,
 		queryVec,
 		embMap,
+		relations,
 		limit,
-		memory.HybridConfig{
-			VectorWeight:  hcfg.VectorWeight,
-			KeywordWeight: hcfg.KeywordWeight,
-		},
+		ec,
 	)
+
 	items := make([]UserMemoryDisplayItem, 0, len(res.Items))
 	for _, it := range res.Items {
 		items = append(items, UserMemoryDisplayItem{
@@ -107,4 +105,24 @@ func HybridSearchUserFacingMemories(
 		Items: items,
 		Total: res.Total,
 	}
+}
+
+func loadMemoryRelations(ctx context.Context, svcCtx *svc.ServiceContext, userID string) []memory.Relation {
+	resp, err := svcCtx.SuperRpcClient.ListUserMemoryRelations(ctx, &super.ListUserMemoryRelationsReq{UserId: userID})
+	if err != nil || resp == nil {
+		return nil
+	}
+	out := make([]memory.Relation, 0, len(resp.Items))
+	for _, it := range resp.Items {
+		if it == nil || it.FromKey == "" || it.ToKey == "" {
+			continue
+		}
+		out = append(out, memory.Relation{
+			FromKey:  it.FromKey,
+			ToKey:    it.ToKey,
+			Relation: it.Relation,
+			Weight:   it.Weight,
+		})
+	}
+	return out
 }
