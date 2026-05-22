@@ -29,7 +29,7 @@ func StartMonitor(addr string) {
 	http.HandleFunc("/debug/goroutine-summary", handleGoroutineSummary)
 
 	go func() {
-		log.Printf("RPC monitor: http://%s/debug/live (dashboard: open monitor.html)", addr)
+		log.Printf("RPC monitor: http://%s/debug/live (dashboard: docs/dev/devtools.html)", addr)
 		if err := http.ListenAndServe(addr, withCORS(http.DefaultServeMux)); err != nil {
 			log.Printf("RPC monitor stopped: %v", err)
 		}

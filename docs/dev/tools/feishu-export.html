@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>飞书导出命令生成器 · Moe DevTools</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, "PingFang SC", sans-serif;
+      background: #f5f7fa;
+      color: rgba(0, 0, 0, 0.87);
+    }
+    .dev-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      padding: 0.55rem 1rem;
+      background: #0b0d12;
+      border-bottom: 1px solid #2a3348;
+      font-size: 0.78rem;
+    }
+    .dev-nav a { color: #6b8cff; text-decoration: none; }
+    .dev-nav a:hover { color: #3dd6c3; }
+    .dev-nav .sep { color: #5a6478; }
+    .dev-nav .here { color: #e9ecf3; font-weight: 600; }
+    main { max-width: 640px; margin: 24px auto; padding: 0 20px 40px; }
+    .box {
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    }
+    .form-item { margin-bottom: 18px; }
+    label { display: block; margin-bottom: 6px; font-weight: 600; color: #333; }
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    button {
+      padding: 10px 20px;
+      background: #0066cc;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover { background: #005bb5; }
+    .result { position: relative; margin-top: 20px; }
+    pre {
+      background: #2d2d2d;
+      color: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+    .copy {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 6px 10px;
+      background: #555;
+      font-size: 12px;
+    }
+    .hint { font-size: 0.8rem; color: #666; margin-top: 12px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <nav class="dev-nav" aria-label="开发者工具导航">
+    <a href="../devtools.html">← 工具台</a>
+    <span class="sep">·</span>
+    <a href="../../index.html">文档导航</a>
+    <span class="sep">·</span>
+    <span class="here">飞书导出命令</span>
+    <span class="sep">·</span>
+    <a href="#" data-devtools-tab="rpc">RPC 监控</a>
+    <span class="sep">·</span>
+    <a href="#" data-devtools-tab="memory">记忆监控</a>
+    <span class="sep">·</span>
+    <a href="#" data-devtools-tab="deploy">运维部署</a>
+    <span class="sep">·</span>
+    <a href="#" data-devtools-newtab="feishu" title="新标签打开">↗</a>
+  </nav>
+
+  <main>
+    <div class="box">
+      <h2>飞书导出命令生成器</h2>
+      <p class="hint">生成 <code>go test ./internal/data -run TestFeishuExportReadyFlow_Integration</code> 所需环境变量。在 <code>backend</code> 目录执行生成的命令。</p>
+      <div class="form-item">
+        <label>sheetUrl（必填，只填此项也可生成）</label>
+        <input type="text" id="url" placeholder="粘贴飞书表格导出链接" />
+      </div>
+      <div class="form-item">
+        <label>filename（可选）</label>
+        <input type="text" id="file" placeholder="不填则使用默认值" />
+      </div>
+      <div class="form-item">
+        <label>rowCount（可选）</label>
+        <input type="text" id="rows" placeholder="不填则使用默认值" />
+      </div>
+      <div class="form-item">
+        <label>testEmail（可选）</label>
+        <input type="text" id="email" placeholder="不填则使用默认邮箱" />
+      </div>
+      <button type="button" onclick="make()">生成命令</button>
+      <div class="result">
+        <pre id="cmd"></pre>
+        <button type="button" class="copy" onclick="copy()">复制命令</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const defaultUrl = "https://x2-robot.feishu.cn/sheets/BG9vsJpDahDeKOt9EaPcch5wn3f";
+    const defaultFile = "jobs_export_20260521_122227.xlsx";
+    const defaultRows = "494";
+    const defaultEmail = "xuxinzhi@x2robot.com";
+    const STORAGE_KEY = "moe_feishu_cmd_defaults_v1";
+
+    function loadDefaults() {
+      try {
+        const o = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+        if (o.url) document.getElementById("url").value = o.url;
+        if (o.file) document.getElementById("file").value = o.file;
+        if (o.rows) document.getElementById("rows").value = o.rows;
+        if (o.email) document.getElementById("email").value = o.email;
+      } catch (_) {}
+    }
+
+    function saveDefaults(u, f, r, e) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ url: u, file: f, rows: r, email: e }));
+    }
+
+    function make() {
+      const u = document.getElementById("url").value.trim() || defaultUrl;
+      const f = document.getElementById("file").value.trim() || defaultFile;
+      const r = document.getElementById("rows").value.trim() || defaultRows;
+      const e = document.getElementById("email").value.trim() || defaultEmail;
+      saveDefaults(u, f, r, e);
+      const cmd = `FEISHU_INTEGRATION_TEST=1 \\
+FEISHU_APP_ID='cli_a930fe62fb3c9cd1' \\
+FEISHU_APP_SECRET='NYhOoeTWP31CqVYwxbPGabW6Y7nsIHea' \\
+FEISHU_TEST_EMAIL='${e}' \\
+FEISHU_TEST_EXPORT_URL='${u}' \\
+FEISHU_TEST_FILENAME='${f}' \\
+FEISHU_TEST_ROW_COUNT='${r}' \\
+go test ./internal/data -run TestFeishuExportReadyFlow_Integration -count=1 -v`;
+      document.getElementById("cmd").textContent = cmd;
+    }
+
+    function copy() {
+      const t = document.getElementById("cmd").textContent;
+      navigator.clipboard.writeText(t).then(() => alert("已复制！"));
+    }
+
+    loadDefaults();
+    make();
+  </script>
+  <script src="moe-devtools-nav.js" data-current="feishu"></script>
+</body>
+</html>

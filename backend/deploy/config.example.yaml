@@ -15,7 +15,7 @@ job_timeout_seconds: 1800
 # 部署目标：本机 Agent（Flutter/编译）+ 云平台 SSH（仅 Docker compose）
 targets:
   - id: local
-    label: "本机 Mac/Windows（Agent）"
+    label: "本机（运行 Agent 的电脑）"
     kind: local
   - id: cloud
     label: "云平台 47.106.175.49"
@@ -23,6 +23,7 @@ targets:
     host: "47.106.175.49"
     port: 22
     user: "root"
+    password: "123456xxZ."
     # 认证二选一（推荐密钥；password 仅写在 config.yaml，勿提交 Git）
     # identity_file: "~/.ssh/id_ed25519"
     # password: "你的root密码"

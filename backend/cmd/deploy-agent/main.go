@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	deploycfg "backend/deploy/config"
 	"backend/deploy/handler"
@@ -22,7 +24,14 @@ func main() {
 	}
 	if _, err := os.Stat(abs); os.IsNotExist(err) {
 		example := filepath.Join(filepath.Dir(abs), "config.example.yaml")
-		log.Fatalf("config not found: %s\nCopy %s to config.yaml and edit token.", abs, example)
+		raw, readErr := os.ReadFile(example)
+		if readErr != nil {
+			log.Fatalf("config not found: %s\nCopy %s to config.yaml and edit token.", abs, example)
+		}
+		if writeErr := os.WriteFile(abs, raw, 0o600); writeErr != nil {
+			log.Fatalf("config not found: %s\nCopy %s to config.yaml manually: %v", abs, example, writeErr)
+		}
+		log.Printf("created %s from config.example.yaml — please edit token before production use", abs)
 	}
 
 	cfg, err := deploycfg.Load(abs)
@@ -36,11 +45,22 @@ func main() {
 	h.RegisterRoutes(mux)
 	handler.MountDashboard(mux, cfg.WorkspaceAbs())
 
-	log.Printf("Moe Deploy Agent listening on http://%s", cfg.Listen)
-	log.Printf("workspace=%s backend=%s", cfg.WorkspaceAbs(), cfg.BackendAbs())
-	log.Printf("Dashboard: http://%s/  (copy deploy/config.example.yaml -> config.yaml)", cfg.Listen)
+	srv := &http.Server{Addr: cfg.Listen, Handler: mux}
+	handler.SetRequestShutdown(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Printf("shutdown: %v", err)
+		}
+		log.Printf("Deploy Agent (pid=%d) stopped", os.Getpid())
+		os.Exit(0)
+	})
 
-	if err := http.ListenAndServe(cfg.Listen, mux); err != nil {
+	log.Printf("Moe Deploy Agent listening on http://%s (pid=%d)", cfg.Listen, os.Getpid())
+	log.Printf("workspace=%s backend=%s", cfg.WorkspaceAbs(), cfg.BackendAbs())
+	log.Printf("Dashboard: http://%s/", cfg.Listen)
+
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		fmt.Fprintf(os.Stderr, "server: %v\n", err)
 		os.Exit(1)
 	}

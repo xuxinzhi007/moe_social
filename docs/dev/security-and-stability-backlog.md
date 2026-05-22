@@ -45,7 +45,7 @@
 | 记忆缓存无上限 | `chatlogic.go`：TTL 保留 + 最多 512 用户条目 + 过期/最旧淘汰 |
 | 后台记忆提取无界 | `backgroundMemoryExtractContext` 上限 60s |
 | README 签名明文 | 迁至 `docs/dev/android-release-signing.md`，README 仅保留链接 |
-| 性能监控页 | `monitor.html` + `rpc/internal/debug` JSON 接口 |
+| 性能监控页 | `docs/dev/tools/rpc-monitor.html` + `rpc/internal/debug` JSON 接口 |
 
 ---
 
@@ -77,4 +77,4 @@ JWT 未配置时 API/RPC 启动会直接 `fatal` 并提示修改 `config.yaml`�
 
 - 审查对照：`docs/dev/security-and-stability-backlog.md`（本文件）
 - Android 签名：`docs/dev/android-release-signing.md`
-- RPC 监控：`monitor.html` + `http://127.0.0.1:6060/debug/live`
+- RPC 监控：`docs/dev/devtools.html`（或 `tools/rpc-monitor.html`）+ `http://127.0.0.1:6060/debug/live`

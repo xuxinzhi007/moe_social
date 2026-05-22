@@ -24,7 +24,7 @@ var migrate = flag.Bool("migrate", false, "run GORM AutoMigrate once at startup 
 func main() {
 	flag.Parse()
 
-	// 本地性能监控（仅 127.0.0.1，配合项目根目录 monitor.html）
+	// 本地性能监控（仅 127.0.0.1，配合 docs/dev/tools/rpc-monitor.html）
 	debug.StartMonitor("127.0.0.1:6060")
 
 	var c config.Config
