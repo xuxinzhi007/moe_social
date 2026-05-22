@@ -4,17 +4,17 @@ import "strings"
 
 // DeployTarget is a deployment environment (local agent host or remote SSH).
 type DeployTarget struct {
-	ID           string `mapstructure:"id"`
-	Label        string `mapstructure:"label"`
-	Kind         string `mapstructure:"kind"` // local | ssh
-	Host         string `mapstructure:"host"`
-	Port         int    `mapstructure:"port"`
-	User         string `mapstructure:"user"`
-	IdentityFile string `mapstructure:"identity_file"`
-	Password     string `mapstructure:"password"` // 可选，仅写在 config.yaml（已 gitignore）；推荐用密钥
-	BackendDir   string `mapstructure:"backend_dir"`
-	ComposeFile  string `mapstructure:"compose_file"`
-	APIBaseURL   string `mapstructure:"api_base_url"`
+	ID           string `mapstructure:"id" json:"id"`
+	Label        string `mapstructure:"label" json:"label"`
+	Kind         string `mapstructure:"kind" json:"kind"` // local | ssh
+	Host         string `mapstructure:"host" json:"host,omitempty"`
+	Port         int    `mapstructure:"port" json:"port,omitempty"`
+	User         string `mapstructure:"user" json:"user,omitempty"`
+	IdentityFile string `mapstructure:"identity_file" json:"identity_file,omitempty"`
+	Password     string `mapstructure:"password" json:"-"` // 永不输出到 API
+	BackendDir   string `mapstructure:"backend_dir" json:"backend_dir,omitempty"`
+	ComposeFile  string `mapstructure:"compose_file" json:"compose_file,omitempty"`
+	APIBaseURL   string `mapstructure:"api_base_url" json:"api_base_url,omitempty"`
 }
 
 // IsSSH reports remote SSH target.

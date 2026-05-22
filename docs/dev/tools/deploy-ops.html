@@ -511,16 +511,17 @@
     <header class="topbar">
       <div class="conn-pill">
         <span class="dot" id="connDot"></span>
-        <span id="connLabel">未连接 Agent</span>
+        <span id="connLabel">未连接</span>
       </div>
-      <input type="text" class="wide" id="baseUrl" placeholder="Agent URL" title="建议直接打开 http://127.0.0.1:9100/">
-      <select id="deployTarget" title="总览/容器页查看哪台机器；执行任务时会按类型自动选本机或云平台"></select>
-      <input type="password" id="token" placeholder="与 config.yaml 的 token 一致" title="Deploy Token">
-      <button type="button" class="btn-sm" onclick="verifyToken()">验证</button>
-      <span class="agent-chip" id="topAgentChip" title="Agent 状态">Agent —</span>
-      <button type="button" class="btn-sm btn-gear" onclick="toggleSettingsDrawer(true)" title="连接与鉴权">⚙ 设置</button>
-      <button type="button" class="btn-sm" onclick="refreshAll()" style="background:var(--panel2);border:1px solid var(--border)">刷新</button>
+      <span class="agent-chip" id="topAgentChip" title="本机 Agent">—</span>
+      <span class="agent-chip" id="topCloudChip" title="云 VPS backend" style="color:var(--mint)">☁ /root/gowork/backend</span>
+      <button type="button" class="btn-sm btn-gear" onclick="toggleSettingsDrawer(true)" title="Agent URL、Token、SSH">⚙ 连接设置</button>
+      <button type="button" class="btn-sm" onclick="refreshAll()" style="background:var(--panel2);border:1px solid var(--border)">刷新总览</button>
     </header>
+    <!-- 连接项仅在抽屉展示，避免与主内容重复 -->
+    <input type="hidden" id="baseUrl" value="http://127.0.0.1:9100" />
+    <input type="hidden" id="token" />
+    <select id="deployTarget" style="display:none" aria-hidden="true"><option value="local">local</option><option value="cloud">cloud</option></select>
 
     <div class="drawer-backdrop" id="drawerBackdrop" onclick="toggleSettingsDrawer(false)"></div>
     <aside class="drawer" id="settingsDrawer" aria-label="连接设置">
@@ -529,6 +530,21 @@
         <button type="button" class="btn btn-ghost" onclick="toggleSettingsDrawer(false)">✕</button>
       </div>
       <div class="drawer-body">
+        <div class="drawer-section">
+          <h4>连接</h4>
+          <label style="font-size:11px;color:var(--muted)">Agent URL</label>
+          <input type="text" class="wide" id="baseUrlVisible" style="width:100%;margin:4px 0 10px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:8px;font-size:12px" onchange="syncConnFromDrawer()" />
+          <label style="font-size:11px;color:var(--muted)">Deploy Token</label>
+          <input type="password" id="tokenVisible" style="width:100%;margin:4px 0 10px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:8px;font-size:12px" onchange="syncConnFromDrawer()" />
+          <label style="font-size:11px;color:var(--muted)">查看指标时的目标</label>
+          <select id="deployTargetVisible" style="width:100%;margin:4px 0 10px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:8px;font-size:12px" onchange="syncConnFromDrawer()">
+            <option value="local">本机</option>
+            <option value="cloud">云 VPS</option>
+          </select>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="syncConnFromDrawer(); verifyToken()">保存并验证</button>
+          </div>
+        </div>
         <div class="drawer-section">
           <h4>Deploy Agent</h4>
           <span id="agentStatusBadge" class="tag tag-pending">检测中</span>
@@ -549,8 +565,11 @@
           <pre class="log" id="authLog" style="margin-top:10px;max-height:100px;font-size:11px">—</pre>
         </div>
         <details style="font-size:11px;color:var(--muted);line-height:1.55">
-          <summary style="cursor:pointer;color:var(--accent2);margin-bottom:6px">配置说明</summary>
-          <p>本机：Flutter / 编译 · 云：Docker compose · SSH 在 config.yaml targets.cloud</p>
+          <summary style="cursor:pointer;color:var(--accent2);margin-bottom:6px">发布分工（与 config.yaml 一致）</summary>
+          <p><strong>本机</strong>：开发联调、<code>make build-linux</code> 编二进制。</p>
+          <p><strong>云 VPS</strong>：仅 <code>/root/gowork/backend</code>，上传二进制后 <code>docker compose</code>；数据卷 <code>/root/gowork/moe_images</code>。</p>
+          <p><strong>前端 APK</strong>：GitHub 打 tag 触发 Actions，不在 VPS 构建。</p>
+          <p>详见 <code>docs/dev/deploy-platform.md</code></p>
         </details>
       </div>
     </aside>
@@ -565,13 +584,13 @@
       <section class="page active" id="page-overview">
         <div class="page-head">
           <h2>运维总览</h2>
-          <p>本机 Agent 编译与构建 · 云平台 VPS 运行 Docker（API / RPC）</p>
+          <p>本机编 Linux 二进制并自测 · 云 VPS <code>/root/gowork/backend</code> 跑 Docker · 前端 APK 走 GitHub tag</p>
         </div>
 
         <div class="env-grid">
           <article class="env-card" id="envLocalCard">
             <div class="env-card-head">
-              <h3>💻 本机 Agent <span class="sub">编译 / Flutter</span></h3>
+              <h3>💻 本机 <span class="sub">开发 · 编 Linux 包</span></h3>
               <span id="localEnvBadge" class="tag tag-pending">—</span>
             </div>
             <div class="env-card-body" id="localCardBody">
@@ -584,7 +603,7 @@
           </article>
           <article class="env-card env-card-cloud" id="envCloudCard">
             <div class="env-card-head">
-              <h3>☁ 云服务器 <span class="sub" id="cloudHostLabel">Docker 部署</span></h3>
+              <h3>☁ 云 VPS <span class="sub" id="cloudHostLabel">/root/gowork/backend</span></h3>
               <span id="cloudEnvBadge" class="tag tag-pending">—</span>
             </div>
             <div class="env-card-body" id="cloudCardBody">
@@ -605,23 +624,23 @@
             <div class="panel-head"><h3>发布流水线</h3></div>
             <div class="panel-body">
               <div class="pipeline compact">
-                <div class="pipe-step"><div class="num">1</div>编译</div>
+                <div class="pipe-step"><div class="num">1</div>本机编包</div>
                 <span class="pipe-arrow">→</span>
-                <div class="pipe-step"><div class="num">2</div>Docker</div>
+                <div class="pipe-step"><div class="num">2</div>上传 VPS</div>
                 <span class="pipe-arrow">→</span>
-                <div class="pipe-step"><div class="num">3</div>健康</div>
+                <div class="pipe-step"><div class="num">3</div>云 Docker</div>
                 <span class="pipe-arrow">→</span>
-                <div class="pipe-step"><div class="num">4</div>APK</div>
+                <div class="pipe-step"><div class="num">4</div>GitHub APK</div>
               </div>
             </div>
           </div>
           <div class="panel">
             <div class="panel-head"><h3>快捷操作</h3></div>
             <div class="panel-body btn-row">
-              <button class="btn btn-primary" onclick="runJob('backend_build_linux')">本机编译</button>
-              <button class="btn btn-primary" onclick="runJob('docker_up')">云 Docker Up</button>
-              <button class="btn btn-mint" onclick="runJob('docker_ps'); showPage('docker')">云容器</button>
-              <button class="btn btn-warn" onclick="runJob('github_trigger_apk', {ref: document.getElementById('ghRef')?.value || 'main'})">APK CI</button>
+              <button class="btn btn-primary" onclick="runJob('backend_build_linux')">① 本机编 Linux</button>
+              <button class="btn btn-primary" onclick="runJob('docker_up')">② 云 Docker Up</button>
+              <button class="btn btn-mint" onclick="runJob('docker_ps'); showPage('docker')">③ 云容器状态</button>
+              <button class="btn btn-warn" onclick="showPage('release')">④ GitHub APK</button>
             </div>
           </div>
         </div>
@@ -813,9 +832,12 @@
         const def = data.default_target || 'cloud';
         deployTarget = localStorage.getItem('moe_deploy_target') || 'cloud';
         sel.value = deployTarget;
+        const vis = document.getElementById('deployTargetVisible');
+        if (vis) vis.value = deployTarget;
         sel.onchange = () => {
           deployTarget = sel.value;
           localStorage.setItem('moe_deploy_target', deployTarget);
+          if (vis) vis.value = deployTarget;
           refreshAll();
         };
       } catch (_) {
@@ -824,15 +846,38 @@
       }
     }
 
+    function syncConnToDrawer() {
+      const u = document.getElementById('baseUrlVisible');
+      const t = document.getElementById('tokenVisible');
+      const s = document.getElementById('deployTargetVisible');
+      if (u) u.value = document.getElementById('baseUrl').value || 'http://127.0.0.1:9100';
+      if (t) t.value = document.getElementById('token').value || '';
+      if (s) s.value = document.getElementById('deployTarget').value || deployTarget;
+    }
+
+    function syncConnFromDrawer() {
+      const u = document.getElementById('baseUrlVisible');
+      const t = document.getElementById('tokenVisible');
+      const s = document.getElementById('deployTargetVisible');
+      if (u) document.getElementById('baseUrl').value = u.value.trim();
+      if (t) document.getElementById('token').value = t.value;
+      if (s) {
+        document.getElementById('deployTarget').value = s.value;
+        deployTarget = s.value;
+        const mt = document.getElementById('metricsTargetSelect');
+        if (mt) mt.value = s.value;
+      }
+      saveConn();
+    }
+
     function initUrl() {
       const origin = window.location.origin;
       if (origin && origin.startsWith('http') && !origin.includes('63342')) {
         document.getElementById('baseUrl').value = origin;
-        document.getElementById('dashUrl').textContent = origin + '/';
       } else if (!localStorage.getItem(LS_URL)) {
         document.getElementById('baseUrl').value = 'http://127.0.0.1:9100';
-        document.getElementById('dashUrl').textContent = 'http://127.0.0.1:9100/';
       }
+      syncConnToDrawer();
     }
 
     function detectClientPlatform() {
@@ -943,6 +988,7 @@
       if (u) document.getElementById('baseUrl').value = u;
       if (t) document.getElementById('token').value = t;
       initUrl();
+      syncConnToDrawer();
     }
 
     function setOnline(ok) {
@@ -988,6 +1034,11 @@
       badge.className = 'tag tag-pending';
       badge.textContent = '检测中';
       try {
+        const info = await api('/api/deploy/info');
+        const runtime = info.cloud_deploy || {};
+        if ((runtime.backend_dir || '').includes('moe_social')) {
+          toast('Agent 仍在使用旧路径，请 make deploy-agent-stop 后重新 make deploy-agent');
+        }
         const targets = await api('/api/deploy/targets');
         const cloud = (targets.targets || []).find(t => t.id === 'cloud' || t.kind === 'ssh') || {};
         const hostLabel = cloud.host ? `${cloud.user || 'root'}@${cloud.host}` : (cloud.label || 'cloud');
@@ -1004,7 +1055,8 @@
         } catch (e) { sshMsg = e.message; }
 
         let pathMsg = '—';
-        let backendDir = cloud.backend_dir || '—';
+        let backendDir = runtime.backend_dir || cloud.backend_dir || '—';
+        const composePath = runtime.compose_path || (backendDir + '/docker-compose.binary.yml');
         let composeOk = '—';
         try {
           const chk = await api('/api/deploy/remote-check?target=cloud');
@@ -1024,9 +1076,11 @@
         const rows = [
           ['SSH', sshOk ? '连通 ✓' : sshMsg],
           ['主机', hostLabel],
-          ['backend_dir', backendDir],
-          ['compose', composeOk],
-          ['线上 API', cloud.api_base_url || '—'],
+          ['Agent 云路径', backendDir],
+          ['compose', composePath],
+          ['compose 就绪', composeOk],
+          ['容器', 'moe-social-api · moe-social-rpc'],
+          ['线上 API', cloud.api_base_url || runtime.api_base_url || '—'],
           ['路径巡检', pathMsg],
         ];
         if (kvMain) renderEnvKv(kvMain, rows);
@@ -1034,6 +1088,12 @@
         setPre(dockerOut);
         badge.className = 'tag ' + (sshOk ? 'tag-ok' : 'tag-fail');
         badge.textContent = sshOk ? 'SSH 在线' : 'SSH 异常';
+        const cloudChip = document.getElementById('topCloudChip');
+        if (cloudChip) {
+          cloudChip.textContent = sshOk
+            ? `☁ ${hostLabel} · compose ${composeOk}`
+            : `☁ ${hostLabel} · 异常`;
+        }
       } catch (e) {
         badge.className = 'tag tag-fail';
         badge.textContent = '失败';

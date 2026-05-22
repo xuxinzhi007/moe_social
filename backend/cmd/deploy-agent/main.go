@@ -56,8 +56,13 @@ func main() {
 		os.Exit(0)
 	})
 
+	cloud := cfg.TargetByID("cloud")
 	log.Printf("Moe Deploy Agent listening on http://%s (pid=%d)", cfg.Listen, os.Getpid())
 	log.Printf("workspace=%s backend=%s", cfg.WorkspaceAbs(), cfg.BackendAbs())
+	if cloud.IsSSH() {
+		log.Printf("cloud SSH %s@%s backend_dir=%s compose=%s",
+			cloud.User, cloud.Host, cloud.BackendDir, cloud.ComposeFile)
+	}
 	log.Printf("Dashboard: http://%s/", cfg.Listen)
 
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
