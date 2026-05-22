@@ -17,6 +17,7 @@ backend/api/api.exe
 backend/rpc/rpc.exe
 *.exe
 backend/deploy/config.yaml
+backend/deploy/config.local.yaml
 
 
 # IntelliJ related

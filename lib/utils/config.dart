@@ -1,35 +1,28 @@
 // =============================================================================
-// 前端 API 环境 —— 唯一配置入口（社交 App：登录、动态、私信等走 [ApiService.baseUrl]）
+// 前端 API 环境 —— 唯一配置入口
 // =============================================================================
 //
-// 修改本文件后请 **热重启 (R) / 重新运行**，不要只热重载。
+// 修改后请 **完整重启 App**（Stop + Run），不要只热重载。
+// 真机上的 127.0.0.1 是「手机访问自己」，连不到你电脑上的后端；必须用 productionUrl。
 //
-// • [isProduction] = false → 使用 [developmentUrl]（本地 / 内网调试）
-// • [isProduction] = true  → 使用 [productionUrl]，且非 Web 时会再走
-//   [RemoteApiConfigService] 尝试与线上 client-config / GitHub 同步基址
+// • isProduction = true  → productionUrl（线上 VPS，真机 debug 包也用这项）
+// • isProduction = false → developmentUrl（本机 / 模拟器）
 //
-// 常见地址：
-// - 本机 API：        http://localhost:8888
-// - Android 模拟器：  http://10.0.2.2:8888（把 developmentUrl 改成此项即可）
-// - 真机连电脑：      http://你的电脑局域网 IP:8888
-//
-// 后端数据库、yaml 等仍在 backend/config/config.yaml，与本文件独立。
+// 与 Flutter debug/release 无关；右上角 Debug 横幅不代表连本地 API。
 // =============================================================================
 
 class AppConfig {
-  /// false = 开发（[developmentUrl]）；true = 生产（[productionUrl]）
-  static const bool isProduction = false;
+  /// true = 线上；false = 本地
+  static const bool isProduction = true;
 
-  /// 生产环境 API 根（无末尾 /）
+  /// 线上 API（无末尾 /）
   static const String productionUrl = 'http://47.106.175.49:8888';
 
-  /// 开发环境 API 根（无末尾 /）
-  static const String developmentUrl = 'http://localhost:8888';
+  /// 本地 API（无末尾 /）
+  static const String developmentUrl = 'http://127.0.0.1:8888';
 
-  /// 当前应使用的 API 根（与 [ApiService.baseUrl] 一致）
   static String get baseUrl =>
       isProduction ? productionUrl : developmentUrl;
 
-  /// 与 [baseUrl] 相同，保留给习惯「getApiUrl」命名的调用方
   static String getApiUrl() => baseUrl;
 }

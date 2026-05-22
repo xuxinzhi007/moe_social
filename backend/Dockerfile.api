@@ -30,7 +30,6 @@ RUN apk add --no-cache ca-certificates
 # 从编译阶段复制编译好的可执行文件
 COPY --from=builder /app/api /app/api
 
-# 复制配置文件
 COPY api/etc/super.yaml /app/etc/super.yaml
 COPY config/config.yaml /app/config/config.yaml
 

@@ -14,15 +14,23 @@ import (
 func BuildProcessEnv(workDir string) []string {
 	base := os.Environ()
 	if runtime.GOOS == "windows" {
-		merged := mergeEnv(base, captureWindowsEnv())
-		return ensureWindowsFlutterPath(merged)
+		var extra map[string]string
+		if useGitBashOnWindows() {
+			extra = captureGitBashEnv()
+		} else {
+			extra = captureWindowsEnv()
+		}
+		merged := mergeEnv(base, extra)
+		merged = ensureWindowsFlutterPath(merged)
+		merged = appendLocalPathExtra(merged)
+		return sanitizeWindowsTempEnv(merged)
 	}
 	login := captureLoginShellEnv()
 	if len(login) == 0 {
-		return ensureAndroidSDK(base)
+		return appendLocalPathExtra(ensureAndroidSDK(base))
 	}
 	merged := mergeEnv(base, login)
-	return ensureAndroidSDK(merged)
+	return appendLocalPathExtra(ensureAndroidSDK(merged))
 }
 
 func captureLoginShellEnv() map[string]string {
@@ -120,13 +128,12 @@ func shellQuote(s string) string {
 func flutterShellCommand(workspace, flutterLine string) CommandSpec {
 	switch runtime.GOOS {
 	case "windows":
-		ws := windowsPathQuote(workspace)
-		line := fmt.Sprintf("cd /d %s & %s", ws, flutterLine)
+		line := windowsWorkspaceCD(workspace) + flutterLine
 		return CommandSpec{
 			Dir:       workspace,
 			Label:     flutterLine,
 			Shell:     true,
-			ShellLine: line,
+			ShellLine: strings.TrimSpace(line),
 		}
 	case "darwin":
 		ws := shellQuote(workspace)
@@ -153,7 +160,11 @@ func whichFlutter(ctx context.Context) string {
 	if runtime.GOOS == "darwin" {
 		cmd = exec.CommandContext(ctx, "/bin/zsh", "-l", "-c", "which flutter")
 	} else if runtime.GOOS == "windows" {
-		if p := whichFlutterWindows(ctx); p != "" {
+		if useGitBashOnWindows() {
+			if p := runGitBashCapture(ctx, "which flutter"); p != "" {
+				return p
+			}
+		} else if p := whichFlutterWindows(ctx); p != "" {
 			return p
 		}
 		return "flutter"

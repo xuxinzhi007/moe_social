@@ -16,8 +16,12 @@ type Config struct {
 	WorkspaceRoot      string       `mapstructure:"workspace_root"`
 	BackendDir         string       `mapstructure:"backend_dir"`
 	ComposeFile        string       `mapstructure:"compose_file"`
-	JobTimeoutSeconds  int          `mapstructure:"job_timeout_seconds"`
-	GitHub             GitHubConfig     `mapstructure:"github"`
+	JobTimeoutSeconds  int              `mapstructure:"job_timeout_seconds"`
+	// WindowsShell: auto | git-bash | cmd — 本机任务用哪种 shell（auto 检测到 Git 则用 Git Bash）
+	WindowsShell string `mapstructure:"windows_shell"`
+	// LocalPathExtra 追加到本机任务 PATH 最前（Win 用 ; 分隔，Mac/Linux 用 :）
+	LocalPathExtra string `mapstructure:"local_path_extra"`
+	GitHub         GitHubConfig `mapstructure:"github"`
 	Targets            []DeployTarget   `mapstructure:"targets"`
 	workspaceAbs       string
 	backendAbs         string
@@ -37,6 +41,17 @@ func Load(path string) (*Config, error) {
 	v.SetConfigFile(path)
 	if err := v.ReadInConfig(); err != nil {
 		return nil, err
+	}
+	localPath := filepath.Join(filepath.Dir(path), "config.local.yaml")
+	if st, err := os.Stat(localPath); err == nil && !st.IsDir() {
+		v2 := viper.New()
+		v2.SetConfigFile(localPath)
+		if err := v2.ReadInConfig(); err != nil {
+			return nil, fmt.Errorf("读取 config.local.yaml: %w", err)
+		}
+		if err := v.MergeConfigMap(v2.AllSettings()); err != nil {
+			return nil, fmt.Errorf("合并 config.local.yaml: %w", err)
+		}
 	}
 	var c Config
 	if err := v.Unmarshal(&c); err != nil {
@@ -124,6 +139,69 @@ func TokenFromRequest(authHeader, queryToken string) string {
 		return t
 	}
 	return strings.TrimSpace(queryToken)
+}
+
+// WindowsShellLabel returns mode, bash path, and display label for logs/API.
+func WindowsShellLabel(c *Config) (mode, bashExe, label string) {
+	mode, bashExe = c.ResolvedWindowsShell()
+	switch mode {
+	case "git-bash":
+		label = "Git Bash"
+		if bashExe != "" {
+			label += " (" + bashExe + ")"
+		}
+	default:
+		label = "cmd.exe"
+	}
+	return mode, bashExe, label
+}
+
+// ResolvedWindowsShell picks local shell on Windows (auto prefers Git Bash when installed).
+func (c *Config) ResolvedWindowsShell() (mode string, bashExe string) {
+	mode = strings.ToLower(strings.TrimSpace(c.WindowsShell))
+	if v := strings.ToLower(strings.TrimSpace(os.Getenv("MOE_DEPLOY_WINDOWS_SHELL"))); v != "" {
+		mode = v
+	}
+	if mode == "" {
+		mode = "auto"
+	}
+	bash := findGitBashInConfig()
+	switch mode {
+	case "git-bash", "gitbash", "bash":
+		if bash != "" {
+			return "git-bash", bash
+		}
+		return "cmd", ""
+	case "cmd", "powershell", "pwsh":
+		return "cmd", ""
+	case "auto":
+		if bash != "" {
+			return "git-bash", bash
+		}
+		return "cmd", ""
+	default:
+		return "cmd", ""
+	}
+}
+
+func findGitBashInConfig() string {
+	var candidates []string
+	for _, key := range []string{"ProgramFiles", "ProgramFiles(x86)", "LocalAppData"} {
+		if base := os.Getenv(key); base != "" {
+			candidates = append(candidates, filepath.Join(base, "Git", "bin", "bash.exe"))
+		}
+	}
+	if home, err := os.UserHomeDir(); err == nil {
+		candidates = append(candidates,
+			filepath.Join(home, "AppData", "Local", "Programs", "Git", "bin", "bash.exe"),
+		)
+	}
+	for _, p := range candidates {
+		if st, err := os.Stat(p); err == nil && !st.IsDir() {
+			return p
+		}
+	}
+	return ""
 }
 
 // EnvOverride applies MOE_DEPLOY_* environment variables.

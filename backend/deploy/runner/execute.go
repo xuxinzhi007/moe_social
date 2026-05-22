@@ -68,6 +68,9 @@ func buildSSHCommandSpec(ssh SSHConfig, remoteScript string) (CommandSpec, error
 }
 
 func runCommand(ctx context.Context, spec CommandSpec, sink LogSink) (exitCode int, err error) {
+	if spec.LinuxCrossBuild {
+		return runLinuxCrossBuild(ctx, spec.Dir, sink)
+	}
 	var cmd *exec.Cmd
 	if spec.Shell {
 		cmd = shellCommand(ctx, spec.Dir, spec.ShellLine)
@@ -96,6 +99,11 @@ func runCommand(ctx context.Context, spec CommandSpec, sink LogSink) (exitCode i
 	}
 
 	if sink != nil {
+		if runtime.GOOS == "windows" && useGitBashOnWindows() {
+			sink(fmt.Sprintf("# 本机 shell: Git Bash (%s)\n", windowsShellState.bashExe))
+		} else if runtime.GOOS == "windows" {
+			sink("# 本机 shell: cmd.exe（可在 config.yaml 设置 windows_shell: auto 使用 Git Bash）\n")
+		}
 		sink(fmt.Sprintf("$ %s\n", displayCommand(spec)))
 	}
 
@@ -133,6 +141,9 @@ func DisplayCommand(spec CommandSpec) string {
 }
 
 func displayCommand(spec CommandSpec) string {
+	if spec.LinuxCrossBuild {
+		return "go build -o api/moe-social-api ./api && go build -o rpc/moe-social-rpc ./rpc  (GOOS=linux GOARCH=amd64)"
+	}
 	if spec.SSH != nil {
 		return fmt.Sprintf("ssh %s@%s %s", spec.SSH.User, spec.SSH.Host, spec.ShellLine)
 	}
@@ -149,7 +160,11 @@ func shellCommand(ctx context.Context, dir, line string) *exec.Cmd {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "windows":
-		cmd = exec.CommandContext(ctx, "cmd.exe", "/C", wrapWindowsCmd(line))
+		if useGitBashOnWindows() {
+			cmd = exec.CommandContext(ctx, windowsShellState.bashExe, "-l", "-c", line)
+		} else {
+			cmd = exec.CommandContext(ctx, "cmd.exe", "/C", wrapWindowsCmd(line))
+		}
 	case "darwin":
 		// 加载 ~/.zshrc，避免 flutter 找不到 Android SDK（Agent 子进程 PATH 过短）
 		cmd = exec.CommandContext(ctx, "/bin/zsh", "-l", "-c", line)

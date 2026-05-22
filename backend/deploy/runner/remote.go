@@ -177,7 +177,8 @@ func IsLocalOnlyJob(jobType string) bool {
 // IsCloudOnlyJob types that must run on SSH cloud target (Docker on VPS).
 func IsCloudOnlyJob(jobType string) bool {
 	switch strings.TrimSpace(strings.ToLower(jobType)) {
-	case "docker_ps", "docker_up", "docker_stop", "docker_down", "docker_restart", "docker_logs", "remote_inspect":
+	case "docker_ps", "docker_up", "docker_stop", "docker_down", "docker_restart", "docker_logs", "remote_inspect",
+		"backend_upload_binaries":
 		return true
 	default:
 		return false

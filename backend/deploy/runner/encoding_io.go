@@ -10,7 +10,7 @@ import (
 
 // commandOutputReader decodes child process stdout/stderr on Windows (often GBK).
 func commandOutputReader(r io.Reader) io.Reader {
-	if runtime.GOOS != "windows" {
+	if runtime.GOOS != "windows" || useGitBashOnWindows() {
 		return r
 	}
 	return transform.NewReader(r, simplifiedchinese.GBK.NewDecoder())

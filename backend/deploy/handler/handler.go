@@ -340,6 +340,41 @@ func (h *Handler) runJob(id string, body createJobBody) {
 	}
 	targetID = runner.SuggestedTarget(body.Type, targetID)
 	req := runner.JobRequest{Type: body.Type, Params: body.Params}
+
+	if runner.IsPipelineJob(jobType) {
+		h.Store.Update(id, func(j *store.Job) {
+			j.Target = "local+cloud"
+			j.Command = "backend_release_pipeline"
+		})
+		sink := func(line string) { h.Store.AppendLog(id, line) }
+		code, err := h.Registry.RunReleasePipeline(ctx, h.Cfg, req, sink)
+		errMsg := ""
+		if err != nil {
+			errMsg = err.Error()
+		} else if code != 0 {
+			errMsg = fmt.Sprintf("exit code %d", code)
+		}
+		h.finishJob(id, code, "backend_release_pipeline", errMsg)
+		return
+	}
+
+	if runner.IsUploadJob(jobType) {
+		h.Store.Update(id, func(j *store.Job) {
+			j.Target = targetID
+			j.Command = "sftp upload (backend_upload_binaries)"
+		})
+		sink := func(line string) { h.Store.AppendLog(id, line) }
+		code, err := h.Registry.RunBackendUpload(ctx, targetID, h.Cfg, req, sink)
+		errMsg := ""
+		if err != nil {
+			errMsg = err.Error()
+		} else if code != 0 {
+			errMsg = fmt.Sprintf("exit code %d", code)
+		}
+		h.finishJob(id, code, "backend_upload_binaries", errMsg)
+		return
+	}
+
 	spec, err := h.Registry.ResolveCommand(targetID, h.Cfg, req)
 	if err != nil {
 		h.finishJob(id, -1, "", err.Error())

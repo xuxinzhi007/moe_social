@@ -17,6 +17,8 @@ services:
       context: .
       dockerfile: Dockerfile.api
     container_name: moe-social-api
+    environment:
+      MOE_SUPER_RPC_ENDPOINT: rpc:8080
     ports:
       - "8888:8888"
     depends_on:

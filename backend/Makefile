@@ -36,6 +36,10 @@ build-linux:
 env-status:
 	@echo GOOS=$$(go env GOOS) GOARCH=$$(go env GOARCH) CGO_ENABLED=$$(go env CGO_ENABLED)
 
+# 首次生成 deploy/config.yaml（已存在则跳过，不会覆盖）
+deploy-config-init:
+	@if [ ! -f deploy/config.yaml ]; then cp deploy/config.example.yaml deploy/config.yaml && echo "created deploy/config.yaml — please edit token"; else echo "deploy/config.yaml already exists (not overwritten)"; fi
+
 # 部署控制台 Agent（首次运行会自动从 config.example.yaml 生成 config.yaml）
 deploy-agent:
 	go run ./cmd/deploy-agent -f deploy/config.yaml

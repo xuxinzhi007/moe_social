@@ -20,7 +20,6 @@ import '../models/checkin_record.dart';
 import '../models/checkin_data.dart';
 import '../models/exp_log.dart';
 import '../models/feishu_public_config.dart';
-import 'remote_api_config_service.dart';
 import '../utils/jwt_exp.dart';
 import '../utils/config.dart' as moe_launch_config;
 
@@ -122,7 +121,8 @@ class ApiService {
   static const String _envLocal = 'local';
   static const String _envOnline = 'online';
 
-  static String _runtimeEnvironment = _envLocal;
+  static String _runtimeEnvironment =
+      moe_launch_config.AppConfig.isProduction ? _envOnline : _envLocal;
   static String get runtimeEnvironment => _runtimeEnvironment;
 
   /// API 调试日志开关（只在 Debug 模式生效）
@@ -181,7 +181,7 @@ class ApiService {
   }
 
   /// 在 [main] 里 `WidgetsFlutterBinding` 之后、`AuthService.init` 之前调用一次。
-  /// local 模式直接使用本地地址；online 模式会优先解析远程配置用于自动同步最新地址。
+  /// isProduction=true → 直接用 [AppConfig.productionUrl]；false → [developmentUrl]。
   static Future<void> initRemoteProductionBaseUrl() async {
     _applyApiEnvironmentFromAppConfig();
 
@@ -190,19 +190,10 @@ class ApiService {
       return;
     }
 
-    if (kIsWeb) {
-      _runtimeProductionBaseUrl = _configuredOnlineUrl;
-      return;
+    _runtimeProductionBaseUrl = _configuredOnlineUrl;
+    if (kDebugMode) {
+      debugPrint('API: online 模式，基址=$_runtimeProductionBaseUrl（来自 config.dart）');
     }
-
-    if (_runtimeEnvironment != _envOnline) {
-      _runtimeProductionBaseUrl = null;
-      return;
-    }
-    _runtimeProductionBaseUrl =
-        await RemoteApiConfigService.resolveProductionBaseUrl(
-      fallbackBakedUrl: _configuredOnlineUrl,
-    );
   }
 
   // 根据环境和平台自动选择API地址

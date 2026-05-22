@@ -16,6 +16,10 @@ type Registry struct {
 
 // NewRegistry builds executors from config.
 func NewRegistry(cfg *deploycfg.Config) *Registry {
+	if mode, bash := cfg.ResolvedWindowsShell(); mode != "" {
+		InitWindowsShell(mode, bash)
+	}
+	InitLocalPathExtra(cfg.LocalPathExtra)
 	reg := &Registry{
 		Local: NewPlatform(cfg.WorkspaceAbs(), cfg.BackendAbs(), cfg.ComposeFileAbs()),
 		Remote: make(map[string]*RemotePlatform),

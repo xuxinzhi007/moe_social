@@ -93,7 +93,12 @@ class StartupManager {
   List<List<StartupTask>> _groupTasksByPriority() {
     final criticalTasks = _tasks.where((t) => t.critical).toList();
     final nonCriticalTasks = _tasks.where((t) => !t.critical).toList();
-    return [criticalTasks, nonCriticalTasks];
+    // 关键任务逐个 await，避免「API Config」与「Auth Service」并行时
+    // Auth 先起 WebSocket 仍读到默认 local(127.0.0.1)。
+    return [
+      for (final t in criticalTasks) [t],
+      if (nonCriticalTasks.isNotEmpty) nonCriticalTasks,
+    ];
   }
 
   Future<void> _executeTask(StartupTask task) async {

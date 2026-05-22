@@ -12,6 +12,16 @@ compose_file: "docker-compose.binary.yml"
 # 任务默认超时（秒）
 job_timeout_seconds: 1800
 
+# Windows 本机任务 shell：auto（已装 Git 则用 Git Bash，与「Git Bash 终端」PATH 一致）| git-bash | cmd
+# 也可用环境变量 MOE_DEPLOY_WINDOWS_SHELL=git-bash
+windows_shell: auto
+
+# 本机任务额外 PATH（可选）。Win 分号分隔，Mac 冒号。无 Git 且 cmd 找不到 go 时可填 Go/flutter 的 bin
+# local_path_extra: "C:\\Go\\bin;C:\\src\\flutter\\bin"
+
+# 私密覆盖（可选）：复制 config.local.example.yaml → config.local.yaml（同样 gitignore）
+# 与 config.yaml 合并，便于 Win/Mac 只同步一小段 token/SSH，见 docs/dev/deploy-platform.md
+
 # 部署目标：本机开发/编二进制 · 云 VPS 仅 backend + docker compose（前端 APK 走 GitHub tag）
 targets:
   - id: local

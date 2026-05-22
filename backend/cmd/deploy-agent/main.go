@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	deploycfg "backend/deploy/config"
@@ -39,6 +40,13 @@ func main() {
 		log.Fatalf("load config: %v", err)
 	}
 	cfg.EnvOverride()
+
+	if mode, bash, label := deploycfg.WindowsShellLabel(cfg); runtime.GOOS == "windows" && label != "" {
+		log.Printf("Windows 本机 shell: %s", label)
+		if mode == "cmd" && bash == "" {
+			log.Printf("hint: 若本机终端找不到 go，请安装 Git for Windows 或设置 windows_shell: git-bash / local_path_extra")
+		}
+	}
 
 	h := handler.New(cfg)
 	mux := http.NewServeMux()

@@ -1,0 +1,12 @@
+# 复制为 config.local.yaml（与 config.yaml 同目录，勿提交 Git）
+# 用于 Win / Mac 手动同步「私密项」：git pull 不会带 config.yaml，可把两边共用的 token、云 SSH 写在这里
+
+token: "与 Windows 上相同的 deploy token"
+
+# 仅覆盖 cloud 目标中的敏感字段（合并后覆盖主配置里同 id 的项需写在完整 targets 时慎用）
+# 更简单做法：Mac 上单独维护一份完整 config.yaml，只复制 token/host/password 等字段
+
+# targets:
+#   - id: cloud
+#     password: "仅本机保存的 SSH 密码"
+#     identity_file: "~/.ssh/id_ed25519"
