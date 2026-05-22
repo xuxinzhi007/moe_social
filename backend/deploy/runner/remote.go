@@ -56,7 +56,7 @@ func (r *RemotePlatform) ResolveCommand(req JobRequest) (CommandSpec, error) {
 		script = fmt.Sprintf("cd %s && (make build 2>/dev/null || (go build -o api/moe-social-api ./api && go build -o rpc/moe-social-rpc ./rpc))", shellQuote(be))
 	case "docker_ps":
 		label = "remote docker ps"
-		script = r.composeScript(cf, "ps")
+		script = r.composeScriptWithContainerFallback(cf, "ps")
 	case "docker_up":
 		label = "remote docker up"
 		script = r.composeScript(cf, "up", "-d", "--build")
@@ -104,6 +104,19 @@ func (r *RemotePlatform) composeScript(composeFile string, args ...string) strin
 	return fmt.Sprintf(
 		"cd %s && (docker compose -f %s %s || docker-compose -f %s %s)",
 		be, cf, argStr, cf, argStr,
+	)
+}
+
+// composeScriptWithContainerFallback runs compose in backend_dir; if path missing, lists moe-social-* containers.
+func (r *RemotePlatform) composeScriptWithContainerFallback(composeFile string, args ...string) string {
+	be := shellQuote(r.Target.BackendDir)
+	cf := shellQuote(composeFile)
+	argStr := strings.Join(args, " ")
+	return fmt.Sprintf(
+		`if [ -d %s ] && [ -f %s/%s ]; then %s; else echo "=== compose 目录不可用 (%s)，按容器名查看 moe-social-api / moe-social-rpc ==="; docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}' | grep -E '^(NAMES|moe-social-api|moe-social-rpc)'; fi`,
+		be, be, composeFile,
+		fmt.Sprintf("cd %s && (docker compose -f %s %s || docker-compose -f %s %s)", be, cf, argStr, cf, argStr),
+		r.Target.BackendDir,
 	)
 }
 

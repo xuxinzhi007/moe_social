@@ -71,6 +71,11 @@ func (h *Handler) info(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	cloud := h.Cfg.TargetByID("cloud")
+	cloudCompose := cloud.ComposeFile
+	if cloudCompose == "" {
+		cloudCompose = h.Cfg.ComposeFile
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"success": true,
 		"auth": map[string]any{
@@ -82,6 +87,13 @@ func (h *Handler) info(w http.ResponseWriter, r *http.Request) {
 			"workspace": h.Cfg.WorkspaceAbs(),
 			"backend":   h.Cfg.BackendAbs(),
 			"compose":   h.Cfg.ComposeFileAbs(),
+		},
+		"cloud_deploy": map[string]any{
+			"backend_dir":  cloud.BackendDir,
+			"compose_file": cloudCompose,
+			"compose_path": strings.TrimRight(cloud.BackendDir, "/") + "/" + cloudCompose,
+			"host":         cloud.Host,
+			"containers":   []string{"moe-social-api", "moe-social-rpc"},
 		},
 		"default_target": h.Cfg.DefaultTarget(),
 	})

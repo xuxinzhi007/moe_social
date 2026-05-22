@@ -103,11 +103,11 @@ func runCommand(ctx context.Context, spec CommandSpec, sink LogSink) (exitCode i
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		pipeLines(stdout, sink)
+		pipeLines(commandOutputReader(stdout), sink)
 	}()
 	go func() {
 		defer wg.Done()
-		pipeLines(stderr, sink)
+		pipeLines(commandOutputReader(stderr), sink)
 	}()
 
 	if err := cmd.Start(); err != nil {
@@ -149,7 +149,7 @@ func shellCommand(ctx context.Context, dir, line string) *exec.Cmd {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "windows":
-		cmd = exec.CommandContext(ctx, "cmd.exe", "/C", line)
+		cmd = exec.CommandContext(ctx, "cmd.exe", "/C", wrapWindowsCmd(line))
 	case "darwin":
 		// 加载 ~/.zshrc，避免 flutter 找不到 Android SDK（Agent 子进程 PATH 过短）
 		cmd = exec.CommandContext(ctx, "/bin/zsh", "-l", "-c", line)

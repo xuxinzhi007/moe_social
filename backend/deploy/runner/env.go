@@ -14,7 +14,8 @@ import (
 func BuildProcessEnv(workDir string) []string {
 	base := os.Environ()
 	if runtime.GOOS == "windows" {
-		return base
+		merged := mergeEnv(base, captureWindowsEnv())
+		return ensureWindowsFlutterPath(merged)
 	}
 	login := captureLoginShellEnv()
 	if len(login) == 0 {
@@ -82,6 +83,11 @@ func ensureAndroidSDK(env []string) []string {
 		filepath.Join(home, "sdk", "Android"),
 		filepath.Join(home, "Library", "Android", "sdk"),
 	}
+	if runtime.GOOS == "windows" {
+		if lad := os.Getenv("LOCALAPPDATA"); lad != "" {
+			candidates = append([]string{filepath.Join(lad, "Android", "Sdk")}, candidates...)
+		}
+	}
 	for _, dir := range candidates {
 		if st, err := os.Stat(dir); err == nil && st.IsDir() {
 			env = append(env, "ANDROID_HOME="+dir, "ANDROID_SDK_ROOT="+dir)
@@ -110,14 +116,34 @@ func shellQuote(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", "'\"'\"'") + "'"
 }
 
-// flutterShellCommand runs flutter in workspace via login shell.
+// flutterShellCommand runs flutter in workspace (macOS/Linux login shell; Windows cmd/PowerShell).
 func flutterShellCommand(workspace, flutterLine string) CommandSpec {
-	ws := shellQuote(workspace)
-	return CommandSpec{
-		Dir:       workspace,
-		Label:     flutterLine,
-		Shell:     true,
-		ShellLine: fmt.Sprintf("cd %s && %s", ws, flutterLine),
+	switch runtime.GOOS {
+	case "windows":
+		ws := windowsPathQuote(workspace)
+		line := fmt.Sprintf("cd /d %s & %s", ws, flutterLine)
+		return CommandSpec{
+			Dir:       workspace,
+			Label:     flutterLine,
+			Shell:     true,
+			ShellLine: line,
+		}
+	case "darwin":
+		ws := shellQuote(workspace)
+		return CommandSpec{
+			Dir:       workspace,
+			Label:     flutterLine,
+			Shell:     true,
+			ShellLine: fmt.Sprintf("cd %s && %s", ws, flutterLine),
+		}
+	default:
+		ws := shellQuote(workspace)
+		return CommandSpec{
+			Dir:       workspace,
+			Label:     flutterLine,
+			Shell:     true,
+			ShellLine: fmt.Sprintf("cd %s && %s", ws, flutterLine),
+		}
 	}
 }
 
@@ -127,6 +153,9 @@ func whichFlutter(ctx context.Context) string {
 	if runtime.GOOS == "darwin" {
 		cmd = exec.CommandContext(ctx, "/bin/zsh", "-l", "-c", "which flutter")
 	} else if runtime.GOOS == "windows" {
+		if p := whichFlutterWindows(ctx); p != "" {
+			return p
+		}
 		return "flutter"
 	} else {
 		cmd = exec.CommandContext(ctx, "/bin/bash", "-l", "-c", "which flutter")

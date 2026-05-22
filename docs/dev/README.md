@@ -22,6 +22,7 @@
 | [记忆系统-开源对标调研.md](./记忆系统-开源对标调研.md) | OpenClaw / 酒馆对标 |
 | [用户级记忆统一改造验收脚本.md](./用户级记忆统一改造验收脚本.md) | E2E 验收 |
 | [devtools.html](./devtools.html) | **开发者 / 运维工具台**（飞书 / RPC / 记忆 / 部署） |
+| [deploy-platform.md](./deploy-platform.md) | **部署分工 SSOT**（本机编包 / 云 backend / GitHub APK） |
 | [tools/deploy-ops.html](./tools/deploy-ops.html) | 运维部署中心（Moe Ops） |
 | [memory-system-dashboard.html](./memory-system-dashboard.html) | 记忆监控台 |
 | [tools/feishu-export.html](./tools/feishu-export.html) | 飞书导出命令生成 |
