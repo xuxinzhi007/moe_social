@@ -43,6 +43,8 @@ func New(cfg *deploycfg.Config) *Handler {
 // RegisterRoutes mounts handlers on mux.
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/deploy/health", h.withCORS(h.health))
+	mux.HandleFunc("/api/deploy/agent", h.withCORS(h.agentMeta))
+	mux.HandleFunc("/api/deploy/shutdown", h.withCORS(h.auth(h.shutdownAgent)))
 	mux.HandleFunc("/api/deploy/info", h.withCORS(h.info))
 	mux.HandleFunc("/api/deploy/session", h.withCORS(h.auth(h.session)))
 	mux.HandleFunc("/api/deploy/ssh-check", h.withCORS(h.auth(h.sshCheck)))

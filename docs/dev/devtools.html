@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Moe Social · 开发者 / 运维工具台</title>
+  <style>
+    :root {
+      --bg: #0b0d12;
+      --surface: #141820;
+      --border: #2a3348;
+      --text: #e9ecf3;
+      --muted: #8d97ab;
+      --accent: #6b8cff;
+      --accent2: #3dd6c3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-family: system-ui, "PingFang SC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .top {
+      flex-shrink: 0;
+      padding: 0.85rem 1rem 0;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #12151c, var(--bg));
+    }
+    .top h1 { margin: 0; font-size: 1.1rem; }
+    .top p { margin: 0.25rem 0 0.5rem; font-size: 0.8rem; color: var(--muted); }
+    .top a { color: var(--accent); text-decoration: none; }
+    .top a:hover { color: var(--accent2); }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      padding-bottom: 0.5rem;
+      align-items: center;
+    }
+    .tabs button {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      padding: 0.4rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+    .tabs button:hover { border-color: var(--accent); }
+    .tabs button.active {
+      background: var(--accent2);
+      color: #0a0c10;
+      border-color: var(--accent2);
+      font-weight: 600;
+    }
+    .tabs .actions {
+      margin-left: auto;
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+    .tabs .actions button {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .tabs .actions button.primary-action {
+      color: var(--text);
+      border-color: var(--accent);
+    }
+    .frame-wrap {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+    }
+    iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #0f1118;
+      display: none;
+    }
+    iframe.active { display: block; }
+    .tip {
+      font-size: 0.75rem;
+      color: var(--muted);
+      padding: 0.35rem 1rem 0.5rem;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .tip code { color: var(--accent2); }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <h1>开发者 / 运维工具台</h1>
+    <p>
+      联调、监控与部署 ·
+      <a href="../index.html">文档导航</a> ·
+      预览：<code style="color:var(--accent2)">cd docs && python -m http.server 8765</code> ·
+      部署台：<a href="tools/deploy-ops.html" target="_blank" rel="noopener">静态页</a> ·
+      <a href="http://127.0.0.1:9100/" target="_blank" rel="noopener">Agent :9100</a>
+    </p>
+    <div class="tabs" role="tablist" id="tabBar"></div>
+  </div>
+
+  <div class="frame-wrap" id="frameWrap"></div>
+
+  <p class="tip" id="toolHint"></p>
+
+  <script>
+    const TOOLS = {
+      feishu: {
+        label: "飞书导出命令",
+        src: "tools/feishu-export.html",
+        hint: "在 backend 目录粘贴并执行生成的 go test 命令。",
+      },
+      rpc: {
+        label: "RPC 性能监控",
+        src: "tools/rpc-monitor.html",
+        hint: "先 cd backend/rpc && go run super.go，默认 http://127.0.0.1:6060。",
+      },
+      memory: {
+        label: "记忆系统监控",
+        src: "memory-system-dashboard.html",
+        hint: "需 API 服务（默认 :8888）与 CORS；可自动读 lib/config/moe_api.json。",
+      },
+      deploy: {
+        label: "运维部署中心",
+        src: "tools/deploy-ops.html",
+        agentSrc: "http://127.0.0.1:9100/",
+        hint: "推荐启动 Deploy Agent（:9100）以调用 API；静态页可直接操作已配置的 Agent 地址。",
+        preferAgent: true,
+      },
+    };
+
+    const tabBar = document.getElementById("tabBar");
+    const frameWrap = document.getElementById("frameWrap");
+    const frames = {};
+    let currentId = "feishu";
+
+    function buildUI() {
+      const tabButtons = document.createElement("div");
+      tabButtons.style.display = "contents";
+      Object.entries(TOOLS).forEach(([id, tool]) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.dataset.id = id;
+        btn.textContent = tool.label;
+        btn.addEventListener("click", () => activate(id, true));
+        tabButtons.appendChild(btn);
+
+        const iframe = document.createElement("iframe");
+        iframe.id = "frame-" + id;
+        iframe.title = tool.label;
+        iframe.src = tool.src;
+        frameWrap.appendChild(iframe);
+        frames[id] = iframe;
+
+      });
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+      const btnNew = document.createElement("button");
+      btnNew.type = "button";
+      btnNew.className = "primary-action";
+      btnNew.textContent = "新标签打开当前";
+      btnNew.addEventListener("click", openCurrentInNewTab);
+      const btnAll = document.createElement("button");
+      btnAll.type = "button";
+      btnAll.textContent = "全部新标签";
+      btnAll.addEventListener("click", openAllInNewTabs);
+      actions.appendChild(btnNew);
+      actions.appendChild(btnAll);
+
+      tabBar.appendChild(tabButtons);
+      tabBar.appendChild(actions);
+    }
+
+    function resolveOpenUrl(id) {
+      const tool = TOOLS[id];
+      if (!tool) return null;
+      if (id === "deploy" && tool.agentSrc) return tool.agentSrc;
+      return new URL(tool.src, window.location.href).href;
+    }
+
+    function openCurrentInNewTab() {
+      const url = resolveOpenUrl(currentId);
+      if (url) window.open(url, "_blank", "noopener");
+    }
+
+    function openAllInNewTabs() {
+      Object.keys(TOOLS).forEach((id) => {
+        window.open(resolveOpenUrl(id), "_blank", "noopener");
+      });
+    }
+
+    function activate(id, save) {
+      if (!TOOLS[id]) return;
+      currentId = id;
+      tabBar.querySelectorAll("button[data-id]").forEach((b) => {
+        b.classList.toggle("active", b.dataset.id === id);
+      });
+      Object.keys(frames).forEach((k) => {
+        frames[k].classList.toggle("active", k === id);
+      });
+      document.getElementById("toolHint").textContent = TOOLS[id].hint || "";
+      if (save) {
+        localStorage.setItem("moe_devtools_tab", id);
+        history.replaceState(null, "", "#" + id);
+      }
+    }
+
+    function initFromUrl() {
+      const hash = (location.hash || "").replace(/^#/, "");
+      const param = new URLSearchParams(location.search).get("tab");
+      const id = TOOLS[param] ? param : TOOLS[hash] ? hash : null;
+      if (id) return id;
+      const saved = localStorage.getItem("moe_devtools_tab");
+      return TOOLS[saved] ? saved : "feishu";
+    }
+
+    window.addEventListener("message", (e) => {
+      if (e.data?.type === "moe-devtools-switch" && TOOLS[e.data.tab]) {
+        activate(e.data.tab, true);
+      }
+    });
+
+    buildUI();
+    activate(initFromUrl(), false);
+  </script>
+</body>
+</html>

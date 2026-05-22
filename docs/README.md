@@ -74,7 +74,8 @@ docs/
 | 功能指南 | [features/NEW_FEATURES_GUIDE.md](./features/NEW_FEATURES_GUIDE.md) |
 | 测试 | [testing/E2E测试清单.md](./testing/E2E测试清单.md) |
 | 后端私信 | [../backend/docs/private_messages.md](../backend/docs/private_messages.md) |
-| RPC 监控 | [../monitor.html](../monitor.html)（仓库根目录） |
+| 开发者工具台 | [dev/devtools.html](dev/devtools.html)（飞书 / RPC / 记忆） |
+| RPC 监控 | [dev/tools/rpc-monitor.html](dev/tools/rpc-monitor.html) |
 
 ---
 

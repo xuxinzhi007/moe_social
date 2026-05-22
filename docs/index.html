@@ -51,7 +51,8 @@
   <p class="sub">当前有效文档集中入口；过时文档已迁入 <code>docs/archive/</code>。</p>
 
   <div class="tip">
-    预览：<code>cd docs && python3 -m http.server 8765</code> ·
+    预览：<code>cd docs; python -m http.server 8765</code>（PowerShell 用 <code>;</code>） ·
+    工具台：<a href="dev/devtools.html">devtools.html</a> ·
     Markdown 总索引：<a href="README.md">README.md</a>
   </div>
 
@@ -79,13 +80,23 @@
   </section>
 
   <section>
+    <h2>开发者工具台 <span class="tag live">HTML</span></h2>
+    <ul>
+      <li><a href="dev/devtools.html">开发者 / 运维工具台（统一入口）</a><span class="desc">飞书 · RPC · 记忆 · 部署，标签切换 / 新标签打开</span></li>
+      <li><a href="dev/tools/deploy-ops.html">运维部署中心（Moe Ops）</a><span class="path">docs/dev/tools · Agent :9100</span></li>
+      <li><a href="dev/tools/feishu-export.html">飞书导出命令生成器</a></li>
+      <li><a href="dev/tools/rpc-monitor.html">RPC 性能监控</a></li>
+      <li><a href="dev/memory-system-dashboard.html">记忆系统监控台</a></li>
+    </ul>
+  </section>
+
+  <section>
     <h2>开发与联调</h2>
     <ul>
       <li><a href="dev/README.md">dev/ 目录索引</a></li>
       <li><a href="dev/API调试指南.md">API 调试指南</a></li>
       <li><a href="dev/打包流程.md">打包流程</a></li>
       <li><a href="dev/飞书OAuth授权验证指南.md">飞书 OAuth</a></li>
-      <li><a href="../monitor.html">RPC 性能监控</a><span class="path">monitor.html（仓库根）</span></li>
     </ul>
   </section>
 

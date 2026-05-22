@@ -36,14 +36,18 @@ build-linux:
 env-status:
 	@echo GOOS=$$(go env GOOS) GOARCH=$$(go env GOARCH) CGO_ENABLED=$$(go env CGO_ENABLED)
 
-# 部署控制台 Agent（默认 deploy/config.yaml，先 cp deploy/config.example.yaml）
+# 部署控制台 Agent（首次运行会自动从 config.example.yaml 生成 config.yaml）
 deploy-agent:
 	go run ./cmd/deploy-agent -f deploy/config.yaml
 
 # 释放 9100 端口（address already in use 时先执行）
 deploy-agent-stop:
-	-@lsof -ti :9100 | xargs kill 2>/dev/null || true
-	@echo "port 9100 cleared (if any agent was listening)"
+ifeq ($(OS),Windows_NT)
+	-@powershell -NoProfile -ExecutionPolicy Bypass -File deploy/scripts/stop-agent.ps1
+else
+	-@command -v lsof >/dev/null 2>&1 && lsof -ti :9100 | xargs kill 2>/dev/null || true
+endif
+	@echo port 9100 cleared
 
 help:
 	@echo make gen           - 生成 RPC + API 代码

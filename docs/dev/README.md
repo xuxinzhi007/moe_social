@@ -21,7 +21,11 @@
 | [记忆系统-2026-05-20-变更整理.md](./记忆系统-2026-05-20-变更整理.md) | 近期变更与验收 |
 | [记忆系统-开源对标调研.md](./记忆系统-开源对标调研.md) | OpenClaw / 酒馆对标 |
 | [用户级记忆统一改造验收脚本.md](./用户级记忆统一改造验收脚本.md) | E2E 验收 |
-| [memory-system-dashboard.html](./memory-system-dashboard.html) | 监控台 |
+| [devtools.html](./devtools.html) | **开发者 / 运维工具台**（飞书 / RPC / 记忆 / 部署） |
+| [tools/deploy-ops.html](./tools/deploy-ops.html) | 运维部署中心（Moe Ops） |
+| [memory-system-dashboard.html](./memory-system-dashboard.html) | 记忆监控台 |
+| [tools/feishu-export.html](./tools/feishu-export.html) | 飞书导出命令生成 |
+| [tools/rpc-monitor.html](./tools/rpc-monitor.html) | RPC 性能监控 |
 | [memory/README.md](./memory/README.md) | 代码模块地图 |
 
 历史 Ollama 记忆文档已迁入 [../archive/memory/](../archive/memory/)。

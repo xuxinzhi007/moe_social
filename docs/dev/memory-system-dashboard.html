@@ -127,12 +127,42 @@
     .trigger-table td:first-child { width: 28%; color: var(--accent2); font-weight: 500; }
     .conf-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 2px; }
     .conf-bar i { display: block; height: 100%; background: var(--accent2); border-radius: 2px; }
+    .dev-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      padding: 0.55rem 1rem;
+      background: #0b0d12;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.78rem;
+    }
+    .dev-nav a { color: var(--accent); text-decoration: none; }
+    .dev-nav a:hover { color: var(--accent2); }
+    .dev-nav .sep { color: var(--muted); }
+    .dev-nav .here { color: var(--text); font-weight: 600; }
   </style>
 </head>
 <body>
+  <nav class="dev-nav" aria-label="开发者工具导航">
+    <a href="devtools.html">← 工具台</a>
+    <span class="sep">·</span>
+    <a href="../index.html">文档导航</a>
+    <span class="sep">·</span>
+    <a href="#" data-devtools-tab="feishu">飞书命令</a>
+    <span class="sep">·</span>
+    <a href="#" data-devtools-tab="rpc">RPC 监控</a>
+    <span class="sep">·</span>
+    <span class="here">记忆监控</span>
+    <span class="sep">·</span>
+    <a href="#" data-devtools-tab="deploy">运维部署</a>
+    <span class="sep">·</span>
+    <a href="#" data-devtools-newtab="memory" title="新标签打开">↗</a>
+  </nav>
   <header>
     <h1><span class="dot" id="liveDot"></span> 记忆系统监控台</h1>
     <p>真实 API · Phase 2 混合检索 + Phase 3 图谱/rerank ·
+      <a href="devtools.html" style="color:var(--accent)">开发者工具台</a> ·
       <a href="../index.html" style="color:var(--accent)">文档导航</a> ·
       <a href="记忆系统-2026-05-20-变更整理.md" style="color:var(--accent)">变更整理</a> ·
       SSOT：<code>用户记忆系统-OpenClaw式演进设计.md</code></p>
@@ -337,10 +367,11 @@
   </main>
 
   <footer style="padding:0.85rem 1.25rem;border-top:1px solid var(--border);color:var(--muted);font-size:0.72rem">
-    <a href="../index.html" style="color:var(--accent)">← 文档导航</a> ·
+    <a href="devtools.html" style="color:var(--accent)">← 开发者工具台</a> ·
+    <a href="../index.html" style="color:var(--accent)">文档导航</a> ·
     启动：<code>cd docs && python3 -m http.server 8765</code> →
-    <a href="http://localhost:8765/index.html" style="color:var(--accent)">index</a> ·
-    <a href="http://localhost:8765/dev/memory-system-dashboard.html" style="color:var(--accent)">监控台</a>
+    <a href="http://localhost:8765/dev/devtools.html" style="color:var(--accent)">工具台</a> ·
+    <a href="http://localhost:8765/index.html" style="color:var(--accent)">文档导航</a>
     · API 需 CORS · 默认读取 <code>lib/config/moe_api.json</code> 或 localhost:8888
   </footer>
 
@@ -972,5 +1003,6 @@
     renderTraces();
     log("监控台就绪", "ok");
   </script>
+  <script src="tools/moe-devtools-nav.js" data-current="memory"></script>
 </body>
 </html>

@@ -76,6 +76,34 @@
       color: var(--muted);
       border-top: 1px solid var(--border);
     }
+    .tool-links {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .tool-links .cap {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+    .tool-link {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 10px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 12px;
+      margin-bottom: 4px;
+      transition: all 0.15s;
+    }
+    .tool-link:hover {
+      background: rgba(127,127,213,0.12);
+      color: var(--text);
+    }
+    .tool-link.here { color: var(--mint); font-weight: 600; }
+    .tool-link .ext { opacity: 0.6; font-size: 10px; }
     /* 主区 */
     .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
     .topbar {
@@ -133,21 +161,131 @@
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       color: #fff;
     }
-    .content { flex: 1; overflow: auto; padding: 24px; }
+    .content { flex: 1; overflow: auto; padding: 20px 24px 32px; }
     .page { display: none; }
     .page.active { display: block; }
-    /* 告警条 */
-    .alert {
-      background: linear-gradient(90deg, rgba(255,107,107,0.15), rgba(255,179,71,0.1));
-      border: 1px solid rgba(255,107,107,0.35);
-      border-radius: var(--radius);
-      padding: 14px 18px;
-      margin-bottom: 20px;
-      font-size: 13px;
+    .page-head { margin-bottom: 18px; }
+    .page-head h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .page-head p { font-size: 13px; color: var(--muted); }
+    /* 顶部细条提示（不挡主内容） */
+    .notice-bar {
       display: none;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 14px;
+      margin-bottom: 14px;
+      font-size: 12px;
+      background: rgba(255,107,107,0.12);
+      border: 1px solid rgba(255,107,107,0.35);
+      border-radius: 10px;
+      color: var(--text);
     }
-    .alert.show { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-    .alert code { background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px; font-size: 12px; }
+    .notice-bar.show { display: flex; flex-wrap: wrap; }
+    .notice-bar .notice-close {
+      margin-left: auto;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      padding: 0 4px;
+    }
+    /* 双环境卡片 */
+    .env-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 1100px) { .env-grid { grid-template-columns: 1fr; } }
+    .env-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      min-height: 200px;
+    }
+    .env-card-cloud { border-color: rgba(145,234,228,0.45); }
+    .env-card-head {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .env-card-head h3 { font-size: 14px; font-weight: 600; }
+    .env-card-head .sub { font-size: 11px; color: var(--muted); font-weight: 400; }
+    .env-card-body { padding: 14px 16px; font-size: 12px; line-height: 1.65; color: var(--muted); }
+    .env-kv { display: grid; grid-template-columns: 88px 1fr; gap: 6px 10px; margin-bottom: 10px; }
+    .env-kv dt { color: var(--muted); }
+    .env-kv dd { color: var(--text); word-break: break-all; margin: 0; }
+    .env-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .env-pre {
+      margin-top: 10px;
+      max-height: 120px;
+      overflow: auto;
+      background: var(--panel2);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-family: ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .overview-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 900px) { .overview-bottom { grid-template-columns: 1fr; } }
+    .pipeline.compact { margin-bottom: 0; }
+    .pipeline.compact .pipe-step { padding: 10px 6px; font-size: 11px; }
+    /* 设置抽屉 */
+    .drawer-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 200;
+    }
+    .drawer-backdrop.open { display: block; }
+    .drawer {
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: min(400px, 92vw);
+      background: #15182a;
+      border-left: 1px solid var(--border);
+      z-index: 201;
+      transform: translateX(100%);
+      transition: transform .22s ease;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .drawer.open { transform: translateX(0); }
+    .drawer-head {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .drawer-head h3 { font-size: 15px; }
+    .drawer-body { flex: 1; overflow: auto; padding: 14px 18px 24px; }
+    .drawer-section { margin-bottom: 18px; }
+    .drawer-section h4 { font-size: 12px; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .topbar .btn-gear {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      margin-left: auto;
+    }
+    .topbar .agent-chip {
+      font-size: 11px;
+      color: var(--muted);
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     /* 指标卡 */
     .metrics {
       display: grid;
@@ -239,6 +377,9 @@
     .btn-mint { background: rgba(145,234,228,0.2); color: var(--mint); border: 1px solid rgba(145,234,228,0.4); }
     .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
     .btn-danger { background: rgba(255,107,107,0.2); color: var(--danger); border: 1px solid rgba(255,107,107,0.4); }
+    .agent-panel { margin-bottom: 16px; border-color: rgba(127,127,213,0.35); }
+    .agent-panel .agent-detail { font-size: 12px; color: var(--muted); line-height: 1.55; margin: 0 0 10px; }
+    .agent-panel .agent-detail strong { color: var(--text); }
     .btn-warn { background: rgba(255,179,71,0.15); color: var(--warn); border: 1px solid rgba(255,179,71,0.35); }
     /* 终端 */
     .terminal {
@@ -349,11 +490,20 @@
     </div>
     <nav>
       <div class="nav-item active" data-page="overview"><span class="nav-icon">◉</span> 总览</div>
-      <div class="nav-item" data-page="docker"><span class="nav-icon">⬡</span> 容器编排</div>
+      <div class="nav-item" data-page="docker"><span class="nav-icon">☁</span> 云服务器 · Docker</div>
       <div class="nav-item" data-page="build"><span class="nav-icon">⚙</span> 构建流水线</div>
       <div class="nav-item" data-page="release"><span class="nav-icon">↑</span> 应用发布</div>
       <div class="nav-item" data-page="jobs"><span class="nav-icon">☰</span> 任务审计</div>
     </nav>
+    <div class="tool-links" id="toolLinks">
+      <div class="cap">开发者 / 运维工具</div>
+      <a class="tool-link" data-devtools-tab="feishu" data-hub-tab="feishu">工具台 · 飞书命令</a>
+      <a class="tool-link" data-devtools-tab="rpc" data-hub-tab="rpc">工具台 · RPC 监控</a>
+      <a class="tool-link" data-devtools-tab="memory" data-hub-tab="memory">工具台 · 记忆监控</a>
+      <a class="tool-link here" data-hub-tab="deploy">工具台 · 本页 <span class="ext">↗</span></a>
+      <a class="tool-link" id="linkOpenHub" target="_blank" rel="noopener">在新标签打开工具台</a>
+      <a class="tool-link" id="linkDocsIndex" target="_blank" rel="noopener">文档导航</a>
+    </div>
     <div class="sidebar-foot" id="sideOs">—</div>
   </aside>
 
@@ -367,65 +517,145 @@
       <select id="deployTarget" title="总览/容器页查看哪台机器；执行任务时会按类型自动选本机或云平台"></select>
       <input type="password" id="token" placeholder="与 config.yaml 的 token 一致" title="Deploy Token">
       <button type="button" class="btn-sm" onclick="verifyToken()">验证</button>
+      <span class="agent-chip" id="topAgentChip" title="Agent 状态">Agent —</span>
+      <button type="button" class="btn-sm btn-gear" onclick="toggleSettingsDrawer(true)" title="连接与鉴权">⚙ 设置</button>
       <button type="button" class="btn-sm" onclick="refreshAll()" style="background:var(--panel2);border:1px solid var(--border)">刷新</button>
     </header>
 
-    <div class="content">
-      <div class="alert show" id="offlineAlert">
-        <span>无法连接 Deploy Agent。请先在 <code>backend</code> 目录执行 <code>make deploy-agent</code>，然后访问 <strong id="dashUrl">http://127.0.0.1:9100/</strong>。</span>
+    <div class="drawer-backdrop" id="drawerBackdrop" onclick="toggleSettingsDrawer(false)"></div>
+    <aside class="drawer" id="settingsDrawer" aria-label="连接设置">
+      <div class="drawer-head">
+        <h3>连接与鉴权</h3>
+        <button type="button" class="btn btn-ghost" onclick="toggleSettingsDrawer(false)">✕</button>
       </div>
-
-      <div class="panel" id="authPanel">
-        <div class="panel-head">
-          <h3>鉴权说明（不是 Moe App 登录）</h3>
-          <span id="authBadge" class="tag tag-pending">未验证 Token</span>
-        </div>
-        <div class="panel-body" style="font-size:13px;color:var(--muted);line-height:1.6">
-          <p style="margin-bottom:10px">① 在 <code>backend/deploy/config.yaml</code> 设置 <code>token</code>，与上方输入框一致后点 <strong>保存并验证</strong>。</p>
-          <p style="margin-bottom:10px">② <strong>仅 Docker</strong> 在云平台执行；<strong>Flutter / 编译</strong> 在本机。本机路径由 <code>workspace_root: ../..</code> 相对配置文件自动解析，换电脑无需改绝对路径。</p>
-          <p style="margin-bottom:10px">③ 云平台 SSH：在 <code>config.yaml</code> 的 <code>cloud</code> 配置 <code>identity_file</code>（推荐）或 <code>password</code>；也可用 <code>ssh-copy-id root@47.106.175.49</code> 后不配密码。</p>
-          <p>④ 云上 <code>backend_dir</code> 必须是 VPS 上的绝对路径（如 <code>/root/gowork/moe_social/backend</code>）。</p>
-          <div class="btn-row" style="margin-top:14px">
-            <button class="btn btn-primary" onclick="verifyToken()">保存并验证 Token</button>
-            <button class="btn btn-mint" onclick="testSSH()">测试云平台 SSH</button>
+      <div class="drawer-body">
+        <div class="drawer-section">
+          <h4>Deploy Agent</h4>
+          <span id="agentStatusBadge" class="tag tag-pending">检测中</span>
+          <p class="agent-detail" id="agentStatusDetail" style="margin-top:8px;font-size:12px;color:var(--muted)">—</p>
+          <div class="btn-row" style="margin-top:8px">
+            <button type="button" class="btn btn-ghost" onclick="probeAgent()">检测</button>
+            <button type="button" class="btn btn-danger" id="btnStopAgent" onclick="stopAgent()" style="display:none">停止 Agent</button>
           </div>
-          <pre class="log" id="authLog" style="margin-top:12px;max-height:120px;font-size:11px">—</pre>
         </div>
+        <div class="drawer-section">
+          <h4>Deploy Token</h4>
+          <span id="authBadge" class="tag tag-pending">未验证</span>
+          <p style="font-size:11px;color:var(--muted);margin:8px 0">与 <code>deploy/config.yaml</code> 中 token 一致，非 App 登录。</p>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="verifyToken()">验证 Token</button>
+            <button class="btn btn-mint" onclick="testSSH()">测试 SSH</button>
+          </div>
+          <pre class="log" id="authLog" style="margin-top:10px;max-height:100px;font-size:11px">—</pre>
+        </div>
+        <details style="font-size:11px;color:var(--muted);line-height:1.55">
+          <summary style="cursor:pointer;color:var(--accent2);margin-bottom:6px">配置说明</summary>
+          <p>本机：Flutter / 编译 · 云：Docker compose · SSH 在 config.yaml targets.cloud</p>
+        </details>
+      </div>
+    </aside>
+
+    <div class="content">
+      <div class="notice-bar" id="offlineAlert">
+        <span id="offlineAlertText">Agent 离线</span>
+        <button type="button" class="notice-close" onclick="dismissOfflineNotice()" aria-label="关闭">×</button>
       </div>
 
       <!-- 总览 -->
       <section class="page active" id="page-overview">
-        <div class="pipeline">
-          <div class="pipe-step"><div class="num">1</div>编译</div>
-          <span class="pipe-arrow">→</span>
-          <div class="pipe-step"><div class="num">2</div>Docker</div>
-          <span class="pipe-arrow">→</span>
-          <div class="pipe-step"><div class="num">3</div>健康检查</div>
-          <span class="pipe-arrow">→</span>
-          <div class="pipe-step"><div class="num">4</div>APK 发布</div>
+        <div class="page-head">
+          <h2>运维总览</h2>
+          <p>本机 Agent 编译与构建 · 云平台 VPS 运行 Docker（API / RPC）</p>
         </div>
-        <div class="panel" style="margin-bottom:16px;border-color:rgba(145,234,228,0.35)">
-          <div class="panel-body" style="font-size:13px;color:var(--muted);line-height:1.55">
-            <strong style="color:var(--mint)">执行分工</strong>：
-            <span style="color:var(--text)">本机 💻</span> — Flutter、<code>make build-linux</code>、本机构建、环境巡检；
-            <span style="color:var(--text)">云平台 ☁</span> — 仅 <code>docker compose</code>（API/RPC 容器）。
-            顶部「部署目标」用于查看主机信息；点按钮时会<strong>自动</strong>选对环境。
+
+        <div class="env-grid">
+          <article class="env-card" id="envLocalCard">
+            <div class="env-card-head">
+              <h3>💻 本机 Agent <span class="sub">编译 / Flutter</span></h3>
+              <span id="localEnvBadge" class="tag tag-pending">—</span>
+            </div>
+            <div class="env-card-body" id="localCardBody">
+              <dl class="env-kv" id="localEnvKv"></dl>
+              <div class="env-actions">
+                <button class="btn btn-ghost" onclick="showPage('build')">构建流水线</button>
+                <button class="btn btn-primary" onclick="runJob('backend_build_linux')">编译 Linux</button>
+              </div>
+            </div>
+          </article>
+          <article class="env-card env-card-cloud" id="envCloudCard">
+            <div class="env-card-head">
+              <h3>☁ 云服务器 <span class="sub" id="cloudHostLabel">Docker 部署</span></h3>
+              <span id="cloudEnvBadge" class="tag tag-pending">—</span>
+            </div>
+            <div class="env-card-body" id="cloudCardBody">
+              <dl class="env-kv" id="cloudEnvKv"></dl>
+              <pre class="env-pre" id="cloudDockerPreview">容器状态加载中…</pre>
+              <div class="env-actions">
+                <button class="btn btn-mint" onclick="showPage('docker'); runRemotePathCheck()">路径巡检</button>
+                <button class="btn btn-primary" onclick="runJob('docker_ps'); showPage('docker')">容器状态</button>
+                <button class="btn btn-primary" onclick="runJob('docker_up')">Docker Up</button>
+                <button class="btn btn-ghost" onclick="testSSH()">测试 SSH</button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="overview-bottom">
+          <div class="panel">
+            <div class="panel-head"><h3>发布流水线</h3></div>
+            <div class="panel-body">
+              <div class="pipeline compact">
+                <div class="pipe-step"><div class="num">1</div>编译</div>
+                <span class="pipe-arrow">→</span>
+                <div class="pipe-step"><div class="num">2</div>Docker</div>
+                <span class="pipe-arrow">→</span>
+                <div class="pipe-step"><div class="num">3</div>健康</div>
+                <span class="pipe-arrow">→</span>
+                <div class="pipe-step"><div class="num">4</div>APK</div>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>快捷操作</h3></div>
+            <div class="panel-body btn-row">
+              <button class="btn btn-primary" onclick="runJob('backend_build_linux')">本机编译</button>
+              <button class="btn btn-primary" onclick="runJob('docker_up')">云 Docker Up</button>
+              <button class="btn btn-mint" onclick="runJob('docker_ps'); showPage('docker')">云容器</button>
+              <button class="btn btn-warn" onclick="runJob('github_trigger_apk', {ref: document.getElementById('ghRef')?.value || 'main'})">APK CI</button>
+            </div>
           </div>
         </div>
-        <div class="metrics" id="metricsGrid">加载中…</div>
-        <div class="panel">
-          <div class="panel-head"><h3>快捷部署</h3></div>
-          <div class="panel-body btn-row">
-            <button class="btn btn-primary" onclick="runJob('backend_build_linux')">① 本机编译 Linux 后端</button>
-            <button class="btn btn-primary" onclick="runJob('docker_up')">② 云平台 Docker Up</button>
-            <button class="btn btn-mint" onclick="runJob('docker_ps'); showPage('docker')">③ 云平台检查容器</button>
-            <button class="btn btn-warn" onclick="runJob('github_trigger_apk', {ref: document.getElementById('ghRef').value || 'main'})">④ 触发 APK CI</button>
+
+        <div class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <h3>环境指标</h3>
+            <select id="metricsTargetSelect" onchange="refreshHost()" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:8px;font-size:12px">
+              <option value="local">本机</option>
+              <option value="cloud">云平台</option>
+            </select>
+          </div>
+          <div class="panel-body" style="padding-top:8px">
+            <div class="metrics" id="metricsGrid">加载中…</div>
           </div>
         </div>
       </section>
 
       <!-- Docker -->
       <section class="page" id="page-docker">
+        <div class="page-head">
+          <h2>云服务器 · Docker</h2>
+          <p id="cloudPageSubtitle">SSH 连接 VPS，管理 compose 与 API/RPC 容器</p>
+        </div>
+        <div class="env-card env-card-cloud" style="margin-bottom:16px">
+          <div class="env-card-head">
+            <h3>☁ 云平台状态</h3>
+            <button class="btn btn-ghost" onclick="refreshCloudCard()">刷新</button>
+          </div>
+          <div class="env-card-body">
+            <dl class="env-kv" id="cloudEnvKvDocker"></dl>
+            <pre class="env-pre" id="cloudDockerPreviewPage" style="max-height:160px">—</pre>
+          </div>
+        </div>
         <div class="panel">
           <div class="panel-head">
             <h3>云平台路径巡检</h3>
@@ -555,9 +785,15 @@
     let activeJobId = null;
     let pollTimer = null;
     let hostCache = null;
-    let deployTarget = localStorage.getItem('moe_deploy_target') || 'cloud';
+    let agentMeta = null;
+    let agentProbeTimer = null;
+    let deployTarget = localStorage.getItem('moe_deploy_target') || 'local';
 
     function currentTarget() {
+      const metricsSel = document.getElementById('metricsTargetSelect');
+      if (metricsSel && document.querySelector('#page-overview.active')) {
+        return metricsSel.value || deployTarget;
+      }
       const sel = document.getElementById('deployTarget');
       return sel && sel.value ? sel.value : deployTarget;
     }
@@ -575,7 +811,7 @@
           `<option value="${esc(t.id)}">${esc(t.label || t.id)}${t.kind === 'ssh' ? ' ☁' : ' 💻'}</option>`
         ).join('');
         const def = data.default_target || 'cloud';
-        deployTarget = localStorage.getItem('moe_deploy_target') || def;
+        deployTarget = localStorage.getItem('moe_deploy_target') || 'cloud';
         sel.value = deployTarget;
         sel.onchange = () => {
           deployTarget = sel.value;
@@ -593,7 +829,38 @@
       if (origin && origin.startsWith('http') && !origin.includes('63342')) {
         document.getElementById('baseUrl').value = origin;
         document.getElementById('dashUrl').textContent = origin + '/';
+      } else if (!localStorage.getItem(LS_URL)) {
+        document.getElementById('baseUrl').value = 'http://127.0.0.1:9100';
+        document.getElementById('dashUrl').textContent = 'http://127.0.0.1:9100/';
       }
+    }
+
+    function detectClientPlatform() {
+      const ua = navigator.userAgent || '';
+      const plat = (navigator.platform || '').trim();
+      let os = '未知系统';
+      if (/Win/i.test(plat) || /Windows/i.test(ua)) os = 'Windows';
+      else if (/Mac/i.test(plat) || /Macintosh/i.test(ua)) os = 'macOS';
+      else if (/Linux/i.test(plat) || /Linux/i.test(ua)) os = 'Linux';
+      else if (/Android/i.test(ua)) os = 'Android';
+      else if (/iPhone|iPad/i.test(ua)) os = 'iOS';
+      const arch = plat.includes('64') || ua.includes('x64') || ua.includes('x86_64') ? 'x64'
+        : ua.includes('arm') || ua.includes('aarch64') ? 'arm64' : (plat || '—');
+      return { os, arch, plat };
+    }
+
+    function renderClientPlatform(prefix) {
+      const p = detectClientPlatform();
+      const pre = prefix ? prefix + ' · ' : '';
+      document.getElementById('sideOs').textContent = `${pre}${p.os} · ${p.arch}`;
+      return p;
+    }
+
+    function offlineSetupHint() {
+      const isWin = /Win/i.test(navigator.platform || '') || /Windows/i.test(navigator.userAgent || '');
+      const cmd = isWin ? 'cd backend; make deploy-agent' : 'cd backend && make deploy-agent';
+      document.getElementById('offlineAlertText').innerHTML =
+        `Agent 离线 · 在 backend 执行 <code>${cmd}</code> · <a href="#" onclick="toggleSettingsDrawer(true);return false" style="color:var(--mint)">打开设置</a>`;
     }
 
     function base() { return document.getElementById('baseUrl').value.replace(/\/$/, ''); }
@@ -621,6 +888,7 @@
         badge.textContent = 'Token 有效';
         log.textContent = data.message || '已鉴权，可以执行任务';
         setOnline(true);
+        localStorage.removeItem('moe_deploy_offline_dismissed');
         await refreshAll();
       } catch (e) {
         badge.className = 'tag tag-fail';
@@ -680,7 +948,193 @@
     function setOnline(ok) {
       document.getElementById('connDot').classList.toggle('online', ok);
       document.getElementById('connLabel').textContent = ok ? 'Agent 在线' : 'Agent 离线';
-      document.getElementById('offlineAlert').classList.toggle('show', !ok);
+      const dismissed = localStorage.getItem('moe_deploy_offline_dismissed') === '1';
+      document.getElementById('offlineAlert').classList.toggle('show', !ok && !dismissed);
+    }
+
+    function dismissOfflineNotice() {
+      localStorage.setItem('moe_deploy_offline_dismissed', '1');
+      document.getElementById('offlineAlert').classList.remove('show');
+    }
+
+    function toggleSettingsDrawer(open) {
+      const on = open === true || open === undefined;
+      document.getElementById('settingsDrawer').classList.toggle('open', on);
+      document.getElementById('drawerBackdrop').classList.toggle('open', on);
+    }
+
+    function renderEnvKv(el, rows) {
+      el.innerHTML = rows.map(([k, v]) =>
+        `<dt>${esc(k)}</dt><dd>${esc(String(v ?? '—'))}</dd>`
+      ).join('');
+    }
+
+    async function refreshCloudCard() {
+      const kvMain = document.getElementById('cloudEnvKv');
+      const kvDocker = document.getElementById('cloudEnvKvDocker');
+      const pre1 = document.getElementById('cloudDockerPreview');
+      const pre2 = document.getElementById('cloudDockerPreviewPage');
+      const badge = document.getElementById('cloudEnvBadge');
+      const setPre = (t) => { if (pre1) pre1.textContent = t; if (pre2) pre2.textContent = t; };
+      if (!token()) {
+        badge.className = 'tag tag-pending';
+        badge.textContent = '需 Token';
+        const rows = [['状态', '请先在设置中验证 Token']];
+        if (kvMain) renderEnvKv(kvMain, rows);
+        if (kvDocker) renderEnvKv(kvDocker, rows);
+        setPre('—');
+        return;
+      }
+      badge.className = 'tag tag-pending';
+      badge.textContent = '检测中';
+      try {
+        const targets = await api('/api/deploy/targets');
+        const cloud = (targets.targets || []).find(t => t.id === 'cloud' || t.kind === 'ssh') || {};
+        const hostLabel = cloud.host ? `${cloud.user || 'root'}@${cloud.host}` : (cloud.label || 'cloud');
+        document.getElementById('cloudHostLabel').textContent = hostLabel;
+        const sub = document.getElementById('cloudPageSubtitle');
+        if (sub) sub.textContent = `SSH · ${hostLabel} · Docker compose`;
+
+        let sshOk = false;
+        let sshMsg = '—';
+        try {
+          const ssh = await api('/api/deploy/ssh-check?target=cloud');
+          sshOk = !!ssh.success;
+          sshMsg = (ssh.probe || {}).message || (sshOk ? 'SSH 连通' : 'SSH 失败');
+        } catch (e) { sshMsg = e.message; }
+
+        let pathMsg = '—';
+        let backendDir = cloud.backend_dir || '—';
+        let composeOk = '—';
+        try {
+          const chk = await api('/api/deploy/remote-check?target=cloud');
+          const c = chk.check || {};
+          pathMsg = c.message || (chk.success ? '路径就绪' : '路径异常');
+          backendDir = c.backend_dir || backendDir;
+          composeOk = c.compose_file_exists ? '存在' : '缺失';
+        } catch (e) { pathMsg = e.message; }
+
+        let dockerOut = '—';
+        try {
+          const st = await api('/api/deploy/status?target=cloud');
+          dockerOut = st.output || st.message || '(无输出)';
+          if (!st.success && st.message) dockerOut = st.message + '\n' + dockerOut;
+        } catch (e) { dockerOut = e.message; }
+
+        const rows = [
+          ['SSH', sshOk ? '连通 ✓' : sshMsg],
+          ['主机', hostLabel],
+          ['backend_dir', backendDir],
+          ['compose', composeOk],
+          ['线上 API', cloud.api_base_url || '—'],
+          ['路径巡检', pathMsg],
+        ];
+        if (kvMain) renderEnvKv(kvMain, rows);
+        if (kvDocker) renderEnvKv(kvDocker, rows);
+        setPre(dockerOut);
+        badge.className = 'tag ' + (sshOk ? 'tag-ok' : 'tag-fail');
+        badge.textContent = sshOk ? 'SSH 在线' : 'SSH 异常';
+      } catch (e) {
+        badge.className = 'tag tag-fail';
+        badge.textContent = '失败';
+        const rows = [['错误', e.message]];
+        if (kvMain) renderEnvKv(kvMain, rows);
+        if (kvDocker) renderEnvKv(kvDocker, rows);
+        setPre(e.message);
+      }
+    }
+
+    async function refreshLocalCard() {
+      const badge = document.getElementById('localEnvBadge');
+      const kv = document.getElementById('localEnvKv');
+      const chip = document.getElementById('topAgentChip');
+      try {
+        const data = await api('/api/deploy/host?target=local');
+        const h = data.host || {};
+        const paths = data.resolved_paths || {};
+        badge.className = 'tag tag-ok';
+        badge.textContent = h.platform || h.os || '本机';
+        renderEnvKv(kv, [
+          ['系统', (h.platform || h.os) + ' / ' + (h.arch || '')],
+          ['Go', (h.go_version || '—').split('\n')[0]],
+          ['Flutter', (h.flutter_version || '—').split('\n')[0]],
+          ['Make', h.has_make ? '可用' : 'go build'],
+          ['工作区', paths.workspace || h.workspace_root || '—'],
+        ]);
+        if (chip) chip.textContent = `Agent · ${h.platform || h.os} · PID ${agentMeta?.pid || '—'}`;
+      } catch (e) {
+        badge.className = 'tag tag-fail';
+        badge.textContent = '离线';
+        renderEnvKv(kv, [['状态', e.message]]);
+        if (chip) chip.textContent = 'Agent 离线';
+      }
+    }
+
+    async function probeAgent() {
+      const badge = document.getElementById('agentStatusBadge');
+      const detail = document.getElementById('agentStatusDetail');
+      const btnStop = document.getElementById('btnStopAgent');
+      const chip = document.getElementById('topAgentChip');
+      const agentURL = base().replace(/\/$/, '') + '/api/deploy/agent';
+      badge.className = 'tag tag-pending';
+      badge.textContent = '检测中';
+      detail.textContent = '正在连接 ' + agentURL + ' …';
+      btnStop.style.display = 'none';
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 4000);
+        const res = await fetch(agentURL, { signal: ctrl.signal });
+        clearTimeout(timer);
+        const data = await res.json();
+        if (!res.ok || !data.running) throw new Error(data.message || '无响应');
+        agentMeta = data;
+        badge.className = 'tag tag-ok';
+        badge.textContent = '运行中';
+        detail.innerHTML =
+          '<strong>PID ' + esc(String(data.pid)) + '</strong> · 监听 <code>' + esc(data.listen || '') +
+          '</code> · ' + esc(data.platform_label || data.platform || '') + ' · ' + esc(data.arch || '');
+        btnStop.style.display = 'inline-block';
+        setOnline(true);
+        if (chip) chip.textContent = `Agent · PID ${data.pid} · ${data.platform_label || ''}`;
+        localStorage.removeItem('moe_deploy_offline_dismissed');
+        if (token()) refreshLocalCard().catch(() => {});
+      } catch (e) {
+        agentMeta = null;
+        badge.className = 'tag tag-fail';
+        badge.textContent = '未运行';
+        const msg = e.name === 'AbortError' ? '连接超时' : (e.message || '无法连接');
+        detail.textContent =
+          msg + '。若终端里 make deploy-agent 提示端口占用，说明 9100 仍被旧 Agent 占用——请填写 Token 后若页面曾连上过可点「停止 Agent」，否则在 backend 目录执行 make deploy-agent-stop。';
+        btnStop.style.display = 'none';
+        if (chip) chip.textContent = 'Agent 离线';
+        setOnline(false);
+      }
+    }
+
+    async function stopAgent() {
+      if (!token()) {
+        toast('请先填写 Token');
+        document.getElementById('authLog').textContent = '停止 Agent 需要与 config.yaml 相同的 Deploy Token';
+        return;
+      }
+      if (!confirm('确认停止本机 Deploy Agent？\n停止后需重新在 backend 目录执行 make deploy-agent。')) return;
+      try {
+        const data = await api('/api/deploy/shutdown', { method: 'POST' });
+        toast(data.message || '已发送停止指令');
+        document.getElementById('agentStatusBadge').className = 'tag tag-pending';
+        document.getElementById('agentStatusBadge').textContent = '退出中';
+        document.getElementById('agentStatusDetail').textContent = 'Agent 正在退出（PID ' + (data.pid || agentMeta?.pid || '?') + '）…';
+        document.getElementById('btnStopAgent').style.display = 'none';
+        setTimeout(probeAgent, 1500);
+      } catch (e) {
+        toast(e.message);
+        document.getElementById('authLog').textContent = e.message;
+      }
+    }
+
+    function scheduleAgentProbe() {
+      if (agentProbeTimer) clearInterval(agentProbeTimer);
+      agentProbeTimer = setInterval(probeAgent, 20000);
     }
 
     function toast(msg) {
@@ -721,20 +1175,45 @@
         showPage(el.dataset.page);
         if (el.dataset.page === 'docker') {
           setDeployTarget('cloud');
-          runRemotePathCheck();
+          refreshCloudCard();
         }
         if (el.dataset.page === 'build') setDeployTarget('local');
+        if (el.dataset.page === 'overview') refreshOverviewAll();
       };
     });
 
-    async function refreshHost() {
+    async function refreshSideLocal() {
       try {
-        const data = await api('/api/deploy/host' + targetQuery());
+        const data = await api('/api/deploy/host?target=local');
+        const h = data.host || {};
+        const label = h.platform || h.os || '本机';
+        document.getElementById('sideOs').textContent = label + ' · ' + (h.arch || '') + ' · Agent';
+        return h;
+      } catch (_) {
+        renderClientPlatform('未连接 Agent');
+        return null;
+      }
+    }
+
+    async function refreshOverviewAll() {
+      if (!token()) return;
+      await Promise.all([
+        refreshLocalCard().catch(() => {}),
+        refreshCloudCard().catch(() => {}),
+        refreshHost().catch(() => {}),
+      ]);
+    }
+
+    async function refreshHost() {
+      const mt = document.getElementById('metricsTargetSelect');
+      const tid = mt ? mt.value : currentTarget();
+      try {
+        const data = await api('/api/deploy/host?target=' + encodeURIComponent(tid));
         setOnline(true);
         const h = data.host || {};
         const tgt = data.target || {};
         hostCache = h;
-        document.getElementById('sideOs').textContent = (tgt.label || h.platform || h.os) + ' · ' + (h.arch || '');
+        await refreshSideLocal();
         const isCloud = (tgt.kind === 'ssh' || currentTarget() === 'cloud');
         document.getElementById('metricsGrid').innerHTML = [
           ['当前目标', (tgt.label || currentTarget()) + (isCloud ? ' ☁' : ' 💻')],
@@ -749,6 +1228,7 @@
         ].map(([k,v]) => `<div class="metric"><div class="label">${k}</div><div class="value">${esc(String(v||'—'))}</div></div>`).join('');
       } catch (e) {
         setOnline(false);
+        renderClientPlatform('未连接 Agent');
         document.getElementById('metricsGrid').innerHTML = `<div class="metric"><div class="label">连接失败</div><div class="value" style="color:var(--danger)">${esc(e.message)}</div></div>`;
       }
     }
@@ -937,19 +1417,50 @@
 
     async function refreshAll() {
       await loadTargets();
-      await refreshHost();
-      await refreshDockerStatus();
-      await refreshReleases();
-      await loadJobs();
+      if (token()) {
+        await refreshOverviewAll();
+        await refreshDockerStatus();
+        await refreshReleases();
+        await loadJobs();
+      } else {
+        await refreshHost().catch(() => {});
+      }
     }
 
-    loadConn();
-    fetch(base() + '/api/deploy/info').then(r => r.json()).then(() => {}).catch(() => {});
-    if (token()) {
-      verifyToken();
-    } else {
-      refreshAll();
+    function devtoolsHubBase() {
+      try {
+        const saved = localStorage.getItem('moe_devtools_hub');
+        if (saved) return saved.replace(/\/?$/, '');
+      } catch (_) {}
+      if (location.port === '9100' || location.pathname.startsWith('/api/deploy')) {
+        return 'http://127.0.0.1:8765/docs/dev/devtools.html'.replace(/\/devtools\.html$/, '');
+      }
+      return new URL('..', window.location.href).href.replace(/\/$/, '');
     }
+
+    function wireToolLinks() {
+      const hub = devtoolsHubBase();
+      const hubPage = hub.endsWith('devtools.html') ? hub : hub + '/devtools.html';
+      document.querySelectorAll('#toolLinks [data-hub-tab]').forEach((a) => {
+        const tab = a.getAttribute('data-hub-tab');
+        a.href = hubPage + (tab === 'deploy' ? '?tab=deploy' : '?tab=' + tab);
+      });
+      const openHub = document.getElementById('linkOpenHub');
+      if (openHub) openHub.href = hubPage + '?tab=deploy';
+      const docsIdx = document.getElementById('linkDocsIndex');
+      if (docsIdx) docsIdx.href = new URL('../index.html', hubPage).href;
+    }
+    wireToolLinks();
+    offlineSetupHint();
+    renderClientPlatform('本机浏览器');
+
+    loadConn();
+    probeAgent().then(() => {
+      if (token()) verifyToken();
+      else toggleSettingsDrawer(true);
+    });
+    scheduleAgentProbe();
   </script>
+  <script src="moe-devtools-nav.js" data-current="deploy"></script>
 </body>
 </html>

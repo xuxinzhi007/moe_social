@@ -5,7 +5,7 @@
 ## 架构
 
 ```text
-web/deploy/index.html  ──HTTP──►  Deploy Agent (:9100)
+docs/dev/tools/deploy-ops.html  ──HTTP──►  Deploy Agent (:9100)
                                       │
                     ┌─────────────────┼─────────────────┐
                     ▼                 ▼                 ▼
