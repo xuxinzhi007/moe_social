@@ -100,14 +100,14 @@ ollama:
 
 ### 3. API 配置
 
-修改 `api/etc/super-direct.yaml` 中的 RPC 服务地址：
+**Docker Compose** 下在 `docker-compose*.yml` 的 `api` 服务注入环境变量（唯一 API etc 文件仍为 `api/etc/super.yaml`）：
 
 ```yaml
-SuperRpc:
-  Endpoints:
-  - rpc:8080  # 使用容器名称作为主机名
-  NonBlock: true
+environment:
+  MOE_SUPER_RPC_ENDPOINT: rpc:8080
 ```
+
+本机 `go run` 不设该变量，沿用 `api/etc/super.yaml` 的 `127.0.0.1:8080`。也可在 `config/config.yaml` 写 `api.super_rpc_endpoints` 作为兜底。
 
 ## 端口说明
 
@@ -125,7 +125,7 @@ SuperRpc:
 **解决方案**：
 - 使用 docker-compose 部署，确保两个服务在同一个网络中
 - 单独部署时，使用 `--link` 参数连接两个容器
-- 检查 `super-direct.yaml` 中的 RPC 地址配置
+- 检查 compose 是否设置 `MOE_SUPER_RPC_ENDPOINT=rpc:8080`，且 API 容器环境变量已生效
 
 ### 2. 数据库连接失败
 

@@ -234,6 +234,53 @@
       white-space: pre-wrap;
       word-break: break-all;
     }
+    .live-job-dock {
+      margin-top: 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #0c0e16;
+      overflow: hidden;
+    }
+    .live-job-dock.hidden { display: none; }
+    .live-job-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel2);
+      font-size: 12px;
+    }
+    .live-job-head strong { flex: 1; min-width: 120px; }
+    .upload-progress { padding: 8px 14px 0; }
+    .upload-progress.hidden { display: none; }
+    .upload-progress-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+    .upload-progress-track {
+      height: 8px;
+      background: var(--panel2);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .upload-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #5b8def, #3dd6c6);
+      border-radius: 4px;
+      transition: width .25s ease;
+    }
+    .live-job-log {
+      margin: 0;
+      padding: 12px 14px;
+      max-height: 240px;
+      overflow: auto;
+      font-family: ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #c8d0e0;
+    }
     .overview-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     @media (max-width: 900px) { .overview-bottom { grid-template-columns: 1fr; } }
     .pipeline.compact { margin-bottom: 0; }
@@ -619,9 +666,26 @@
           </article>
         </div>
 
+        <div id="liveJobDock" class="live-job-dock hidden">
+          <div class="live-job-head">
+            <strong id="liveJobTitle">任务执行中</strong>
+            <span id="liveJobBadge" class="tag tag-pending">running</span>
+            <button type="button" class="btn btn-ghost" onclick="showPage('jobs')">打开任务页</button>
+            <button type="button" class="btn btn-ghost" onclick="hideLiveJobDock()">收起</button>
+          </div>
+          <div id="uploadProgressWrap" class="upload-progress hidden">
+            <div class="upload-progress-label" id="uploadProgressLabel">上传进度</div>
+            <div class="upload-progress-track"><div id="uploadProgressBar" class="upload-progress-bar"></div></div>
+          </div>
+          <pre id="liveJobLog" class="live-job-log">等待输出…</pre>
+        </div>
+
         <div class="overview-bottom">
           <div class="panel">
-            <div class="panel-head"><h3>发布流水线</h3></div>
+            <div class="panel-head">
+              <h3>发布流水线</h3>
+              <button type="button" class="btn btn-primary" onclick="runReleasePipeline()">一键发布</button>
+            </div>
             <div class="panel-body">
               <div class="pipeline compact">
                 <div class="pipe-step"><div class="num">1</div>本机编包</div>
@@ -638,9 +702,10 @@
             <div class="panel-head"><h3>快捷操作</h3></div>
             <div class="panel-body btn-row">
               <button class="btn btn-primary" onclick="runJob('backend_build_linux')">① 本机编 Linux</button>
-              <button class="btn btn-primary" onclick="runJob('docker_up')">② 云 Docker Up</button>
-              <button class="btn btn-mint" onclick="runJob('docker_ps'); showPage('docker')">③ 云容器状态</button>
-              <button class="btn btn-warn" onclick="showPage('release')">④ GitHub APK</button>
+              <button class="btn btn-primary" onclick="runJob('backend_upload_binaries')">② 上传 VPS</button>
+              <button class="btn btn-primary" onclick="runJob('docker_up')">③ 云 Docker Up</button>
+              <button class="btn btn-mint" onclick="runJob('docker_ps'); showPage('docker')">④ 云容器状态</button>
+              <button class="btn btn-warn" onclick="showPage('release')">⑤ GitHub APK</button>
             </div>
           </div>
         </div>
@@ -681,7 +746,7 @@
             <button class="btn btn-mint" onclick="runRemotePathCheck()">检查 backend_dir</button>
           </div>
           <div class="panel-body">
-            <pre class="log" id="remoteCheckOut" style="max-height:140px">点击检查，确认 VPS 上 backend_dir 与 compose 是否存在</pre>
+            <pre class="log" id="remoteCheckOut" style="max-height:180px">点击检查：backend_dir、compose、MOE_SUPER_RPC_ENDPOINT=rpc:8080、API 容器环境变量</pre>
           </div>
         </div>
         <div class="panel">
@@ -692,6 +757,7 @@
               <option value="docker-compose.yml">docker-compose.yml</option>
               <option value="config.yaml">config.yaml</option>
               <option value="config/config.yaml">config/config.yaml（运行时）</option>
+              <option value="api/etc/super.yaml">api/etc/super.yaml（go-zero API）</option>
             </select>
             <div class="btn-row">
               <button class="btn btn-ghost" onclick="loadRemoteConfig()">读取</button>
@@ -966,8 +1032,10 @@
     /** 按任务类型自动选 local / cloud（与后端 SuggestedTarget 一致） */
     function jobTargetForType(type) {
       const t = (type || '').toLowerCase();
-      if (t.startsWith('docker_')) return 'cloud';
-      if (t.startsWith('flutter_') || t.startsWith('backend_') || t === 'env_inspect') return 'local';
+      if (t.startsWith('docker_') || t === 'backend_upload_binaries' || t === 'remote_inspect') return 'cloud';
+      if (t === 'backend_release_pipeline') return 'local';
+      if (t === 'backend_build_linux' || t === 'backend_build_local' ||
+          t.startsWith('flutter_') || t === 'env_inspect' || t === 'git_tags') return 'local';
       return currentTarget();
     }
 
@@ -1116,6 +1184,7 @@
         badge.textContent = h.platform || h.os || '本机';
         renderEnvKv(kv, [
           ['系统', (h.platform || h.os) + ' / ' + (h.arch || '')],
+          ['本机 Shell', h.shell || agentMeta?.windows_shell_label || '—'],
           ['Go', (h.go_version || '—').split('\n')[0]],
           ['Flutter', (h.flutter_version || '—').split('\n')[0]],
           ['Make', h.has_make ? '可用' : 'go build'],
@@ -1303,6 +1372,10 @@
         let lines = (c.message || '') + '\n\n';
         lines += `backend_dir: ${c.backend_dir}\n存在: ${c.backend_dir_exists ? '是' : '否'}\n`;
         lines += `compose: ${c.compose_file} 存在: ${c.compose_file_exists ? '是' : '否'}\n`;
+        lines += `compose MOE_SUPER_RPC_ENDPOINT: ${c.compose_rpc_env_ok ? 'rpc:8080 已配置' : '未配置/错误'}\n`;
+        lines += `config super_rpc_endpoints: ${c.config_rpc_endpoints_ok ? '是' : '否'}  API 容器 env: ${c.api_container_rpc_env_ok || '—'}\n`;
+        if (c.legacy_super_docker_yaml) lines += '⚠ 仍存在旧版 api/etc/super-docker.yaml，建议删除\n';
+        lines += `API→RPC 配置就绪: ${c.rpc_config_ok ? '是' : '否'}\n`;
         if (c.suggested_backend_dir) lines += `\n建议改为:\n  backend_dir: "${c.suggested_backend_dir}"\n`;
         if ((c.compose_candidates || []).length) lines += '\n发现的 compose:\n' + c.compose_candidates.join('\n');
         if (c.raw_output) lines += '\n---\n' + c.raw_output;
@@ -1382,6 +1455,100 @@
       }
     }
 
+    function showLiveJobDock(type, target) {
+      const dock = document.getElementById('liveJobDock');
+      if (!dock) return;
+      dock.classList.remove('hidden');
+      document.getElementById('liveJobTitle').textContent =
+        (target === 'cloud' ? '☁ ' : '💻 ') + type;
+      const badge = document.getElementById('liveJobBadge');
+      badge.className = 'tag tag-pending';
+      badge.textContent = 'running';
+      document.getElementById('liveJobLog').textContent = '任务已提交，等待输出…\n';
+      document.getElementById('uploadProgressWrap')?.classList.add('hidden');
+      const bar = document.getElementById('uploadProgressBar');
+      if (bar) bar.style.width = '0%';
+      scrollLiveJobLog();
+    }
+
+    function hideLiveJobDock() {
+      document.getElementById('liveJobDock')?.classList.add('hidden');
+    }
+
+    function scrollLiveJobLog() {
+      const el = document.getElementById('liveJobLog');
+      if (el) el.scrollTop = el.scrollHeight;
+    }
+
+    function renderJobOutput(j) {
+      if (!j) return '';
+      return [
+        `[${j.target || '?'}] ${j.type}  ${j.status}  exit=${j.exit_code ?? '—'}`,
+        j.command ? '$ ' + j.command : '',
+        j.error ? 'ERROR: ' + j.error : '',
+        '---',
+        j.log || '(等待输出…)',
+      ].filter(Boolean).join('\n');
+    }
+
+    function applyUploadProgressFromLog(log) {
+      const wrap = document.getElementById('uploadProgressWrap');
+      const bar = document.getElementById('uploadProgressBar');
+      const label = document.getElementById('uploadProgressLabel');
+      if (!wrap || !bar) return;
+      const re = /UPLOAD_PROGRESS\|([^|]+)\|(\d+)\|(\d+)\|(\d+)/g;
+      const byName = {};
+      let m;
+      while ((m = re.exec(log || '')) !== null) {
+        byName[m[1]] = { pct: parseInt(m[2], 10) || 0, done: parseInt(m[3], 10) || 0, total: parseInt(m[4], 10) || 0 };
+      }
+      const names = Object.keys(byName);
+      if (!names.length) {
+        wrap.classList.add('hidden');
+        return;
+      }
+      wrap.classList.remove('hidden');
+      const mb = (n) => (n / 1024 / 1024).toFixed(1);
+      let sumPct = 0;
+      const parts = names.map(n => {
+        const x = byName[n];
+        sumPct += x.pct;
+        return `${n} ${x.pct}%`;
+      });
+      bar.style.width = Math.min(100, Math.round(sumPct / names.length)) + '%';
+      if (label) {
+        label.textContent = parts.join(' · ');
+        const last = byName[names[names.length - 1]];
+        if (last.total > 0) {
+          label.textContent += ` (${mb(last.done)}/${mb(last.total)} MB)`;
+        }
+      }
+    }
+
+    function runReleasePipeline() {
+      if (!confirm('将依次执行：① 本机编 Linux → ② 上传 VPS（停→传→启）→ ③ 检查容器（异常时拉日志）。继续？')) return;
+      runJob('backend_release_pipeline');
+    }
+
+    function updateJobViews(j) {
+      const text = renderJobOutput(j);
+      applyUploadProgressFromLog(j && j.log);
+      const live = document.getElementById('liveJobLog');
+      if (live) {
+        live.textContent = text;
+        scrollLiveJobLog();
+      }
+      const jobLog = document.getElementById('jobLog');
+      if (jobLog) jobLog.textContent = text;
+      const buildLog = document.getElementById('buildLog');
+      if (buildLog) buildLog.textContent = (j.log || '').slice(-12000) || text;
+      const badge = document.getElementById('liveJobBadge');
+      if (badge && j.status) {
+        badge.className = 'tag ' + (j.status === 'succeeded' ? 'tag-ok' : j.status === 'failed' ? 'tag-fail' : 'tag-pending');
+        badge.textContent = j.status;
+      }
+    }
+
     async function runJob(type, params = {}) {
       if (!token()) {
         toast('请先填写 Deploy Token（与 deploy/config.yaml 一致）');
@@ -1401,7 +1568,7 @@
         });
         toast('任务 #' + data.job_id.slice(0, 8));
         activeJobId = data.job_id;
-        showPage('jobs');
+        showLiveJobDock(type, resolved);
         await loadJobs();
         pollJob(data.job_id);
       } catch (e) {
@@ -1415,32 +1582,27 @@
 
     async function pollJob(id) {
       if (pollTimer) clearInterval(pollTimer);
-      pollTimer = setInterval(async () => {
+      const tick = async () => {
         try {
           const data = await api('/api/deploy/jobs/' + id);
-          showJobLog(data.job);
-          document.getElementById('buildLog').textContent = (data.job.log || '').slice(-8000) || '…';
+          updateJobViews(data.job);
           await loadJobs();
           const st = data.job.status;
           if (st === 'succeeded' || st === 'failed') {
             clearInterval(pollTimer);
             pollTimer = null;
+            toast(st === 'succeeded' ? '任务完成' : '任务失败');
             if ((data.job.type || '').startsWith('docker')) refreshDockerStatus();
+            if ((data.job.type || '').includes('upload')) refreshCloudCard();
           }
         } catch (_) {}
-      }, 1000);
+      };
+      await tick();
+      pollTimer = setInterval(tick, 600);
     }
 
     function showJobLog(j) {
-      if (!j) return;
-      const lines = [
-        `[${j.target || '?'}] ${j.type} ${j.status}  exit=${j.exit_code}`,
-        j.command ? '$ ' + j.command : '',
-        j.error ? 'ERROR: ' + j.error : '',
-        '---',
-        j.log || '(无输出)',
-      ].join('\n');
-      document.getElementById('jobLog').textContent = lines;
+      updateJobViews(j);
     }
 
     async function loadJobs() {

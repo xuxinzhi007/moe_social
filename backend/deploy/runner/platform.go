@@ -78,14 +78,22 @@ func platformLabel() string {
 
 func shellLabel() string {
 	if runtime.GOOS == "windows" {
+		if _, _, label := WindowsShellInfo(); label != "" {
+			return label
+		}
 		return "cmd.exe"
 	}
 	return "/bin/sh"
 }
 
 func commandExists(ctx context.Context, name string) bool {
-	_, err := exec.LookPath(name)
-	return err == nil
+	if _, err := exec.LookPath(name); err == nil {
+		return true
+	}
+	if runtime.GOOS == "windows" && useGitBashOnWindows() {
+		return runGitBashCapture(ctx, "command -v "+name) != ""
+	}
+	return false
 }
 
 // DockerAvailable reports whether docker CLI is on PATH.
@@ -143,14 +151,18 @@ type CommandSpec struct {
 	Shell     bool
 	ShellLine string
 	SSH       *SSHConfig
+	// LinuxCrossBuild runs go build with GOOS=linux via exec.Env（不依赖 make / shell 环境变量写法）
+	LinuxCrossBuild bool
 }
 
 // BuildLinuxCommand cross-compiles api+rpc for Linux amd64.
+// Agent 统一用 go 子进程 + 环境变量，避免 Windows 上 make/cmd 无法解析 Makefile 里的 Unix 写法。
 func (p *Platform) BuildLinuxCommand() CommandSpec {
-	if commandExists(context.Background(), "make") {
-		return p.shellInBackend("make build-linux", "make", "build-linux")
+	return CommandSpec{
+		Dir:             p.backendDir,
+		Label:           "go build (linux amd64)",
+		LinuxCrossBuild: true,
 	}
-	return p.goBuildLinux()
 }
 
 // BuildLocalCommand builds api+rpc for current OS.
@@ -183,7 +195,7 @@ func (p *Platform) goBuildLocal() CommandSpec {
 
 func buildGoLinuxScript(goos string) string {
 	const tpl = `CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o api/moe-social-api ./api && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o rpc/moe-social-rpc ./rpc`
-	if goos == "windows" {
+	if goos == "windows" && !useGitBashOnWindows() {
 		return `set CGO_ENABLED=0&& set GOOS=linux&& set GOARCH=amd64&& go build -o api/moe-social-api ./api && set CGO_ENABLED=0&& set GOOS=linux&& set GOARCH=amd64&& go build -o rpc/moe-social-rpc ./rpc`
 	}
 	return tpl

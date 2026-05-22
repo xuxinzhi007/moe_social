@@ -131,6 +131,19 @@ class RemoteApiConfigService {
     return null;
   }
 
+  static bool _isLocalDevBaseUrl(String url) {
+    final u = normalizeBaseUrl(url);
+    if (u == null) return false;
+    final host = Uri.parse(u).host.toLowerCase();
+    return host == 'localhost' || host == '127.0.0.1' || host == '10.0.2.2';
+  }
+
+  /// 清除线上 API 基址缓存（设置页或排查时可调用）。
+  static Future<void> clearCachedBaseUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefsKey);
+  }
+
   static String? takeStartupConfigHint() {
     final h = _startupConfigHint;
     _startupConfigHint = null;
@@ -191,13 +204,20 @@ class RemoteApiConfigService {
       return official;
     }
 
-    if (cached != null) {
+    if (cached != null && !_isLocalDevBaseUrl(cached)) {
       _startupConfigHint =
           '无法从服务器获取最新地址，暂用上次缓存。请确认 yaml 与 GitHub 已改为同一新域名，或稍后重试。';
       if (kDebugMode) {
         debugPrint('RemoteApiConfig: 降级使用缓存 $cached');
       }
       return cached;
+    }
+    if (cached != null && _isLocalDevBaseUrl(cached)) {
+      _startupConfigHint =
+          '已忽略本机缓存 $cached；请确认手机能访问 $fallback，且 VPS client-config 正常。';
+      if (kDebugMode) {
+        debugPrint('RemoteApiConfig: 忽略本机缓存 $cached');
+      }
     }
 
     if (githubBootstrap != null) {

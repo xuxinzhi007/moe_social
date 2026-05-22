@@ -40,7 +40,7 @@ Image:
   # 1GB = 1073741824（0 表示不限制/不展示容量）
   MaxBytes: 1073741824
 
-# RPC服务配置 - 直接连接方式（不使用etcd）
+# RPC 默认本机地址；Docker 由 compose 环境变量 MOE_SUPER_RPC_ENDPOINT=rpc:8080 覆盖
 SuperRpc:
   Endpoints:
     - 127.0.0.1:8080

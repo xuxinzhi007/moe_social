@@ -82,6 +82,32 @@ func applyUnifiedConfigOverrides(c *config.Config) {
 	if exp := v.GetInt64("auth.access_expire_seconds"); exp > 0 {
 		c.Auth.AccessExpire = exp
 	}
+	applySuperRpcOverrides(c, v)
+}
+
+// applySuperRpcOverrides 解析 API→RPC 地址（优先级：环境变量 > config.yaml > etc/super.yaml）。
+// Docker Compose 注入 MOE_SUPER_RPC_ENDPOINT=rpc:8080；本机 go run 不设则沿用 127.0.0.1:8080。
+func applySuperRpcOverrides(c *config.Config, v *viper.Viper) {
+	if ep := strings.TrimSpace(os.Getenv("MOE_SUPER_RPC_ENDPOINT")); ep != "" {
+		c.SuperRpc.Endpoints = splitRPCEndpoints(ep)
+		return
+	}
+	if v != nil {
+		if eps := v.GetStringSlice("api.super_rpc_endpoints"); len(eps) > 0 {
+			c.SuperRpc.Endpoints = eps
+		}
+	}
+}
+
+func splitRPCEndpoints(raw string) []string {
+	var out []string
+	for _, p := range strings.Split(raw, ",") {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func firstNonEmptyString(v *viper.Viper, keys ...string) string {
@@ -132,6 +158,7 @@ func main() {
 	fmt.Printf("Effective image config: local_dir=%s public_base_url=%s max_bytes=%d\n",
 		c.Image.LocalDir, c.Image.PublicBaseUrl, c.Image.MaxBytes)
 
+	fmt.Printf("SuperRpc endpoints: %v\n", c.SuperRpc.Endpoints)
 	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
 	server.Start()
 }

@@ -10,6 +10,7 @@ import 'auth_service.dart';
 import 'pages/auth/login_page.dart';
 import 'pages/achievements/achievements_page.dart';
 import 'services/api_service.dart';
+import 'utils/config.dart' as moe_launch_config;
 import 'pages/auth/register_page.dart';
 import 'pages/profile/profile_page.dart';
 import 'pages/settings/settings_page.dart';
@@ -257,7 +258,8 @@ class SplashScreenWrapper extends StatelessWidget {
 
     debugPrint('🚀 App starting...');
     debugPrint('📱 Platform: ${kIsWeb ? "web" : Platform.operatingSystem}');
-    debugPrint('🧭 API Environment: ${ApiService.runtimeEnvironment}');
+    debugPrint('🧭 API Environment: ${ApiService.runtimeEnvironment} '
+        '(isProduction=${moe_launch_config.AppConfig.isProduction})');
     debugPrint('🌐 API Base URL: ${ApiService.baseUrl}');
     debugPrint('🔐 User logged in: ${AuthService.isLoggedIn}');
   }

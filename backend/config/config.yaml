@@ -4,7 +4,7 @@ server:
 
 # ===== Moe Social 统一配置（可选）=====
 # 说明：
-# - backend/api（go-zero）默认读 backend/api/etc/super*.yaml
+# - backend/api 读 api/etc/super.yaml；Docker 用 MOE_SUPER_RPC_ENDPOINT 覆盖 RPC 地址
 # - 现在 backend/api 会额外尝试读取本文件，用于覆盖部分参数（找不到会自动跳过）
 # - JWT 密钥唯一配置处：auth.access_secret（也可用环境变量 MOE_AUTH_ACCESS_SECRET 覆盖）
 auth:
@@ -14,6 +14,10 @@ auth:
 api:
   # go-zero REST 超时（毫秒）。LLM 首次加载模型可能较慢，建议 >= 180000
   timeout_ms: 600000
+  # API→RPC 地址（可选）。Docker 推荐用 compose 环境变量 MOE_SUPER_RPC_ENDPOINT=rpc:8080；
+  # 本机 go run 勿配置此项，沿用 api/etc/super.yaml 的 127.0.0.1:8080。
+  # super_rpc_endpoints:
+  #   - rpc:8080
 
 # 飞书：企业自建应用机器人（非群自定义 Webhook）
 # 1. 开放平台创建企业自建应用，拿到 App ID / App Secret
@@ -72,13 +76,11 @@ local_models:
 #  timeout_seconds: 300
 
 
-# 当前公网 API 根（服务器公网IP）。须与 App 能访问到的地址一致。
-# 重启 API 后生效；客户端会 GET /api/public/client-config 读取本字段（权威）。
-# 换域名时：改此处 + 更新 GitHub 上 lib/config/moe_api.json（或 MOE_API_CONFIG_URL），通常无需改 Dart。
-# 服务器到期改回本地：把下面改成 http://127.0.0.1:8888（或你的局域网 IP），并注释/切换下方 database 为本地块。
+# 可选：GET /api/public/client-config 返回的公网 API 根（给旧版 App / 文档用）。
+# 当前 Flutter 主路径在 lib/utils/config.dart 的 isProduction，不依赖本字段。
 app_client:
-#  public_api_base_url: "http://47.106.175.49:8888"
-  public_api_base_url: "http://127.0.0.1:8888"
+  public_api_base_url: "http://47.106.175.49:8888"
+#  public_api_base_url: "http://127.0.0.1:8888"
 
 
 

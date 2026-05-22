@@ -6,6 +6,8 @@ import (
 	"os"
 	"runtime"
 	"time"
+
+	"backend/deploy/runner"
 )
 
 var requestShutdown func()
@@ -33,7 +35,7 @@ func (h *Handler) agentMeta(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{
+	payload := map[string]any{
 		"success":        true,
 		"running":        true,
 		"pid":            os.Getpid(),
@@ -41,7 +43,16 @@ func (h *Handler) agentMeta(w http.ResponseWriter, r *http.Request) {
 		"platform":       runtime.GOOS,
 		"platform_label": platformLabel(),
 		"arch":           runtime.GOARCH,
-	})
+	}
+	if runtime.GOOS == "windows" {
+		mode, bash, label := runner.WindowsShellInfo()
+		payload["windows_shell"] = mode
+		payload["windows_shell_label"] = label
+		if bash != "" {
+			payload["git_bash_path"] = bash
+		}
+	}
+	writeJSON(w, http.StatusOK, payload)
 }
 
 func (h *Handler) shutdownAgent(w http.ResponseWriter, r *http.Request) {

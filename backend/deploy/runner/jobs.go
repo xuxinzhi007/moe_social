@@ -73,6 +73,8 @@ var AllowedJobTypes = []string{
 	"env_inspect",
 	"backend_build_linux",
 	"backend_build_local",
+	"backend_upload_binaries",
+	"backend_release_pipeline",
 	"docker_ps",
 	"docker_up",
 	"docker_stop",

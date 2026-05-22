@@ -78,12 +78,10 @@ class AuthService {
       logout();
     };
 
-    // 如果有token，设置到ApiService
+    // 如果有 token，设置到 ApiService；WebSocket 在 main 启动流程末尾统一 start，
+    // 避免与 ApiService.initRemoteProductionBaseUrl 并行时连到 127.0.0.1。
     if (_token != null && _token!.isNotEmpty) {
       ApiService.setToken(_token);
-      // Start websocket-based services as early as possible.
-      PresenceService.start();
-      ChatPushService.start();
     }
   }
 
