@@ -25,7 +25,8 @@ abstract final class AiChatSettingsSheet {
     final profile =
         await AiProviderService().resolveProfile(agent.providerProfileId);
     final memoryToolsAdvanced =
-        profile.supportsToolCalls && !profile.isBackendOllama;
+        profile.supportsToolCalls &&
+            (profile.isLocalGguf || !profile.isBackendOllama);
     if (!context.mounted) return;
 
     return AiSheet.show(

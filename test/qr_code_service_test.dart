@@ -17,7 +17,7 @@ void main() {
         'username': username,
         'avatar': avatar,
         'moeNo': moeNo,
-        'timestamp': any(int),
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
       };
 
       // 验证数据结构

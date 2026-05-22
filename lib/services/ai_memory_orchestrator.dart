@@ -172,8 +172,8 @@ class AiMemoryOrchestrator {
     final account = await _loadAccountMemoryState();
     final availableCount = account.memories.length;
     final profile = await AiProviderService().resolveProfile(agent.providerProfileId);
-    final memoryToolsAdvanced =
-        profile.supportsToolCalls && !profile.isBackendOllama;
+    final memoryToolsAdvanced = profile.supportsToolCalls &&
+        (profile.isLocalGguf || !profile.isBackendOllama);
 
     if (mode == AiMemoryMode.server) {
       final injected = await _queryMemoriesForInject(

@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Moe 运维部署中心</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <style>
+    :root {
+      --bg: #0f1118;
+      --panel: #181b26;
+      --panel2: #1e2230;
+      --border: rgba(127,127,213,0.22);
+      --accent: #7F7FD5;
+      --accent2: #86A8E7;
+      --mint: #91EAE4;
+      --warn: #FFB347;
+      --danger: #ff6b6b;
+      --text: #e8eaf2;
+      --muted: #8b90a8;
+      --ok: #4ade80;
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "SF Pro Display", -apple-system, "PingFang SC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+    }
+    /* 侧栏 */
+    .sidebar {
+      width: 220px;
+      background: linear-gradient(180deg, #15182a 0%, #12151f 100%);
+      border-right: 1px solid var(--border);
+      padding: 20px 12px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .brand {
+      padding: 8px 12px 24px;
+    }
+    .brand h1 {
+      font-size: 18px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .brand p { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      border-radius: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+      margin-bottom: 4px;
+      transition: all .15s;
+    }
+    .nav-item:hover { background: rgba(127,127,213,0.12); color: var(--text); }
+    .nav-item.active {
+      background: linear-gradient(135deg, rgba(127,127,213,0.35), rgba(134,168,231,0.2));
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(127,127,213,0.2);
+    }
+    .nav-icon { width: 18px; text-align: center; opacity: 0.9; }
+    .sidebar-foot {
+      margin-top: auto;
+      padding: 12px;
+      font-size: 11px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+    /* 主区 */
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .topbar {
+      height: 56px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      background: rgba(24,27,38,0.85);
+      backdrop-filter: blur(8px);
+    }
+    .conn-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: var(--panel2);
+      font-size: 12px;
+      border: 1px solid var(--border);
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--danger);
+      box-shadow: 0 0 8px var(--danger);
+    }
+    .dot.online { background: var(--ok); box-shadow: 0 0 8px var(--ok); animation: pulse 2s infinite; }
+    @keyframes pulse { 50% { opacity: 0.6; } }
+    .topbar input {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      width: 140px;
+    }
+    .topbar input.wide { width: 220px; }
+    .topbar select {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      min-width: 180px;
+    }
+    .topbar .btn-sm {
+      padding: 7px 14px;
+      border-radius: 20px;
+      border: none;
+      font-size: 12px;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+    }
+    .content { flex: 1; overflow: auto; padding: 24px; }
+    .page { display: none; }
+    .page.active { display: block; }
+    /* 告警条 */
+    .alert {
+      background: linear-gradient(90deg, rgba(255,107,107,0.15), rgba(255,179,71,0.1));
+      border: 1px solid rgba(255,107,107,0.35);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      display: none;
+    }
+    .alert.show { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .alert code { background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px; font-size: 12px; }
+    /* 指标卡 */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .metric::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--mint));
+    }
+    .metric .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .metric .value { font-size: 15px; font-weight: 600; margin-top: 8px; word-break: break-all; }
+    /* 流水线 */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+    }
+    .pipe-step {
+      flex: 1;
+      min-width: 100px;
+      text-align: center;
+      padding: 14px 8px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      position: relative;
+    }
+    .pipe-step:first-child { border-radius: 12px 0 0 12px; }
+    .pipe-step:last-child { border-radius: 0 12px 12px 0; }
+    .pipe-step .num {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      margin-bottom: 6px;
+    }
+    .pipe-arrow { color: var(--muted); padding: 0 4px; font-size: 18px; }
+    /* 面板 */
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 18px;
+      overflow: hidden;
+    }
+    .panel-head {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .panel-head h3 { font-size: 14px; font-weight: 600; }
+    .panel-body { padding: 16px 18px; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .btn {
+      padding: 9px 16px;
+      border-radius: 22px;
+      border: none;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: transform .1s, opacity .15s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+    .btn-mint { background: rgba(145,234,228,0.2); color: var(--mint); border: 1px solid rgba(145,234,228,0.4); }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-danger { background: rgba(255,107,107,0.2); color: var(--danger); border: 1px solid rgba(255,107,107,0.4); }
+    .btn-warn { background: rgba(255,179,71,0.15); color: var(--warn); border: 1px solid rgba(255,179,71,0.35); }
+    /* 终端 */
+    .terminal {
+      background: #0a0c10;
+      border: 1px solid #2a2d3a;
+      border-radius: 12px;
+      font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      max-height: 360px;
+      overflow: auto;
+      padding: 0;
+    }
+    .terminal-bar {
+      background: #1a1d28;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #2a2d3a;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .terminal-bar .t-dots span {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+    .t-red { background: #ff5f57; }
+    .t-yellow { background: #febc2e; }
+    .t-green { background: #28c840; }
+    pre.log {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: var(--muted);
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .terminal pre {
+      margin: 0;
+      padding: 14px;
+      color: #b8c0d4;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .terminal .line-cmd { color: var(--mint); }
+    .terminal .line-err { color: var(--danger); }
+    /* 任务表 */
+    table.jobs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .jobs-table th {
+      text-align: left;
+      padding: 10px 12px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      font-weight: 500;
+    }
+    .jobs-table td {
+      padding: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      cursor: pointer;
+    }
+    .jobs-table tr:hover td { background: rgba(127,127,213,0.08); }
+    .jobs-table tr.selected td { background: rgba(127,127,213,0.15); }
+    .tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .tag-ok { background: rgba(74,222,128,0.15); color: var(--ok); }
+    .tag-fail { background: rgba(255,107,107,0.15); color: var(--danger); }
+    .tag-run { background: rgba(255,179,71,0.15); color: var(--warn); }
+    .tag-pending { background: rgba(139,144,168,0.2); color: var(--muted); }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .split { grid-template-columns: 1fr; }
+    }
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%);
+      background: var(--panel2);
+      border: 1px solid var(--accent);
+      color: #fff;
+      padding: 12px 22px;
+      border-radius: 24px;
+      font-size: 13px;
+      z-index: 99;
+      display: none;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>Moe Ops</h1>
+      <p>运维部署中心 v1</p>
+    </div>
+    <nav>
+      <div class="nav-item active" data-page="overview"><span class="nav-icon">◉</span> 总览</div>
+      <div class="nav-item" data-page="docker"><span class="nav-icon">⬡</span> 容器编排</div>
+      <div class="nav-item" data-page="build"><span class="nav-icon">⚙</span> 构建流水线</div>
+      <div class="nav-item" data-page="release"><span class="nav-icon">↑</span> 应用发布</div>
+      <div class="nav-item" data-page="jobs"><span class="nav-icon">☰</span> 任务审计</div>
+    </nav>
+    <div class="sidebar-foot" id="sideOs">—</div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="conn-pill">
+        <span class="dot" id="connDot"></span>
+        <span id="connLabel">未连接 Agent</span>
+      </div>
+      <input type="text" class="wide" id="baseUrl" placeholder="Agent URL" title="建议直接打开 http://127.0.0.1:9100/">
+      <select id="deployTarget" title="总览/容器页查看哪台机器；执行任务时会按类型自动选本机或云平台"></select>
+      <input type="password" id="token" placeholder="与 config.yaml 的 token 一致" title="Deploy Token">
+      <button type="button" class="btn-sm" onclick="verifyToken()">验证</button>
+      <button type="button" class="btn-sm" onclick="refreshAll()" style="background:var(--panel2);border:1px solid var(--border)">刷新</button>
+    </header>
+
+    <div class="content">
+      <div class="alert show" id="offlineAlert">
+        <span>无法连接 Deploy Agent。请先在 <code>backend</code> 目录执行 <code>make deploy-agent</code>，然后访问 <strong id="dashUrl">http://127.0.0.1:9100/</strong>。</span>
+      </div>
+
+      <div class="panel" id="authPanel">
+        <div class="panel-head">
+          <h3>鉴权说明（不是 Moe App 登录）</h3>
+          <span id="authBadge" class="tag tag-pending">未验证 Token</span>
+        </div>
+        <div class="panel-body" style="font-size:13px;color:var(--muted);line-height:1.6">
+          <p style="margin-bottom:10px">① 在 <code>backend/deploy/config.yaml</code> 设置 <code>token</code>，与上方输入框一致后点 <strong>保存并验证</strong>。</p>
+          <p style="margin-bottom:10px">② <strong>仅 Docker</strong> 在云平台执行；<strong>Flutter / 编译</strong> 在本机。本机路径由 <code>workspace_root: ../..</code> 相对配置文件自动解析，换电脑无需改绝对路径。</p>
+          <p style="margin-bottom:10px">③ 云平台 SSH：在 <code>config.yaml</code> 的 <code>cloud</code> 配置 <code>identity_file</code>（推荐）或 <code>password</code>；也可用 <code>ssh-copy-id root@47.106.175.49</code> 后不配密码。</p>
+          <p>④ 云上 <code>backend_dir</code> 必须是 VPS 上的绝对路径（如 <code>/root/gowork/moe_social/backend</code>）。</p>
+          <div class="btn-row" style="margin-top:14px">
+            <button class="btn btn-primary" onclick="verifyToken()">保存并验证 Token</button>
+            <button class="btn btn-mint" onclick="testSSH()">测试云平台 SSH</button>
+          </div>
+          <pre class="log" id="authLog" style="margin-top:12px;max-height:120px;font-size:11px">—</pre>
+        </div>
+      </div>
+
+      <!-- 总览 -->
+      <section class="page active" id="page-overview">
+        <div class="pipeline">
+          <div class="pipe-step"><div class="num">1</div>编译</div>
+          <span class="pipe-arrow">→</span>
+          <div class="pipe-step"><div class="num">2</div>Docker</div>
+          <span class="pipe-arrow">→</span>
+          <div class="pipe-step"><div class="num">3</div>健康检查</div>
+          <span class="pipe-arrow">→</span>
+          <div class="pipe-step"><div class="num">4</div>APK 发布</div>
+        </div>
+        <div class="panel" style="margin-bottom:16px;border-color:rgba(145,234,228,0.35)">
+          <div class="panel-body" style="font-size:13px;color:var(--muted);line-height:1.55">
+            <strong style="color:var(--mint)">执行分工</strong>：
+            <span style="color:var(--text)">本机 💻</span> — Flutter、<code>make build-linux</code>、本机构建、环境巡检；
+            <span style="color:var(--text)">云平台 ☁</span> — 仅 <code>docker compose</code>（API/RPC 容器）。
+            顶部「部署目标」用于查看主机信息；点按钮时会<strong>自动</strong>选对环境。
+          </div>
+        </div>
+        <div class="metrics" id="metricsGrid">加载中…</div>
+        <div class="panel">
+          <div class="panel-head"><h3>快捷部署</h3></div>
+          <div class="panel-body btn-row">
+            <button class="btn btn-primary" onclick="runJob('backend_build_linux')">① 本机编译 Linux 后端</button>
+            <button class="btn btn-primary" onclick="runJob('docker_up')">② 云平台 Docker Up</button>
+            <button class="btn btn-mint" onclick="runJob('docker_ps'); showPage('docker')">③ 云平台检查容器</button>
+            <button class="btn btn-warn" onclick="runJob('github_trigger_apk', {ref: document.getElementById('ghRef').value || 'main'})">④ 触发 APK CI</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Docker -->
+      <section class="page" id="page-docker">
+        <div class="panel">
+          <div class="panel-head">
+            <h3>云平台路径巡检</h3>
+            <button class="btn btn-mint" onclick="runRemotePathCheck()">检查 backend_dir</button>
+          </div>
+          <div class="panel-body">
+            <pre class="log" id="remoteCheckOut" style="max-height:140px">点击检查，确认 VPS 上 backend_dir 与 compose 是否存在</pre>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h3>远程 Docker 配置</h3>
+            <select id="remoteConfigFile" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px">
+              <option value="docker-compose.binary.yml">docker-compose.binary.yml</option>
+              <option value="docker-compose.yml">docker-compose.yml</option>
+              <option value="config.yaml">config.yaml</option>
+              <option value="config/config.yaml">config/config.yaml（运行时）</option>
+            </select>
+            <div class="btn-row">
+              <button class="btn btn-ghost" onclick="loadRemoteConfig()">读取</button>
+              <button class="btn btn-primary" onclick="saveRemoteConfig()">保存到 VPS（自动备份）</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <textarea id="remoteConfigEditor" spellcheck="false" placeholder="读取后在此编辑 YAML…" style="width:100%;min-height:200px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:12px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.45"></textarea>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h3>docker-compose.binary.yml <span class="tag tag-run" style="margin-left:8px">云平台 ☁</span></h3>
+            <div class="btn-row">
+              <button class="btn btn-ghost" onclick="runJob('docker_ps')">状态</button>
+              <button class="btn btn-primary" onclick="runJob('docker_up')">Up --build</button>
+              <button class="btn btn-mint" onclick="runJob('docker_restart',{service:'api'})">重启 API</button>
+              <button class="btn btn-mint" onclick="runJob('docker_restart',{service:'rpc'})">重启 RPC</button>
+              <button class="btn btn-warn" onclick="runJob('docker_stop')">Stop</button>
+              <button class="btn btn-danger" onclick="confirmJob('docker_down','确认 down 全部容器？')">Down</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="btn-row" style="margin-bottom:12px">
+              <button class="btn btn-ghost" onclick="runJob('docker_logs',{service:'api',tail:'120'})">API 日志</button>
+              <button class="btn btn-ghost" onclick="runJob('docker_logs',{service:'rpc',tail:'120'})">RPC 日志</button>
+            </div>
+            <div class="terminal" id="dockerTerm">
+              <div class="terminal-bar"><span class="t-dots"><span class="t-red"></span><span class="t-yellow"></span><span class="t-green"></span></span> compose output</div>
+              <pre id="dockerOut">等待连接…</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 构建 -->
+      <section class="page" id="page-build">
+        <div class="split">
+          <div class="panel">
+            <div class="panel-head"><h3>后端（按本机 OS 自动选命令）</h3></div>
+            <div class="panel-body btn-row">
+              <button class="btn btn-primary" onclick="runJob('backend_build_linux')">make build-linux / go cross</button>
+              <button class="btn btn-mint" onclick="runJob('backend_build_local')">本机构建</button>
+              <button class="btn btn-ghost" onclick="runJob('env_inspect')">环境巡检</button>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Flutter（本机，较慢）</h3></div>
+            <div class="panel-body btn-row">
+              <button class="btn btn-ghost" onclick="runFlutterJob('flutter_doctor')">flutter doctor</button>
+              <button class="btn btn-ghost" onclick="runFlutterJob('flutter_pub_get')">pub get</button>
+              <button class="btn btn-ghost" onclick="runFlutterJob('flutter_build_apk')">build apk</button>
+            </div>
+          </div>
+        </div>
+        <div class="terminal">
+          <div class="terminal-bar"><span class="t-dots"><span class="t-red"></span><span class="t-yellow"></span><span class="t-green"></span></span> build log</div>
+          <pre id="buildLog">选择任务后在此显示日志</pre>
+        </div>
+      </section>
+
+      <!-- 发布 -->
+      <section class="page" id="page-release">
+        <div class="panel">
+          <div class="panel-head">
+            <h3>GitHub Actions · flutter-release.yml</h3>
+            <input id="ghRef" value="main" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:12px;width:160px">
+          </div>
+          <div class="panel-body btn-row">
+            <button class="btn btn-ghost" onclick="refreshReleases()">刷新版本</button>
+            <button class="btn btn-primary" onclick="runJob('github_trigger_apk',{ref:document.getElementById('ghRef').value})">workflow_dispatch</button>
+            <button class="btn btn-ghost" onclick="runJob('github_list_workflows')">最近构建</button>
+          </div>
+        </div>
+        <div class="terminal">
+          <div class="terminal-bar">releases / actions</div>
+          <pre id="releaseOut">—</pre>
+        </div>
+      </section>
+
+      <!-- 任务 -->
+      <section class="page" id="page-jobs">
+        <div class="split">
+          <div class="panel">
+            <div class="panel-head"><h3>任务队列</h3><button class="btn btn-ghost" onclick="loadJobs()">刷新</button></div>
+            <div class="panel-body" style="padding:0">
+              <table class="jobs-table">
+                <thead><tr><th>类型</th><th>状态</th><th>时间</th></tr></thead>
+                <tbody id="jobTableBody"><tr><td colspan="3" style="color:var(--muted)">暂无</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>执行日志</h3></div>
+            <div class="panel-body" style="padding:0">
+              <div class="terminal" style="max-height:420px;border:none;border-radius:0">
+                <pre id="jobLog" style="min-height:200px">选择任务查看</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const LS_URL = 'moe_deploy_base';
+    const LS_TOKEN = 'moe_deploy_token';
+    let activeJobId = null;
+    let pollTimer = null;
+    let hostCache = null;
+    let deployTarget = localStorage.getItem('moe_deploy_target') || 'cloud';
+
+    function currentTarget() {
+      const sel = document.getElementById('deployTarget');
+      return sel && sel.value ? sel.value : deployTarget;
+    }
+
+    function targetQuery() {
+      return '?target=' + encodeURIComponent(currentTarget());
+    }
+
+    async function loadTargets() {
+      try {
+        const data = await api('/api/deploy/targets');
+        const sel = document.getElementById('deployTarget');
+        const list = data.targets || [];
+        sel.innerHTML = list.map(t =>
+          `<option value="${esc(t.id)}">${esc(t.label || t.id)}${t.kind === 'ssh' ? ' ☁' : ' 💻'}</option>`
+        ).join('');
+        const def = data.default_target || 'cloud';
+        deployTarget = localStorage.getItem('moe_deploy_target') || def;
+        sel.value = deployTarget;
+        sel.onchange = () => {
+          deployTarget = sel.value;
+          localStorage.setItem('moe_deploy_target', deployTarget);
+          refreshAll();
+        };
+      } catch (_) {
+        document.getElementById('deployTarget').innerHTML =
+          '<option value="local">本机</option><option value="cloud">云平台</option>';
+      }
+    }
+
+    function initUrl() {
+      const origin = window.location.origin;
+      if (origin && origin.startsWith('http') && !origin.includes('63342')) {
+        document.getElementById('baseUrl').value = origin;
+        document.getElementById('dashUrl').textContent = origin + '/';
+      }
+    }
+
+    function base() { return document.getElementById('baseUrl').value.replace(/\/$/, ''); }
+    function token() { return document.getElementById('token').value.trim(); }
+
+    function saveConn() {
+      localStorage.setItem(LS_URL, base());
+      localStorage.setItem(LS_TOKEN, token());
+      toast('连接已保存');
+    }
+
+    async function verifyToken() {
+      saveConn();
+      const log = document.getElementById('authLog');
+      const badge = document.getElementById('authBadge');
+      if (!token()) {
+        badge.className = 'tag tag-fail';
+        badge.textContent = '未填写 Token';
+        log.textContent = '请填写与 deploy/config.yaml 相同的 token';
+        return;
+      }
+      try {
+        const data = await api('/api/deploy/session');
+        badge.className = 'tag tag-ok';
+        badge.textContent = 'Token 有效';
+        log.textContent = data.message || '已鉴权，可以执行任务';
+        setOnline(true);
+        await refreshAll();
+      } catch (e) {
+        badge.className = 'tag tag-fail';
+        badge.textContent = 'Token 无效';
+        log.textContent = e.message;
+      }
+    }
+
+    async function testSSH() {
+      const log = document.getElementById('authLog');
+      if (!token()) {
+        log.textContent = '请先验证 Token';
+        return;
+      }
+      const sel = document.getElementById('deployTarget');
+      if (sel) sel.value = 'cloud';
+      deployTarget = 'cloud';
+      log.textContent = '正在测试 SSH…';
+      try {
+        const data = await api('/api/deploy/ssh-check?target=cloud');
+        const p = data.probe || {};
+        log.textContent = (p.message || '') + '\n' + (p.output || '');
+        if (data.success) toast('SSH 连通');
+        else toast('SSH 失败，见鉴权说明');
+      } catch (e) {
+        log.textContent = e.message;
+      }
+    }
+
+    /** 按任务类型自动选 local / cloud（与后端 SuggestedTarget 一致） */
+    function jobTargetForType(type) {
+      const t = (type || '').toLowerCase();
+      if (t.startsWith('docker_')) return 'cloud';
+      if (t.startsWith('flutter_') || t.startsWith('backend_') || t === 'env_inspect') return 'local';
+      return currentTarget();
+    }
+
+    function setDeployTarget(id) {
+      const sel = document.getElementById('deployTarget');
+      if (sel) sel.value = id;
+      deployTarget = id;
+      localStorage.setItem('moe_deploy_target', id);
+    }
+
+    function runFlutterJob(type) {
+      return runJob(type);
+    }
+
+    function loadConn() {
+      const u = localStorage.getItem(LS_URL);
+      const t = localStorage.getItem(LS_TOKEN);
+      if (u) document.getElementById('baseUrl').value = u;
+      if (t) document.getElementById('token').value = t;
+      initUrl();
+    }
+
+    function setOnline(ok) {
+      document.getElementById('connDot').classList.toggle('online', ok);
+      document.getElementById('connLabel').textContent = ok ? 'Agent 在线' : 'Agent 离线';
+      document.getElementById('offlineAlert').classList.toggle('show', !ok);
+    }
+
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 2600);
+    }
+
+    async function api(path, opts = {}) {
+      const headers = Object.assign({ 'X-Deploy-Token': token() }, opts.headers || {});
+      const res = await fetch(base() + path, Object.assign({}, opts, { headers }));
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { data = { raw: text }; }
+      if (!res.ok) throw new Error(data.message || data.error || res.statusText || text);
+      return data;
+    }
+
+    function tagHtml(status) {
+      const s = (status || '').toLowerCase();
+      const cls = s === 'succeeded' ? 'tag-ok' : s === 'failed' ? 'tag-fail' : s === 'running' ? 'tag-run' : 'tag-pending';
+      const label = { succeeded: '成功', failed: '失败', running: '运行中', pending: '排队' }[s] || status;
+      return `<span class="tag ${cls}">${label}</span>`;
+    }
+
+    function showPage(name) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      const page = document.getElementById('page-' + name);
+      const nav = document.querySelector(`.nav-item[data-page="${name}"]`);
+      if (page) page.classList.add('active');
+      if (nav) nav.classList.add('active');
+    }
+
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.onclick = () => {
+        showPage(el.dataset.page);
+        if (el.dataset.page === 'docker') {
+          setDeployTarget('cloud');
+          runRemotePathCheck();
+        }
+        if (el.dataset.page === 'build') setDeployTarget('local');
+      };
+    });
+
+    async function refreshHost() {
+      try {
+        const data = await api('/api/deploy/host' + targetQuery());
+        setOnline(true);
+        const h = data.host || {};
+        const tgt = data.target || {};
+        hostCache = h;
+        document.getElementById('sideOs').textContent = (tgt.label || h.platform || h.os) + ' · ' + (h.arch || '');
+        const isCloud = (tgt.kind === 'ssh' || currentTarget() === 'cloud');
+        document.getElementById('metricsGrid').innerHTML = [
+          ['当前目标', (tgt.label || currentTarget()) + (isCloud ? ' ☁' : ' 💻')],
+          ['运行平台', h.platform || h.os],
+          ['Docker', isCloud ? (h.docker_version || '远程') : ((h.docker_version || '本机未安装').split('\n')[0])],
+          ['Compose', h.compose_cli || '—'],
+          ['Make', h.has_make ? '可用' : '回退 go build'],
+          ['Go', (h.go_version || '—').split('\n')[0]],
+          ['Flutter', (h.flutter_version || '—').split('\n')[0]],
+          ['线上 API', tgt.api_base_url || '—'],
+          ['工作区', h.workspace_root || '—'],
+        ].map(([k,v]) => `<div class="metric"><div class="label">${k}</div><div class="value">${esc(String(v||'—'))}</div></div>`).join('');
+      } catch (e) {
+        setOnline(false);
+        document.getElementById('metricsGrid').innerHTML = `<div class="metric"><div class="label">连接失败</div><div class="value" style="color:var(--danger)">${esc(e.message)}</div></div>`;
+      }
+    }
+
+    async function runRemotePathCheck() {
+      setDeployTarget('cloud');
+      const out = document.getElementById('remoteCheckOut');
+      out.textContent = '巡检中…';
+      try {
+        const data = await api('/api/deploy/remote-check?target=cloud');
+        const c = data.check || {};
+        let lines = (c.message || '') + '\n\n';
+        lines += `backend_dir: ${c.backend_dir}\n存在: ${c.backend_dir_exists ? '是' : '否'}\n`;
+        lines += `compose: ${c.compose_file} 存在: ${c.compose_file_exists ? '是' : '否'}\n`;
+        if (c.suggested_backend_dir) lines += `\n建议改为:\n  backend_dir: "${c.suggested_backend_dir}"\n`;
+        if ((c.compose_candidates || []).length) lines += '\n发现的 compose:\n' + c.compose_candidates.join('\n');
+        if (c.raw_output) lines += '\n---\n' + c.raw_output;
+        out.textContent = lines;
+        if (!data.success) toast('路径未就绪，请改 config.yaml');
+        else toast('路径检查通过');
+      } catch (e) {
+        out.textContent = e.message;
+      }
+    }
+
+    async function loadRemoteConfig() {
+      setDeployTarget('cloud');
+      const file = document.getElementById('remoteConfigFile').value;
+      try {
+        const data = await api('/api/deploy/remote-config?target=cloud&file=' + encodeURIComponent(file));
+        document.getElementById('remoteConfigEditor').value = data.content || '';
+        toast('已读取 ' + (data.remote_path || file));
+      } catch (e) {
+        toast('读取失败: ' + e.message);
+        if (e.message.includes('不存在')) runRemotePathCheck();
+      }
+    }
+
+    async function saveRemoteConfig() {
+      setDeployTarget('cloud');
+      const file = document.getElementById('remoteConfigFile').value;
+      const content = document.getElementById('remoteConfigEditor').value;
+      if (!content.trim()) {
+        toast('内容为空');
+        return;
+      }
+      if (!confirm('确认写入 VPS 上的 ' + file + '？\n将自动创建 .bak 备份。')) return;
+      try {
+        const data = await api('/api/deploy/remote-config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target: 'cloud', file, content }),
+        });
+        toast(data.message || '已保存');
+      } catch (e) {
+        toast('保存失败: ' + e.message);
+      }
+    }
+
+    async function refreshDockerStatus() {
+      try {
+        setDeployTarget('cloud');
+        const data = await api('/api/deploy/status?target=cloud');
+        const pre = document.getElementById('dockerOut');
+        if (!data.success && data.remote_check) {
+          pre.innerHTML = `<span class="line-err">${esc(data.message || '')}</span>\n` + esc(data.output || '');
+          return;
+        }
+        pre.innerHTML = `<span class="line-cmd">$ ${esc(data.command || '')}</span>\n` + esc(data.output || '(空)');
+      } catch (e) {
+        document.getElementById('dockerOut').innerHTML = `<span class="line-err">${esc(e.message)}</span>`;
+      }
+    }
+
+    async function refreshReleases() {
+      try {
+        const data = await api('/api/deploy/releases');
+        let lines = '【本地 Git Tags】\n' + (data.tags || []).slice(0, 15).join('\n');
+        if (data.github_latest) {
+          const g = data.github_latest;
+          lines += '\n\n【GitHub Release】\n' + g.tag_name + ' → ' + (g.html_url || '');
+        }
+        if (data.workflow_runs && data.workflow_runs.length) {
+          lines += '\n\n【Actions】\n' + data.workflow_runs.map(r =>
+            `#${r.id} ${r.status}/${r.conclusion || '-'} ${r.created_at}`
+          ).join('\n');
+        }
+        document.getElementById('releaseOut').textContent = lines;
+      } catch (e) {
+        document.getElementById('releaseOut').textContent = e.message;
+      }
+    }
+
+    async function runJob(type, params = {}) {
+      if (!token()) {
+        toast('请先填写 Deploy Token（与 deploy/config.yaml 一致）');
+        return;
+      }
+      const resolved = jobTargetForType(type);
+      const prev = currentTarget();
+      setDeployTarget(resolved);
+      if (prev !== resolved) {
+        toast((resolved === 'cloud' ? '☁ 云平台' : '💻 本机') + ' · ' + type);
+      }
+      try {
+        const data = await api('/api/deploy/jobs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, target: resolved, params }),
+        });
+        toast('任务 #' + data.job_id.slice(0, 8));
+        activeJobId = data.job_id;
+        showPage('jobs');
+        await loadJobs();
+        pollJob(data.job_id);
+      } catch (e) {
+        toast('失败: ' + e.message);
+      }
+    }
+
+    function confirmJob(type, msg) {
+      if (confirm(msg)) runJob(type);
+    }
+
+    async function pollJob(id) {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(async () => {
+        try {
+          const data = await api('/api/deploy/jobs/' + id);
+          showJobLog(data.job);
+          document.getElementById('buildLog').textContent = (data.job.log || '').slice(-8000) || '…';
+          await loadJobs();
+          const st = data.job.status;
+          if (st === 'succeeded' || st === 'failed') {
+            clearInterval(pollTimer);
+            pollTimer = null;
+            if ((data.job.type || '').startsWith('docker')) refreshDockerStatus();
+          }
+        } catch (_) {}
+      }, 1000);
+    }
+
+    function showJobLog(j) {
+      if (!j) return;
+      const lines = [
+        `[${j.target || '?'}] ${j.type} ${j.status}  exit=${j.exit_code}`,
+        j.command ? '$ ' + j.command : '',
+        j.error ? 'ERROR: ' + j.error : '',
+        '---',
+        j.log || '(无输出)',
+      ].join('\n');
+      document.getElementById('jobLog').textContent = lines;
+    }
+
+    async function loadJobs() {
+      try {
+        const data = await api('/api/deploy/jobs');
+        const jobs = data.jobs || [];
+        const tbody = document.getElementById('jobTableBody');
+        if (!jobs.length) {
+          tbody.innerHTML = '<tr><td colspan="3" style="color:var(--muted)">暂无任务</td></tr>';
+          return;
+        }
+        tbody.innerHTML = jobs.map(j => `
+          <tr class="${j.id === activeJobId ? 'selected' : ''}" data-id="${j.id}">
+            <td>${esc((j.target || '') + ' · ' + j.type)}</td>
+            <td>${tagHtml(j.status)}</td>
+            <td>${new Date(j.created_at).toLocaleString()}</td>
+          </tr>`).join('');
+        tbody.querySelectorAll('tr[data-id]').forEach(tr => {
+          tr.onclick = async () => {
+            activeJobId = tr.dataset.id;
+            const d = await api('/api/deploy/jobs/' + activeJobId);
+            showJobLog(d.job);
+            await loadJobs();
+          };
+        });
+      } catch (e) {
+        document.getElementById('jobTableBody').innerHTML = `<tr><td colspan="3">${esc(e.message)}</td></tr>`;
+      }
+    }
+
+    function esc(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    async function refreshAll() {
+      await loadTargets();
+      await refreshHost();
+      await refreshDockerStatus();
+      await refreshReleases();
+      await loadJobs();
+    }
+
+    loadConn();
+    fetch(base() + '/api/deploy/info').then(r => r.json()).then(() => {}).catch(() => {});
+    if (token()) {
+      verifyToken();
+    } else {
+      refreshAll();
+    }
+  </script>
+</body>
+</html>

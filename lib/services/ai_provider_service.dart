@@ -34,7 +34,10 @@ class AiProviderService {
   }
 
   Future<List<AiProviderProfile>> _listLocalProfiles() async {
-    final out = <AiProviderProfile>[AiProviderProfile.builtinBackend()];
+    final out = <AiProviderProfile>[
+      AiProviderProfile.builtinBackend(),
+      AiProviderProfile.builtinLocalGguf(),
+    ];
     if (kIsWeb) {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_webProfilesKey);
@@ -95,6 +98,9 @@ class AiProviderService {
     if (id == null || id.trim().isEmpty) {
       return AiProviderProfile.builtinBackend();
     }
+    if (id == AiProviderProfile.builtinLocalGgufId) {
+      return AiProviderProfile.builtinLocalGguf();
+    }
     final profiles = await listProfiles();
     for (final item in profiles) {
       if (item.id == id) return item;
@@ -109,7 +115,9 @@ class AiProviderService {
     if (kIsWeb) {
       final prefs = await SharedPreferences.getInstance();
       final current = await listProfiles();
-      final customs = current.where((e) => !e.isBuiltinBackend).toList();
+      final customs = current
+          .where((e) => !e.isBuiltinBackend && !e.isBuiltinLocal)
+          .toList();
       final next = <AiProviderProfile>[];
       var replaced = false;
       for (final item in customs) {

@@ -10,6 +10,8 @@ import 'ai_models_cache_service.dart';
 import 'ai_provider_service.dart';
 import 'ai_tool_runtime.dart';
 import 'api_service.dart';
+import 'local_llm_chat_service.dart';
+import 'local_model_store.dart';
 import 'llm_endpoint_config.dart';
 import 'llm_response_parser.dart';
 
@@ -61,14 +63,16 @@ class AiChatGatewayService {
       if (decoded is! Map) return null;
       final nested = decoded['error'];
       if (nested is Map) {
-        final msg = (nested['message'] ?? nested['msg'] ?? '').toString().trim();
+        final msg =
+            (nested['message'] ?? nested['msg'] ?? '').toString().trim();
         final code = (nested['code'] ?? nested['type'] ?? '').toString().trim();
         return _friendlyProviderMessage(
           msg.isNotEmpty ? msg : code,
           code,
         );
       }
-      final top = (decoded['message'] ?? decoded['msg'] ?? '').toString().trim();
+      final top =
+          (decoded['message'] ?? decoded['msg'] ?? '').toString().trim();
       if (top.isNotEmpty) {
         return _friendlyProviderMessage(top, '');
       }
@@ -96,8 +100,7 @@ class AiChatGatewayService {
     int? systemChars,
   }) {
     if (!kDebugMode) return;
-    final preview =
-        body.length > 1200 ? '${body.substring(0, 1200)}…' : body;
+    final preview = body.length > 1200 ? '${body.substring(0, 1200)}…' : body;
     debugPrint(
       '❌ [Provider] chat/completions failed '
       'status=$statusCode model=$model '
@@ -116,6 +119,11 @@ class AiChatGatewayService {
 
   Future<List<String>> fetchModelsForProfile(AiProviderProfile profile) async {
     try {
+      if (profile.isLocalGguf) {
+        final installed = await LocalModelStore.instance.listInstalled();
+        return installed.map((e) => e.id).toList();
+      }
+
       if (profile.isBackendOllama) {
         final uri = await LlmEndpointConfig.modelsUri();
         ApiService.logDirectHttp('GET', uri);
@@ -182,6 +190,16 @@ class AiChatGatewayService {
         topP: topP,
       );
     }
+
+    if (profile.isLocalGguf) {
+      return _sendToLocalGguf(
+        agent: agent,
+        profile: profile,
+        messages: messages,
+        temperature: temperature,
+      );
+    }
+
     final model = _effectiveModel(agent, profile);
     if (profile.supportsToolCalls) {
       final userId = await AiMemoryTools.resolveUserId();
@@ -211,6 +229,27 @@ class AiChatGatewayService {
     );
   }
 
+  Future<String> _sendToLocalGguf({
+    required AiAgent agent,
+    required AiProviderProfile profile,
+    required List<Map<String, String>> messages,
+    double? temperature,
+  }) async {
+    final modelId = _effectiveModel(agent, profile);
+    final userId = await AiMemoryTools.resolveUserId();
+    try {
+      return await LocalLlmChatService.instance.chat(
+        modelId: modelId,
+        messages: messages,
+        enableTools: profile.supportsToolCalls,
+        userId: userId,
+        temperature: temperature,
+      );
+    } catch (e) {
+      throw Exception(AiChatGatewayService.userFacingError(e));
+    }
+  }
+
   Future<String> _sendToBackendOllama({
     required AiAgent agent,
     required List<Map<String, String>> messages,
@@ -238,7 +277,8 @@ class AiChatGatewayService {
             'source_msg_id': sourceMsgId,
             'client_memory_applied': true,
             if (terminalMode) 'stream': false,
-            if (temperature != null && temperature > 0) 'temperature': temperature,
+            if (temperature != null && temperature > 0)
+              'temperature': temperature,
             if (topP != null && topP > 0) 'top_p': topP,
           }),
         )
@@ -413,7 +453,8 @@ class AiChatGatewayService {
     return out;
   }
 
-  Map<String, dynamic>? _extractAssistantMessageMap(Map<dynamic, dynamic> decoded) {
+  Map<String, dynamic>? _extractAssistantMessageMap(
+      Map<dynamic, dynamic> decoded) {
     final choices = decoded['choices'];
     if (choices is! List || choices.isEmpty) return null;
     final first = choices.first;

@@ -1,7 +1,7 @@
 # 在 backend 目录执行，例如: make gen | make build | make build-linux
 # gen-rpc 须在 backend 根目录跑（pb 路径依赖 --go_opt=module=backend）
 
-.PHONY: all gen gen-rpc gen-api gen-swagger build build-linux env-status help
+.PHONY: all gen gen-rpc gen-api gen-swagger build build-linux env-status deploy-agent deploy-agent-stop help
 
 # 交叉编译用「命令前面临时变量」，不用 go env -w，避免本机 go run 编错平台。
 
@@ -36,6 +36,15 @@ build-linux:
 env-status:
 	@echo GOOS=$$(go env GOOS) GOARCH=$$(go env GOARCH) CGO_ENABLED=$$(go env CGO_ENABLED)
 
+# 部署控制台 Agent（默认 deploy/config.yaml，先 cp deploy/config.example.yaml）
+deploy-agent:
+	go run ./cmd/deploy-agent -f deploy/config.yaml
+
+# 释放 9100 端口（address already in use 时先执行）
+deploy-agent-stop:
+	-@lsof -ti :9100 | xargs kill 2>/dev/null || true
+	@echo "port 9100 cleared (if any agent was listening)"
+
 help:
 	@echo make gen           - 生成 RPC + API 代码
 	@echo make gen-rpc       - 仅 RPC 代码生成
@@ -44,6 +53,8 @@ help:
 	@echo make build         - 本机打包 api + rpc
 	@echo make build-linux   - 交叉编 Linux 包（不改全局 go 配置）
 	@echo make env-status    - 打印 GOOS/GOARCH
+	@echo make deploy-agent       - 启动部署控制台 Agent (:9100)
+	@echo make deploy-agent-stop  - 结束占用 9100 的旧 Agent
 	@echo make help          - 本说明
 	@echo ""
 	@echo 若本机 go run 曾异常，可试: go env -u GOOS  或  go env -w GOOS=darwin

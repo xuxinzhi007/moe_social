@@ -2,6 +2,7 @@ import 'dart:convert';
 
 enum AiProviderType {
   backendOllama('backend_ollama', '后端 Ollama'),
+  localGguf('local_gguf', '本机 GGUF'),
   openAiCompatible('openai_compatible', 'OpenAI 兼容'),
   ;
 
@@ -20,6 +21,7 @@ enum AiProviderType {
 
 class AiProviderProfile {
   static const String builtinBackendId = 'builtin_backend_ollama';
+  static const String builtinLocalGgufId = 'builtin_local_gguf';
 
   final String id;
   final String name;
@@ -52,7 +54,9 @@ class AiProviderProfile {
   });
 
   bool get isBuiltinBackend => id == builtinBackendId;
+  bool get isBuiltinLocal => id == builtinLocalGgufId;
   bool get isBackendOllama => providerType == AiProviderType.backendOllama;
+  bool get isLocalGguf => providerType == AiProviderType.localGguf;
   bool get isOpenAiCompatible =>
       providerType == AiProviderType.openAiCompatible;
 
@@ -94,7 +98,10 @@ class AiProviderProfile {
     try {
       final decoded = jsonDecode(rawModels);
       manualModels = decoded is List
-          ? decoded.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList()
+          ? decoded
+              .map((e) => e.toString().trim())
+              .where((e) => e.isNotEmpty)
+              .toList()
           : <String>[];
     } catch (_) {
       manualModels = <String>[];
@@ -144,6 +151,29 @@ class AiProviderProfile {
       supportsStreaming: true,
       supportsVision: false,
       supportsToolCalls: false,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  /// 本机已下载 GGUF + llama.cpp；默认开启记忆工具（需 Qwen2.5 等支持 JSON 工具调用的模型）。
+  factory AiProviderProfile.builtinLocalGguf() {
+    final now = DateTime.fromMillisecondsSinceEpoch(0);
+    return AiProviderProfile(
+      id: builtinLocalGgufId,
+      name: '本机 GGUF（离线）',
+      providerType: AiProviderType.localGguf,
+      baseUrl: '',
+      defaultModel: 'qwen2.5-1.5b-instruct-q4',
+      manualModels: const [
+        'qwen2.5-0.5b-instruct-q4',
+        'qwen2.5-1.5b-instruct-q4',
+      ],
+      useServerMemory: false,
+      supportsSystemMessages: true,
+      supportsStreaming: true,
+      supportsVision: false,
+      supportsToolCalls: true,
       createdAt: now,
       updatedAt: now,
     );

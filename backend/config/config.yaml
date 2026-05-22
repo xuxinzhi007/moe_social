@@ -48,6 +48,19 @@ ollama:
   # 后端请求 Ollama 的超时（秒）
   timeout_seconds: 300
 
+# 手机 App 可下载的离线 GGUF（文件放 storage_dir，勿提交大文件进 Git）
+local_models:
+  storage_dir: "data/local_models"
+  catalog:
+    - id: qwen2.5-0.5b-instruct-q4
+      name: "Qwen2.5 0.5B 离线助手"
+      filename: "qwen2.5-0.5b-instruct-q4_k_m.gguf"
+      size_bytes: 0
+      sha256: ""
+      description: "轻量离线对话，适合弱网与隐私场景；需将 gguf 放到 storage_dir。"
+      parameters_b: 0.5
+      recommended: true
+
 # ngrok http 11434 --host-header=rewrite
 
 #线上

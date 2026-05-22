@@ -94,6 +94,19 @@ flutter doctor
 - macOS: `flutter build macos`
 - Linux: `flutter build linux`
 
+## 🛠 运维部署台（Deploy Agent）
+
+一体化运维界面：构建后端、管理 Docker、触发 GitHub APK 流水线。按**运行 Agent 的机器**自动选择 macOS / Windows / Linux 命令。
+
+```bash
+cd backend
+cp deploy/config.example.yaml deploy/config.yaml   # 修改 token
+make deploy-agent
+# 浏览器打开 http://127.0.0.1:9100/  （不要只用 IDE 预览 HTML，需 Agent 在线）
+```
+
+在 `deploy/config.yaml` 的 `targets` 中配置云平台 SSH（示例见 `deploy/config.example.yaml` 的 `cloud`）。详见 [docs/dev/deploy-platform.md](docs/dev/deploy-platform.md)。
+
 ## 🚀 CI/CD 与自动更新
 
 本项目集成了 GitHub Actions 实现自动化构建与发布，并支持 App 内自动检测更新。
