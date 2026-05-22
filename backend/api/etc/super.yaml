@@ -24,6 +24,12 @@ Ollama:
   # 可选：用于「记忆抽取」的系统提示词，不填则使用内置中文抽取提示
   MemoryExtractPrompt: ""
 
+# 可选：手机离线模型服务端镜像（主路径为 App 从 Hugging Face 直下；此处仅 catalog 合并用）
+# 详细项由 backend/config/config.yaml 的 local_models 覆盖
+LocalModels:
+  StorageDir: ""
+  Catalog: []
+
 # 图片“云空间”（实际落到服务端本地目录）
 Image:
   # 服务端机器的本地目录（与 docker-compose 挂载路径一致）

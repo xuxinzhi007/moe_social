@@ -1587,6 +1587,24 @@ type LlmDeleteModelReq {
 	Model string `json:"model"`
 }
 
+// 手机端可下载的本地 GGUF 模型目录（由服务端托管文件，App 下载到本机后离线推理）
+type LlmLocalModelCatalogItem {
+	Id           string  `json:"id"`
+	Name         string  `json:"name"`
+	Filename     string  `json:"filename"`
+	SizeBytes    int64   `json:"size_bytes"`
+	Sha256       string  `json:"sha256"`
+	Description  string  `json:"description"`
+	ParametersB  float64 `json:"parameters_b"`
+	Recommended  bool    `json:"recommended"`
+	DownloadPath string  `json:"download_path"`
+}
+
+type LlmLocalModelsCatalogResp {
+	BaseResp
+	Items []LlmLocalModelCatalogItem `json:"items"`
+}
+
 // LLM 聊天相关API服务
 @server (
 	group: llm
@@ -1595,6 +1613,10 @@ service Super {
 	// 获取可用模型列表
 	@handler models
 	get /api/llm/models (EmptyReq) returns (LlmModelsResp)
+
+	// 手机离线模型目录（GGUF 由服务端托管，App 下载到本机）
+	@handler localModelsCatalog
+	get /api/llm/local-models/catalog (EmptyReq) returns (LlmLocalModelsCatalogResp)
 
 	// 创建带有个性化系统提示词的新模型
 	@handler createAgent

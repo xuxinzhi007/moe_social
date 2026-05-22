@@ -22,9 +22,14 @@ func ConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 				"has_extract_prompt": svcCtx.Config.Ollama.MemoryExtractPrompt != "",
 			},
 			"memory_budget": budget,
+			"local_models": map[string]interface{}{
+				"storage_dir":   svcCtx.Config.LocalModels.StorageDir,
+				"catalog_count": len(svcCtx.Config.LocalModels.Catalog),
+			},
 			"runtime": map[string]interface{}{
 				"server_memory_enabled": true,
 				"raw_debug_only":        true,
+				"local_gguf_download":   true,
 			},
 		}
 

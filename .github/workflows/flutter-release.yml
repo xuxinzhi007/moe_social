@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*' # 仅当推送 v 开头的 tag 时触发，例如 v1.0.0
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref (tag e.g. v1.0.4 or branch main)'
+        required: true
+        default: 'main'
 
 permissions:
   contents: write
@@ -45,7 +51,12 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          VERSION_NAME="${GITHUB_REF_NAME#v}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            REF="${{ github.event.inputs.ref }}"
+            VERSION_NAME="${REF#v}"
+          else
+            VERSION_NAME="${GITHUB_REF_NAME#v}"
+          fi
           BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
           flutter build apk --release --no-tree-shake-icons \
             --build-name "$VERSION_NAME" \

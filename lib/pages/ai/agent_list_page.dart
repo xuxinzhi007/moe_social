@@ -150,7 +150,9 @@ class _AgentListPageState extends State<AgentListPage>
       _resolveProviderById(_selectedSquareProviderId);
 
   String _providerSourceLabel(AiProviderProfile profile) {
-    return profile.isBuiltinBackend ? '服务器 Ollama' : '我的 API';
+    if (profile.isBuiltinBackend) return '服务器 Ollama';
+    if (profile.isLocalGguf) return '本机 GGUF';
+    return '我的 API';
   }
 
   Future<void> _loadProviderProfiles({bool reloadSquareModels = true}) async {

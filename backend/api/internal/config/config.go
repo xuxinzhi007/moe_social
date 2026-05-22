@@ -20,6 +20,9 @@ type Config struct {
 	// Ollama 配置（用于 /api/llm/*）
 	Ollama OllamaConf `json:"Ollama" yaml:"Ollama"`
 
+	// LocalModels 手机可下载的 GGUF 托管目录与清单
+	LocalModels LocalModelsConf `json:"LocalModels" yaml:"LocalModels"`
+
 	// Agora 配置
 	Agora AgoraConf `json:"Agora" yaml:"Agora"`
 
@@ -30,6 +33,22 @@ type Config struct {
 	// 仅由 super.go 的 applyUnifiedConfigOverrides 从 backend/config/config.yaml 写入；
 	// yaml:"-" 表示不参与 etc/super.yaml 解析，不必在 go-zero 主配置里重复配置。
 	ClientPublicApiBaseUrl string `json:"-" yaml:"-"`
+}
+
+type LocalModelCatalogEntry struct {
+	Id          string  `json:"Id" yaml:"id"`
+	Name        string  `json:"Name" yaml:"name"`
+	Filename    string  `json:"Filename" yaml:"filename"`
+	SizeBytes   int64   `json:"SizeBytes" yaml:"size_bytes"`
+	Sha256      string  `json:"Sha256" yaml:"sha256"`
+	Description string  `json:"Description" yaml:"description"`
+	ParametersB float64 `json:"ParametersB" yaml:"parameters_b"`
+	Recommended bool    `json:"Recommended" yaml:"recommended"`
+}
+
+type LocalModelsConf struct {
+	StorageDir string                   `json:"StorageDir" yaml:"storage_dir"`
+	Catalog    []LocalModelCatalogEntry `json:"Catalog" yaml:"catalog"`
 }
 
 type OllamaConf struct {

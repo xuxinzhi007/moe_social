@@ -45,6 +45,15 @@ func applyUnifiedConfigOverrides(c *config.Config) {
 	if ts := v.GetInt("ollama.timeout_seconds"); ts > 0 {
 		c.Ollama.TimeoutSeconds = ts
 	}
+	if dir := v.GetString("local_models.storage_dir"); dir != "" {
+		c.LocalModels.StorageDir = dir
+	}
+	if v.IsSet("local_models.catalog") {
+		var entries []config.LocalModelCatalogEntry
+		if err := v.UnmarshalKey("local_models.catalog", &entries); err == nil && len(entries) > 0 {
+			c.LocalModels.Catalog = entries
+		}
+	}
 	if timeoutMs := v.GetInt64("api.timeout_ms"); timeoutMs > 0 {
 		// go-zero RestConf 的 Timeout 通常为毫秒单位的 int64
 		c.Timeout = timeoutMs
@@ -108,7 +117,8 @@ func main() {
 		func(header http.Header) {
 			header.Set("Access-Control-Allow-Origin", "*")
 			header.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
-			header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept")
+			header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Range")
+			header.Set("Access-Control-Expose-Headers", "Content-Length, Content-Range, Accept-Ranges, X-Model-Sha256")
 			header.Set("Access-Control-Max-Age", "3600")
 		},
 		nil,
