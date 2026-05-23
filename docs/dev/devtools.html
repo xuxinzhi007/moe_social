@@ -100,11 +100,8 @@
   <div class="top">
     <h1>开发者 / 运维工具台</h1>
     <p>
-      联调、监控与部署 ·
-      <a href="../index.html">文档导航</a> ·
-      预览：<code style="color:var(--accent2)">cd docs && python -m http.server 8765</code> ·
-      部署台：<a href="tools/deploy-ops.html" target="_blank" rel="noopener">静态页</a> ·
-      <a href="http://127.0.0.1:9100/" target="_blank" rel="noopener">Agent :9100</a>
+      联调、监控与部署 · <code style="color:var(--accent2)">make deploy-agent</code> 即 Moe Ops ·
+      端口表：<a href="ports.md">ports.md</a>
     </p>
     <div class="tabs" role="tablist" id="tabBar"></div>
   </div>
@@ -122,8 +119,8 @@
       },
       rpc: {
         label: "RPC 性能监控",
-        src: "tools/rpc-monitor.html",
-        hint: "先 cd backend/rpc && go run super.go，默认 http://127.0.0.1:6060。",
+        src: "/?page=rpc",
+        hint: "Moe Ops 侧栏「RPC 监控」；需 make rpc-debug。",
       },
       memory: {
         label: "记忆系统监控",
@@ -132,10 +129,9 @@
       },
       deploy: {
         label: "运维部署中心",
-        src: "tools/deploy-ops.html",
-        agentSrc: "http://127.0.0.1:9100/",
-        hint: "推荐启动 Deploy Agent（:9100）以调用 API；静态页可直接操作已配置的 Agent 地址。",
-        preferAgent: true,
+        src: "/",
+        hint: "make deploy-agent 后直接打开 http://127.0.0.1:19010/",
+        preferAgent: false,
       },
     };
 

@@ -2,11 +2,16 @@
 package debug
 
 import (
+	"backend/devports"
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"log"
+	"net"
 	"net/http"
 	_ "net/http/pprof" // registers /debug/pprof/* on DefaultServeMux
+	"os"
 	"runtime"
 	"runtime/pprof"
 	"sort"
@@ -17,23 +22,99 @@ import (
 	"github.com/google/pprof/profile"
 )
 
-// StartMonitor listens on addr (e.g. "127.0.0.1:6060") for pprof and JSON stats.
-// Bind to loopback only; do not expose on public interfaces.
-func StartMonitor(addr string) {
-	if strings.TrimSpace(addr) == "" {
-		addr = "127.0.0.1:6060"
+const defaultDebugAddr = devports.RpcDebugAddr
+
+var monitorBaseURL = "http://" + defaultDebugAddr
+
+// Monitor serves local-only pprof and JSON stats inside the RPC process.
+// Call Stop when the RPC process exits. Use only with super.go -debug or make rpc-debug.
+type Monitor struct {
+	server *http.Server
+}
+
+// StartMonitor listens on preferredAddr (default devports.RpcDebugAddr) for pprof and JSON stats.
+// Uses Moe reserved block 19011–19016 if busy.
+// Set MOE_RPC_DEBUG_ADDR to override. Bind to loopback only; do not expose publicly.
+func StartMonitor(preferredAddr string) *Monitor {
+	if env := strings.TrimSpace(os.Getenv("MOE_RPC_DEBUG_ADDR")); env != "" {
+		preferredAddr = env
 	}
+	if strings.TrimSpace(preferredAddr) == "" {
+		preferredAddr = defaultDebugAddr
+	}
+
+	ln, addr, err := listenMonitor(preferredAddr)
+	if err != nil {
+		log.Printf("RPC monitor disabled: %v", err)
+		return nil
+	}
+
+	monitorBaseURL = "http://" + addr
 
 	http.HandleFunc("/debug/live", handleLive)
 	http.HandleFunc("/debug/heap-top", handleHeapTop)
 	http.HandleFunc("/debug/goroutine-summary", handleGoroutineSummary)
 
+	srv := &http.Server{
+		Handler: withCORS(http.DefaultServeMux),
+	}
+
 	go func() {
-		log.Printf("RPC monitor: http://%s/debug/live (dashboard: docs/dev/devtools.html)", addr)
-		if err := http.ListenAndServe(addr, withCORS(http.DefaultServeMux)); err != nil {
+		log.Printf("RPC debug API: http://%s/debug/live (dashboard: make rpc-monitor)", addr)
+		if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("RPC monitor stopped: %v", err)
 		}
 	}()
+
+	return &Monitor{server: srv}
+}
+
+// Stop shuts down the monitor HTTP server. Safe to call on nil or after Stop.
+func (m *Monitor) Stop() {
+	if m == nil || m.server == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if err := m.server.Shutdown(ctx); err != nil {
+		log.Printf("RPC monitor shutdown: %v", err)
+	}
+}
+
+func listenMonitor(preferred string) (net.Listener, string, error) {
+	host, portStr, err := net.SplitHostPort(preferred)
+	if err != nil {
+		return nil, "", err
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil || port <= 0 {
+		return nil, "", err
+	}
+
+	seen := map[int]struct{}{port: {}}
+	candidates := []int{port}
+	for _, p := range devports.RpcDebugFallbackPorts() {
+		if _, ok := seen[p]; ok {
+			continue
+		}
+		seen[p] = struct{}{}
+		candidates = append(candidates, p)
+	}
+
+	var lastErr error
+	for _, p := range candidates {
+		addr := net.JoinHostPort(host, strconv.Itoa(p))
+		ln, err := net.Listen("tcp", addr)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		if p != port {
+			log.Printf("RPC monitor: %s busy (%v), using %s instead", preferred, lastErr, addr)
+		}
+		return ln, addr, nil
+	}
+	return nil, "", lastErr
 }
 
 func withCORS(next http.Handler) http.Handler {
@@ -76,9 +157,9 @@ func handleLive(w http.ResponseWriter, _ *http.Request) {
 			"stack_inuse_mb": bytesToMB(ms.StackInuse),
 		},
 		"gc": map[string]any{
-			"num_gc":         ms.NumGC,
-			"pause_total_ms": float64(ms.PauseTotalNs) / 1e6,
-			"last_pause_ms":  float64(ms.PauseNs[(ms.NumGC+255)%256]) / 1e6,
+			"num_gc":          ms.NumGC,
+			"pause_total_ms":  float64(ms.PauseTotalNs) / 1e6,
+			"last_pause_ms":   float64(ms.PauseNs[(ms.NumGC+255)%256]) / 1e6,
 			"gc_cpu_fraction": ms.GCCPUFraction,
 		},
 		"links": pprofLinks(),
@@ -107,9 +188,9 @@ func handleHeapTop(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, map[string]any{
 		"timestamp": time.Now().Format(time.RFC3339),
-		"unit":        "inuse_heap_bytes",
-		"top":         entries,
-		"hint":        "关注 inuse_mb 持续偏高的函数；配合 go tool pprof 做火焰图",
+		"unit":      "inuse_heap_bytes",
+		"top":       entries,
+		"hint":      "关注 inuse_mb 持续偏高的函数；配合 go tool pprof 做火焰图",
 	})
 }
 
@@ -258,8 +339,8 @@ func sampleGoroutineStacks(limit int) ([]map[string]any, error) {
 	out := make([]map[string]any, 0, limit)
 	for i := 0; i < limit; i++ {
 		out = append(out, map[string]any{
-			"count":  items[i].n,
-			"stack":  items[i].stack,
+			"count": items[i].n,
+			"stack": items[i].stack,
 		})
 	}
 	return out, nil
@@ -275,7 +356,7 @@ func trimRuntimePrefix(fn string) string {
 }
 
 func pprofLinks() map[string]string {
-	base := "http://127.0.0.1:6060"
+	base := monitorBaseURL
 	return map[string]string{
 		"pprof_index": base + "/debug/pprof/",
 		"heap":        base + "/debug/pprof/heap",

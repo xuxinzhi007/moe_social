@@ -21,6 +21,7 @@
 | [记忆系统-2026-05-20-变更整理.md](./记忆系统-2026-05-20-变更整理.md) | 近期变更与验收 |
 | [记忆系统-开源对标调研.md](./记忆系统-开源对标调研.md) | OpenClaw / 酒馆对标 |
 | [用户级记忆统一改造验收脚本.md](./用户级记忆统一改造验收脚本.md) | E2E 验收 |
+| [ports.md](./ports.md) | **本地开发端口表**（Moe 专属 19010–19019） |
 | [devtools.html](./devtools.html) | **开发者 / 运维工具台**（飞书 / RPC / 记忆 / 部署） |
 | [deploy-platform.md](./deploy-platform.md) | **部署分工 SSOT**（本机编包 / 云 backend / GitHub APK） |
 | [tools/deploy-ops.html](./tools/deploy-ops.html) | 运维部署中心（Moe Ops） |

@@ -120,3 +120,4 @@ release.jks.b64
 android/app/release.jks.bak
 backend/api/moe-social-api
 backend/rpc/moe-social-rpc
+backend/.dev/
