@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"backend/model"
+	"backend/rpc/internal/achievement"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -85,6 +86,7 @@ func (l *SendGiftLogic) SendGift(in *super.SendGiftReq) (*super.SendGiftResp, er
 	}
 
 	var record model.GiftRecord
+	var achUnlocks []achievement.UnlockResult
 	err = db.Transaction(func(tx *gorm.DB) error {
 		var s model.User
 		if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&s, fromUserID).Error; err != nil {
@@ -146,6 +148,17 @@ func (l *SendGiftLogic) SendGift(in *super.SendGiftReq) (*super.SendGiftResp, er
 		}).Error; err != nil {
 			return err
 		}
+
+		engine := achievement.NewEngine(db)
+		unlocks, err := engine.ApplyEvent(tx, uint(fromUserID), achievement.Event{
+			Type:      achievement.EventGiftSent,
+			GiftCount: int(quantity),
+			GiftValue: addValue,
+		})
+		if err != nil {
+			return err
+		}
+		achUnlocks = unlocks
 		return nil
 	})
 
@@ -164,8 +177,9 @@ func (l *SendGiftLogic) SendGift(in *super.SendGiftReq) (*super.SendGiftResp, er
 	}
 
 	return &super.SendGiftResp{
-		Success: true,
-		Message: "gift sent successfully",
+		Success:         true,
+		Message:         "gift sent successfully",
+		NewAchievements: achievement.UnlocksToProto(achUnlocks),
 		Record: &super.GiftRecord{
 			Id:           uint64(record.ID),
 			FromUserId:   uint64(record.FromUserID),

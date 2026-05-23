@@ -12,6 +12,7 @@ import '../../models/ai_provider_profile.dart';
 import 'agent_editor_page.dart';
 import 'ai_lorebooks_page.dart';
 import 'ai_provider_profiles_page.dart';
+import 'llama_cpp_settings_page.dart';
 import 'character_card_plaza_page.dart';
 import 'chat_page.dart';
 import 'memory_manager_page.dart';
@@ -52,9 +53,9 @@ class _AgentListPageState extends State<AgentListPage>
   List<String> _squareModels = [];
   bool _isLoadingSquareModels = false;
   List<AiProviderProfile> _providerProfiles = [
-    AiProviderProfile.builtinBackend(),
+    AiProviderProfile.builtinLocalGguf(),
   ];
-  String _selectedSquareProviderId = AiProviderProfile.builtinBackendId;
+  String _selectedSquareProviderId = AiProviderProfile.builtinLocalGgufId;
   Map<String, Color> _agentColors = {};
   bool _showFab = true;
 
@@ -128,7 +129,7 @@ class _AgentListPageState extends State<AgentListPage>
 
   String _normalizeProviderId(String? providerId) {
     if (providerId == null || providerId.trim().isEmpty) {
-      return AiProviderProfile.builtinBackendId;
+      return AiProviderProfile.builtinLocalGgufId;
     }
     return providerId.trim();
   }
@@ -139,19 +140,26 @@ class _AgentListPageState extends State<AgentListPage>
   }
 
   AiProviderProfile _resolveProviderById(String? providerId) {
-    final normalized = _normalizeProviderId(providerId);
+    if (providerId == null || providerId.trim().isEmpty) {
+      return _providerProfiles.firstWhere(
+        (p) => p.isLocalGguf,
+        orElse: () => AiProviderProfile.builtinLocalGguf(),
+      );
+    }
+    final normalized = providerId.trim();
     for (final profile in _providerProfiles) {
       if (profile.id == normalized) return profile;
     }
-    return AiProviderProfile.builtinBackend();
+    return AiProviderProfile.builtinLocalGguf();
   }
 
   AiProviderProfile get _selectedSquareProvider =>
       _resolveProviderById(_selectedSquareProviderId);
 
   String _providerSourceLabel(AiProviderProfile profile) {
+    if (profile.isLocalGguf) return 'App 内 llama.cpp';
+    if (profile.isLlamaCppServer) return '本机 llama-server';
     if (profile.isBuiltinBackend) return '服务器 Ollama';
-    if (profile.isLocalGguf) return '本机 GGUF';
     return '我的 API';
   }
 
@@ -164,7 +172,7 @@ class _AgentListPageState extends State<AgentListPage>
       final preferredId = lastSelected ?? _selectedSquareProviderId;
       final exists = profiles.any((item) => item.id == preferredId);
       if (!exists) {
-        _selectedSquareProviderId = AiProviderProfile.builtinBackendId;
+        _selectedSquareProviderId = AiProviderProfile.builtinLocalGgufId;
       } else {
         _selectedSquareProviderId = preferredId;
       }
@@ -540,7 +548,7 @@ class _AgentListPageState extends State<AgentListPage>
     final draft = AiStarterTemplates.buildAgentFromTemplate(
       template,
       modelName: _squareModels.isNotEmpty ? _squareModels.first : 'llama3:8b',
-      providerProfileId: _selectedSquareProvider.isBuiltinBackend
+      providerProfileId: _selectedSquareProvider.isBackendOllama
           ? null
           : _selectedSquareProvider.id,
     );

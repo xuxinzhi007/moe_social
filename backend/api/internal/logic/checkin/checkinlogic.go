@@ -3,6 +3,7 @@ package checkin
 import (
 	"context"
 
+	achlogic "backend/api/internal/logic/achievement"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 	"backend/rpc/pb/super"
@@ -52,6 +53,7 @@ func (l *CheckInLogic) CheckIn(req *types.CheckInReq) (resp *types.CheckInResp, 
 			ConsecutiveDays: int(rpcResp.ConsecutiveDays),
 			LevelUp:         rpcResp.LevelUp,
 			SpecialReward:   rpcResp.SpecialReward,
+			NewAchievements: achlogic.UnlocksFromRPC(rpcResp.NewAchievements),
 		},
 	}, nil
 }

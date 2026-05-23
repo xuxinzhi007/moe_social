@@ -254,6 +254,56 @@ class AchievementBadge {
     ),
   ];
 
+  /// 合并服务端进度与本地展示元数据（emoji/color）。
+  factory AchievementBadge.fromServerJson(Map<String, dynamic> json) {
+    final id = json['id'] as String? ?? '';
+    final template = findById(id);
+    final required = (json['required_count'] as num?)?.toInt() ??
+        template?.requiredCount ??
+        1;
+    final current = (json['current_count'] as num?)?.toInt() ?? 0;
+    final progress = (json['progress'] as num?)?.toDouble() ??
+        (required > 0 ? (current / required).clamp(0.0, 1.0) : 0.0);
+    final unlockedAtRaw = json['unlocked_at'] as String?;
+    return AchievementBadge(
+      id: id,
+      name: json['name'] as String? ?? template?.name ?? id,
+      description:
+          json['description'] as String? ?? template?.description ?? '',
+      emoji: template?.emoji ?? '✨',
+      color: template?.color ?? const Color(0xFF7F7FD5),
+      category: _parseCategory(
+          json['category'] as String?, template?.category),
+      rarity: _parseRarity(json['rarity'] as String?, template?.rarity),
+      requiredCount: required,
+      condition: json['condition'] as String? ?? template?.condition ?? '',
+      progress: progress,
+      currentCount: current,
+      isUnlocked: json['is_unlocked'] as bool? ?? false,
+      unlockedAt: unlockedAtRaw != null && unlockedAtRaw.isNotEmpty
+          ? DateTime.tryParse(unlockedAtRaw)
+          : null,
+    );
+  }
+
+  static BadgeCategory _parseCategory(String? raw, BadgeCategory? fallback) {
+    if (raw == null) return fallback ?? BadgeCategory.social;
+    try {
+      return BadgeCategory.values.firstWhere((c) => c.name == raw);
+    } catch (_) {
+      return fallback ?? BadgeCategory.social;
+    }
+  }
+
+  static BadgeRarity _parseRarity(String? raw, BadgeRarity? fallback) {
+    if (raw == null) return fallback ?? BadgeRarity.common;
+    try {
+      return BadgeRarity.values.firstWhere((r) => r.name == raw);
+    } catch (_) {
+      return fallback ?? BadgeRarity.common;
+    }
+  }
+
   // 从JSON创建实例
   factory AchievementBadge.fromJson(Map<String, dynamic> json) {
     return AchievementBadge(
@@ -478,4 +528,19 @@ class UserBadgeProgress {
       'updated_at': updatedAt.toIso8601String(),
     };
   }
+}
+
+/// 成就统计概览（服务端 summary 接口）。
+class BadgeStatistics {
+  final int totalBadges;
+  final int unlockedBadges;
+  final double completionPercentage;
+  final Map<BadgeRarity, int> rarityStatistics;
+
+  BadgeStatistics({
+    required this.totalBadges,
+    required this.unlockedBadges,
+    required this.completionPercentage,
+    this.rarityStatistics = const {},
+  });
 }

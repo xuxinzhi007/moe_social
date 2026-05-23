@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../services/llm_endpoint_config.dart';
-import '../../../widgets/fade_in_up.dart';
 import '../../../widgets/moe_menu_card.dart';
 import '../../ai/local_model_manager_page.dart';
 import '../../ai/llm_model_config_page.dart';
@@ -12,90 +11,87 @@ class AiSettingsModule extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FadeInUp(
-      delay: const Duration(milliseconds: 300),
-      child: MoeMenuCard(
-        items: [
-          MoeMenuItem(
-            icon: Icons.terminal_rounded,
-            title: 'raw 调试模式（本地 Ollama）',
-            subtitle: '仅调试时开启；日常建议走服务端记忆链路',
-            color: Colors.deepPurpleAccent,
-            onTap: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const LlmTerminalModeSettingsPage(),
+    return MoeMenuCard(
+      items: [
+        MoeMenuItem(
+          icon: Icons.terminal_rounded,
+          title: 'raw 调试模式（本地 Ollama）',
+          subtitle: '仅调试时开启；日常建议走服务端记忆链路',
+          color: Colors.deepPurpleAccent,
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const LlmTerminalModeSettingsPage(),
+              ),
+            );
+          },
+          trailing: FutureBuilder<bool>(
+            future: LlmEndpointConfig.isTerminalModeEnabled(),
+            builder: (context, snapshot) {
+              final enabled = snapshot.data == true;
+              return Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color:
+                      (enabled ? Colors.green : Colors.grey).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(999),
                 ),
-              );
-            },
-            trailing: FutureBuilder<bool>(
-              future: LlmEndpointConfig.isTerminalModeEnabled(),
-              builder: (context, snapshot) {
-                final enabled = snapshot.data == true;
-                return Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: (enabled ? Colors.green : Colors.grey)
-                        .withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(999),
+                child: Text(
+                  enabled ? '已开启' : '未开启',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: enabled ? Colors.green : Colors.grey[700],
+                    fontWeight: FontWeight.w600,
                   ),
-                  child: Text(
-                    enabled ? '已开启' : '未开启',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: enabled ? Colors.green : Colors.grey[700],
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          MoeMenuItem(
-            icon: Icons.psychology_rounded,
-            title: '模型记忆线',
-            subtitle: '查看模型记录的所有记忆',
-            color: Colors.deepPurple,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const MemoryTimelinePage()),
-              );
-            },
-          ),
-          MoeMenuItem(
-            icon: Icons.download_rounded,
-            title: '离线模型下载',
-            subtitle: '从 Hugging Face 直下到手机，供本地 cpp 推理',
-            color: const Color(0xFF7F7FD5),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const LocalModelManagerPage(),
                 ),
               );
             },
           ),
-          MoeMenuItem(
-            icon: Icons.settings_suggest_rounded,
-            title: 'AI 模型配置',
-            subtitle: '管理 AI 模型参数和配置',
-            color: Colors.indigo,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const LlmModelConfigPage(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+        ),
+        MoeMenuItem(
+          icon: Icons.psychology_rounded,
+          title: '模型记忆线',
+          subtitle: '查看模型记录的所有记忆',
+          color: Colors.deepPurple,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const MemoryTimelinePage()),
+            );
+          },
+        ),
+        MoeMenuItem(
+          icon: Icons.download_rounded,
+          title: '离线模型下载',
+          subtitle: '从 Hugging Face 直下到手机，供本地 cpp 推理',
+          color: const Color(0xFF7F7FD5),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const LocalModelManagerPage(),
+              ),
+            );
+          },
+        ),
+        MoeMenuItem(
+          icon: Icons.settings_suggest_rounded,
+          title: 'AI 模型配置',
+          subtitle: '管理 AI 模型参数和配置',
+          color: Colors.indigo,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const LlmModelConfigPage(),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }

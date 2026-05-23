@@ -3,6 +3,7 @@ package post
 import (
 	"context"
 
+	achlogic "backend/api/internal/logic/achievement"
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
@@ -45,6 +46,7 @@ func (l *CreatePostLogic) CreatePost(req *types.CreatePostReq) (resp *types.Crea
 		TopicTags:        rpcTopicTags,
 		HandDrawCard:     req.HandDrawCard,
 		HandDrawThumbUrl: req.HandDrawThumbUrl,
+		MoodTag:          req.MoodTag,
 	})
 	if err != nil {
 		return &types.CreatePostResp{
@@ -65,7 +67,8 @@ func (l *CreatePostLogic) CreatePost(req *types.CreatePostReq) (resp *types.Crea
 
 	// 转换为API响应格式
 	return &types.CreatePostResp{
-		BaseResp: common.HandleRPCError(nil, "创建帖子成功"),
+		BaseResp:        common.HandleRPCError(nil, "创建帖子成功"),
+		NewAchievements: achlogic.UnlocksFromRPC(rpcResp.NewAchievements),
 		Data: types.Post{
 			Id:               rpcResp.Post.Id,
 			UserId:           rpcResp.Post.UserId,

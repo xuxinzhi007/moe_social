@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 
+	achlogic "backend/api/internal/logic/achievement"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 	"backend/rpc/pb/super"
@@ -73,6 +74,7 @@ func (l *SendGiftLogic) SendGift(req *types.SendGiftReq) (resp *types.SendGiftRe
 			Message: rpcResp.Message,
 			Success: rpcResp.Success,
 		},
+		NewAchievements: achlogic.UnlocksFromRPC(rpcResp.NewAchievements),
 	}
 	if rpcResp.Success && rpcResp.Record != nil {
 		out.Data = rpcGiftRecordToAPI(rpcResp.Record)

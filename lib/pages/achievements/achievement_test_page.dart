@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../auth_service.dart';
 import '../../services/achievement_service.dart';
 import '../../models/achievement_badge.dart';
 import '../achievements/achievements_page.dart';
-import '../../widgets/achievement/achievement_unlock_notification.dart';
 
 class AchievementTestPage extends StatefulWidget {
   const AchievementTestPage({super.key});
@@ -22,25 +22,24 @@ class _AchievementTestPageState extends State<AchievementTestPage> {
     _loadAchievements();
   }
 
+  String? get _userId => AuthService.currentUser;
+
   Future<void> _loadAchievements() async {
+    final userId = _userId;
+    if (userId == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
     setState(() => _isLoading = true);
-    await _achievementService.initializeUserBadges('user_123');
-    _badges = _achievementService.getUserBadges('user_123');
+    await _achievementService.initializeUserBadges(userId);
+    _badges = _achievementService.getUserBadges(userId);
     setState(() => _isLoading = false);
   }
 
-  Future<void> _unlockBadge(String badgeId) async {
-    final newlyUnlocked = await _achievementService.updateBadgeProgress('user_123', badgeId, 9999);
-    if (newlyUnlocked.isNotEmpty) {
-      for (final badge in newlyUnlocked) {
-        AchievementNotificationManager.showUnlockNotification(context, badge);
-      }
-      await _loadAchievements();
-    }
-  }
-
   Future<void> _resetAchievements() async {
-    await _achievementService.clearUserData('user_123');
+    final userId = _userId;
+    if (userId == null) return;
+    await _achievementService.clearUserData(userId);
     await _loadAchievements();
   }
 
@@ -64,7 +63,9 @@ class _AchievementTestPageState extends State<AchievementTestPage> {
           ),
         ],
       ),
-      body: _isLoading
+      body: _userId == null
+          ? const Center(child: Text('请先登录后查看成就'))
+          : _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(16),
@@ -89,15 +90,18 @@ class _AchievementTestPageState extends State<AchievementTestPage> {
                           child: ListTile(
                             leading: CircleAvatar(
                               backgroundColor: badge.color.withOpacity(0.1),
-                              child: Icon(badge.badgeSymbol, color: badge.color),
+                              child: Text(
+                                badge.emoji,
+                                style: const TextStyle(fontSize: 22),
+                              ),
                             ),
                             title: Text(badge.name),
                             subtitle: Text(badge.description),
                             trailing: badge.isUnlocked
                                 ? const Icon(Icons.check_circle, color: Colors.green)
-                                : ElevatedButton(
-                                    onPressed: () => _unlockBadge(badge.id),
-                                    child: const Text('解锁'),
+                                : Text(
+                                    '${(badge.progress * 100).round()}%',
+                                    style: const TextStyle(color: Colors.grey),
                                   ),
                           ),
                         );

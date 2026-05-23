@@ -18,6 +18,7 @@ type Post struct {
 	HandDrawThumbURL string `gorm:"type:text" json:"hand_draw_thumb_url"`
 	// 审核状态：ok | pending | rejected；手绘帖创建时为 pending
 	ModerationStatus string `gorm:"size:32;default:ok;index" json:"moderation_status"`
+	MoodTag          string         `gorm:"size:32;index" json:"mood_tag"` // 情绪标签（可选）
 	Likes     int            `gorm:"default:0" json:"likes"`            // 点赞数
 	Comments  int            `gorm:"default:0" json:"comments"`         // 评论数
 	CreatedAt time.Time      `json:"created_at"`

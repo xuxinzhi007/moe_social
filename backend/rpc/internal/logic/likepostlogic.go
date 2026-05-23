@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"backend/model"
+	"backend/rpc/internal/achievement"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -92,6 +93,17 @@ func (l *LikePostLogic) LikePost(in *super.LikePostReq) (*super.LikePostResp, er
 			return nil, err
 		}
 		post.Likes++
+		engine := achievement.NewEngine(l.svcCtx.DB)
+		unlocks, err := engine.ApplyEvent(tx, post.UserID, achievement.Event{
+			Type:          achievement.EventPostLiked,
+			PostLikeCount: post.Likes,
+		})
+		if err != nil {
+			tx.Rollback()
+			l.Error("成就处理失败:", err)
+			return nil, err
+		}
+		_ = unlocks
 	}
 
 	// 提交事务

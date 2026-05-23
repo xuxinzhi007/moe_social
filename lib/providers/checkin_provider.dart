@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/checkin_status.dart';
 import '../models/checkin_record.dart';
 import '../models/checkin_data.dart';
+import '../models/achievement_unlock.dart';
 import '../models/exp_log.dart';
 import '../services/api_service.dart';
 
@@ -37,6 +38,10 @@ class CheckInProvider extends ChangeNotifier {
 
   bool _isCheckingIn = false;
   bool get isCheckingIn => _isCheckingIn;
+
+  List<AchievementUnlock> _lastUnlocks = [];
+  List<AchievementUnlock> get lastUnlocks =>
+      List.unmodifiable(_lastUnlocks);
 
   bool _isLoadingHistory = false;
   bool get isLoadingHistory => _isLoadingHistory;
@@ -105,7 +110,9 @@ class CheckInProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      final checkInData = await ApiService.checkIn(userId);
+      final checkInResult = await ApiService.checkInWithUnlocks(userId);
+      final checkInData = checkInResult.data;
+      _lastUnlocks = checkInResult.newAchievements;
 
       // 更新签到状态
       _checkInStatus = _checkInStatus?.copyWith(

@@ -244,7 +244,7 @@ class AiCharacterCardService {
 
     try {
       final profile = await AiProviderService().resolveProfile(providerId);
-      if (!profile.isBuiltinBackend) {
+      if (!profile.isBackendOllama) {
         binding['provider_type'] = profile.providerType.value;
         binding['provider_label'] = profile.name;
       } else {

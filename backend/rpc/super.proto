@@ -275,6 +275,7 @@ message CreateVipOrderReq {
 
 message CreateVipOrderResp {
   VipOrder order = 1;
+  repeated AchievementUnlock new_achievements = 2;
 }
 
 message GetVipOrdersReq {
@@ -469,6 +470,7 @@ message CreatePostReq {
   repeated TopicTag topic_tags = 4;
   string hand_draw_card = 5;
   string hand_draw_thumb_url = 6;
+  string mood_tag = 7;
 }
 
 // 更新帖子请求
@@ -507,6 +509,7 @@ message ReportPostResp {
 // 创建帖子响应
 message CreatePostResp {
   Post post = 1;
+  repeated AchievementUnlock new_achievements = 2;
 }
 
 // 点赞帖子请求
@@ -557,6 +560,7 @@ message CreateCommentReq {
 // 创建评论响应
 message CreateCommentResp {
   Comment comment = 1;
+  repeated AchievementUnlock new_achievements = 2;
 }
 
 // 点赞评论请求
@@ -1115,6 +1119,12 @@ service Super {
   rpc GetCheckInHistory(GetCheckInHistoryReq) returns (GetCheckInHistoryResp);
   rpc GetExpLogs(GetExpLogsReq) returns (GetExpLogsResp);
 
+  // 成就系统
+  rpc GetUserAchievements(GetUserAchievementsReq) returns (GetUserAchievementsResp);
+  rpc GetUserUnlockedAchievements(GetUserUnlockedAchievementsReq) returns (GetUserUnlockedAchievementsResp);
+  rpc GetUserAchievementSummary(GetUserAchievementSummaryReq) returns (GetUserAchievementSummaryResp);
+  rpc EnsureUserAchievements(EnsureUserAchievementsReq) returns (EnsureUserAchievementsResp);
+
   // 群组相关服务
   rpc CreateGroup(CreateGroupReq) returns (CreateGroupResp);
   rpc GetGroup(GetGroupReq) returns (GetGroupResp);
@@ -1267,12 +1277,21 @@ message CheckInReq {
   string user_id = 1;
 }
 
+message AchievementUnlock {
+  string badge_id = 1;
+  string name = 2;
+  int32 exp_granted = 3;
+  bool level_up = 4;
+  int32 new_level = 5;
+}
+
 message CheckInResp {
   int32 exp_gained = 1;
   int32 new_level = 2;
   int32 consecutive_days = 3;
   bool level_up = 4;
   string special_reward = 5;
+  repeated AchievementUnlock new_achievements = 6;
 }
 
 message GetUserLevelReq {
@@ -1311,6 +1330,59 @@ message GetExpLogsReq {
 message GetExpLogsResp {
   repeated ExpLogRecord logs = 1;
   int32 total = 2;
+}
+
+// 成就系统
+message AchievementBadgeItem {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string category = 4;
+  string rarity = 5;
+  string condition = 6;
+  int32 required_count = 7;
+  int32 current_count = 8;
+  double progress = 9;
+  bool is_unlocked = 10;
+  string unlocked_at = 11;
+}
+
+message AchievementSummary {
+  int32 total_badges = 1;
+  int32 unlocked_badges = 2;
+  double completion_percentage = 3;
+}
+
+message GetUserAchievementsReq {
+  string user_id = 1;
+}
+
+message GetUserAchievementsResp {
+  repeated AchievementBadgeItem badges = 1;
+}
+
+message GetUserUnlockedAchievementsReq {
+  string user_id = 1;
+}
+
+message GetUserUnlockedAchievementsResp {
+  repeated AchievementBadgeItem badges = 1;
+}
+
+message GetUserAchievementSummaryReq {
+  string user_id = 1;
+}
+
+message GetUserAchievementSummaryResp {
+  AchievementSummary summary = 1;
+}
+
+message EnsureUserAchievementsReq {
+  string user_id = 1;
+}
+
+message EnsureUserAchievementsResp {
+  repeated AchievementUnlock new_achievements = 1;
 }
 
 // ==================== 群组相关消息 ====================
@@ -1510,6 +1582,7 @@ message SendGiftResp {
   bool success = 1;
   string message = 2;
   GiftRecord record = 3;
+  repeated AchievementUnlock new_achievements = 4;
 }
 
 message GetGiftRecordsReq {

@@ -113,7 +113,10 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     } catch (_) {
       if (mounted) {
-        setState(() { _isLoading = false; _isLoadingDetails = false; });
+        setState(() {
+          _isLoading = false;
+          _isLoadingDetails = false;
+        });
         MoeToast.error(context, '加载个人信息失败，请检查网络连接');
       }
     }
@@ -123,14 +126,17 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       final r = await fn().timeout(const Duration(seconds: 5));
       return r['total'] as int? ?? 0;
-    } catch (_) { return 0; }
+    } catch (_) {
+      return 0;
+    }
   }
 
   Future<int> _getPostCount(String userId) async {
     try {
       final viewer = AuthService.currentUser ?? '';
       final r = await ApiService.getPosts(
-        page: 1, pageSize: 1,
+        page: 1,
+        pageSize: 1,
         viewerUserId: viewer.isEmpty ? null : viewer,
         authorUserId: userId,
       ).timeout(const Duration(seconds: 8));
@@ -138,7 +144,9 @@ class _ProfilePageState extends State<ProfilePage> {
       if (t is int) return t;
       if (t is num) return t.toInt();
       return 0;
-    } catch (_) { return 0; }
+    } catch (_) {
+      return 0;
+    }
   }
 
   // ─── Navigation helpers ───────────────────────────────────────────────────
@@ -147,8 +155,9 @@ class _ProfilePageState extends State<ProfilePage> {
     HapticFeedback.lightImpact();
     final u = _user;
     if (u == null) return;
-    Navigator.pushNamed(context, '/edit-profile', arguments: u)
-        .then((_) { if (mounted) _loadUserInfo(); });
+    Navigator.pushNamed(context, '/edit-profile', arguments: u).then((_) {
+      if (mounted) _loadUserInfo();
+    });
   }
 
   void _goToMyPosts() {
@@ -165,7 +174,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _navigateToCheckIn() {
     final userId = AuthService.currentUser;
-    if (userId == null) { MoeToast.error(context, '请先登录'); return; }
+    if (userId == null) {
+      MoeToast.error(context, '请先登录');
+      return;
+    }
     HapticFeedback.lightImpact();
     Navigator.push(context,
         MaterialPageRoute(builder: (_) => CheckInPage(userId: userId)));
@@ -173,7 +185,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _navigateToUserLevel() {
     final userId = AuthService.currentUser;
-    if (userId == null) { MoeToast.error(context, '请先登录'); return; }
+    if (userId == null) {
+      MoeToast.error(context, '请先登录');
+      return;
+    }
     Navigator.push(context,
         MaterialPageRoute(builder: (_) => UserLevelPage(userId: userId)));
   }
@@ -186,10 +201,15 @@ class _ProfilePageState extends State<ProfilePage> {
         builder: (_) => AlertDialog(
           title: const Text('先登录再查看'),
           content: const Text('登录后可查看会员权益、套餐和开通记录。'),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('稍后再说')),
-            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('去登录')),
+            TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('稍后再说')),
+            FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('去登录')),
           ],
         ),
       );
@@ -242,7 +262,8 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               MoeLoading(color: Color(0xFF7F7FD5)),
               SizedBox(height: 16),
-              Text('正在加载个人信息…', style: TextStyle(color: Colors.grey, fontSize: 16)),
+              Text('正在加载个人信息…',
+                  style: TextStyle(color: Colors.grey, fontSize: 16)),
             ],
           ),
         ),
@@ -255,7 +276,8 @@ class _ProfilePageState extends State<ProfilePage> {
         onRefresh: _loadUserInfo,
         color: const Color(0xFF7F7FD5),
         child: CustomScrollView(
-          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics()),
           slivers: [
             _buildSliverAppBar(),
             SliverToBoxAdapter(
@@ -265,21 +287,43 @@ class _ProfilePageState extends State<ProfilePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Quick actions
-                    FadeInUp(delay: const Duration(milliseconds: 50), child: _buildQuickActions()),
+                    FadeInUp(
+                        delay: const Duration(milliseconds: 50),
+                        child: _buildQuickActions()),
                     const SizedBox(height: 18),
                     // Achievements preview
                     if (_user != null) ...[
-                      FadeInUp(delay: const Duration(milliseconds: 80), child: _buildAchievementsPreview()),
+                      FadeInUp(
+                          delay: const Duration(milliseconds: 80),
+                          child: _buildAchievementsPreview()),
                       const SizedBox(height: 18),
                     ],
                     // Cloud & QR
                     FadeInUp(
                       delay: const Duration(milliseconds: 110),
                       child: _menuSection('云端与相册', [
-                        _MenuItem(icon: Icons.cloud_queue_rounded, title: '云端图库', subtitle: '管理你的美好回忆', color: const Color(0xFF86A8E7),
-                          onTap: () async { HapticFeedback.lightImpact(); await Navigator.push(context, MaterialPageRoute(builder: (_) => const CloudGalleryPage())); }),
-                        _MenuItem(icon: Icons.qr_code_rounded, title: '我的二维码', subtitle: '让其他用户扫描添加你', color: const Color(0xFF4ECDC4),
-                          onTap: () { HapticFeedback.lightImpact(); Navigator.pushNamed(context, '/user-qr-code'); }),
+                        _MenuItem(
+                            icon: Icons.cloud_queue_rounded,
+                            title: '云端图库',
+                            subtitle: '管理你的美好回忆',
+                            color: const Color(0xFF86A8E7),
+                            onTap: () async {
+                              HapticFeedback.lightImpact();
+                              await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const CloudGalleryPage()));
+                            }),
+                        _MenuItem(
+                            icon: Icons.qr_code_rounded,
+                            title: '我的二维码',
+                            subtitle: '让其他用户扫描添加你',
+                            color: const Color(0xFF4ECDC4),
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              Navigator.pushNamed(context, '/user-qr-code');
+                            }),
                       ]),
                     ),
                     const SizedBox(height: 20),
@@ -287,8 +331,17 @@ class _ProfilePageState extends State<ProfilePage> {
                     FadeInUp(
                       delay: const Duration(milliseconds: 140),
                       child: _menuSection('实验室与系统', [
-                        _MenuItem(icon: Icons.smart_toy_rounded, title: 'AutoGLM 助手', color: const Color(0xFF7F7FD5),
-                          onTap: () { HapticFeedback.lightImpact(); Navigator.push(context, MaterialPageRoute(builder: (_) => const AutoGLMPage())); },
+                        _MenuItem(
+                          icon: Icons.smart_toy_rounded,
+                          title: 'AutoGLM 助手',
+                          color: const Color(0xFF7F7FD5),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => const AutoGLMPage()));
+                          },
                           trailing: Transform.scale(
                             scale: 0.8,
                             child: Switch(
@@ -296,15 +349,21 @@ class _ProfilePageState extends State<ProfilePage> {
                               activeThumbColor: const Color(0xFF7F7FD5),
                               onChanged: (v) async {
                                 HapticFeedback.lightImpact();
-                                setState(() => AutoGLMService.enableOverlay = v);
+                                setState(
+                                    () => AutoGLMService.enableOverlay = v);
                                 if (v) {
-                                  bool ok = await AutoGLMService.checkOverlayPermission();
+                                  bool ok = await AutoGLMService
+                                      .checkOverlayPermission();
                                   if (!ok) {
-                                    await AutoGLMService.requestOverlayPermission();
-                                    await Future.delayed(const Duration(seconds: 1));
-                                    ok = await AutoGLMService.checkOverlayPermission();
+                                    await AutoGLMService
+                                        .requestOverlayPermission();
+                                    await Future.delayed(
+                                        const Duration(seconds: 1));
+                                    ok = await AutoGLMService
+                                        .checkOverlayPermission();
                                     if (!ok) {
-                                      setState(() => AutoGLMService.enableOverlay = false);
+                                      setState(() =>
+                                          AutoGLMService.enableOverlay = false);
                                       if (!context.mounted) return;
                                       MoeToast.error(context, '需要悬浮窗权限才能显示');
                                       return;
@@ -320,12 +379,38 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                         ),
-                        _MenuItem(icon: Icons.smart_toy_rounded, title: 'AI 助手', subtitle: '对话、创作与辅助功能', color: const Color(0xFFFFB347),
-                          onTap: () { HapticFeedback.lightImpact(); Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentListPage())); }),
-                        _MenuItem(icon: Icons.settings_outlined, title: '通用设置', color: const Color(0xFF90A4AE),
-                          onTap: () { HapticFeedback.lightImpact(); Navigator.pushNamed(context, '/settings').then((_) { if (mounted) _loadUserInfo(); }); }),
-                        _MenuItem(icon: Icons.logout_rounded, title: '退出登录', color: const Color(0xFFFF6B6B), isDestructive: true,
-                          onTap: () { HapticFeedback.lightImpact(); _showLogoutDialog(); }),
+                        _MenuItem(
+                            icon: Icons.smart_toy_rounded,
+                            title: 'AI 助手',
+                            subtitle: '对话、创作与辅助功能',
+                            color: const Color(0xFFFFB347),
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => const AgentListPage()));
+                            }),
+                        _MenuItem(
+                            icon: Icons.settings_outlined,
+                            title: '通用设置',
+                            color: const Color(0xFF90A4AE),
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              Navigator.pushNamed(context, '/settings')
+                                  .then((_) {
+                                if (mounted) _loadUserInfo();
+                              });
+                            }),
+                        _MenuItem(
+                            icon: Icons.logout_rounded,
+                            title: '退出登录',
+                            color: const Color(0xFFFF6B6B),
+                            isDestructive: true,
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              _showLogoutDialog();
+                            }),
                       ]),
                     ),
                   ],
@@ -351,11 +436,19 @@ class _ProfilePageState extends State<ProfilePage> {
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('我的', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+          const Text('我的',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18)),
           if (_isLoadingDetails) ...[
             const SizedBox(width: 8),
-            const SizedBox(width: 12, height: 12,
-              child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white70))),
+            const SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white70))),
           ],
         ],
       ),
@@ -363,13 +456,23 @@ class _ProfilePageState extends State<ProfilePage> {
       actions: [
         IconButton(
           icon: const Icon(Icons.settings_outlined, color: Colors.white),
-          onPressed: () { HapticFeedback.lightImpact(); Navigator.pushNamed(context, '/settings').then((_) { if (mounted) _loadUserInfo(); }); },
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            Navigator.pushNamed(context, '/settings').then((_) {
+              if (mounted) _loadUserInfo();
+            });
+          },
         ),
-        IconButton(icon: const Icon(Icons.edit_outlined, color: Colors.white), onPressed: _openEditProfile),
+        IconButton(
+            icon: const Icon(Icons.edit_outlined, color: Colors.white),
+            onPressed: _openEditProfile),
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: _buildHeader(),
-        stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],
+        stretchModes: const [
+          StretchMode.zoomBackground,
+          StretchMode.blurBackground
+        ],
       ),
     );
   }
@@ -390,7 +493,10 @@ class _ProfilePageState extends State<ProfilePage> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black.withValues(alpha: 0.12)],
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.12)
+                ],
                 stops: const [0.45, 1.0],
               ),
             ),
@@ -414,12 +520,21 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          boxShadow: [BoxShadow(color: primaryGlow.withValues(alpha: 0.38), blurRadius: 28, offset: const Offset(0, 10))],
+                          boxShadow: [
+                            BoxShadow(
+                                color: primaryGlow.withValues(alpha: 0.38),
+                                blurRadius: 28,
+                                offset: const Offset(0, 10))
+                          ],
                         ),
                         child: Container(
                           padding: const EdgeInsets.all(3.5),
-                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                          child: DynamicAvatar(avatarUrl: _user?.avatar ?? '', size: 78, frameId: _user?.equippedFrameId),
+                          decoration: const BoxDecoration(
+                              color: Colors.white, shape: BoxShape.circle),
+                          child: DynamicAvatar(
+                              avatarUrl: _user?.avatar ?? '',
+                              size: 78,
+                              frameId: _user?.equippedFrameId),
                         ),
                       ),
                     ),
@@ -434,20 +549,33 @@ class _ProfilePageState extends State<ProfilePage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Flexible(
-                        child: Text(_user?.username ?? '未知用户', textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.3),
-                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                        child: Text(_user?.username ?? '未知用户',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 0.3),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
                       ),
                       if (_isVip) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(999),
-                            border: Border.all(color: const Color(0xFFFFE082).withValues(alpha: 0.95)),
+                            border: Border.all(
+                                color: const Color(0xFFFFE082)
+                                    .withValues(alpha: 0.95)),
                           ),
-                          child: const Text('VIP', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFFFFF8E1))),
+                          child: const Text('VIP',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFFFFF8E1))),
                         ),
                       ],
                     ],
@@ -463,11 +591,16 @@ class _ProfilePageState extends State<ProfilePage> {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Text(
                         sig.isEmpty ? '点击添加个性签名' : sig,
-                        textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 13, height: 1.35,
-                          color: Colors.white.withValues(alpha: sig.isEmpty ? 0.55 : 0.9),
-                          fontStyle: sig.isEmpty ? FontStyle.italic : FontStyle.normal,
+                          fontSize: 13,
+                          height: 1.35,
+                          color: Colors.white
+                              .withValues(alpha: sig.isEmpty ? 0.55 : 0.9),
+                          fontStyle:
+                              sig.isEmpty ? FontStyle.italic : FontStyle.normal,
                         ),
                       ),
                     ),
@@ -479,17 +612,31 @@ class _ProfilePageState extends State<ProfilePage> {
                   delay: const Duration(milliseconds: 160),
                   child: Wrap(
                     alignment: WrapAlignment.center,
-                    spacing: 8, runSpacing: 8,
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       if ((_user?.moeNo ?? '').isNotEmpty)
                         _glassPill(
-                          onTap: () { Clipboard.setData(ClipboardData(text: _user!.moeNo)); MoeToast.success(context, '已复制 Moe 号'); },
+                          onTap: () {
+                            Clipboard.setData(
+                                ClipboardData(text: _user!.moeNo));
+                            MoeToast.success(context, '已复制 Moe 号');
+                          },
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.badge_outlined, size: 14, color: Colors.white.withValues(alpha: 0.9)),
+                            Icon(Icons.badge_outlined,
+                                size: 14,
+                                color: Colors.white.withValues(alpha: 0.9)),
                             const SizedBox(width: 5),
-                            Text(_user!.moeNo, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+                            Text(_user!.moeNo,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5)),
                             const SizedBox(width: 4),
-                            Icon(Icons.copy_rounded, size: 13, color: Colors.white.withValues(alpha: 0.75)),
+                            Icon(Icons.copy_rounded,
+                                size: 13,
+                                color: Colors.white.withValues(alpha: 0.75)),
                           ]),
                         ),
                       Consumer<UserLevelProvider>(
@@ -498,12 +645,20 @@ class _ProfilePageState extends State<ProfilePage> {
                           if (ul == null) return const SizedBox.shrink();
                           return _glassPill(
                             onTap: _navigateToUserLevel,
-                            child: Row(mainAxisSize: MainAxisSize.min, children: [
-                              const Icon(Icons.stars_rounded, size: 14, color: Colors.white),
+                            child:
+                                Row(mainAxisSize: MainAxisSize.min, children: [
+                              const Icon(Icons.stars_rounded,
+                                  size: 14, color: Colors.white),
                               const SizedBox(width: 5),
-                              Text('Lv.${ul.level} ${ul.levelTitle}', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                              Text('Lv.${ul.level} ${ul.levelTitle}',
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600)),
                               const SizedBox(width: 2),
-                              Icon(Icons.chevron_right_rounded, size: 16, color: Colors.white.withValues(alpha: 0.7)),
+                              Icon(Icons.chevron_right_rounded,
+                                  size: 16,
+                                  color: Colors.white.withValues(alpha: 0.7)),
                             ]),
                           );
                         },
@@ -521,24 +676,46 @@ class _ProfilePageState extends State<ProfilePage> {
                       filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                       child: Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 11, horizontal: 8),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.26),
                           borderRadius: BorderRadius.circular(22),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.42)),
+                          border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.42)),
                         ),
                         child: Row(
                           children: [
-                            Expanded(child: _statItem('动态', '$_postCount', onTap: _goToMyPosts)),
+                            Expanded(
+                                child: _statItem('动态', '$_postCount',
+                                    onTap: _goToMyPosts)),
                             _vDivider(),
                             Expanded(
                               child: _statItem('关注', '$_followingCount',
-                                onTap: _user != null ? () { HapticFeedback.lightImpact(); Navigator.push(context, MaterialPageRoute(builder: (_) => FollowingPage(userId: _user!.id))); } : null),
+                                  onTap: _user != null
+                                      ? () {
+                                          HapticFeedback.lightImpact();
+                                          Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                  builder: (_) => FollowingPage(
+                                                      userId: _user!.id)));
+                                        }
+                                      : null),
                             ),
                             _vDivider(),
                             Expanded(
                               child: _statItem('粉丝', '$_followerCount',
-                                onTap: _user != null ? () { HapticFeedback.lightImpact(); Navigator.push(context, MaterialPageRoute(builder: (_) => FollowersPage(userId: _user!.id))); } : null),
+                                  onTap: _user != null
+                                      ? () {
+                                          HapticFeedback.lightImpact();
+                                          Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                  builder: (_) => FollowersPage(
+                                                      userId: _user!.id)));
+                                        }
+                                      : null),
                             ),
                           ],
                         ),
@@ -558,26 +735,48 @@ class _ProfilePageState extends State<ProfilePage> {
     return Material(
       color: Colors.white.withValues(alpha: 0.18),
       borderRadius: BorderRadius.circular(999),
-      child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(999),
-        child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), child: child)),
+      child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: child)),
     );
   }
 
   Widget _statItem(String label, String value, {VoidCallback? onTap}) {
     final col = Column(mainAxisSize: MainAxisSize.min, children: [
-      Text(value, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: Color(0xFF1E1E2E), height: 1.05)),
+      Text(value,
+          style: const TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF1E1E2E),
+              height: 1.05)),
       const SizedBox(height: 4),
-      Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF1E1E2E).withValues(alpha: 0.52))),
+      Text(label,
+          style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF1E1E2E).withValues(alpha: 0.52))),
     ]);
     if (onTap != null) {
-      return Material(color: Colors.transparent,
-        child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(14),
-          child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), child: col)));
+      return Material(
+          color: Colors.transparent,
+          child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(14),
+              child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: col)));
     }
-    return Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), child: col);
+    return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: col);
   }
 
-  Widget _vDivider() => Container(width: 1, height: 32, color: Colors.white.withValues(alpha: 0.35));
+  Widget _vDivider() => Container(
+      width: 1, height: 32, color: Colors.white.withValues(alpha: 0.35));
 
   // ─── Quick Actions ────────────────────────────────────────────────────────
 
@@ -598,15 +797,17 @@ class _ProfilePageState extends State<ProfilePage> {
         subtitle: '¥${_user?.balance.toStringAsFixed(2) ?? '0.00'}',
         onTap: () {
           HapticFeedback.lightImpact();
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletPage()))
-              .then((_) { if (mounted) _loadUserInfo(); });
+          Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const WalletPage())).then((_) {
+            if (mounted) _loadUserInfo();
+          });
         },
       ),
       _QuickAction(
         icon: _isVip ? Icons.workspace_premium_rounded : Icons.diamond_rounded,
         iconColor: _isVip ? const Color(0xFFFFB347) : const Color(0xFF7F7FD5),
-        label: 'VIP 会员',
-        subtitle: _isVip ? '权益生效中' : '会员特权',
+        label: '会员',
+        subtitle: _isVip ? '权益生效中' : '开通享特权',
         isCta: !_isVip,
         onTap: _openVipCenter,
       ),
@@ -636,30 +837,19 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildQuickActionCard(_QuickAction action) {
     final isCta = action.isCta;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade100),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: action.onTap,
           borderRadius: BorderRadius.circular(20),
           child: SizedBox(
-            height: 132,
+            height: 120,
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -681,10 +871,12 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       const SizedBox(height: 7),
                       SizedBox(
-                        height: 17,
+                        width: double.infinity,
                         child: Text(
                           action.label,
                           textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -695,7 +887,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       const SizedBox(height: 3),
                       SizedBox(
-                        height: 15,
+                        width: double.infinity,
                         child: Text(
                           action.subtitle,
                           textAlign: TextAlign.center,
@@ -711,31 +903,6 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      SizedBox(
-                        height: 14,
-                        child: isCta
-                            ? const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    '立即开通',
-                                    style: TextStyle(
-                                      color: Color(0xFF7F7FD5),
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  SizedBox(width: 2),
-                                  Icon(
-                                    Icons.chevron_right_rounded,
-                                    size: 14,
-                                    color: Color(0xFF7F7FD5),
-                                  ),
-                                ],
-                              )
-                            : const SizedBox.shrink(),
-                      ),
                     ],
                   ),
                   if (action.badge != null && action.badge! > 0)
@@ -745,11 +912,15 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: Container(
                         width: 17,
                         height: 17,
-                        decoration: const BoxDecoration(color: Color(0xFFFF6B35), shape: BoxShape.circle),
+                        decoration: const BoxDecoration(
+                            color: Color(0xFFFF6B35), shape: BoxShape.circle),
                         child: Center(
                           child: Text(
                             '${action.badge}',
-                            style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800),
                           ),
                         ),
                       ),
@@ -768,7 +939,10 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildAchievementsPreview() {
     final stats = _achievementService.getBadgeStatistics(_user!.id);
     final unlocked = _userBadges.where((b) => b.isUnlocked).toList();
-    final inProgress = _userBadges.where((b) => !b.isUnlocked && b.progress > 0).take(3).toList();
+    final inProgress = _userBadges
+        .where((b) => !b.isUnlocked && b.progress > 0)
+        .take(3)
+        .toList();
     final preview = [...unlocked.take(5), ...inProgress];
 
     return GestureDetector(
@@ -778,7 +952,12 @@ class _ProfilePageState extends State<ProfilePage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
-          boxShadow: [BoxShadow(color: const Color(0xFF7F7FD5).withValues(alpha: 0.07), blurRadius: 16, offset: const Offset(0, 6))],
+          boxShadow: [
+            BoxShadow(
+                color: const Color(0xFF7F7FD5).withValues(alpha: 0.07),
+                blurRadius: 16,
+                offset: const Offset(0, 6))
+          ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -790,16 +969,26 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   Row(
                     children: [
-                      const Text('成就徽章', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF333333))),
+                      const Text('成就徽章',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF333333))),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 1),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFB347).withValues(alpha: 0.15),
+                          color:
+                              const Color(0xFFFFB347).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text('${stats.unlockedBadges}/${stats.totalBadges}',
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFE65100))),
+                        child: Text(
+                            '${stats.unlockedBadges}/${stats.totalBadges}',
+                            style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFE65100))),
                       ),
                     ],
                   ),
@@ -816,30 +1005,37 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 9),
                   preview.isEmpty
-                      ? Text('完成任务解锁成就 →', style: TextStyle(color: Colors.grey[400], fontSize: 11.5))
+                      ? Text('完成任务解锁成就 →',
+                          style: TextStyle(
+                              color: Colors.grey[400], fontSize: 11.5))
                       : Wrap(
                           spacing: 6,
                           runSpacing: 6,
                           children: [
                             ...preview.take(4).map(
-                              (b) => SizedBox(
-                                width: 34,
-                                height: 34,
-                                child: MiniBadge(
-                                  badge: b,
-                                  size: 32,
+                                  (b) => SizedBox(
+                                    width: 34,
+                                    height: 34,
+                                    child: MiniBadge(
+                                      badge: b,
+                                      size: 32,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
                             if (preview.length > 4)
                               Container(
                                 width: 34,
                                 height: 34,
-                                decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(10)),
+                                decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(10)),
                                 child: Center(
                                   child: Text(
                                     '+${preview.length - 4}',
-                                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Colors.grey[500]),
+                                    style: TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.grey[500]),
                                   ),
                                 ),
                               ),
@@ -853,26 +1049,37 @@ class _ProfilePageState extends State<ProfilePage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
-                  width: 46, height: 46,
+                  width: 46,
+                  height: 46,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
                       CircularProgressIndicator(
-                        value: stats.totalBadges > 0 ? stats.unlockedBadges / stats.totalBadges : 0,
+                        value: stats.totalBadges > 0
+                            ? stats.unlockedBadges / stats.totalBadges
+                            : 0,
                         strokeWidth: 4,
                         backgroundColor: Colors.grey.shade200,
                         color: const Color(0xFF7F7FD5),
                       ),
                       Text(
                         '${stats.totalBadges > 0 ? (stats.unlockedBadges * 100 ~/ stats.totalBadges) : 0}%',
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF7F7FD5)),
+                        style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF7F7FD5)),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 5),
-                Text('查看', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Colors.grey[500])),
-                Icon(Icons.chevron_right_rounded, size: 17, color: Colors.grey[400]),
+                Text('查看',
+                    style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.grey[500])),
+                Icon(Icons.chevron_right_rounded,
+                    size: 17, color: Colors.grey[400]),
               ],
             ),
           ],
@@ -893,7 +1100,12 @@ class _ProfilePageState extends State<ProfilePage> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [BoxShadow(color: const Color(0xFF7F7FD5).withValues(alpha: 0.07), blurRadius: 16, offset: const Offset(0, 6))],
+            boxShadow: [
+              BoxShadow(
+                  color: const Color(0xFF7F7FD5).withValues(alpha: 0.07),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6))
+            ],
           ),
           child: Column(
             children: items.map((item) {
@@ -905,35 +1117,55 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: InkWell(
                       onTap: item.onTap,
                       borderRadius: BorderRadius.only(
-                        topLeft: items.first == item ? const Radius.circular(24) : Radius.zero,
-                        topRight: items.first == item ? const Radius.circular(24) : Radius.zero,
-                        bottomLeft: isLast ? const Radius.circular(24) : Radius.zero,
-                        bottomRight: isLast ? const Radius.circular(24) : Radius.zero,
+                        topLeft: items.first == item
+                            ? const Radius.circular(24)
+                            : Radius.zero,
+                        topRight: items.first == item
+                            ? const Radius.circular(24)
+                            : Radius.zero,
+                        bottomLeft:
+                            isLast ? const Radius.circular(24) : Radius.zero,
+                        bottomRight:
+                            isLast ? const Radius.circular(24) : Radius.zero,
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 15),
                         child: Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(9),
-                              decoration: BoxDecoration(color: item.color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(13)),
-                              child: Icon(item.icon, color: item.color, size: 21),
+                              decoration: BoxDecoration(
+                                  color: item.color.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(13)),
+                              child:
+                                  Icon(item.icon, color: item.color, size: 21),
                             ),
                             const SizedBox(width: 14),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(item.title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15,
-                                      color: item.isDestructive ? Colors.redAccent : const Color(0xFF333333))),
+                                  Text(item.title,
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 15,
+                                          color: item.isDestructive
+                                              ? Colors.redAccent
+                                              : const Color(0xFF333333))),
                                   if (item.subtitle != null) ...[
                                     const SizedBox(height: 2),
-                                    Text(item.subtitle!, style: TextStyle(fontSize: 12, color: Colors.grey[400])),
+                                    Text(item.subtitle!,
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[400])),
                                   ],
                                 ],
                               ),
                             ),
-                            item.trailing ?? Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey[300], size: 15),
+                            item.trailing ??
+                                Icon(Icons.arrow_forward_ios_rounded,
+                                    color: Colors.grey[300], size: 15),
                           ],
                         ),
                       ),
@@ -942,7 +1174,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   if (!isLast)
                     Padding(
                       padding: const EdgeInsets.only(left: 60, right: 20),
-                      child: Divider(height: 1, color: Colors.grey.withValues(alpha: 0.08)),
+                      child: Divider(
+                          height: 1,
+                          color: Colors.grey.withValues(alpha: 0.08)),
                     ),
                 ],
               );
@@ -954,10 +1188,20 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _sectionTitle(String t) => Row(children: [
-    Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFF7F7FD5), borderRadius: BorderRadius.circular(2))),
-    const SizedBox(width: 10),
-    Text(t, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF2D2D3D), letterSpacing: 0.2)),
-  ]);
+        Container(
+            width: 4,
+            height: 16,
+            decoration: BoxDecoration(
+                color: const Color(0xFF7F7FD5),
+                borderRadius: BorderRadius.circular(2))),
+        const SizedBox(width: 10),
+        Text(t,
+            style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF2D2D3D),
+                letterSpacing: 0.2)),
+      ]);
 }
 
 // ─── Helper data models ──────────────────────────────────────────────────────
@@ -989,5 +1233,12 @@ class _MenuItem {
   final VoidCallback onTap;
   final bool isDestructive;
   final Widget? trailing;
-  _MenuItem({required this.icon, required this.title, this.subtitle, required this.color, required this.onTap, this.isDestructive = false, this.trailing});
+  _MenuItem(
+      {required this.icon,
+      required this.title,
+      this.subtitle,
+      required this.color,
+      required this.onTap,
+      this.isDestructive = false,
+      this.trailing});
 }

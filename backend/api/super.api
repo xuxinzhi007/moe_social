@@ -555,6 +555,7 @@ type CreatePostReq {
 	TopicTags        []TopicTag `json:"topic_tags,optional"`
 	HandDrawCard     string     `json:"hand_draw_card,optional"`
 	HandDrawThumbUrl string     `json:"hand_draw_thumb_url,optional"`
+	MoodTag          string     `json:"mood_tag,optional"`
 }
 
 type ReportPostReq {
@@ -710,7 +711,8 @@ type GetVipPlansResp {
 
 type CreateVipOrderResp {
 	BaseResp
-	Data VipOrder `json:"data"`
+	Data            VipOrder            `json:"data"`
+	NewAchievements []AchievementUnlock `json:"new_achievements,optional"`
 }
 
 type GetVipOrdersResp {
@@ -1008,7 +1010,8 @@ type GetPostResp {
 
 type CreatePostResp {
 	BaseResp
-	Data Post `json:"data"`
+	Data            Post                `json:"data"`
+	NewAchievements []AchievementUnlock `json:"new_achievements,optional"`
 }
 
 type UpdatePostReq {
@@ -1049,7 +1052,8 @@ type GetPostCommentsResp {
 // 评论相关响应
 type CreateCommentResp {
 	BaseResp
-	Data Comment `json:"data"`
+	Data            Comment             `json:"data"`
+	NewAchievements []AchievementUnlock `json:"new_achievements,optional"`
 }
 
 type LikeCommentResp {
@@ -1972,12 +1976,41 @@ type GetExpLogsReq {
 }
 
 // 签到等级相关响应
+type AchievementUnlock {
+	BadgeId    string `json:"badge_id"`
+	Name       string `json:"name"`
+	ExpGranted int    `json:"exp_granted"`
+	LevelUp    bool   `json:"level_up"`
+	NewLevel   int    `json:"new_level"`
+}
+
+type AchievementBadgeItem {
+	Id            string  `json:"id"`
+	Name          string  `json:"name"`
+	Description   string  `json:"description"`
+	Category      string  `json:"category"`
+	Rarity        string  `json:"rarity"`
+	Condition     string  `json:"condition"`
+	RequiredCount int     `json:"required_count"`
+	CurrentCount  int     `json:"current_count"`
+	Progress      float64 `json:"progress"`
+	IsUnlocked    bool    `json:"is_unlocked"`
+	UnlockedAt    string  `json:"unlocked_at,optional"`
+}
+
+type AchievementSummary {
+	TotalBadges          int     `json:"total_badges"`
+	UnlockedBadges       int     `json:"unlocked_badges"`
+	CompletionPercentage float64 `json:"completion_percentage"`
+}
+
 type CheckInData {
-	ExpGained       int    `json:"exp_gained"`
-	NewLevel        int    `json:"new_level"`
-	ConsecutiveDays int    `json:"consecutive_days"`
-	LevelUp         bool   `json:"level_up"`
-	SpecialReward   string `json:"special_reward"`
+	ExpGained       int                 `json:"exp_gained"`
+	NewLevel        int                 `json:"new_level"`
+	ConsecutiveDays int                 `json:"consecutive_days"`
+	LevelUp         bool                `json:"level_up"`
+	SpecialReward   string              `json:"special_reward"`
+	NewAchievements []AchievementUnlock `json:"new_achievements,optional"`
 }
 
 type CheckInResp {
@@ -2026,6 +2059,63 @@ service Super {
 
 	@handler getExpLogs
 	get /api/user/:user_id/exp/logs (GetExpLogsReq) returns (GetExpLogsResp)
+}
+
+type GetUserAchievementsReq {
+	UserId string `path:"user_id"`
+}
+
+type GetUserAchievementsResp {
+	BaseResp
+	Data []AchievementBadgeItem `json:"data"`
+}
+
+type GetUserUnlockedAchievementsReq {
+	UserId string `path:"user_id"`
+}
+
+type GetUserUnlockedAchievementsResp {
+	BaseResp
+	Data []AchievementBadgeItem `json:"data"`
+}
+
+type GetUserAchievementSummaryReq {
+	UserId string `path:"user_id"`
+}
+
+type GetUserAchievementSummaryResp {
+	BaseResp
+	Data AchievementSummary `json:"data"`
+}
+
+type EnsureUserAchievementsReq {
+	UserId string `path:"user_id"`
+}
+
+type EnsureUserAchievementsData {
+	NewAchievements []AchievementUnlock `json:"new_achievements,optional"`
+}
+
+type EnsureUserAchievementsResp {
+	BaseResp
+	Data EnsureUserAchievementsData `json:"data"`
+}
+
+@server (
+	group: achievement
+)
+service Super {
+	@handler getUserAchievements
+	get /api/user/:user_id/achievements (GetUserAchievementsReq) returns (GetUserAchievementsResp)
+
+	@handler getUserUnlockedAchievements
+	get /api/user/:user_id/achievements/unlocked (GetUserUnlockedAchievementsReq) returns (GetUserUnlockedAchievementsResp)
+
+	@handler getUserAchievementSummary
+	get /api/user/:user_id/achievements/summary (GetUserAchievementSummaryReq) returns (GetUserAchievementSummaryResp)
+
+	@handler ensureUserAchievements
+	post /api/user/:user_id/achievements/ensure (EnsureUserAchievementsReq) returns (EnsureUserAchievementsResp)
 }
 
 // 内容生成相关结构
@@ -2150,7 +2240,8 @@ type GetGiftResp {
 
 type SendGiftResp {
 	BaseResp
-	Data GiftRecord `json:"data"`
+	Data            GiftRecord          `json:"data"`
+	NewAchievements []AchievementUnlock `json:"new_achievements,optional"`
 }
 
 type GetGiftRecordsResp {

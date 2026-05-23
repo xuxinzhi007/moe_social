@@ -2,7 +2,8 @@ import 'dart:convert';
 
 enum AiProviderType {
   backendOllama('backend_ollama', '后端 Ollama'),
-  localGguf('local_gguf', '本机 GGUF'),
+  llamaCppServer('llama_cpp_server', '本机 llama.cpp'),
+  localGguf('local_gguf', 'App 内 llama.cpp'),
   openAiCompatible('openai_compatible', 'OpenAI 兼容'),
   ;
 
@@ -21,6 +22,7 @@ enum AiProviderType {
 
 class AiProviderProfile {
   static const String builtinBackendId = 'builtin_backend_ollama';
+  static const String builtinLlamaCppId = 'builtin_local_llama_cpp';
   static const String builtinLocalGgufId = 'builtin_local_gguf';
 
   final String id;
@@ -54,8 +56,12 @@ class AiProviderProfile {
   });
 
   bool get isBuiltinBackend => id == builtinBackendId;
+  bool get isBuiltinLlamaCpp => id == builtinLlamaCppId;
   bool get isBuiltinLocal => id == builtinLocalGgufId;
+  bool get isBuiltin =>
+      isBuiltinBackend || isBuiltinLlamaCpp || isBuiltinLocal;
   bool get isBackendOllama => providerType == AiProviderType.backendOllama;
+  bool get isLlamaCppServer => providerType == AiProviderType.llamaCppServer;
   bool get isLocalGguf => providerType == AiProviderType.localGguf;
   bool get isOpenAiCompatible =>
       providerType == AiProviderType.openAiCompatible;
@@ -156,12 +162,51 @@ class AiProviderProfile {
     );
   }
 
-  /// 本机已下载 GGUF + llama.cpp；默认开启记忆工具（需 Qwen2.5 等支持 JSON 工具调用的模型）。
+  /// 直连本机 llama.cpp / 局域网 OpenAI 兼容网关时可不填 Key。
+  bool get requiresApiKey =>
+      isOpenAiCompatible &&
+      !isLlamaCppServer &&
+      baseUrl.trim().isNotEmpty &&
+      !_looksLikeLocalBaseUrl(baseUrl);
+
+  static bool _looksLikeLocalBaseUrl(String raw) {
+    final uri = Uri.tryParse(raw.trim());
+    if (uri == null || uri.host.isEmpty) return true;
+    final h = uri.host.toLowerCase();
+    return h == 'localhost' ||
+        h == '127.0.0.1' ||
+        h == '10.0.2.2' ||
+        h.startsWith('192.168.') ||
+        h.startsWith('10.');
+  }
+
+  factory AiProviderProfile.builtinLlamaCpp() {
+    final now = DateTime.fromMillisecondsSinceEpoch(0);
+    return AiProviderProfile(
+      id: builtinLlamaCppId,
+      name: '本机 llama.cpp',
+      providerType: AiProviderType.llamaCppServer,
+      baseUrl: 'http://127.0.0.1:6633',
+      defaultModel: 'qwen2',
+      manualModels: const ['qwen2'],
+      useServerMemory: false,
+      supportsSystemMessages: true,
+      supportsStreaming: false,
+      supportsVision: false,
+      supportsToolCalls: false,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  /// 默认本机推理：App 内嵌 llama.cpp（llamadart + GGUF）。
+  static const String defaultLocalProviderId = builtinLocalGgufId;
+
   factory AiProviderProfile.builtinLocalGguf() {
     final now = DateTime.fromMillisecondsSinceEpoch(0);
     return AiProviderProfile(
       id: builtinLocalGgufId,
-      name: '本机 GGUF（离线）',
+      name: 'App 内 llama.cpp',
       providerType: AiProviderType.localGguf,
       baseUrl: '',
       defaultModel: 'qwen2.5-1.5b-instruct-q4',

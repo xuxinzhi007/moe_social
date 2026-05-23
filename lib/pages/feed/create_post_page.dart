@@ -22,7 +22,11 @@ import '../../utils/media_url.dart';
 class CreatePostPage extends StatefulWidget {
   /// 传入已有帖子时进入编辑模式，否则为新建发布模式。
   final Post? initialPost;
-  const CreatePostPage({super.key, this.initialPost});
+
+  /// 发帖成功后关联到该群组（需先发布动态再 link）。
+  final String? groupId;
+
+  const CreatePostPage({super.key, this.initialPost, this.groupId});
 
   @override
   State<CreatePostPage> createState() => _CreatePostPageState();
@@ -37,6 +41,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
   String? _userAvatar;
   List<TopicTag> _selectedTopicTags = [];
   HandDrawCardData? _handDrawCard;
+  String? _selectedMoodTag;
 
   bool get _isEditMode => widget.initialPost != null;
 
@@ -264,17 +269,25 @@ class _CreatePostPageState extends State<CreatePostPage> {
           topicTags: _selectedTopicTags,
           handDrawCardJson: handJson,
           handDrawThumbUrl: thumbUrl,
+          moodTag: _selectedMoodTag ?? '',
         );
 
-        final createdPost = await ApiService.createPost(newPost);
+        final created = await ApiService.createPostWithUnlocks(newPost);
+        final groupId = widget.groupId;
+        if (groupId != null && groupId.isNotEmpty) {
+          await ApiService.linkPostToGroup(
+            groupId: groupId,
+            postId: created.post.id,
+            userId: userId,
+          );
+        }
         try {
-          await AchievementHooks.recordPostPublished(
+          await AchievementHooks.handleServerUnlocks(
             userId,
-            imageCount: imageUrls.length,
-            contentLength: caption.length,
+            created.newAchievements,
           );
         } catch (_) {}
-        return createdPost;
+        return created.post;
       },
       onSuccess: (createdPost) {
         if (!mounted) return;
@@ -539,7 +552,29 @@ class _CreatePostPageState extends State<CreatePostPage> {
                       ],
                     ),
                   
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 24),
+
+                  if (!_isEditMode) ...[
+                    const Text(
+                      '心情（可选）',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        _moodChip('happy', '😊 开心'),
+                        _moodChip('calm', '😌 平静'),
+                        _moodChip('sad', '😢 低落'),
+                        _moodChip('excited', '🤩 兴奋'),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                  ],
 
                   // 话题标签
                   if (_selectedTopicTags.isNotEmpty)
@@ -671,6 +706,21 @@ class _CreatePostPageState extends State<CreatePostPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _moodChip(String value, String label) {
+    final selected = _selectedMoodTag == value;
+    return FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (on) {
+        setState(() {
+          _selectedMoodTag = on ? value : null;
+        });
+      },
+      selectedColor: const Color(0xFF7F7FD5).withOpacity(0.2),
+      checkmarkColor: const Color(0xFF7F7FD5),
     );
   }
 

@@ -489,7 +489,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
         description: desc,
         systemPrompt: prompt,
         modelName: modelForChat,
-        providerProfileId: provider.isBuiltinBackend ? null : provider.id,
+        providerProfileId: provider.isBackendOllama ? null : provider.id,
         lorebookId:
             (_lorebookId?.trim().isNotEmpty ?? false) ? _lorebookId : null,
         persona: _personaController.text.trim(),

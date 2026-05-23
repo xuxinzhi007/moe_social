@@ -1,27 +1,26 @@
 import 'package:flutter/material.dart';
 
-import '../../auth_service.dart';
 import '../../models/topic_tag.dart';
-import '../../widgets/moe_toast.dart';
 import 'community_posts_feed.dart';
 
-/// 话题讨论：与首页动态同一数据源（[ApiService.getPosts]），按官方话题筛选；发动态与首页闭环一致。
-class TopicDiscussionsPage extends StatefulWidget {
-  const TopicDiscussionsPage({super.key});
+/// 讨论 Tab：话题 Chip + 形态筛选 + 广场帖子流（与首页分工：此处偏「逛广场」）。
+class CommunityDiscussionsTab extends StatefulWidget {
+  const CommunityDiscussionsTab({super.key});
 
   @override
-  State<TopicDiscussionsPage> createState() => _TopicDiscussionsPageState();
+  State<CommunityDiscussionsTab> createState() =>
+      _CommunityDiscussionsTabState();
 }
 
-class _TopicDiscussionsPageState extends State<TopicDiscussionsPage> {
+class _CommunityDiscussionsTabState extends State<CommunityDiscussionsTab> {
   TopicTag? _selectedTopic;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Scaffold(
-      backgroundColor: scheme.surfaceContainerLowest,
-      body: Column(
+    return Material(
+      color: scheme.surfaceContainerLowest,
+      child: Column(
         children: [
           _buildTopicChips(scheme),
           Expanded(
@@ -29,26 +28,12 @@ class _TopicDiscussionsPageState extends State<TopicDiscussionsPage> {
               key: ValueKey<String?>(_selectedTopic?.id),
               topicTagId: _selectedTopic?.id,
               showTextSearch: true,
-              emptyTitle: '暂无相关讨论',
-              emptySubtitle: _selectedTopic == null
-                  ? '下拉刷新，或去首页看看最新动态'
-                  : '该话题下还没有帖子，做第一个发帖的人吧',
+              showVisualKindRow: true,
+              emptyTitle: '广场还没有内容',
+              emptySubtitle: '选一个话题标签，或发第一条动态',
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          if (!AuthService.isLoggedIn) {
-            MoeToast.error(context, '请先登录后再发帖');
-            return;
-          }
-          Navigator.pushNamed(context, '/create-post');
-        },
-        icon: const Icon(Icons.edit_rounded),
-        label: const Text('发帖'),
-        backgroundColor: const Color(0xFFAB47BC),
-        foregroundColor: Colors.white,
       ),
     );
   }
@@ -69,7 +54,7 @@ class _TopicDiscussionsPageState extends State<TopicDiscussionsPage> {
                 label: const Text('全部'),
                 selected: sel,
                 onSelected: (_) => setState(() => _selectedTopic = null),
-                selectedColor: scheme.primary.withOpacity(0.14),
+                selectedColor: scheme.primary.withValues(alpha: 0.14),
                 checkmarkColor: scheme.primary,
               ),
             );
@@ -82,7 +67,7 @@ class _TopicDiscussionsPageState extends State<TopicDiscussionsPage> {
               label: Text('#${topic.name}'),
               selected: sel,
               onSelected: (_) => setState(() => _selectedTopic = topic),
-              selectedColor: topic.color.withOpacity(0.14),
+              selectedColor: topic.color.withValues(alpha: 0.14),
               checkmarkColor: topic.color,
             ),
           );

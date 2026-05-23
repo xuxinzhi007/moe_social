@@ -12,6 +12,7 @@ import 'ai_tool_runtime.dart';
 import 'api_service.dart';
 import 'local_llm_chat_service.dart';
 import 'local_model_store.dart';
+import 'llama_cpp_endpoint_config.dart';
 import 'llm_endpoint_config.dart';
 import 'llm_response_parser.dart';
 
@@ -46,7 +47,18 @@ class AiChatGatewayService {
     }
     if (raw.contains('SocketException') ||
         raw.contains('ClientException') ||
-        raw.contains('Connection refused')) {
+        raw.contains('Connection refused') ||
+        raw.contains('Failed to fetch') ||
+        raw.contains('XMLHttpRequest')) {
+      if (raw.contains('6633')) {
+        return '无法连接本机 llama.cpp（端口 6633）。请确认 llama-server 已启动，并在「模型来源 → llama.cpp 设置」检查地址';
+      }
+      if (kIsWeb &&
+          (raw.contains('Failed to fetch') || raw.contains('XMLHttpRequest'))) {
+        return '浏览器跨域 (CORS) 拦截了 llama.cpp / ngrok 响应。'
+            'ngrok 可能已收到 200，但 Chrome 网页版读不到。'
+            '请改用 Windows 桌面 App，或给 llama-server 开启 CORS。';
+      }
       return '无法连接模型服务，请检查网络与 API 地址';
     }
     if (raw.length > 120) {
@@ -124,6 +136,10 @@ class AiChatGatewayService {
         return installed.map((e) => e.id).toList();
       }
 
+      if (profile.isLlamaCppServer || profile.isOpenAiCompatible) {
+        return _fetchOpenAiCompatibleModels(profile);
+      }
+
       if (profile.isBackendOllama) {
         final uri = await LlmEndpointConfig.modelsUri();
         ApiService.logDirectHttp('GET', uri);
@@ -136,26 +152,6 @@ class AiChatGatewayService {
         final decoded = jsonDecode(utf8.decode(response.bodyBytes));
         return _extractModelNames(decoded);
       }
-
-      final apiKey = await AiProviderService().readApiKey(profile.id);
-      if (apiKey.trim().isEmpty) {
-        throw Exception(
-          '请先在「模型来源」中为「${profile.name}」填写 API Key',
-        );
-      }
-      final uri = Uri.parse('${_normalizeBaseUrl(profile.baseUrl)}/models');
-      final response = await http
-          .get(uri, headers: await _buildProviderHeaders(profile, uri: uri))
-          .timeout(const Duration(seconds: 12));
-      if (response.statusCode != 200) {
-        throw Exception('加载模型失败: ${response.statusCode}');
-      }
-      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      final names = _extractModelNames(decoded);
-      if (names.isNotEmpty) {
-        await AiModelsCacheService().write(profile.id, names);
-        return names;
-      }
     } catch (_) {}
 
     final cached = await AiModelsCacheService().read(profile.id);
@@ -166,6 +162,34 @@ class AiChatGatewayService {
       ...profile.manualModels.map((e) => e.trim()).where((e) => e.isNotEmpty),
     ];
     return fallback.toSet().toList();
+  }
+
+  Future<List<String>> _fetchOpenAiCompatibleModels(
+    AiProviderProfile profile,
+  ) async {
+    if (profile.requiresApiKey) {
+      final apiKey = await AiProviderService().readApiKey(profile.id);
+      if (apiKey.trim().isEmpty) {
+        throw Exception(
+          '请先在「模型来源」中为「${profile.name}」填写 API Key',
+        );
+      }
+    }
+    final baseUrl = await _resolveProviderBaseUrl(profile);
+    final uri = Uri.parse('${_normalizeBaseUrl(baseUrl)}/models');
+    final response = await http
+        .get(uri, headers: await _buildProviderHeaders(profile, uri: uri))
+        .timeout(const Duration(seconds: 12));
+    if (response.statusCode != 200) {
+      throw Exception('加载模型失败: ${response.statusCode}');
+    }
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    final names = _extractModelNames(decoded);
+    if (names.isNotEmpty) {
+      await AiModelsCacheService().write(profile.id, names);
+      return names;
+    }
+    throw Exception('models_empty');
   }
 
   Future<String> sendChat({
@@ -200,6 +224,7 @@ class AiChatGatewayService {
       );
     }
 
+    // llama.cpp server 与 OpenAI 兼容中转均走 chat/completions。
     final model = _effectiveModel(agent, profile);
     if (profile.supportsToolCalls) {
       final userId = await AiMemoryTools.resolveUserId();
@@ -358,13 +383,14 @@ class AiChatGatewayService {
     double? topP,
   }) async {
     final apiKey = await AiProviderService().readApiKey(profile.id);
-    if (apiKey.trim().isEmpty) {
+    if (profile.requiresApiKey && apiKey.trim().isEmpty) {
       throw Exception(
         '请先在「模型来源」中为「${profile.name}」填写 API Key，再开始聊天',
       );
     }
+    final baseUrl = await _resolveProviderBaseUrl(profile);
     final uri =
-        Uri.parse('${_normalizeBaseUrl(profile.baseUrl)}/chat/completions');
+        Uri.parse('${_normalizeBaseUrl(baseUrl)}/chat/completions');
     final headers = await _buildProviderHeaders(profile, uri: uri);
     final tools = AiToolRuntime.definitionsForMemory();
     var working = profile.supportsSystemMessages
@@ -472,13 +498,14 @@ class AiChatGatewayService {
     double? topP,
   }) async {
     final apiKey = await AiProviderService().readApiKey(profile.id);
-    if (apiKey.trim().isEmpty) {
+    if (profile.requiresApiKey && apiKey.trim().isEmpty) {
       throw Exception(
         '请先在「模型来源」中为「${profile.name}」填写 API Key，再开始聊天',
       );
     }
+    final baseUrl = await _resolveProviderBaseUrl(profile);
     final uri =
-        Uri.parse('${_normalizeBaseUrl(profile.baseUrl)}/chat/completions');
+        Uri.parse('${_normalizeBaseUrl(baseUrl)}/chat/completions');
     ApiService.logDirectHttp('POST', uri);
     final headers = await _buildProviderHeaders(profile, uri: uri);
     final payloadMessages = profile.supportsSystemMessages
@@ -489,10 +516,11 @@ class AiChatGatewayService {
         .where((m) => m['role'] == 'system')
         .fold<int>(0, (sum, m) => sum + (m['content'] ?? '').length);
     final sendTemp = supportsSamplingParams(model) ? temperature : null;
+    final useStream = profile.supportsStreaming && !profile.isLlamaCppServer;
     if (kDebugMode) {
       debugPrint(
         '📤 [Provider] chat model=$model messages=${payloadMessages.length} '
-        'stream=${profile.supportsStreaming} systemChars=$systemChars '
+        'stream=$useStream systemChars=$systemChars '
         'temperature=${sendTemp ?? 'default'}',
       );
     }
@@ -504,7 +532,7 @@ class AiChatGatewayService {
             _openAiChatBody(
               model: model,
               messages: dynamicMessages,
-              stream: profile.supportsStreaming,
+              stream: useStream,
               temperature: temperature,
               topP: topP,
             ),
@@ -523,7 +551,7 @@ class AiChatGatewayService {
               _openAiChatBody(
                 model: model,
                 messages: _toDynamicMessages(fallbackMessages),
-                stream: profile.supportsStreaming,
+                stream: useStream,
                 temperature: temperature,
                 topP: topP,
               ),
@@ -594,9 +622,11 @@ class AiChatGatewayService {
     AiProviderProfile profile, {
     Uri? uri,
   }) async {
-    final apiKey = _normalizeApiKey(
-      await AiProviderService().readApiKey(profile.id),
-    );
+    final apiKey = profile.isLlamaCppServer
+        ? ''
+        : _normalizeApiKey(
+            await AiProviderService().readApiKey(profile.id),
+          );
     final baseHeaders = {
       'Content-Type': 'application/json',
       if (apiKey.isNotEmpty) 'Authorization': 'Bearer $apiKey',
@@ -653,6 +683,13 @@ class AiChatGatewayService {
       key = key.substring(7).trim();
     }
     return key;
+  }
+
+  Future<String> _resolveProviderBaseUrl(AiProviderProfile profile) async {
+    if (profile.isLlamaCppServer) {
+      return LlamaCppEndpointConfig.resolveRootUrl();
+    }
+    return profile.baseUrl;
   }
 
   String _normalizeBaseUrl(String raw) {

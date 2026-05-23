@@ -5,6 +5,7 @@ import 'dart:io' show File, SocketException;
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart'
     show debugPrint, kDebugMode, kIsWeb, VoidCallback;
+import '../models/community_group.dart';
 import '../models/post.dart';
 import '../models/comment.dart';
 import '../models/user.dart';
@@ -19,6 +20,8 @@ import '../models/checkin_status.dart';
 import '../models/checkin_record.dart';
 import '../models/checkin_data.dart';
 import '../models/exp_log.dart';
+import '../models/achievement_badge.dart';
+import '../models/achievement_unlock.dart';
 import '../models/feishu_public_config.dart';
 import '../utils/jwt_exp.dart';
 import '../utils/config.dart' as moe_launch_config;
@@ -866,13 +869,23 @@ class ApiService {
 
   /// 创建帖子；成功时返回服务端 [Post]（含真实 id、时间等），与列表/详情解析一致。
   static Future<Post> createPost(Post post) async {
+    final created = await createPostWithUnlocks(post);
+    return created.post;
+  }
+
+  /// 创建帖子并解析成就解锁列表。
+  static Future<PostCreateResult> createPostWithUnlocks(Post post) async {
     final result =
         await _request('/api/posts', method: 'POST', body: post.toJson());
     final data = result['data'];
+    final unlocks = AchievementUnlock.listFromJson(result['new_achievements']);
     if (data is Map<String, dynamic>) {
-      return Post.fromJson(data);
+      return PostCreateResult(
+        post: Post.fromJson(data),
+        newAchievements: unlocks,
+      );
     }
-    return post;
+    return PostCreateResult(post: post, newAchievements: unlocks);
   }
 
   /// 更新帖子正文 / 图片 / 话题标签（仅帖子作者可调用）。
@@ -991,6 +1004,112 @@ class ApiService {
     );
   }
 
+  /// GET `/api/community/groups/:group_id`
+  static Future<CommunityGroup> getCommunityGroup({
+    required String groupId,
+    String? userId,
+  }) async {
+    final parts = <String>[];
+    if (userId != null && userId.isNotEmpty) {
+      parts.add('user_id=${Uri.encodeQueryComponent(userId)}');
+    }
+    final q = parts.isEmpty ? '' : '?${parts.join('&')}';
+    final result =
+        await _request('/api/community/groups/$groupId$q');
+    final data = result['data'];
+    if (data is Map<String, dynamic>) {
+      return CommunityGroup.fromApi(data);
+    }
+    if (data is Map) {
+      return CommunityGroup.fromApi(Map<String, dynamic>.from(data));
+    }
+    throw ApiException('群组不存在', 404);
+  }
+
+  /// GET `/api/user/:user_id/community/groups`
+  static Future<List<CommunityGroup>> getUserCommunityGroups({
+    required String userId,
+    int page = 1,
+    int pageSize = 40,
+  }) async {
+    final result = await _request(
+      '/api/user/$userId/community/groups?page=$page&page_size=$pageSize',
+    );
+    final raw = result['data'];
+    if (raw is! List) return [];
+    return raw
+        .map((e) => CommunityGroup.fromApi(
+              Map<String, dynamic>.from(e as Map),
+            ))
+        .toList();
+  }
+
+  /// GET `/api/community/groups/:group_id/members`
+  static Future<Map<String, dynamic>> getGroupMembers({
+    required String groupId,
+    int page = 1,
+    int pageSize = 40,
+  }) async {
+    final result = await _request(
+      '/api/community/groups/$groupId/members?page=$page&page_size=$pageSize',
+    );
+    final raw = result['data'];
+    final list = raw is List
+        ? raw
+            .map((e) => GroupMember.fromApi(
+                  Map<String, dynamic>.from(e as Map),
+                ))
+            .toList()
+        : <GroupMember>[];
+    final totalRaw = result['total'];
+    final total = totalRaw is int
+        ? totalRaw
+        : (totalRaw is num ? totalRaw.toInt() : list.length);
+    return {'members': list, 'total': total};
+  }
+
+  /// GET `/api/community/groups/:group_id/posts`
+  static Future<Map<String, dynamic>> getGroupPosts({
+    required String groupId,
+    int page = 1,
+    int pageSize = 20,
+    String? userId,
+  }) async {
+    final parts = <String>['page=$page', 'page_size=$pageSize'];
+    if (userId != null && userId.isNotEmpty) {
+      parts.add('user_id=${Uri.encodeQueryComponent(userId)}');
+    }
+    final result = await _request(
+      '/api/community/groups/$groupId/posts?${parts.join('&')}',
+    );
+    final raw = result['data'];
+    final list = raw is List
+        ? raw
+            .map((e) => GroupPostEntry.fromApi(
+                  Map<String, dynamic>.from(e as Map),
+                ))
+            .toList()
+        : <GroupPostEntry>[];
+    final totalRaw = result['total'];
+    final total = totalRaw is int
+        ? totalRaw
+        : (totalRaw is num ? totalRaw.toInt() : list.length);
+    return {'posts': list, 'total': total};
+  }
+
+  /// POST `/api/community/groups/:group_id/posts` — 将已发布动态关联到群组。
+  static Future<void> linkPostToGroup({
+    required String groupId,
+    required String postId,
+    required String userId,
+  }) async {
+    await _request(
+      '/api/community/groups/$groupId/posts',
+      method: 'POST',
+      body: {'post_id': postId, 'user_id': userId},
+    );
+  }
+
   // 获取帖子评论（传 viewer 才能返回准确的 is_liked）
   static Future<List<Comment>> getComments(
     String postId, {
@@ -1008,9 +1127,19 @@ class ApiService {
 
   // 添加评论
   static Future<Comment> addComment(Comment comment) async {
+    final created = await addCommentWithUnlocks(comment);
+    return created.comment;
+  }
+
+  static Future<({Comment comment, List<AchievementUnlock> newAchievements})>
+      addCommentWithUnlocks(Comment comment) async {
     final result =
         await _request('/api/comments', method: 'POST', body: comment.toJson());
-    return Comment.fromJson(result['data']);
+    final unlocks = AchievementUnlock.listFromJson(result['new_achievements']);
+    return (
+      comment: Comment.fromJson(result['data'] as Map<String, dynamic>),
+      newAchievements: unlocks,
+    );
   }
 
   // 点赞/取消点赞评论
@@ -1363,9 +1492,19 @@ class ApiService {
 
   // 创建VIP订单
   static Future<VipOrder> createVipOrder(String userId, String planId) async {
+    final r = await createVipOrderWithUnlocks(userId, planId);
+    return r.order;
+  }
+
+  static Future<({VipOrder order, List<AchievementUnlock> newAchievements})>
+      createVipOrderWithUnlocks(String userId, String planId) async {
     final result = await _request('/api/user/$userId/vip/orders',
         method: 'POST', body: {'plan_id': planId});
-    return VipOrder.fromJson(result['data']);
+    final unlocks = AchievementUnlock.listFromJson(result['new_achievements']);
+    return (
+      order: VipOrder.fromJson(result['data'] as Map<String, dynamic>),
+      newAchievements: unlocks,
+    );
   }
 
   // 获取VIP订单列表
@@ -1762,7 +1901,23 @@ class ApiService {
     int quantity = 1,
     String message = '',
   }) async {
-    await _request(
+    await sendGiftWithUnlocks(
+      fromUserId: fromUserId,
+      toUserId: toUserId,
+      giftId: giftId,
+      quantity: quantity,
+      message: message,
+    );
+  }
+
+  static Future<List<AchievementUnlock>> sendGiftWithUnlocks({
+    required String fromUserId,
+    required String toUserId,
+    required String giftId,
+    int quantity = 1,
+    String message = '',
+  }) async {
+    final result = await _request(
       '/api/user/$fromUserId/gifts/send',
       method: 'POST',
       body: {
@@ -1772,6 +1927,7 @@ class ApiService {
         if (message.trim().isNotEmpty) 'message': message.trim(),
       },
     );
+    return AchievementUnlock.listFromJson(result['new_achievements']);
   }
 
   /// POST `/api/user/:user_id/gifts/purchase` — 用心意（余额）购买，增加背包数量
@@ -1837,8 +1993,64 @@ class ApiService {
 
   /// 执行每日签到
   static Future<CheckInData> checkIn(String userId) async {
+    final r = await checkInWithUnlocks(userId);
+    return r.data;
+  }
+
+  static Future<CheckInResult> checkInWithUnlocks(String userId) async {
     final result = await _request('/api/user/$userId/check-in', method: 'POST');
-    return CheckInData.fromJson(result['data']);
+    final data = result['data'] as Map<String, dynamic>;
+    final unlocks = AchievementUnlock.listFromJson(data['new_achievements']);
+    return CheckInResult(
+      data: CheckInData.fromJson(data),
+      newAchievements: unlocks,
+    );
+  }
+
+  // ========== 成就系统 API ==========
+
+  static Future<List<AchievementBadge>> getUserAchievements(String userId) async {
+    final result = await _request('/api/user/$userId/achievements');
+    final raw = result['data'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((e) =>
+            AchievementBadge.fromServerJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  static Future<List<AchievementBadge>> getUserUnlockedAchievements(
+      String userId) async {
+    final result = await _request('/api/user/$userId/achievements/unlocked');
+    final raw = result['data'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((e) =>
+            AchievementBadge.fromServerJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  static Future<BadgeStatistics> getUserAchievementSummary(String userId) async {
+    final result = await _request('/api/user/$userId/achievements/summary');
+    final data = result['data'] as Map<String, dynamic>? ?? {};
+    return BadgeStatistics(
+      totalBadges: (data['total_badges'] as num?)?.toInt() ?? 0,
+      unlockedBadges: (data['unlocked_badges'] as num?)?.toInt() ?? 0,
+      completionPercentage:
+          (data['completion_percentage'] as num?)?.toDouble() ?? 0,
+    );
+  }
+
+  static Future<List<AchievementUnlock>> ensureUserAchievements(
+      String userId) async {
+    final result = await _request(
+      '/api/user/$userId/achievements/ensure',
+      method: 'POST',
+    );
+    final data = result['data'] as Map<String, dynamic>? ?? {};
+    return AchievementUnlock.listFromJson(data['new_achievements']);
   }
 
   /// 获取用户等级信息
