@@ -162,6 +162,19 @@
       color: #fff;
     }
     .content { flex: 1; overflow: auto; padding: 20px 24px 32px; }
+    .content.content-rpc-mode { padding: 0; overflow: hidden; }
+    .content.content-rpc-mode #page-rpc {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 56px);
+    }
+    #page-rpc iframe {
+      flex: 1;
+      width: 100%;
+      border: none;
+      min-height: 0;
+      background: #0f1118;
+    }
     .page { display: none; }
     .page.active { display: block; }
     .page-head { margin-bottom: 18px; }
@@ -537,18 +550,16 @@
     </div>
     <nav>
       <div class="nav-item active" data-page="overview"><span class="nav-icon">◉</span> 总览</div>
+      <div class="nav-item" data-page="rpc"><span class="nav-icon">◫</span> RPC 监控</div>
       <div class="nav-item" data-page="docker"><span class="nav-icon">☁</span> 云服务器 · Docker</div>
       <div class="nav-item" data-page="build"><span class="nav-icon">⚙</span> 构建流水线</div>
       <div class="nav-item" data-page="release"><span class="nav-icon">↑</span> 应用发布</div>
       <div class="nav-item" data-page="jobs"><span class="nav-icon">☰</span> 任务审计</div>
     </nav>
     <div class="tool-links" id="toolLinks">
-      <div class="cap">开发者 / 运维工具</div>
-      <a class="tool-link" data-devtools-tab="feishu" data-hub-tab="feishu">工具台 · 飞书命令</a>
-      <a class="tool-link" data-devtools-tab="rpc" data-hub-tab="rpc">工具台 · RPC 监控</a>
-      <a class="tool-link" data-devtools-tab="memory" data-hub-tab="memory">工具台 · 记忆监控</a>
-      <a class="tool-link here" data-hub-tab="deploy">工具台 · 本页 <span class="ext">↗</span></a>
-      <a class="tool-link" id="linkOpenHub" target="_blank" rel="noopener">在新标签打开工具台</a>
+      <div class="cap">其他工具</div>
+      <a class="tool-link" href="/devtools.html?tab=feishu" target="_blank" rel="noopener">飞书导出命令</a>
+      <a class="tool-link" href="/devtools.html?tab=memory" target="_blank" rel="noopener">记忆系统监控</a>
       <a class="tool-link" id="linkDocsIndex" target="_blank" rel="noopener">文档导航</a>
     </div>
     <div class="sidebar-foot" id="sideOs">—</div>
@@ -566,7 +577,7 @@
       <button type="button" class="btn-sm" onclick="refreshAll()" style="background:var(--panel2);border:1px solid var(--border)">刷新总览</button>
     </header>
     <!-- 连接项仅在抽屉展示，避免与主内容重复 -->
-    <input type="hidden" id="baseUrl" value="http://127.0.0.1:9100" />
+    <input type="hidden" id="baseUrl" value="http://127.0.0.1:19010" />
     <input type="hidden" id="token" />
     <select id="deployTarget" style="display:none" aria-hidden="true"><option value="local">local</option><option value="cloud">cloud</option></select>
 
@@ -838,6 +849,11 @@
         </div>
       </section>
 
+      <!-- RPC 监控 -->
+      <section class="page" id="page-rpc">
+        <iframe src="/tools/rpc-monitor.html?embed=ops" title="RPC 性能监控" loading="lazy"></iframe>
+      </section>
+
       <!-- 任务 -->
       <section class="page" id="page-jobs">
         <div class="split">
@@ -916,7 +932,7 @@
       const u = document.getElementById('baseUrlVisible');
       const t = document.getElementById('tokenVisible');
       const s = document.getElementById('deployTargetVisible');
-      if (u) u.value = document.getElementById('baseUrl').value || 'http://127.0.0.1:9100';
+      if (u) u.value = document.getElementById('baseUrl').value || 'http://127.0.0.1:19010';
       if (t) t.value = document.getElementById('token').value || '';
       if (s) s.value = document.getElementById('deployTarget').value || deployTarget;
     }
@@ -941,7 +957,7 @@
       if (origin && origin.startsWith('http') && !origin.includes('63342')) {
         document.getElementById('baseUrl').value = origin;
       } else if (!localStorage.getItem(LS_URL)) {
-        document.getElementById('baseUrl').value = 'http://127.0.0.1:9100';
+        document.getElementById('baseUrl').value = 'http://127.0.0.1:19010';
       }
       syncConnToDrawer();
     }
@@ -1233,7 +1249,7 @@
         badge.textContent = '未运行';
         const msg = e.name === 'AbortError' ? '连接超时' : (e.message || '无法连接');
         detail.textContent =
-          msg + '。若终端里 make deploy-agent 提示端口占用，说明 9100 仍被旧 Agent 占用——请填写 Token 后若页面曾连上过可点「停止 Agent」，否则在 backend 目录执行 make deploy-agent-stop。';
+          msg + '。若端口占用，在 backend 执行 make deploy-agent-stop（默认 :19010）。';
         btnStop.style.display = 'none';
         if (chip) chip.textContent = 'Agent 离线';
         setOnline(false);
@@ -1297,6 +1313,8 @@
       const nav = document.querySelector(`.nav-item[data-page="${name}"]`);
       if (page) page.classList.add('active');
       if (nav) nav.classList.add('active');
+      const content = document.querySelector('.content');
+      if (content) content.classList.toggle('content-rpc-mode', name === 'rpc');
     }
 
     document.querySelectorAll('.nav-item').forEach(el => {
@@ -1649,32 +1667,18 @@
       }
     }
 
-    function devtoolsHubBase() {
-      try {
-        const saved = localStorage.getItem('moe_devtools_hub');
-        if (saved) return saved.replace(/\/?$/, '');
-      } catch (_) {}
-      if (location.port === '9100' || location.pathname.startsWith('/api/deploy')) {
-        return 'http://127.0.0.1:8765/docs/dev/devtools.html'.replace(/\/devtools\.html$/, '');
-      }
-      return new URL('..', window.location.href).href.replace(/\/$/, '');
-    }
-
     function wireToolLinks() {
-      const hub = devtoolsHubBase();
-      const hubPage = hub.endsWith('devtools.html') ? hub : hub + '/devtools.html';
-      document.querySelectorAll('#toolLinks [data-hub-tab]').forEach((a) => {
-        const tab = a.getAttribute('data-hub-tab');
-        a.href = hubPage + (tab === 'deploy' ? '?tab=deploy' : '?tab=' + tab);
-      });
-      const openHub = document.getElementById('linkOpenHub');
-      if (openHub) openHub.href = hubPage + '?tab=deploy';
       const docsIdx = document.getElementById('linkDocsIndex');
-      if (docsIdx) docsIdx.href = new URL('../index.html', hubPage).href;
+      if (docsIdx) docsIdx.href = '/index.html';
     }
     wireToolLinks();
     offlineSetupHint();
     renderClientPlatform('本机浏览器');
+
+    const initPage = new URLSearchParams(location.search).get('page');
+    if (initPage && document.getElementById('page-' + initPage)) {
+      showPage(initPage);
+    }
 
     loadConn();
     probeAgent().then(() => {
@@ -1683,6 +1687,5 @@
     });
     scheduleAgentProbe();
   </script>
-  <script src="moe-devtools-nav.js" data-current="deploy"></script>
 </body>
 </html>

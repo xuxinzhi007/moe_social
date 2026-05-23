@@ -112,19 +112,9 @@ private_message:
   image_paths_max: 9
 
 
-#线上ip ：
 
-database:
- host: "47.106.175.49"
- port: 3306
- user: "root"
- password: "123456xxZ."
- dbname: "go_react_demo"
- charset: "utf8mb4"
- parseTime: true
- loc: "Local"
 
-#本地ip :
+
 
 # 用户记忆 Phase 2：混合检索 + 多路 embedding（不偏向单一厂商，按链式回退）
 memory:
@@ -157,6 +147,21 @@ memory:
     #     api_key_env: MOE_MEMORY_EMBED_API_KEY
     #     model: text-embedding-3-small
     #     priority: 2
+
+#线上ip ：
+
+database:
+ host: "47.106.175.49"
+ port: 3306
+ user: "root"
+ password: "123456xxZ."
+ dbname: "go_react_demo"
+ charset: "utf8mb4"
+ parseTime: true
+ loc: "Local"
+
+
+#本地ip :
 
 # database:
 #   host: "127.0.0.1"

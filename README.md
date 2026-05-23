@@ -102,7 +102,7 @@ flutter doctor
 cd backend
 cp deploy/config.example.yaml deploy/config.yaml   # 修改 token
 make deploy-agent
-# 浏览器打开 http://127.0.0.1:9100/  （不要只用 IDE 预览 HTML，需 Agent 在线）
+# 浏览器打开 http://127.0.0.1:19010/  （不要只用 IDE 预览 HTML，需 Agent 在线）
 ```
 
 在 `deploy/config.yaml` 的 `targets` 中配置云平台 SSH（示例见 `deploy/config.example.yaml` 的 `cloud`）。详见 [docs/dev/deploy-platform.md](docs/dev/deploy-platform.md)。

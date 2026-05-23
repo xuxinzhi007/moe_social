@@ -1,6 +1,7 @@
 package config
 
 import (
+	"backend/devports"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,20 +12,21 @@ import (
 
 // Config holds Deploy Agent settings.
 type Config struct {
-	Listen             string       `mapstructure:"listen"`
-	Token              string       `mapstructure:"token"`
-	WorkspaceRoot      string       `mapstructure:"workspace_root"`
-	BackendDir         string       `mapstructure:"backend_dir"`
-	ComposeFile        string       `mapstructure:"compose_file"`
-	JobTimeoutSeconds  int              `mapstructure:"job_timeout_seconds"`
+	Listen            string `mapstructure:"listen"`
+	Token             string `mapstructure:"token"`
+	WorkspaceRoot     string `mapstructure:"workspace_root"`
+	BackendDir        string `mapstructure:"backend_dir"`
+	ComposeFile       string `mapstructure:"compose_file"`
+	JobTimeoutSeconds int    `mapstructure:"job_timeout_seconds"`
+	RpcDebugUpstream  string `mapstructure:"rpc_debug_upstream"`
 	// WindowsShell: auto | git-bash | cmd — 本机任务用哪种 shell（auto 检测到 Git 则用 Git Bash）
 	WindowsShell string `mapstructure:"windows_shell"`
 	// LocalPathExtra 追加到本机任务 PATH 最前（Win 用 ; 分隔，Mac/Linux 用 :）
-	LocalPathExtra string `mapstructure:"local_path_extra"`
-	GitHub         GitHubConfig `mapstructure:"github"`
-	Targets            []DeployTarget   `mapstructure:"targets"`
-	workspaceAbs       string
-	backendAbs         string
+	LocalPathExtra string         `mapstructure:"local_path_extra"`
+	GitHub         GitHubConfig   `mapstructure:"github"`
+	Targets        []DeployTarget `mapstructure:"targets"`
+	workspaceAbs   string
+	backendAbs     string
 }
 
 // GitHubConfig optional integration for Releases / Actions.
@@ -58,7 +60,7 @@ func Load(path string) (*Config, error) {
 		return nil, err
 	}
 	if c.Listen == "" {
-		c.Listen = "127.0.0.1:9100"
+		c.Listen = devports.AgentAddr
 	}
 	if c.Token == "" {
 		c.Token = "change-me"
@@ -71,6 +73,9 @@ func Load(path string) (*Config, error) {
 	}
 	if c.JobTimeoutSeconds <= 0 {
 		c.JobTimeoutSeconds = 1800
+	}
+	if c.RpcDebugUpstream == "" {
+		c.RpcDebugUpstream = devports.RpcDebugUpstream()
 	}
 	if c.WorkspaceRoot == "" {
 		c.WorkspaceRoot = "../.."
@@ -219,5 +224,8 @@ func (c *Config) EnvOverride() {
 			be = filepath.Join(c.workspaceAbs, be)
 		}
 		c.backendAbs = filepath.Clean(be)
+	}
+	if v := os.Getenv("MOE_RPC_DEBUG_UPSTREAM"); v != "" {
+		c.RpcDebugUpstream = v
 	}
 }

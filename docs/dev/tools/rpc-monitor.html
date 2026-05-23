@@ -199,6 +199,74 @@
     .dev-nav a:hover { color: #3dd6c3; }
     .dev-nav .sep { color: #5a6478; }
     .dev-nav .here { color: #e9ecf3; font-weight: 600; }
+    /* Moe Ops 内嵌模式（deploy-ops 侧栏 RPC 监控） */
+    body.embed-ops {
+      --bg: #0f1118;
+      --card: #181b26;
+      --primary: #86A8E7;
+      --primary2: #7F7FD5;
+      --mint: #91EAE4;
+      --text: #e8eaf2;
+      --muted: #8b90a8;
+      --danger: #ff6b6b;
+      --ok: #4ade80;
+      --orange: #FFB347;
+      --radius: 14px;
+      --shadow: none;
+    }
+    body.embed-ops .dev-nav { display: none !important; }
+    body.embed-ops header {
+      background: transparent;
+      box-shadow: none;
+      padding: 12px 20px 8px;
+      color: var(--text);
+    }
+    body.embed-ops header h1 { display: none; }
+    body.embed-ops header {
+      padding: 8px 20px 4px;
+    }
+    body.embed-ops header p { display: none; }
+    body.embed-ops .toolbar { margin-top: 10px; gap: 8px; }
+    body.embed-ops .toolbar label { color: var(--muted); font-size: 0.78rem; }
+    body.embed-ops .toolbar input[type="text"] {
+      background: #1e2230;
+      color: var(--text);
+      border: 1px solid rgba(127,127,213,0.22);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+    }
+    body.embed-ops .toolbar input.embed-hidden,
+    body.embed-ops .toolbar label.embed-hidden { display: none; }
+    body.embed-ops .toolbar button {
+      background: #1e2230;
+      color: var(--text);
+      border: 1px solid rgba(127,127,213,0.22);
+      border-radius: 10px;
+      padding: 8px 14px;
+    }
+    body.embed-ops .toolbar button.primary {
+      background: linear-gradient(135deg, #7F7FD5, #86A8E7);
+      color: #fff;
+      border: none;
+      font-weight: 600;
+    }
+    body.embed-ops main { max-width: none; padding: 8px 20px 20px; }
+    body.embed-ops .card {
+      background: var(--card);
+      border: 1px solid rgba(127,127,213,0.18);
+      box-shadow: none;
+    }
+    body.embed-ops .card h2 { color: var(--accent2, #86A8E7); }
+    body.embed-ops .metric .value { color: var(--mint); }
+    body.embed-ops .alert {
+      background: rgba(255, 179, 71, 0.1);
+      border-left-color: var(--orange);
+      color: var(--text);
+    }
+    body.embed-ops .bar-track { background: #1e2230; }
+    body.embed-ops th, body.embed-ops td { border-bottom-color: rgba(127,127,213,0.15); }
+    body.embed-ops .hint { color: var(--muted); }
   </style>
 </head>
 <body>
@@ -222,7 +290,7 @@
     <p>可读指标 + 热点函数，不再直接看 pprof 二进制/原始堆转储</p>
     <div class="toolbar">
       <label for="baseUrl">监控地址</label>
-      <input id="baseUrl" type="text" value="http://127.0.0.1:6060" spellcheck="false" />
+      <input id="baseUrl" type="text" value="http://127.0.0.1:19010" spellcheck="false" />
       <button type="button" class="primary" id="btnRefresh">立即刷新</button>
       <button type="button" id="btnAuto">自动刷新: 开</button>
     </div>
@@ -230,7 +298,8 @@
 
   <main>
     <div class="alert" id="setupHint">
-      使用前请先启动 RPC：<code>cd backend/rpc && go run super.go</code>。
+      使用前请先：<code>make rpc-debug</code>，再 <code>make deploy-agent</code> 打开工具台 → RPC 监控标签。
+      Agent 将 <code>/debug/*</code> 转发到 RPC debug（:19011）。
       然后用浏览器打开本文件（或通过本地静态服务访问）。
     </div>
 
@@ -269,6 +338,9 @@
   </main>
 
   <script>
+    const embedOps = new URLSearchParams(location.search).get('embed') === 'ops';
+    if (embedOps) document.body.classList.add('embed-ops');
+
     const history = { heap: [], maxPoints: 24 };
     let autoTimer = null;
     let autoOn = true;
@@ -403,7 +475,7 @@
         $('setupHint').style.display = 'block';
         $('setupHint').innerHTML =
           '连接失败：' + escapeHtml(e.message) +
-          '。请确认 <code>go run super.go</code> 已启动，且地址为 <code>http://127.0.0.1:6060</code>。';
+          '。请先在本机终端执行 <code>make rpc-debug</code>（:19011），再刷新。';
       }
     }
 
@@ -424,9 +496,33 @@
     });
 
     renderCommands();
+
+    (function initMonitorBaseUrl() {
+      const el = $('baseUrl');
+      if (embedOps || window.location.port === '19010') {
+        el.value = window.location.origin;
+        if (embedOps) {
+          el.classList.add('embed-hidden');
+          const lbl = document.querySelector('label[for="baseUrl"]');
+          if (lbl) lbl.classList.add('embed-hidden');
+          const hint = $('setupHint');
+          if (hint) {
+            hint.innerHTML = '需先执行 <code>make rpc-debug</code>（:19011）；数据经 Agent <code>/debug/*</code> 转发。';
+          }
+        }
+      }
+    })();
+
     refresh();
     scheduleAuto();
   </script>
-  <script src="moe-devtools-nav.js" data-current="rpc"></script>
+  <script>
+    if (!new URLSearchParams(location.search).get('embed')) {
+      const s = document.createElement('script');
+      s.src = 'moe-devtools-nav.js';
+      s.dataset.current = 'rpc';
+      document.body.appendChild(s);
+    }
+  </script>
 </body>
 </html>

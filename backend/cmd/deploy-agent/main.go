@@ -51,7 +51,7 @@ func main() {
 	h := handler.New(cfg)
 	mux := http.NewServeMux()
 	h.RegisterRoutes(mux)
-	handler.MountDashboard(mux, cfg.WorkspaceAbs())
+	handler.MountDevHub(mux, cfg.WorkspaceAbs(), cfg.RpcDebugUpstream)
 
 	srv := &http.Server{Addr: cfg.Listen, Handler: mux}
 	handler.SetRequestShutdown(func() {
@@ -71,7 +71,7 @@ func main() {
 		log.Printf("cloud SSH %s@%s backend_dir=%s compose=%s",
 			cloud.User, cloud.Host, cloud.BackendDir, cloud.ComposeFile)
 	}
-	log.Printf("Dashboard: http://%s/", cfg.Listen)
+	log.Printf("Dashboard: http://%s/  (Moe Ops · deploy · rpc-monitor)", cfg.Listen)
 
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		fmt.Fprintf(os.Stderr, "server: %v\n", err)
