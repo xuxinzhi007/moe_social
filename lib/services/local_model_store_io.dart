@@ -104,7 +104,7 @@ class LocalModelStore {
       try {
         final serverItems = await _fetchServerCatalog();
         for (final item in serverItems) {
-          merged.putIfAbsent(item.id, () => item);
+          merged[item.id] = item;
         }
       } catch (_) {
         // 后端未配置镜像时不影响 HF 直下

@@ -558,6 +558,16 @@ func (s *SuperServer) GetUserGroups(ctx context.Context, in *super.GetUserGroups
 	return l.GetUserGroups(in)
 }
 
+func (s *SuperServer) CreateGroupPost(ctx context.Context, in *super.CreateGroupPostReq) (*super.CreateGroupPostResp, error) {
+	l := logic.NewCreateGroupPostLogic(ctx, s.svcCtx)
+	return l.CreateGroupPost(in)
+}
+
+func (s *SuperServer) GetGroupPosts(ctx context.Context, in *super.GetGroupPostsReq) (*super.GetGroupPostsResp, error) {
+	l := logic.NewGetGroupPostsLogic(ctx, s.svcCtx)
+	return l.GetGroupPosts(in)
+}
+
 // 礼物相关服务
 func (s *SuperServer) GetGifts(ctx context.Context, in *super.GetGiftsReq) (*super.GetGiftsResp, error) {
 	l := logic.NewGetGiftsLogic(ctx, s.svcCtx)

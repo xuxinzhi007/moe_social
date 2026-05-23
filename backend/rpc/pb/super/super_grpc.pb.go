@@ -123,6 +123,8 @@ const (
 	Super_LeaveGroup_FullMethodName                  = "/super.Super/LeaveGroup"
 	Super_GetGroupMembers_FullMethodName             = "/super.Super/GetGroupMembers"
 	Super_GetUserGroups_FullMethodName               = "/super.Super/GetUserGroups"
+	Super_CreateGroupPost_FullMethodName             = "/super.Super/CreateGroupPost"
+	Super_GetGroupPosts_FullMethodName               = "/super.Super/GetGroupPosts"
 	Super_GetGifts_FullMethodName                    = "/super.Super/GetGifts"
 	Super_GetGift_FullMethodName                     = "/super.Super/GetGift"
 	Super_SendGift_FullMethodName                    = "/super.Super/SendGift"
@@ -256,6 +258,8 @@ type SuperClient interface {
 	LeaveGroup(ctx context.Context, in *LeaveGroupReq, opts ...grpc.CallOption) (*LeaveGroupResp, error)
 	GetGroupMembers(ctx context.Context, in *GetGroupMembersReq, opts ...grpc.CallOption) (*GetGroupMembersResp, error)
 	GetUserGroups(ctx context.Context, in *GetUserGroupsReq, opts ...grpc.CallOption) (*GetUserGroupsResp, error)
+	CreateGroupPost(ctx context.Context, in *CreateGroupPostReq, opts ...grpc.CallOption) (*CreateGroupPostResp, error)
+	GetGroupPosts(ctx context.Context, in *GetGroupPostsReq, opts ...grpc.CallOption) (*GetGroupPostsResp, error)
 	// 礼物相关服务
 	GetGifts(ctx context.Context, in *GetGiftsReq, opts ...grpc.CallOption) (*GetGiftsResp, error)
 	GetGift(ctx context.Context, in *GetGiftReq, opts ...grpc.CallOption) (*GetGiftResp, error)
@@ -1315,6 +1319,26 @@ func (c *superClient) GetUserGroups(ctx context.Context, in *GetUserGroupsReq, o
 	return out, nil
 }
 
+func (c *superClient) CreateGroupPost(ctx context.Context, in *CreateGroupPostReq, opts ...grpc.CallOption) (*CreateGroupPostResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateGroupPostResp)
+	err := c.cc.Invoke(ctx, Super_CreateGroupPost_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) GetGroupPosts(ctx context.Context, in *GetGroupPostsReq, opts ...grpc.CallOption) (*GetGroupPostsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetGroupPostsResp)
+	err := c.cc.Invoke(ctx, Super_GetGroupPosts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *superClient) GetGifts(ctx context.Context, in *GetGiftsReq, opts ...grpc.CallOption) (*GetGiftsResp, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetGiftsResp)
@@ -1500,6 +1524,8 @@ type SuperServer interface {
 	LeaveGroup(context.Context, *LeaveGroupReq) (*LeaveGroupResp, error)
 	GetGroupMembers(context.Context, *GetGroupMembersReq) (*GetGroupMembersResp, error)
 	GetUserGroups(context.Context, *GetUserGroupsReq) (*GetUserGroupsResp, error)
+	CreateGroupPost(context.Context, *CreateGroupPostReq) (*CreateGroupPostResp, error)
+	GetGroupPosts(context.Context, *GetGroupPostsReq) (*GetGroupPostsResp, error)
 	// 礼物相关服务
 	GetGifts(context.Context, *GetGiftsReq) (*GetGiftsResp, error)
 	GetGift(context.Context, *GetGiftReq) (*GetGiftResp, error)
@@ -1830,6 +1856,12 @@ func (UnimplementedSuperServer) GetGroupMembers(context.Context, *GetGroupMember
 }
 func (UnimplementedSuperServer) GetUserGroups(context.Context, *GetUserGroupsReq) (*GetUserGroupsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUserGroups not implemented")
+}
+func (UnimplementedSuperServer) CreateGroupPost(context.Context, *CreateGroupPostReq) (*CreateGroupPostResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateGroupPost not implemented")
+}
+func (UnimplementedSuperServer) GetGroupPosts(context.Context, *GetGroupPostsReq) (*GetGroupPostsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGroupPosts not implemented")
 }
 func (UnimplementedSuperServer) GetGifts(context.Context, *GetGiftsReq) (*GetGiftsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGifts not implemented")
@@ -3742,6 +3774,42 @@ func _Super_GetUserGroups_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Super_CreateGroupPost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateGroupPostReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).CreateGroupPost(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_CreateGroupPost_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).CreateGroupPost(ctx, req.(*CreateGroupPostReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_GetGroupPosts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGroupPostsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).GetGroupPosts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_GetGroupPosts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).GetGroupPosts(ctx, req.(*GetGroupPostsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Super_GetGifts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetGiftsReq)
 	if err := dec(in); err != nil {
@@ -4272,6 +4340,14 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserGroups",
 			Handler:    _Super_GetUserGroups_Handler,
+		},
+		{
+			MethodName: "CreateGroupPost",
+			Handler:    _Super_CreateGroupPost_Handler,
+		},
+		{
+			MethodName: "GetGroupPosts",
+			Handler:    _Super_GetGroupPosts_Handler,
 		},
 		{
 			MethodName: "GetGifts",

@@ -1,9 +1,12 @@
 package logic
 
 import (
+	"encoding/json"
+	"strconv"
 	"strings"
 
 	"backend/model"
+	"backend/rpc/pb/super"
 
 	"gorm.io/gorm"
 )
@@ -39,4 +42,49 @@ func moderationStatusOrDefault(s string) string {
 		return "ok"
 	}
 	return s
+}
+
+func buildSuperPost(post model.Post, user model.User, isLiked bool) *super.Post {
+	var images []string
+	if post.Images != "" {
+		_ = json.Unmarshal([]byte(post.Images), &images)
+	}
+
+	username := "未知用户"
+	avatar := "https://picsum.photos/150"
+	if user.Username != "" {
+		username = user.Username
+	} else if user.Email != "" {
+		username = user.Email
+	}
+	if user.Avatar != "" {
+		avatar = user.Avatar
+	}
+
+	topicTags := make([]*super.TopicTag, 0, len(post.TopicTags))
+	for _, tag := range post.TopicTags {
+		topicTags = append(topicTags, &super.TopicTag{
+			Id:        strconv.FormatUint(uint64(tag.ID), 10),
+			Name:      tag.Name,
+			Color:     tag.Color,
+			CreatedAt: tag.CreatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+
+	return &super.Post{
+		Id:               strconv.FormatUint(uint64(post.ID), 10),
+		UserId:           strconv.FormatUint(uint64(post.UserID), 10),
+		UserName:         username,
+		UserAvatar:       avatar,
+		Content:          post.Content,
+		Images:           images,
+		TopicTags:        topicTags,
+		Likes:            int32(post.Likes),
+		Comments:         int32(post.Comments),
+		IsLiked:          isLiked,
+		CreatedAt:        post.CreatedAt.Format("2006-01-02 15:04:05"),
+		HandDrawCard:     post.HandDrawCard,
+		HandDrawThumbUrl: post.HandDrawThumbURL,
+		ModerationStatus: moderationStatusOrDefault(post.ModerationStatus),
+	}
 }

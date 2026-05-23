@@ -102,7 +102,10 @@ class _InterestGroupDetailPageState extends State<InterestGroupDetailPage>
         _loadingPosts = false;
       });
     } catch (e) {
-      if (mounted) setState(() => _loadingPosts = false);
+      if (mounted) {
+        setState(() => _loadingPosts = false);
+        MoeToast.error(context, _err(e));
+      }
     }
   }
 
@@ -152,7 +155,7 @@ class _InterestGroupDetailPageState extends State<InterestGroupDetailPage>
       MoeToast.info(context, '请先加入群组再发帖');
       return;
     }
-  final uid = AuthService.currentUser;
+    final uid = AuthService.currentUser;
     if (uid == null) {
       MoeToast.error(context, '请先登录');
       return;

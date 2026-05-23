@@ -3,11 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../config/hf_local_model_catalog.dart';
 import '../../models/local_llm_model_catalog_item.dart';
-import '../../providers/local_model_catalog_controller.dart';
 import '../../services/local_model_store.dart';
 import '../../widgets/moe_toast.dart';
 
+/// 离线模型：首屏仅同步渲染内置清单，不做自动 refresh，避免 semantics 断言白屏。
 class LocalModelManagerPage extends StatefulWidget {
   const LocalModelManagerPage({super.key});
 
@@ -16,33 +17,65 @@ class LocalModelManagerPage extends StatefulWidget {
 }
 
 class _LocalModelManagerPageState extends State<LocalModelManagerPage> {
-  late final LocalModelCatalogController _controller;
+  final List<LocalLlmModelCatalogItem> _catalog =
+      HfLocalModelCatalog.withResolvedUrls();
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = LocalModelCatalogController();
-    _controller.initAfterFirstFrame();
-  }
+  List<InstalledLocalLlmModel> _installed = const [];
+  bool _syncing = false;
+  String? _downloadingId;
+  double _downloadProgress = 0;
+  CancelToken? _cancelToken;
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  bool _isInstalled(String id) => _installed.any((e) => e.id == id);
 
   Future<void> _onRefresh() async {
-    final ok = await _controller.refresh();
-    if (!mounted) return;
-    if (!ok && _controller.hasCatalog) {
-      MoeToast.error(context, '同步失败，仍显示内置模型清单');
+    if (_syncing) return;
+    setState(() => _syncing = true);
+    try {
+      final catalog = await LocalModelStore.instance.fetchCatalog();
+      final installed = await LocalModelStore.instance.listInstalled();
+      if (!mounted) return;
+      setState(() {
+        if (catalog.isNotEmpty) {
+          // 用 fetch 结果更新（含服务器镜像）
+          _catalog
+            ..clear()
+            ..addAll(catalog);
+        }
+        _installed = installed;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      MoeToast.error(
+        context,
+        '同步失败，仍显示内置清单。${e.toString().replaceFirst('Exception: ', '')}',
+      );
+    } finally {
+      if (mounted) setState(() => _syncing = false);
     }
   }
 
   Future<void> _onDownload(LocalLlmModelCatalogItem item) async {
+    _cancelToken?.cancel();
+    _cancelToken = CancelToken();
+    setState(() {
+      _downloadingId = item.id;
+      _downloadProgress = 0;
+    });
+
     try {
-      await _controller.download(item);
+      await LocalModelStore.instance.downloadModel(
+        item: item,
+        cancelToken: _cancelToken,
+        onProgress: (p) {
+          if (!mounted) return;
+          setState(() => _downloadProgress = p);
+        },
+      );
       if (!mounted) return;
+      final installed = await LocalModelStore.instance.listInstalled();
+      if (!mounted) return;
+      setState(() => _installed = installed);
       final doneMsg =
           kIsWeb ? '「${item.name}」已登记，首次对话时由浏览器下载并缓存' : '「${item.name}」已保存到本机';
       MoeToast.success(context, doneMsg);
@@ -51,12 +84,27 @@ class _LocalModelManagerPageState extends State<LocalModelManagerPage> {
       if (e is DioException && CancelToken.isCancel(e)) {
         MoeToast.error(context, '已取消下载');
       } else {
-        MoeToast.error(
-          context,
-          e.toString().replaceFirst('Exception: ', ''),
-        );
+        MoeToast.error(context, _friendlyDownloadError(e));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _downloadingId = null;
+          _downloadProgress = 0;
+        });
       }
     }
+  }
+
+  String _friendlyDownloadError(Object e) {
+    final raw = e.toString().replaceFirst('Exception: ', '');
+    if (raw.contains('SocketException') ||
+        raw.contains('Connection') ||
+        raw.contains('timed out') ||
+        raw.contains('Failed host lookup')) {
+      return '下载失败：无法连接模型源。国内可开梯子，或让管理员在服务器部署 GGUF 镜像后点刷新。';
+    }
+    return raw;
   }
 
   Future<void> _onDelete(InstalledLocalLlmModel item) async {
@@ -82,13 +130,21 @@ class _LocalModelManagerPageState extends State<LocalModelManagerPage> {
     );
     if (ok != true || !mounted) return;
 
-    await _controller.deleteInstalled(item.id);
+    await LocalModelStore.instance.deleteInstalled(item.id);
     if (!mounted) return;
+    final installed = await LocalModelStore.instance.listInstalled();
+    if (!mounted) return;
+    setState(() => _installed = installed);
     MoeToast.success(context, '已删除');
   }
 
   Future<void> _openHuggingFaceRepo(String repoId) async {
-    final uri = Uri.parse(huggingFaceRepoPageUrl(repoId));
+    final repo = repoId.trim().replaceAll(RegExp(r'^/+|/+$'), '');
+    final uri = Uri.parse(
+      repo.isEmpty
+          ? 'https://huggingface.co/models'
+          : 'https://huggingface.co/$repo',
+    );
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!mounted) return;
       MoeToast.error(context, '无法打开 Hugging Face 页面');
@@ -110,10 +166,8 @@ class _LocalModelManagerPageState extends State<LocalModelManagerPage> {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-          ),
+          Text(subtitle,
+              style: TextStyle(fontSize: 13, color: Colors.grey[600])),
         ],
       ),
     );
@@ -128,22 +182,17 @@ class _LocalModelManagerPageState extends State<LocalModelManagerPage> {
         ),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(
-        kIsWeb
-            ? '模型来自 Hugging Face 开源 GGUF 仓库。登记后首次对话时由浏览器拉取并缓存（需 WebGPU），在 App 内 llama.cpp 推理。'
-            : '模型来自 Hugging Face 开源 GGUF 仓库，下载到本机后在 App 内 llama.cpp 推理。可选合并服务器镜像加速。',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 13,
-          height: 1.4,
-        ),
+      child: const Text(
+        '模型来自 Hugging Face 开源 GGUF（国内下载可能需梯子，或点右上角刷新尝试服务器镜像）。'
+        '安装后在 App 内 llama.cpp 离线推理。',
+        style: TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
       ),
     );
   }
 
   Widget _catalogCard(LocalLlmModelCatalogItem item) {
-    final installed = _controller.isInstalled(item.id);
-    final downloading = _controller.downloadingId == item.id;
+    final installed = _isInstalled(item.id);
+    final downloading = _downloadingId == item.id;
 
     return Container(
       key: ValueKey('catalog_${item.id}'),
@@ -191,35 +240,33 @@ class _LocalModelManagerPageState extends State<LocalModelManagerPage> {
           ),
           const SizedBox(height: 6),
           Text(
-            '${LocalModelStore.formatBytes(item.sizeBytes)} · ${item.parametersB > 0 ? '${item.parametersB}B' : 'GGUF'} · ${LocalModelStore.sourceLabel(item.source)}',
+            '${LocalModelStore.formatBytes(item.sizeBytes)} · '
+            '${item.parametersB > 0 ? '${item.parametersB}B' : 'GGUF'} · '
+            '${LocalModelStore.sourceLabel(item.source)}',
             style: TextStyle(fontSize: 12, color: Colors.grey[600]),
           ),
           if (item.hfRepoId.isNotEmpty) ...[
             const SizedBox(height: 6),
             InkWell(
               onTap: () => _openHuggingFaceRepo(item.hfRepoId),
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
-                  children: [
-                    Icon(Icons.open_in_new_rounded,
-                        size: 14, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        item.hfRepoId,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.blueGrey[700],
-                          decoration: TextDecoration.underline,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+              child: Row(
+                children: [
+                  Icon(Icons.open_in_new_rounded,
+                      size: 14, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      item.hfRepoId,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blueGrey[700],
+                        decoration: TextDecoration.underline,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -228,10 +275,7 @@ class _LocalModelManagerPageState extends State<LocalModelManagerPage> {
             Text(
               item.description,
               style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey[700],
-                height: 1.35,
-              ),
+                  fontSize: 13, color: Colors.grey[700], height: 1.35),
             ),
           ],
           if (downloading) ...[
@@ -239,9 +283,7 @@ class _LocalModelManagerPageState extends State<LocalModelManagerPage> {
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: LinearProgressIndicator(
-                value: _controller.downloadProgress > 0
-                    ? _controller.downloadProgress
-                    : null,
+                value: _downloadProgress > 0 ? _downloadProgress : null,
                 minHeight: 8,
                 color: const Color(0xFF7F7FD5),
                 backgroundColor:
@@ -250,7 +292,7 @@ class _LocalModelManagerPageState extends State<LocalModelManagerPage> {
             ),
             const SizedBox(height: 6),
             Text(
-              '下载中 ${(_controller.downloadProgress * 100).toStringAsFixed(0)}%',
+              '下载中 ${(_downloadProgress * 100).toStringAsFixed(0)}%',
               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
           ],
@@ -269,14 +311,13 @@ class _LocalModelManagerPageState extends State<LocalModelManagerPage> {
               const Spacer(),
               if (downloading)
                 TextButton(
-                  onPressed: _controller.cancelDownload,
+                  onPressed: () => _cancelToken?.cancel(),
                   child: const Text('取消'),
                 )
               else if (!installed)
                 ElevatedButton(
-                  onPressed: _controller.downloadingId != null
-                      ? null
-                      : () => _onDownload(item),
+                  onPressed:
+                      _downloadingId != null ? null : () => _onDownload(item),
                   style: ElevatedButton.styleFrom(
                     elevation: 0,
                     backgroundColor: const Color(0xFF7F7FD5),
@@ -310,10 +351,8 @@ class _LocalModelManagerPageState extends State<LocalModelManagerPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item.name,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
+                Text(item.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),
                 Text(
                   LocalModelStore.formatBytes(item.sizeBytes),
@@ -333,108 +372,56 @@ class _LocalModelManagerPageState extends State<LocalModelManagerPage> {
     );
   }
 
-  Widget _buildBody() {
-    if (!_controller.hasCatalog && _controller.error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _controller.error ?? '',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.redAccent),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _onRefresh,
-                style: ElevatedButton.styleFrom(
-                  elevation: 0,
-                  backgroundColor: const Color(0xFF7F7FD5),
-                  foregroundColor: Colors.white,
-                  shape: const StadiumBorder(),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
+      appBar: AppBar(
+        centerTitle: true,
+        title: const Text('离线模型'),
+        actions: [
+          if (_syncing)
+            const Padding(
+              padding: EdgeInsets.only(right: 8),
+              child: Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
-                child: const Text('重试'),
               ),
+            ),
+          IconButton(
+            onPressed: _syncing ? null : _onRefresh,
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: '刷新已安装列表与服务器镜像',
+          ),
+        ],
+      ),
+      body: ExcludeSemantics(
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _sourceBanner(),
+              const SizedBox(height: 20),
+              if (_installed.isNotEmpty) ...[
+                _sectionTitle(
+                  '已安装',
+                  kIsWeb ? '已登记，推理时由浏览器缓存加载' : '保存在应用私有目录',
+                ),
+                ..._installed.map(_installedCard),
+                const SizedBox(height: 16),
+              ],
+              _sectionTitle(
+                '可下载 (${_catalog.length})',
+                kIsWeb ? '点击登记；首次对话时下载' : '从 Hugging Face 或服务器镜像下载',
+              ),
+              ..._catalog.map(_catalogCard),
             ],
           ),
         ),
-      );
-    }
-
-    return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _sourceBanner(),
-          const SizedBox(height: 20),
-          if (_controller.installed.isNotEmpty) ...[
-            _sectionTitle(
-              '已安装',
-              kIsWeb ? '已登记，推理时由浏览器缓存加载' : '保存在应用私有目录，卸载 App 会一并删除',
-            ),
-            ..._controller.installed.map(_installedCard),
-            const SizedBox(height: 16),
-          ],
-          _sectionTitle(
-            '可下载',
-            _controller.catalog.isEmpty
-                ? '暂无模型条目'
-                : kIsWeb
-                    ? '点击登记；首次对话时下载'
-                    : '默认从 Hugging Face 直下；支持断点续传',
-          ),
-          if (_controller.catalog.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '暂无可下载模型。请检查网络或更新 App 内置模型清单。',
-                style: TextStyle(color: Colors.grey[600], height: 1.4),
-              ),
-            )
-          else
-            ..._controller.catalog.map(_catalogCard),
-        ],
       ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: _controller,
-      builder: (context, _) {
-        return Scaffold(
-          backgroundColor: const Color(0xFFF5F7FA),
-          appBar: AppBar(
-            centerTitle: true,
-            title: const Text('离线模型'),
-            actions: [
-              if (_controller.syncing)
-                const Padding(
-                  padding: EdgeInsets.only(right: 8),
-                  child: Center(
-                    child: SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                ),
-              IconButton(
-                onPressed: _controller.syncing ? null : _onRefresh,
-                icon: const Icon(Icons.refresh_rounded),
-              ),
-            ],
-          ),
-          body: _buildBody(),
-        );
-      },
     );
   }
 }
