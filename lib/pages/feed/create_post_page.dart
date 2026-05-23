@@ -295,7 +295,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final rootCtx = AuthService.navigatorKey.currentContext;
           if (rootCtx != null) {
-            MoeToast.success(rootCtx, '帖子发布成功！(≧∇≦)/');
+            final msg = widget.groupId != null && widget.groupId!.isNotEmpty
+                ? '已发布并同步到群组 ~(≧∇≦)/~'
+                : '帖子发布成功！(≧∇≦)/';
+            MoeToast.success(rootCtx, msg);
           }
         });
       },

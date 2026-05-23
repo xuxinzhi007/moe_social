@@ -1135,6 +1135,8 @@ service Super {
   rpc LeaveGroup(LeaveGroupReq) returns (LeaveGroupResp);
   rpc GetGroupMembers(GetGroupMembersReq) returns (GetGroupMembersResp);
   rpc GetUserGroups(GetUserGroupsReq) returns (GetUserGroupsResp);
+  rpc CreateGroupPost(CreateGroupPostReq) returns (CreateGroupPostResp);
+  rpc GetGroupPosts(GetGroupPostsReq) returns (GetGroupPostsResp);
 
   // 礼物相关服务
   rpc GetGifts(GetGiftsReq) returns (GetGiftsResp);
@@ -1517,6 +1519,38 @@ message GetUserGroupsReq {
 
 message GetUserGroupsResp {
   repeated Group groups = 1;
+  int32 total = 2;
+}
+
+message GroupPost {
+  uint64 id = 1;
+  uint64 group_id = 2;
+  uint64 post_id = 3;
+  Post post = 4;
+  string created_at = 5;
+}
+
+message CreateGroupPostReq {
+  string group_id = 1;
+  string post_id = 2;
+  string user_id = 3;
+}
+
+message CreateGroupPostResp {
+  bool success = 1;
+  string message = 2;
+  GroupPost group_post = 3;
+}
+
+message GetGroupPostsReq {
+  string group_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+  string user_id = 4;
+}
+
+message GetGroupPostsResp {
+  repeated GroupPost posts = 1;
   int32 total = 2;
 }
 

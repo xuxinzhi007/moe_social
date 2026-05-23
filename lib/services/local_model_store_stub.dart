@@ -29,7 +29,7 @@ class LocalModelStore {
       try {
         final serverItems = await _fetchServerCatalog();
         for (final item in serverItems) {
-          merged.putIfAbsent(item.id, () => item);
+          merged[item.id] = item;
         }
       } catch (_) {}
     }

@@ -106,8 +106,7 @@ void _setupErrorHandlers() {
       if (errorCount == 4) {
         debugPrint('... (重复 parentDataDirty 错误已省略，请完全重启 App 后重试)');
       }
-      if (errorCount > 4) return;
-      FlutterError.presentError(details);
+      // 勿 presentError：会在 semantics 阶段再次触发布局，导致每帧崩溃与白屏。
       return;
     }
     errorCount = 0;
