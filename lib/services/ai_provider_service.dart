@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/ai_provider_profile.dart';
 import 'ai_cloud_config_service.dart';
 import 'ai_db_service.dart';
+import 'llama_cpp_endpoint_config.dart';
 
 class AiProviderService {
   AiProviderService._();
@@ -35,7 +36,6 @@ class AiProviderService {
 
   Future<List<AiProviderProfile>> _listLocalProfiles() async {
     final out = <AiProviderProfile>[
-      AiProviderProfile.builtinBackend(),
       AiProviderProfile.builtinLocalGguf(),
     ];
     if (kIsWeb) {
@@ -96,16 +96,32 @@ class AiProviderService {
 
   Future<AiProviderProfile> resolveProfile(String? id) async {
     if (id == null || id.trim().isEmpty) {
-      return AiProviderProfile.builtinBackend();
+      return AiProviderProfile.builtinLocalGguf();
     }
     if (id == AiProviderProfile.builtinLocalGgufId) {
       return AiProviderProfile.builtinLocalGguf();
+    }
+    if (id == AiProviderProfile.builtinLlamaCppId) {
+      return _resolveLlamaCppProfile();
+    }
+    if (id == AiProviderProfile.builtinBackendId) {
+      return AiProviderProfile.builtinBackend();
     }
     final profiles = await listProfiles();
     for (final item in profiles) {
       if (item.id == id) return item;
     }
-    return AiProviderProfile.builtinBackend();
+    return AiProviderProfile.builtinLocalGguf();
+  }
+
+  Future<AiProviderProfile> _resolveLlamaCppProfile() async {
+    final baseUrl = await _llamaCppBaseUrl();
+    return AiProviderProfile.builtinLlamaCpp().copyWith(baseUrl: baseUrl);
+  }
+
+  Future<String> _llamaCppBaseUrl() async {
+    // 延迟 import 避免循环：直接读 endpoint config
+    return LlamaCppEndpointConfig.resolveRootUrl();
   }
 
   Future<void> saveProfile(
@@ -116,7 +132,7 @@ class AiProviderService {
       final prefs = await SharedPreferences.getInstance();
       final current = await listProfiles();
       final customs = current
-          .where((e) => !e.isBuiltinBackend && !e.isBuiltinLocal)
+          .where((e) => !e.isBuiltin)
           .toList();
       final next = <AiProviderProfile>[];
       var replaced = false;
@@ -156,7 +172,7 @@ class AiProviderService {
       final prefs = await SharedPreferences.getInstance();
       final current = await listProfiles();
       final next = current
-          .where((e) => !e.isBuiltinBackend && e.id != profileId)
+          .where((e) => !e.isBuiltin && e.id != profileId)
           .map((e) => e.toMap())
           .toList();
       await prefs.setString(_webProfilesKey, jsonEncode(next));

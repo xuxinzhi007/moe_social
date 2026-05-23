@@ -144,6 +144,10 @@ func autoMigrate() error {
 		&model.UserCheckIn{},
 		&model.CheckInReward{},
 		&model.ExpLog{},
+		&model.AchievementDefinition{},
+		&model.UserAchievementProgress{},
+		&model.UserDailyActivity{},
+		&model.UserWeeklyActivity{},
 		&model.FriendRequest{},
 		// 礼物和社区相关
 		&model.Gift{},
@@ -168,6 +172,9 @@ func autoMigrate() error {
 func postMigrate(db *gorm.DB) {
 	BackfillAllUserMoeNos(db)
 	SeedDefaultGifts(db)
+	if err := SeedAchievementDefinitions(db); err != nil {
+		log.Printf("成就定义种子初始化失败: %v", err)
+	}
 }
 
 // GetDB 获取数据库实例，并确保连接有效

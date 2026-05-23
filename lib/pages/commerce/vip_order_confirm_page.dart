@@ -97,14 +97,19 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
     });
 
     try {
-      final order = await ApiService.createVipOrder(userId, widget.plan.id);
+      final vipResult =
+          await ApiService.createVipOrderWithUnlocks(userId, widget.plan.id);
+      final order = vipResult.order;
       await ApiService.syncUserVipStatus(userId);
       await _refreshBalance();
 
       if (!mounted) {
         return;
       }
-      unawaited(AchievementHooks.recordVipPurchased(userId));
+      unawaited(AchievementHooks.handleServerUnlocks(
+        userId,
+        vipResult.newAchievements,
+      ));
       final action = await _showPaySuccessDialog(order.amount);
       if (!mounted) {
         return;

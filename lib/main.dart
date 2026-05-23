@@ -63,6 +63,8 @@ import 'providers/main_nav_controller.dart';
 import 'pages/feed/home_page.dart';
 import 'pages/community/community_home_page.dart';
 import 'pages/community/community_post_detail_page.dart';
+import 'pages/community/interest_group_detail_page.dart';
+import 'models/community_group.dart';
 import 'pages/checkin/checkin_page.dart';
 import 'pages/settings/virtual_avatar_settings_page.dart';
 import 'pages/settings/message_retention_settings_page.dart';
@@ -99,11 +101,13 @@ void _setupErrorHandlers() {
     final errorString = details.exceptionAsString();
     if (errorString.contains('parentDataDirty')) {
       errorCount++;
-      if (errorCount <= 3) {
-        debugPrint('Flutter Error [$errorCount]: $errorString');
-      } else if (errorCount == 4) {
-        debugPrint('... (重复错误已省略，修复后刷新即可)');
+      debugPrint('Flutter Error [$errorCount]: $errorString');
+      debugPrint('Stack: ${details.stack}');
+      if (errorCount == 4) {
+        debugPrint('... (重复 parentDataDirty 错误已省略，请完全重启 App 后重试)');
       }
+      if (errorCount > 4) return;
+      FlutterError.presentError(details);
       return;
     }
     errorCount = 0;
@@ -354,7 +358,20 @@ class _MyAppState extends State<MyApp> {
             }
             return CheckInPage(userId: userId);
           },
-          '/create-post': (context) => const CreatePostPage(),
+          '/create-post': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            Post? initialPost;
+            String? groupId;
+            if (args is Map) {
+              if (args['initialPost'] is Post) {
+                initialPost = args['initialPost'] as Post;
+              }
+              groupId = args['groupId'] as String?;
+            } else if (args is Post) {
+              initialPost = args;
+            }
+            return CreatePostPage(initialPost: initialPost, groupId: groupId);
+          },
           '/comments': (context) => CommentsPage(
                 postId: ModalRoute.of(context)!.settings.arguments as String,
               ),
@@ -403,6 +420,27 @@ class _MyAppState extends State<MyApp> {
           },
           '/friends': (context) => const FriendsPage(),
           '/community': (context) => const CommunityHomePage(),
+          '/community/group': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is! Map) {
+              return const Scaffold(
+                body: Center(child: Text('缺少群组参数')),
+              );
+            }
+            final groupId = args['groupId'] as String?;
+            if (groupId == null || groupId.isEmpty) {
+              return const Scaffold(
+                body: Center(child: Text('无效的群组 ID')),
+              );
+            }
+            final initial = args['group'] is CommunityGroup
+                ? args['group'] as CommunityGroup
+                : null;
+            return InterestGroupDetailPage(
+              groupId: groupId,
+              initialGroup: initial,
+            );
+          },
           '/post-detail': (context) {
             final args = ModalRoute.of(context)?.settings.arguments;
             if (args is! Map) {

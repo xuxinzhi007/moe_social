@@ -20,6 +20,7 @@ class Post {
   final String handDrawThumbUrl;
   /// ok | pending | rejected
   final String moderationStatus;
+  final String moodTag;
 
   Post({
     required this.id,
@@ -36,6 +37,7 @@ class Post {
     this.handDrawCardJson = '',
     this.handDrawThumbUrl = '',
     this.moderationStatus = '',
+    this.moodTag = '',
   });
 
   /// 展示用正文（独立手绘字段时 content 即为配文；旧数据则去掉内嵌块）
@@ -70,6 +72,7 @@ class Post {
     String? handDrawCardJson,
     String? handDrawThumbUrl,
     String? moderationStatus,
+    String? moodTag,
   }) {
     return Post(
       id: id ?? this.id,
@@ -86,6 +89,7 @@ class Post {
       handDrawCardJson: handDrawCardJson ?? this.handDrawCardJson,
       handDrawThumbUrl: handDrawThumbUrl ?? this.handDrawThumbUrl,
       moderationStatus: moderationStatus ?? this.moderationStatus,
+      moodTag: moodTag ?? this.moodTag,
     );
   }
 
@@ -201,6 +205,9 @@ class Post {
     }
     if (handDrawThumbUrl.isNotEmpty) {
       json['hand_draw_thumb_url'] = handDrawThumbUrl;
+    }
+    if (moodTag.isNotEmpty) {
+      json['mood_tag'] = moodTag;
     }
 
     return json;

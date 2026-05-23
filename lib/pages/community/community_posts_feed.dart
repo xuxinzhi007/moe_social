@@ -70,6 +70,7 @@ class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
         page: 1,
         pageSize: 30,
         viewerUserId: viewer,
+        feedMode: 'latest',
         topicTagId: widget.topicTagId,
       );
       if (!mounted) return;
@@ -257,7 +258,7 @@ class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
           label: Text(label),
           selected: sel,
           onSelected: (_) => setState(() => _visualKind = k),
-          selectedColor: scheme.primary.withOpacity(0.12),
+          selectedColor: scheme.primary.withValues(alpha: 0.12),
           checkmarkColor: scheme.primary,
         ),
       );

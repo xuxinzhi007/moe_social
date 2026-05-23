@@ -110,6 +110,10 @@ const (
 	Super_GetCheckInStatus_FullMethodName            = "/super.Super/GetCheckInStatus"
 	Super_GetCheckInHistory_FullMethodName           = "/super.Super/GetCheckInHistory"
 	Super_GetExpLogs_FullMethodName                  = "/super.Super/GetExpLogs"
+	Super_GetUserAchievements_FullMethodName         = "/super.Super/GetUserAchievements"
+	Super_GetUserUnlockedAchievements_FullMethodName = "/super.Super/GetUserUnlockedAchievements"
+	Super_GetUserAchievementSummary_FullMethodName   = "/super.Super/GetUserAchievementSummary"
+	Super_EnsureUserAchievements_FullMethodName      = "/super.Super/EnsureUserAchievements"
 	Super_CreateGroup_FullMethodName                 = "/super.Super/CreateGroup"
 	Super_GetGroup_FullMethodName                    = "/super.Super/GetGroup"
 	Super_GetGroups_FullMethodName                   = "/super.Super/GetGroups"
@@ -237,6 +241,11 @@ type SuperClient interface {
 	GetCheckInStatus(ctx context.Context, in *GetCheckInStatusReq, opts ...grpc.CallOption) (*GetCheckInStatusResp, error)
 	GetCheckInHistory(ctx context.Context, in *GetCheckInHistoryReq, opts ...grpc.CallOption) (*GetCheckInHistoryResp, error)
 	GetExpLogs(ctx context.Context, in *GetExpLogsReq, opts ...grpc.CallOption) (*GetExpLogsResp, error)
+	// 成就系统
+	GetUserAchievements(ctx context.Context, in *GetUserAchievementsReq, opts ...grpc.CallOption) (*GetUserAchievementsResp, error)
+	GetUserUnlockedAchievements(ctx context.Context, in *GetUserUnlockedAchievementsReq, opts ...grpc.CallOption) (*GetUserUnlockedAchievementsResp, error)
+	GetUserAchievementSummary(ctx context.Context, in *GetUserAchievementSummaryReq, opts ...grpc.CallOption) (*GetUserAchievementSummaryResp, error)
+	EnsureUserAchievements(ctx context.Context, in *EnsureUserAchievementsReq, opts ...grpc.CallOption) (*EnsureUserAchievementsResp, error)
 	// 群组相关服务
 	CreateGroup(ctx context.Context, in *CreateGroupReq, opts ...grpc.CallOption) (*CreateGroupResp, error)
 	GetGroup(ctx context.Context, in *GetGroupReq, opts ...grpc.CallOption) (*GetGroupResp, error)
@@ -1176,6 +1185,46 @@ func (c *superClient) GetExpLogs(ctx context.Context, in *GetExpLogsReq, opts ..
 	return out, nil
 }
 
+func (c *superClient) GetUserAchievements(ctx context.Context, in *GetUserAchievementsReq, opts ...grpc.CallOption) (*GetUserAchievementsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserAchievementsResp)
+	err := c.cc.Invoke(ctx, Super_GetUserAchievements_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) GetUserUnlockedAchievements(ctx context.Context, in *GetUserUnlockedAchievementsReq, opts ...grpc.CallOption) (*GetUserUnlockedAchievementsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserUnlockedAchievementsResp)
+	err := c.cc.Invoke(ctx, Super_GetUserUnlockedAchievements_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) GetUserAchievementSummary(ctx context.Context, in *GetUserAchievementSummaryReq, opts ...grpc.CallOption) (*GetUserAchievementSummaryResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserAchievementSummaryResp)
+	err := c.cc.Invoke(ctx, Super_GetUserAchievementSummary_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) EnsureUserAchievements(ctx context.Context, in *EnsureUserAchievementsReq, opts ...grpc.CallOption) (*EnsureUserAchievementsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EnsureUserAchievementsResp)
+	err := c.cc.Invoke(ctx, Super_EnsureUserAchievements_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *superClient) CreateGroup(ctx context.Context, in *CreateGroupReq, opts ...grpc.CallOption) (*CreateGroupResp, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateGroupResp)
@@ -1436,6 +1485,11 @@ type SuperServer interface {
 	GetCheckInStatus(context.Context, *GetCheckInStatusReq) (*GetCheckInStatusResp, error)
 	GetCheckInHistory(context.Context, *GetCheckInHistoryReq) (*GetCheckInHistoryResp, error)
 	GetExpLogs(context.Context, *GetExpLogsReq) (*GetExpLogsResp, error)
+	// 成就系统
+	GetUserAchievements(context.Context, *GetUserAchievementsReq) (*GetUserAchievementsResp, error)
+	GetUserUnlockedAchievements(context.Context, *GetUserUnlockedAchievementsReq) (*GetUserUnlockedAchievementsResp, error)
+	GetUserAchievementSummary(context.Context, *GetUserAchievementSummaryReq) (*GetUserAchievementSummaryResp, error)
+	EnsureUserAchievements(context.Context, *EnsureUserAchievementsReq) (*EnsureUserAchievementsResp, error)
 	// 群组相关服务
 	CreateGroup(context.Context, *CreateGroupReq) (*CreateGroupResp, error)
 	GetGroup(context.Context, *GetGroupReq) (*GetGroupResp, error)
@@ -1737,6 +1791,18 @@ func (UnimplementedSuperServer) GetCheckInHistory(context.Context, *GetCheckInHi
 }
 func (UnimplementedSuperServer) GetExpLogs(context.Context, *GetExpLogsReq) (*GetExpLogsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetExpLogs not implemented")
+}
+func (UnimplementedSuperServer) GetUserAchievements(context.Context, *GetUserAchievementsReq) (*GetUserAchievementsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserAchievements not implemented")
+}
+func (UnimplementedSuperServer) GetUserUnlockedAchievements(context.Context, *GetUserUnlockedAchievementsReq) (*GetUserUnlockedAchievementsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserUnlockedAchievements not implemented")
+}
+func (UnimplementedSuperServer) GetUserAchievementSummary(context.Context, *GetUserAchievementSummaryReq) (*GetUserAchievementSummaryResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserAchievementSummary not implemented")
+}
+func (UnimplementedSuperServer) EnsureUserAchievements(context.Context, *EnsureUserAchievementsReq) (*EnsureUserAchievementsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EnsureUserAchievements not implemented")
 }
 func (UnimplementedSuperServer) CreateGroup(context.Context, *CreateGroupReq) (*CreateGroupResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateGroup not implemented")
@@ -3442,6 +3508,78 @@ func _Super_GetExpLogs_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Super_GetUserAchievements_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserAchievementsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).GetUserAchievements(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_GetUserAchievements_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).GetUserAchievements(ctx, req.(*GetUserAchievementsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_GetUserUnlockedAchievements_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserUnlockedAchievementsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).GetUserUnlockedAchievements(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_GetUserUnlockedAchievements_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).GetUserUnlockedAchievements(ctx, req.(*GetUserUnlockedAchievementsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_GetUserAchievementSummary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserAchievementSummaryReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).GetUserAchievementSummary(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_GetUserAchievementSummary_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).GetUserAchievementSummary(ctx, req.(*GetUserAchievementSummaryReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_EnsureUserAchievements_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EnsureUserAchievementsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).EnsureUserAchievements(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_EnsureUserAchievements_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).EnsureUserAchievements(ctx, req.(*EnsureUserAchievementsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Super_CreateGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateGroupReq)
 	if err := dec(in); err != nil {
@@ -4082,6 +4220,22 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetExpLogs",
 			Handler:    _Super_GetExpLogs_Handler,
+		},
+		{
+			MethodName: "GetUserAchievements",
+			Handler:    _Super_GetUserAchievements_Handler,
+		},
+		{
+			MethodName: "GetUserUnlockedAchievements",
+			Handler:    _Super_GetUserUnlockedAchievements_Handler,
+		},
+		{
+			MethodName: "GetUserAchievementSummary",
+			Handler:    _Super_GetUserAchievementSummary_Handler,
+		},
+		{
+			MethodName: "EnsureUserAchievements",
+			Handler:    _Super_EnsureUserAchievements_Handler,
 		},
 		{
 			MethodName: "CreateGroup",

@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"backend/model"
+	"backend/rpc/internal/achievement"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -80,6 +81,11 @@ func (l *FollowUserLogic) FollowUser(in *super.FollowUserReq) (*super.FollowUser
 	// TODO: 实现关注通知逻辑
 
 	l.Debug("关注用户成功:", followerID, "关注了", followingID)
+
+	tx := l.svcCtx.DB.Begin()
+	engine := achievement.NewEngine(l.svcCtx.DB)
+	_, _ = engine.ApplyEvent(tx, uint(followingID), achievement.Event{Type: achievement.EventNewFollower})
+	_ = tx.Commit()
 
 	return &super.FollowUserResp{
 		Success: true,

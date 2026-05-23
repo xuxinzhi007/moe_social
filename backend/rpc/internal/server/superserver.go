@@ -491,6 +491,27 @@ func (s *SuperServer) GetExpLogs(ctx context.Context, in *super.GetExpLogsReq) (
 	return l.GetExpLogs(in)
 }
 
+// 成就系统
+func (s *SuperServer) GetUserAchievements(ctx context.Context, in *super.GetUserAchievementsReq) (*super.GetUserAchievementsResp, error) {
+	l := logic.NewGetUserAchievementsLogic(ctx, s.svcCtx)
+	return l.GetUserAchievements(in)
+}
+
+func (s *SuperServer) GetUserUnlockedAchievements(ctx context.Context, in *super.GetUserUnlockedAchievementsReq) (*super.GetUserUnlockedAchievementsResp, error) {
+	l := logic.NewGetUserUnlockedAchievementsLogic(ctx, s.svcCtx)
+	return l.GetUserUnlockedAchievements(in)
+}
+
+func (s *SuperServer) GetUserAchievementSummary(ctx context.Context, in *super.GetUserAchievementSummaryReq) (*super.GetUserAchievementSummaryResp, error) {
+	l := logic.NewGetUserAchievementSummaryLogic(ctx, s.svcCtx)
+	return l.GetUserAchievementSummary(in)
+}
+
+func (s *SuperServer) EnsureUserAchievements(ctx context.Context, in *super.EnsureUserAchievementsReq) (*super.EnsureUserAchievementsResp, error) {
+	l := logic.NewEnsureUserAchievementsLogic(ctx, s.svcCtx)
+	return l.EnsureUserAchievements(in)
+}
+
 // 群组相关服务
 func (s *SuperServer) CreateGroup(ctx context.Context, in *super.CreateGroupReq) (*super.CreateGroupResp, error) {
 	l := logic.NewCreateGroupLogic(ctx, s.svcCtx)

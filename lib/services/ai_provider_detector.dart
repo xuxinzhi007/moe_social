@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../models/ai_provider_profile.dart';
 import 'api_service.dart';
 import 'ai_provider_service.dart';
+import 'llama_cpp_endpoint_config.dart';
 
 /// 探测中转站 Base URL：规范化地址、识别 OpenAI 兼容类型、拉取模型列表。
 class AiProviderDetectResult {
@@ -70,6 +71,18 @@ abstract final class AiProviderDetector {
           .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 401 || response.statusCode == 403) {
+        final localNoKey = apiKey.trim().isEmpty &&
+            LlamaCppEndpointConfig.isLocalBaseUrl(normalized);
+        if (localNoKey) {
+          return AiProviderDetectResult(
+            success: false,
+            message: '本地服务返回 HTTP ${response.statusCode}。'
+                'llama-server 通常无需 Key；若仍失败请检查 server 日志。',
+            normalizedBaseUrl: normalized,
+            suggestedType: AiProviderType.llamaCppServer,
+            suggestedName: suggestedName,
+          );
+        }
         return AiProviderDetectResult(
           success: false,
           message: '认证失败（HTTP ${response.statusCode}），请检查 API Key',

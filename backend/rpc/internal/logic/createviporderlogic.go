@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"backend/model"
+	"backend/rpc/internal/achievement"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
@@ -31,6 +32,7 @@ func NewCreateVipOrderLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cr
 // 用户相关服务
 func (l *CreateVipOrderLogic) CreateVipOrder(in *super.CreateVipOrderReq) (*super.CreateVipOrderResp, error) {
 	var order model.VipOrder
+	var achUnlocks []achievement.UnlockResult
 	err := l.svcCtx.DB.Transaction(func(tx *gorm.DB) error {
 		// 验证用户是否存在并加锁
 		var user model.User
@@ -111,6 +113,13 @@ func (l *CreateVipOrderLogic) CreateVipOrder(in *super.CreateVipOrderReq) (*supe
 
 		// 预加载套餐，供响应使用
 		order.Plan = plan
+
+		engine := achievement.NewEngine(l.svcCtx.DB)
+		unlocks, err := engine.ApplyEvent(tx, user.ID, achievement.Event{Type: achievement.EventVipActivated})
+		if err != nil {
+			return err
+		}
+		achUnlocks = unlocks
 		return nil
 	})
 	if err != nil {
@@ -118,6 +127,7 @@ func (l *CreateVipOrderLogic) CreateVipOrder(in *super.CreateVipOrderReq) (*supe
 	}
 
 	return &super.CreateVipOrderResp{
+		NewAchievements: achievement.UnlocksToProto(achUnlocks),
 		Order: &super.VipOrder{
 			Id:        strconv.FormatUint(uint64(order.ID), 10),
 			UserId:    in.UserId,

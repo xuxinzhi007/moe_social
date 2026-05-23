@@ -51,8 +51,8 @@ class _AiModelBindingSheetBody extends StatefulWidget {
 class _AiModelBindingSheetBodyState extends State<_AiModelBindingSheetBody> {
   final _modelController = TextEditingController();
 
-  List<AiProviderProfile> _profiles = [AiProviderProfile.builtinBackend()];
-  String _profileId = AiProviderProfile.builtinBackendId;
+  List<AiProviderProfile> _profiles = [AiProviderProfile.builtinLocalGguf()];
+  String _profileId = AiProviderProfile.builtinLocalGgufId;
   List<String> _models = [];
   bool _loadingProfiles = true;
   bool _loadingModels = false;
@@ -84,9 +84,9 @@ class _AiModelBindingSheetBodyState extends State<_AiModelBindingSheetBody> {
     try {
       final profiles = await AiProviderService().listProfiles();
       final lastId = await AiProviderService().readLastSelectedProfileId();
-      var selected = lastId ?? AiProviderProfile.builtinBackendId;
+      var selected = lastId ?? AiProviderProfile.builtinLocalGgufId;
       if (!profiles.any((p) => p.id == selected)) {
-        selected = AiProviderProfile.builtinBackendId;
+        selected = AiProviderProfile.builtinLocalGgufId;
       }
       if (!mounted) return;
       setState(() {
@@ -107,7 +107,9 @@ class _AiModelBindingSheetBodyState extends State<_AiModelBindingSheetBody> {
     if (!background && mounted && localIds.isNotEmpty) {
       setState(() => _models = localIds);
     }
-    if (!profile.isBackendOllama && localIds.isNotEmpty && !background) {
+    if (profile.isOpenAiCompatible &&
+        localIds.isNotEmpty &&
+        !background) {
       return;
     }
 

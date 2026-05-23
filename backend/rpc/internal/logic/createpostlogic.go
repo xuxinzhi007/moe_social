@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
-
 	"backend/model"
+	"backend/rpc/internal/achievement"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
@@ -29,103 +29,103 @@ func NewCreatePostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Create
 }
 
 func (l *CreatePostLogic) CreatePost(in *super.CreatePostReq) (*super.CreatePostResp, error) {
-	// 1. 参数验证
 	if in.UserId == "" {
 		return nil, errorx.New(400, "用户ID不能为空")
 	}
-	
 	if in.Content == "" && in.HandDrawCard == "" && len(in.Images) == 0 {
 		return nil, errorx.New(400, "请填写文字、上传图片或添加手绘卡片")
 	}
-	
-	// 2. 转换用户ID
+
 	userID, err := strconv.ParseUint(in.UserId, 10, 32)
 	if err != nil {
 		return nil, errorx.New(400, "无效的用户ID")
 	}
-	
-	// 3. 查找用户，确保用户存在
+
 	var user model.User
-	err = l.svcCtx.DB.Where("id = ?", userID).First(&user).Error
-	if err != nil {
+	if err := l.svcCtx.DB.Where("id = ?", userID).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, errorx.New(404, "用户不存在")
 		}
 		l.Error("查找用户失败: ", err)
 		return nil, errorx.New(500, "服务器内部错误")
 	}
-	
-	// 4. 构建帖子数据（手绘默认与图文一致直接公开；需人工审图时在 super.yaml 设 HandDrawRequireModeration: true）
+
 	modStatus := "ok"
 	if in.HandDrawCard != "" && l.svcCtx.Config.HandDrawRequireModeration {
 		modStatus = "pending"
 	}
+
+	tx := l.svcCtx.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
 	post := model.Post{
 		UserID:           uint(userID),
 		Content:          in.Content,
 		HandDrawCard:     in.HandDrawCard,
 		HandDrawThumbURL: in.HandDrawThumbUrl,
 		ModerationStatus: modStatus,
+		MoodTag:          in.MoodTag,
 	}
-	
-	// 5. 处理图片
 	if len(in.Images) > 0 {
-		// 将图片数组转换为JSON字符串
 		imagesJSON, err := json.Marshal(in.Images)
 		if err != nil {
-			l.Error("图片数组序列化失败: ", err)
+			tx.Rollback()
 			return nil, errorx.New(500, "服务器内部错误")
 		}
 		post.Images = string(imagesJSON)
 	}
-	
-	// 6. 保存到数据库
-	err = l.svcCtx.DB.Create(&post).Error
-	if err != nil {
+
+	if err := tx.Create(&post).Error; err != nil {
+		tx.Rollback()
 		l.Error("创建帖子失败: ", err)
 		return nil, errorx.New(500, "创建帖子失败")
 	}
-	
-	// 7. 处理话题标签
+
 	var topicTags []model.TopicTag
 	if len(in.TopicTags) > 0 {
 		for _, tag := range in.TopicTags {
-			// 查找或创建话题标签
 			var topicTag model.TopicTag
-			err := l.svcCtx.DB.Where("name = ?", tag.Name).FirstOrCreate(&topicTag, model.TopicTag{
+			if err := tx.Where("name = ?", tag.Name).FirstOrCreate(&topicTag, model.TopicTag{
 				Name:  tag.Name,
 				Color: tag.Color,
-			}).Error
-			if err != nil {
-				l.Error("处理话题标签失败: ", err)
-				// 继续处理其他标签，不中断
+			}).Error; err != nil {
 				continue
 			}
 			topicTags = append(topicTags, topicTag)
 		}
-		
-		// 建立帖子和话题标签的关联关系
 		if len(topicTags) > 0 {
-			// 先删除旧的关联关系
-			l.svcCtx.DB.Where("post_id = ?", post.ID).Delete(&model.PostTopic{})
-			
-			// 添加新的关联关系
+			tx.Where("post_id = ?", post.ID).Delete(&model.PostTopic{})
 			for _, tag := range topicTags {
-				postTopic := model.PostTopic{
-					PostID:     post.ID,
-					TopicTagID: tag.ID,
-				}
-				err := l.svcCtx.DB.Create(&postTopic).Error
-				if err != nil {
-					l.Error("建立帖子标签关联失败: ", err)
-					continue
-				}
+				_ = tx.Create(&model.PostTopic{PostID: post.ID, TopicTagID: tag.ID}).Error
 			}
 		}
 	}
-	
-	// 8. 构建响应
-	// 转换话题标签为响应格式
+
+	handDrawApproved := in.HandDrawCard != "" && modStatus == "ok"
+	engine := achievement.NewEngine(l.svcCtx.DB)
+	achUnlocks, err := engine.ApplyEvent(tx, uint(userID), achievement.Event{
+		Type:             achievement.EventPostCreated,
+		ImageCount:       len(in.Images),
+		HasTopic:         len(topicTags) > 0,
+		ContentLen:       len([]rune(in.Content)),
+		MoodTag:          in.MoodTag,
+		HasHandDraw:      in.HandDrawCard != "",
+		HandDrawApproved: handDrawApproved,
+		Hour:             achievement.CurrentEventHour(),
+	})
+	if err != nil {
+		tx.Rollback()
+		return nil, errorx.New(500, "成就处理失败")
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return nil, errorx.New(500, "创建帖子失败")
+	}
+
 	responseTopicTags := make([]*super.TopicTag, 0, len(topicTags))
 	for _, tag := range topicTags {
 		responseTopicTags = append(responseTopicTags, &super.TopicTag{
@@ -135,23 +135,24 @@ func (l *CreatePostLogic) CreatePost(in *super.CreatePostReq) (*super.CreatePost
 			CreatedAt: tag.CreatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
-	
+
 	return &super.CreatePostResp{
 		Post: &super.Post{
-			Id:                strconv.FormatUint(uint64(post.ID), 10),
-			UserId:            in.UserId,
-			UserName:          user.Username,
-			UserAvatar:        user.Avatar,
-			Content:           post.Content,
-			Images:            in.Images,
-			TopicTags:         responseTopicTags,
-			Likes:             0,
-			Comments:          0,
-			IsLiked:           false,
-			CreatedAt:         post.CreatedAt.Format("2006-01-02 15:04:05"),
-			HandDrawCard:      post.HandDrawCard,
-			HandDrawThumbUrl:  post.HandDrawThumbURL,
-			ModerationStatus:  moderationStatusOrDefault(post.ModerationStatus),
+			Id:               strconv.FormatUint(uint64(post.ID), 10),
+			UserId:           in.UserId,
+			UserName:         user.Username,
+			UserAvatar:       user.Avatar,
+			Content:          post.Content,
+			Images:           in.Images,
+			TopicTags:        responseTopicTags,
+			Likes:            0,
+			Comments:         0,
+			IsLiked:          false,
+			CreatedAt:        post.CreatedAt.Format("2006-01-02 15:04:05"),
+			HandDrawCard:     post.HandDrawCard,
+			HandDrawThumbUrl: post.HandDrawThumbURL,
+			ModerationStatus: moderationStatusOrDefault(post.ModerationStatus),
 		},
+		NewAchievements: achievement.UnlocksToProto(achUnlocks),
 	}, nil
 }

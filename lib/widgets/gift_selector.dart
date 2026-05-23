@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/gift.dart';
 import '../auth_service.dart';
+import '../services/achievement_hooks.dart';
 import '../services/api_service.dart';
 import '../services/gift_catalog_service.dart';
 import '../utils/error_handler.dart';
@@ -160,12 +162,13 @@ class _GiftSelectorState extends State<GiftSelector>
     });
 
     try {
-      await ApiService.sendGift(
+      final unlocks = await ApiService.sendGiftWithUnlocks(
         fromUserId: userId,
         toUserId: widget.receiverId,
         giftId: gift.id,
         quantity: 1,
       );
+      unawaited(AchievementHooks.handleServerUnlocks(userId, unlocks));
       await GiftHapticFeedback.forGiftSuccess(gift);
 
       final refreshed = await ApiService.getUserInfo(userId);

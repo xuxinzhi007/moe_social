@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 
+	achlogic "backend/api/internal/logic/achievement"
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
@@ -38,7 +39,8 @@ func (l *CreateVipOrderLogic) CreateVipOrder(req *types.CreateVipOrderReq) (resp
 	}
 
 	return &types.CreateVipOrderResp{
-		BaseResp: common.HandleRPCError(nil, "创建VIP订单成功"),
+		BaseResp:        common.HandleRPCError(nil, "创建VIP订单成功"),
+		NewAchievements: achlogic.UnlocksFromRPC(rpcResp.NewAchievements),
 		Data: types.VipOrder{
 			Id:        rpcResp.Order.Id,
 			UserId:    rpcResp.Order.UserId,

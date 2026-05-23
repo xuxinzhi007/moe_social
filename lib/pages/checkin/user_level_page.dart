@@ -5,8 +5,11 @@ import 'package:provider/provider.dart';
 import '../../providers/user_level_provider.dart';
 import '../../providers/checkin_provider.dart';
 import '../../services/api_service.dart';
+import '../../models/achievement_badge.dart';
+import '../../services/achievement_service.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_loading.dart';
+import '../achievements/achievements_page.dart';
 import 'checkin_page.dart';
 
 /// 用户等级页：顶部概览（含跳转签到）+ 下方多列宫格模块。
@@ -27,6 +30,9 @@ class _UserLevelPageState extends State<UserLevelPage>
   late AnimationController _levelUpController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _rotationAnimation;
+  final AchievementService _achievementService = AchievementService();
+  BadgeStatistics? _achievementStats;
+  List<AchievementBadge> _recentUnlocked = [];
 
   @override
   void initState() {
@@ -57,10 +63,27 @@ class _UserLevelPageState extends State<UserLevelPage>
   }
 
   void _loadData() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final levelProvider = context.read<UserLevelProvider>();
       levelProvider.loadUserLevel(widget.userId);
       context.read<CheckInProvider>().loadCheckInStatus(widget.userId);
+      try {
+        await _achievementService.refreshFromServer(widget.userId);
+        if (!mounted) return;
+        final badges = _achievementService.getUserBadges(widget.userId);
+        setState(() {
+          _achievementStats =
+              _achievementService.getBadgeStatistics(widget.userId);
+          _recentUnlocked = badges
+              .where((b) => b.isUnlocked)
+              .toList()
+            ..sort((a, b) => (b.unlockedAt ?? DateTime(2000))
+                .compareTo(a.unlockedAt ?? DateTime(2000)));
+          if (_recentUnlocked.length > 2) {
+            _recentUnlocked = _recentUnlocked.sublist(0, 2);
+          }
+        });
+      } catch (_) {}
     });
   }
 
@@ -919,14 +942,12 @@ class _UserLevelPageState extends State<UserLevelPage>
     );
   }
 
-  /// 构建成就系统卡片
+  /// 构建成就系统卡片（服务端数据）
   Widget _buildAchievementsCard(UserLevelProvider levelProvider) {
-    final achievements = [
-      {'title': '初出茅庐', 'description': '等级达到2级', 'completed': levelProvider.currentLevel >= 2, 'icon': Icons.emoji_events},
-      {'title': '社区活跃', 'description': '连续签到7天', 'completed': false, 'icon': Icons.local_fire_department},
-      {'title': '内容创作', 'description': '发布10个帖子', 'completed': false, 'icon': Icons.edit_document},
-      {'title': '社交达人', 'description': '获得50个赞', 'completed': false, 'icon': Icons.people},
-    ];
+    final stats = _achievementStats;
+    final unlocked = stats?.unlockedBadges ?? 0;
+    final total = stats?.totalBadges ?? 0;
+    final pct = stats?.completionPercentage ?? 0;
 
     return FadeInUp(
       delay: const Duration(milliseconds: 350),
@@ -945,137 +966,76 @@ class _UserLevelPageState extends State<UserLevelPage>
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.emoji_events_rounded, color: Colors.amber.shade700, size: 22),
-                    const SizedBox(width: 8),
-                    const Text(
-                      '成就系统',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF1E1E2E),
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFD700).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+                Icon(Icons.emoji_events_rounded,
+                    color: Colors.amber.shade700, size: 22),
+                const SizedBox(width: 8),
+                const Expanded(
                   child: Text(
-                    '${achievements.where((a) => a['completed'] as bool).length}/${achievements.length}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFFFD700),
+                    '成就进度',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF1E1E2E),
                     ),
+                  ),
+                ),
+                Text(
+                  '$unlocked/$total',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFFFD700),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            ...achievements.map((achievement) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        gradient: achievement['completed'] as bool
-                            ? const LinearGradient(
-                                colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                              )
-                            : null,
-                        color: achievement['completed'] as bool
-                            ? null
-                            : Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: achievement['completed'] as bool
-                            ? [
-                                BoxShadow(
-                                  color: const Color(0xFFFFD700).withOpacity(0.4),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ]
-                            : [],
-                      ),
-                      child: Icon(
-                        achievement['icon'] as IconData,
-                        color: achievement['completed'] as bool ? Colors.white : Colors.grey.shade500,
-                        size: 20,
-                      ),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: total > 0 ? pct / 100 : 0,
+              backgroundColor: Colors.grey.shade200,
+              color: const Color(0xFF7F7FD5),
+              minHeight: 8,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '已完成 ${pct.toStringAsFixed(0)}% · 解锁成就可获得经验奖励',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+            if (_recentUnlocked.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              ..._recentUnlocked.map(
+                (b) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    '「${b.name}」已解锁',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF7F7FD5),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            achievement['title'] as String,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: achievement['completed'] as bool
-                                  ? const Color(0xFFFFD700)
-                                  : const Color(0xFF2D3748),
-                            ),
-                          ),
-                          Text(
-                            achievement['description'] as String,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (achievement['completed'] as bool)
-                      const Icon(
-                        Icons.check_circle,
-                        color: Color(0xFF4CAF50),
-                        size: 20,
-                      ),
-                  ],
+                  ),
                 ),
-              );
-            }).toList(),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
-                borderRadius: BorderRadius.circular(16),
               ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.auto_awesome_outlined,
-                    color: Color(0xFFFFD700),
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '完成成就可获得额外经验和特殊奖励',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
+            ],
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          AchievementsPage(userId: widget.userId),
                     ),
-                  ),
-                ],
+                  );
+                },
+                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                label: const Text('查看成就中心'),
               ),
             ),
           ],

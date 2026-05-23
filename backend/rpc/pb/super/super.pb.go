@@ -2470,10 +2470,11 @@ func (x *CreateVipOrderReq) GetPlanId() string {
 }
 
 type CreateVipOrderResp struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Order         *VipOrder              `protobuf:"bytes,1,opt,name=order,proto3" json:"order,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Order           *VipOrder              `protobuf:"bytes,1,opt,name=order,proto3" json:"order,omitempty"`
+	NewAchievements []*AchievementUnlock   `protobuf:"bytes,2,rep,name=new_achievements,json=newAchievements,proto3" json:"new_achievements,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *CreateVipOrderResp) Reset() {
@@ -2509,6 +2510,13 @@ func (*CreateVipOrderResp) Descriptor() ([]byte, []int) {
 func (x *CreateVipOrderResp) GetOrder() *VipOrder {
 	if x != nil {
 		return x.Order
+	}
+	return nil
+}
+
+func (x *CreateVipOrderResp) GetNewAchievements() []*AchievementUnlock {
+	if x != nil {
+		return x.NewAchievements
 	}
 	return nil
 }
@@ -4183,6 +4191,7 @@ type CreatePostReq struct {
 	TopicTags        []*TopicTag            `protobuf:"bytes,4,rep,name=topic_tags,json=topicTags,proto3" json:"topic_tags,omitempty"`
 	HandDrawCard     string                 `protobuf:"bytes,5,opt,name=hand_draw_card,json=handDrawCard,proto3" json:"hand_draw_card,omitempty"`
 	HandDrawThumbUrl string                 `protobuf:"bytes,6,opt,name=hand_draw_thumb_url,json=handDrawThumbUrl,proto3" json:"hand_draw_thumb_url,omitempty"`
+	MoodTag          string                 `protobuf:"bytes,7,opt,name=mood_tag,json=moodTag,proto3" json:"mood_tag,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -4255,6 +4264,13 @@ func (x *CreatePostReq) GetHandDrawCard() string {
 func (x *CreatePostReq) GetHandDrawThumbUrl() string {
 	if x != nil {
 		return x.HandDrawThumbUrl
+	}
+	return ""
+}
+
+func (x *CreatePostReq) GetMoodTag() string {
+	if x != nil {
+		return x.MoodTag
 	}
 	return ""
 }
@@ -4584,10 +4600,11 @@ func (*ReportPostResp) Descriptor() ([]byte, []int) {
 
 // 创建帖子响应
 type CreatePostResp struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Post          *Post                  `protobuf:"bytes,1,opt,name=post,proto3" json:"post,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Post            *Post                  `protobuf:"bytes,1,opt,name=post,proto3" json:"post,omitempty"`
+	NewAchievements []*AchievementUnlock   `protobuf:"bytes,2,rep,name=new_achievements,json=newAchievements,proto3" json:"new_achievements,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *CreatePostResp) Reset() {
@@ -4623,6 +4640,13 @@ func (*CreatePostResp) Descriptor() ([]byte, []int) {
 func (x *CreatePostResp) GetPost() *Post {
 	if x != nil {
 		return x.Post
+	}
+	return nil
+}
+
+func (x *CreatePostResp) GetNewAchievements() []*AchievementUnlock {
+	if x != nil {
+		return x.NewAchievements
 	}
 	return nil
 }
@@ -5019,10 +5043,11 @@ func (x *CreateCommentReq) GetContent() string {
 
 // 创建评论响应
 type CreateCommentResp struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Comment       *Comment               `protobuf:"bytes,1,opt,name=comment,proto3" json:"comment,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Comment         *Comment               `protobuf:"bytes,1,opt,name=comment,proto3" json:"comment,omitempty"`
+	NewAchievements []*AchievementUnlock   `protobuf:"bytes,2,rep,name=new_achievements,json=newAchievements,proto3" json:"new_achievements,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *CreateCommentResp) Reset() {
@@ -5058,6 +5083,13 @@ func (*CreateCommentResp) Descriptor() ([]byte, []int) {
 func (x *CreateCommentResp) GetComment() *Comment {
 	if x != nil {
 		return x.Comment
+	}
+	return nil
+}
+
+func (x *CreateCommentResp) GetNewAchievements() []*AchievementUnlock {
+	if x != nil {
+		return x.NewAchievements
 	}
 	return nil
 }
@@ -10630,6 +10662,82 @@ func (x *CheckInReq) GetUserId() string {
 	return ""
 }
 
+type AchievementUnlock struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BadgeId       string                 `protobuf:"bytes,1,opt,name=badge_id,json=badgeId,proto3" json:"badge_id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	ExpGranted    int32                  `protobuf:"varint,3,opt,name=exp_granted,json=expGranted,proto3" json:"exp_granted,omitempty"`
+	LevelUp       bool                   `protobuf:"varint,4,opt,name=level_up,json=levelUp,proto3" json:"level_up,omitempty"`
+	NewLevel      int32                  `protobuf:"varint,5,opt,name=new_level,json=newLevel,proto3" json:"new_level,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AchievementUnlock) Reset() {
+	*x = AchievementUnlock{}
+	mi := &file_super_proto_msgTypes[184]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AchievementUnlock) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AchievementUnlock) ProtoMessage() {}
+
+func (x *AchievementUnlock) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[184]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AchievementUnlock.ProtoReflect.Descriptor instead.
+func (*AchievementUnlock) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{184}
+}
+
+func (x *AchievementUnlock) GetBadgeId() string {
+	if x != nil {
+		return x.BadgeId
+	}
+	return ""
+}
+
+func (x *AchievementUnlock) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *AchievementUnlock) GetExpGranted() int32 {
+	if x != nil {
+		return x.ExpGranted
+	}
+	return 0
+}
+
+func (x *AchievementUnlock) GetLevelUp() bool {
+	if x != nil {
+		return x.LevelUp
+	}
+	return false
+}
+
+func (x *AchievementUnlock) GetNewLevel() int32 {
+	if x != nil {
+		return x.NewLevel
+	}
+	return 0
+}
+
 type CheckInResp struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	ExpGained       int32                  `protobuf:"varint,1,opt,name=exp_gained,json=expGained,proto3" json:"exp_gained,omitempty"`
@@ -10637,13 +10745,14 @@ type CheckInResp struct {
 	ConsecutiveDays int32                  `protobuf:"varint,3,opt,name=consecutive_days,json=consecutiveDays,proto3" json:"consecutive_days,omitempty"`
 	LevelUp         bool                   `protobuf:"varint,4,opt,name=level_up,json=levelUp,proto3" json:"level_up,omitempty"`
 	SpecialReward   string                 `protobuf:"bytes,5,opt,name=special_reward,json=specialReward,proto3" json:"special_reward,omitempty"`
+	NewAchievements []*AchievementUnlock   `protobuf:"bytes,6,rep,name=new_achievements,json=newAchievements,proto3" json:"new_achievements,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
 
 func (x *CheckInResp) Reset() {
 	*x = CheckInResp{}
-	mi := &file_super_proto_msgTypes[184]
+	mi := &file_super_proto_msgTypes[185]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10655,7 +10764,7 @@ func (x *CheckInResp) String() string {
 func (*CheckInResp) ProtoMessage() {}
 
 func (x *CheckInResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[184]
+	mi := &file_super_proto_msgTypes[185]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10668,7 +10777,7 @@ func (x *CheckInResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckInResp.ProtoReflect.Descriptor instead.
 func (*CheckInResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{184}
+	return file_super_proto_rawDescGZIP(), []int{185}
 }
 
 func (x *CheckInResp) GetExpGained() int32 {
@@ -10706,6 +10815,13 @@ func (x *CheckInResp) GetSpecialReward() string {
 	return ""
 }
 
+func (x *CheckInResp) GetNewAchievements() []*AchievementUnlock {
+	if x != nil {
+		return x.NewAchievements
+	}
+	return nil
+}
+
 type GetUserLevelReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -10715,7 +10831,7 @@ type GetUserLevelReq struct {
 
 func (x *GetUserLevelReq) Reset() {
 	*x = GetUserLevelReq{}
-	mi := &file_super_proto_msgTypes[185]
+	mi := &file_super_proto_msgTypes[186]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10727,7 +10843,7 @@ func (x *GetUserLevelReq) String() string {
 func (*GetUserLevelReq) ProtoMessage() {}
 
 func (x *GetUserLevelReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[185]
+	mi := &file_super_proto_msgTypes[186]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10740,7 +10856,7 @@ func (x *GetUserLevelReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserLevelReq.ProtoReflect.Descriptor instead.
 func (*GetUserLevelReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{185}
+	return file_super_proto_rawDescGZIP(), []int{186}
 }
 
 func (x *GetUserLevelReq) GetUserId() string {
@@ -10759,7 +10875,7 @@ type GetUserLevelResp struct {
 
 func (x *GetUserLevelResp) Reset() {
 	*x = GetUserLevelResp{}
-	mi := &file_super_proto_msgTypes[186]
+	mi := &file_super_proto_msgTypes[187]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10771,7 +10887,7 @@ func (x *GetUserLevelResp) String() string {
 func (*GetUserLevelResp) ProtoMessage() {}
 
 func (x *GetUserLevelResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[186]
+	mi := &file_super_proto_msgTypes[187]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10784,7 +10900,7 @@ func (x *GetUserLevelResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserLevelResp.ProtoReflect.Descriptor instead.
 func (*GetUserLevelResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{186}
+	return file_super_proto_rawDescGZIP(), []int{187}
 }
 
 func (x *GetUserLevelResp) GetLevelInfo() *UserLevelInfo {
@@ -10803,7 +10919,7 @@ type GetCheckInStatusReq struct {
 
 func (x *GetCheckInStatusReq) Reset() {
 	*x = GetCheckInStatusReq{}
-	mi := &file_super_proto_msgTypes[187]
+	mi := &file_super_proto_msgTypes[188]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10815,7 +10931,7 @@ func (x *GetCheckInStatusReq) String() string {
 func (*GetCheckInStatusReq) ProtoMessage() {}
 
 func (x *GetCheckInStatusReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[187]
+	mi := &file_super_proto_msgTypes[188]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10828,7 +10944,7 @@ func (x *GetCheckInStatusReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCheckInStatusReq.ProtoReflect.Descriptor instead.
 func (*GetCheckInStatusReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{187}
+	return file_super_proto_rawDescGZIP(), []int{188}
 }
 
 func (x *GetCheckInStatusReq) GetUserId() string {
@@ -10847,7 +10963,7 @@ type GetCheckInStatusResp struct {
 
 func (x *GetCheckInStatusResp) Reset() {
 	*x = GetCheckInStatusResp{}
-	mi := &file_super_proto_msgTypes[188]
+	mi := &file_super_proto_msgTypes[189]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10859,7 +10975,7 @@ func (x *GetCheckInStatusResp) String() string {
 func (*GetCheckInStatusResp) ProtoMessage() {}
 
 func (x *GetCheckInStatusResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[188]
+	mi := &file_super_proto_msgTypes[189]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10872,7 +10988,7 @@ func (x *GetCheckInStatusResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCheckInStatusResp.ProtoReflect.Descriptor instead.
 func (*GetCheckInStatusResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{188}
+	return file_super_proto_rawDescGZIP(), []int{189}
 }
 
 func (x *GetCheckInStatusResp) GetStatus() *CheckInStatus {
@@ -10893,7 +11009,7 @@ type GetCheckInHistoryReq struct {
 
 func (x *GetCheckInHistoryReq) Reset() {
 	*x = GetCheckInHistoryReq{}
-	mi := &file_super_proto_msgTypes[189]
+	mi := &file_super_proto_msgTypes[190]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10905,7 +11021,7 @@ func (x *GetCheckInHistoryReq) String() string {
 func (*GetCheckInHistoryReq) ProtoMessage() {}
 
 func (x *GetCheckInHistoryReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[189]
+	mi := &file_super_proto_msgTypes[190]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10918,7 +11034,7 @@ func (x *GetCheckInHistoryReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCheckInHistoryReq.ProtoReflect.Descriptor instead.
 func (*GetCheckInHistoryReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{189}
+	return file_super_proto_rawDescGZIP(), []int{190}
 }
 
 func (x *GetCheckInHistoryReq) GetUserId() string {
@@ -10952,7 +11068,7 @@ type GetCheckInHistoryResp struct {
 
 func (x *GetCheckInHistoryResp) Reset() {
 	*x = GetCheckInHistoryResp{}
-	mi := &file_super_proto_msgTypes[190]
+	mi := &file_super_proto_msgTypes[191]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10964,7 +11080,7 @@ func (x *GetCheckInHistoryResp) String() string {
 func (*GetCheckInHistoryResp) ProtoMessage() {}
 
 func (x *GetCheckInHistoryResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[190]
+	mi := &file_super_proto_msgTypes[191]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10977,7 +11093,7 @@ func (x *GetCheckInHistoryResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCheckInHistoryResp.ProtoReflect.Descriptor instead.
 func (*GetCheckInHistoryResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{190}
+	return file_super_proto_rawDescGZIP(), []int{191}
 }
 
 func (x *GetCheckInHistoryResp) GetRecords() []*CheckInRecord {
@@ -11005,7 +11121,7 @@ type GetExpLogsReq struct {
 
 func (x *GetExpLogsReq) Reset() {
 	*x = GetExpLogsReq{}
-	mi := &file_super_proto_msgTypes[191]
+	mi := &file_super_proto_msgTypes[192]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11017,7 +11133,7 @@ func (x *GetExpLogsReq) String() string {
 func (*GetExpLogsReq) ProtoMessage() {}
 
 func (x *GetExpLogsReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[191]
+	mi := &file_super_proto_msgTypes[192]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11030,7 +11146,7 @@ func (x *GetExpLogsReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetExpLogsReq.ProtoReflect.Descriptor instead.
 func (*GetExpLogsReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{191}
+	return file_super_proto_rawDescGZIP(), []int{192}
 }
 
 func (x *GetExpLogsReq) GetUserId() string {
@@ -11064,7 +11180,7 @@ type GetExpLogsResp struct {
 
 func (x *GetExpLogsResp) Reset() {
 	*x = GetExpLogsResp{}
-	mi := &file_super_proto_msgTypes[192]
+	mi := &file_super_proto_msgTypes[193]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11076,7 +11192,7 @@ func (x *GetExpLogsResp) String() string {
 func (*GetExpLogsResp) ProtoMessage() {}
 
 func (x *GetExpLogsResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[192]
+	mi := &file_super_proto_msgTypes[193]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11089,7 +11205,7 @@ func (x *GetExpLogsResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetExpLogsResp.ProtoReflect.Descriptor instead.
 func (*GetExpLogsResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{192}
+	return file_super_proto_rawDescGZIP(), []int{193}
 }
 
 func (x *GetExpLogsResp) GetLogs() []*ExpLogRecord {
@@ -11104,6 +11220,543 @@ func (x *GetExpLogsResp) GetTotal() int32 {
 		return x.Total
 	}
 	return 0
+}
+
+// 成就系统
+type AchievementBadgeItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Category      string                 `protobuf:"bytes,4,opt,name=category,proto3" json:"category,omitempty"`
+	Rarity        string                 `protobuf:"bytes,5,opt,name=rarity,proto3" json:"rarity,omitempty"`
+	Condition     string                 `protobuf:"bytes,6,opt,name=condition,proto3" json:"condition,omitempty"`
+	RequiredCount int32                  `protobuf:"varint,7,opt,name=required_count,json=requiredCount,proto3" json:"required_count,omitempty"`
+	CurrentCount  int32                  `protobuf:"varint,8,opt,name=current_count,json=currentCount,proto3" json:"current_count,omitempty"`
+	Progress      float64                `protobuf:"fixed64,9,opt,name=progress,proto3" json:"progress,omitempty"`
+	IsUnlocked    bool                   `protobuf:"varint,10,opt,name=is_unlocked,json=isUnlocked,proto3" json:"is_unlocked,omitempty"`
+	UnlockedAt    string                 `protobuf:"bytes,11,opt,name=unlocked_at,json=unlockedAt,proto3" json:"unlocked_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AchievementBadgeItem) Reset() {
+	*x = AchievementBadgeItem{}
+	mi := &file_super_proto_msgTypes[194]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AchievementBadgeItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AchievementBadgeItem) ProtoMessage() {}
+
+func (x *AchievementBadgeItem) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[194]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AchievementBadgeItem.ProtoReflect.Descriptor instead.
+func (*AchievementBadgeItem) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{194}
+}
+
+func (x *AchievementBadgeItem) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *AchievementBadgeItem) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *AchievementBadgeItem) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *AchievementBadgeItem) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *AchievementBadgeItem) GetRarity() string {
+	if x != nil {
+		return x.Rarity
+	}
+	return ""
+}
+
+func (x *AchievementBadgeItem) GetCondition() string {
+	if x != nil {
+		return x.Condition
+	}
+	return ""
+}
+
+func (x *AchievementBadgeItem) GetRequiredCount() int32 {
+	if x != nil {
+		return x.RequiredCount
+	}
+	return 0
+}
+
+func (x *AchievementBadgeItem) GetCurrentCount() int32 {
+	if x != nil {
+		return x.CurrentCount
+	}
+	return 0
+}
+
+func (x *AchievementBadgeItem) GetProgress() float64 {
+	if x != nil {
+		return x.Progress
+	}
+	return 0
+}
+
+func (x *AchievementBadgeItem) GetIsUnlocked() bool {
+	if x != nil {
+		return x.IsUnlocked
+	}
+	return false
+}
+
+func (x *AchievementBadgeItem) GetUnlockedAt() string {
+	if x != nil {
+		return x.UnlockedAt
+	}
+	return ""
+}
+
+type AchievementSummary struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	TotalBadges          int32                  `protobuf:"varint,1,opt,name=total_badges,json=totalBadges,proto3" json:"total_badges,omitempty"`
+	UnlockedBadges       int32                  `protobuf:"varint,2,opt,name=unlocked_badges,json=unlockedBadges,proto3" json:"unlocked_badges,omitempty"`
+	CompletionPercentage float64                `protobuf:"fixed64,3,opt,name=completion_percentage,json=completionPercentage,proto3" json:"completion_percentage,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *AchievementSummary) Reset() {
+	*x = AchievementSummary{}
+	mi := &file_super_proto_msgTypes[195]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AchievementSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AchievementSummary) ProtoMessage() {}
+
+func (x *AchievementSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[195]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AchievementSummary.ProtoReflect.Descriptor instead.
+func (*AchievementSummary) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{195}
+}
+
+func (x *AchievementSummary) GetTotalBadges() int32 {
+	if x != nil {
+		return x.TotalBadges
+	}
+	return 0
+}
+
+func (x *AchievementSummary) GetUnlockedBadges() int32 {
+	if x != nil {
+		return x.UnlockedBadges
+	}
+	return 0
+}
+
+func (x *AchievementSummary) GetCompletionPercentage() float64 {
+	if x != nil {
+		return x.CompletionPercentage
+	}
+	return 0
+}
+
+type GetUserAchievementsReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserAchievementsReq) Reset() {
+	*x = GetUserAchievementsReq{}
+	mi := &file_super_proto_msgTypes[196]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserAchievementsReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserAchievementsReq) ProtoMessage() {}
+
+func (x *GetUserAchievementsReq) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[196]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserAchievementsReq.ProtoReflect.Descriptor instead.
+func (*GetUserAchievementsReq) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{196}
+}
+
+func (x *GetUserAchievementsReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type GetUserAchievementsResp struct {
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Badges        []*AchievementBadgeItem `protobuf:"bytes,1,rep,name=badges,proto3" json:"badges,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserAchievementsResp) Reset() {
+	*x = GetUserAchievementsResp{}
+	mi := &file_super_proto_msgTypes[197]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserAchievementsResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserAchievementsResp) ProtoMessage() {}
+
+func (x *GetUserAchievementsResp) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[197]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserAchievementsResp.ProtoReflect.Descriptor instead.
+func (*GetUserAchievementsResp) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{197}
+}
+
+func (x *GetUserAchievementsResp) GetBadges() []*AchievementBadgeItem {
+	if x != nil {
+		return x.Badges
+	}
+	return nil
+}
+
+type GetUserUnlockedAchievementsReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserUnlockedAchievementsReq) Reset() {
+	*x = GetUserUnlockedAchievementsReq{}
+	mi := &file_super_proto_msgTypes[198]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserUnlockedAchievementsReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserUnlockedAchievementsReq) ProtoMessage() {}
+
+func (x *GetUserUnlockedAchievementsReq) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[198]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserUnlockedAchievementsReq.ProtoReflect.Descriptor instead.
+func (*GetUserUnlockedAchievementsReq) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{198}
+}
+
+func (x *GetUserUnlockedAchievementsReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type GetUserUnlockedAchievementsResp struct {
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Badges        []*AchievementBadgeItem `protobuf:"bytes,1,rep,name=badges,proto3" json:"badges,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserUnlockedAchievementsResp) Reset() {
+	*x = GetUserUnlockedAchievementsResp{}
+	mi := &file_super_proto_msgTypes[199]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserUnlockedAchievementsResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserUnlockedAchievementsResp) ProtoMessage() {}
+
+func (x *GetUserUnlockedAchievementsResp) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[199]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserUnlockedAchievementsResp.ProtoReflect.Descriptor instead.
+func (*GetUserUnlockedAchievementsResp) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{199}
+}
+
+func (x *GetUserUnlockedAchievementsResp) GetBadges() []*AchievementBadgeItem {
+	if x != nil {
+		return x.Badges
+	}
+	return nil
+}
+
+type GetUserAchievementSummaryReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserAchievementSummaryReq) Reset() {
+	*x = GetUserAchievementSummaryReq{}
+	mi := &file_super_proto_msgTypes[200]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserAchievementSummaryReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserAchievementSummaryReq) ProtoMessage() {}
+
+func (x *GetUserAchievementSummaryReq) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[200]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserAchievementSummaryReq.ProtoReflect.Descriptor instead.
+func (*GetUserAchievementSummaryReq) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{200}
+}
+
+func (x *GetUserAchievementSummaryReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type GetUserAchievementSummaryResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Summary       *AchievementSummary    `protobuf:"bytes,1,opt,name=summary,proto3" json:"summary,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserAchievementSummaryResp) Reset() {
+	*x = GetUserAchievementSummaryResp{}
+	mi := &file_super_proto_msgTypes[201]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserAchievementSummaryResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserAchievementSummaryResp) ProtoMessage() {}
+
+func (x *GetUserAchievementSummaryResp) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[201]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserAchievementSummaryResp.ProtoReflect.Descriptor instead.
+func (*GetUserAchievementSummaryResp) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{201}
+}
+
+func (x *GetUserAchievementSummaryResp) GetSummary() *AchievementSummary {
+	if x != nil {
+		return x.Summary
+	}
+	return nil
+}
+
+type EnsureUserAchievementsReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EnsureUserAchievementsReq) Reset() {
+	*x = EnsureUserAchievementsReq{}
+	mi := &file_super_proto_msgTypes[202]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnsureUserAchievementsReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnsureUserAchievementsReq) ProtoMessage() {}
+
+func (x *EnsureUserAchievementsReq) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[202]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnsureUserAchievementsReq.ProtoReflect.Descriptor instead.
+func (*EnsureUserAchievementsReq) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{202}
+}
+
+func (x *EnsureUserAchievementsReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type EnsureUserAchievementsResp struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	NewAchievements []*AchievementUnlock   `protobuf:"bytes,1,rep,name=new_achievements,json=newAchievements,proto3" json:"new_achievements,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *EnsureUserAchievementsResp) Reset() {
+	*x = EnsureUserAchievementsResp{}
+	mi := &file_super_proto_msgTypes[203]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnsureUserAchievementsResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnsureUserAchievementsResp) ProtoMessage() {}
+
+func (x *EnsureUserAchievementsResp) ProtoReflect() protoreflect.Message {
+	mi := &file_super_proto_msgTypes[203]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnsureUserAchievementsResp.ProtoReflect.Descriptor instead.
+func (*EnsureUserAchievementsResp) Descriptor() ([]byte, []int) {
+	return file_super_proto_rawDescGZIP(), []int{203}
+}
+
+func (x *EnsureUserAchievementsResp) GetNewAchievements() []*AchievementUnlock {
+	if x != nil {
+		return x.NewAchievements
+	}
+	return nil
 }
 
 type Group struct {
@@ -11127,7 +11780,7 @@ type Group struct {
 
 func (x *Group) Reset() {
 	*x = Group{}
-	mi := &file_super_proto_msgTypes[193]
+	mi := &file_super_proto_msgTypes[204]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11139,7 +11792,7 @@ func (x *Group) String() string {
 func (*Group) ProtoMessage() {}
 
 func (x *Group) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[193]
+	mi := &file_super_proto_msgTypes[204]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11152,7 +11805,7 @@ func (x *Group) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Group.ProtoReflect.Descriptor instead.
 func (*Group) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{193}
+	return file_super_proto_rawDescGZIP(), []int{204}
 }
 
 func (x *Group) GetId() uint64 {
@@ -11262,7 +11915,7 @@ type GroupMember struct {
 
 func (x *GroupMember) Reset() {
 	*x = GroupMember{}
-	mi := &file_super_proto_msgTypes[194]
+	mi := &file_super_proto_msgTypes[205]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11274,7 +11927,7 @@ func (x *GroupMember) String() string {
 func (*GroupMember) ProtoMessage() {}
 
 func (x *GroupMember) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[194]
+	mi := &file_super_proto_msgTypes[205]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11287,7 +11940,7 @@ func (x *GroupMember) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GroupMember.ProtoReflect.Descriptor instead.
 func (*GroupMember) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{194}
+	return file_super_proto_rawDescGZIP(), []int{205}
 }
 
 func (x *GroupMember) GetId() uint64 {
@@ -11360,7 +12013,7 @@ type CreateGroupReq struct {
 
 func (x *CreateGroupReq) Reset() {
 	*x = CreateGroupReq{}
-	mi := &file_super_proto_msgTypes[195]
+	mi := &file_super_proto_msgTypes[206]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11372,7 +12025,7 @@ func (x *CreateGroupReq) String() string {
 func (*CreateGroupReq) ProtoMessage() {}
 
 func (x *CreateGroupReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[195]
+	mi := &file_super_proto_msgTypes[206]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11385,7 +12038,7 @@ func (x *CreateGroupReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateGroupReq.ProtoReflect.Descriptor instead.
 func (*CreateGroupReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{195}
+	return file_super_proto_rawDescGZIP(), []int{206}
 }
 
 func (x *CreateGroupReq) GetName() string {
@@ -11441,7 +12094,7 @@ type CreateGroupResp struct {
 
 func (x *CreateGroupResp) Reset() {
 	*x = CreateGroupResp{}
-	mi := &file_super_proto_msgTypes[196]
+	mi := &file_super_proto_msgTypes[207]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11453,7 +12106,7 @@ func (x *CreateGroupResp) String() string {
 func (*CreateGroupResp) ProtoMessage() {}
 
 func (x *CreateGroupResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[196]
+	mi := &file_super_proto_msgTypes[207]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11466,7 +12119,7 @@ func (x *CreateGroupResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateGroupResp.ProtoReflect.Descriptor instead.
 func (*CreateGroupResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{196}
+	return file_super_proto_rawDescGZIP(), []int{207}
 }
 
 func (x *CreateGroupResp) GetSuccess() bool {
@@ -11500,7 +12153,7 @@ type GetGroupReq struct {
 
 func (x *GetGroupReq) Reset() {
 	*x = GetGroupReq{}
-	mi := &file_super_proto_msgTypes[197]
+	mi := &file_super_proto_msgTypes[208]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11512,7 +12165,7 @@ func (x *GetGroupReq) String() string {
 func (*GetGroupReq) ProtoMessage() {}
 
 func (x *GetGroupReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[197]
+	mi := &file_super_proto_msgTypes[208]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11525,7 +12178,7 @@ func (x *GetGroupReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGroupReq.ProtoReflect.Descriptor instead.
 func (*GetGroupReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{197}
+	return file_super_proto_rawDescGZIP(), []int{208}
 }
 
 func (x *GetGroupReq) GetGroupId() string {
@@ -11553,7 +12206,7 @@ type GetGroupResp struct {
 
 func (x *GetGroupResp) Reset() {
 	*x = GetGroupResp{}
-	mi := &file_super_proto_msgTypes[198]
+	mi := &file_super_proto_msgTypes[209]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11565,7 +12218,7 @@ func (x *GetGroupResp) String() string {
 func (*GetGroupResp) ProtoMessage() {}
 
 func (x *GetGroupResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[198]
+	mi := &file_super_proto_msgTypes[209]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11578,7 +12231,7 @@ func (x *GetGroupResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGroupResp.ProtoReflect.Descriptor instead.
 func (*GetGroupResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{198}
+	return file_super_proto_rawDescGZIP(), []int{209}
 }
 
 func (x *GetGroupResp) GetSuccess() bool {
@@ -11615,7 +12268,7 @@ type GetGroupsReq struct {
 
 func (x *GetGroupsReq) Reset() {
 	*x = GetGroupsReq{}
-	mi := &file_super_proto_msgTypes[199]
+	mi := &file_super_proto_msgTypes[210]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11627,7 +12280,7 @@ func (x *GetGroupsReq) String() string {
 func (*GetGroupsReq) ProtoMessage() {}
 
 func (x *GetGroupsReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[199]
+	mi := &file_super_proto_msgTypes[210]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11640,7 +12293,7 @@ func (x *GetGroupsReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGroupsReq.ProtoReflect.Descriptor instead.
 func (*GetGroupsReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{199}
+	return file_super_proto_rawDescGZIP(), []int{210}
 }
 
 func (x *GetGroupsReq) GetPage() int32 {
@@ -11688,7 +12341,7 @@ type GetGroupsResp struct {
 
 func (x *GetGroupsResp) Reset() {
 	*x = GetGroupsResp{}
-	mi := &file_super_proto_msgTypes[200]
+	mi := &file_super_proto_msgTypes[211]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11700,7 +12353,7 @@ func (x *GetGroupsResp) String() string {
 func (*GetGroupsResp) ProtoMessage() {}
 
 func (x *GetGroupsResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[200]
+	mi := &file_super_proto_msgTypes[211]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11713,7 +12366,7 @@ func (x *GetGroupsResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGroupsResp.ProtoReflect.Descriptor instead.
 func (*GetGroupsResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{200}
+	return file_super_proto_rawDescGZIP(), []int{211}
 }
 
 func (x *GetGroupsResp) GetGroups() []*Group {
@@ -11744,7 +12397,7 @@ type UpdateGroupReq struct {
 
 func (x *UpdateGroupReq) Reset() {
 	*x = UpdateGroupReq{}
-	mi := &file_super_proto_msgTypes[201]
+	mi := &file_super_proto_msgTypes[212]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11756,7 +12409,7 @@ func (x *UpdateGroupReq) String() string {
 func (*UpdateGroupReq) ProtoMessage() {}
 
 func (x *UpdateGroupReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[201]
+	mi := &file_super_proto_msgTypes[212]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11769,7 +12422,7 @@ func (x *UpdateGroupReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateGroupReq.ProtoReflect.Descriptor instead.
 func (*UpdateGroupReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{201}
+	return file_super_proto_rawDescGZIP(), []int{212}
 }
 
 func (x *UpdateGroupReq) GetGroupId() string {
@@ -11825,7 +12478,7 @@ type UpdateGroupResp struct {
 
 func (x *UpdateGroupResp) Reset() {
 	*x = UpdateGroupResp{}
-	mi := &file_super_proto_msgTypes[202]
+	mi := &file_super_proto_msgTypes[213]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11837,7 +12490,7 @@ func (x *UpdateGroupResp) String() string {
 func (*UpdateGroupResp) ProtoMessage() {}
 
 func (x *UpdateGroupResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[202]
+	mi := &file_super_proto_msgTypes[213]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11850,7 +12503,7 @@ func (x *UpdateGroupResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateGroupResp.ProtoReflect.Descriptor instead.
 func (*UpdateGroupResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{202}
+	return file_super_proto_rawDescGZIP(), []int{213}
 }
 
 func (x *UpdateGroupResp) GetSuccess() bool {
@@ -11884,7 +12537,7 @@ type DeleteGroupReq struct {
 
 func (x *DeleteGroupReq) Reset() {
 	*x = DeleteGroupReq{}
-	mi := &file_super_proto_msgTypes[203]
+	mi := &file_super_proto_msgTypes[214]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11896,7 +12549,7 @@ func (x *DeleteGroupReq) String() string {
 func (*DeleteGroupReq) ProtoMessage() {}
 
 func (x *DeleteGroupReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[203]
+	mi := &file_super_proto_msgTypes[214]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11909,7 +12562,7 @@ func (x *DeleteGroupReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteGroupReq.ProtoReflect.Descriptor instead.
 func (*DeleteGroupReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{203}
+	return file_super_proto_rawDescGZIP(), []int{214}
 }
 
 func (x *DeleteGroupReq) GetGroupId() string {
@@ -11936,7 +12589,7 @@ type DeleteGroupResp struct {
 
 func (x *DeleteGroupResp) Reset() {
 	*x = DeleteGroupResp{}
-	mi := &file_super_proto_msgTypes[204]
+	mi := &file_super_proto_msgTypes[215]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11948,7 +12601,7 @@ func (x *DeleteGroupResp) String() string {
 func (*DeleteGroupResp) ProtoMessage() {}
 
 func (x *DeleteGroupResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[204]
+	mi := &file_super_proto_msgTypes[215]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11961,7 +12614,7 @@ func (x *DeleteGroupResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteGroupResp.ProtoReflect.Descriptor instead.
 func (*DeleteGroupResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{204}
+	return file_super_proto_rawDescGZIP(), []int{215}
 }
 
 func (x *DeleteGroupResp) GetSuccess() bool {
@@ -11988,7 +12641,7 @@ type JoinGroupReq struct {
 
 func (x *JoinGroupReq) Reset() {
 	*x = JoinGroupReq{}
-	mi := &file_super_proto_msgTypes[205]
+	mi := &file_super_proto_msgTypes[216]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12000,7 +12653,7 @@ func (x *JoinGroupReq) String() string {
 func (*JoinGroupReq) ProtoMessage() {}
 
 func (x *JoinGroupReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[205]
+	mi := &file_super_proto_msgTypes[216]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12013,7 +12666,7 @@ func (x *JoinGroupReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JoinGroupReq.ProtoReflect.Descriptor instead.
 func (*JoinGroupReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{205}
+	return file_super_proto_rawDescGZIP(), []int{216}
 }
 
 func (x *JoinGroupReq) GetGroupId() string {
@@ -12040,7 +12693,7 @@ type JoinGroupResp struct {
 
 func (x *JoinGroupResp) Reset() {
 	*x = JoinGroupResp{}
-	mi := &file_super_proto_msgTypes[206]
+	mi := &file_super_proto_msgTypes[217]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12052,7 +12705,7 @@ func (x *JoinGroupResp) String() string {
 func (*JoinGroupResp) ProtoMessage() {}
 
 func (x *JoinGroupResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[206]
+	mi := &file_super_proto_msgTypes[217]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12065,7 +12718,7 @@ func (x *JoinGroupResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JoinGroupResp.ProtoReflect.Descriptor instead.
 func (*JoinGroupResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{206}
+	return file_super_proto_rawDescGZIP(), []int{217}
 }
 
 func (x *JoinGroupResp) GetSuccess() bool {
@@ -12092,7 +12745,7 @@ type LeaveGroupReq struct {
 
 func (x *LeaveGroupReq) Reset() {
 	*x = LeaveGroupReq{}
-	mi := &file_super_proto_msgTypes[207]
+	mi := &file_super_proto_msgTypes[218]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12104,7 +12757,7 @@ func (x *LeaveGroupReq) String() string {
 func (*LeaveGroupReq) ProtoMessage() {}
 
 func (x *LeaveGroupReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[207]
+	mi := &file_super_proto_msgTypes[218]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12117,7 +12770,7 @@ func (x *LeaveGroupReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LeaveGroupReq.ProtoReflect.Descriptor instead.
 func (*LeaveGroupReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{207}
+	return file_super_proto_rawDescGZIP(), []int{218}
 }
 
 func (x *LeaveGroupReq) GetGroupId() string {
@@ -12144,7 +12797,7 @@ type LeaveGroupResp struct {
 
 func (x *LeaveGroupResp) Reset() {
 	*x = LeaveGroupResp{}
-	mi := &file_super_proto_msgTypes[208]
+	mi := &file_super_proto_msgTypes[219]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12156,7 +12809,7 @@ func (x *LeaveGroupResp) String() string {
 func (*LeaveGroupResp) ProtoMessage() {}
 
 func (x *LeaveGroupResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[208]
+	mi := &file_super_proto_msgTypes[219]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12169,7 +12822,7 @@ func (x *LeaveGroupResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LeaveGroupResp.ProtoReflect.Descriptor instead.
 func (*LeaveGroupResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{208}
+	return file_super_proto_rawDescGZIP(), []int{219}
 }
 
 func (x *LeaveGroupResp) GetSuccess() bool {
@@ -12197,7 +12850,7 @@ type GetGroupMembersReq struct {
 
 func (x *GetGroupMembersReq) Reset() {
 	*x = GetGroupMembersReq{}
-	mi := &file_super_proto_msgTypes[209]
+	mi := &file_super_proto_msgTypes[220]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12209,7 +12862,7 @@ func (x *GetGroupMembersReq) String() string {
 func (*GetGroupMembersReq) ProtoMessage() {}
 
 func (x *GetGroupMembersReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[209]
+	mi := &file_super_proto_msgTypes[220]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12222,7 +12875,7 @@ func (x *GetGroupMembersReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGroupMembersReq.ProtoReflect.Descriptor instead.
 func (*GetGroupMembersReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{209}
+	return file_super_proto_rawDescGZIP(), []int{220}
 }
 
 func (x *GetGroupMembersReq) GetGroupId() string {
@@ -12256,7 +12909,7 @@ type GetGroupMembersResp struct {
 
 func (x *GetGroupMembersResp) Reset() {
 	*x = GetGroupMembersResp{}
-	mi := &file_super_proto_msgTypes[210]
+	mi := &file_super_proto_msgTypes[221]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12268,7 +12921,7 @@ func (x *GetGroupMembersResp) String() string {
 func (*GetGroupMembersResp) ProtoMessage() {}
 
 func (x *GetGroupMembersResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[210]
+	mi := &file_super_proto_msgTypes[221]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12281,7 +12934,7 @@ func (x *GetGroupMembersResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGroupMembersResp.ProtoReflect.Descriptor instead.
 func (*GetGroupMembersResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{210}
+	return file_super_proto_rawDescGZIP(), []int{221}
 }
 
 func (x *GetGroupMembersResp) GetMembers() []*GroupMember {
@@ -12309,7 +12962,7 @@ type GetUserGroupsReq struct {
 
 func (x *GetUserGroupsReq) Reset() {
 	*x = GetUserGroupsReq{}
-	mi := &file_super_proto_msgTypes[211]
+	mi := &file_super_proto_msgTypes[222]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12321,7 +12974,7 @@ func (x *GetUserGroupsReq) String() string {
 func (*GetUserGroupsReq) ProtoMessage() {}
 
 func (x *GetUserGroupsReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[211]
+	mi := &file_super_proto_msgTypes[222]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12334,7 +12987,7 @@ func (x *GetUserGroupsReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserGroupsReq.ProtoReflect.Descriptor instead.
 func (*GetUserGroupsReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{211}
+	return file_super_proto_rawDescGZIP(), []int{222}
 }
 
 func (x *GetUserGroupsReq) GetUserId() string {
@@ -12368,7 +13021,7 @@ type GetUserGroupsResp struct {
 
 func (x *GetUserGroupsResp) Reset() {
 	*x = GetUserGroupsResp{}
-	mi := &file_super_proto_msgTypes[212]
+	mi := &file_super_proto_msgTypes[223]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12380,7 +13033,7 @@ func (x *GetUserGroupsResp) String() string {
 func (*GetUserGroupsResp) ProtoMessage() {}
 
 func (x *GetUserGroupsResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[212]
+	mi := &file_super_proto_msgTypes[223]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12393,7 +13046,7 @@ func (x *GetUserGroupsResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserGroupsResp.ProtoReflect.Descriptor instead.
 func (*GetUserGroupsResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{212}
+	return file_super_proto_rawDescGZIP(), []int{223}
 }
 
 func (x *GetUserGroupsResp) GetGroups() []*Group {
@@ -12430,7 +13083,7 @@ type Gift struct {
 
 func (x *Gift) Reset() {
 	*x = Gift{}
-	mi := &file_super_proto_msgTypes[213]
+	mi := &file_super_proto_msgTypes[224]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12442,7 +13095,7 @@ func (x *Gift) String() string {
 func (*Gift) ProtoMessage() {}
 
 func (x *Gift) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[213]
+	mi := &file_super_proto_msgTypes[224]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12455,7 +13108,7 @@ func (x *Gift) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Gift.ProtoReflect.Descriptor instead.
 func (*Gift) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{213}
+	return file_super_proto_rawDescGZIP(), []int{224}
 }
 
 func (x *Gift) GetId() uint64 {
@@ -12545,7 +13198,7 @@ type GiftRecord struct {
 
 func (x *GiftRecord) Reset() {
 	*x = GiftRecord{}
-	mi := &file_super_proto_msgTypes[214]
+	mi := &file_super_proto_msgTypes[225]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12557,7 +13210,7 @@ func (x *GiftRecord) String() string {
 func (*GiftRecord) ProtoMessage() {}
 
 func (x *GiftRecord) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[214]
+	mi := &file_super_proto_msgTypes[225]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12570,7 +13223,7 @@ func (x *GiftRecord) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GiftRecord.ProtoReflect.Descriptor instead.
 func (*GiftRecord) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{214}
+	return file_super_proto_rawDescGZIP(), []int{225}
 }
 
 func (x *GiftRecord) GetId() uint64 {
@@ -12648,7 +13301,7 @@ type GetGiftsReq struct {
 
 func (x *GetGiftsReq) Reset() {
 	*x = GetGiftsReq{}
-	mi := &file_super_proto_msgTypes[215]
+	mi := &file_super_proto_msgTypes[226]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12660,7 +13313,7 @@ func (x *GetGiftsReq) String() string {
 func (*GetGiftsReq) ProtoMessage() {}
 
 func (x *GetGiftsReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[215]
+	mi := &file_super_proto_msgTypes[226]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12673,7 +13326,7 @@ func (x *GetGiftsReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGiftsReq.ProtoReflect.Descriptor instead.
 func (*GetGiftsReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{215}
+	return file_super_proto_rawDescGZIP(), []int{226}
 }
 
 func (x *GetGiftsReq) GetPage() int32 {
@@ -12707,7 +13360,7 @@ type GetGiftsResp struct {
 
 func (x *GetGiftsResp) Reset() {
 	*x = GetGiftsResp{}
-	mi := &file_super_proto_msgTypes[216]
+	mi := &file_super_proto_msgTypes[227]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12719,7 +13372,7 @@ func (x *GetGiftsResp) String() string {
 func (*GetGiftsResp) ProtoMessage() {}
 
 func (x *GetGiftsResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[216]
+	mi := &file_super_proto_msgTypes[227]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12732,7 +13385,7 @@ func (x *GetGiftsResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGiftsResp.ProtoReflect.Descriptor instead.
 func (*GetGiftsResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{216}
+	return file_super_proto_rawDescGZIP(), []int{227}
 }
 
 func (x *GetGiftsResp) GetGifts() []*Gift {
@@ -12758,7 +13411,7 @@ type GetGiftReq struct {
 
 func (x *GetGiftReq) Reset() {
 	*x = GetGiftReq{}
-	mi := &file_super_proto_msgTypes[217]
+	mi := &file_super_proto_msgTypes[228]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12770,7 +13423,7 @@ func (x *GetGiftReq) String() string {
 func (*GetGiftReq) ProtoMessage() {}
 
 func (x *GetGiftReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[217]
+	mi := &file_super_proto_msgTypes[228]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12783,7 +13436,7 @@ func (x *GetGiftReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGiftReq.ProtoReflect.Descriptor instead.
 func (*GetGiftReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{217}
+	return file_super_proto_rawDescGZIP(), []int{228}
 }
 
 func (x *GetGiftReq) GetGiftId() string {
@@ -12804,7 +13457,7 @@ type GetGiftResp struct {
 
 func (x *GetGiftResp) Reset() {
 	*x = GetGiftResp{}
-	mi := &file_super_proto_msgTypes[218]
+	mi := &file_super_proto_msgTypes[229]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12816,7 +13469,7 @@ func (x *GetGiftResp) String() string {
 func (*GetGiftResp) ProtoMessage() {}
 
 func (x *GetGiftResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[218]
+	mi := &file_super_proto_msgTypes[229]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12829,7 +13482,7 @@ func (x *GetGiftResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGiftResp.ProtoReflect.Descriptor instead.
 func (*GetGiftResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{218}
+	return file_super_proto_rawDescGZIP(), []int{229}
 }
 
 func (x *GetGiftResp) GetSuccess() bool {
@@ -12865,7 +13518,7 @@ type SendGiftReq struct {
 
 func (x *SendGiftReq) Reset() {
 	*x = SendGiftReq{}
-	mi := &file_super_proto_msgTypes[219]
+	mi := &file_super_proto_msgTypes[230]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12877,7 +13530,7 @@ func (x *SendGiftReq) String() string {
 func (*SendGiftReq) ProtoMessage() {}
 
 func (x *SendGiftReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[219]
+	mi := &file_super_proto_msgTypes[230]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12890,7 +13543,7 @@ func (x *SendGiftReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendGiftReq.ProtoReflect.Descriptor instead.
 func (*SendGiftReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{219}
+	return file_super_proto_rawDescGZIP(), []int{230}
 }
 
 func (x *SendGiftReq) GetFromUserId() string {
@@ -12922,17 +13575,18 @@ func (x *SendGiftReq) GetQuantity() int32 {
 }
 
 type SendGiftResp struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	Record        *GiftRecord            `protobuf:"bytes,3,opt,name=record,proto3" json:"record,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Success         bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message         string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Record          *GiftRecord            `protobuf:"bytes,3,opt,name=record,proto3" json:"record,omitempty"`
+	NewAchievements []*AchievementUnlock   `protobuf:"bytes,4,rep,name=new_achievements,json=newAchievements,proto3" json:"new_achievements,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *SendGiftResp) Reset() {
 	*x = SendGiftResp{}
-	mi := &file_super_proto_msgTypes[220]
+	mi := &file_super_proto_msgTypes[231]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12944,7 +13598,7 @@ func (x *SendGiftResp) String() string {
 func (*SendGiftResp) ProtoMessage() {}
 
 func (x *SendGiftResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[220]
+	mi := &file_super_proto_msgTypes[231]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12957,7 +13611,7 @@ func (x *SendGiftResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendGiftResp.ProtoReflect.Descriptor instead.
 func (*SendGiftResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{220}
+	return file_super_proto_rawDescGZIP(), []int{231}
 }
 
 func (x *SendGiftResp) GetSuccess() bool {
@@ -12981,6 +13635,13 @@ func (x *SendGiftResp) GetRecord() *GiftRecord {
 	return nil
 }
 
+func (x *SendGiftResp) GetNewAchievements() []*AchievementUnlock {
+	if x != nil {
+		return x.NewAchievements
+	}
+	return nil
+}
+
 type GetGiftRecordsReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -12992,7 +13653,7 @@ type GetGiftRecordsReq struct {
 
 func (x *GetGiftRecordsReq) Reset() {
 	*x = GetGiftRecordsReq{}
-	mi := &file_super_proto_msgTypes[221]
+	mi := &file_super_proto_msgTypes[232]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13004,7 +13665,7 @@ func (x *GetGiftRecordsReq) String() string {
 func (*GetGiftRecordsReq) ProtoMessage() {}
 
 func (x *GetGiftRecordsReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[221]
+	mi := &file_super_proto_msgTypes[232]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13017,7 +13678,7 @@ func (x *GetGiftRecordsReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGiftRecordsReq.ProtoReflect.Descriptor instead.
 func (*GetGiftRecordsReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{221}
+	return file_super_proto_rawDescGZIP(), []int{232}
 }
 
 func (x *GetGiftRecordsReq) GetUserId() string {
@@ -13051,7 +13712,7 @@ type GetGiftRecordsResp struct {
 
 func (x *GetGiftRecordsResp) Reset() {
 	*x = GetGiftRecordsResp{}
-	mi := &file_super_proto_msgTypes[222]
+	mi := &file_super_proto_msgTypes[233]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13063,7 +13724,7 @@ func (x *GetGiftRecordsResp) String() string {
 func (*GetGiftRecordsResp) ProtoMessage() {}
 
 func (x *GetGiftRecordsResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[222]
+	mi := &file_super_proto_msgTypes[233]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13076,7 +13737,7 @@ func (x *GetGiftRecordsResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGiftRecordsResp.ProtoReflect.Descriptor instead.
 func (*GetGiftRecordsResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{222}
+	return file_super_proto_rawDescGZIP(), []int{233}
 }
 
 func (x *GetGiftRecordsResp) GetRecords() []*GiftRecord {
@@ -13104,7 +13765,7 @@ type PurchaseGiftReq struct {
 
 func (x *PurchaseGiftReq) Reset() {
 	*x = PurchaseGiftReq{}
-	mi := &file_super_proto_msgTypes[223]
+	mi := &file_super_proto_msgTypes[234]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13116,7 +13777,7 @@ func (x *PurchaseGiftReq) String() string {
 func (*PurchaseGiftReq) ProtoMessage() {}
 
 func (x *PurchaseGiftReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[223]
+	mi := &file_super_proto_msgTypes[234]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13129,7 +13790,7 @@ func (x *PurchaseGiftReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PurchaseGiftReq.ProtoReflect.Descriptor instead.
 func (*PurchaseGiftReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{223}
+	return file_super_proto_rawDescGZIP(), []int{234}
 }
 
 func (x *PurchaseGiftReq) GetUserId() string {
@@ -13166,7 +13827,7 @@ type PurchaseGiftResp struct {
 
 func (x *PurchaseGiftResp) Reset() {
 	*x = PurchaseGiftResp{}
-	mi := &file_super_proto_msgTypes[224]
+	mi := &file_super_proto_msgTypes[235]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13178,7 +13839,7 @@ func (x *PurchaseGiftResp) String() string {
 func (*PurchaseGiftResp) ProtoMessage() {}
 
 func (x *PurchaseGiftResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[224]
+	mi := &file_super_proto_msgTypes[235]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13191,7 +13852,7 @@ func (x *PurchaseGiftResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PurchaseGiftResp.ProtoReflect.Descriptor instead.
 func (*PurchaseGiftResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{224}
+	return file_super_proto_rawDescGZIP(), []int{235}
 }
 
 func (x *PurchaseGiftResp) GetSuccess() bool {
@@ -13248,7 +13909,7 @@ type GiftPurchaseOrder struct {
 
 func (x *GiftPurchaseOrder) Reset() {
 	*x = GiftPurchaseOrder{}
-	mi := &file_super_proto_msgTypes[225]
+	mi := &file_super_proto_msgTypes[236]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13260,7 +13921,7 @@ func (x *GiftPurchaseOrder) String() string {
 func (*GiftPurchaseOrder) ProtoMessage() {}
 
 func (x *GiftPurchaseOrder) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[225]
+	mi := &file_super_proto_msgTypes[236]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13273,7 +13934,7 @@ func (x *GiftPurchaseOrder) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GiftPurchaseOrder.ProtoReflect.Descriptor instead.
 func (*GiftPurchaseOrder) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{225}
+	return file_super_proto_rawDescGZIP(), []int{236}
 }
 
 func (x *GiftPurchaseOrder) GetId() string {
@@ -13364,7 +14025,7 @@ type GetGiftPurchaseOrdersReq struct {
 
 func (x *GetGiftPurchaseOrdersReq) Reset() {
 	*x = GetGiftPurchaseOrdersReq{}
-	mi := &file_super_proto_msgTypes[226]
+	mi := &file_super_proto_msgTypes[237]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13376,7 +14037,7 @@ func (x *GetGiftPurchaseOrdersReq) String() string {
 func (*GetGiftPurchaseOrdersReq) ProtoMessage() {}
 
 func (x *GetGiftPurchaseOrdersReq) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[226]
+	mi := &file_super_proto_msgTypes[237]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13389,7 +14050,7 @@ func (x *GetGiftPurchaseOrdersReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGiftPurchaseOrdersReq.ProtoReflect.Descriptor instead.
 func (*GetGiftPurchaseOrdersReq) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{226}
+	return file_super_proto_rawDescGZIP(), []int{237}
 }
 
 func (x *GetGiftPurchaseOrdersReq) GetUserId() string {
@@ -13423,7 +14084,7 @@ type GetGiftPurchaseOrdersResp struct {
 
 func (x *GetGiftPurchaseOrdersResp) Reset() {
 	*x = GetGiftPurchaseOrdersResp{}
-	mi := &file_super_proto_msgTypes[227]
+	mi := &file_super_proto_msgTypes[238]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13435,7 +14096,7 @@ func (x *GetGiftPurchaseOrdersResp) String() string {
 func (*GetGiftPurchaseOrdersResp) ProtoMessage() {}
 
 func (x *GetGiftPurchaseOrdersResp) ProtoReflect() protoreflect.Message {
-	mi := &file_super_proto_msgTypes[227]
+	mi := &file_super_proto_msgTypes[238]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13448,7 +14109,7 @@ func (x *GetGiftPurchaseOrdersResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGiftPurchaseOrdersResp.ProtoReflect.Descriptor instead.
 func (*GetGiftPurchaseOrdersResp) Descriptor() ([]byte, []int) {
-	return file_super_proto_rawDescGZIP(), []int{227}
+	return file_super_proto_rawDescGZIP(), []int{238}
 }
 
 func (x *GetGiftPurchaseOrdersResp) GetOrders() []*GiftPurchaseOrder {
@@ -13629,9 +14290,10 @@ const file_super_proto_rawDesc = "" +
 	"\border_no\x18\t \x01(\tR\aorderNo\"E\n" +
 	"\x11CreateVipOrderReq\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x17\n" +
-	"\aplan_id\x18\x02 \x01(\tR\x06planId\";\n" +
+	"\aplan_id\x18\x02 \x01(\tR\x06planId\"\x80\x01\n" +
 	"\x12CreateVipOrderResp\x12%\n" +
-	"\x05order\x18\x01 \x01(\v2\x0f.super.VipOrderR\x05order\"[\n" +
+	"\x05order\x18\x01 \x01(\v2\x0f.super.VipOrderR\x05order\x12C\n" +
+	"\x10new_achievements\x18\x02 \x03(\v2\x18.super.AchievementUnlockR\x0fnewAchievements\"[\n" +
 	"\x0fGetVipOrdersReq\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x12\n" +
 	"\x04page\x18\x02 \x01(\x05R\x04page\x12\x1b\n" +
@@ -13752,7 +14414,7 @@ const file_super_proto_rawDesc = "" +
 	"\apost_id\x18\x01 \x01(\tR\x06postId\x12$\n" +
 	"\x0eviewer_user_id\x18\x02 \x01(\tR\fviewerUserId\".\n" +
 	"\vGetPostResp\x12\x1f\n" +
-	"\x04post\x18\x01 \x01(\v2\v.super.PostR\x04post\"\xdf\x01\n" +
+	"\x04post\x18\x01 \x01(\v2\v.super.PostR\x04post\"\xfa\x01\n" +
 	"\rCreatePostReq\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12\x16\n" +
@@ -13760,7 +14422,8 @@ const file_super_proto_rawDesc = "" +
 	"\n" +
 	"topic_tags\x18\x04 \x03(\v2\x0f.super.TopicTagR\ttopicTags\x12$\n" +
 	"\x0ehand_draw_card\x18\x05 \x01(\tR\fhandDrawCard\x12-\n" +
-	"\x13hand_draw_thumb_url\x18\x06 \x01(\tR\x10handDrawThumbUrl\"\xf8\x01\n" +
+	"\x13hand_draw_thumb_url\x18\x06 \x01(\tR\x10handDrawThumbUrl\x12\x19\n" +
+	"\bmood_tag\x18\a \x01(\tR\amoodTag\"\xf8\x01\n" +
 	"\rUpdatePostReq\x12\x17\n" +
 	"\apost_id\x18\x01 \x01(\tR\x06postId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x18\n" +
@@ -13780,9 +14443,10 @@ const file_super_proto_rawDesc = "" +
 	"\apost_id\x18\x01 \x01(\tR\x06postId\x12(\n" +
 	"\x10reporter_user_id\x18\x02 \x01(\tR\x0ereporterUserId\x12\x16\n" +
 	"\x06reason\x18\x03 \x01(\tR\x06reason\"\x10\n" +
-	"\x0eReportPostResp\"1\n" +
+	"\x0eReportPostResp\"v\n" +
 	"\x0eCreatePostResp\x12\x1f\n" +
-	"\x04post\x18\x01 \x01(\v2\v.super.PostR\x04post\"?\n" +
+	"\x04post\x18\x01 \x01(\v2\v.super.PostR\x04post\x12C\n" +
+	"\x10new_achievements\x18\x02 \x03(\v2\x18.super.AchievementUnlockR\x0fnewAchievements\"?\n" +
 	"\vLikePostReq\x12\x17\n" +
 	"\apost_id\x18\x01 \x01(\tR\x06postId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\"/\n" +
@@ -13811,9 +14475,10 @@ const file_super_proto_rawDesc = "" +
 	"\x10CreateCommentReq\x12\x17\n" +
 	"\apost_id\x18\x01 \x01(\tR\x06postId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x18\n" +
-	"\acontent\x18\x03 \x01(\tR\acontent\"=\n" +
+	"\acontent\x18\x03 \x01(\tR\acontent\"\x82\x01\n" +
 	"\x11CreateCommentResp\x12(\n" +
-	"\acomment\x18\x01 \x01(\v2\x0e.super.CommentR\acomment\"H\n" +
+	"\acomment\x18\x01 \x01(\v2\x0e.super.CommentR\acomment\x12C\n" +
+	"\x10new_achievements\x18\x02 \x03(\v2\x18.super.AchievementUnlockR\x0fnewAchievements\"H\n" +
 	"\x0eLikeCommentReq\x12\x1d\n" +
 	"\n" +
 	"comment_id\x18\x01 \x01(\tR\tcommentId\x12\x17\n" +
@@ -14232,14 +14897,22 @@ const file_super_proto_rawDesc = "" +
 	"created_at\x18\x05 \x01(\tR\tcreatedAt\"%\n" +
 	"\n" +
 	"CheckInReq\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xb6\x01\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"\x9b\x01\n" +
+	"\x11AchievementUnlock\x12\x19\n" +
+	"\bbadge_id\x18\x01 \x01(\tR\abadgeId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
+	"\vexp_granted\x18\x03 \x01(\x05R\n" +
+	"expGranted\x12\x19\n" +
+	"\blevel_up\x18\x04 \x01(\bR\alevelUp\x12\x1b\n" +
+	"\tnew_level\x18\x05 \x01(\x05R\bnewLevel\"\xfb\x01\n" +
 	"\vCheckInResp\x12\x1d\n" +
 	"\n" +
 	"exp_gained\x18\x01 \x01(\x05R\texpGained\x12\x1b\n" +
 	"\tnew_level\x18\x02 \x01(\x05R\bnewLevel\x12)\n" +
 	"\x10consecutive_days\x18\x03 \x01(\x05R\x0fconsecutiveDays\x12\x19\n" +
 	"\blevel_up\x18\x04 \x01(\bR\alevelUp\x12%\n" +
-	"\x0especial_reward\x18\x05 \x01(\tR\rspecialReward\"*\n" +
+	"\x0especial_reward\x18\x05 \x01(\tR\rspecialReward\x12C\n" +
+	"\x10new_achievements\x18\x06 \x03(\v2\x18.super.AchievementUnlockR\x0fnewAchievements\"*\n" +
 	"\x0fGetUserLevelReq\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"G\n" +
 	"\x10GetUserLevelResp\x123\n" +
@@ -14262,7 +14935,42 @@ const file_super_proto_rawDesc = "" +
 	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"O\n" +
 	"\x0eGetExpLogsResp\x12'\n" +
 	"\x04logs\x18\x01 \x03(\v2\x13.super.ExpLogRecordR\x04logs\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x05R\x05total\"\xee\x02\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"\xd8\x02\n" +
+	"\x14AchievementBadgeItem\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x1a\n" +
+	"\bcategory\x18\x04 \x01(\tR\bcategory\x12\x16\n" +
+	"\x06rarity\x18\x05 \x01(\tR\x06rarity\x12\x1c\n" +
+	"\tcondition\x18\x06 \x01(\tR\tcondition\x12%\n" +
+	"\x0erequired_count\x18\a \x01(\x05R\rrequiredCount\x12#\n" +
+	"\rcurrent_count\x18\b \x01(\x05R\fcurrentCount\x12\x1a\n" +
+	"\bprogress\x18\t \x01(\x01R\bprogress\x12\x1f\n" +
+	"\vis_unlocked\x18\n" +
+	" \x01(\bR\n" +
+	"isUnlocked\x12\x1f\n" +
+	"\vunlocked_at\x18\v \x01(\tR\n" +
+	"unlockedAt\"\x95\x01\n" +
+	"\x12AchievementSummary\x12!\n" +
+	"\ftotal_badges\x18\x01 \x01(\x05R\vtotalBadges\x12'\n" +
+	"\x0funlocked_badges\x18\x02 \x01(\x05R\x0eunlockedBadges\x123\n" +
+	"\x15completion_percentage\x18\x03 \x01(\x01R\x14completionPercentage\"1\n" +
+	"\x16GetUserAchievementsReq\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"N\n" +
+	"\x17GetUserAchievementsResp\x123\n" +
+	"\x06badges\x18\x01 \x03(\v2\x1b.super.AchievementBadgeItemR\x06badges\"9\n" +
+	"\x1eGetUserUnlockedAchievementsReq\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"V\n" +
+	"\x1fGetUserUnlockedAchievementsResp\x123\n" +
+	"\x06badges\x18\x01 \x03(\v2\x1b.super.AchievementBadgeItemR\x06badges\"7\n" +
+	"\x1cGetUserAchievementSummaryReq\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"T\n" +
+	"\x1dGetUserAchievementSummaryResp\x123\n" +
+	"\asummary\x18\x01 \x01(\v2\x19.super.AchievementSummaryR\asummary\"4\n" +
+	"\x19EnsureUserAchievementsReq\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"a\n" +
+	"\x1aEnsureUserAchievementsResp\x12C\n" +
+	"\x10new_achievements\x18\x01 \x03(\v2\x18.super.AchievementUnlockR\x0fnewAchievements\"\xee\x02\n" +
 	"\x05Group\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -14411,11 +15119,12 @@ const file_super_proto_rawDesc = "" +
 	"\n" +
 	"to_user_id\x18\x02 \x01(\tR\btoUserId\x12\x17\n" +
 	"\agift_id\x18\x03 \x01(\tR\x06giftId\x12\x1a\n" +
-	"\bquantity\x18\x04 \x01(\x05R\bquantity\"m\n" +
+	"\bquantity\x18\x04 \x01(\x05R\bquantity\"\xb2\x01\n" +
 	"\fSendGiftResp\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12)\n" +
-	"\x06record\x18\x03 \x01(\v2\x11.super.GiftRecordR\x06record\"]\n" +
+	"\x06record\x18\x03 \x01(\v2\x11.super.GiftRecordR\x06record\x12C\n" +
+	"\x10new_achievements\x18\x04 \x03(\v2\x18.super.AchievementUnlockR\x0fnewAchievements\"]\n" +
 	"\x11GetGiftRecordsReq\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x12\n" +
 	"\x04page\x18\x02 \x01(\x05R\x04page\x12\x1b\n" +
@@ -14456,7 +15165,7 @@ const file_super_proto_rawDesc = "" +
 	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"c\n" +
 	"\x19GetGiftPurchaseOrdersResp\x120\n" +
 	"\x06orders\x18\x01 \x03(\v2\x18.super.GiftPurchaseOrderR\x06orders\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x05R\x05total2\x94;\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total2\x9f>\n" +
 	"\x05Super\x123\n" +
 	"\bRegister\x12\x12.super.RegisterReq\x1a\x13.super.RegisterResp\x12*\n" +
 	"\x05Login\x12\x0f.super.LoginReq\x1a\x10.super.LoginResp\x12<\n" +
@@ -14557,7 +15266,11 @@ const file_super_proto_rawDesc = "" +
 	"\x10GetCheckInStatus\x12\x1a.super.GetCheckInStatusReq\x1a\x1b.super.GetCheckInStatusResp\x12N\n" +
 	"\x11GetCheckInHistory\x12\x1b.super.GetCheckInHistoryReq\x1a\x1c.super.GetCheckInHistoryResp\x129\n" +
 	"\n" +
-	"GetExpLogs\x12\x14.super.GetExpLogsReq\x1a\x15.super.GetExpLogsResp\x12<\n" +
+	"GetExpLogs\x12\x14.super.GetExpLogsReq\x1a\x15.super.GetExpLogsResp\x12T\n" +
+	"\x13GetUserAchievements\x12\x1d.super.GetUserAchievementsReq\x1a\x1e.super.GetUserAchievementsResp\x12l\n" +
+	"\x1bGetUserUnlockedAchievements\x12%.super.GetUserUnlockedAchievementsReq\x1a&.super.GetUserUnlockedAchievementsResp\x12f\n" +
+	"\x19GetUserAchievementSummary\x12#.super.GetUserAchievementSummaryReq\x1a$.super.GetUserAchievementSummaryResp\x12]\n" +
+	"\x16EnsureUserAchievements\x12 .super.EnsureUserAchievementsReq\x1a!.super.EnsureUserAchievementsResp\x12<\n" +
 	"\vCreateGroup\x12\x15.super.CreateGroupReq\x1a\x16.super.CreateGroupResp\x123\n" +
 	"\bGetGroup\x12\x12.super.GetGroupReq\x1a\x13.super.GetGroupResp\x126\n" +
 	"\tGetGroups\x12\x13.super.GetGroupsReq\x1a\x14.super.GetGroupsResp\x12<\n" +
@@ -14587,7 +15300,7 @@ func file_super_proto_rawDescGZIP() []byte {
 	return file_super_proto_rawDescData
 }
 
-var file_super_proto_msgTypes = make([]protoimpl.MessageInfo, 228)
+var file_super_proto_msgTypes = make([]protoimpl.MessageInfo, 239)
 var file_super_proto_goTypes = []any{
 	(*User)(nil),                            // 0: super.User
 	(*FeishuAuthorizeURLReq)(nil),           // 1: super.FeishuAuthorizeURLReq
@@ -14773,50 +15486,61 @@ var file_super_proto_goTypes = []any{
 	(*CheckInRecord)(nil),                   // 181: super.CheckInRecord
 	(*ExpLogRecord)(nil),                    // 182: super.ExpLogRecord
 	(*CheckInReq)(nil),                      // 183: super.CheckInReq
-	(*CheckInResp)(nil),                     // 184: super.CheckInResp
-	(*GetUserLevelReq)(nil),                 // 185: super.GetUserLevelReq
-	(*GetUserLevelResp)(nil),                // 186: super.GetUserLevelResp
-	(*GetCheckInStatusReq)(nil),             // 187: super.GetCheckInStatusReq
-	(*GetCheckInStatusResp)(nil),            // 188: super.GetCheckInStatusResp
-	(*GetCheckInHistoryReq)(nil),            // 189: super.GetCheckInHistoryReq
-	(*GetCheckInHistoryResp)(nil),           // 190: super.GetCheckInHistoryResp
-	(*GetExpLogsReq)(nil),                   // 191: super.GetExpLogsReq
-	(*GetExpLogsResp)(nil),                  // 192: super.GetExpLogsResp
-	(*Group)(nil),                           // 193: super.Group
-	(*GroupMember)(nil),                     // 194: super.GroupMember
-	(*CreateGroupReq)(nil),                  // 195: super.CreateGroupReq
-	(*CreateGroupResp)(nil),                 // 196: super.CreateGroupResp
-	(*GetGroupReq)(nil),                     // 197: super.GetGroupReq
-	(*GetGroupResp)(nil),                    // 198: super.GetGroupResp
-	(*GetGroupsReq)(nil),                    // 199: super.GetGroupsReq
-	(*GetGroupsResp)(nil),                   // 200: super.GetGroupsResp
-	(*UpdateGroupReq)(nil),                  // 201: super.UpdateGroupReq
-	(*UpdateGroupResp)(nil),                 // 202: super.UpdateGroupResp
-	(*DeleteGroupReq)(nil),                  // 203: super.DeleteGroupReq
-	(*DeleteGroupResp)(nil),                 // 204: super.DeleteGroupResp
-	(*JoinGroupReq)(nil),                    // 205: super.JoinGroupReq
-	(*JoinGroupResp)(nil),                   // 206: super.JoinGroupResp
-	(*LeaveGroupReq)(nil),                   // 207: super.LeaveGroupReq
-	(*LeaveGroupResp)(nil),                  // 208: super.LeaveGroupResp
-	(*GetGroupMembersReq)(nil),              // 209: super.GetGroupMembersReq
-	(*GetGroupMembersResp)(nil),             // 210: super.GetGroupMembersResp
-	(*GetUserGroupsReq)(nil),                // 211: super.GetUserGroupsReq
-	(*GetUserGroupsResp)(nil),               // 212: super.GetUserGroupsResp
-	(*Gift)(nil),                            // 213: super.Gift
-	(*GiftRecord)(nil),                      // 214: super.GiftRecord
-	(*GetGiftsReq)(nil),                     // 215: super.GetGiftsReq
-	(*GetGiftsResp)(nil),                    // 216: super.GetGiftsResp
-	(*GetGiftReq)(nil),                      // 217: super.GetGiftReq
-	(*GetGiftResp)(nil),                     // 218: super.GetGiftResp
-	(*SendGiftReq)(nil),                     // 219: super.SendGiftReq
-	(*SendGiftResp)(nil),                    // 220: super.SendGiftResp
-	(*GetGiftRecordsReq)(nil),               // 221: super.GetGiftRecordsReq
-	(*GetGiftRecordsResp)(nil),              // 222: super.GetGiftRecordsResp
-	(*PurchaseGiftReq)(nil),                 // 223: super.PurchaseGiftReq
-	(*PurchaseGiftResp)(nil),                // 224: super.PurchaseGiftResp
-	(*GiftPurchaseOrder)(nil),               // 225: super.GiftPurchaseOrder
-	(*GetGiftPurchaseOrdersReq)(nil),        // 226: super.GetGiftPurchaseOrdersReq
-	(*GetGiftPurchaseOrdersResp)(nil),       // 227: super.GetGiftPurchaseOrdersResp
+	(*AchievementUnlock)(nil),               // 184: super.AchievementUnlock
+	(*CheckInResp)(nil),                     // 185: super.CheckInResp
+	(*GetUserLevelReq)(nil),                 // 186: super.GetUserLevelReq
+	(*GetUserLevelResp)(nil),                // 187: super.GetUserLevelResp
+	(*GetCheckInStatusReq)(nil),             // 188: super.GetCheckInStatusReq
+	(*GetCheckInStatusResp)(nil),            // 189: super.GetCheckInStatusResp
+	(*GetCheckInHistoryReq)(nil),            // 190: super.GetCheckInHistoryReq
+	(*GetCheckInHistoryResp)(nil),           // 191: super.GetCheckInHistoryResp
+	(*GetExpLogsReq)(nil),                   // 192: super.GetExpLogsReq
+	(*GetExpLogsResp)(nil),                  // 193: super.GetExpLogsResp
+	(*AchievementBadgeItem)(nil),            // 194: super.AchievementBadgeItem
+	(*AchievementSummary)(nil),              // 195: super.AchievementSummary
+	(*GetUserAchievementsReq)(nil),          // 196: super.GetUserAchievementsReq
+	(*GetUserAchievementsResp)(nil),         // 197: super.GetUserAchievementsResp
+	(*GetUserUnlockedAchievementsReq)(nil),  // 198: super.GetUserUnlockedAchievementsReq
+	(*GetUserUnlockedAchievementsResp)(nil), // 199: super.GetUserUnlockedAchievementsResp
+	(*GetUserAchievementSummaryReq)(nil),    // 200: super.GetUserAchievementSummaryReq
+	(*GetUserAchievementSummaryResp)(nil),   // 201: super.GetUserAchievementSummaryResp
+	(*EnsureUserAchievementsReq)(nil),       // 202: super.EnsureUserAchievementsReq
+	(*EnsureUserAchievementsResp)(nil),      // 203: super.EnsureUserAchievementsResp
+	(*Group)(nil),                           // 204: super.Group
+	(*GroupMember)(nil),                     // 205: super.GroupMember
+	(*CreateGroupReq)(nil),                  // 206: super.CreateGroupReq
+	(*CreateGroupResp)(nil),                 // 207: super.CreateGroupResp
+	(*GetGroupReq)(nil),                     // 208: super.GetGroupReq
+	(*GetGroupResp)(nil),                    // 209: super.GetGroupResp
+	(*GetGroupsReq)(nil),                    // 210: super.GetGroupsReq
+	(*GetGroupsResp)(nil),                   // 211: super.GetGroupsResp
+	(*UpdateGroupReq)(nil),                  // 212: super.UpdateGroupReq
+	(*UpdateGroupResp)(nil),                 // 213: super.UpdateGroupResp
+	(*DeleteGroupReq)(nil),                  // 214: super.DeleteGroupReq
+	(*DeleteGroupResp)(nil),                 // 215: super.DeleteGroupResp
+	(*JoinGroupReq)(nil),                    // 216: super.JoinGroupReq
+	(*JoinGroupResp)(nil),                   // 217: super.JoinGroupResp
+	(*LeaveGroupReq)(nil),                   // 218: super.LeaveGroupReq
+	(*LeaveGroupResp)(nil),                  // 219: super.LeaveGroupResp
+	(*GetGroupMembersReq)(nil),              // 220: super.GetGroupMembersReq
+	(*GetGroupMembersResp)(nil),             // 221: super.GetGroupMembersResp
+	(*GetUserGroupsReq)(nil),                // 222: super.GetUserGroupsReq
+	(*GetUserGroupsResp)(nil),               // 223: super.GetUserGroupsResp
+	(*Gift)(nil),                            // 224: super.Gift
+	(*GiftRecord)(nil),                      // 225: super.GiftRecord
+	(*GetGiftsReq)(nil),                     // 226: super.GetGiftsReq
+	(*GetGiftsResp)(nil),                    // 227: super.GetGiftsResp
+	(*GetGiftReq)(nil),                      // 228: super.GetGiftReq
+	(*GetGiftResp)(nil),                     // 229: super.GetGiftResp
+	(*SendGiftReq)(nil),                     // 230: super.SendGiftReq
+	(*SendGiftResp)(nil),                    // 231: super.SendGiftResp
+	(*GetGiftRecordsReq)(nil),               // 232: super.GetGiftRecordsReq
+	(*GetGiftRecordsResp)(nil),              // 233: super.GetGiftRecordsResp
+	(*PurchaseGiftReq)(nil),                 // 234: super.PurchaseGiftReq
+	(*PurchaseGiftResp)(nil),                // 235: super.PurchaseGiftResp
+	(*GiftPurchaseOrder)(nil),               // 236: super.GiftPurchaseOrder
+	(*GetGiftPurchaseOrdersReq)(nil),        // 237: super.GetGiftPurchaseOrdersReq
+	(*GetGiftPurchaseOrdersResp)(nil),       // 238: super.GetGiftPurchaseOrdersResp
 }
 var file_super_proto_depIdxs = []int32{
 	0,   // 0: super.FeishuLoginResp.user:type_name -> super.User
@@ -14834,285 +15558,302 @@ var file_super_proto_depIdxs = []int32{
 	35,  // 12: super.CreateVipPlanResp.plan:type_name -> super.VipPlan
 	35,  // 13: super.GetVipPlansResp.plans:type_name -> super.VipPlan
 	42,  // 14: super.CreateVipOrderResp.order:type_name -> super.VipOrder
-	42,  // 15: super.GetVipOrdersResp.orders:type_name -> super.VipOrder
-	47,  // 16: super.GetVipRecordsResp.records:type_name -> super.VipRecord
-	47,  // 17: super.GetUserActiveVipRecordResp.record:type_name -> super.VipRecord
-	63,  // 18: super.GetTransactionsResp.transactions:type_name -> super.Transaction
-	63,  // 19: super.GetTransactionResp.transaction:type_name -> super.Transaction
-	67,  // 20: super.Post.topic_tags:type_name -> super.TopicTag
-	68,  // 21: super.GetPostsResp.posts:type_name -> super.Post
-	68,  // 22: super.GetPostResp.post:type_name -> super.Post
-	67,  // 23: super.CreatePostReq.topic_tags:type_name -> super.TopicTag
-	67,  // 24: super.UpdatePostReq.topic_tags:type_name -> super.TopicTag
-	68,  // 25: super.UpdatePostResp.post:type_name -> super.Post
-	68,  // 26: super.CreatePostResp.post:type_name -> super.Post
-	68,  // 27: super.LikePostResp.post:type_name -> super.Post
-	85,  // 28: super.GetPostCommentsResp.comments:type_name -> super.Comment
-	85,  // 29: super.CreateCommentResp.comment:type_name -> super.Comment
-	85,  // 30: super.LikeCommentResp.comment:type_name -> super.Comment
-	90,  // 31: super.GetNotificationsResp.notifications:type_name -> super.Notification
-	90,  // 32: super.CreateNotificationResp.notification:type_name -> super.Notification
-	101, // 33: super.SendPrivateMessageResp.message:type_name -> super.PrivateMessage
-	101, // 34: super.ListPrivateMessagesResp.messages:type_name -> super.PrivateMessage
-	101, // 35: super.PrivateConversation.last_message:type_name -> super.PrivateMessage
-	106, // 36: super.ListPrivateConversationsResp.conversations:type_name -> super.PrivateConversation
-	109, // 37: super.UpsertUserMemoryResp.memory:type_name -> super.UserMemory
-	109, // 38: super.GetUserMemoriesResp.memories:type_name -> super.UserMemory
-	114, // 39: super.GetUserMemoryProfilesResp.profiles:type_name -> super.UserMemoryProfile
-	109, // 40: super.SubmitUserMemoryFeedbackResp.memory:type_name -> super.UserMemory
-	121, // 41: super.SyncUserDeviceResp.device:type_name -> super.UserDeviceRecord
-	121, // 42: super.ListUserDevicesResp.devices:type_name -> super.UserDeviceRecord
-	126, // 43: super.ListUserMemoryEmbeddingsResp.items:type_name -> super.UserMemoryEmbeddingItem
-	133, // 44: super.ListUserMemoryRelationsResp.items:type_name -> super.UserMemoryRelationItem
-	136, // 45: super.ListAiResourceResp.items:type_name -> super.AiJsonResourceItem
-	136, // 46: super.UpsertAiResourceResp.item:type_name -> super.AiJsonResourceItem
-	0,   // 47: super.FriendRequestView.from_user:type_name -> super.User
-	0,   // 48: super.FriendRequestView.to_user:type_name -> super.User
-	148, // 49: super.SendFriendRequestResp.data:type_name -> super.FriendRequestView
-	148, // 50: super.ListIncomingFriendRequestsResp.data:type_name -> super.FriendRequestView
-	148, // 51: super.ListOutgoingFriendRequestsResp.data:type_name -> super.FriendRequestView
-	0,   // 52: super.ListFriendsResp.users:type_name -> super.User
-	0,   // 53: super.GetFollowingsResp.users:type_name -> super.User
-	0,   // 54: super.GetFollowersResp.users:type_name -> super.User
-	172, // 55: super.UserAvatarData.base_config:type_name -> super.AvatarBaseConfig
-	173, // 56: super.UserAvatarData.current_outfit:type_name -> super.AvatarOutfitConfig
-	174, // 57: super.GetUserAvatarResp.avatar:type_name -> super.UserAvatarData
-	172, // 58: super.UpdateUserAvatarReq.base_config:type_name -> super.AvatarBaseConfig
-	173, // 59: super.UpdateUserAvatarReq.current_outfit:type_name -> super.AvatarOutfitConfig
-	174, // 60: super.UpdateUserAvatarResp.avatar:type_name -> super.UserAvatarData
-	179, // 61: super.GetUserLevelResp.level_info:type_name -> super.UserLevelInfo
-	180, // 62: super.GetCheckInStatusResp.status:type_name -> super.CheckInStatus
-	181, // 63: super.GetCheckInHistoryResp.records:type_name -> super.CheckInRecord
-	182, // 64: super.GetExpLogsResp.logs:type_name -> super.ExpLogRecord
-	193, // 65: super.CreateGroupResp.group:type_name -> super.Group
-	193, // 66: super.GetGroupResp.group:type_name -> super.Group
-	193, // 67: super.GetGroupsResp.groups:type_name -> super.Group
-	193, // 68: super.UpdateGroupResp.group:type_name -> super.Group
-	194, // 69: super.GetGroupMembersResp.members:type_name -> super.GroupMember
-	193, // 70: super.GetUserGroupsResp.groups:type_name -> super.Group
-	213, // 71: super.GiftRecord.gift:type_name -> super.Gift
-	213, // 72: super.GetGiftsResp.gifts:type_name -> super.Gift
-	213, // 73: super.GetGiftResp.gift:type_name -> super.Gift
-	214, // 74: super.SendGiftResp.record:type_name -> super.GiftRecord
-	214, // 75: super.GetGiftRecordsResp.records:type_name -> super.GiftRecord
-	225, // 76: super.GetGiftPurchaseOrdersResp.orders:type_name -> super.GiftPurchaseOrder
-	11,  // 77: super.Super.Register:input_type -> super.RegisterReq
-	13,  // 78: super.Super.Login:input_type -> super.LoginReq
-	15,  // 79: super.Super.GetUserInfo:input_type -> super.GetUserInfoReq
-	17,  // 80: super.Super.GetUser:input_type -> super.GetUserReq
-	19,  // 81: super.Super.GetUserByEmail:input_type -> super.GetUserByEmailReq
-	21,  // 82: super.Super.UpdateUserInfo:input_type -> super.UpdateUserInfoReq
-	23,  // 83: super.Super.UpdateUserPassword:input_type -> super.UpdateUserPasswordReq
-	25,  // 84: super.Super.ResetPassword:input_type -> super.ResetPasswordReq
-	27,  // 85: super.Super.DeleteUser:input_type -> super.DeleteUserReq
-	29,  // 86: super.Super.UpdateUserVip:input_type -> super.UpdateUserVipReq
-	31,  // 87: super.Super.GetUsers:input_type -> super.GetUsersReq
-	33,  // 88: super.Super.GetUserCount:input_type -> super.GetUserCountReq
-	5,   // 89: super.Super.BindFeishu:input_type -> super.BindFeishuReq
-	7,   // 90: super.Super.UnbindFeishu:input_type -> super.UnbindFeishuReq
-	9,   // 91: super.Super.SendFeishuTestCard:input_type -> super.SendFeishuTestCardReq
-	1,   // 92: super.Super.FeishuAuthorizeURL:input_type -> super.FeishuAuthorizeURLReq
-	3,   // 93: super.Super.FeishuLogin:input_type -> super.FeishuLoginReq
-	110, // 94: super.Super.UpsertUserMemory:input_type -> super.UpsertUserMemoryReq
-	112, // 95: super.Super.GetUserMemories:input_type -> super.GetUserMemoriesReq
-	115, // 96: super.Super.GetUserMemoryProfiles:input_type -> super.GetUserMemoryProfilesReq
-	117, // 97: super.Super.DeleteUserMemory:input_type -> super.DeleteUserMemoryReq
-	119, // 98: super.Super.SubmitUserMemoryFeedback:input_type -> super.SubmitUserMemoryFeedbackReq
-	122, // 99: super.Super.SyncUserDevice:input_type -> super.SyncUserDeviceReq
-	124, // 100: super.Super.ListUserDevices:input_type -> super.ListUserDevicesReq
-	127, // 101: super.Super.ListUserMemoryEmbeddings:input_type -> super.ListUserMemoryEmbeddingsReq
-	129, // 102: super.Super.UpsertUserMemoryEmbedding:input_type -> super.UpsertUserMemoryEmbeddingReq
-	131, // 103: super.Super.RebuildUserMemoryEmbeddings:input_type -> super.RebuildUserMemoryEmbeddingsReq
-	134, // 104: super.Super.ListUserMemoryRelations:input_type -> super.ListUserMemoryRelationsReq
-	137, // 105: super.Super.ListAiProviders:input_type -> super.ListAiResourceReq
-	140, // 106: super.Super.UpsertAiProvider:input_type -> super.UpsertAiResourceReq
-	142, // 107: super.Super.DeleteAiProvider:input_type -> super.DeleteAiResourceReq
-	137, // 108: super.Super.ListAiAgents:input_type -> super.ListAiResourceReq
-	139, // 109: super.Super.ListPublicAiAgents:input_type -> super.ListPublicAiAgentsReq
-	140, // 110: super.Super.UpsertAiAgent:input_type -> super.UpsertAiResourceReq
-	142, // 111: super.Super.DeleteAiAgent:input_type -> super.DeleteAiResourceReq
-	137, // 112: super.Super.ListAiLorebooks:input_type -> super.ListAiResourceReq
-	140, // 113: super.Super.UpsertAiLorebook:input_type -> super.UpsertAiResourceReq
-	142, // 114: super.Super.DeleteAiLorebook:input_type -> super.DeleteAiResourceReq
-	144, // 115: super.Super.GetAiUserConfig:input_type -> super.GetAiUserConfigReq
-	146, // 116: super.Super.UpsertAiUserConfig:input_type -> super.UpsertAiUserConfigReq
-	40,  // 117: super.Super.GetVipPlans:input_type -> super.GetVipPlansReq
-	36,  // 118: super.Super.GetVipPlan:input_type -> super.GetVipPlanReq
-	38,  // 119: super.Super.CreateVipPlan:input_type -> super.CreateVipPlanReq
-	43,  // 120: super.Super.CreateVipOrder:input_type -> super.CreateVipOrderReq
-	45,  // 121: super.Super.GetVipOrders:input_type -> super.GetVipOrdersReq
-	48,  // 122: super.Super.GetVipRecords:input_type -> super.GetVipRecordsReq
-	50,  // 123: super.Super.GetUserActiveVipRecord:input_type -> super.GetUserActiveVipRecordReq
-	52,  // 124: super.Super.GetUserVipStatus:input_type -> super.GetUserVipStatusReq
-	54,  // 125: super.Super.CheckUserVip:input_type -> super.CheckUserVipReq
-	56,  // 126: super.Super.UpdateAutoRenew:input_type -> super.UpdateAutoRenewReq
-	58,  // 127: super.Super.SyncUserVipStatus:input_type -> super.SyncUserVipStatusReq
-	69,  // 128: super.Super.GetPosts:input_type -> super.GetPostsReq
-	71,  // 129: super.Super.GetPost:input_type -> super.GetPostReq
-	73,  // 130: super.Super.CreatePost:input_type -> super.CreatePostReq
-	74,  // 131: super.Super.UpdatePost:input_type -> super.UpdatePostReq
-	76,  // 132: super.Super.DeletePost:input_type -> super.DeletePostReq
-	78,  // 133: super.Super.ReportPost:input_type -> super.ReportPostReq
-	81,  // 134: super.Super.LikePost:input_type -> super.LikePostReq
-	83,  // 135: super.Super.GetPostComments:input_type -> super.GetPostCommentsReq
-	86,  // 136: super.Super.CreateComment:input_type -> super.CreateCommentReq
-	88,  // 137: super.Super.LikeComment:input_type -> super.LikeCommentReq
-	91,  // 138: super.Super.GetNotifications:input_type -> super.GetNotificationsReq
-	93,  // 139: super.Super.GetUnreadCount:input_type -> super.GetUnreadCountReq
-	95,  // 140: super.Super.ReadNotification:input_type -> super.ReadNotificationReq
-	97,  // 141: super.Super.ReadAllNotifications:input_type -> super.ReadAllNotificationsReq
-	99,  // 142: super.Super.CreateNotification:input_type -> super.CreateNotificationReq
-	102, // 143: super.Super.SendPrivateMessage:input_type -> super.SendPrivateMessageReq
-	104, // 144: super.Super.ListPrivateMessages:input_type -> super.ListPrivateMessagesReq
-	107, // 145: super.Super.ListPrivateConversations:input_type -> super.ListPrivateConversationsReq
-	60,  // 146: super.Super.Recharge:input_type -> super.RechargeReq
-	62,  // 147: super.Super.GetTransactions:input_type -> super.GetTransactionsReq
-	65,  // 148: super.Super.GetTransaction:input_type -> super.GetTransactionReq
-	163, // 149: super.Super.FollowUser:input_type -> super.FollowUserReq
-	165, // 150: super.Super.UnfollowUser:input_type -> super.UnfollowUserReq
-	166, // 151: super.Super.GetFollowings:input_type -> super.GetFollowingsReq
-	168, // 152: super.Super.GetFollowers:input_type -> super.GetFollowersReq
-	170, // 153: super.Super.CheckFollow:input_type -> super.CheckFollowReq
-	149, // 154: super.Super.SendFriendRequest:input_type -> super.SendFriendRequestReq
-	151, // 155: super.Super.ListIncomingFriendRequests:input_type -> super.ListIncomingFriendRequestsReq
-	153, // 156: super.Super.ListOutgoingFriendRequests:input_type -> super.ListOutgoingFriendRequestsReq
-	155, // 157: super.Super.AcceptFriendRequest:input_type -> super.AcceptFriendRequestReq
-	157, // 158: super.Super.RejectFriendRequest:input_type -> super.RejectFriendRequestReq
-	159, // 159: super.Super.ListFriends:input_type -> super.ListFriendsReq
-	161, // 160: super.Super.GetFriendRelation:input_type -> super.GetFriendRelationReq
-	175, // 161: super.Super.GetUserAvatar:input_type -> super.GetUserAvatarReq
-	177, // 162: super.Super.UpdateUserAvatar:input_type -> super.UpdateUserAvatarReq
-	183, // 163: super.Super.CheckIn:input_type -> super.CheckInReq
-	185, // 164: super.Super.GetUserLevel:input_type -> super.GetUserLevelReq
-	187, // 165: super.Super.GetCheckInStatus:input_type -> super.GetCheckInStatusReq
-	189, // 166: super.Super.GetCheckInHistory:input_type -> super.GetCheckInHistoryReq
-	191, // 167: super.Super.GetExpLogs:input_type -> super.GetExpLogsReq
-	195, // 168: super.Super.CreateGroup:input_type -> super.CreateGroupReq
-	197, // 169: super.Super.GetGroup:input_type -> super.GetGroupReq
-	199, // 170: super.Super.GetGroups:input_type -> super.GetGroupsReq
-	201, // 171: super.Super.UpdateGroup:input_type -> super.UpdateGroupReq
-	203, // 172: super.Super.DeleteGroup:input_type -> super.DeleteGroupReq
-	205, // 173: super.Super.JoinGroup:input_type -> super.JoinGroupReq
-	207, // 174: super.Super.LeaveGroup:input_type -> super.LeaveGroupReq
-	209, // 175: super.Super.GetGroupMembers:input_type -> super.GetGroupMembersReq
-	211, // 176: super.Super.GetUserGroups:input_type -> super.GetUserGroupsReq
-	215, // 177: super.Super.GetGifts:input_type -> super.GetGiftsReq
-	217, // 178: super.Super.GetGift:input_type -> super.GetGiftReq
-	219, // 179: super.Super.SendGift:input_type -> super.SendGiftReq
-	221, // 180: super.Super.GetGiftRecords:input_type -> super.GetGiftRecordsReq
-	223, // 181: super.Super.PurchaseGift:input_type -> super.PurchaseGiftReq
-	226, // 182: super.Super.GetGiftPurchaseOrders:input_type -> super.GetGiftPurchaseOrdersReq
-	12,  // 183: super.Super.Register:output_type -> super.RegisterResp
-	14,  // 184: super.Super.Login:output_type -> super.LoginResp
-	16,  // 185: super.Super.GetUserInfo:output_type -> super.GetUserInfoResp
-	18,  // 186: super.Super.GetUser:output_type -> super.GetUserResp
-	20,  // 187: super.Super.GetUserByEmail:output_type -> super.GetUserByEmailResp
-	22,  // 188: super.Super.UpdateUserInfo:output_type -> super.UpdateUserInfoResp
-	24,  // 189: super.Super.UpdateUserPassword:output_type -> super.UpdateUserPasswordResp
-	26,  // 190: super.Super.ResetPassword:output_type -> super.ResetPasswordResp
-	28,  // 191: super.Super.DeleteUser:output_type -> super.DeleteUserResp
-	30,  // 192: super.Super.UpdateUserVip:output_type -> super.UpdateUserVipResp
-	32,  // 193: super.Super.GetUsers:output_type -> super.GetUsersResp
-	34,  // 194: super.Super.GetUserCount:output_type -> super.GetUserCountResp
-	6,   // 195: super.Super.BindFeishu:output_type -> super.BindFeishuResp
-	8,   // 196: super.Super.UnbindFeishu:output_type -> super.UnbindFeishuResp
-	10,  // 197: super.Super.SendFeishuTestCard:output_type -> super.SendFeishuTestCardResp
-	2,   // 198: super.Super.FeishuAuthorizeURL:output_type -> super.FeishuAuthorizeURLResp
-	4,   // 199: super.Super.FeishuLogin:output_type -> super.FeishuLoginResp
-	111, // 200: super.Super.UpsertUserMemory:output_type -> super.UpsertUserMemoryResp
-	113, // 201: super.Super.GetUserMemories:output_type -> super.GetUserMemoriesResp
-	116, // 202: super.Super.GetUserMemoryProfiles:output_type -> super.GetUserMemoryProfilesResp
-	118, // 203: super.Super.DeleteUserMemory:output_type -> super.DeleteUserMemoryResp
-	120, // 204: super.Super.SubmitUserMemoryFeedback:output_type -> super.SubmitUserMemoryFeedbackResp
-	123, // 205: super.Super.SyncUserDevice:output_type -> super.SyncUserDeviceResp
-	125, // 206: super.Super.ListUserDevices:output_type -> super.ListUserDevicesResp
-	128, // 207: super.Super.ListUserMemoryEmbeddings:output_type -> super.ListUserMemoryEmbeddingsResp
-	130, // 208: super.Super.UpsertUserMemoryEmbedding:output_type -> super.UpsertUserMemoryEmbeddingResp
-	132, // 209: super.Super.RebuildUserMemoryEmbeddings:output_type -> super.RebuildUserMemoryEmbeddingsResp
-	135, // 210: super.Super.ListUserMemoryRelations:output_type -> super.ListUserMemoryRelationsResp
-	138, // 211: super.Super.ListAiProviders:output_type -> super.ListAiResourceResp
-	141, // 212: super.Super.UpsertAiProvider:output_type -> super.UpsertAiResourceResp
-	143, // 213: super.Super.DeleteAiProvider:output_type -> super.DeleteAiResourceResp
-	138, // 214: super.Super.ListAiAgents:output_type -> super.ListAiResourceResp
-	138, // 215: super.Super.ListPublicAiAgents:output_type -> super.ListAiResourceResp
-	141, // 216: super.Super.UpsertAiAgent:output_type -> super.UpsertAiResourceResp
-	143, // 217: super.Super.DeleteAiAgent:output_type -> super.DeleteAiResourceResp
-	138, // 218: super.Super.ListAiLorebooks:output_type -> super.ListAiResourceResp
-	141, // 219: super.Super.UpsertAiLorebook:output_type -> super.UpsertAiResourceResp
-	143, // 220: super.Super.DeleteAiLorebook:output_type -> super.DeleteAiResourceResp
-	145, // 221: super.Super.GetAiUserConfig:output_type -> super.GetAiUserConfigResp
-	147, // 222: super.Super.UpsertAiUserConfig:output_type -> super.UpsertAiUserConfigResp
-	41,  // 223: super.Super.GetVipPlans:output_type -> super.GetVipPlansResp
-	37,  // 224: super.Super.GetVipPlan:output_type -> super.GetVipPlanResp
-	39,  // 225: super.Super.CreateVipPlan:output_type -> super.CreateVipPlanResp
-	44,  // 226: super.Super.CreateVipOrder:output_type -> super.CreateVipOrderResp
-	46,  // 227: super.Super.GetVipOrders:output_type -> super.GetVipOrdersResp
-	49,  // 228: super.Super.GetVipRecords:output_type -> super.GetVipRecordsResp
-	51,  // 229: super.Super.GetUserActiveVipRecord:output_type -> super.GetUserActiveVipRecordResp
-	53,  // 230: super.Super.GetUserVipStatus:output_type -> super.GetUserVipStatusResp
-	55,  // 231: super.Super.CheckUserVip:output_type -> super.CheckUserVipResp
-	57,  // 232: super.Super.UpdateAutoRenew:output_type -> super.UpdateAutoRenewResp
-	59,  // 233: super.Super.SyncUserVipStatus:output_type -> super.SyncUserVipStatusResp
-	70,  // 234: super.Super.GetPosts:output_type -> super.GetPostsResp
-	72,  // 235: super.Super.GetPost:output_type -> super.GetPostResp
-	80,  // 236: super.Super.CreatePost:output_type -> super.CreatePostResp
-	75,  // 237: super.Super.UpdatePost:output_type -> super.UpdatePostResp
-	77,  // 238: super.Super.DeletePost:output_type -> super.DeletePostResp
-	79,  // 239: super.Super.ReportPost:output_type -> super.ReportPostResp
-	82,  // 240: super.Super.LikePost:output_type -> super.LikePostResp
-	84,  // 241: super.Super.GetPostComments:output_type -> super.GetPostCommentsResp
-	87,  // 242: super.Super.CreateComment:output_type -> super.CreateCommentResp
-	89,  // 243: super.Super.LikeComment:output_type -> super.LikeCommentResp
-	92,  // 244: super.Super.GetNotifications:output_type -> super.GetNotificationsResp
-	94,  // 245: super.Super.GetUnreadCount:output_type -> super.GetUnreadCountResp
-	96,  // 246: super.Super.ReadNotification:output_type -> super.ReadNotificationResp
-	98,  // 247: super.Super.ReadAllNotifications:output_type -> super.ReadAllNotificationsResp
-	100, // 248: super.Super.CreateNotification:output_type -> super.CreateNotificationResp
-	103, // 249: super.Super.SendPrivateMessage:output_type -> super.SendPrivateMessageResp
-	105, // 250: super.Super.ListPrivateMessages:output_type -> super.ListPrivateMessagesResp
-	108, // 251: super.Super.ListPrivateConversations:output_type -> super.ListPrivateConversationsResp
-	61,  // 252: super.Super.Recharge:output_type -> super.RechargeResp
-	64,  // 253: super.Super.GetTransactions:output_type -> super.GetTransactionsResp
-	66,  // 254: super.Super.GetTransaction:output_type -> super.GetTransactionResp
-	164, // 255: super.Super.FollowUser:output_type -> super.FollowUserResp
-	164, // 256: super.Super.UnfollowUser:output_type -> super.FollowUserResp
-	167, // 257: super.Super.GetFollowings:output_type -> super.GetFollowingsResp
-	169, // 258: super.Super.GetFollowers:output_type -> super.GetFollowersResp
-	171, // 259: super.Super.CheckFollow:output_type -> super.CheckFollowResp
-	150, // 260: super.Super.SendFriendRequest:output_type -> super.SendFriendRequestResp
-	152, // 261: super.Super.ListIncomingFriendRequests:output_type -> super.ListIncomingFriendRequestsResp
-	154, // 262: super.Super.ListOutgoingFriendRequests:output_type -> super.ListOutgoingFriendRequestsResp
-	156, // 263: super.Super.AcceptFriendRequest:output_type -> super.AcceptFriendRequestResp
-	158, // 264: super.Super.RejectFriendRequest:output_type -> super.RejectFriendRequestResp
-	160, // 265: super.Super.ListFriends:output_type -> super.ListFriendsResp
-	162, // 266: super.Super.GetFriendRelation:output_type -> super.GetFriendRelationResp
-	176, // 267: super.Super.GetUserAvatar:output_type -> super.GetUserAvatarResp
-	178, // 268: super.Super.UpdateUserAvatar:output_type -> super.UpdateUserAvatarResp
-	184, // 269: super.Super.CheckIn:output_type -> super.CheckInResp
-	186, // 270: super.Super.GetUserLevel:output_type -> super.GetUserLevelResp
-	188, // 271: super.Super.GetCheckInStatus:output_type -> super.GetCheckInStatusResp
-	190, // 272: super.Super.GetCheckInHistory:output_type -> super.GetCheckInHistoryResp
-	192, // 273: super.Super.GetExpLogs:output_type -> super.GetExpLogsResp
-	196, // 274: super.Super.CreateGroup:output_type -> super.CreateGroupResp
-	198, // 275: super.Super.GetGroup:output_type -> super.GetGroupResp
-	200, // 276: super.Super.GetGroups:output_type -> super.GetGroupsResp
-	202, // 277: super.Super.UpdateGroup:output_type -> super.UpdateGroupResp
-	204, // 278: super.Super.DeleteGroup:output_type -> super.DeleteGroupResp
-	206, // 279: super.Super.JoinGroup:output_type -> super.JoinGroupResp
-	208, // 280: super.Super.LeaveGroup:output_type -> super.LeaveGroupResp
-	210, // 281: super.Super.GetGroupMembers:output_type -> super.GetGroupMembersResp
-	212, // 282: super.Super.GetUserGroups:output_type -> super.GetUserGroupsResp
-	216, // 283: super.Super.GetGifts:output_type -> super.GetGiftsResp
-	218, // 284: super.Super.GetGift:output_type -> super.GetGiftResp
-	220, // 285: super.Super.SendGift:output_type -> super.SendGiftResp
-	222, // 286: super.Super.GetGiftRecords:output_type -> super.GetGiftRecordsResp
-	224, // 287: super.Super.PurchaseGift:output_type -> super.PurchaseGiftResp
-	227, // 288: super.Super.GetGiftPurchaseOrders:output_type -> super.GetGiftPurchaseOrdersResp
-	183, // [183:289] is the sub-list for method output_type
-	77,  // [77:183] is the sub-list for method input_type
-	77,  // [77:77] is the sub-list for extension type_name
-	77,  // [77:77] is the sub-list for extension extendee
-	0,   // [0:77] is the sub-list for field type_name
+	184, // 15: super.CreateVipOrderResp.new_achievements:type_name -> super.AchievementUnlock
+	42,  // 16: super.GetVipOrdersResp.orders:type_name -> super.VipOrder
+	47,  // 17: super.GetVipRecordsResp.records:type_name -> super.VipRecord
+	47,  // 18: super.GetUserActiveVipRecordResp.record:type_name -> super.VipRecord
+	63,  // 19: super.GetTransactionsResp.transactions:type_name -> super.Transaction
+	63,  // 20: super.GetTransactionResp.transaction:type_name -> super.Transaction
+	67,  // 21: super.Post.topic_tags:type_name -> super.TopicTag
+	68,  // 22: super.GetPostsResp.posts:type_name -> super.Post
+	68,  // 23: super.GetPostResp.post:type_name -> super.Post
+	67,  // 24: super.CreatePostReq.topic_tags:type_name -> super.TopicTag
+	67,  // 25: super.UpdatePostReq.topic_tags:type_name -> super.TopicTag
+	68,  // 26: super.UpdatePostResp.post:type_name -> super.Post
+	68,  // 27: super.CreatePostResp.post:type_name -> super.Post
+	184, // 28: super.CreatePostResp.new_achievements:type_name -> super.AchievementUnlock
+	68,  // 29: super.LikePostResp.post:type_name -> super.Post
+	85,  // 30: super.GetPostCommentsResp.comments:type_name -> super.Comment
+	85,  // 31: super.CreateCommentResp.comment:type_name -> super.Comment
+	184, // 32: super.CreateCommentResp.new_achievements:type_name -> super.AchievementUnlock
+	85,  // 33: super.LikeCommentResp.comment:type_name -> super.Comment
+	90,  // 34: super.GetNotificationsResp.notifications:type_name -> super.Notification
+	90,  // 35: super.CreateNotificationResp.notification:type_name -> super.Notification
+	101, // 36: super.SendPrivateMessageResp.message:type_name -> super.PrivateMessage
+	101, // 37: super.ListPrivateMessagesResp.messages:type_name -> super.PrivateMessage
+	101, // 38: super.PrivateConversation.last_message:type_name -> super.PrivateMessage
+	106, // 39: super.ListPrivateConversationsResp.conversations:type_name -> super.PrivateConversation
+	109, // 40: super.UpsertUserMemoryResp.memory:type_name -> super.UserMemory
+	109, // 41: super.GetUserMemoriesResp.memories:type_name -> super.UserMemory
+	114, // 42: super.GetUserMemoryProfilesResp.profiles:type_name -> super.UserMemoryProfile
+	109, // 43: super.SubmitUserMemoryFeedbackResp.memory:type_name -> super.UserMemory
+	121, // 44: super.SyncUserDeviceResp.device:type_name -> super.UserDeviceRecord
+	121, // 45: super.ListUserDevicesResp.devices:type_name -> super.UserDeviceRecord
+	126, // 46: super.ListUserMemoryEmbeddingsResp.items:type_name -> super.UserMemoryEmbeddingItem
+	133, // 47: super.ListUserMemoryRelationsResp.items:type_name -> super.UserMemoryRelationItem
+	136, // 48: super.ListAiResourceResp.items:type_name -> super.AiJsonResourceItem
+	136, // 49: super.UpsertAiResourceResp.item:type_name -> super.AiJsonResourceItem
+	0,   // 50: super.FriendRequestView.from_user:type_name -> super.User
+	0,   // 51: super.FriendRequestView.to_user:type_name -> super.User
+	148, // 52: super.SendFriendRequestResp.data:type_name -> super.FriendRequestView
+	148, // 53: super.ListIncomingFriendRequestsResp.data:type_name -> super.FriendRequestView
+	148, // 54: super.ListOutgoingFriendRequestsResp.data:type_name -> super.FriendRequestView
+	0,   // 55: super.ListFriendsResp.users:type_name -> super.User
+	0,   // 56: super.GetFollowingsResp.users:type_name -> super.User
+	0,   // 57: super.GetFollowersResp.users:type_name -> super.User
+	172, // 58: super.UserAvatarData.base_config:type_name -> super.AvatarBaseConfig
+	173, // 59: super.UserAvatarData.current_outfit:type_name -> super.AvatarOutfitConfig
+	174, // 60: super.GetUserAvatarResp.avatar:type_name -> super.UserAvatarData
+	172, // 61: super.UpdateUserAvatarReq.base_config:type_name -> super.AvatarBaseConfig
+	173, // 62: super.UpdateUserAvatarReq.current_outfit:type_name -> super.AvatarOutfitConfig
+	174, // 63: super.UpdateUserAvatarResp.avatar:type_name -> super.UserAvatarData
+	184, // 64: super.CheckInResp.new_achievements:type_name -> super.AchievementUnlock
+	179, // 65: super.GetUserLevelResp.level_info:type_name -> super.UserLevelInfo
+	180, // 66: super.GetCheckInStatusResp.status:type_name -> super.CheckInStatus
+	181, // 67: super.GetCheckInHistoryResp.records:type_name -> super.CheckInRecord
+	182, // 68: super.GetExpLogsResp.logs:type_name -> super.ExpLogRecord
+	194, // 69: super.GetUserAchievementsResp.badges:type_name -> super.AchievementBadgeItem
+	194, // 70: super.GetUserUnlockedAchievementsResp.badges:type_name -> super.AchievementBadgeItem
+	195, // 71: super.GetUserAchievementSummaryResp.summary:type_name -> super.AchievementSummary
+	184, // 72: super.EnsureUserAchievementsResp.new_achievements:type_name -> super.AchievementUnlock
+	204, // 73: super.CreateGroupResp.group:type_name -> super.Group
+	204, // 74: super.GetGroupResp.group:type_name -> super.Group
+	204, // 75: super.GetGroupsResp.groups:type_name -> super.Group
+	204, // 76: super.UpdateGroupResp.group:type_name -> super.Group
+	205, // 77: super.GetGroupMembersResp.members:type_name -> super.GroupMember
+	204, // 78: super.GetUserGroupsResp.groups:type_name -> super.Group
+	224, // 79: super.GiftRecord.gift:type_name -> super.Gift
+	224, // 80: super.GetGiftsResp.gifts:type_name -> super.Gift
+	224, // 81: super.GetGiftResp.gift:type_name -> super.Gift
+	225, // 82: super.SendGiftResp.record:type_name -> super.GiftRecord
+	184, // 83: super.SendGiftResp.new_achievements:type_name -> super.AchievementUnlock
+	225, // 84: super.GetGiftRecordsResp.records:type_name -> super.GiftRecord
+	236, // 85: super.GetGiftPurchaseOrdersResp.orders:type_name -> super.GiftPurchaseOrder
+	11,  // 86: super.Super.Register:input_type -> super.RegisterReq
+	13,  // 87: super.Super.Login:input_type -> super.LoginReq
+	15,  // 88: super.Super.GetUserInfo:input_type -> super.GetUserInfoReq
+	17,  // 89: super.Super.GetUser:input_type -> super.GetUserReq
+	19,  // 90: super.Super.GetUserByEmail:input_type -> super.GetUserByEmailReq
+	21,  // 91: super.Super.UpdateUserInfo:input_type -> super.UpdateUserInfoReq
+	23,  // 92: super.Super.UpdateUserPassword:input_type -> super.UpdateUserPasswordReq
+	25,  // 93: super.Super.ResetPassword:input_type -> super.ResetPasswordReq
+	27,  // 94: super.Super.DeleteUser:input_type -> super.DeleteUserReq
+	29,  // 95: super.Super.UpdateUserVip:input_type -> super.UpdateUserVipReq
+	31,  // 96: super.Super.GetUsers:input_type -> super.GetUsersReq
+	33,  // 97: super.Super.GetUserCount:input_type -> super.GetUserCountReq
+	5,   // 98: super.Super.BindFeishu:input_type -> super.BindFeishuReq
+	7,   // 99: super.Super.UnbindFeishu:input_type -> super.UnbindFeishuReq
+	9,   // 100: super.Super.SendFeishuTestCard:input_type -> super.SendFeishuTestCardReq
+	1,   // 101: super.Super.FeishuAuthorizeURL:input_type -> super.FeishuAuthorizeURLReq
+	3,   // 102: super.Super.FeishuLogin:input_type -> super.FeishuLoginReq
+	110, // 103: super.Super.UpsertUserMemory:input_type -> super.UpsertUserMemoryReq
+	112, // 104: super.Super.GetUserMemories:input_type -> super.GetUserMemoriesReq
+	115, // 105: super.Super.GetUserMemoryProfiles:input_type -> super.GetUserMemoryProfilesReq
+	117, // 106: super.Super.DeleteUserMemory:input_type -> super.DeleteUserMemoryReq
+	119, // 107: super.Super.SubmitUserMemoryFeedback:input_type -> super.SubmitUserMemoryFeedbackReq
+	122, // 108: super.Super.SyncUserDevice:input_type -> super.SyncUserDeviceReq
+	124, // 109: super.Super.ListUserDevices:input_type -> super.ListUserDevicesReq
+	127, // 110: super.Super.ListUserMemoryEmbeddings:input_type -> super.ListUserMemoryEmbeddingsReq
+	129, // 111: super.Super.UpsertUserMemoryEmbedding:input_type -> super.UpsertUserMemoryEmbeddingReq
+	131, // 112: super.Super.RebuildUserMemoryEmbeddings:input_type -> super.RebuildUserMemoryEmbeddingsReq
+	134, // 113: super.Super.ListUserMemoryRelations:input_type -> super.ListUserMemoryRelationsReq
+	137, // 114: super.Super.ListAiProviders:input_type -> super.ListAiResourceReq
+	140, // 115: super.Super.UpsertAiProvider:input_type -> super.UpsertAiResourceReq
+	142, // 116: super.Super.DeleteAiProvider:input_type -> super.DeleteAiResourceReq
+	137, // 117: super.Super.ListAiAgents:input_type -> super.ListAiResourceReq
+	139, // 118: super.Super.ListPublicAiAgents:input_type -> super.ListPublicAiAgentsReq
+	140, // 119: super.Super.UpsertAiAgent:input_type -> super.UpsertAiResourceReq
+	142, // 120: super.Super.DeleteAiAgent:input_type -> super.DeleteAiResourceReq
+	137, // 121: super.Super.ListAiLorebooks:input_type -> super.ListAiResourceReq
+	140, // 122: super.Super.UpsertAiLorebook:input_type -> super.UpsertAiResourceReq
+	142, // 123: super.Super.DeleteAiLorebook:input_type -> super.DeleteAiResourceReq
+	144, // 124: super.Super.GetAiUserConfig:input_type -> super.GetAiUserConfigReq
+	146, // 125: super.Super.UpsertAiUserConfig:input_type -> super.UpsertAiUserConfigReq
+	40,  // 126: super.Super.GetVipPlans:input_type -> super.GetVipPlansReq
+	36,  // 127: super.Super.GetVipPlan:input_type -> super.GetVipPlanReq
+	38,  // 128: super.Super.CreateVipPlan:input_type -> super.CreateVipPlanReq
+	43,  // 129: super.Super.CreateVipOrder:input_type -> super.CreateVipOrderReq
+	45,  // 130: super.Super.GetVipOrders:input_type -> super.GetVipOrdersReq
+	48,  // 131: super.Super.GetVipRecords:input_type -> super.GetVipRecordsReq
+	50,  // 132: super.Super.GetUserActiveVipRecord:input_type -> super.GetUserActiveVipRecordReq
+	52,  // 133: super.Super.GetUserVipStatus:input_type -> super.GetUserVipStatusReq
+	54,  // 134: super.Super.CheckUserVip:input_type -> super.CheckUserVipReq
+	56,  // 135: super.Super.UpdateAutoRenew:input_type -> super.UpdateAutoRenewReq
+	58,  // 136: super.Super.SyncUserVipStatus:input_type -> super.SyncUserVipStatusReq
+	69,  // 137: super.Super.GetPosts:input_type -> super.GetPostsReq
+	71,  // 138: super.Super.GetPost:input_type -> super.GetPostReq
+	73,  // 139: super.Super.CreatePost:input_type -> super.CreatePostReq
+	74,  // 140: super.Super.UpdatePost:input_type -> super.UpdatePostReq
+	76,  // 141: super.Super.DeletePost:input_type -> super.DeletePostReq
+	78,  // 142: super.Super.ReportPost:input_type -> super.ReportPostReq
+	81,  // 143: super.Super.LikePost:input_type -> super.LikePostReq
+	83,  // 144: super.Super.GetPostComments:input_type -> super.GetPostCommentsReq
+	86,  // 145: super.Super.CreateComment:input_type -> super.CreateCommentReq
+	88,  // 146: super.Super.LikeComment:input_type -> super.LikeCommentReq
+	91,  // 147: super.Super.GetNotifications:input_type -> super.GetNotificationsReq
+	93,  // 148: super.Super.GetUnreadCount:input_type -> super.GetUnreadCountReq
+	95,  // 149: super.Super.ReadNotification:input_type -> super.ReadNotificationReq
+	97,  // 150: super.Super.ReadAllNotifications:input_type -> super.ReadAllNotificationsReq
+	99,  // 151: super.Super.CreateNotification:input_type -> super.CreateNotificationReq
+	102, // 152: super.Super.SendPrivateMessage:input_type -> super.SendPrivateMessageReq
+	104, // 153: super.Super.ListPrivateMessages:input_type -> super.ListPrivateMessagesReq
+	107, // 154: super.Super.ListPrivateConversations:input_type -> super.ListPrivateConversationsReq
+	60,  // 155: super.Super.Recharge:input_type -> super.RechargeReq
+	62,  // 156: super.Super.GetTransactions:input_type -> super.GetTransactionsReq
+	65,  // 157: super.Super.GetTransaction:input_type -> super.GetTransactionReq
+	163, // 158: super.Super.FollowUser:input_type -> super.FollowUserReq
+	165, // 159: super.Super.UnfollowUser:input_type -> super.UnfollowUserReq
+	166, // 160: super.Super.GetFollowings:input_type -> super.GetFollowingsReq
+	168, // 161: super.Super.GetFollowers:input_type -> super.GetFollowersReq
+	170, // 162: super.Super.CheckFollow:input_type -> super.CheckFollowReq
+	149, // 163: super.Super.SendFriendRequest:input_type -> super.SendFriendRequestReq
+	151, // 164: super.Super.ListIncomingFriendRequests:input_type -> super.ListIncomingFriendRequestsReq
+	153, // 165: super.Super.ListOutgoingFriendRequests:input_type -> super.ListOutgoingFriendRequestsReq
+	155, // 166: super.Super.AcceptFriendRequest:input_type -> super.AcceptFriendRequestReq
+	157, // 167: super.Super.RejectFriendRequest:input_type -> super.RejectFriendRequestReq
+	159, // 168: super.Super.ListFriends:input_type -> super.ListFriendsReq
+	161, // 169: super.Super.GetFriendRelation:input_type -> super.GetFriendRelationReq
+	175, // 170: super.Super.GetUserAvatar:input_type -> super.GetUserAvatarReq
+	177, // 171: super.Super.UpdateUserAvatar:input_type -> super.UpdateUserAvatarReq
+	183, // 172: super.Super.CheckIn:input_type -> super.CheckInReq
+	186, // 173: super.Super.GetUserLevel:input_type -> super.GetUserLevelReq
+	188, // 174: super.Super.GetCheckInStatus:input_type -> super.GetCheckInStatusReq
+	190, // 175: super.Super.GetCheckInHistory:input_type -> super.GetCheckInHistoryReq
+	192, // 176: super.Super.GetExpLogs:input_type -> super.GetExpLogsReq
+	196, // 177: super.Super.GetUserAchievements:input_type -> super.GetUserAchievementsReq
+	198, // 178: super.Super.GetUserUnlockedAchievements:input_type -> super.GetUserUnlockedAchievementsReq
+	200, // 179: super.Super.GetUserAchievementSummary:input_type -> super.GetUserAchievementSummaryReq
+	202, // 180: super.Super.EnsureUserAchievements:input_type -> super.EnsureUserAchievementsReq
+	206, // 181: super.Super.CreateGroup:input_type -> super.CreateGroupReq
+	208, // 182: super.Super.GetGroup:input_type -> super.GetGroupReq
+	210, // 183: super.Super.GetGroups:input_type -> super.GetGroupsReq
+	212, // 184: super.Super.UpdateGroup:input_type -> super.UpdateGroupReq
+	214, // 185: super.Super.DeleteGroup:input_type -> super.DeleteGroupReq
+	216, // 186: super.Super.JoinGroup:input_type -> super.JoinGroupReq
+	218, // 187: super.Super.LeaveGroup:input_type -> super.LeaveGroupReq
+	220, // 188: super.Super.GetGroupMembers:input_type -> super.GetGroupMembersReq
+	222, // 189: super.Super.GetUserGroups:input_type -> super.GetUserGroupsReq
+	226, // 190: super.Super.GetGifts:input_type -> super.GetGiftsReq
+	228, // 191: super.Super.GetGift:input_type -> super.GetGiftReq
+	230, // 192: super.Super.SendGift:input_type -> super.SendGiftReq
+	232, // 193: super.Super.GetGiftRecords:input_type -> super.GetGiftRecordsReq
+	234, // 194: super.Super.PurchaseGift:input_type -> super.PurchaseGiftReq
+	237, // 195: super.Super.GetGiftPurchaseOrders:input_type -> super.GetGiftPurchaseOrdersReq
+	12,  // 196: super.Super.Register:output_type -> super.RegisterResp
+	14,  // 197: super.Super.Login:output_type -> super.LoginResp
+	16,  // 198: super.Super.GetUserInfo:output_type -> super.GetUserInfoResp
+	18,  // 199: super.Super.GetUser:output_type -> super.GetUserResp
+	20,  // 200: super.Super.GetUserByEmail:output_type -> super.GetUserByEmailResp
+	22,  // 201: super.Super.UpdateUserInfo:output_type -> super.UpdateUserInfoResp
+	24,  // 202: super.Super.UpdateUserPassword:output_type -> super.UpdateUserPasswordResp
+	26,  // 203: super.Super.ResetPassword:output_type -> super.ResetPasswordResp
+	28,  // 204: super.Super.DeleteUser:output_type -> super.DeleteUserResp
+	30,  // 205: super.Super.UpdateUserVip:output_type -> super.UpdateUserVipResp
+	32,  // 206: super.Super.GetUsers:output_type -> super.GetUsersResp
+	34,  // 207: super.Super.GetUserCount:output_type -> super.GetUserCountResp
+	6,   // 208: super.Super.BindFeishu:output_type -> super.BindFeishuResp
+	8,   // 209: super.Super.UnbindFeishu:output_type -> super.UnbindFeishuResp
+	10,  // 210: super.Super.SendFeishuTestCard:output_type -> super.SendFeishuTestCardResp
+	2,   // 211: super.Super.FeishuAuthorizeURL:output_type -> super.FeishuAuthorizeURLResp
+	4,   // 212: super.Super.FeishuLogin:output_type -> super.FeishuLoginResp
+	111, // 213: super.Super.UpsertUserMemory:output_type -> super.UpsertUserMemoryResp
+	113, // 214: super.Super.GetUserMemories:output_type -> super.GetUserMemoriesResp
+	116, // 215: super.Super.GetUserMemoryProfiles:output_type -> super.GetUserMemoryProfilesResp
+	118, // 216: super.Super.DeleteUserMemory:output_type -> super.DeleteUserMemoryResp
+	120, // 217: super.Super.SubmitUserMemoryFeedback:output_type -> super.SubmitUserMemoryFeedbackResp
+	123, // 218: super.Super.SyncUserDevice:output_type -> super.SyncUserDeviceResp
+	125, // 219: super.Super.ListUserDevices:output_type -> super.ListUserDevicesResp
+	128, // 220: super.Super.ListUserMemoryEmbeddings:output_type -> super.ListUserMemoryEmbeddingsResp
+	130, // 221: super.Super.UpsertUserMemoryEmbedding:output_type -> super.UpsertUserMemoryEmbeddingResp
+	132, // 222: super.Super.RebuildUserMemoryEmbeddings:output_type -> super.RebuildUserMemoryEmbeddingsResp
+	135, // 223: super.Super.ListUserMemoryRelations:output_type -> super.ListUserMemoryRelationsResp
+	138, // 224: super.Super.ListAiProviders:output_type -> super.ListAiResourceResp
+	141, // 225: super.Super.UpsertAiProvider:output_type -> super.UpsertAiResourceResp
+	143, // 226: super.Super.DeleteAiProvider:output_type -> super.DeleteAiResourceResp
+	138, // 227: super.Super.ListAiAgents:output_type -> super.ListAiResourceResp
+	138, // 228: super.Super.ListPublicAiAgents:output_type -> super.ListAiResourceResp
+	141, // 229: super.Super.UpsertAiAgent:output_type -> super.UpsertAiResourceResp
+	143, // 230: super.Super.DeleteAiAgent:output_type -> super.DeleteAiResourceResp
+	138, // 231: super.Super.ListAiLorebooks:output_type -> super.ListAiResourceResp
+	141, // 232: super.Super.UpsertAiLorebook:output_type -> super.UpsertAiResourceResp
+	143, // 233: super.Super.DeleteAiLorebook:output_type -> super.DeleteAiResourceResp
+	145, // 234: super.Super.GetAiUserConfig:output_type -> super.GetAiUserConfigResp
+	147, // 235: super.Super.UpsertAiUserConfig:output_type -> super.UpsertAiUserConfigResp
+	41,  // 236: super.Super.GetVipPlans:output_type -> super.GetVipPlansResp
+	37,  // 237: super.Super.GetVipPlan:output_type -> super.GetVipPlanResp
+	39,  // 238: super.Super.CreateVipPlan:output_type -> super.CreateVipPlanResp
+	44,  // 239: super.Super.CreateVipOrder:output_type -> super.CreateVipOrderResp
+	46,  // 240: super.Super.GetVipOrders:output_type -> super.GetVipOrdersResp
+	49,  // 241: super.Super.GetVipRecords:output_type -> super.GetVipRecordsResp
+	51,  // 242: super.Super.GetUserActiveVipRecord:output_type -> super.GetUserActiveVipRecordResp
+	53,  // 243: super.Super.GetUserVipStatus:output_type -> super.GetUserVipStatusResp
+	55,  // 244: super.Super.CheckUserVip:output_type -> super.CheckUserVipResp
+	57,  // 245: super.Super.UpdateAutoRenew:output_type -> super.UpdateAutoRenewResp
+	59,  // 246: super.Super.SyncUserVipStatus:output_type -> super.SyncUserVipStatusResp
+	70,  // 247: super.Super.GetPosts:output_type -> super.GetPostsResp
+	72,  // 248: super.Super.GetPost:output_type -> super.GetPostResp
+	80,  // 249: super.Super.CreatePost:output_type -> super.CreatePostResp
+	75,  // 250: super.Super.UpdatePost:output_type -> super.UpdatePostResp
+	77,  // 251: super.Super.DeletePost:output_type -> super.DeletePostResp
+	79,  // 252: super.Super.ReportPost:output_type -> super.ReportPostResp
+	82,  // 253: super.Super.LikePost:output_type -> super.LikePostResp
+	84,  // 254: super.Super.GetPostComments:output_type -> super.GetPostCommentsResp
+	87,  // 255: super.Super.CreateComment:output_type -> super.CreateCommentResp
+	89,  // 256: super.Super.LikeComment:output_type -> super.LikeCommentResp
+	92,  // 257: super.Super.GetNotifications:output_type -> super.GetNotificationsResp
+	94,  // 258: super.Super.GetUnreadCount:output_type -> super.GetUnreadCountResp
+	96,  // 259: super.Super.ReadNotification:output_type -> super.ReadNotificationResp
+	98,  // 260: super.Super.ReadAllNotifications:output_type -> super.ReadAllNotificationsResp
+	100, // 261: super.Super.CreateNotification:output_type -> super.CreateNotificationResp
+	103, // 262: super.Super.SendPrivateMessage:output_type -> super.SendPrivateMessageResp
+	105, // 263: super.Super.ListPrivateMessages:output_type -> super.ListPrivateMessagesResp
+	108, // 264: super.Super.ListPrivateConversations:output_type -> super.ListPrivateConversationsResp
+	61,  // 265: super.Super.Recharge:output_type -> super.RechargeResp
+	64,  // 266: super.Super.GetTransactions:output_type -> super.GetTransactionsResp
+	66,  // 267: super.Super.GetTransaction:output_type -> super.GetTransactionResp
+	164, // 268: super.Super.FollowUser:output_type -> super.FollowUserResp
+	164, // 269: super.Super.UnfollowUser:output_type -> super.FollowUserResp
+	167, // 270: super.Super.GetFollowings:output_type -> super.GetFollowingsResp
+	169, // 271: super.Super.GetFollowers:output_type -> super.GetFollowersResp
+	171, // 272: super.Super.CheckFollow:output_type -> super.CheckFollowResp
+	150, // 273: super.Super.SendFriendRequest:output_type -> super.SendFriendRequestResp
+	152, // 274: super.Super.ListIncomingFriendRequests:output_type -> super.ListIncomingFriendRequestsResp
+	154, // 275: super.Super.ListOutgoingFriendRequests:output_type -> super.ListOutgoingFriendRequestsResp
+	156, // 276: super.Super.AcceptFriendRequest:output_type -> super.AcceptFriendRequestResp
+	158, // 277: super.Super.RejectFriendRequest:output_type -> super.RejectFriendRequestResp
+	160, // 278: super.Super.ListFriends:output_type -> super.ListFriendsResp
+	162, // 279: super.Super.GetFriendRelation:output_type -> super.GetFriendRelationResp
+	176, // 280: super.Super.GetUserAvatar:output_type -> super.GetUserAvatarResp
+	178, // 281: super.Super.UpdateUserAvatar:output_type -> super.UpdateUserAvatarResp
+	185, // 282: super.Super.CheckIn:output_type -> super.CheckInResp
+	187, // 283: super.Super.GetUserLevel:output_type -> super.GetUserLevelResp
+	189, // 284: super.Super.GetCheckInStatus:output_type -> super.GetCheckInStatusResp
+	191, // 285: super.Super.GetCheckInHistory:output_type -> super.GetCheckInHistoryResp
+	193, // 286: super.Super.GetExpLogs:output_type -> super.GetExpLogsResp
+	197, // 287: super.Super.GetUserAchievements:output_type -> super.GetUserAchievementsResp
+	199, // 288: super.Super.GetUserUnlockedAchievements:output_type -> super.GetUserUnlockedAchievementsResp
+	201, // 289: super.Super.GetUserAchievementSummary:output_type -> super.GetUserAchievementSummaryResp
+	203, // 290: super.Super.EnsureUserAchievements:output_type -> super.EnsureUserAchievementsResp
+	207, // 291: super.Super.CreateGroup:output_type -> super.CreateGroupResp
+	209, // 292: super.Super.GetGroup:output_type -> super.GetGroupResp
+	211, // 293: super.Super.GetGroups:output_type -> super.GetGroupsResp
+	213, // 294: super.Super.UpdateGroup:output_type -> super.UpdateGroupResp
+	215, // 295: super.Super.DeleteGroup:output_type -> super.DeleteGroupResp
+	217, // 296: super.Super.JoinGroup:output_type -> super.JoinGroupResp
+	219, // 297: super.Super.LeaveGroup:output_type -> super.LeaveGroupResp
+	221, // 298: super.Super.GetGroupMembers:output_type -> super.GetGroupMembersResp
+	223, // 299: super.Super.GetUserGroups:output_type -> super.GetUserGroupsResp
+	227, // 300: super.Super.GetGifts:output_type -> super.GetGiftsResp
+	229, // 301: super.Super.GetGift:output_type -> super.GetGiftResp
+	231, // 302: super.Super.SendGift:output_type -> super.SendGiftResp
+	233, // 303: super.Super.GetGiftRecords:output_type -> super.GetGiftRecordsResp
+	235, // 304: super.Super.PurchaseGift:output_type -> super.PurchaseGiftResp
+	238, // 305: super.Super.GetGiftPurchaseOrders:output_type -> super.GetGiftPurchaseOrdersResp
+	196, // [196:306] is the sub-list for method output_type
+	86,  // [86:196] is the sub-list for method input_type
+	86,  // [86:86] is the sub-list for extension type_name
+	86,  // [86:86] is the sub-list for extension extendee
+	0,   // [0:86] is the sub-list for field type_name
 }
 
 func init() { file_super_proto_init() }
@@ -15126,7 +15867,7 @@ func file_super_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_super_proto_rawDesc), len(file_super_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   228,
+			NumMessages:   239,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

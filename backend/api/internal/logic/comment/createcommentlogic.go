@@ -3,6 +3,7 @@ package comment
 import (
 	"context"
 
+	achlogic "backend/api/internal/logic/achievement"
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
@@ -40,7 +41,8 @@ func (l *CreateCommentLogic) CreateComment(req *types.CreateCommentReq) (resp *t
 
 	// 转换为API响应格式
 	return &types.CreateCommentResp{
-		BaseResp: common.HandleRPCError(nil, "创建评论成功"),
+		BaseResp:        common.HandleRPCError(nil, "创建评论成功"),
+		NewAchievements: achlogic.UnlocksFromRPC(rpcResp.NewAchievements),
 		Data: types.Comment{
 			Id:         rpcResp.Comment.Id,
 			PostId:     rpcResp.Comment.PostId,
