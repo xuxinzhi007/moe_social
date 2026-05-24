@@ -4882,18 +4882,20 @@ func (x *GetPostCommentsResp) GetTotal() int32 {
 
 // 评论相关消息
 type Comment struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	PostId        string                 `protobuf:"bytes,2,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
-	UserId        string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	UserName      string                 `protobuf:"bytes,4,opt,name=user_name,json=userName,proto3" json:"user_name,omitempty"`
-	UserAvatar    string                 `protobuf:"bytes,5,opt,name=user_avatar,json=userAvatar,proto3" json:"user_avatar,omitempty"`
-	Content       string                 `protobuf:"bytes,6,opt,name=content,proto3" json:"content,omitempty"`
-	Likes         int32                  `protobuf:"varint,7,opt,name=likes,proto3" json:"likes,omitempty"`
-	IsLiked       bool                   `protobuf:"varint,8,opt,name=is_liked,json=isLiked,proto3" json:"is_liked,omitempty"`
-	CreatedAt     string                 `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	PostId          string                 `protobuf:"bytes,2,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	UserId          string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserName        string                 `protobuf:"bytes,4,opt,name=user_name,json=userName,proto3" json:"user_name,omitempty"`
+	UserAvatar      string                 `protobuf:"bytes,5,opt,name=user_avatar,json=userAvatar,proto3" json:"user_avatar,omitempty"`
+	Content         string                 `protobuf:"bytes,6,opt,name=content,proto3" json:"content,omitempty"`
+	Likes           int32                  `protobuf:"varint,7,opt,name=likes,proto3" json:"likes,omitempty"`
+	IsLiked         bool                   `protobuf:"varint,8,opt,name=is_liked,json=isLiked,proto3" json:"is_liked,omitempty"`
+	CreatedAt       string                 `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	ParentId        string                 `protobuf:"bytes,10,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
+	ReplyToUserName string                 `protobuf:"bytes,11,opt,name=reply_to_user_name,json=replyToUserName,proto3" json:"reply_to_user_name,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Comment) Reset() {
@@ -4989,12 +4991,27 @@ func (x *Comment) GetCreatedAt() string {
 	return ""
 }
 
+func (x *Comment) GetParentId() string {
+	if x != nil {
+		return x.ParentId
+	}
+	return ""
+}
+
+func (x *Comment) GetReplyToUserName() string {
+	if x != nil {
+		return x.ReplyToUserName
+	}
+	return ""
+}
+
 // 创建评论请求
 type CreateCommentReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
 	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Content       string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
+	ParentId      string                 `protobuf:"bytes,4,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5046,6 +5063,13 @@ func (x *CreateCommentReq) GetUserId() string {
 func (x *CreateCommentReq) GetContent() string {
 	if x != nil {
 		return x.Content
+	}
+	return ""
+}
+
+func (x *CreateCommentReq) GetParentId() string {
+	if x != nil {
+		return x.ParentId
 	}
 	return ""
 }
@@ -14785,7 +14809,7 @@ const file_super_proto_rawDesc = "" +
 	"\x0eviewer_user_id\x18\x04 \x01(\tR\fviewerUserId\"W\n" +
 	"\x13GetPostCommentsResp\x12*\n" +
 	"\bcomments\x18\x01 \x03(\v2\x0e.super.CommentR\bcomments\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x05R\x05total\"\xf3\x01\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"\xbd\x02\n" +
 	"\aComment\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\apost_id\x18\x02 \x01(\tR\x06postId\x12\x17\n" +
@@ -14797,11 +14821,15 @@ const file_super_proto_rawDesc = "" +
 	"\x05likes\x18\a \x01(\x05R\x05likes\x12\x19\n" +
 	"\bis_liked\x18\b \x01(\bR\aisLiked\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\t \x01(\tR\tcreatedAt\"^\n" +
+	"created_at\x18\t \x01(\tR\tcreatedAt\x12\x1b\n" +
+	"\tparent_id\x18\n" +
+	" \x01(\tR\bparentId\x12+\n" +
+	"\x12reply_to_user_name\x18\v \x01(\tR\x0freplyToUserName\"{\n" +
 	"\x10CreateCommentReq\x12\x17\n" +
 	"\apost_id\x18\x01 \x01(\tR\x06postId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x18\n" +
-	"\acontent\x18\x03 \x01(\tR\acontent\"\x82\x01\n" +
+	"\acontent\x18\x03 \x01(\tR\acontent\x12\x1b\n" +
+	"\tparent_id\x18\x04 \x01(\tR\bparentId\"\x82\x01\n" +
 	"\x11CreateCommentResp\x12(\n" +
 	"\acomment\x18\x01 \x01(\v2\x0e.super.CommentR\acomment\x12C\n" +
 	"\x10new_achievements\x18\x02 \x03(\v2\x18.super.AchievementUnlockR\x0fnewAchievements\"H\n" +

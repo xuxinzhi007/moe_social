@@ -2,12 +2,15 @@ package logic
 
 import (
 	"context"
+	"fmt"
 	"strconv"
+	"strings"
 
 	"backend/model"
 	"backend/rpc/internal/achievement"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
+	"backend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -58,11 +61,31 @@ func (l *CreateCommentLogic) CreateComment(in *super.CreateCommentReq) (*super.C
 		}
 	}()
 
+	var parentID uint
+	if pid := strings.TrimSpace(in.GetParentId()); pid != "" {
+		parsed, err := strconv.ParseUint(pid, 10, 32)
+		if err != nil || parsed == 0 {
+			tx.Rollback()
+			return nil, fmt.Errorf("invalid parent_id")
+		}
+		var parent model.Comment
+		if err := tx.First(&parent, parsed).Error; err != nil {
+			tx.Rollback()
+			return nil, fmt.Errorf("parent comment not found")
+		}
+		if parent.PostID != uint(postID) {
+			tx.Rollback()
+			return nil, fmt.Errorf("parent comment mismatch")
+		}
+		parentID = uint(parsed)
+	}
+
 	comment := model.Comment{
-		PostID:  uint(postID),
-		UserID:  uint(userID),
-		Content: in.Content,
-		Likes:   0,
+		PostID:   uint(postID),
+		ParentID: parentID,
+		UserID:   uint(userID),
+		Content:  in.Content,
+		Likes:    0,
 	}
 	if err := tx.Create(&comment).Error; err != nil {
 		tx.Rollback()
@@ -74,13 +97,30 @@ func (l *CreateCommentLogic) CreateComment(in *super.CreateCommentReq) (*super.C
 		l.Error("更新评论数失败:", err)
 	}
 
-	if uint(userID) != post.UserID {
+	notifyContent := in.Content
+	if len(notifyContent) > 200 {
+		notifyContent = notifyContent[:200]
+	}
+	if parentID > 0 {
+		var parent model.Comment
+		if err := tx.First(&parent, parentID).Error; err == nil && parent.UserID != uint(userID) {
+			notification := model.Notification{
+				UserID:   parent.UserID,
+				SenderID: uint(userID),
+				Type:     2,
+				PostID:   uint(postID),
+				Content:  notifyContent,
+				IsRead:   false,
+			}
+			_ = tx.Create(&notification).Error
+		}
+	} else if uint(userID) != post.UserID {
 		notification := model.Notification{
 			UserID:   post.UserID,
 			SenderID: uint(userID),
 			Type:     2,
 			PostID:   uint(postID),
-			Content:  in.Content,
+			Content:  notifyContent,
 			IsRead:   false,
 		}
 		_ = tx.Create(&notification).Error
@@ -89,8 +129,8 @@ func (l *CreateCommentLogic) CreateComment(in *super.CreateCommentReq) (*super.C
 	engine := achievement.NewEngine(l.svcCtx.DB)
 	achUnlocks, err := engine.ApplyEvent(tx, uint(userID), achievement.Event{Type: achievement.EventCommentCreated})
 	if err != nil {
-		tx.Rollback()
-		return nil, err
+		l.Errorf("成就处理失败（评论仍会发布）: %v", err)
+		achUnlocks = nil
 	}
 
 	if err := tx.Commit().Error; err != nil {
@@ -115,17 +155,29 @@ func (l *CreateCommentLogic) CreateComment(in *super.CreateCommentReq) (*super.C
 		}
 	}
 
+	replyToName := ""
+	if comment.ParentID > 0 {
+		var parent model.Comment
+		if err := l.svcCtx.DB.Preload("User").First(&parent, comment.ParentID).Error; err == nil {
+			if parent.User.Username != "" {
+				replyToName = parent.User.Username
+			}
+		}
+	}
+
 	return &super.CreateCommentResp{
 		Comment: &super.Comment{
-			Id:         strconv.FormatUint(uint64(comment.ID), 10),
-			PostId:     strconv.FormatUint(uint64(comment.PostID), 10),
-			UserId:     strconv.FormatUint(uint64(comment.UserID), 10),
-			UserName:   username,
-			UserAvatar: avatar,
-			Content:    comment.Content,
-			Likes:      int32(comment.Likes),
-			IsLiked:    false,
-			CreatedAt:  comment.CreatedAt.Format("2006-01-02 15:04:05"),
+			Id:              strconv.FormatUint(uint64(comment.ID), 10),
+			PostId:          strconv.FormatUint(uint64(comment.PostID), 10),
+			UserId:          strconv.FormatUint(uint64(comment.UserID), 10),
+			UserName:        username,
+			UserAvatar:      avatar,
+			Content:         comment.Content,
+			Likes:           int32(comment.Likes),
+			IsLiked:         false,
+			CreatedAt:       utils.FormatAPIDateTime(comment.CreatedAt),
+			ParentId:        strconv.FormatUint(uint64(comment.ParentID), 10),
+			ReplyToUserName: replyToName,
 		},
 		NewAchievements: achievement.UnlocksToProto(achUnlocks),
 	}, nil

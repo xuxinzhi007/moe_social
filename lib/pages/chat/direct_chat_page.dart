@@ -278,9 +278,12 @@ class _DirectChatPageState extends State<DirectChatPage> {
     final currentUserId = _currentUserId;
     if (currentUserId == null || currentUserId.isEmpty) return;
     try {
+      final callData = await ApiService.voiceCall(widget.userId);
       final channelName =
-          'call_${currentUserId}_${widget.userId}_${DateTime.now().millisecondsSinceEpoch}';
-      await ApiService.voiceCall(widget.userId, channelName);
+          callData['channel_name']?.toString() ?? callData['call_id']?.toString();
+      if (channelName == null || channelName.isEmpty) {
+        throw Exception('invalid channel');
+      }
       if (!mounted) return;
       await openVoiceCallPage(
         context,

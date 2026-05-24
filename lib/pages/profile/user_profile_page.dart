@@ -927,16 +927,33 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                       MoeToast.error(context, '请先登录');
                                       return;
                                     }
-                                    final ids = [currentUserId, widget.userId]
-                                      ..sort();
-                                    final channelName =
-                                        'voice_call_${ids.join('_')}';
-                                    openVoiceCallPage(
-                                      context,
-                                      channelName: channelName,
-                                      userName: widget.userName ?? 'User',
-                                      userAvatar: widget.userAvatar ?? '',
-                                    );
+                                    () async {
+                                      try {
+                                        final callData = await ApiService
+                                            .voiceCall(widget.userId);
+                                        final channelName = callData[
+                                                'channel_name']
+                                            ?.toString();
+                                        if (channelName == null ||
+                                            channelName.isEmpty) {
+                                          throw Exception('invalid channel');
+                                        }
+                                        if (!context.mounted) return;
+                                        await openVoiceCallPage(
+                                          context,
+                                          channelName: channelName,
+                                          userName:
+                                              widget.userName ?? 'User',
+                                          userAvatar:
+                                              widget.userAvatar ?? '',
+                                        );
+                                      } catch (_) {
+                                        if (context.mounted) {
+                                          MoeToast.error(
+                                              context, '发起通话失败，请重试');
+                                        }
+                                      }
+                                    }();
                                   },
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: const Color(0xFF7F7FD5),

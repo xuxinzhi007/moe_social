@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:flutter/material.dart';
 
 import '../../auth_service.dart';
@@ -56,8 +57,17 @@ class _InterestGroupDetailPageState extends State<InterestGroupDetailPage>
   }
 
   String _err(Object e) {
-    if (e is ApiException) return e.message;
-    return '加载失败';
+    if (e is ApiException) {
+      final msg = e.message.trim();
+      if (msg.length > 120) {
+        return '${msg.substring(0, 120)}…';
+      }
+      return msg.isEmpty ? '加载失败' : msg;
+    }
+    if (kDebugMode) {
+      return '加载失败：$e';
+    }
+    return '加载失败，请稍后重试';
   }
 
   Future<void> _loadAll() async {
@@ -87,7 +97,7 @@ class _InterestGroupDetailPageState extends State<InterestGroupDetailPage>
     }
   }
 
-  Future<void> _loadPosts() async {
+  Future<void> _loadPosts({bool silent = false}) async {
     setState(() => _loadingPosts = true);
     try {
       final uid = AuthService.currentUser;
@@ -104,7 +114,11 @@ class _InterestGroupDetailPageState extends State<InterestGroupDetailPage>
     } catch (e) {
       if (mounted) {
         setState(() => _loadingPosts = false);
-        MoeToast.error(context, _err(e));
+        if (!silent) {
+          MoeToast.error(context, _err(e));
+        } else if (kDebugMode) {
+          debugPrint('群帖刷新失败（静默）: $e');
+        }
       }
     }
   }
@@ -167,7 +181,18 @@ class _InterestGroupDetailPageState extends State<InterestGroupDetailPage>
       ),
     );
     if (created != null && mounted) {
-      await _loadPosts();
+      setState(() {
+        _posts = [
+          GroupPostEntry(
+            id: '',
+            groupId: g.id,
+            postId: created.id,
+            post: created,
+          ),
+          ..._posts.where((e) => e.postId != created.id),
+        ];
+      });
+      unawaited(_loadPosts(silent: true));
     }
   }
 

@@ -49,10 +49,11 @@ func (l *CheckInLogic) CheckIn(in *super.CheckInReq) (*super.CheckInResp, error)
 		return nil, fmt.Errorf("用户不存在")
 	}
 
-	today := time.Now().Format("2006-01-02")
+	now := time.Now()
+	dayStart, dayEnd := achievement.ShanghaiDayBounds(now)
 	var todayCheckIn model.UserCheckIn
-	if err := tx.Where("user_id = ? AND DATE(check_in_date) = ?", userID, today).
-		First(&todayCheckIn).Error; err == nil {
+	if err := tx.Where("user_id = ? AND check_in_date >= ? AND check_in_date < ?",
+		userID, dayStart, dayEnd).First(&todayCheckIn).Error; err == nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("今日已签到")
 	}
@@ -61,9 +62,8 @@ func (l *CheckInLogic) CheckIn(in *super.CheckInReq) (*super.CheckInResp, error)
 	consecutiveDays := 1
 	if err := tx.Where("user_id = ?", userID).Order("check_in_date DESC").
 		First(&lastCheckIn).Error; err == nil {
-		yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
-		lastCheckInDate := lastCheckIn.CheckInDate.Format("2006-01-02")
-		if lastCheckInDate == yesterday {
+		yesterday := achievement.ShanghaiYesterdayString(now)
+		if achievement.ShanghaiDayStringFrom(lastCheckIn.CheckInDate) == yesterday {
 			consecutiveDays = lastCheckIn.ConsecutiveDays + 1
 		}
 	}
@@ -83,7 +83,7 @@ func (l *CheckInLogic) CheckIn(in *super.CheckInReq) (*super.CheckInResp, error)
 
 	checkInRecord := model.UserCheckIn{
 		UserID:          uint(userID),
-		CheckInDate:     time.Now(),
+		CheckInDate:     achievement.StorageDateForShanghaiDay(now),
 		ConsecutiveDays: consecutiveDays,
 		ExpReward:       totalExp,
 		IsSpecialReward: extraExp > 0,
@@ -106,8 +106,8 @@ func (l *CheckInLogic) CheckIn(in *super.CheckInReq) (*super.CheckInResp, error)
 	engine := achievement.NewEngine(l.svcCtx.DB)
 	achUnlocks, err := engine.ApplyEvent(tx, uint(userID), achievement.Event{Type: achievement.EventCheckIn})
 	if err != nil {
-		tx.Rollback()
-		return nil, err
+		l.Errorf("成就处理失败（签到仍会成功）: %v", err)
+		achUnlocks = nil
 	}
 
 	if err := tx.Commit().Error; err != nil {

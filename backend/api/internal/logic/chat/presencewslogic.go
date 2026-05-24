@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"backend/api/internal/presence"
 	"backend/api/internal/svc"
 	"backend/utils"
 
@@ -20,8 +21,6 @@ import (
 var (
 	presenceConnections      = make(map[string]*presenceConn)
 	presenceConnectionsMutex sync.RWMutex
-	onlineUsers              = make(map[string]bool)
-	onlineUsersMutex         sync.RWMutex
 )
 
 type presenceConn struct {
@@ -146,18 +145,16 @@ func (l *PresenceWsLogic) PresenceWs() error {
 	presenceConnections[userID] = member
 	presenceConnectionsMutex.Unlock()
 
-	// 更新在线状态
-	onlineUsersMutex.Lock()
-	onlineUsers[userID] = true
-	onlineUsersMutex.Unlock()
+	becameOnline := presence.DefaultState.Add(userID)
 
 	l.Logger.Infof("Presence user %s connected", userID)
 
 	// 发送在线状态快照
 	l.sendPresenceSnapshot(userID)
 
-	// 广播用户上线通知
-	l.broadcastPresence(userID, true)
+	if becameOnline {
+		l.broadcastPresence(userID, true)
+	}
 
 	// 处理消息
 	go l.handleConnection(userID, member)
@@ -168,22 +165,20 @@ func (l *PresenceWsLogic) PresenceWs() error {
 // 处理 WebSocket 连接
 func (l *PresenceWsLogic) handleConnection(userID string, member *presenceConn) {
 	defer func() {
+		var becameOffline bool
 		presenceConnectionsMutex.Lock()
 		if current, ok := presenceConnections[userID]; ok && current == member {
 			delete(presenceConnections, userID)
+			becameOffline = presence.DefaultState.Remove(userID)
 		}
 		presenceConnectionsMutex.Unlock()
-
-		// 更新在线状态
-		onlineUsersMutex.Lock()
-		delete(onlineUsers, userID)
-		onlineUsersMutex.Unlock()
 
 		member.close()
 		l.Logger.Infof("Presence user %s disconnected", userID)
 
-		// 广播用户下线通知
-		l.broadcastPresence(userID, false)
+		if becameOffline {
+			l.broadcastPresence(userID, false)
+		}
 	}()
 
 	if member.conn == nil {
@@ -248,12 +243,7 @@ func (l *PresenceWsLogic) handleMessage(userID string, message []byte) {
 
 // 发送在线状态快照
 func (l *PresenceWsLogic) sendPresenceSnapshot(userID string) {
-	onlineUsersMutex.RLock()
-	userIDs := make([]string, 0, len(onlineUsers))
-	for id := range onlineUsers {
-		userIDs = append(userIDs, id)
-	}
-	onlineUsersMutex.RUnlock()
+	userIDs := presence.DefaultState.OnlineUserIDs()
 
 	message := PresenceMessage{
 		Type:          "presence_snapshot",
@@ -320,13 +310,9 @@ func (l *PresenceWsLogic) sendToUser(userID string, data interface{}) bool {
 
 // 获取在线用户列表
 func (l *PresenceWsLogic) GetOnlineUsers() map[string]bool {
-	onlineUsersMutex.RLock()
-	defer onlineUsersMutex.RUnlock()
-
 	result := make(map[string]bool)
-	for id, online := range onlineUsers {
-		result[id] = online
+	for _, id := range presence.DefaultState.OnlineUserIDs() {
+		result[id] = true
 	}
-
 	return result
 }

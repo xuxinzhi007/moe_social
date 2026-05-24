@@ -99,9 +99,7 @@ func (l *LikePostLogic) LikePost(in *super.LikePostReq) (*super.LikePostResp, er
 			PostLikeCount: post.Likes,
 		})
 		if err != nil {
-			tx.Rollback()
-			l.Error("成就处理失败:", err)
-			return nil, err
+			l.Errorf("成就处理失败（点赞仍会成功）: %v", err)
 		}
 		_ = unlocks
 	}

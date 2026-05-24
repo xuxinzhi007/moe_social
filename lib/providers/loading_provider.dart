@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show ChangeNotifier, kDebugMode;
 import '../services/api_service.dart';
 
 /// 统一加载状态管理Provider
@@ -109,7 +109,9 @@ class LoadingProvider extends ChangeNotifier {
 
       return null;
     } catch (e) {
-      final errorMsg = '操作失败: $e';
+      final errorMsg = kDebugMode
+          ? '操作失败: $e'
+          : '操作失败，请稍后重试';
       setError(errorMsg);
 
       if (onError != null) {

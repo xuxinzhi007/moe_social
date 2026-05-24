@@ -7,6 +7,7 @@ import (
 	"backend/model"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
+	"backend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -40,10 +41,10 @@ func (l *GetPostCommentsLogic) GetPostComments(in *super.GetPostCommentsReq) (*s
 		page = 1
 	}
 	if pageSize <= 0 {
-		pageSize = 10
+		pageSize = 50
 	}
-	if pageSize > 100 {
-		pageSize = 100
+	if pageSize > 500 {
+		pageSize = 500
 	}
 
 	offset := (page - 1) * pageSize
@@ -61,9 +62,9 @@ func (l *GetPostCommentsLogic) GetPostComments(in *super.GetPostCommentsReq) (*s
 		return nil, err
 	}
 
-	// 查询评论列表，按创建时间倒序排列
+	// 查询评论列表（含回复），按时间正序便于前端组树
 	if err := l.svcCtx.DB.Where("post_id = ?", postID).
-		Order("created_at DESC").
+		Order("created_at ASC").
 		Offset(int(offset)).
 		Limit(int(pageSize)).
 		Find(&comments).Error; err != nil {
@@ -97,6 +98,27 @@ func (l *GetPostCommentsLogic) GetPostComments(in *super.GetPostCommentsReq) (*s
 	}
 	likedComments := LikedTargetIDSet(l.svcCtx.DB, viewerUID, "comment", commentIDs)
 
+	parentNameMap := make(map[uint]string)
+	parentIDs := make([]uint, 0)
+	for _, c := range comments {
+		if c.ParentID > 0 {
+			parentIDs = append(parentIDs, c.ParentID)
+		}
+	}
+	if len(parentIDs) > 0 {
+		var parents []model.Comment
+		_ = l.svcCtx.DB.Preload("User").Where("id IN ?", parentIDs).Find(&parents).Error
+		for _, p := range parents {
+			name := "用户"
+			if p.User.Username != "" {
+				name = p.User.Username
+			} else if p.User.Email != "" {
+				name = p.User.Email
+			}
+			parentNameMap[p.ID] = name
+		}
+	}
+
 	// 构建响应
 	resp := &super.GetPostCommentsResp{
 		Comments: make([]*super.Comment, 0, len(comments)),
@@ -120,15 +142,17 @@ func (l *GetPostCommentsLogic) GetPostComments(in *super.GetPostCommentsReq) (*s
 		}
 
 		rpcComment := &super.Comment{
-			Id:         strconv.FormatUint(uint64(comment.ID), 10),
-			PostId:     strconv.FormatUint(uint64(comment.PostID), 10),
-			UserId:     strconv.FormatUint(uint64(comment.UserID), 10),
-			UserName:   username,
-			UserAvatar: avatar,
-			Content:    comment.Content,
-			Likes:      int32(comment.Likes),
-			IsLiked:    likedComments[comment.ID],
-			CreatedAt:  comment.CreatedAt.Format("2006-01-02 15:04:05"),
+			Id:              strconv.FormatUint(uint64(comment.ID), 10),
+			PostId:          strconv.FormatUint(uint64(comment.PostID), 10),
+			UserId:          strconv.FormatUint(uint64(comment.UserID), 10),
+			UserName:        username,
+			UserAvatar:      avatar,
+			Content:         comment.Content,
+			Likes:           int32(comment.Likes),
+			IsLiked:         likedComments[comment.ID],
+			CreatedAt:       utils.FormatAPIDateTime(comment.CreatedAt),
+			ParentId:        strconv.FormatUint(uint64(comment.ParentID), 10),
+			ReplyToUserName: parentNameMap[comment.ParentID],
 		}
 
 		resp.Comments = append(resp.Comments, rpcComment)

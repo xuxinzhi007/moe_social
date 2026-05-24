@@ -550,6 +550,8 @@ message Comment {
   int32 likes = 7;
   bool is_liked = 8;
   string created_at = 9;
+  string parent_id = 10;
+  string reply_to_user_name = 11;
 }
 
 // 创建评论请求
@@ -557,6 +559,7 @@ message CreateCommentReq {
   string post_id = 1;
   string user_id = 2;
   string content = 3;
+  string parent_id = 4;
 }
 
 // 创建评论响应

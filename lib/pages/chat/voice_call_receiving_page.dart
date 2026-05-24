@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'voice_call_launcher.dart';
 import '../../services/api_service.dart';
+import '../../services/chat_push_service.dart';
 import '../../utils/media_url.dart';
 import '../../widgets/moe_toast.dart';
 
@@ -9,6 +10,7 @@ class VoiceCallReceivingPage extends StatelessWidget {
   final String callerName;
   final String callerAvatar;
   final String callId;
+  final String channelName;
 
   const VoiceCallReceivingPage({
     super.key,
@@ -16,6 +18,7 @@ class VoiceCallReceivingPage extends StatelessWidget {
     required this.callerName,
     required this.callerAvatar,
     required this.callId,
+    required this.channelName,
   });
 
   Future<void> _answerCall(BuildContext context) async {
@@ -24,9 +27,10 @@ class VoiceCallReceivingPage extends StatelessWidget {
       await ApiService.answerCall(callId);
 
       // 跳转到通话页面
+      ChatPushService.clearActiveIncomingCall();
       await replaceWithVoiceCallPage(
         context,
-        channelName: callId,
+        channelName: channelName,
         userName: callerName,
         userAvatar: callerAvatar,
       );
@@ -39,7 +43,8 @@ class VoiceCallReceivingPage extends StatelessWidget {
     try {
       // 调用后端API拒绝呼叫
       await ApiService.rejectCall(callId);
-      Navigator.pop(context);
+      ChatPushService.clearActiveIncomingCall();
+      if (context.mounted) Navigator.pop(context);
     } catch (e) {
       _showError(context, '拒绝呼叫失败: $e');
       Navigator.pop(context);

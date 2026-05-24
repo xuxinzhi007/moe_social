@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { BuildCacheActions } from '../components/BuildCacheActions'
 import { EnvKv } from '../components/EnvKv'
 import { StatusTag } from '../components/StatusTag'
+import { UploadProgressBar } from '../components/UploadProgressBar'
+import { stripUploadProgressLines } from '../lib/uploadProgress'
 import { useDeploy } from '../context/DeployContext'
 import { useOverviewData } from '../hooks/useOverviewData'
 
@@ -147,8 +149,9 @@ export function OverviewPage() {
               {activeJob.target || deployTarget}
             </span>
           </div>
+          <UploadProgressBar log={activeJob.log} />
           <pre className="env-pre live-job-log">
-            {activeJob.log || '等待输出…'}
+            {stripUploadProgressLines(activeJob.log) || '等待输出…'}
           </pre>
         </div>
       ) : null}

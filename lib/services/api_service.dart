@@ -109,14 +109,16 @@ class ApiService {
     return response;
   }
 
-  // 发起语音通话
-  static Future<Map<String, dynamic>> voiceCall(
-      String receiverId, String channelName) async {
+  // 发起语音通话（服务端生成 call_id / channel_name，并通过 WS 推送给被叫方）
+  static Future<Map<String, dynamic>> voiceCall(String receiverId) async {
     final response = await _request(
       '/api/voice/call',
       method: 'POST',
-      body: {'receiver_id': receiverId, 'channel_name': channelName},
+      body: {'receiver_id': receiverId},
     );
+    final data = response['data'];
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
     return response;
   }
 
@@ -1090,13 +1092,21 @@ class ApiService {
       '/api/community/groups/$groupId/posts?${parts.join('&')}',
     );
     final raw = result['data'];
-    final list = raw is List
-        ? raw
-            .map((e) => GroupPostEntry.fromApi(
-                  Map<String, dynamic>.from(e as Map),
-                ))
-            .toList()
-        : <GroupPostEntry>[];
+    final list = <GroupPostEntry>[];
+    if (raw is List) {
+      for (final e in raw) {
+        if (e is! Map) continue;
+        try {
+          list.add(
+            GroupPostEntry.fromApi(Map<String, dynamic>.from(e)),
+          );
+        } catch (err) {
+          if (kDebugMode) {
+            debugPrint('getGroupPosts: 跳过无法解析的条目: $err');
+          }
+        }
+      }
+    }
     final totalRaw = result['total'];
     final total = totalRaw is int
         ? totalRaw
@@ -1121,12 +1131,15 @@ class ApiService {
   static Future<List<Comment>> getComments(
     String postId, {
     String? viewerUserId,
+    int pageSize = 200,
   }) async {
-    final parts = <String>[];
+    final parts = <String>[
+      'page_size=$pageSize',
+    ];
     if (viewerUserId != null && viewerUserId.isNotEmpty) {
       parts.add('viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}');
     }
-    final q = parts.isEmpty ? '' : '?${parts.join('&')}';
+    final q = '?${parts.join('&')}';
     final result = await _request('/api/posts/$postId/comments$q');
     final commentsJson = result['data'] as List;
     return commentsJson.map((json) => Comment.fromJson(json)).toList();

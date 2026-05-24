@@ -53,12 +53,18 @@ func (l *CreateNotificationLogic) CreateNotification(in *super.CreateNotificatio
 		UserID:   uint(userID),
 		SenderID: uint(senderID),
 		Type:     int(in.Type),
-		PostID:   uint(postID),
 		Content:  content,
 		IsRead:   false,
 	}
+	if postID > 0 {
+		notification.PostID = uint(postID)
+	}
 
-	if err := l.svcCtx.DB.Create(&notification).Error; err != nil {
+	db := l.svcCtx.DB
+	if postID == 0 {
+		db = db.Omit("PostID")
+	}
+	if err := db.Create(&notification).Error; err != nil {
 		l.Error("创建通知失败:", err)
 		return nil, err
 	}

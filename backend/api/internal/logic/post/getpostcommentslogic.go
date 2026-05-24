@@ -45,15 +45,17 @@ func (l *GetPostCommentsLogic) GetPostComments(req *types.GetPostCommentsReq) (r
 	respComments := make([]types.Comment, 0, len(rpcResp.Comments))
 	for _, comment := range rpcResp.Comments {
 		respComments = append(respComments, types.Comment{
-			Id:         comment.Id,
-			PostId:     comment.PostId,
-			UserId:     comment.UserId,
-			UserName:   comment.UserName,
-			UserAvatar: comment.UserAvatar,
-			Content:    comment.Content,
-			Likes:      int(comment.Likes),
-			IsLiked:    comment.IsLiked,
-			CreatedAt:  comment.CreatedAt,
+			Id:              comment.Id,
+			PostId:          comment.PostId,
+			UserId:          comment.UserId,
+			UserName:        comment.UserName,
+			UserAvatar:      comment.UserAvatar,
+			Content:         comment.Content,
+			Likes:           int(comment.Likes),
+			IsLiked:         comment.IsLiked,
+			CreatedAt:       comment.CreatedAt,
+			ParentId:        comment.ParentId,
+			ReplyToUserName: comment.ReplyToUserName,
 		})
 	}
 

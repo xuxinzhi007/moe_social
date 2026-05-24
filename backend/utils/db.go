@@ -172,9 +172,24 @@ func autoMigrate() error {
 func postMigrate(db *gorm.DB) {
 	BackfillAllUserMoeNos(db)
 	SeedDefaultGifts(db)
-	if err := SeedAchievementDefinitions(db); err != nil {
+	if err := EnsureAchievementSeeds(db); err != nil {
 		log.Printf("成就定义种子初始化失败: %v", err)
 	}
+}
+
+// EnsureAchievementSeeds 在成就定义表为空时写入默认徽章（RPC 每次启动也会调用）。
+func EnsureAchievementSeeds(db *gorm.DB) error {
+	if db == nil {
+		return nil
+	}
+	var n int64
+	if err := db.Model(&model.AchievementDefinition{}).Count(&n).Error; err != nil {
+		return fmt.Errorf("查询 achievement_definitions: %w", err)
+	}
+	if n > 0 {
+		return nil
+	}
+	return SeedAchievementDefinitions(db)
 }
 
 // GetDB 获取数据库实例，并确保连接有效

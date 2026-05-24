@@ -9,6 +9,7 @@ import 'api_service.dart';
 import 'ws_channel_connector.dart';
 import '../auth_service.dart';
 import '../utils/chat_message_display.dart';
+import '../pages/chat/voice_call_receiving_page.dart';
 import '../widgets/message_notification.dart';
 
 // ChatPushService listens on /ws/chat to receive direct messages in real time.
@@ -62,6 +63,7 @@ class ChatPushService {
   static bool _connecting = false;
   static GlobalKey<NavigatorState>? _navigatorKey;
   static BuildContext? _globalContext;
+  static String? _activeIncomingCallId;
 
   // 指数退避：每次断线后延迟翻倍，上限 10 秒（让后端恢复后能在 10s 内重连上）
   static int _reconnectAttempts = 0;
@@ -249,6 +251,20 @@ class ChatPushService {
     }
 
     final msgType = map['type']?.toString();
+    if (msgType == 'incoming_call') {
+      _handleIncomingCall(map);
+      return;
+    }
+    if (msgType == 'call_cancelled' || msgType == 'call_rejected') {
+      final callId = map['call_id']?.toString();
+      if (callId != null && _activeIncomingCallId == callId) {
+        _activeIncomingCallId = null;
+        _navigatorKey?.currentState?.popUntil((route) {
+          return route.settings.name != '/incoming-voice-call';
+        });
+      }
+      return;
+    }
     if (msgType == 'match_found' ||
         msgType == 'match_waiting' ||
         msgType == 'match_cancelled' ||
@@ -352,6 +368,45 @@ class ChatPushService {
     final list = _pendingBySender.remove(senderId);
     if (list == null || list.isEmpty) return const [];
     return List<Map<String, dynamic>>.from(list);
+  }
+
+  static void _handleIncomingCall(Map<String, dynamic> map) {
+    final callerId = map['caller_id']?.toString();
+    final callId = map['call_id']?.toString();
+    final channelName = map['channel_name']?.toString();
+    if (callerId == null ||
+        callerId.isEmpty ||
+        callId == null ||
+        callId.isEmpty ||
+        channelName == null ||
+        channelName.isEmpty) {
+      return;
+    }
+    if (_activeIncomingCallId == callId) return;
+    _activeIncomingCallId = callId;
+
+    final callerName = map['caller_name']?.toString() ?? '用户';
+    final callerAvatar = map['caller_avatar']?.toString() ?? '';
+
+    final nav = _navigatorKey?.currentState;
+    if (nav == null) return;
+
+    nav.push(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: '/incoming-voice-call'),
+        builder: (context) => VoiceCallReceivingPage(
+          callerId: callerId,
+          callerName: callerName,
+          callerAvatar: callerAvatar,
+          callId: callId,
+          channelName: channelName,
+        ),
+      ),
+    );
+  }
+
+  static void clearActiveIncomingCall() {
+    _activeIncomingCallId = null;
   }
 
   static void _enqueuePending(String senderId, Map<String, dynamic> msg) {

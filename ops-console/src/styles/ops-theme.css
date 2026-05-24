@@ -446,6 +446,55 @@ a {
   margin: 0;
 }
 
+.upload-progress {
+  padding: 4px 0 10px;
+}
+
+.upload-progress-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  word-break: break-all;
+}
+
+.upload-progress-track {
+  height: 8px;
+  background: var(--panel2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.upload-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #5b8def, #3dd6c6);
+  border-radius: 4px;
+  transition: width 0.25s ease;
+}
+
+.upload-progress-multi {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upload-progress-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 40px;
+  align-items: center;
+  gap: 8px;
+}
+
+.upload-progress-name,
+.upload-progress-pct {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.upload-progress-pct {
+  text-align: right;
+}
+
 .jobs-table {
   width: 100%;
   border-collapse: collapse;

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { StatusTag } from '../components/StatusTag'
+import { UploadProgressBar } from '../components/UploadProgressBar'
 import { useDeploy } from '../context/DeployContext'
+import { stripUploadProgressLines } from '../lib/uploadProgress'
 import type { DeployJob } from '../types/deploy'
 
 export function JobsPage() {
@@ -25,6 +27,8 @@ export function JobsPage() {
   }, [selected, client])
 
   const show = detail || selected
+  const liveLog =
+    activeJob && show && activeJob.id === show.id ? activeJob.log : show?.log
 
   return (
     <>
@@ -90,8 +94,9 @@ export function JobsPage() {
                 <p style={{ fontSize: 12, margin: '0 0 8px' }}>
                   <StatusTag status={show.status} /> {show.type} · {show.target}
                 </p>
+                <UploadProgressBar log={liveLog} />
                 <pre className="log-pre" style={{ maxHeight: 400 }}>
-                  {show.log || '—'}
+                  {stripUploadProgressLines(liveLog) || '—'}
                 </pre>
               </>
             ) : (
