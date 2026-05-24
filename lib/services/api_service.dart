@@ -1296,6 +1296,37 @@ class ApiService {
     );
   }
 
+  /// 微信授权地址。 [flow]：`website` 扫码（Web/PC），`mp` 公众号网页（仅微信内）。
+  static Future<String> getWechatAuthorizeUrl({
+    required String state,
+    String flow = 'website',
+  }) async {
+    final result = await _request(
+      '/api/auth/wechat/authorize-url?state=${Uri.encodeQueryComponent(state)}&flow=${Uri.encodeQueryComponent(flow)}',
+    );
+    final data = result['data'];
+    if (data is! Map<String, dynamic>) {
+      throw ApiException('微信授权地址响应格式异常', 500);
+    }
+    final url = (data['authorize_url'] as String?)?.trim() ?? '';
+    if (url.isEmpty) {
+      throw ApiException('微信授权地址为空', 500);
+    }
+    return url;
+  }
+
+  /// 微信 OAuth 登录（code 换 JWT）。 [flow]：`app` | `website` | `mp`。
+  static Future<Map<String, dynamic>> wechatLogin(
+    String code, {
+    String flow = 'app',
+  }) async {
+    return _request(
+      '/api/auth/wechat/login',
+      method: 'POST',
+      body: {'code': code.trim(), 'flow': flow.trim()},
+    );
+  }
+
   // 更新用户信息
   static Future<User> updateUserInfo(
     String userId, {

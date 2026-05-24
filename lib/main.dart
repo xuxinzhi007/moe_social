@@ -30,6 +30,7 @@ import 'providers/virtual_avatar_provider.dart';
 import 'providers/main_nav_controller.dart';
 import 'utils/startup_manager.dart';
 import 'utils/webview_platform_init.dart';
+import 'services/wechat_sdk_service.dart';
 import 'widgets/splash_screen.dart';
 
 void main() {
@@ -177,6 +178,11 @@ class SplashScreenWrapper extends StatelessWidget {
         name: 'Auth Service',
         task: () => AuthService.init(),
         critical: true,
+      ),
+      StartupTask(
+        name: 'WeChat SDK',
+        task: () => WechatSdkService.instance.ensureRegistered(),
+        critical: false,
       ),
       StartupTask(
         name: 'Theme Provider',

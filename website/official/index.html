@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Moe Social — 发现更可爱的世界。动态、手绘、圈子、实时私信、语音通话与 AI 伙伴，一站式轻社交体验。" />
+  <meta name="theme-color" content="#7f7fd5" />
+  <meta property="og:title" content="Moe Social — 发现更可爱的世界" />
+  <meta property="og:description" content="记录生活、加入同好、与好友畅聊，还有懂你的 AI 伙伴。" />
+  <meta property="og:type" content="website" />
+  <title>Moe Social — 发现更可爱的世界</title>
+  <link rel="icon" href="app-icons/app_icon_64.png" type="image/png" />
+  <link rel="apple-touch-icon" href="app-icons/app_icon_128.png" />
+  <style>
+    :root {
+      --violet: #7f7fd5;
+      --violet-deep: #5b5bb8;
+      --violet-light: #a8a8e8;
+      --mint: #91eae4;
+      --peach: #ffb8b8;
+      --ink: #1c1f2a;
+      --ink-soft: #4a5160;
+      --ink-muted: #6b7280;
+      --paper: #f6f7ff;
+      --white: #ffffff;
+      --line: rgba(127, 127, 213, 0.14);
+      --glow: 0 28px 72px rgba(127, 127, 213, 0.2);
+      --radius-lg: 28px;
+      --radius-md: 18px;
+      --max: 1120px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    a { color: var(--violet-deep); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .bg-blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.45;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-blob.a {
+      width: 420px;
+      height: 420px;
+      background: rgba(127, 127, 213, 0.35);
+      top: -120px;
+      right: -80px;
+    }
+
+    .bg-blob.b {
+      width: 360px;
+      height: 360px;
+      background: rgba(145, 234, 228, 0.4);
+      bottom: 20%;
+      left: -100px;
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Nav */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(18px);
+      background: rgba(246, 247, 255, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 1.12rem;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .brand:hover { text-decoration: none; }
+
+    .brand img {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(127, 127, 213, 0.35);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 26px;
+      list-style: none;
+      font-size: 0.9rem;
+      color: var(--ink-soft);
+    }
+
+    .nav-links a {
+      color: inherit;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--violet); text-decoration: none; }
+
+    .nav-cta {
+      padding: 10px 20px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--violet), #9b8fd9);
+      color: #fff;
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow: 0 8px 24px rgba(127, 127, 213, 0.35);
+    }
+
+    .nav-cta:hover { text-decoration: none; opacity: 0.95; }
+
+  .menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--ink);
+    }
+
+    /* Hero */
+    .hero {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 56px 24px 88px;
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 40px;
+      align-items: center;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(127, 127, 213, 0.1);
+      color: var(--violet-deep);
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 18px;
+    }
+
+    .pill::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--mint);
+      box-shadow: 0 0 0 3px rgba(145, 234, 228, 0.4);
+    }
+
+    .hero h1 {
+      font-size: clamp(2.25rem, 5.5vw, 3.35rem);
+      font-weight: 800;
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+      margin-bottom: 18px;
+    }
+
+    .hero h1 .grad {
+      background: linear-gradient(120deg, var(--violet-deep) 0%, var(--violet) 50%, #5ec9c0 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero .lead {
+      font-size: 1.08rem;
+      color: var(--ink-soft);
+      max-width: 480px;
+      margin-bottom: 28px;
+    }
+
+    .hero-cta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 26px;
+      border-radius: 999px;
+      font-size: 0.94rem;
+      font-weight: 600;
+      border: none;
+      cursor: default;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--violet), #9b8fd9);
+      color: #fff;
+      box-shadow: 0 14px 36px rgba(127, 127, 213, 0.42);
+    }
+
+    .btn-ghost {
+      background: var(--white);
+      color: var(--violet-deep);
+      border: 1px solid var(--line);
+    }
+
+    .hero-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .hero-tags span {
+      font-size: 0.78rem;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      color: var(--ink-muted);
+    }
+
+    /* Phone */
+    .hero-visual {
+      display: flex;
+      justify-content: center;
+      position: relative;
+    }
+
+    .phone {
+      width: 290px;
+      aspect-ratio: 9 / 19.5;
+      border-radius: 38px;
+      padding: 11px;
+      background: linear-gradient(155deg, #2d2d3d, #14141c);
+      box-shadow: var(--glow), 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+      position: relative;
+    }
+
+    .phone-notch {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90px;
+      height: 26px;
+      background: #14141c;
+      border-radius: 0 0 14px 14px;
+      z-index: 2;
+    }
+
+    .phone-screen {
+      width: 100%;
+      height: 100%;
+      border-radius: 28px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #eef0ff 0%, #f8f9ff 35%, #fff 100%);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .screen-top {
+      padding: 42px 16px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .screen-top strong {
+      font-size: 0.85rem;
+      color: var(--violet-deep);
+    }
+
+    .screen-top .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--mint);
+    }
+
+    .screen-feed {
+      flex: 1;
+      padding: 0 12px;
+      overflow: hidden;
+    }
+
+    .mock-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 6px 20px rgba(127, 127, 213, 0.1);
+    }
+
+    .mock-card .row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .mock-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--mint), var(--violet));
+      flex-shrink: 0;
+    }
+
+    .mock-lines .l {
+      height: 7px;
+      border-radius: 4px;
+      background: #e8eaf5;
+      margin-bottom: 5px;
+    }
+
+    .mock-lines .l.w80 { width: 80%; }
+    .mock-lines .l.w55 { width: 55%; }
+
+    .mock-draw {
+      height: 64px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(127, 127, 213, 0.12), rgba(145, 234, 228, 0.22));
+      border: 2px dashed rgba(127, 127, 213, 0.2);
+      margin-bottom: 10px;
+    }
+
+    .mock-ai {
+      background: linear-gradient(135deg, rgba(127, 127, 213, 0.08), rgba(145, 234, 228, 0.15));
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 0.72rem;
+      color: var(--violet-deep);
+      margin-bottom: 10px;
+    }
+
+    .mock-ai b { display: block; font-size: 0.75rem; margin-bottom: 4px; }
+
+    .screen-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 10px 8px 14px;
+      background: rgba(255, 255, 255, 0.92);
+      border-top: 1px solid var(--line);
+      font-size: 0.62rem;
+      color: var(--ink-muted);
+      text-align: center;
+    }
+
+    .screen-tabs .on { color: var(--violet-deep); font-weight: 700; }
+
+    .float-card {
+      position: absolute;
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: var(--white);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.1);
+      font-size: 0.78rem;
+      font-weight: 600;
+      animation: bob 4s ease-in-out infinite;
+    }
+
+    .float-card.f1 { top: 6%; right: -4%; }
+    .float-card.f2 { bottom: 22%; left: -8%; color: var(--violet-deep); animation-delay: 1s; }
+    .float-card.f3 { top: 42%; right: -10%; animation-delay: 2s; font-size: 0.72rem; }
+
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-7px); }
+    }
+
+    /* Sections */
+    section {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    .section-head {
+      text-align: center;
+      max-width: 640px;
+      margin: 0 auto 44px;
+    }
+
+    .section-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--violet);
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      font-size: clamp(1.65rem, 3.2vw, 2.1rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .section-desc {
+      color: var(--ink-soft);
+      font-size: 1.02rem;
+    }
+
+    /* Steps */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 80px;
+    }
+
+    .step-card {
+      text-align: center;
+      padding: 28px 20px;
+      background: var(--white);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+    }
+
+    .step-num {
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 14px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--violet), var(--mint));
+      color: #fff;
+      font-weight: 800;
+      display: grid;
+      place-items: center;
+      font-size: 1rem;
+    }
+
+    .step-card h3 {
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+
+    .step-card p {
+      font-size: 0.88rem;
+      color: var(--ink-soft);
+    }
+
+    /* Features */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+    }
+
+    .feature-card {
+      padding: 24px 20px;
+      border-radius: var(--radius-md);
+      background: var(--white);
+      border: 1px solid var(--line);
+      transition: transform 0.22s, box-shadow 0.22s;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--glow);
+    }
+
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 13px;
+      display: grid;
+      place-items: center;
+      font-size: 1.25rem;
+      margin-bottom: 14px;
+    }
+
+    .feature-card h3 {
+      font-size: 0.98rem;
+      margin-bottom: 6px;
+    }
+
+    .feature-card p {
+      font-size: 0.84rem;
+      color: var(--ink-soft);
+      line-height: 1.55;
+    }
+
+    .fi-1 { background: linear-gradient(135deg, #ede9ff, #e0f7f5); }
+    .fi-2 { background: linear-gradient(135deg, #fff0f0, #ede9ff); }
+    .fi-3 { background: linear-gradient(135deg, #e0f7f5, #ede9ff); }
+    .fi-4 { background: linear-gradient(135deg, #ede9ff, #fff8e8); }
+    .fi-5 { background: linear-gradient(135deg, #e8f4ff, #ede9ff); }
+    .fi-6 { background: linear-gradient(135deg, #fff0f5, #e0f7f5); }
+    .fi-7 { background: linear-gradient(135deg, #f0fff4, #ede9ff); }
+    .fi-8 { background: linear-gradient(135deg, #fff8e8, #e8f4ff); }
+
+    /* Spotlight */
+    .spotlight {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 80px;
+    }
+
+    .spotlight-card {
+      padding: 36px 32px;
+      border-radius: var(--radius-lg);
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .spotlight-card::after {
+      content: "";
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      top: -60px;
+      right: -40px;
+    }
+
+    .spotlight-card h3 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+      position: relative;
+    }
+
+    .spotlight-card p {
+      font-size: 0.92rem;
+      opacity: 0.92;
+      max-width: 320px;
+      margin-bottom: 18px;
+      position: relative;
+    }
+
+    .spotlight-card ul {
+      list-style: none;
+      position: relative;
+      font-size: 0.85rem;
+      opacity: 0.95;
+    }
+
+    .spotlight-card li {
+      padding: 4px 0;
+      padding-left: 18px;
+      position: relative;
+    }
+
+    .spotlight-card li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      font-weight: 700;
+    }
+
+    .spot-ai {
+      background: linear-gradient(135deg, #5b5bb8 0%, #7f7fd5 55%, #6ec4be 100%);
+    }
+
+    .spot-social {
+      background: linear-gradient(135deg, #7f7fd5 0%, #9b8fd9 40%, #91eae4 100%);
+    }
+
+    /* Showcase */
+    .showcase {
+      max-width: var(--max);
+      margin: 0 auto 80px;
+      padding: 0 24px;
+    }
+
+    .showcase-inner {
+      padding: 52px 40px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(125deg, var(--violet) 0%, #8e7fd4 42%, var(--mint) 100%);
+      color: #fff;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .showcase-inner::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4z'/%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    .showcase-inner h2 {
+      font-size: clamp(1.45rem, 3vw, 1.9rem);
+      font-weight: 800;
+      margin-bottom: 12px;
+      position: relative;
+    }
+
+    .showcase-inner > p {
+      font-size: 1rem;
+      opacity: 0.92;
+      max-width: 560px;
+      margin: 0 auto 28px;
+      position: relative;
+    }
+
+    .showcase-pills {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      position: relative;
+    }
+
+    .showcase-pills span {
+      padding: 8px 16px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.18);
+      font-size: 0.85rem;
+      font-weight: 600;
+      backdrop-filter: blur(4px);
+    }
+
+    /* Auth strip */
+    .auth-strip {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 16px;
+      padding: 32px 24px;
+      margin-bottom: 80px;
+      background: var(--white);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      max-width: var(--max);
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .auth-strip div {
+      text-align: center;
+      padding: 8px 16px;
+    }
+
+    .auth-strip strong {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
+
+    .auth-strip span {
+      font-size: 0.8rem;
+      color: var(--ink-muted);
+    }
+
+    /* CTA */
+    .cta-block {
+      text-align: center;
+      padding: 20px 24px 72px;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    .cta-block h2 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .cta-block p {
+      color: var(--ink-soft);
+      margin-bottom: 22px;
+    }
+
+    .cta-email {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 36px 24px 40px;
+      background: rgba(255, 255, 255, 0.6);
+    }
+
+    .footer-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+    }
+
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+    }
+
+    .footer-brand img {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+      font-size: 0.88rem;
+      color: var(--ink-soft);
+    }
+
+    .footer-links a { color: inherit; text-decoration: none; }
+    .footer-links a:hover { color: var(--violet); text-decoration: none; }
+
+    .footer-copy {
+      width: 100%;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--ink-muted);
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+    }
+
+    @media (max-width: 960px) {
+      .hero {
+        grid-template-columns: 1fr;
+        text-align: center;
+        padding-top: 32px;
+      }
+
+      .hero .lead { margin-left: auto; margin-right: auto; }
+      .hero-cta, .hero-tags { justify-content: center; }
+      .hero-visual { order: -1; }
+      .float-card { display: none; }
+
+      .steps { grid-template-columns: 1fr; }
+      .feature-grid { grid-template-columns: repeat(2, 1fr); }
+      .spotlight { grid-template-columns: 1fr; }
+
+      .nav-links, .nav-cta { display: none; }
+      .menu-btn { display: block; }
+
+      .nav.open .nav-links {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: rgba(246, 247, 255, 0.98);
+        padding: 16px 24px 20px;
+        border-bottom: 1px solid var(--line);
+        gap: 14px;
+      }
+
+      .nav.open .nav-cta {
+        display: inline-flex;
+        margin: 0 24px 16px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .feature-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-blob a" aria-hidden="true"></div>
+  <div class="bg-blob b" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <nav class="nav" id="nav">
+      <div class="nav-inner">
+        <a class="brand" href="#">
+          <img src="app-icons/app_icon_64.png" width="40" height="40" alt="Moe Social" />
+          Moe Social
+        </a>
+        <button class="menu-btn" type="button" aria-label="打开菜单" id="menuBtn">☰</button>
+        <ul class="nav-links">
+          <li><a href="#features">功能</a></li>
+          <li><a href="#ai">AI 伙伴</a></li>
+          <li><a href="#social">社交</a></li>
+          <li><a href="#join">加入</a></li>
+        </ul>
+        <a class="nav-cta" href="#join">预约内测</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div class="hero-copy">
+        <div class="pill">Android · iOS · 内测招募中</div>
+        <h1>发现更<span class="grad">可爱的世界</span></h1>
+        <p class="lead">
+          Moe Social（萌社交）把动态、手绘、圈子、实时聊天和 AI 伙伴装进一个温柔的 App——不刷屏、不焦虑，只留下你想分享的那一点可爱。
+        </p>
+        <div class="hero-cta">
+          <span class="btn btn-primary">即将上线应用商店</span>
+          <a class="btn btn-ghost" href="#join">写信预约内测</a>
+        </div>
+        <div class="hero-tags">
+          <span>动态 &amp; 手绘</span>
+          <span>兴趣圈子</span>
+          <span>私信 &amp; 语音</span>
+          <span>AI 角色卡</span>
+          <span>签到 &amp; 成就</span>
+        </div>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="screen-top">
+              <strong>发现</strong>
+              <span class="dot" title="在线"></span>
+            </div>
+            <div class="screen-feed">
+              <div class="mock-card">
+                <div class="row">
+                  <div class="mock-avatar"></div>
+                  <div class="mock-lines" style="flex:1">
+                    <div class="l w55"></div>
+                    <div class="l w80"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="mock-draw" title="手绘动态"></div>
+              <div class="mock-ai">
+                <b>🤖 夜语 · AI 伙伴</b>
+                今天也想听你说说心情吗？
+              </div>
+              <div class="mock-card">
+                <div class="row">
+                  <div class="mock-avatar" style="background:linear-gradient(135deg,#ffb8b8,#7f7fd5)"></div>
+                  <div class="mock-lines" style="flex:1">
+                    <div class="l w80"></div>
+                    <div class="l w55"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="screen-tabs">
+              <span class="on">首页</span>
+              <span>消息</span>
+              <span>AI</span>
+              <span>我的</span>
+            </div>
+          </div>
+        </div>
+        <div class="float-card f1">✨ 手绘心情</div>
+        <div class="float-card f2">💬 实时私信</div>
+        <div class="float-card f3">🎙️ 语音通话</div>
+      </div>
+    </header>
+
+    <section aria-label="使用步骤">
+      <div class="steps">
+        <article class="step-card">
+          <div class="step-num">1</div>
+          <h3>轻松注册</h3>
+          <p>手机号验证码、微信或飞书登录，几步即可进入你的小宇宙。</p>
+        </article>
+        <article class="step-card">
+          <div class="step-num">2</div>
+          <h3>探索与表达</h3>
+          <p>刷动态、画手绘、加圈子、带话题发帖——用你喜欢的方式出现。</p>
+        </article>
+        <article class="step-card">
+          <div class="step-num">3</div>
+          <h3>连接与陪伴</h3>
+          <p>私信畅聊、语音通话，或和 AI 角色卡来一场沉浸式对话。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="section-head">
+        <p class="section-label">Features</p>
+        <h2 class="section-title">一款 App，装下你的社交与创作</h2>
+        <p class="section-desc">以下能力均已在客户端实现，我们持续打磨体验，让每一次打开都更轻松。</p>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card">
+          <div class="feature-icon fi-1">📷</div>
+          <h3>动态时间线</h3>
+          <p>图文动态、话题标签、点赞评论与分享，关注喜欢的人不会错过更新。</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon fi-2">🎨</div>
+          <h3>手绘编辑器</h3>
+          <p>内置手绘工具，把文字说不清的情绪画成卡片，发布到动态流。</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon fi-3">🌸</div>
+          <h3>社区与圈子</h3>
+          <p>兴趣小组、社区讨论与发现页，找到同好一起讨论真正在乎的事。</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon fi-4">💌</div>
+          <h3>私信与通知</h3>
+          <p>一对一聊天、WebSocket 实时消息、通知中心，重要对话不再漏看。</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon fi-5">🤖</div>
+          <h3>AI 智能体</h3>
+          <p>多模型对话、角色卡广场、世界书 Lorebook 与记忆管理，打造专属伙伴。</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon fi-6">🎙️</div>
+          <h3>语音通话</h3>
+          <p>基于 Agora 的语音通话能力，和好友距离更近，支持来电接听流程。</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon fi-7">⭐</div>
+          <h3>成长与会员</h3>
+          <p>每日签到、等级成就、钱包充值、VIP 中心与虚拟形象，让陪伴更有仪式感。</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon fi-8">🎮</div>
+          <h3>发现与趣味</h3>
+          <p>云相册、扫码、小游戏房间与主题外观，在社交之外还有一点小玩法。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="spotlight" id="ai">
+      <article class="spotlight-card spot-ai">
+        <h3>AI 伙伴 · 酒馆式体验</h3>
+        <p>不只是聊天机器人。创建或导入角色卡，配置人设、世界书与模型来源，开启多轮沉浸式对话。</p>
+        <ul>
+          <li>智能体列表与编辑器</li>
+          <li>角色卡广场 &amp; Provider 配置</li>
+          <li>用户记忆与时间线</li>
+        </ul>
+      </article>
+      <article class="spotlight-card spot-social" id="social">
+        <h3>真实社交 · 实时连接</h3>
+        <p>从关注到私信，从在线状态到语音通话，Moe Social 围绕「人」而不是算法堆叠。</p>
+        <ul>
+          <li>好友、粉丝与互动礼物</li>
+          <li>情绪标签与成就徽章</li>
+          <li>隐私与消息保留设置</li>
+        </ul>
+      </article>
+    </section>
+
+    <div class="showcase" id="experience">
+      <div class="showcase-inner">
+        <h2>紫与青的渐变，像傍晚的天空</h2>
+        <p>全局治愈系视觉、轻量交互与清晰的信息层级——打开 App，就像走进一间只属于你的小客厅。</p>
+        <div class="showcase-pills">
+          <span>多平台支持</span>
+          <span>Android / iOS / Web</span>
+          <span>主题与外观</span>
+          <span>持续迭代中</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="auth-strip" aria-label="登录方式">
+      <div>
+        <strong>📱 手机号</strong>
+        <span>验证码快捷登录</span>
+      </div>
+      <div>
+        <strong>💬 微信</strong>
+        <span>移动应用授权</span>
+      </div>
+      <div>
+        <strong>🐦 飞书</strong>
+        <span>企业账号绑定</span>
+      </div>
+      <div>
+        <strong>🔒 账号安全</strong>
+        <span>资料编辑 · 找回密码</span>
+      </div>
+    </div>
+
+    <section id="join" class="cta-block">
+      <h2>想第一批体验 Moe Social？</h2>
+      <p>
+        我们正在打磨细节与稳定性，很快就会在应用商店与大家见面。欢迎写信告诉我们你最期待的功能，或申请加入内测。
+      </p>
+      <p class="cta-email">
+        <a href="mailto:xuxinzhi19@gmail.com">xuxinzhi19@gmail.com</a>
+      </p>
+      <div class="hero-cta" style="justify-content:center;margin-top:20px">
+        <span class="btn btn-primary">敬请期待</span>
+      </div>
+    </section>
+
+    <footer>
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <img src="app-icons/app_icon_64.png" width="32" height="32" alt="" />
+          Moe Social
+        </div>
+        <ul class="footer-links">
+          <li><a href="#features">功能</a></li>
+          <li><a href="#ai">AI</a></li>
+          <li><a href="#social">社交</a></li>
+          <li><a href="#join">联系</a></li>
+        </ul>
+      </div>
+      <p class="footer-copy">
+        © <span id="year"></span> Moe Social · 萌社交 · Android &amp; iOS &amp; 更多平台
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+    document.getElementById("menuBtn").addEventListener("click", function () {
+      document.getElementById("nav").classList.toggle("open");
+    });
+  </script>
+</body>
+</html>

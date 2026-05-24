@@ -883,6 +883,41 @@ type FeishuLoginData {
 	IsNewUser bool   `json:"is_new_user"`
 }
 
+type WechatAuthorizeURLReq {
+	State string `form:"state,optional"`
+	Flow  string `form:"flow,optional"` // website | mp
+}
+
+type WechatAuthorizeURLResp {
+	BaseResp
+	Data WechatAuthorizeURLData `json:"data,omitempty"`
+}
+
+type WechatAuthorizeURLData {
+	AuthorizeURL string `json:"authorize_url"`
+}
+
+type WechatLoginReq {
+	Code string `json:"code"`
+	Flow string `json:"flow,optional"` // app | website | mp
+}
+
+type WechatLoginResp {
+	BaseResp
+	Data WechatLoginData `json:"data,omitempty"`
+}
+
+type WechatLoginData {
+	User      User   `json:"user"`
+	Token     string `json:"token"`
+	IsNewUser bool   `json:"is_new_user"`
+}
+
+type WechatOAuthCallbackReq {
+	Code  string `form:"code,optional"`
+	State string `form:"state,optional"`
+}
+
 type FeishuOAuthCallbackReq {
 	Code  string `form:"code,optional"`
 	State string `form:"state,optional"`
@@ -1181,6 +1216,15 @@ service Super {
 
 	@handler feishuLogin
 	post /api/auth/feishu/login (FeishuLoginReq) returns (FeishuLoginResp)
+
+	@handler wechatAuthorizeURL
+	get /api/auth/wechat/authorize-url (WechatAuthorizeURLReq) returns (WechatAuthorizeURLResp)
+
+	@handler wechatLogin
+	post /api/auth/wechat/login (WechatLoginReq) returns (WechatLoginResp)
+
+	@handler wechatOAuthCallback
+	get /api/auth/wechat/callback (WechatOAuthCallbackReq)
 
 	@handler feishuOAuthCallback
 	get /api/auth/feishu/callback (FeishuOAuthCallbackReq)

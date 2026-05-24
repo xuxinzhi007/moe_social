@@ -109,9 +109,7 @@ class LoadingProvider extends ChangeNotifier {
 
       return null;
     } catch (e) {
-      final errorMsg = kDebugMode
-          ? '操作失败: $e'
-          : '操作失败，请稍后重试';
+      final errorMsg = kDebugMode ? '操作失败: $e' : '操作失败，请稍后重试';
       setError(errorMsg);
 
       if (onError != null) {
@@ -142,7 +140,8 @@ class LoadingProvider extends ChangeNotifier {
   }
 
   /// 执行注册操作
-  Future<Map<String, dynamic>?> executeRegister(String username, String email, String password) {
+  Future<Map<String, dynamic>?> executeRegister(
+      String username, String email, String password) {
     return executeOperation(
       operation: () => ApiService.register(username, email, password),
       key: 'register',
@@ -183,6 +182,7 @@ class LoadingProvider extends ChangeNotifier {
 class LoadingKeys {
   static const String login = 'login';
   static const String feishuLogin = 'feishuLogin';
+  static const String wechatLogin = 'wechatLogin';
   static const String register = 'register';
   static const String createPost = 'createPost';
   static const String uploadImage = 'uploadImage';

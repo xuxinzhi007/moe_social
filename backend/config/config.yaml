@@ -44,7 +44,29 @@ feishu:
   enterprise_invite_url: "https://xcnwo3uyqh3i.feishu.cn/invite/member/b1FV8k8WIKA"
   enterprise_notice: "机器人仅可向企业内成员发送通知。如需推送，可申请加入企业；不加入也可正常使用 App。"
 
-#本地
+# 微信登录（https://open.weixin.qq.com）
+# - App：开放平台创建「移动应用」，填 wechat.app，包名 com.example.moe_social + 签名
+# - Web/PC：开放平台创建「网站应用」，填 wechat.website，授权回调域与 redirect_uri 主机一致
+# - mp（可选）：公众号网页授权，仅微信内打开 H5 时可用
+# 改后须同步 VPS 的 config/config.yaml 并重启 RPC + API
+wechat:
+  enabled: true
+  redirect_uri: "http://47.106.175.49:8888/api/auth/wechat/callback"
+  # redirect_uri: "http://127.0.0.1:8888/api/auth/wechat/callback"
+  app_return_url: ""
+  app:
+    # 正式：填开放平台「移动应用」凭证；调试可暂与 mp 相同（须与 lib/utils/wechat_config.dart 的 appId 一致）
+    app_id: "wxf640612c0ad331d9"
+    app_secret: "b8d8a2887474b31a66639da1a7c08fff"
+  website:
+    app_id: ""      # 网站应用 AppID（Web/PC 扫码登录）
+    app_secret: ""
+  mp:
+    app_id: "wxf640612c0ad331d9"
+    app_secret: "b8d8a2887474b31a66639da1a7c08fff"
+  oauth_scope: "snsapi_userinfo"
+
+#local
 
 ollama:
   # 后端能访问到的 Ollama 地址（注意：不是前端能访问，是后端进程所在机器能访问）

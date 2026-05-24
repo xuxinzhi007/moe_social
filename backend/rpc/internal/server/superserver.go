@@ -109,6 +109,16 @@ func (s *SuperServer) FeishuLogin(ctx context.Context, in *super.FeishuLoginReq)
 	return l.FeishuLogin(in)
 }
 
+func (s *SuperServer) WechatAuthorizeURL(ctx context.Context, in *super.WechatAuthorizeURLReq) (*super.WechatAuthorizeURLResp, error) {
+	l := logic.NewWechatAuthorizeURLLogic(ctx, s.svcCtx)
+	return l.WechatAuthorizeURL(in)
+}
+
+func (s *SuperServer) WechatLogin(ctx context.Context, in *super.WechatLoginReq) (*super.WechatLoginResp, error) {
+	l := logic.NewWechatLoginLogic(ctx, s.svcCtx)
+	return l.WechatLogin(in)
+}
+
 func (s *SuperServer) UpsertUserMemory(ctx context.Context, in *super.UpsertUserMemoryReq) (*super.UpsertUserMemoryResp, error) {
 	l := logic.NewUpsertUserMemoryLogic(ctx, s.svcCtx)
 	return l.UpsertUserMemory(in)

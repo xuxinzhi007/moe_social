@@ -36,6 +36,8 @@ const (
 	Super_SendFeishuTestCard_FullMethodName          = "/super.Super/SendFeishuTestCard"
 	Super_FeishuAuthorizeURL_FullMethodName          = "/super.Super/FeishuAuthorizeURL"
 	Super_FeishuLogin_FullMethodName                 = "/super.Super/FeishuLogin"
+	Super_WechatAuthorizeURL_FullMethodName          = "/super.Super/WechatAuthorizeURL"
+	Super_WechatLogin_FullMethodName                 = "/super.Super/WechatLogin"
 	Super_UpsertUserMemory_FullMethodName            = "/super.Super/UpsertUserMemory"
 	Super_GetUserMemories_FullMethodName             = "/super.Super/GetUserMemories"
 	Super_GetUserMemoryProfiles_FullMethodName       = "/super.Super/GetUserMemoryProfiles"
@@ -157,6 +159,8 @@ type SuperClient interface {
 	SendFeishuTestCard(ctx context.Context, in *SendFeishuTestCardReq, opts ...grpc.CallOption) (*SendFeishuTestCardResp, error)
 	FeishuAuthorizeURL(ctx context.Context, in *FeishuAuthorizeURLReq, opts ...grpc.CallOption) (*FeishuAuthorizeURLResp, error)
 	FeishuLogin(ctx context.Context, in *FeishuLoginReq, opts ...grpc.CallOption) (*FeishuLoginResp, error)
+	WechatAuthorizeURL(ctx context.Context, in *WechatAuthorizeURLReq, opts ...grpc.CallOption) (*WechatAuthorizeURLResp, error)
+	WechatLogin(ctx context.Context, in *WechatLoginReq, opts ...grpc.CallOption) (*WechatLoginResp, error)
 	UpsertUserMemory(ctx context.Context, in *UpsertUserMemoryReq, opts ...grpc.CallOption) (*UpsertUserMemoryResp, error)
 	GetUserMemories(ctx context.Context, in *GetUserMemoriesReq, opts ...grpc.CallOption) (*GetUserMemoriesResp, error)
 	GetUserMemoryProfiles(ctx context.Context, in *GetUserMemoryProfilesReq, opts ...grpc.CallOption) (*GetUserMemoryProfilesResp, error)
@@ -443,6 +447,26 @@ func (c *superClient) FeishuLogin(ctx context.Context, in *FeishuLoginReq, opts 
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(FeishuLoginResp)
 	err := c.cc.Invoke(ctx, Super_FeishuLogin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) WechatAuthorizeURL(ctx context.Context, in *WechatAuthorizeURLReq, opts ...grpc.CallOption) (*WechatAuthorizeURLResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WechatAuthorizeURLResp)
+	err := c.cc.Invoke(ctx, Super_WechatAuthorizeURL_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) WechatLogin(ctx context.Context, in *WechatLoginReq, opts ...grpc.CallOption) (*WechatLoginResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WechatLoginResp)
+	err := c.cc.Invoke(ctx, Super_WechatLogin_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1423,6 +1447,8 @@ type SuperServer interface {
 	SendFeishuTestCard(context.Context, *SendFeishuTestCardReq) (*SendFeishuTestCardResp, error)
 	FeishuAuthorizeURL(context.Context, *FeishuAuthorizeURLReq) (*FeishuAuthorizeURLResp, error)
 	FeishuLogin(context.Context, *FeishuLoginReq) (*FeishuLoginResp, error)
+	WechatAuthorizeURL(context.Context, *WechatAuthorizeURLReq) (*WechatAuthorizeURLResp, error)
+	WechatLogin(context.Context, *WechatLoginReq) (*WechatLoginResp, error)
 	UpsertUserMemory(context.Context, *UpsertUserMemoryReq) (*UpsertUserMemoryResp, error)
 	GetUserMemories(context.Context, *GetUserMemoriesReq) (*GetUserMemoriesResp, error)
 	GetUserMemoryProfiles(context.Context, *GetUserMemoryProfilesReq) (*GetUserMemoryProfilesResp, error)
@@ -1595,6 +1621,12 @@ func (UnimplementedSuperServer) FeishuAuthorizeURL(context.Context, *FeishuAutho
 }
 func (UnimplementedSuperServer) FeishuLogin(context.Context, *FeishuLoginReq) (*FeishuLoginResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FeishuLogin not implemented")
+}
+func (UnimplementedSuperServer) WechatAuthorizeURL(context.Context, *WechatAuthorizeURLReq) (*WechatAuthorizeURLResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method WechatAuthorizeURL not implemented")
+}
+func (UnimplementedSuperServer) WechatLogin(context.Context, *WechatLoginReq) (*WechatLoginResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method WechatLogin not implemented")
 }
 func (UnimplementedSuperServer) UpsertUserMemory(context.Context, *UpsertUserMemoryReq) (*UpsertUserMemoryResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpsertUserMemory not implemented")
@@ -2204,6 +2236,42 @@ func _Super_FeishuLogin_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SuperServer).FeishuLogin(ctx, req.(*FeishuLoginReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_WechatAuthorizeURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WechatAuthorizeURLReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).WechatAuthorizeURL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_WechatAuthorizeURL_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).WechatAuthorizeURL(ctx, req.(*WechatAuthorizeURLReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_WechatLogin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WechatLoginReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).WechatLogin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_WechatLogin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).WechatLogin(ctx, req.(*WechatLoginReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3992,6 +4060,14 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FeishuLogin",
 			Handler:    _Super_FeishuLogin_Handler,
+		},
+		{
+			MethodName: "WechatAuthorizeURL",
+			Handler:    _Super_WechatAuthorizeURL_Handler,
+		},
+		{
+			MethodName: "WechatLogin",
+			Handler:    _Super_WechatLogin_Handler,
 		},
 		{
 			MethodName: "UpsertUserMemory",

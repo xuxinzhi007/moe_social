@@ -1,213 +1,188 @@
 # Moe Social (萌社交)
 
-一个使用 Flutter 构建的可爱风格社交网络应用，旨在为用户提供现代化、直观且充满活力的社交体验。
+使用 **Flutter** 与 **Go (go-zero)** 构建的复合型社交产品：萌系社交主线、AI 智能体 / 酒馆化能力、虚拟形象与 VIP 商业化、以及 AutoGLM 自动化实验能力。支持 Android、iOS、Web、Windows、macOS、Linux。
 
-## 功能特性
+> 产品优先级与路线图见 [docs/product/项目开发总览与当前优先级-2026-05-18.md](docs/product/项目开发总览与当前优先级-2026-05-18.md)。贡献与命令约定见 [AGENTS.md](AGENTS.md)。
 
-### 已实现功能
-- 用户认证系统（登录/注册）
-- 个人资料管理
-- 基础设置配置
-- 跨平台支持（Android、iOS、Web、Windows、macOS、Linux）
+## 功能模块（当前已实现）
 
-### 建议添加功能
+### 账号与认证
+- 邮箱注册 / 登录、验证码、找回密码
+- **飞书 OAuth** 登录与账号绑定
+- **微信 OAuth** 登录（App / Web；需配置开放平台与 `backend/config/config.yaml`）
+- JWT 会话、个人资料编辑、用户二维码
 
-#### 1. 个人资料增强
-- ✨ 头像和封面图上传功能
-- ✨ 个人简介和兴趣标签
-- ✨ 动态背景和主题选择
-- ✨ 在线状态显示
-- ✨ 个性化资料卡设计
+### 社交与内容
+- 动态流、发帖（图文 / 手绘等）、评论、点赞、话题
+- 关注 / 粉丝、好友请求与好友列表
+- 私信、WebSocket 实时消息、在线状态、语音通话（Agora）
+- 社区 / 兴趣小组、通知中心、发现页
+- 情绪标签、互动礼物、成就徽章（见 [docs/features/NEW_FEATURES_GUIDE.md](docs/features/NEW_FEATURES_GUIDE.md)）
 
-#### 2. 社交互动功能
-- 💬 发布动态（文字、图片、视频）
-- 👍 点赞、评论、分享功能
-- 👥 关注/粉丝系统
-- 💌 私信功能
-- 🤝 好友请求系统
+### 成长与商业化
+- 签到、用户等级、成就系统
+- 钱包、充值、订单中心、VIP 中心与购买流程
+- 抽卡、背包、虚拟形象（Rive）相关设置
 
-#### 3. 内容发现
-- 🔍 搜索功能（用户、内容、标签）
-- 📊 热门话题和标签
-- 🎯 推荐算法（根据兴趣推荐用户和内容）
-- 📋 分类浏览（根据内容类型或兴趣分类）
+### AI 与自动化
+- AI 智能体列表 / 编辑、多模型聊天、内容生成
+- Provider Profile、Lorebook / 世界书、角色卡广场
+- 用户记忆管理（架构 SSOT：[docs/dev/用户记忆系统-OpenClaw式演进设计.md](docs/dev/用户记忆系统-OpenClaw式演进设计.md)）
+- **AutoGLM** 子系统（配置、任务执行，见 [docs/autoglm/AutoGLM_README.md](docs/autoglm/AutoGLM_README.md)）
 
-#### 4. 社区功能
-- 🏘️ 兴趣小组或圈子
-- 🎉 活动创建和参与
-- 📈 排行榜（活跃度、人气等）
-- 📣 社区公告和通知
+### 其他
+- 云相册、扫码、小游戏（扫雷、游戏房间等）
+- 主题 / 外观、隐私与消息保留、应用内更新检测
+- 静态产品官网：`website/official/`（可部署至 Netlify）；微信开放平台申请资料见 [`website/official/wechat-review/申请指南.md`](website/official/wechat-review/申请指南.md)
 
-#### 5. 个性化功能
-- 🎨 主题切换（亮色/暗色/萌系主题）
-- 🔔 推送通知设置
-- 🔒 隐私设置
-- 📱 字体大小和显示效果调整
+部分 AI / 商业能力仍在迭代中；以代码与 `docs/` 为准。
 
-#### 6. 娱乐功能
-- 😊 表情包和贴纸功能
-- 📸 滤镜和美颜功能
-- 🎮 小游戏或互动功能
-- 📅 签到和积分系统
+## 技术栈
 
-#### 7. 实用功能
-- 📝 笔记和收藏功能
-- 🔄 多账号切换
-- 💾 数据备份和恢复
-- 📊 个人数据分析
+| 层级 | 技术 |
+|------|------|
+| 客户端 | Flutter 3.x、Dart、Provider、Material |
+| 后端 | go-zero、GORM、MySQL、JWT、gRPC |
+| 实时 / 媒体 | WebSocket、Agora RTC |
+| 第三方 | 飞书 / 微信 OAuth、fluwx |
+
+后端详情见 **[backend/README.md](backend/README.md)**。
 
 ## 快速开始
 
 ### 前提条件
 
-- 已安装 Flutter SDK
-- 已安装 Dart SDK
-- 已安装 IDE（VS Code、Android Studio 或 IntelliJ IDEA）并配置 Flutter 插件
+- [Flutter SDK](https://flutter.dev/docs/get-started/install)（`flutter doctor` 通过）
+- 后端开发另需 Go 1.25+、MySQL、goctl（见 `backend/README.md`）
 
-### 安装步骤
-没有安装的话  （macOS 用户）
+**macOS 安装 Flutter（可选）：**
+
 ```bash
-# 1. 安装 Flutter（会自动处理依赖和路径）
 brew install flutter
-
-# 2. 验证安装
 flutter --version
-
-# 3. 同样运行 doctor 检查环境
 flutter doctor
 ```
 
-1. 克隆仓库
-2. 运行 `flutter pub get` 安装依赖
-3. 运行 `flutter run` 启动应用
+### 前端
 
-### 项目文档
+```bash
+git clone <repo-url>
+cd moe_social
+flutter pub get
+flutter run
+```
 
-说明类 Markdown 集中在 **`docs/`**：总索引 **[docs/README.md](docs/README.md)**，浏览器导航 **[docs/index.html](docs/index.html)**。过时文档在 **`docs/archive/`**（原路径保留短跳转）。记忆系统 SSOT：[用户记忆系统-OpenClaw式演进设计.md](docs/dev/用户记忆系统-OpenClaw式演进设计.md)。后端旁注仍在 **`backend/*.md`**。
+API 地址在 **`lib/utils/config.dart`** 中配置（`isProduction` / `productionUrl` / `developmentUrl`）。修改后需 **完整重启** App，不要仅热重载。真机调试时 `127.0.0.1` 指向手机本机，应使用电脑局域网 IP 或线上地址。
 
-### 生产构建
-
-- Android: `flutter build apk`
-- iOS: `flutter build ios`
-- Web: `flutter build web`
-- Windows: `flutter build windows`
-- macOS: `flutter build macos`
-- Linux: `flutter build linux`
-
-## 🛠 运维部署台（Deploy Agent）
-
-一体化运维界面：构建后端、管理 Docker、触发 GitHub APK 流水线。按**运行 Agent 的机器**自动选择 macOS / Windows / Linux 命令。
+### 后端（本地）
 
 ```bash
 cd backend
-cp deploy/config.example.yaml deploy/config.yaml   # 修改 token
-make deploy-agent
-# 浏览器打开 http://127.0.0.1:19010/  （不要只用 IDE 预览 HTML，需 Agent 在线）
+# 配置 config/config.yaml 中的数据库等
+go mod download
+make gen          # 修改 super.api / super.proto 后重新生成
+make build        # 或分别启动 api / rpc
+go test ./...
 ```
 
-在 `deploy/config.yaml` 的 `targets` 中配置云平台 SSH（示例见 `deploy/config.example.yaml` 的 `cloud`）。详见 [docs/dev/deploy-platform.md](docs/dev/deploy-platform.md)。
-
-## 🚀 CI/CD 与自动更新
-
-本项目集成了 GitHub Actions 实现自动化构建与发布，并支持 App 内自动检测更新。
-
-### 1. 自动构建发布
-当推送形如 `v*` 的 Tag（例如 `v1.0.0`）到仓库时，会自动触发构建流程：
-- 自动构建 Release APK
-- 自动发布到 [GitHub Releases](https://github.com/xuxinzhi007/moe_social/releases)
-
-**操作命令**：
-```bash
-git tag v1.0.3
-git push origin v1.0.3
-```
-**删除已推送的版本**, 
-```bash
-git tag -d v1.0.3
-git push origin :v1.0.3
-```
-后端交叉编译 Linux 时，**不要**使用 `go env -w GOOS=linux` 改写全局环境（否则在本机 `go run` 会生成错误平台二进制）。在 `backend` 目录执行：
+Docker 二进制部署示例（在 `backend/` 目录）：
 
 ```bash
-make build-linux
-```
-
-详见 `backend/Makefile`（使用单次命令前缀环境变量）。若本机曾被误设为 `GOOS=windows`，在 Mac 上恢复：`go env -w GOOS=darwin` 或 `go env -u GOOS`。
-
-# 停止所有相关容器
-docker-compose -f docker-compose.binary.yml stop
-
-# 删除所有相关容器
-docker-compose -f docker-compose.binary.yml down
-
-# 清理无效的容器
-docker rm -f moe-social-rpc moe-social-api 2>/dev/null || true
-
-# 重新构建并启动
-docker-compose -f docker-compose.binary.yml up -d --build
-
-# 查看日志
-docker logs moe-social-rpc
+docker compose -f docker-compose.binary.yml up -d --build
 docker logs moe-social-api
+docker logs moe-social-rpc
+```
 
+环境联调说明：[docs/dev/环境配置说明.md](docs/dev/环境配置说明.md) · [docs/dev/快速调试步骤.md](docs/dev/快速调试步骤.md)
 
-### 2. 产物下载
-构建完成后，APK 文件会出现在 Releases 页面：
-- **下载地址**: [Releases 页面](https://github.com/xuxinzhi007/moe_social/releases)
-- **文件名**: `app-release.apk`
+### 生产构建
 
-### 3. 检查更新
-App 内置了更新检测功能：
-- **检测原理**: 对比本地版本与 [GitHub API](https://api.github.com/repos/xuxinzhi007/moe_social/releases/latest) 返回的最新 Tag。
-- **操作方式**: 进入 `设置` -> `常规设置` -> 点击 `软件版本` 即可手动检查。
-
-### 4. 配置 Release 签名（实现覆盖安装）
-
-默认情况下，每次构建使用临时签名，导致新版本无法覆盖旧版本（需卸载重装）。
-配置固定签名后即可实现平滑更新。
-
-完整步骤、GitHub Secrets、密码管理方式见 **[docs/dev/android-release-signing.md](docs/dev/android-release-signing.md)**（含敏感信息，勿公开仓库）。
-
-简要说明：
-
-1. 将 `release.jks` 放在 `android/app/`
-2. 设置环境变量 `KEYSTORE_PASSWORD`、`KEY_PASSWORD`（或配置 GitHub Actions Secrets）
-3. Release 构建即可与已发布版本覆盖安装
-
-> ⚠️ 重新生成 keystore 后，用户通常需卸载旧版才能安装，请妥善保管签名文件。
-
-### 5. App 内更新功能
-
-App 支持应用内下载更新，特性包括：
-- ✅ **国内加速下载**：自动使用 ghproxy、ddlc 等镜像加速
-- ✅ **下载进度显示**：实时显示下载速度和进度
-- ✅ **覆盖安装**：配置签名后无需卸载旧版本
+```bash
+flutter build apk      # Android
+flutter build ios      # iOS
+flutter build web      # Web
+flutter build windows  # Windows
+flutter build macos    # macOS
+flutter build linux    # Linux
+```
 
 ## 项目结构
 
 ```
 moe_social/
-├── android/           # Android 平台特定代码
-├── ios/               # iOS 平台特定代码
-├── docs/              # 项目文档索引与分类说明（见 docs/README.md）
-├── backend/           # Go + go-zero 后端（含 backend/*.md 说明）
-├── lib/               # 主要 Dart 源代码
-│   ├── main.dart           # 应用入口
-│   ├── auth_service.dart   # 认证逻辑
-│   ├── pages/              # 按域划分的页面（auth、feed、profile、commerce 等）
-│   ├── models/、services/、widgets/、providers/ …
-├── linux/             # Linux 平台特定代码
-├── macos/             # macOS 平台特定代码
-├── test/              # 单元测试和 widget 测试
-├── web/               # Web 平台特定代码
-└── windows/           # Windows 平台特定代码
+├── lib/                    # Flutter 客户端
+│   ├── app/                # 路由、主 Shell
+│   ├── pages/              # 按域划分：auth、feed、chat、ai、commerce…
+│   ├── services/、providers/、widgets/、models/、utils/
+│   └── main.dart
+├── backend/                # Go API + RPC（super.api、super.proto）
+├── docs/                   # 文档中心 → docs/README.md
+├── website/official/       # 静态产品官网
+├── test/                   # Flutter 测试
+├── android/、ios/、web/、windows/、macos/、linux/
+└── AGENTS.md               # 仓库贡献与常用命令
 ```
 
-## 使用技术
+## 文档
 
-- Flutter
-- Dart
-- Material Design
+| 用途 | 链接 |
+|------|------|
+| 文档总索引 | [docs/README.md](docs/README.md) |
+| 浏览器导航 | [docs/index.html](docs/index.html) |
+| 记忆系统 SSOT | [docs/dev/用户记忆系统-OpenClaw式演进设计.md](docs/dev/用户记忆系统-OpenClaw式演进设计.md) |
+| 部署平台 / Agent | [docs/dev/deploy-platform.md](docs/dev/deploy-platform.md) |
+| Code Review | [code_review.md](code_review.md) |
+| 归档文档 | [docs/archive/](docs/archive/) |
+
+## 运维部署台（Deploy Agent）
+
+一体化运维界面：构建后端、管理 Docker、触发 GitHub APK 流水线。按运行 Agent 的机器自动选择 macOS / Windows / Linux 命令。
+
+```bash
+cd backend
+cp deploy/config.example.yaml deploy/config.yaml   # 修改 token
+make deploy-agent
+# 浏览器打开 http://127.0.0.1:19010/（需 Agent 在线，勿仅用 IDE 预览 HTML）
+```
+
+在 `deploy/config.yaml` 的 `targets` 中配置云平台 SSH。详见 [docs/dev/deploy-platform.md](docs/dev/deploy-platform.md)。
+
+## CI/CD 与自动更新
+
+推送形如 `v*` 的 Tag（例如 `v1.0.3`）会触发 GitHub Actions：构建 Release APK 并发布到 [GitHub Releases](https://github.com/xuxinzhi007/moe_social/releases)。
+
+```bash
+git tag v1.0.3
+git push origin v1.0.3
+
+# 删除已推送的版本
+git tag -d v1.0.3
+git push origin :refs/tags/v1.0.3
+```
+
+**后端交叉编译 Linux**：在 `backend` 目录执行 `make build-linux`，不要用 `go env -w GOOS=linux` 改写全局环境。详见 `backend/Makefile`。
+
+### 产物与 App 内更新
+
+- APK：[Releases](https://github.com/xuxinzhi007/moe_social/releases)（`app-release.apk`）
+- 检测：对比本地版本与 GitHub API 最新 Tag；**设置 → 常规 → 软件版本** 可手动检查
+- 支持镜像加速下载、进度显示；配置 Release 签名后可覆盖安装
+
+Release 签名完整步骤：[docs/dev/android-release-signing.md](docs/dev/android-release-signing.md)
+
+```bash
+# 简要：android/app/release.jks + 环境变量 KEYSTORE_PASSWORD、KEY_PASSWORD
+```
+
+## 常用开发命令
+
+```bash
+flutter analyze          # 前端静态检查
+flutter test             # 前端测试
+cd backend && make gen   # 重新生成 goctl 代码
+cd backend && make build
+cd backend && go test ./...
+```
 
 ## 许可证
 
@@ -215,125 +190,33 @@ MIT License
 
 ## 贡献
 
-欢迎贡献！请随时提交 Pull Request。
+欢迎提交 Pull Request。请先阅读 [AGENTS.md](AGENTS.md) 与 [code_review.md](code_review.md)。
 
 ---
 
-# Moe Social (English Version)
+# Moe Social (English)
 
-A cute-style social networking application built with Flutter, designed to provide users with a modern, intuitive, and vibrant social experience.
+A **Flutter** client plus **Go (go-zero)** backend for a composite social product: cute-style social feed, AI agents / tavern-style chat, virtual avatars and VIP commerce, and an experimental **AutoGLM** automation stack. Targets Android, iOS, Web, Windows, macOS, and Linux.
 
-## Features
+**Roadmap:** [docs/product/项目开发总览与当前优先级-2026-05-18.md](docs/product/项目开发总览与当前优先级-2026-05-18.md) · **Repo guidelines:** [AGENTS.md](AGENTS.md)
 
-### Implemented Features
-- User authentication system (login/register)
-- Basic profile management
-- Settings configuration
-- Cross-platform support (Android, iOS, Web, Windows, macOS, Linux)
+## Implemented areas
 
-### Suggested Features to Add
+- **Auth:** email, Feishu OAuth, WeChat OAuth, profile & QR
+- **Social:** feed, posts, comments, likes, topics, follow/friends, DMs, WebSocket, voice calls
+- **Growth & commerce:** check-in, levels, achievements, wallet, VIP, gacha, inventory
+- **AI:** agents, chat, lorebooks, memory manager, provider profiles; **AutoGLM** subsystem
+- **Other:** cloud gallery, scan, mini-games, in-app updates, static site under `website/official/`
 
-#### 1. Enhanced Profile
-- ✨ Avatar and cover image upload
-- ✨ Personal bio and interest tags
-- ✨ Dynamic backgrounds and theme selection
-- ✨ Online status display
-- ✨ Personalized profile card design
+## Quick start
 
-#### 2. Social Interaction
-- 💬 Post updates (text, images, videos)
-- 👍 Like, comment, share functionality
-- 👥 Follow/follower system
-- 💌 Private messaging
-- 🤝 Friend request system
-
-#### 3. Content Discovery
-- 🔍 Search functionality (users, content, tags)
-- 📊 Trending topics and tags
-- 🎯 Recommendation algorithm (user and content recommendations based on interests)
-- 📋 Category browsing (by content type or interest category)
-
-#### 4. Community Features
-- 🏘️ Interest groups or circles
-- 🎉 Event creation and participation
-- 📈 Leaderboards (activity, popularity, etc.)
-- 📣 Community announcements and notifications
-
-#### 5. Personalization
-- 🎨 Theme switching (light/dark/cute themes)
-- 🔔 Push notification settings
-- 🔒 Privacy settings
-- 📱 Font size and display adjustment
-
-#### 6. Entertainment Features
-- 😊 Emoji and sticker functionality
-- 📸 Filters and beauty effects
-- 🎮 Mini-games or interactive features
-- 📅 Check-in and points system
-
-#### 7. Utility Features
-- 📝 Notes and favorites
-- 🔄 Multiple account switching
-- 💾 Data backup and recovery
-- 📊 Personal data analysis
-
-## Getting Started
-
-### Prerequisites
-
-- Flutter SDK installed
-- Dart SDK installed
-- IDE (VS Code, Android Studio, or IntelliJ IDEA) with Flutter plugin
-
-### Installation
-
-1. Clone the repository
-2. Run `flutter pub get` to install dependencies
-3. Run `flutter run` to start the application
-
-### Documentation
-
-Project Markdown lives under **`docs/`** with a table of contents in **[docs/README.md](docs/README.md)**. Backend notes remain next to the Go code in **`backend/*.md`**.
-
-### Building for Production
-
-- Android: `flutter build apk`
-- iOS: `flutter build ios`
-- Web: `flutter build web`
-- Windows: `flutter build windows`
-- macOS: `flutter build macos`
-- Linux: `flutter build linux`
-
-## Project Structure
-
-```
-moe_social/
-├── android/           # Android platform specific code
-├── ios/               # iOS platform specific code
-├── docs/              # Documentation index (see docs/README.md)
-├── backend/           # Go + go-zero backend (includes backend/*.md)
-├── lib/               # Main Dart source code
-│   ├── main.dart           # App entry point
-│   ├── auth_service.dart   # Authentication logic
-│   ├── pages/              # Screens by domain (auth, feed, profile, commerce, …)
-│   ├── models/, services/, widgets/, providers/, …
-├── linux/             # Linux platform specific code
-├── macos/             # macOS platform specific code
-├── test/              # Unit and widget tests
-├── web/               # Web platform specific code
-└── windows/           # Windows platform specific code
+```bash
+flutter pub get
+flutter run
 ```
 
-## Technologies Used
-
-- Flutter
-- Dart
-- Material Design
+Configure API base URL in `lib/utils/config.dart`. Backend: see [backend/README.md](backend/README.md). Docs index: [docs/README.md](docs/README.md).
 
 ## License
 
-MIT License
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+MIT License — contributions welcome via Pull Request.

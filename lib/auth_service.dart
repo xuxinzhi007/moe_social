@@ -13,6 +13,7 @@ import 'widgets/moe_toast.dart';
 class AuthResult {
   final bool success;
   final String? errorMessage;
+
   /// 注册成功后后端下发的 Moe 号（若有）
   final String? moeNo;
 
@@ -28,12 +29,15 @@ class AuthService {
   // 存储键名
   static const String _tokenKey = 'auth_token';
   static const String _userIdKey = 'user_id';
+
   /// 上次登录成功的账号（邮箱 / Moe 号 / 用户名），仅成功登录后写入，不存密码
   static const String _lastLoginAccountKey = 'last_login_account';
+
   /// 本地缓存的用户资料（按用户 ID 分键，避免换号后读到上一账号）
   static String _userInfoPrefsKey(String userId) => 'user_info_$userId';
-  
-  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
 
   // 内存中的登录状态
   static String? _currentUser;
@@ -72,7 +76,7 @@ class AuthService {
       onLogout: logout,
       onTokenUpdate: updateToken,
     );
-    
+
     // 设置 WebSocket 401 回调
     ChatPushService.onAuthError = () {
       logout();
@@ -135,6 +139,39 @@ class AuthService {
       }
     }
     return AuthResult.failure('登录失败，请稍后重试');
+  }
+
+  /// 微信 OAuth：用授权码登录；未注册则自动注册并绑定 openid。
+  static Future<AuthResult> loginWithWechat(
+    String code, {
+    String flow = 'app',
+  }) async {
+    try {
+      final result = await ApiService.wechatLogin(code, flow: flow);
+      final data = result['data'];
+      if (data is! Map<String, dynamic>) {
+        return AuthResult.failure('微信登录响应异常');
+      }
+      final userData = data['user'];
+      if (userData is! Map<String, dynamic>) {
+        return AuthResult.failure('微信登录响应异常');
+      }
+      _currentUser = userData['id'] as String;
+      _token = data['token'] as String;
+
+      await _saveAuthData();
+      final prefs = await SharedPreferences.getInstance();
+      await _purgeAllUserInfoCaches(prefs);
+
+      ApiService.setToken(_token);
+      PresenceService.start();
+      ChatPushService.start();
+      return AuthResult.success();
+    } on ApiException catch (e) {
+      return AuthResult.failure(e.message);
+    } catch (e) {
+      return AuthResult.failure('微信登录失败: $e');
+    }
   }
 
   /// 飞书 OAuth：用授权码登录；未注册则自动注册并绑定 open_id / 邮箱 / 显示名。
@@ -230,9 +267,10 @@ class AuthService {
     // Stop websocket-based services to avoid reconnect loops.
     PresenceService.stop();
     ChatPushService.stop();
-    
+
     // 跳转到登录页
-    navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+    navigatorKey.currentState
+        ?.pushNamedAndRemoveUntil('/login', (route) => false);
   }
 
   // 持久化存储认证数据
@@ -352,5 +390,4 @@ class AuthService {
     PresenceService.start();
     ChatPushService.start();
   }
-
 }
