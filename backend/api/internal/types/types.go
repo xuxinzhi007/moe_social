@@ -293,6 +293,7 @@ type CreatePostReq struct {
 	HandDrawCard     string     `json:"hand_draw_card,optional"`
 	HandDrawThumbUrl string     `json:"hand_draw_thumb_url,optional"`
 	MoodTag          string     `json:"mood_tag,optional"`
+	GroupId          string     `json:"group_id,optional"`
 }
 
 type CreatePostResp struct {

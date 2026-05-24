@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/ai_provider_profile.dart';
@@ -5,9 +6,8 @@ import '../../services/ai_chat_gateway_service.dart';
 import '../../services/ai_provider_connectivity_cache.dart';
 import '../../services/ai_provider_detector.dart';
 import '../../services/ai_provider_service.dart';
-import '../../services/local_model_store.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
-import 'local_model_manager_page.dart';
+import 'llama_cpp_settings_page.dart';
 import '../../widgets/ai/ai_confirm_sheet.dart';
 import '../../widgets/ai/ai_loading_skeleton.dart';
 import '../../widgets/ai/ai_scaffold.dart';
@@ -29,7 +29,6 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
   bool _initialLoading = true;
   bool _syncingCloud = false;
   final Map<String, ProviderConnectivityState?> _connectivity = {};
-  int _embeddedModelCount = 0;
 
   static const _ggufAccent = Color(0xFF26A69A);
   static const _apiAccent = Color(0xFF42A5F5);
@@ -49,38 +48,35 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
     final profiles = await AiProviderService().listProfiles();
     final conn = <String, ProviderConnectivityState?>{};
     for (final p in profiles) {
-      if (!p.isBuiltin) {
+      if (!p.isBuiltin || p.isLlamaCppServer) {
         conn[p.id] = await AiProviderConnectivityCache.read(p.id);
       }
     }
-    final installed = await LocalModelStore.instance.listInstalled();
     if (!mounted) return;
     setState(() {
       _profiles = profiles;
       _connectivity
         ..clear()
         ..addAll(conn);
-      _embeddedModelCount = installed.length;
       _initialLoading = false;
       _syncingCloud = false;
     });
   }
 
-  Future<void> _openEmbeddedModelManager() async {
+  Future<void> _openLlamaServerSettings() async {
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const LocalModelManagerPage()),
+      MaterialPageRoute(builder: (_) => const LlamaCppSettingsPage()),
     );
     if (!mounted) return;
-    final installed = await LocalModelStore.instance.listInstalled();
-    setState(() => _embeddedModelCount = installed.length);
+    await _load();
   }
 
   AiSyncStatus _statusFor(AiProviderProfile profile) {
-    if (profile.isLocalGguf) {
-      return _embeddedModelCount > 0
-          ? AiSyncStatus.success
-          : AiSyncStatus.warning;
+    if (profile.isLlamaCppServer) {
+      final state = _connectivity[profile.id];
+      if (state == null) return AiSyncStatus.warning;
+      return state.isSuccess ? AiSyncStatus.success : AiSyncStatus.error;
     }
     final state = _connectivity[profile.id];
     if (state == null) return AiSyncStatus.idle;
@@ -88,8 +84,12 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
   }
 
   String? _statusLabelFor(AiProviderProfile profile) {
-    if (profile.isLocalGguf) {
-      return _embeddedModelCount > 0 ? '已安装 $_embeddedModelCount 个模型' : '待下载模型';
+    if (profile.isLlamaCppServer) {
+      final state = _connectivity[profile.id];
+      if (state == null) {
+        return kIsWeb ? '请启动 llama-server' : null;
+      }
+      return state.isSuccess ? '已连通' : '连接失败';
     }
     final state = _connectivity[profile.id];
     if (state == null) return null;
@@ -207,18 +207,23 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
     final status = _statusFor(profile);
     final statusLabel = _statusLabelFor(profile);
 
-    if (profile.isLocalGguf) {
+    if (profile.isLlamaCppServer) {
       return _buildProviderCard(
         profile: profile,
-        icon: Icons.memory_rounded,
+        icon: Icons.dns_rounded,
         accent: _ggufAccent,
-        description: 'llama.cpp 嵌入 App（llamadart），无需 Ollama / llama-server',
+        description: kIsWeb
+            ? '连接本机 llama-server（OpenAI 兼容），网页版推荐'
+            : '连接本机 llama-server（OpenAI 兼容 /v1）',
         status: status,
         statusLabel: statusLabel,
-        onTap: _openEmbeddedModelManager,
+        onTap: _openLlamaServerSettings,
         metaRows: [
-          _metaRow('引擎', 'App 内 GGUF 推理'),
-          _metaRow('推荐', profile.effectiveModelIds.take(2).join(' · ')),
+          _metaRow('地址', _shortUrl(profile.baseUrl)),
+          _metaRow(
+            '默认模型',
+            profile.defaultModel.isEmpty ? '未设置' : profile.defaultModel,
+          ),
         ],
       );
     }
@@ -259,15 +264,16 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
   }
 
   List<Widget> _buildGroupedCards() {
-    final embedded = _profiles.where((p) => p.isLocalGguf);
+    final llama = _profiles.where((p) => p.isLlamaCppServer);
     final custom = _profiles.where((p) => !p.isBuiltin);
-
     return [
       _sectionHeader(
-        'App 内 llama.cpp',
-        '模型下载到手机/电脑，在 App 内直接推理（当前推荐）',
+        '本机 llama-server',
+        kIsWeb
+            ? '在电脑上启动 llama-server，浏览器通过 127.0.0.1:6633 连接'
+            : '连接本机 llama-server，需先启动 llama-server.exe',
       ),
-      ...embedded.map(_buildCard),
+      ...llama.map(_buildCard),
       _sectionHeader('云端 API', 'OpenAI 兼容中转站（如 Xbai / OpenRouter）'),
       ...custom.map(_buildCard),
     ];
@@ -758,8 +764,8 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                   children: [
                     AiSurfaceCard(
                       child: Text(
-                        '本机对话推荐「App 内 llama.cpp」：下载 GGUF 后在 App 内推理，'
-                        '无需 Ollama、无需单独跑 llama-server.exe。\n\n'
+                        '本机对话推荐「本机 llama-server」：先在电脑上启动 llama-server，'
+                        '再在下方配置连接地址（默认 127.0.0.1:6633）。\n\n'
                         '也可新增 OpenAI 兼容中转站（OpenRouter / Xbai 等）。',
                         style: AiTheme.body,
                       ),

@@ -4,7 +4,9 @@
 
 .PHONY: all gen gen-rpc gen-api gen-swagger build build-linux env-status \
 
-	deploy-agent deploy-agent-stop rpc api rpc-debug rpc-migrate rpc-monitor rpc-monitor-stop \
+	deploy-agent deploy-agent-stop ops-console-install ops-console-dev ops-console-build \
+
+	rpc api rpc-debug rpc-migrate rpc-monitor rpc-monitor-stop \
 
 	dev-docs dev help
 
@@ -119,10 +121,48 @@ deploy-config-init:
 
 
 # 开发者 / 运维统一工具台（Moe 专属 :19010，见 docs/dev/ports.md）
+# 默认打开 React 运维台（/ops/）；无 dist 时自动构建；HTML 版仍可通过 /tools/deploy-ops.html
 
-deploy-agent:
+deploy-agent: ops-console-build-if-needed
 
 	go run ./cmd/deploy-agent -f deploy/config.yaml
+
+
+
+# 仅当 ops-console/dist 不存在时构建（避免每次 npm ci）
+ops-console-build-if-needed:
+
+ifeq ($(OS),Windows_NT)
+	@if not exist "..\ops-console\dist\index.html" (\
+		echo [deploy-agent] building React ops-console... && \
+		cd ../ops-console && if not exist node_modules npm ci && npm run build\
+	) else (echo [deploy-agent] using existing ops-console/dist)
+else
+	@if [ ! -f ../ops-console/dist/index.html ]; then \
+		echo "[deploy-agent] building React ops-console..."; \
+		cd ../ops-console && ( [ -d node_modules ] || npm ci ) && npm run build; \
+	else \
+		echo "[deploy-agent] using existing ops-console/dist"; \
+	fi
+endif
+
+
+
+ops-console-install:
+
+	cd ../ops-console && npm ci
+
+
+
+ops-console-dev:
+
+	cd ../ops-console && npm run dev
+
+
+
+ops-console-build:
+
+	cd ../ops-console && npm ci && npm run build
 
 
 
@@ -216,9 +256,13 @@ help:
 
 	@echo --- 开发工具（独立进程）---
 
-	@echo make deploy-agent      - 统一工具台 (:19010)，见 docs/dev/ports.md
+	@echo make deploy-agent      - 统一工具台 (:19010)，自动打开 React /ops/
 
 	@echo make deploy-agent-stop - 释放 Agent 端口
+
+	@echo make ops-console-dev   - React 运维台开发 (:5173/ops/)
+
+	@echo make ops-console-build - 构建 React 运维台 → Agent /ops/
 
 	@echo make rpc-debug         - RPC debug API (:19011)
 

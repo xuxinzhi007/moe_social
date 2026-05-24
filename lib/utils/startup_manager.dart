@@ -51,38 +51,49 @@ class StartupManager {
     final stopwatch = Stopwatch()..start();
 
     try {
-      final futures = <Future<void>>[];
       final taskGroups = _groupTasksByPriority();
+      final backgroundTasks = <StartupTask>[];
 
-      for (var i = 0; i < taskGroups.length; i++) {
-        final group = taskGroups[i];
-        final groupFutures = <Future<void>>[];
+      Future<void> runCriticalGroups() async {
+        for (final group in taskGroups) {
+          final isBackgroundGroup =
+              group.isNotEmpty && group.every((task) => !task.critical);
+          if (isBackgroundGroup) {
+            backgroundTasks.addAll(group);
+            continue;
+          }
 
-        for (final task in group) {
-          groupFutures.add(_executeTask(task));
-        }
-
-        futures.addAll(groupFutures);
-        if (i < taskGroups.length - 1) {
-          await Future.wait(groupFutures);
+          for (final task in group) {
+            await _executeTask(task);
+          }
         }
       }
 
       if (timeout != null) {
-        await Future.wait(futures).timeout(timeout);
+        await runCriticalGroups().timeout(timeout);
       } else {
-        await Future.wait(futures);
+        await runCriticalGroups();
       }
 
       _checkCriticalTasks();
       _completer?.complete();
 
+      for (final task in backgroundTasks) {
+        unawaited(_executeTask(task));
+      }
+
       stopwatch.stop();
       debugPrint('✅ Startup completed in ${stopwatch.elapsedMilliseconds}ms');
+      if (backgroundTasks.isNotEmpty) {
+        debugPrint(
+          '⏳ ${backgroundTasks.length} non-critical task(s) running in background',
+        );
+      }
       _printTaskResults();
     } catch (e) {
       stopwatch.stop();
-      debugPrint('❌ Startup failed after ${stopwatch.elapsedMilliseconds}ms: $e');
+      debugPrint(
+          '❌ Startup failed after ${stopwatch.elapsedMilliseconds}ms: $e');
       _completer?.completeError(e);
       rethrow;
     }
@@ -112,7 +123,8 @@ class StartupManager {
       _taskResults[task.name] = false;
       _taskErrors[task.name] = {'error': e, 'stack': stack};
       taskStopwatch.stop();
-      debugPrint('   ❌ ${task.name}: ${taskStopwatch.elapsedMilliseconds}ms - $e');
+      debugPrint(
+          '   ❌ ${task.name}: ${taskStopwatch.elapsedMilliseconds}ms - $e');
 
       if (task.critical) {
         rethrow;
@@ -127,14 +139,16 @@ class StartupManager {
         .toList();
 
     if (failedCritical.isNotEmpty) {
-      throw StateError('Critical startup tasks failed: ${failedCritical.join(', ')}');
+      throw StateError(
+          'Critical startup tasks failed: ${failedCritical.join(', ')}');
     }
   }
 
   void _printTaskResults() {
     final successCount = _taskResults.values.where((v) => v).length;
     final totalCount = _taskResults.length;
-    debugPrint('📊 Startup Summary: $successCount/$totalCount tasks completed successfully');
+    debugPrint(
+        '📊 Startup Summary: $successCount/$totalCount tasks completed successfully');
 
     if (_taskErrors.isNotEmpty) {
       debugPrint('⚠️  Non-critical task errors:');

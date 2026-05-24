@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/ai_provider_profile.dart';
+import '../../services/ai_platform_local_provider.dart';
 import '../../services/ai_chat_gateway_service.dart';
 import '../../services/ai_provider_service.dart';
 import '../../pages/ai/ai_provider_profiles_page.dart';
@@ -51,8 +52,10 @@ class _AiModelBindingSheetBody extends StatefulWidget {
 class _AiModelBindingSheetBodyState extends State<_AiModelBindingSheetBody> {
   final _modelController = TextEditingController();
 
-  List<AiProviderProfile> _profiles = [AiProviderProfile.builtinLocalGguf()];
-  String _profileId = AiProviderProfile.builtinLocalGgufId;
+  List<AiProviderProfile> _profiles = [
+    AiPlatformLocalProvider.defaultBuiltinProfileSync(),
+  ];
+  String _profileId = AiPlatformLocalProvider.defaultBuiltinProviderId;
   List<String> _models = [];
   bool _loadingProfiles = true;
   bool _loadingModels = false;
@@ -84,9 +87,10 @@ class _AiModelBindingSheetBodyState extends State<_AiModelBindingSheetBody> {
     try {
       final profiles = await AiProviderService().listProfiles();
       final lastId = await AiProviderService().readLastSelectedProfileId();
-      var selected = lastId ?? AiProviderProfile.builtinLocalGgufId;
+      var selected =
+          lastId ?? AiPlatformLocalProvider.defaultBuiltinProviderId;
       if (!profiles.any((p) => p.id == selected)) {
-        selected = AiProviderProfile.builtinLocalGgufId;
+        selected = AiPlatformLocalProvider.defaultBuiltinProviderId;
       }
       if (!mounted) return;
       setState(() {

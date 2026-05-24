@@ -105,6 +105,11 @@ func (l *CreatePostLogic) CreatePost(in *super.CreatePostReq) (*super.CreatePost
 		}
 	}
 
+	if err := linkPostToGroupTx(tx, in.GetGroupId(), post.ID, uint(userID)); err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
 	handDrawApproved := in.HandDrawCard != "" && modStatus == "ok"
 	engine := achievement.NewEngine(l.svcCtx.DB)
 	achUnlocks, err := engine.ApplyEvent(tx, uint(userID), achievement.Event{

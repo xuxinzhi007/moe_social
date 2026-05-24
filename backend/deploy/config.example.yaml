@@ -23,6 +23,10 @@ windows_shell: auto
 # 本机任务额外 PATH（可选）。Win 分号分隔，Mac 冒号。无 Git 且 cmd 找不到 go 时可填 Go/flutter 的 bin
 # local_path_extra: "C:\\Go\\bin;C:\\src\\flutter\\bin"
 
+# 运维台本机构建专用缓存（Go GOCACHE + 临时目录），默认 backend/deploy/.moe-build-cache
+# 可改为绝对路径（如 D:/moe-deploy-cache），或环境变量 MOE_DEPLOY_BUILD_CACHE
+# build_cache_dir: ".moe-build-cache"
+
 # 私密覆盖（可选）：复制 config.local.example.yaml → config.local.yaml（同样 gitignore）
 # 与 config.yaml 合并，便于 Win/Mac 只同步一小段 token/SSH，见 docs/dev/deploy-platform.md
 

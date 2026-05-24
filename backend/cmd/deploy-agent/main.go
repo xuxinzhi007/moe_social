@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"time"
 
+	"backend/deploy/browser"
 	deploycfg "backend/deploy/config"
 	"backend/deploy/handler"
 )
@@ -71,7 +72,21 @@ func main() {
 		log.Printf("cloud SSH %s@%s backend_dir=%s compose=%s",
 			cloud.User, cloud.Host, cloud.BackendDir, cloud.ComposeFile)
 	}
-	log.Printf("Dashboard: http://%s/  (Moe Ops · deploy · rpc-monitor)", cfg.Listen)
+	dashPath := handler.DashboardPath(cfg.WorkspaceAbs())
+	dashURL := "http://" + cfg.Listen + dashPath
+	if dashPath == "/ops/" {
+		log.Printf("Dashboard: %s  (Moe Ops · React)", dashURL)
+	} else {
+		log.Printf("Dashboard: %s  (Moe Ops · HTML — run: make ops-console-build)", dashURL)
+	}
+	if browser.ShouldOpen() {
+		go func(url string) {
+			time.Sleep(400 * time.Millisecond)
+			if err := browser.Open(url); err != nil {
+				log.Printf("open browser: %v (open manually: %s)", err, url)
+			}
+		}(dashURL)
+	}
 
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		fmt.Fprintf(os.Stderr, "server: %v\n", err)

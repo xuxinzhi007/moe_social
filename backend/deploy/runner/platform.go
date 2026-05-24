@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 )
 
 // HostInfo describes the machine running the Deploy Agent.
@@ -43,8 +44,9 @@ func NewPlatform(workspace, backendDir, composeFile string) *Platform {
 	}
 }
 
-// Inspect collects host capabilities.
-func (p *Platform) Inspect(ctx context.Context) HostInfo {
+// InspectLocal probes the dev machine for cross-compile / Flutter (matches Moe Ops HTML 本机卡片).
+// Intentionally skips Docker: local packaging uses go build in backend/; Docker is cloud-only.
+func (p *Platform) InspectLocal(ctx context.Context) HostInfo {
 	info := HostInfo{
 		OS:            runtime.GOOS,
 		Arch:          runtime.GOARCH,
@@ -55,12 +57,26 @@ func (p *Platform) Inspect(ctx context.Context) HostInfo {
 		BackendDir:    p.backendDir,
 		ComposeFile:   p.composeFile,
 	}
+	info.GoVersion = runOutput(ctx, p.backendDir, "go", "version")
+	if path, err := exec.LookPath("flutter"); err == nil {
+		info.FlutterVersion = runOutput(ctx, p.workspace, path, "--version")
+	}
+	return info
+}
+
+// Inspect collects full host capabilities including Docker (slower; avoid for target=local).
+func (p *Platform) Inspect(ctx context.Context) HostInfo {
+	info := p.InspectLocal(ctx)
 	info.DockerCLI, info.DockerVersion = dockerVersion(ctx)
 	info.ComposeCLI = composeLabel(ctx)
-	info.GoVersion = runOutput(ctx, p.backendDir, "go", "version")
 	info.GitVersion = runOutput(ctx, p.workspace, "git", "--version")
-	info.FlutterVersion = runOutput(ctx, p.workspace, "flutter", "--version")
 	return info
+}
+
+const inspectProbeTimeout = 6 * time.Second
+
+func probeCtx(ctx context.Context) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(ctx, inspectProbeTimeout)
 }
 
 func platformLabel() string {
@@ -126,13 +142,17 @@ func composeLabel(ctx context.Context) string {
 }
 
 func usesDockerComposeV2(ctx context.Context) bool {
-	cmd := exec.CommandContext(ctx, "docker", "compose", "version")
+	pctx, cancel := probeCtx(ctx)
+	defer cancel()
+	cmd := exec.CommandContext(pctx, "docker", "compose", "version")
 	cmd.Stderr = nil
 	return cmd.Run() == nil
 }
 
 func runOutput(ctx context.Context, dir string, name string, args ...string) string {
-	cmd := exec.CommandContext(ctx, name, args...)
+	pctx, cancel := probeCtx(ctx)
+	defer cancel()
+	cmd := exec.CommandContext(pctx, name, args...)
 	if dir != "" {
 		cmd.Dir = dir
 	}

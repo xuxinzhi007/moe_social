@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../auth_service.dart';
 import '../../widgets/moe_toast.dart';
-import '../commerce/gacha_page.dart';
 import 'minesweeper_lobby_page.dart';
 import '../../widgets/fade_in_up.dart';
 
@@ -75,12 +74,7 @@ class GameLobbyPage extends StatelessWidget {
                         description: '碰碰运气，说不定出 SSR！',
                         icon: Icons.egg_alt_rounded,
                         gradient: const [Color(0xFFFF9A9E), Color(0xFFA18CD1)],
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => GachaPage()),
-                          );
-                        },
+                        onTap: () => Navigator.pushNamed(context, '/gacha'),
                       ),
                     ),
                     const SizedBox(height: 20),

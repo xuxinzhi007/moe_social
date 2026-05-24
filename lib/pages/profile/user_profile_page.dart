@@ -23,7 +23,7 @@ import '../../utils/post_navigation.dart';
 import '../feed/create_post_page.dart';
 import 'following_page.dart';
 import 'followers_page.dart';
-import '../chat/voice_call_page.dart';
+import '../chat/voice_call_launcher.dart';
 
 class UserProfilePage extends StatefulWidget {
   final String userId;
@@ -75,14 +75,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
     try {
       // 确保AuthService已经初始化，恢复登录状态
       await AuthService.init();
-      
+
       print('🔍 AuthService.isLoggedIn: ${AuthService.isLoggedIn}');
       print('🔍 AuthService.currentUser: ${AuthService.currentUser}');
-      
+
       final user = await ApiService.getUserInfo(widget.userId);
       // 加载用户徽章
       final userBadges = _achievementService.getUserBadges(widget.userId);
-      
+
       // 检查关注状态
       bool isFollowing = false;
       if (AuthService.isLoggedIn) {
@@ -91,14 +91,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
           // 确保参数顺序正确：followerId（当前用户）在前，followingId（被关注用户）在后
           print('🔍 检查关注状态：当前用户ID = $currentUserId，被关注用户ID = ${widget.userId}');
           try {
-            isFollowing = await ApiService.checkFollow(currentUserId, widget.userId);
+            isFollowing =
+                await ApiService.checkFollow(currentUserId, widget.userId);
             print('🔍 关注状态检查结果：$isFollowing');
           } catch (e) {
             print('❌ 检查关注状态失败: $e');
             // 尝试通过followUser API的错误信息来判断关注状态
             try {
               // 尝试关注，如果返回重复错误则说明已经关注
-              final result = await ApiService.followUser(currentUserId, widget.userId);
+              final result =
+                  await ApiService.followUser(currentUserId, widget.userId);
               print('🔍 尝试关注结果: $result');
               if (result['success']) {
                 isFollowing = true;
@@ -120,8 +122,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         final cur = AuthService.currentUser;
         if (cur != null && cur != widget.userId) {
           try {
-            friendRel =
-                await ApiService.getFriendRelation(cur, widget.userId);
+            friendRel = await ApiService.getFriendRelation(cur, widget.userId);
           } catch (_) {}
         }
       }
@@ -172,8 +173,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
   Future<void> _loadFollowStats() async {
     try {
       // 获取关注数量和粉丝数量
-      final followingResult = await ApiService.getFollowings(widget.userId, page: 1, pageSize: 1);
-      final followersResult = await ApiService.getFollowers(widget.userId, page: 1, pageSize: 1);
+      final followingResult =
+          await ApiService.getFollowings(widget.userId, page: 1, pageSize: 1);
+      final followersResult =
+          await ApiService.getFollowers(widget.userId, page: 1, pageSize: 1);
 
       if (mounted) {
         setState(() {
@@ -226,8 +229,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
             likes: post.likes,
             comments: post.comments,
             isLiked: post.isLiked,
-            userName: updated.userName.isNotEmpty ? updated.userName : post.userName,
-            userAvatar: updated.userAvatar.isNotEmpty ? updated.userAvatar : post.userAvatar,
+            userName:
+                updated.userName.isNotEmpty ? updated.userName : post.userName,
+            userAvatar: updated.userAvatar.isNotEmpty
+                ? updated.userAvatar
+                : post.userAvatar,
           );
         }
       });
@@ -246,7 +252,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
       ErrorHandler.showError(context, '删除失败：$e');
     }
   }
-
 
   String _friendRelationLabel() {
     switch (_friendRelation) {
@@ -359,10 +364,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
       );
     }
 
-    final postsLabel = _isLoadingPosts && _userPosts.isEmpty ? '…' : '$_postTotal';
+    final postsLabel =
+        _isLoadingPosts && _userPosts.isEmpty ? '…' : '$_postTotal';
     final charmLabel = _user == null ? '…' : '${_user!.giftCharm}';
-    final giftValueLabel =
-        _user == null ? '…' : _formatReceivedGiftValue(_user!.receivedGiftValue);
+    final giftValueLabel = _user == null
+        ? '…'
+        : _formatReceivedGiftValue(_user!.receivedGiftValue);
     final sepH = MediaQuery.textScalerOf(context).scale(32.0).clamp(24.0, 44.0);
 
     Widget vDivider() => Container(
@@ -378,7 +385,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
         child: Container(
           width: double.infinity,
           padding: EdgeInsets.symmetric(
-            vertical: MediaQuery.textScalerOf(context).scale(12.0).clamp(8.0, 18.0),
+            vertical:
+                MediaQuery.textScalerOf(context).scale(12.0).clamp(8.0, 18.0),
             horizontal: 2,
           ),
           decoration: BoxDecoration(
@@ -400,7 +408,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute<void>(
-                          builder: (context) => FollowingPage(userId: widget.userId),
+                          builder: (context) =>
+                              FollowingPage(userId: widget.userId),
                         ),
                       );
                     },
@@ -413,7 +422,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute<void>(
-                          builder: (context) => FollowersPage(userId: widget.userId),
+                          builder: (context) =>
+                              FollowersPage(userId: widget.userId),
                         ),
                       );
                     },
@@ -489,167 +499,168 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                Hero(
-                  tag: widget.heroTag ?? 'user_avatar_${widget.userId}',
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF7F7FD5).withValues(alpha: 0.35),
-                          blurRadius: 22,
-                          offset: const Offset(0, 8),
+                  Hero(
+                    tag: widget.heroTag ?? 'user_avatar_${widget.userId}',
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                const Color(0xFF7F7FD5).withValues(alpha: 0.35),
+                            blurRadius: 22,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: _user != null
+                            ? DynamicAvatar(
+                                avatarUrl: avatar ?? '',
+                                size: 76,
+                                frameId: _user!.equippedFrameId,
+                              )
+                            : NetworkAvatarImage(
+                                imageUrl: avatar ?? '',
+                                radius: 38,
+                                placeholderIcon: Icons.person,
+                              ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          name,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 21,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      if (_user?.isVip == true) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.22),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: const Color(0xFFFFE082)
+                                  .withValues(alpha: 0.9),
+                            ),
+                          ),
+                          child: const Text(
+                            'VIP',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFFFFF8E1),
+                            ),
+                          ),
                         ),
                       ],
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: _user != null
-                          ? DynamicAvatar(
-                              avatarUrl: avatar ?? '',
-                              size: 76,
-                              frameId: _user!.equippedFrameId,
-                            )
-                          : NetworkAvatarImage(
-                              imageUrl: avatar ?? '',
-                              radius: 38,
-                              placeholderIcon: Icons.person,
-                            ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        name,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 21,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    if (_user?.isVip == true) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.22),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color:
-                                const Color(0xFFFFE082).withValues(alpha: 0.9),
-                          ),
-                        ),
-                        child: const Text(
-                          'VIP',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFFFFF8E1),
-                          ),
-                        ),
-                      ),
                     ],
-                  ],
-                ),
-                if (_isSelf && (_user?.email ?? '').isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    _user!.email,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.78),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
-                if (sig.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(
-                      sig,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                  if (_isSelf && (_user?.email ?? '').isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      _user!.email,
                       style: TextStyle(
-                        fontSize: 13,
-                        height: 1.3,
-                        color: Colors.white.withValues(alpha: 0.92),
+                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.78),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  if (sig.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        sig,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.3,
+                          color: Colors.white.withValues(alpha: 0.92),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-                if (moe.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Material(
-                    color: Colors.white.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(999),
-                    child: InkWell(
-                      onTap: _isSelf
-                          ? () {
-                              Clipboard.setData(ClipboardData(text: moe));
-                              MoeToast.success(context, '已复制 Moe 号');
-                            }
-                          : null,
+                  ],
+                  if (moe.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Material(
+                      color: Colors.white.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(999),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 5,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.badge_outlined,
-                              size: 14,
-                              color: Colors.white.withValues(alpha: 0.95),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              moe,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            if (_isSelf) ...[
-                              const SizedBox(width: 4),
+                      child: InkWell(
+                        onTap: _isSelf
+                            ? () {
+                                Clipboard.setData(ClipboardData(text: moe));
+                                MoeToast.success(context, '已复制 Moe 号');
+                              }
+                            : null,
+                        borderRadius: BorderRadius.circular(999),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 5,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
                               Icon(
-                                Icons.copy_rounded,
-                                size: 13,
-                                color: Colors.white.withValues(alpha: 0.85),
+                                Icons.badge_outlined,
+                                size: 14,
+                                color: Colors.white.withValues(alpha: 0.95),
                               ),
+                              const SizedBox(width: 6),
+                              Text(
+                                moe,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (_isSelf) ...[
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.copy_rounded,
+                                  size: 13,
+                                  color: Colors.white.withValues(alpha: 0.85),
+                                ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
+                  const SizedBox(height: 10),
+                  _buildFrostedStatsStrip(),
                 ],
-                const SizedBox(height: 10),
-                _buildFrostedStatsStrip(),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );
@@ -677,24 +688,24 @@ class _UserProfilePageState extends State<UserProfilePage> {
       MoeToast.error(context, '请先登录');
       return;
     }
-    
+
     final currentUserId = AuthService.currentUser;
     if (currentUserId == null) {
       MoeToast.error(context, '获取用户信息失败');
       return;
     }
-    
+
     // 禁止关注自己
     if (currentUserId == widget.userId) {
       MoeToast.error(context, '不能关注自己');
       return;
     }
-    
+
     try {
       final result = _isFollowing
           ? await ApiService.unfollowUser(currentUserId, widget.userId)
           : await ApiService.followUser(currentUserId, widget.userId);
-      
+
       if (result['success']) {
         setState(() {
           _isFollowing = !_isFollowing;
@@ -709,10 +720,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
       }
     } catch (e) {
       print('关注操作失败: $e');
-      
+
       // 处理重复关注的情况
       String errorMessage = _isFollowing ? '取消关注失败' : '关注失败';
-      if (e.toString().contains('Duplicate entry') || e.toString().contains('already exists')) {
+      if (e.toString().contains('Duplicate entry') ||
+          e.toString().contains('already exists')) {
         errorMessage = '您已经关注了该用户';
         // 更新本地状态为已关注
         setState(() {
@@ -723,7 +735,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       } else if (e.toString().contains('foreign key constraint fails')) {
         errorMessage = '关注的用户不存在';
       }
-      
+
       MoeToast.error(context, errorMessage);
     }
   }
@@ -735,8 +747,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
     if (avatar == null || avatar.isEmpty) {
       avatar = widget.userAvatar;
     }
-    final showMidCard = !_isSelf ||
-        _userBadges.where((badge) => badge.isUnlocked).isNotEmpty;
+    final showMidCard =
+        !_isSelf || _userBadges.where((badge) => badge.isUnlocked).isNotEmpty;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -919,17 +931,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                       ..sort();
                                     final channelName =
                                         'voice_call_${ids.join('_')}';
-                                    Navigator.push(
+                                    openVoiceCallPage(
                                       context,
-                                      MaterialPageRoute<void>(
-                                        builder: (context) => VoiceCallPage(
-                                          channelName: channelName,
-                                          userName:
-                                              widget.userName ?? 'User',
-                                          userAvatar:
-                                              widget.userAvatar ?? '',
-                                        ),
-                                      ),
+                                      channelName: channelName,
+                                      userName: widget.userName ?? 'User',
+                                      userAvatar: widget.userAvatar ?? '',
                                     );
                                   },
                                   style: OutlinedButton.styleFrom(
@@ -984,12 +990,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                 flex: 1,
                                 child: ElevatedButton.icon(
                                   onPressed: _showGiftSelector,
-                                  icon: const Icon(Icons.card_giftcard,
-                                      size: 16),
+                                  icon:
+                                      const Icon(Icons.card_giftcard, size: 16),
                                   label: const Text(
                                     '送礼',
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w500),
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.w500),
                                   ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.pink[400],
@@ -1040,8 +1046,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       child: Row(
                         children: [
                           Container(
-                            width: 4, 
-                            height: 18, 
+                            width: 4,
+                            height: 18,
                             decoration: BoxDecoration(
                               color: const Color(0xFF7F7FD5),
                               borderRadius: BorderRadius.circular(2),
@@ -1070,7 +1076,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         child: Center(
                           child: Column(
                             children: [
-                              Icon(Icons.bubble_chart_outlined, size: 64, color: Colors.grey[200]),
+                              Icon(Icons.bubble_chart_outlined,
+                                  size: 64, color: Colors.grey[200]),
                               const SizedBox(height: 16),
                               Text(
                                 '这里还空空如也哦 ~',
@@ -1104,16 +1111,17 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                 });
                               }
                             },
-                            onEdit: post.userId == (AuthService.currentUser ?? '')
-                                ? () => _editPost(post)
-                                : null,
-                            onDelete: post.userId == (AuthService.currentUser ?? '')
-                                ? () => _deletePost(post.id)
-                                : null,
+                            onEdit:
+                                post.userId == (AuthService.currentUser ?? '')
+                                    ? () => _editPost(post)
+                                    : null,
+                            onDelete:
+                                post.userId == (AuthService.currentUser ?? '')
+                                    ? () => _deletePost(post.id)
+                                    : null,
                           ),
-                      );
-                    }),
-                    
+                        );
+                      }),
                     const SizedBox(height: 16),
                   ],
                 ),
@@ -1125,7 +1133,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
       ),
     );
   }
-
 
   void _showGiftSelector() {
     showModalBottomSheet<void>(
@@ -1157,5 +1164,4 @@ class _UserProfilePageState extends State<UserProfilePage> {
       builder: (_) => BadgeDetailDialog(badge: badge),
     );
   }
-
 }

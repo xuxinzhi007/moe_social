@@ -471,6 +471,8 @@ message CreatePostReq {
   string hand_draw_card = 5;
   string hand_draw_thumb_url = 6;
   string mood_tag = 7;
+  // 可选：创建后自动关联到该群组（需已是群成员）
+  string group_id = 8;
 }
 
 // 更新帖子请求

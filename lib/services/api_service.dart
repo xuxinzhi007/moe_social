@@ -874,9 +874,16 @@ class ApiService {
   }
 
   /// 创建帖子并解析成就解锁列表。
-  static Future<PostCreateResult> createPostWithUnlocks(Post post) async {
+  static Future<PostCreateResult> createPostWithUnlocks(
+    Post post, {
+    String? groupId,
+  }) async {
+    final body = post.toJson();
+    if (groupId != null && groupId.isNotEmpty) {
+      body['group_id'] = groupId;
+    }
     final result =
-        await _request('/api/posts', method: 'POST', body: post.toJson());
+        await _request('/api/posts', method: 'POST', body: body);
     final data = result['data'];
     final unlocks = AchievementUnlock.listFromJson(result['new_achievements']);
     if (data is Map<String, dynamic>) {

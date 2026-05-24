@@ -3,7 +3,6 @@ import 'dart:convert';
 enum AiProviderType {
   backendOllama('backend_ollama', '后端 Ollama'),
   llamaCppServer('llama_cpp_server', '本机 llama.cpp'),
-  localGguf('local_gguf', 'App 内 llama.cpp'),
   openAiCompatible('openai_compatible', 'OpenAI 兼容'),
   ;
 
@@ -13,6 +12,10 @@ enum AiProviderType {
   final String label;
 
   static AiProviderType fromValue(String raw) {
+    // 旧版 App 内嵌 GGUF 已移除，历史数据映射到 llama-server。
+    if (raw == 'local_gguf') {
+      return AiProviderType.llamaCppServer;
+    }
     for (final item in AiProviderType.values) {
       if (item.value == raw) return item;
     }
@@ -23,7 +26,9 @@ enum AiProviderType {
 class AiProviderProfile {
   static const String builtinBackendId = 'builtin_backend_ollama';
   static const String builtinLlamaCppId = 'builtin_local_llama_cpp';
-  static const String builtinLocalGgufId = 'builtin_local_gguf';
+
+  /// 旧内置 ID（App 内嵌 GGUF），仅用于迁移到 [builtinLlamaCppId]。
+  static const String legacyLocalGgufId = 'builtin_local_gguf';
 
   final String id;
   final String name;
@@ -57,12 +62,10 @@ class AiProviderProfile {
 
   bool get isBuiltinBackend => id == builtinBackendId;
   bool get isBuiltinLlamaCpp => id == builtinLlamaCppId;
-  bool get isBuiltinLocal => id == builtinLocalGgufId;
-  bool get isBuiltin =>
-      isBuiltinBackend || isBuiltinLlamaCpp || isBuiltinLocal;
+  bool get isLegacyLocalGguf => id == legacyLocalGgufId;
+  bool get isBuiltin => isBuiltinBackend || isBuiltinLlamaCpp;
   bool get isBackendOllama => providerType == AiProviderType.backendOllama;
   bool get isLlamaCppServer => providerType == AiProviderType.llamaCppServer;
-  bool get isLocalGguf => providerType == AiProviderType.localGguf;
   bool get isOpenAiCompatible =>
       providerType == AiProviderType.openAiCompatible;
 
@@ -199,30 +202,7 @@ class AiProviderProfile {
     );
   }
 
-  /// 默认本机推理：App 内嵌 llama.cpp（llamadart + GGUF）。
-  static const String defaultLocalProviderId = builtinLocalGgufId;
-
-  factory AiProviderProfile.builtinLocalGguf() {
-    final now = DateTime.fromMillisecondsSinceEpoch(0);
-    return AiProviderProfile(
-      id: builtinLocalGgufId,
-      name: 'App 内 llama.cpp',
-      providerType: AiProviderType.localGguf,
-      baseUrl: '',
-      defaultModel: 'qwen2.5-1.5b-instruct-q4',
-      manualModels: const [
-        'qwen2.5-0.5b-instruct-q4',
-        'qwen2.5-1.5b-instruct-q4',
-      ],
-      useServerMemory: false,
-      supportsSystemMessages: true,
-      supportsStreaming: true,
-      supportsVision: false,
-      supportsToolCalls: true,
-      createdAt: now,
-      updatedAt: now,
-    );
-  }
+  static const String defaultLocalProviderId = builtinLlamaCppId;
 
   AiProviderProfile copyWith({
     String? id,

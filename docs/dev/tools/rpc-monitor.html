@@ -267,6 +267,110 @@
     body.embed-ops .bar-track { background: #1e2230; }
     body.embed-ops th, body.embed-ops td { border-bottom-color: rgba(127,127,213,0.15); }
     body.embed-ops .hint { color: var(--muted); }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .tab-btn {
+      border: 1px solid rgba(127,127,213,0.25);
+      background: var(--card);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      color: #fff;
+      border-color: transparent;
+      font-weight: 600;
+    }
+    body.embed-ops .tab-btn {
+      background: #1e2230;
+      border-color: rgba(127,127,213,0.22);
+      color: var(--text);
+    }
+    body.embed-ops .tab-btn.active {
+      background: linear-gradient(135deg, #7F7FD5, #86A8E7);
+      color: #fff;
+    }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .log-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .log-toolbar input[type="search"],
+    .log-toolbar select {
+      border: 1px solid rgba(127,127,213,0.25);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+      background: var(--card);
+      color: var(--text);
+      min-width: 180px;
+    }
+    body.embed-ops .log-toolbar input[type="search"],
+    body.embed-ops .log-toolbar select {
+      background: #1e2230;
+      border-color: rgba(127,127,213,0.22);
+    }
+    .level-chip {
+      border: none;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      background: #eef1f6;
+      color: var(--text);
+    }
+    body.embed-ops .level-chip { background: #1e2230; color: var(--text); }
+    .level-chip.active { background: var(--primary); color: #fff; }
+    .level-chip.warn-active { background: var(--orange); color: #fff; }
+    .level-chip.err-active { background: var(--danger); color: #fff; }
+    .badge {
+      display: inline-block;
+      min-width: 1.2rem;
+      padding: 0 6px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      margin-left: 4px;
+      background: rgba(0,0,0,0.08);
+    }
+    .log-table-wrap { max-height: 520px; overflow: auto; }
+    .log-level {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .log-level.error { background: rgba(229,115,115,0.18); color: var(--danger); }
+    .log-level.warn { background: rgba(255,179,71,0.2); color: #c77800; }
+    body.embed-ops .log-level.warn { color: var(--orange); }
+    .log-level.info { background: rgba(127,127,213,0.15); color: var(--primary); }
+    .log-msg { word-break: break-word; font-family: ui-monospace, monospace; font-size: 0.78rem; }
+    .log-time { white-space: nowrap; color: var(--muted); font-size: 0.75rem; }
+    .log-toolbar button {
+      border: 1px solid rgba(127,127,213,0.25);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      background: var(--card);
+      color: var(--text);
+    }
+    body.embed-ops .log-toolbar button {
+      background: #1e2230;
+      border-color: rgba(127,127,213,0.22);
+    }
   </style>
 </head>
 <body>
@@ -287,12 +391,17 @@
   </nav>
   <header>
     <h1>Moe RPC 性能监控</h1>
-    <p>可读指标 + 热点函数，不再直接看 pprof 二进制/原始堆转储</p>
+    <p>可读指标 + 日志查询 + 热点函数，不再直接看 pprof 二进制/原始堆转储</p>
     <div class="toolbar">
       <label for="baseUrl">监控地址</label>
       <input id="baseUrl" type="text" value="http://127.0.0.1:19010" spellcheck="false" />
       <button type="button" class="primary" id="btnRefresh">立即刷新</button>
       <button type="button" id="btnAuto">自动刷新: 开</button>
+      <select id="refreshInterval" title="自动刷新间隔">
+        <option value="3000" selected>3 秒</option>
+        <option value="10000">10 秒</option>
+        <option value="30000">30 秒</option>
+      </select>
     </div>
   </header>
 
@@ -306,8 +415,16 @@
     <div class="status-bar">
       <span class="dot" id="statusDot"></span>
       <span id="statusText">等待连接…</span>
+      <span id="logBadges" style="margin-left:8px"></span>
       <span style="margin-left:auto;color:var(--muted)" id="lastUpdate"></span>
     </div>
+
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab-btn active" data-panel="metrics" id="tabMetrics">性能指标</button>
+      <button type="button" class="tab-btn" data-panel="logs" id="tabLogs">日志查询</button>
+    </div>
+
+    <div class="panel active" id="panelMetrics">
 
     <section class="grid" id="metricsGrid"></section>
 
@@ -335,6 +452,31 @@
       <p class="hint">下面命令在「已启动 RPC」的机器上执行，会打开交互式火焰图/调用图：</p>
       <pre class="commands" id="cmdBlock"></pre>
     </section>
+    </div>
+
+    <div class="panel" id="panelLogs">
+      <section class="card">
+        <h2>RPC 日志（内存环形缓冲）</h2>
+        <p class="hint">采集 logx 与标准 log 输出，保留最近约 2000 条。可按级别筛选、关键词搜索；仅本地 debug 模式可用。</p>
+        <div class="log-toolbar">
+          <button type="button" class="level-chip active" data-level="">全部</button>
+          <button type="button" class="level-chip" data-level="error">错误 <span class="badge" id="badgeError">0</span></button>
+          <button type="button" class="level-chip" data-level="warn">警告 <span class="badge" id="badgeWarn">0</span></button>
+          <button type="button" class="level-chip" data-level="info">信息</button>
+          <input type="search" id="logSearch" placeholder="搜索关键词…" spellcheck="false" />
+          <select id="logLimit" title="返回条数">
+            <option value="50">50 条</option>
+            <option value="100" selected>100 条</option>
+            <option value="200">200 条</option>
+          </select>
+          <button type="button" id="btnLogRefresh">刷新日志</button>
+          <button type="button" id="btnLogExport">导出 JSON</button>
+        </div>
+        <div id="logTableWrap">
+          <p class="empty">切换到本页或点击「刷新日志」加载…</p>
+        </div>
+      </section>
+    </div>
   </main>
 
   <script>
@@ -344,6 +486,10 @@
     const history = { heap: [], maxPoints: 24 };
     let autoTimer = null;
     let autoOn = true;
+    let activePanel = 'metrics';
+    let logLevelFilter = '';
+    let lastLogData = null;
+    let logSearchTimer = null;
 
     const $ = (id) => document.getElementById(id);
 
@@ -455,6 +601,105 @@
         .replace(/>/g, '&gt;');
     }
 
+    function formatLogTime(ts) {
+      if (!ts) return '-';
+      const d = new Date(ts);
+      if (Number.isNaN(d.getTime())) return ts;
+      return d.toLocaleString();
+    }
+
+    function logQueryPath() {
+      const params = new URLSearchParams();
+      const limit = $('logLimit')?.value || '100';
+      params.set('limit', limit);
+      if (logLevelFilter) params.set('level', logLevelFilter);
+      const q = ($('logSearch')?.value || '').trim();
+      if (q) params.set('q', q);
+      return '/debug/logs?' + params.toString();
+    }
+
+    function renderLogBadges(counts) {
+      const c = counts || {};
+      const err = c.error ?? 0;
+      const warn = c.warn ?? 0;
+      $('badgeError').textContent = String(err);
+      $('badgeWarn').textContent = String(warn);
+      if (err > 0 || warn > 0) {
+        $('logBadges').innerHTML =
+          (err > 0 ? `<span class="log-level error">错误 ${err}</span> ` : '') +
+          (warn > 0 ? `<span class="log-level warn">警告 ${warn}</span>` : '');
+      } else {
+        $('logBadges').innerHTML = '';
+      }
+    }
+
+    function renderLogs(data) {
+      lastLogData = data;
+      const counts = data.counts || {};
+      renderLogBadges(counts);
+      const entries = data.entries || [];
+      if (!entries.length) {
+        $('logTableWrap').innerHTML = '<p class="empty">暂无匹配日志（缓冲区 ' + (data.total ?? 0) + ' 条）</p>';
+        return;
+      }
+      let html = '<div class="log-table-wrap"><table><thead><tr><th>时间</th><th>级别</th><th>内容</th></tr></thead><tbody>';
+      html += entries.map((row) => {
+        const lvl = row.level || 'info';
+        return `<tr>
+          <td class="log-time">${escapeHtml(formatLogTime(row.timestamp))}</td>
+          <td><span class="log-level ${escapeHtml(lvl)}">${escapeHtml(lvl)}</span></td>
+          <td class="log-msg">${escapeHtml(row.message || '')}</td>
+        </tr>`;
+      }).join('');
+      html += '</tbody></table></div>';
+      html += `<p class="hint">显示 ${data.returned ?? entries.length} / 缓冲 ${data.total ?? 0} 条（容量 ${data.capacity ?? '-'}）</p>`;
+      $('logTableWrap').innerHTML = html;
+    }
+
+    async function refreshLogCounts() {
+      try {
+        const data = await fetchJSON('/debug/logs?counts_only=1');
+        renderLogBadges(data.counts);
+      } catch (_) {
+        /* metrics refresh already surfaces connection errors */
+      }
+    }
+
+    async function refreshLogs() {
+      try {
+        const data = await fetchJSON(logQueryPath());
+        renderLogs(data);
+      } catch (e) {
+        $('logTableWrap').innerHTML =
+          '<p class="empty">日志加载失败：' + escapeHtml(e.message) + '</p>';
+      }
+    }
+
+    function setActivePanel(name) {
+      activePanel = name;
+      document.querySelectorAll('.tab-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.panel === name);
+      });
+      document.querySelectorAll('.panel').forEach((panel) => {
+        panel.classList.toggle('active', panel.id === 'panel' + name.charAt(0).toUpperCase() + name.slice(1));
+      });
+      if (name === 'logs') refreshLogs();
+    }
+
+    function updateLevelChips() {
+      document.querySelectorAll('.level-chip').forEach((chip) => {
+        const lvl = chip.dataset.level || '';
+        chip.classList.remove('active', 'warn-active', 'err-active');
+        if (lvl === logLevelFilter) {
+          if (lvl === 'error') chip.classList.add('err-active');
+          else if (lvl === 'warn') chip.classList.add('warn-active');
+          else chip.classList.add('active');
+        } else if (!logLevelFilter && !lvl) {
+          chip.classList.add('active');
+        }
+      });
+    }
+
     async function refresh() {
       try {
         const [live, heap, gr] = await Promise.all([
@@ -466,6 +711,8 @@
         renderHeapTop(heap);
         renderGoroutine(gr);
         renderCommands();
+        await refreshLogCounts();
+        if (activePanel === 'logs') await refreshLogs();
         setStatus(true, '已连接 · ' + (live.timestamp || ''));
         $('lastUpdate').textContent = '更新于 ' + new Date().toLocaleTimeString();
         $('setupHint').style.display = 'none';
@@ -481,7 +728,10 @@
 
     function scheduleAuto() {
       if (autoTimer) clearInterval(autoTimer);
-      if (autoOn) autoTimer = setInterval(refresh, 3000);
+      if (autoOn) {
+        const ms = parseInt($('refreshInterval')?.value || '3000', 10) || 3000;
+        autoTimer = setInterval(refresh, ms);
+      }
     }
 
     $('btnRefresh').addEventListener('click', refresh);
@@ -490,10 +740,52 @@
       $('btnAuto').textContent = '自动刷新: ' + (autoOn ? '开' : '关');
       scheduleAuto();
     });
+    $('refreshInterval')?.addEventListener('change', scheduleAuto);
     $('baseUrl').addEventListener('change', () => {
       history.heap = [];
       refresh();
     });
+
+    document.querySelectorAll('.tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => setActivePanel(btn.dataset.panel || 'metrics'));
+    });
+
+    document.querySelectorAll('.level-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        logLevelFilter = chip.dataset.level || '';
+        updateLevelChips();
+        refreshLogs();
+      });
+    });
+
+    $('btnLogRefresh')?.addEventListener('click', refreshLogs);
+    $('btnLogExport')?.addEventListener('click', () => {
+      if (!lastLogData) {
+        refreshLogs().then(() => {
+          if (lastLogData) downloadLogJson(lastLogData);
+        });
+        return;
+      }
+      downloadLogJson(lastLogData);
+    });
+
+    function downloadLogJson(data) {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'rpc-logs-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    $('logSearch')?.addEventListener('input', () => {
+      if (logSearchTimer) clearTimeout(logSearchTimer);
+      logSearchTimer = setTimeout(refreshLogs, 350);
+    });
+    $('logLimit')?.addEventListener('change', refreshLogs);
+
+    updateLevelChips();
 
     renderCommands();
 

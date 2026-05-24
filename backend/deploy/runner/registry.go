@@ -20,6 +20,7 @@ func NewRegistry(cfg *deploycfg.Config) *Registry {
 		InitWindowsShell(mode, bash)
 	}
 	InitLocalPathExtra(cfg.LocalPathExtra)
+	SetDeployBuildCacheRoot(cfg.BuildCacheAbs())
 	reg := &Registry{
 		Local: NewPlatform(cfg.WorkspaceAbs(), cfg.BackendAbs(), cfg.ComposeFileAbs()),
 		Remote: make(map[string]*RemotePlatform),
@@ -73,7 +74,7 @@ func (reg *Registry) InspectHost(ctx context.Context, targetID string, cfg *depl
 			return rp.Inspect(ctx)
 		}
 	}
-	return reg.Local.Inspect(ctx)
+	return reg.Local.InspectLocal(ctx)
 }
 
 // ComposePsSpec for docker status on target.
