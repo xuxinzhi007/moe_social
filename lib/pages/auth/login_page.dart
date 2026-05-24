@@ -21,6 +21,12 @@ import '../../utils/feishu_app_launcher.dart';
 import '../../utils/feishu_oauth_helper.dart';
 import '../../utils/feishu_web_history.dart';
 import '../../utils/feishu_web_redirect.dart';
+import '../../utils/wechat_app_launcher.dart';
+import '../../utils/wechat_oauth_helper.dart';
+import '../../utils/wechat_web_history.dart';
+import '../../utils/wechat_web_redirect.dart';
+import '../../services/wechat_sdk_service.dart';
+import '../../utils/wechat_config.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -41,6 +47,7 @@ class _LoginPageState extends State<LoginPage> {
   final ValueNotifier<List<String>> _emailCompletions =
       ValueNotifier<List<String>>(const []);
   StreamSubscription<Uri>? _feishuLinkSub;
+  StreamSubscription<Uri>? _wechatLinkSub;
 
   @override
   void initState() {
@@ -53,10 +60,18 @@ class _LoginPageState extends State<LoginPage> {
         if (!FeishuAppLauncher.isFeishuOAuthReturnUri(uri)) return;
         unawaited(_completeFeishuLoginWithCode(readFeishuCodeFromUri(uri)));
       });
+      _wechatLinkSub = WechatAppLauncher.uriLinkStream.listen((uri) {
+        if (!WechatAppLauncher.isWechatOAuthReturnUri(uri)) return;
+        unawaited(_completeWechatLoginWithCode(readWechatCodeFromUri(uri)));
+      });
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_tryResumeFeishuOAuthFromUrl());
-      if (!kIsWeb) unawaited(_tryResumeFeishuOAuthFromDeepLink());
+      unawaited(_tryResumeWechatOAuthFromUrl());
+      if (!kIsWeb) {
+        unawaited(_tryResumeFeishuOAuthFromDeepLink());
+        unawaited(_tryResumeWechatOAuthFromDeepLink());
+      }
     });
   }
 
@@ -175,6 +190,106 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<void> _tryResumeWechatOAuthFromUrl() async {
+    if (!kIsWeb) return;
+    final code = readWechatCodeFromCurrentUrl();
+    if (code == null || code.isEmpty) return;
+    clearWechatCodeFromBrowserUrl();
+    await _completeWechatLoginWithCode(code, flow: defaultWechatOAuthFlow());
+  }
+
+  Future<void> _tryResumeWechatOAuthFromDeepLink() async {
+    if (kIsWeb) return;
+    final uri = await WechatAppLauncher.getInitialOAuthUri();
+    final code = readWechatCodeFromUri(uri);
+    if (code == null || code.isEmpty) return;
+    await _completeWechatLoginWithCode(code, flow: WechatConfig.oauthFlow);
+  }
+
+  Future<void> _completeWechatLoginWithCode(
+    String? code, {
+    String flow = 'website',
+  }) async {
+    if (code == null || code.isEmpty || !mounted) return;
+    final loadingProvider = context.read<LoadingProvider>();
+    await loadingProvider.executeOperation<AuthResult>(
+      operation: () => AuthService.loginWithWechat(code, flow: flow),
+      key: LoadingKeys.wechatLogin,
+      onSuccess: (authResult) {
+        if (!mounted) return;
+        if (!authResult.success) {
+          MoeToast.error(
+            context,
+            authResult.errorMessage ?? '微信登录失败',
+          );
+          return;
+        }
+        unawaited(_onWechatLoginSuccess());
+      },
+      onError: (_) {
+        if (!mounted) return;
+        MoeToast.error(context, '微信登录异常，请稍后重试');
+      },
+    );
+  }
+
+  /// Web/PC：开放平台网站应用扫码；App：fluwx 唤起微信授权。
+  Future<void> _wechatLogin() async {
+    if (kIsWeb) {
+      try {
+        final url = await ApiService.getWechatAuthorizeUrl(
+          state: buildWechatOAuthState(),
+          flow: 'website',
+        );
+        navigateBrowserToWechatAuthorize(url);
+      } catch (e) {
+        if (mounted) MoeToast.error(context, '无法打开微信扫码登录：$e');
+      }
+      return;
+    }
+
+    final loadingProvider = context.read<LoadingProvider>();
+    await loadingProvider.executeOperation<AuthResult>(
+      operation: () async {
+        try {
+          final code = await WechatSdkService.instance.requestAuthCode();
+          return AuthService.loginWithWechat(code, flow: WechatConfig.oauthFlow);
+        } on StateError catch (e) {
+          return AuthResult.failure(e.message);
+        }
+      },
+      key: LoadingKeys.wechatLogin,
+      onSuccess: (authResult) {
+        if (!mounted) return;
+        if (!authResult.success) {
+          MoeToast.error(
+            context,
+            authResult.errorMessage ?? '微信登录失败',
+          );
+          return;
+        }
+        unawaited(_onWechatLoginSuccess());
+      },
+      onError: (_) {
+        if (!mounted) return;
+        MoeToast.error(context, '微信登录异常，请稍后重试');
+      },
+    );
+  }
+
+  Future<void> _onWechatLoginSuccess() async {
+    try {
+      context.read<NotificationProvider>().init();
+    } catch (_) {}
+    final uid = AuthService.currentUser;
+    if (uid != null) {
+      unawaited(AchievementHooks.ensureReady(uid));
+    }
+    if (!mounted) return;
+    MoeToast.success(context, '微信登录成功');
+    Navigator.pushReplacementNamed(context, '/home');
+  }
+
   Future<void> _onFeishuLoginSuccess() async {
     try {
       context.read<NotificationProvider>().init();
@@ -290,154 +405,185 @@ class _LoginPageState extends State<LoginPage> {
                 child: OperationLoadingWidget(
                   operationKey: LoadingKeys.feishuLogin,
                   loadingText: '正在完成飞书登录…',
-                  child: Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      // 气泡放在整列之上绘制，避免被下方密码框盖住。
-                      Stack(
-                        clipBehavior: Clip.none,
+                  child: OperationLoadingWidget(
+                    operationKey: LoadingKeys.wechatLogin,
+                    loadingText: '正在完成微信登录…',
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                          // 气泡放在整列之上绘制，避免被下方密码框盖住。
+                          Stack(
+                            clipBehavior: Clip.none,
                             children: [
-                              MoeInputField(
-                                controller: _emailController,
-                                focusNode: _emailFocus,
-                                hintText: '邮箱或 10 位 Moe 号',
-                                icon: Icons.alternate_email_rounded,
-                                keyboardType: TextInputType.emailAddress,
-                                validator: Validators.loginAccount,
-                                autovalidateMode:
-                                    AutovalidateMode.onUserInteraction,
-                                textInputAction: TextInputAction.next,
-                                onEditingComplete: () =>
-                                    FocusScope.of(context)
-                                        .requestFocus(_passwordFocus),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  MoeInputField(
+                                    controller: _emailController,
+                                    focusNode: _emailFocus,
+                                    hintText: '邮箱或 10 位 Moe 号',
+                                    icon: Icons.alternate_email_rounded,
+                                    keyboardType: TextInputType.emailAddress,
+                                    validator: Validators.loginAccount,
+                                    autovalidateMode:
+                                        AutovalidateMode.onUserInteraction,
+                                    textInputAction: TextInputAction.next,
+                                    onEditingComplete: () =>
+                                        FocusScope.of(context)
+                                            .requestFocus(_passwordFocus),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  MoeInputField(
+                                    controller: _passwordController,
+                                    focusNode: _passwordFocus,
+                                    hintText: '密码',
+                                    icon: Icons.lock_outline,
+                                    isPassword: true,
+                                    validator: Validators.password,
+                                    autovalidateMode: AutovalidateMode.disabled,
+                                    textInputAction: TextInputAction.done,
+                                    onEditingComplete: () =>
+                                        unawaited(_login()),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 20),
-                              MoeInputField(
-                                controller: _passwordController,
-                                focusNode: _passwordFocus,
-                                hintText: '密码',
-                                icon: Icons.lock_outline,
-                                isPassword: true,
-                                validator: Validators.password,
-                                autovalidateMode: AutovalidateMode.disabled,
-                                textInputAction: TextInputAction.done,
-                                onEditingComplete: () =>
-                                    unawaited(_login()),
+                              ValueListenableBuilder<List<String>>(
+                                valueListenable: _emailCompletions,
+                                builder: (_, completions, __) {
+                                  if (completions.isEmpty) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return Positioned(
+                                    left: 4,
+                                    right: 4,
+                                    top: 56,
+                                    child: EmailCompletionBubble(
+                                      candidates: completions,
+                                      accentColor: _primaryColor,
+                                      onSelected: (picked) {
+                                        final e = picked.trim();
+                                        if (e.isEmpty) return;
+                                        _emailController.value =
+                                            TextEditingValue(
+                                          text: e,
+                                          selection: TextSelection.collapsed(
+                                              offset: e.length),
+                                        );
+                                        _emailCompletions.value = const [];
+                                        // 下一帧再校验 / 移焦点，避免与失焦、Scroll 手势抢同一帧。
+                                        WidgetsBinding.instance
+                                            .addPostFrameCallback((_) {
+                                          if (!mounted) return;
+                                          _formKey.currentState?.validate();
+                                          FocusScope.of(context)
+                                              .requestFocus(_passwordFocus);
+                                        });
+                                      },
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),
-                          ValueListenableBuilder<List<String>>(
-                            valueListenable: _emailCompletions,
-                            builder: (_, completions, __) {
-                              if (completions.isEmpty) {
-                                return const SizedBox.shrink();
-                              }
-                              return Positioned(
-                                left: 4,
-                                right: 4,
-                                top: 56,
-                                child: EmailCompletionBubble(
-                                  candidates: completions,
-                                  accentColor: _primaryColor,
-                                  onSelected: (picked) {
-                                    final e = picked.trim();
-                                    if (e.isEmpty) return;
-                                    _emailController.value = TextEditingValue(
-                                      text: e,
-                                      selection: TextSelection.collapsed(
-                                          offset: e.length),
-                                    );
-                                    _emailCompletions.value = const [];
-                                    // 下一帧再校验 / 移焦点，避免与失焦、Scroll 手势抢同一帧。
-                                    WidgetsBinding.instance
-                                        .addPostFrameCallback((_) {
-                                      if (!mounted) return;
-                                      _formKey.currentState?.validate();
-                                      FocusScope.of(context)
-                                          .requestFocus(_passwordFocus);
-                                    });
-                                  },
-                                ),
-                              );
-                            },
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const ForgotPasswordPage()),
+                                );
+                              },
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.grey[400],
+                              ),
+                              child: const Text('忘记密码？'),
+                            ),
                           ),
+                          const SizedBox(height: 32),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: LoadingButton(
+                              operationKey: LoadingKeys.login,
+                              onPressed: _login,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _primaryColor,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                                elevation: 8,
+                                shadowColor:
+                                    _primaryColor.withValues(alpha: 0.4),
+                              ),
+                              child: const Text(
+                                '登 录',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: OutlinedButton.icon(
+                              onPressed: () => unawaited(_wechatLogin()),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF07C160),
+                                side:
+                                    const BorderSide(color: Color(0xFF07C160)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                              ),
+                              icon: const Icon(Icons.wechat, size: 22),
+                              label: Text(
+                                kIsWeb ? '微信扫码登录' : '微信登录 / 注册',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: OutlinedButton.icon(
+                              onPressed: () => unawaited(_feishuLogin()),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF3370FF),
+                                side:
+                                    const BorderSide(color: Color(0xFF3370FF)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                              ),
+                              icon: const Icon(Icons.hub_outlined, size: 22),
+                              label: const Text(
+                                '飞书登录 / 注册',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const FeishuEnterpriseInviteBanner(compact: true),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      const ForgotPasswordPage()),
-                            );
-                          },
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.grey[400],
-                          ),
-                          child: const Text('忘记密码？'),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: LoadingButton(
-                          operationKey: LoadingKeys.login,
-                          onPressed: _login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _primaryColor,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
-                            ),
-                            elevation: 8,
-                            shadowColor: _primaryColor.withValues(alpha: 0.4),
-                          ),
-                          child: const Text(
-                            '登 录',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 2,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: OutlinedButton.icon(
-                          onPressed: () => unawaited(_feishuLogin()),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF3370FF),
-                            side: const BorderSide(color: Color(0xFF3370FF)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
-                            ),
-                          ),
-                          icon: const Icon(Icons.hub_outlined, size: 22),
-                          label: const Text(
-                            '飞书登录 / 注册',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const FeishuEnterpriseInviteBanner(compact: true),
-                    ],
+                    ),
                   ),
-                ),
                 ),
               ),
 
@@ -484,10 +630,10 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-
   @override
   void dispose() {
     _feishuLinkSub?.cancel();
+    _wechatLinkSub?.cancel();
     _emailFocus.removeListener(_onEmailFocusChanged);
     _emailController.removeListener(_onEmailTextChanged);
     _emailCompletionDebounce?.cancel();

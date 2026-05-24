@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Moe Social — 应用运行流程图</title>
+  <style>
+    :root {
+      --violet: #7f7fd5;
+      --violet-deep: #5b5bb8;
+      --mint: #91eae4;
+      --ink: #1c1f2a;
+      --ink-soft: #4a5160;
+      --paper: #fafbff;
+      --white: #ffffff;
+      --line: rgba(127, 127, 213, 0.25);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      padding: 48px 40px 56px;
+      min-width: 1000px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    header h1 {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      font-size: 14px;
+      color: var(--ink-soft);
+    }
+
+    .diagram {
+      max-width: 960px;
+      margin: 0 auto;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 40px 36px 44px;
+      box-shadow: 0 20px 60px rgba(127, 127, 213, 0.12);
+    }
+
+    /* —— 主流程（自上而下）—— */
+    .lane-main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    .node {
+      min-width: 200px;
+      max-width: 280px;
+      padding: 14px 20px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.45;
+      border: 2px solid var(--line);
+      background: var(--white);
+      color: var(--ink);
+    }
+
+    .node small {
+      display: block;
+      font-weight: 400;
+      font-size: 12px;
+      color: var(--ink-soft);
+      margin-top: 6px;
+    }
+
+    .node.start,
+    .node.end {
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--violet), var(--mint));
+      color: #fff;
+      border: none;
+    }
+
+    .node.start small,
+    .node.end small { color: rgba(255, 255, 255, 0.9); }
+
+    .node.auth {
+      border-color: var(--violet);
+      background: rgba(127, 127, 213, 0.08);
+    }
+
+    .node.hub {
+      min-width: 240px;
+      border-width: 2px;
+      border-color: var(--violet-deep);
+      font-size: 15px;
+    }
+
+    .arrow-down {
+      width: 2px;
+      height: 28px;
+      background: linear-gradient(var(--violet), var(--mint));
+      position: relative;
+    }
+
+    .arrow-down::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: var(--mint);
+    }
+
+    /* —— 功能分支（并列）—— */
+    .branch-wrap {
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .branch-label {
+      text-align: center;
+      font-size: 12px;
+      color: var(--ink-soft);
+      margin: 8px 0 16px;
+    }
+
+    .branches {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      position: relative;
+    }
+
+    .branches::before {
+      content: "";
+      position: absolute;
+      top: -20px;
+      left: 12.5%;
+      right: 12.5%;
+      height: 2px;
+      background: var(--line);
+    }
+
+    .branch-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    .branch-col .arrow-down {
+      height: 20px;
+    }
+
+    .node.feature {
+      width: 100%;
+      min-width: 0;
+      font-size: 13px;
+      padding: 12px 10px;
+    }
+
+    .node.feature em {
+      display: block;
+      font-style: normal;
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--ink-soft);
+      margin-top: 4px;
+    }
+
+    /* —— 图例 —— */
+    .legend {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px dashed var(--line);
+      font-size: 12px;
+      color: var(--ink-soft);
+    }
+
+    .legend span {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend i {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .legend .i-main { background: linear-gradient(135deg, var(--violet), var(--mint)); }
+    .legend .i-auth { background: rgba(127, 127, 213, 0.35); border: 1px solid var(--violet); }
+    .legend .i-feat { background: #fff; border: 1px solid var(--line); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Moe Social · 应用运行流程图</h1>
+    <p>示意用户从打开应用到使用核心功能的主要路径（非界面原型）</p>
+  </header>
+
+  <div class="diagram" role="img" aria-label="应用运行流程图">
+    <div class="lane-main">
+      <div class="node start">打开应用<small>Android / iOS 客户端</small></div>
+      <div class="arrow-down" aria-hidden="true"></div>
+
+      <div class="node auth">登录 / 注册<small>手机号验证码 · 微信授权（可选）</small></div>
+      <div class="arrow-down" aria-hidden="true"></div>
+
+      <div class="node hub">进入主界面<small>底部导航 · 首页为默认入口</small></div>
+    </div>
+
+    <div class="branch-wrap">
+      <p class="branch-label">用户可在主界面进入以下功能模块（并列关系）</p>
+      <div class="branches">
+        <div class="branch-col">
+          <div class="arrow-down" aria-hidden="true"></div>
+          <div class="node feature">动态浏览<em>推荐 / 关注 · 点赞评论</em></div>
+        </div>
+        <div class="branch-col">
+          <div class="arrow-down" aria-hidden="true"></div>
+          <div class="node feature">兴趣圈子<em>加入圈子 · 发布内容</em></div>
+        </div>
+        <div class="branch-col">
+          <div class="arrow-down" aria-hidden="true"></div>
+          <div class="node feature">私信消息<em>好友会话 · 文字与图片</em></div>
+        </div>
+        <div class="branch-col">
+          <div class="arrow-down" aria-hidden="true"></div>
+          <div class="node feature">AI 伙伴<em>角色对话 · 本地记录</em></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lane-main" style="margin-top: 28px;">
+      <div class="arrow-down" aria-hidden="true"></div>
+      <div class="node auth">个人中心<small>资料 · 通知 · 账号与安全</small></div>
+      <div class="arrow-down" aria-hidden="true"></div>
+      <div class="node end">退出登录<small>返回登录页，结束本次会话</small></div>
+    </div>
+
+    <div class="legend">
+      <span><i class="i-main"></i> 起止节点</span>
+      <span><i class="i-auth"></i> 账号相关</span>
+      <span><i class="i-feat"></i> 业务功能</span>
+      <span>箭头表示典型使用顺序，模块之间可自由切换</span>
+    </div>
+  </div>
+</body>
+</html>

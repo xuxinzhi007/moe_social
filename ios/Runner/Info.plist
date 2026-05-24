@@ -59,6 +59,8 @@
 	<array>
 		<string>lark</string>
 		<string>feishu</string>
+		<string>weixin</string>
+		<string>weixinULAPI</string>
 	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
@@ -70,6 +72,16 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>moesocial</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>weixin</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>wxf640612c0ad331d9</string>
 			</array>
 		</dict>
 	</array>

@@ -617,6 +617,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
+				Path:    "/api/auth/wechat/authorize-url",
+				Handler: user.WechatAuthorizeURLHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/auth/wechat/callback",
+				Handler: user.WechatOAuthCallbackHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/auth/wechat/login",
+				Handler: user.WechatLoginHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/transactions/:transaction_id",
 				Handler: user.GetTransactionHandler(serverCtx),
 			},

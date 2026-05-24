@@ -57,6 +57,28 @@ message FeishuLoginResp {
   bool is_new_user = 3;
 }
 
+message WechatAuthorizeURLReq {
+  string state = 1;
+  // website=开放平台网站应用扫码；mp=公众号网页授权（仅微信内）
+  string flow = 2;
+}
+
+message WechatAuthorizeURLResp {
+  string authorize_url = 1;
+}
+
+message WechatLoginReq {
+  string code = 1;
+  // app=移动应用 SDK；website=网站应用扫码；mp=公众号
+  string flow = 2;
+}
+
+message WechatLoginResp {
+  User user = 1;
+  string token = 2;
+  bool is_new_user = 3;
+}
+
 message BindFeishuReq {
   string user_id = 1;
   string feishu_email = 2;
@@ -1024,6 +1046,8 @@ service Super {
   rpc SendFeishuTestCard(SendFeishuTestCardReq) returns (SendFeishuTestCardResp);
   rpc FeishuAuthorizeURL(FeishuAuthorizeURLReq) returns (FeishuAuthorizeURLResp);
   rpc FeishuLogin(FeishuLoginReq) returns (FeishuLoginResp);
+  rpc WechatAuthorizeURL(WechatAuthorizeURLReq) returns (WechatAuthorizeURLResp);
+  rpc WechatLogin(WechatLoginReq) returns (WechatLoginResp);
   rpc UpsertUserMemory(UpsertUserMemoryReq) returns (UpsertUserMemoryResp);
   rpc GetUserMemories(GetUserMemoriesReq) returns (GetUserMemoriesResp);
   rpc GetUserMemoryProfiles(GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp);

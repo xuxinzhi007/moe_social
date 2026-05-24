@@ -1840,3 +1840,38 @@ type VoiceCancelReq struct {
 type VoiceRejectReq struct {
 	CallId string `json:"call_id"`
 }
+
+type WechatAuthorizeURLData struct {
+	AuthorizeURL string `json:"authorize_url"`
+}
+
+type WechatAuthorizeURLReq struct {
+	State string `form:"state,optional"`
+	Flow  string `form:"flow,optional"` // website | mp
+}
+
+type WechatAuthorizeURLResp struct {
+	BaseResp
+	Data WechatAuthorizeURLData `json:"data,omitempty"`
+}
+
+type WechatLoginData struct {
+	User      User   `json:"user"`
+	Token     string `json:"token"`
+	IsNewUser bool   `json:"is_new_user"`
+}
+
+type WechatLoginReq struct {
+	Code string `json:"code"`
+	Flow string `json:"flow,optional"` // app | website | mp
+}
+
+type WechatLoginResp struct {
+	BaseResp
+	Data WechatLoginData `json:"data,omitempty"`
+}
+
+type WechatOAuthCallbackReq struct {
+	Code  string `form:"code,optional"`
+	State string `form:"state,optional"`
+}
