@@ -101,6 +101,7 @@ class HandDrawCardReplay extends StatefulWidget {
     this.borderRadius = 20,
     this.autoPlay = true,
     this.duration = const Duration(milliseconds: 2200),
+    this.showReplayButton = true,
   });
 
   final HandDrawCardData data;
@@ -108,6 +109,8 @@ class HandDrawCardReplay extends StatefulWidget {
   final double borderRadius;
   final bool autoPlay;
   final Duration duration;
+  /// 预览弹窗等紧凑场景可关闭，避免「再看一遍」占高导致溢出。
+  final bool showReplayButton;
 
   @override
   State<HandDrawCardReplay> createState() => _HandDrawCardReplayState();
@@ -125,7 +128,8 @@ class _HandDrawCardReplayState extends State<HandDrawCardReplay>
     _anim = CurvedAnimation(parent: _c, curve: Curves.easeInOutCubic);
     if (widget.autoPlay) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _c.forward(from: 0);
+        if (!mounted) return;
+        if (!_c.isAnimating) _c.forward(from: 0);
       });
     } else {
       // 动态流里默认不自动播：先展示完整画稿，用户点「再看一遍」再播
@@ -138,6 +142,7 @@ class _HandDrawCardReplayState extends State<HandDrawCardReplay>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.data != widget.data) {
       _c.duration = widget.duration;
+      if (!mounted) return;
       if (widget.autoPlay) {
         _c.forward(from: 0);
       } else {
@@ -146,20 +151,22 @@ class _HandDrawCardReplayState extends State<HandDrawCardReplay>
     }
   }
 
+  void _replay() {
+    if (!mounted) return;
+    _c.forward(from: 0);
+  }
+
   @override
   void dispose() {
     _c.dispose();
     super.dispose();
   }
 
-  void _replay() {
-    _c.forward(from: 0);
-  }
-
   @override
   Widget build(BuildContext context) {
-    const gap = 8.0;
-    const bottomReserve = 52.0;
+    final gap = widget.showReplayButton ? 8.0 : 0.0;
+    final buttonH = widget.showReplayButton ? 40.0 : 0.0;
+    final chromeH = gap + buttonH;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -169,23 +176,22 @@ class _HandDrawCardReplayState extends State<HandDrawCardReplay>
         double canvasW;
         double canvasH;
 
-        if (maxH.isFinite) {
-          final availH = (maxH - gap - bottomReserve).clamp(1.0, double.infinity);
-          final hIfFullW = maxW / widget.aspectRatio;
-          if (hIfFullW <= availH) {
-            canvasW = maxW;
-            canvasH = hIfFullW;
-          } else {
-            canvasH = availH;
-            canvasW = canvasH * widget.aspectRatio;
-            if (canvasW > maxW) {
-              canvasW = maxW;
-              canvasH = canvasW / widget.aspectRatio;
-            }
-          }
-        } else {
+        final hIfFullW = maxW / widget.aspectRatio;
+        final maxCanvasH = maxH.isFinite
+            ? (maxH - chromeH).clamp(80.0, double.infinity)
+            : (MediaQuery.sizeOf(context).height * 0.38)
+                .clamp(120.0, 320.0);
+
+        if (hIfFullW <= maxCanvasH) {
           canvasW = maxW;
-          canvasH = maxW / widget.aspectRatio;
+          canvasH = hIfFullW;
+        } else {
+          canvasH = maxCanvasH;
+          canvasW = canvasH * widget.aspectRatio;
+          if (canvasW > maxW) {
+            canvasW = maxW;
+            canvasH = canvasW / widget.aspectRatio;
+          }
         }
 
         final card = Material(
@@ -209,25 +215,32 @@ class _HandDrawCardReplayState extends State<HandDrawCardReplay>
           ),
         );
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Align(
-              alignment: Alignment.center,
-              child: SizedBox(
-                width: canvasW,
-                height: canvasH,
-                child: card,
+        final totalH = canvasH + chromeH;
+
+        return SizedBox(
+          height: maxH.isFinite ? totalH.clamp(0, maxH) : totalH,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Align(
+                alignment: Alignment.center,
+                child: SizedBox(
+                  width: canvasW,
+                  height: canvasH,
+                  child: card,
+                ),
               ),
-            ),
-            const SizedBox(height: gap),
-            TextButton.icon(
-              onPressed: _replay,
-              icon: const Icon(Icons.replay_rounded, size: 18),
-              label: const Text('再看一遍'),
-            ),
-          ],
+              if (widget.showReplayButton) ...[
+                SizedBox(height: gap),
+                TextButton.icon(
+                  onPressed: _replay,
+                  icon: const Icon(Icons.replay_rounded, size: 18),
+                  label: const Text('再看一遍'),
+                ),
+              ],
+            ],
+          ),
         );
       },
     );

@@ -50,6 +50,10 @@ func (l *CreatePostLogic) CreatePost(in *super.CreatePostReq) (*super.CreatePost
 		return nil, errorx.New(500, "服务器内部错误")
 	}
 
+	if err := requireGroupMember(l.svcCtx.DB, in.GetGroupId(), uint(userID)); err != nil {
+		return nil, err
+	}
+
 	modStatus := "ok"
 	if in.HandDrawCard != "" && l.svcCtx.Config.HandDrawRequireModeration {
 		modStatus = "pending"
