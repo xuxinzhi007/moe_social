@@ -22,6 +22,8 @@ admin:
 api:
   # go-zero REST 超时（毫秒）。LLM 首次加载模型可能较慢，建议 >= 180000
   timeout_ms: 600000
+  # 对外 API 根地址（与 Flutter AppConfig.productionUrl 一致；feishu.redirect_uri 留空时用于拼回调）
+  public_base_url: "http://47.106.175.49:8888"
   # API→RPC 地址（可选）。Docker 推荐用 compose 环境变量 MOE_SUPER_RPC_ENDPOINT=rpc:8080；
   # 本机 go run 勿配置此项，沿用 api/etc/super.yaml 的 127.0.0.1:8080。
   # super_rpc_endpoints:
@@ -32,9 +34,6 @@ api:
 # 2. 开通权限：im:message、im:message:send_as_bot
 # 3. 发到指定同事：receive_id_type=email，receive_id 填其企业飞书邮箱（须为本租户成员）
 # 4. 发到群会话：receive_id_type=chat_id，receive_id 填 oc_xxx，且需先把机器人拉进群
-# 对外 API 根地址（与 Flutter AppConfig.productionUrl 一致；feishu.redirect_uri 留空时用于拼回调）
-api:
-  public_base_url: "http://47.106.175.49:8888"
 
 feishu:
   enabled: true
