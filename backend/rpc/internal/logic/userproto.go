@@ -45,5 +45,6 @@ func modelUserToProto(user *model.User) *super.User {
 		FeishuEmail:              user.FeishuEmail,
 		FeishuName:               user.FeishuName,
 		FeishuBound:              user.FeishuOpenID != nil && strings.TrimSpace(*user.FeishuOpenID) != "",
+		Role:                     user.Role,
 	}
 }

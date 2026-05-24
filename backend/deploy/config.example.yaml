@@ -35,6 +35,7 @@ targets:
   - id: local
     label: "本机 · 开发 / 编 Linux 包"
     kind: local
+    api_base_url: "http://127.0.0.1:8888"
   - id: cloud
     label: "云 VPS · /root/gowork/backend"
     kind: ssh

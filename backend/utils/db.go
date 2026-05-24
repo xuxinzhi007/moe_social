@@ -158,6 +158,8 @@ func autoMigrate() error {
 		&model.GroupMember{},
 		&model.GroupPost{},
 		&model.PrivateMessage{},
+		&model.LandingFeedback{},
+		&model.AdminAccount{},
 	}
 
 	if err := DB.AutoMigrate(models...); err != nil {
@@ -175,6 +177,7 @@ func postMigrate(db *gorm.DB) {
 	if err := EnsureAchievementSeeds(db); err != nil {
 		log.Printf("成就定义种子初始化失败: %v", err)
 	}
+	SeedAdminAccount(db)
 }
 
 // EnsureAchievementSeeds 在成就定义表为空时写入默认徽章（RPC 每次启动也会调用）。

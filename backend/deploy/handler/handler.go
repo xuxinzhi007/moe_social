@@ -57,6 +57,11 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/deploy/jobs", h.withCORS(h.auth(h.jobsRoot)))
 	mux.HandleFunc("/api/deploy/jobs/", h.withCORS(h.auth(h.jobByID)))
 	mux.HandleFunc("/api/deploy/build-cache", h.withCORS(h.auth(h.buildCache)))
+	mux.HandleFunc("/api/deploy/platform/health", h.withCORS(h.platformHealth))
+	mux.HandleFunc("/api/deploy/admin/login", h.withCORS(h.adminLoginProxy))
+	mux.HandleFunc("/api/deploy/admin/dashboard", h.withCORS(h.adminDashboardProxy))
+	mux.HandleFunc("/api/deploy/admin/", h.withCORS(h.adminAPIProxy))
+	mux.HandleFunc("/api/deploy/ops/landing-feedback", h.withCORS(h.opsLandingFeedback))
 }
 
 func (h *Handler) health(w http.ResponseWriter, r *http.Request) {
@@ -480,8 +485,8 @@ func (h *Handler) auth(next http.HandlerFunc) http.HandlerFunc {
 func (h *Handler) withCORS(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Deploy-Token, Authorization")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Deploy-Token, X-Admin-Token, Authorization")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return

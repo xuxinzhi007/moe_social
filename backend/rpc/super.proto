@@ -37,6 +37,7 @@ message User {
   string feishu_name = 22;
   // 是否已通过飞书 OAuth 绑定
   bool feishu_bound = 23;
+  string role = 24; // App 用户角色 user | admin | super_admin
 }
 
 message FeishuAuthorizeURLReq {
@@ -1026,6 +1027,95 @@ message GetFriendRelationResp {
   string relation = 1;
 }
 
+message SubmitLandingFeedbackReq {
+  string email = 1;
+  string category = 2;
+  string content = 3;
+  string source = 4;
+  string client_ip = 5;
+  string user_agent = 6;
+}
+
+message SubmitLandingFeedbackResp {
+  uint64 id = 1;
+}
+
+message LandingFeedbackItem {
+  uint64 id = 1;
+  string email = 2;
+  string category = 3;
+  string content = 4;
+  string source = 5;
+  string client_ip = 6;
+  string user_agent = 7;
+  string created_at = 8;
+}
+
+message ListLandingFeedbackReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string category = 3;
+}
+
+message ListLandingFeedbackResp {
+  repeated LandingFeedbackItem items = 1;
+  int32 total = 2;
+}
+
+message AdminDashboardReq {}
+
+message AdminDashboardResp {
+  int32 landing_feedback_total = 1;
+  int32 user_total = 2;
+  string server_time = 3;
+  bool feishu_enabled = 4;
+}
+
+message AdminLoginReq {
+  string username = 1;
+  string password = 2;
+}
+
+message AdminLoginResp {
+  string token = 1;
+  uint64 admin_id = 2;
+  string username = 3;
+  string role = 4;
+  int64 expire_at = 5;
+}
+
+message AdminListUsersReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+}
+
+message AdminListUsersResp {
+  repeated User users = 1;
+  int32 total = 2;
+}
+
+message AdminGetUserReq {
+  uint64 user_id = 1;
+}
+
+message AdminGetUserResp {
+  User user = 1;
+}
+
+message AdminUpdateUserReq {
+  uint64 user_id = 1;
+  string role = 2;
+  bool is_vip = 3;
+  bool update_is_vip = 4;
+  string signature = 5;
+  bool update_signature = 6;
+}
+
+message AdminUpdateUserResp {
+  User user = 1;
+}
+
 // 服务定义
 service Super {
   // 用户相关服务
@@ -1048,6 +1138,13 @@ service Super {
   rpc FeishuLogin(FeishuLoginReq) returns (FeishuLoginResp);
   rpc WechatAuthorizeURL(WechatAuthorizeURLReq) returns (WechatAuthorizeURLResp);
   rpc WechatLogin(WechatLoginReq) returns (WechatLoginResp);
+  rpc SubmitLandingFeedback(SubmitLandingFeedbackReq) returns (SubmitLandingFeedbackResp);
+  rpc ListLandingFeedback(ListLandingFeedbackReq) returns (ListLandingFeedbackResp);
+  rpc AdminDashboard(AdminDashboardReq) returns (AdminDashboardResp);
+  rpc AdminLogin(AdminLoginReq) returns (AdminLoginResp);
+  rpc AdminListUsers(AdminListUsersReq) returns (AdminListUsersResp);
+  rpc AdminGetUser(AdminGetUserReq) returns (AdminGetUserResp);
+  rpc AdminUpdateUser(AdminUpdateUserReq) returns (AdminUpdateUserResp);
   rpc UpsertUserMemory(UpsertUserMemoryReq) returns (UpsertUserMemoryResp);
   rpc GetUserMemories(GetUserMemoriesReq) returns (GetUserMemoriesResp);
   rpc GetUserMemoryProfiles(GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp);

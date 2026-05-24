@@ -20,7 +20,11 @@ func Open(url string) error {
 	return cmd.Start()
 }
 
-// ShouldOpen returns false when MOE_DEPLOY_NO_BROWSER=1 (CI / headless).
+// ShouldOpen is true only when MOE_DEPLOY_OPEN_BROWSER=1.
+// deploy-agent 默认不弹浏览器；需要时：MOE_DEPLOY_OPEN_BROWSER=1 make deploy-agent
 func ShouldOpen() bool {
-	return os.Getenv("MOE_DEPLOY_NO_BROWSER") != "1"
+	if os.Getenv("MOE_DEPLOY_NO_BROWSER") == "1" {
+		return false
+	}
+	return os.Getenv("MOE_DEPLOY_OPEN_BROWSER") == "1"
 }

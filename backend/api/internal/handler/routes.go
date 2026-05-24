@@ -7,6 +7,8 @@ import (
 	"net/http"
 
 	achievement "backend/api/internal/handler/achievement"
+	admin "backend/api/internal/handler/admin"
+	admin_public "backend/api/internal/handler/admin_public"
 	ai "backend/api/internal/handler/ai"
 	appcfg "backend/api/internal/handler/appcfg"
 	avatar "backend/api/internal/handler/avatar"
@@ -19,8 +21,10 @@ import (
 	emoji "backend/api/internal/handler/emoji"
 	gift "backend/api/internal/handler/gift"
 	image "backend/api/internal/handler/image"
+	landing "backend/api/internal/handler/landing"
 	llm "backend/api/internal/handler/llm"
 	notification "backend/api/internal/handler/notification"
+	ops "backend/api/internal/handler/ops"
 	post "backend/api/internal/handler/post"
 	privatemsg "backend/api/internal/handler/privatemsg"
 	user "backend/api/internal/handler/user"
@@ -53,6 +57,51 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/user/:user_id/achievements/unlocked",
 				Handler: achievement.GetUserUnlockedAchievementsHandler(serverCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/dashboard",
+				Handler: admin.AdminDashboardHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/landing/feedback",
+				Handler: admin.AdminListLandingFeedbackHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/me",
+				Handler: admin.AdminMeHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/users",
+				Handler: admin.AdminListUsersHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/users/:user_id",
+				Handler: admin.AdminGetUserHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/admin/users/:user_id",
+				Handler: admin.AdminUpdateUserHandler(serverCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/login",
+				Handler: admin_public.AdminLoginHandler(serverCtx),
 			},
 		},
 	)
@@ -436,6 +485,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodPost,
+				Path:    "/api/landing/feedback",
+				Handler: landing.SubmitLandingFeedbackHandler(serverCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPost,
 				Path:    "/api/llm/agents",
 				Handler: llm.CreateAgentHandler(serverCtx),
 			},
@@ -523,6 +582,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/notifications/unread",
 				Handler: notification.GetUnreadCountHandler(serverCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/ops/landing/feedback",
+				Handler: ops.ListLandingFeedbackHandler(serverCtx),
 			},
 		},
 	)

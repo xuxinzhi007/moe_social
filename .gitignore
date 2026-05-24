@@ -23,6 +23,7 @@ backend/rpc/rpc.exe
 backend/deploy/config.yaml
 backend/deploy/config.local.yaml
 backend/deploy/.moe-build-cache/
+.run/
 
 
 # IntelliJ related
