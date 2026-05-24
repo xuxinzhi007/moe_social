@@ -32,6 +32,10 @@ api:
 # 2. 开通权限：im:message、im:message:send_as_bot
 # 3. 发到指定同事：receive_id_type=email，receive_id 填其企业飞书邮箱（须为本租户成员）
 # 4. 发到群会话：receive_id_type=chat_id，receive_id 填 oc_xxx，且需先把机器人拉进群
+# 对外 API 根地址（与 Flutter AppConfig.productionUrl 一致；feishu.redirect_uri 留空时用于拼回调）
+api:
+  public_base_url: "http://47.106.175.49:8888"
+
 feishu:
   enabled: true
   app_id: "cli_aa805993a6a3dcc4"
@@ -39,9 +43,9 @@ feishu:
   receive_id: "xinzhi.xu@feishu.cn"  # 企业飞书邮箱，或 chat_id / open_id 等
   receive_id_type: "email"             # email | chat_id | open_id | user_id | union_id
   # OAuth 登录（须在飞书开放平台配置相同 redirect_uri）
-  # 须与飞书开放平台「重定向 URL」完全一致。Chrome 调试 API 在本地用 127.0.0.1；真机用 47.106...
-  redirect_uri: "http://127.0.0.1:8888/api/auth/feishu/callback"
-  # redirect_uri: "http://47.106.175.49:8888/api/auth/feishu/callback"
+  # 真机连 VPS：用下方 47.106...；仅本机 Chrome 调试可改回 127.0.0.1 并同步开放平台
+  redirect_uri: "http://47.106.175.49:8888/api/auth/feishu/callback"
+  # redirect_uri: "http://127.0.0.1:8888/api/auth/feishu/callback"
   oauth_scope: "contact:user.email:readonly"
   # Web 跳回以 OAuth state（当前页 origin）为准；此项仅作兜底
   app_return_url: ""

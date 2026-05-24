@@ -733,11 +733,76 @@ a {
   font-size: 13px;
 }
 
+.remote-config-panel .panel-head {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.remote-config-panel .panel-head h3 {
+  flex: none;
+  width: auto;
+}
+
+.remote-config-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.remote-config-toolbar select {
+  flex: 1 1 220px;
+  min-width: 180px;
+  max-width: 100%;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.remote-config-toolbar .btn-row {
+  flex: 0 0 auto;
+}
+
+.remote-config-body {
+  padding-top: 0;
+}
+
 .config-editor {
-  min-height: 200px;
-  font-family: ui-monospace, Menlo, monospace;
-  font-size: 12px;
-  line-height: 1.45;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: min(480px, 58vh);
+  max-height: 72vh;
+  resize: vertical;
+  padding: 14px 16px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  tab-size: 2;
+  white-space: pre;
+  overflow: auto;
+}
+
+.config-editor:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(127, 127, 213, 0.25);
+}
+
+.config-editor-meta {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
 }
 
 .rpc-frame {

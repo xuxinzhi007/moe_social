@@ -94,42 +94,48 @@ export function DockerPage() {
         </div>
       </div>
 
-      <div className="panel">
+      <div className="panel remote-config-panel">
         <div className="panel-head">
           <h3>远程配置</h3>
-          <select
-            value={configFile}
-            onChange={(e) => setConfigFile(e.target.value)}
-            style={{
-              background: 'var(--panel2)',
-              border: '1px solid var(--border)',
-              color: 'var(--text)',
-              padding: '6px 10px',
-              borderRadius: 8,
-              fontSize: 12,
-            }}
-          >
-            {CONFIG_FILES.map((f) => (
-              <option key={f} value={f}>
-                {f}
-              </option>
-            ))}
-          </select>
-          <button type="button" className="btn btn-ghost" onClick={() => void loadRemoteConfig()}>
-            读取
-          </button>
-          <button type="button" className="btn btn-primary" onClick={() => void saveRemoteConfig()}>
-            保存到 VPS
-          </button>
+          <div className="remote-config-toolbar">
+            <select
+              value={configFile}
+              onChange={(e) => setConfigFile(e.target.value)}
+              aria-label="配置文件"
+            >
+              {CONFIG_FILES.map((f) => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
+            </select>
+            <div className="btn-row">
+              <button type="button" className="btn btn-ghost" onClick={() => void loadRemoteConfig()}>
+                读取
+              </button>
+              <button type="button" className="btn btn-primary" onClick={() => void saveRemoteConfig()}>
+                保存到 VPS
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="panel-body">
+        <div className="panel-body remote-config-body">
           <textarea
             className="config-editor"
             value={editor}
             onChange={(e) => setEditor(e.target.value)}
             spellCheck={false}
-            placeholder="读取后在此编辑 YAML…"
+            rows={22}
+            wrap="off"
+            placeholder="点击「读取」从 VPS 拉取配置；编辑后「保存到 VPS」会自动 .bak 备份。"
           />
+          <p className="config-editor-meta">
+            当前文件：{configFile}
+            {editor.length > 0 ? ` · ${editor.split(/\r?\n/).length} 行 · ${editor.length} 字符` : ''}
+            {configFile.includes('config.yaml')
+              ? ' · 改 feishu/wechat 后请重启 API/RPC 容器'
+              : ''}
+          </p>
         </div>
       </div>
 

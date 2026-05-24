@@ -81,15 +81,23 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun isFeishuInstalled(): Boolean {
+        val packages = listOf("com.ss.android.lark", "com.larksuite.suite")
+        for (pkg in packages) {
+            if (isPackageInstalled(pkg)) return true
+        }
+        return false
+    }
+
+    private fun isPackageInstalled(packageName: String): Boolean {
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 packageManager.getPackageInfo(
-                    "com.ss.android.lark",
+                    packageName,
                     PackageManager.PackageInfoFlags.of(0),
                 )
             } else {
                 @Suppress("DEPRECATION")
-                packageManager.getPackageInfo("com.ss.android.lark", 0)
+                packageManager.getPackageInfo(packageName, 0)
             }
             true
         } catch (_: PackageManager.NameNotFoundException) {
