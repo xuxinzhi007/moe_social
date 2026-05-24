@@ -45,6 +45,28 @@ const (
 	Super_AdminListUsers_FullMethodName              = "/super.Super/AdminListUsers"
 	Super_AdminGetUser_FullMethodName                = "/super.Super/AdminGetUser"
 	Super_AdminUpdateUser_FullMethodName             = "/super.Super/AdminUpdateUser"
+	Super_AdminListVipPlans_FullMethodName           = "/super.Super/AdminListVipPlans"
+	Super_AdminGetVipPlan_FullMethodName             = "/super.Super/AdminGetVipPlan"
+	Super_AdminUpdateVipPlan_FullMethodName          = "/super.Super/AdminUpdateVipPlan"
+	Super_AdminDeleteVipPlan_FullMethodName          = "/super.Super/AdminDeleteVipPlan"
+	Super_AdminBootstrapVipPlans_FullMethodName      = "/super.Super/AdminBootstrapVipPlans"
+	Super_AdminBootstrapAccount_FullMethodName       = "/super.Super/AdminBootstrapAccount"
+	Super_AdminBootstrapAchievements_FullMethodName  = "/super.Super/AdminBootstrapAchievements"
+	Super_AdminListGifts_FullMethodName              = "/super.Super/AdminListGifts"
+	Super_AdminGetGift_FullMethodName                = "/super.Super/AdminGetGift"
+	Super_AdminCreateGift_FullMethodName             = "/super.Super/AdminCreateGift"
+	Super_AdminUpdateGift_FullMethodName             = "/super.Super/AdminUpdateGift"
+	Super_AdminDeleteGift_FullMethodName             = "/super.Super/AdminDeleteGift"
+	Super_AdminBootstrapGifts_FullMethodName         = "/super.Super/AdminBootstrapGifts"
+	Super_AdminListVipOrders_FullMethodName          = "/super.Super/AdminListVipOrders"
+	Super_AdminListGiftPurchaseOrders_FullMethodName = "/super.Super/AdminListGiftPurchaseOrders"
+	Super_AdminListPosts_FullMethodName              = "/super.Super/AdminListPosts"
+	Super_AdminDeletePost_FullMethodName             = "/super.Super/AdminDeletePost"
+	Super_AdminListComments_FullMethodName           = "/super.Super/AdminListComments"
+	Super_AdminDeleteComment_FullMethodName          = "/super.Super/AdminDeleteComment"
+	Super_AdminListPostReports_FullMethodName        = "/super.Super/AdminListPostReports"
+	Super_AdminListGroups_FullMethodName             = "/super.Super/AdminListGroups"
+	Super_AdminDeleteGroup_FullMethodName            = "/super.Super/AdminDeleteGroup"
 	Super_UpsertUserMemory_FullMethodName            = "/super.Super/UpsertUserMemory"
 	Super_GetUserMemories_FullMethodName             = "/super.Super/GetUserMemories"
 	Super_GetUserMemoryProfiles_FullMethodName       = "/super.Super/GetUserMemoryProfiles"
@@ -175,6 +197,28 @@ type SuperClient interface {
 	AdminListUsers(ctx context.Context, in *AdminListUsersReq, opts ...grpc.CallOption) (*AdminListUsersResp, error)
 	AdminGetUser(ctx context.Context, in *AdminGetUserReq, opts ...grpc.CallOption) (*AdminGetUserResp, error)
 	AdminUpdateUser(ctx context.Context, in *AdminUpdateUserReq, opts ...grpc.CallOption) (*AdminUpdateUserResp, error)
+	AdminListVipPlans(ctx context.Context, in *AdminListVipPlansReq, opts ...grpc.CallOption) (*AdminListVipPlansResp, error)
+	AdminGetVipPlan(ctx context.Context, in *AdminGetVipPlanReq, opts ...grpc.CallOption) (*AdminGetVipPlanResp, error)
+	AdminUpdateVipPlan(ctx context.Context, in *AdminUpdateVipPlanReq, opts ...grpc.CallOption) (*AdminUpdateVipPlanResp, error)
+	AdminDeleteVipPlan(ctx context.Context, in *AdminDeleteVipPlanReq, opts ...grpc.CallOption) (*AdminDeleteVipPlanResp, error)
+	AdminBootstrapVipPlans(ctx context.Context, in *AdminBootstrapVipPlansReq, opts ...grpc.CallOption) (*AdminBootstrapVipPlansResp, error)
+	AdminBootstrapAccount(ctx context.Context, in *AdminBootstrapAccountReq, opts ...grpc.CallOption) (*AdminBootstrapAccountResp, error)
+	AdminBootstrapAchievements(ctx context.Context, in *AdminBootstrapAchievementsReq, opts ...grpc.CallOption) (*AdminBootstrapAchievementsResp, error)
+	AdminListGifts(ctx context.Context, in *AdminListGiftsReq, opts ...grpc.CallOption) (*AdminListGiftsResp, error)
+	AdminGetGift(ctx context.Context, in *AdminGetGiftReq, opts ...grpc.CallOption) (*AdminGetGiftResp, error)
+	AdminCreateGift(ctx context.Context, in *AdminCreateGiftReq, opts ...grpc.CallOption) (*AdminCreateGiftResp, error)
+	AdminUpdateGift(ctx context.Context, in *AdminUpdateGiftReq, opts ...grpc.CallOption) (*AdminUpdateGiftResp, error)
+	AdminDeleteGift(ctx context.Context, in *AdminDeleteGiftReq, opts ...grpc.CallOption) (*AdminDeleteGiftResp, error)
+	AdminBootstrapGifts(ctx context.Context, in *AdminBootstrapGiftsReq, opts ...grpc.CallOption) (*AdminBootstrapGiftsResp, error)
+	AdminListVipOrders(ctx context.Context, in *AdminListVipOrdersReq, opts ...grpc.CallOption) (*AdminListVipOrdersResp, error)
+	AdminListGiftPurchaseOrders(ctx context.Context, in *AdminListGiftPurchaseOrdersReq, opts ...grpc.CallOption) (*AdminListGiftPurchaseOrdersResp, error)
+	AdminListPosts(ctx context.Context, in *AdminListPostsReq, opts ...grpc.CallOption) (*AdminListPostsResp, error)
+	AdminDeletePost(ctx context.Context, in *AdminDeletePostReq, opts ...grpc.CallOption) (*AdminDeletePostResp, error)
+	AdminListComments(ctx context.Context, in *AdminListCommentsReq, opts ...grpc.CallOption) (*AdminListCommentsResp, error)
+	AdminDeleteComment(ctx context.Context, in *AdminDeleteCommentReq, opts ...grpc.CallOption) (*AdminDeleteCommentResp, error)
+	AdminListPostReports(ctx context.Context, in *AdminListPostReportsReq, opts ...grpc.CallOption) (*AdminListPostReportsResp, error)
+	AdminListGroups(ctx context.Context, in *AdminListGroupsReq, opts ...grpc.CallOption) (*AdminListGroupsResp, error)
+	AdminDeleteGroup(ctx context.Context, in *AdminDeleteGroupReq, opts ...grpc.CallOption) (*AdminDeleteGroupResp, error)
 	UpsertUserMemory(ctx context.Context, in *UpsertUserMemoryReq, opts ...grpc.CallOption) (*UpsertUserMemoryResp, error)
 	GetUserMemories(ctx context.Context, in *GetUserMemoriesReq, opts ...grpc.CallOption) (*GetUserMemoriesResp, error)
 	GetUserMemoryProfiles(ctx context.Context, in *GetUserMemoryProfilesReq, opts ...grpc.CallOption) (*GetUserMemoryProfilesResp, error)
@@ -551,6 +595,226 @@ func (c *superClient) AdminUpdateUser(ctx context.Context, in *AdminUpdateUserRe
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AdminUpdateUserResp)
 	err := c.cc.Invoke(ctx, Super_AdminUpdateUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminListVipPlans(ctx context.Context, in *AdminListVipPlansReq, opts ...grpc.CallOption) (*AdminListVipPlansResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminListVipPlansResp)
+	err := c.cc.Invoke(ctx, Super_AdminListVipPlans_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminGetVipPlan(ctx context.Context, in *AdminGetVipPlanReq, opts ...grpc.CallOption) (*AdminGetVipPlanResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminGetVipPlanResp)
+	err := c.cc.Invoke(ctx, Super_AdminGetVipPlan_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminUpdateVipPlan(ctx context.Context, in *AdminUpdateVipPlanReq, opts ...grpc.CallOption) (*AdminUpdateVipPlanResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminUpdateVipPlanResp)
+	err := c.cc.Invoke(ctx, Super_AdminUpdateVipPlan_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminDeleteVipPlan(ctx context.Context, in *AdminDeleteVipPlanReq, opts ...grpc.CallOption) (*AdminDeleteVipPlanResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminDeleteVipPlanResp)
+	err := c.cc.Invoke(ctx, Super_AdminDeleteVipPlan_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminBootstrapVipPlans(ctx context.Context, in *AdminBootstrapVipPlansReq, opts ...grpc.CallOption) (*AdminBootstrapVipPlansResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminBootstrapVipPlansResp)
+	err := c.cc.Invoke(ctx, Super_AdminBootstrapVipPlans_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminBootstrapAccount(ctx context.Context, in *AdminBootstrapAccountReq, opts ...grpc.CallOption) (*AdminBootstrapAccountResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminBootstrapAccountResp)
+	err := c.cc.Invoke(ctx, Super_AdminBootstrapAccount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminBootstrapAchievements(ctx context.Context, in *AdminBootstrapAchievementsReq, opts ...grpc.CallOption) (*AdminBootstrapAchievementsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminBootstrapAchievementsResp)
+	err := c.cc.Invoke(ctx, Super_AdminBootstrapAchievements_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminListGifts(ctx context.Context, in *AdminListGiftsReq, opts ...grpc.CallOption) (*AdminListGiftsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminListGiftsResp)
+	err := c.cc.Invoke(ctx, Super_AdminListGifts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminGetGift(ctx context.Context, in *AdminGetGiftReq, opts ...grpc.CallOption) (*AdminGetGiftResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminGetGiftResp)
+	err := c.cc.Invoke(ctx, Super_AdminGetGift_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminCreateGift(ctx context.Context, in *AdminCreateGiftReq, opts ...grpc.CallOption) (*AdminCreateGiftResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminCreateGiftResp)
+	err := c.cc.Invoke(ctx, Super_AdminCreateGift_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminUpdateGift(ctx context.Context, in *AdminUpdateGiftReq, opts ...grpc.CallOption) (*AdminUpdateGiftResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminUpdateGiftResp)
+	err := c.cc.Invoke(ctx, Super_AdminUpdateGift_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminDeleteGift(ctx context.Context, in *AdminDeleteGiftReq, opts ...grpc.CallOption) (*AdminDeleteGiftResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminDeleteGiftResp)
+	err := c.cc.Invoke(ctx, Super_AdminDeleteGift_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminBootstrapGifts(ctx context.Context, in *AdminBootstrapGiftsReq, opts ...grpc.CallOption) (*AdminBootstrapGiftsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminBootstrapGiftsResp)
+	err := c.cc.Invoke(ctx, Super_AdminBootstrapGifts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminListVipOrders(ctx context.Context, in *AdminListVipOrdersReq, opts ...grpc.CallOption) (*AdminListVipOrdersResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminListVipOrdersResp)
+	err := c.cc.Invoke(ctx, Super_AdminListVipOrders_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminListGiftPurchaseOrders(ctx context.Context, in *AdminListGiftPurchaseOrdersReq, opts ...grpc.CallOption) (*AdminListGiftPurchaseOrdersResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminListGiftPurchaseOrdersResp)
+	err := c.cc.Invoke(ctx, Super_AdminListGiftPurchaseOrders_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminListPosts(ctx context.Context, in *AdminListPostsReq, opts ...grpc.CallOption) (*AdminListPostsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminListPostsResp)
+	err := c.cc.Invoke(ctx, Super_AdminListPosts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminDeletePost(ctx context.Context, in *AdminDeletePostReq, opts ...grpc.CallOption) (*AdminDeletePostResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminDeletePostResp)
+	err := c.cc.Invoke(ctx, Super_AdminDeletePost_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminListComments(ctx context.Context, in *AdminListCommentsReq, opts ...grpc.CallOption) (*AdminListCommentsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminListCommentsResp)
+	err := c.cc.Invoke(ctx, Super_AdminListComments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminDeleteComment(ctx context.Context, in *AdminDeleteCommentReq, opts ...grpc.CallOption) (*AdminDeleteCommentResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminDeleteCommentResp)
+	err := c.cc.Invoke(ctx, Super_AdminDeleteComment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminListPostReports(ctx context.Context, in *AdminListPostReportsReq, opts ...grpc.CallOption) (*AdminListPostReportsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminListPostReportsResp)
+	err := c.cc.Invoke(ctx, Super_AdminListPostReports_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminListGroups(ctx context.Context, in *AdminListGroupsReq, opts ...grpc.CallOption) (*AdminListGroupsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminListGroupsResp)
+	err := c.cc.Invoke(ctx, Super_AdminListGroups_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminDeleteGroup(ctx context.Context, in *AdminDeleteGroupReq, opts ...grpc.CallOption) (*AdminDeleteGroupResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminDeleteGroupResp)
+	err := c.cc.Invoke(ctx, Super_AdminDeleteGroup_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1540,6 +1804,28 @@ type SuperServer interface {
 	AdminListUsers(context.Context, *AdminListUsersReq) (*AdminListUsersResp, error)
 	AdminGetUser(context.Context, *AdminGetUserReq) (*AdminGetUserResp, error)
 	AdminUpdateUser(context.Context, *AdminUpdateUserReq) (*AdminUpdateUserResp, error)
+	AdminListVipPlans(context.Context, *AdminListVipPlansReq) (*AdminListVipPlansResp, error)
+	AdminGetVipPlan(context.Context, *AdminGetVipPlanReq) (*AdminGetVipPlanResp, error)
+	AdminUpdateVipPlan(context.Context, *AdminUpdateVipPlanReq) (*AdminUpdateVipPlanResp, error)
+	AdminDeleteVipPlan(context.Context, *AdminDeleteVipPlanReq) (*AdminDeleteVipPlanResp, error)
+	AdminBootstrapVipPlans(context.Context, *AdminBootstrapVipPlansReq) (*AdminBootstrapVipPlansResp, error)
+	AdminBootstrapAccount(context.Context, *AdminBootstrapAccountReq) (*AdminBootstrapAccountResp, error)
+	AdminBootstrapAchievements(context.Context, *AdminBootstrapAchievementsReq) (*AdminBootstrapAchievementsResp, error)
+	AdminListGifts(context.Context, *AdminListGiftsReq) (*AdminListGiftsResp, error)
+	AdminGetGift(context.Context, *AdminGetGiftReq) (*AdminGetGiftResp, error)
+	AdminCreateGift(context.Context, *AdminCreateGiftReq) (*AdminCreateGiftResp, error)
+	AdminUpdateGift(context.Context, *AdminUpdateGiftReq) (*AdminUpdateGiftResp, error)
+	AdminDeleteGift(context.Context, *AdminDeleteGiftReq) (*AdminDeleteGiftResp, error)
+	AdminBootstrapGifts(context.Context, *AdminBootstrapGiftsReq) (*AdminBootstrapGiftsResp, error)
+	AdminListVipOrders(context.Context, *AdminListVipOrdersReq) (*AdminListVipOrdersResp, error)
+	AdminListGiftPurchaseOrders(context.Context, *AdminListGiftPurchaseOrdersReq) (*AdminListGiftPurchaseOrdersResp, error)
+	AdminListPosts(context.Context, *AdminListPostsReq) (*AdminListPostsResp, error)
+	AdminDeletePost(context.Context, *AdminDeletePostReq) (*AdminDeletePostResp, error)
+	AdminListComments(context.Context, *AdminListCommentsReq) (*AdminListCommentsResp, error)
+	AdminDeleteComment(context.Context, *AdminDeleteCommentReq) (*AdminDeleteCommentResp, error)
+	AdminListPostReports(context.Context, *AdminListPostReportsReq) (*AdminListPostReportsResp, error)
+	AdminListGroups(context.Context, *AdminListGroupsReq) (*AdminListGroupsResp, error)
+	AdminDeleteGroup(context.Context, *AdminDeleteGroupReq) (*AdminDeleteGroupResp, error)
 	UpsertUserMemory(context.Context, *UpsertUserMemoryReq) (*UpsertUserMemoryResp, error)
 	GetUserMemories(context.Context, *GetUserMemoriesReq) (*GetUserMemoriesResp, error)
 	GetUserMemoryProfiles(context.Context, *GetUserMemoryProfilesReq) (*GetUserMemoryProfilesResp, error)
@@ -1739,6 +2025,72 @@ func (UnimplementedSuperServer) AdminGetUser(context.Context, *AdminGetUserReq) 
 }
 func (UnimplementedSuperServer) AdminUpdateUser(context.Context, *AdminUpdateUserReq) (*AdminUpdateUserResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AdminUpdateUser not implemented")
+}
+func (UnimplementedSuperServer) AdminListVipPlans(context.Context, *AdminListVipPlansReq) (*AdminListVipPlansResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminListVipPlans not implemented")
+}
+func (UnimplementedSuperServer) AdminGetVipPlan(context.Context, *AdminGetVipPlanReq) (*AdminGetVipPlanResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminGetVipPlan not implemented")
+}
+func (UnimplementedSuperServer) AdminUpdateVipPlan(context.Context, *AdminUpdateVipPlanReq) (*AdminUpdateVipPlanResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminUpdateVipPlan not implemented")
+}
+func (UnimplementedSuperServer) AdminDeleteVipPlan(context.Context, *AdminDeleteVipPlanReq) (*AdminDeleteVipPlanResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminDeleteVipPlan not implemented")
+}
+func (UnimplementedSuperServer) AdminBootstrapVipPlans(context.Context, *AdminBootstrapVipPlansReq) (*AdminBootstrapVipPlansResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminBootstrapVipPlans not implemented")
+}
+func (UnimplementedSuperServer) AdminBootstrapAccount(context.Context, *AdminBootstrapAccountReq) (*AdminBootstrapAccountResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminBootstrapAccount not implemented")
+}
+func (UnimplementedSuperServer) AdminBootstrapAchievements(context.Context, *AdminBootstrapAchievementsReq) (*AdminBootstrapAchievementsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminBootstrapAchievements not implemented")
+}
+func (UnimplementedSuperServer) AdminListGifts(context.Context, *AdminListGiftsReq) (*AdminListGiftsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminListGifts not implemented")
+}
+func (UnimplementedSuperServer) AdminGetGift(context.Context, *AdminGetGiftReq) (*AdminGetGiftResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminGetGift not implemented")
+}
+func (UnimplementedSuperServer) AdminCreateGift(context.Context, *AdminCreateGiftReq) (*AdminCreateGiftResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminCreateGift not implemented")
+}
+func (UnimplementedSuperServer) AdminUpdateGift(context.Context, *AdminUpdateGiftReq) (*AdminUpdateGiftResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminUpdateGift not implemented")
+}
+func (UnimplementedSuperServer) AdminDeleteGift(context.Context, *AdminDeleteGiftReq) (*AdminDeleteGiftResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminDeleteGift not implemented")
+}
+func (UnimplementedSuperServer) AdminBootstrapGifts(context.Context, *AdminBootstrapGiftsReq) (*AdminBootstrapGiftsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminBootstrapGifts not implemented")
+}
+func (UnimplementedSuperServer) AdminListVipOrders(context.Context, *AdminListVipOrdersReq) (*AdminListVipOrdersResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminListVipOrders not implemented")
+}
+func (UnimplementedSuperServer) AdminListGiftPurchaseOrders(context.Context, *AdminListGiftPurchaseOrdersReq) (*AdminListGiftPurchaseOrdersResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminListGiftPurchaseOrders not implemented")
+}
+func (UnimplementedSuperServer) AdminListPosts(context.Context, *AdminListPostsReq) (*AdminListPostsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminListPosts not implemented")
+}
+func (UnimplementedSuperServer) AdminDeletePost(context.Context, *AdminDeletePostReq) (*AdminDeletePostResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminDeletePost not implemented")
+}
+func (UnimplementedSuperServer) AdminListComments(context.Context, *AdminListCommentsReq) (*AdminListCommentsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminListComments not implemented")
+}
+func (UnimplementedSuperServer) AdminDeleteComment(context.Context, *AdminDeleteCommentReq) (*AdminDeleteCommentResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminDeleteComment not implemented")
+}
+func (UnimplementedSuperServer) AdminListPostReports(context.Context, *AdminListPostReportsReq) (*AdminListPostReportsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminListPostReports not implemented")
+}
+func (UnimplementedSuperServer) AdminListGroups(context.Context, *AdminListGroupsReq) (*AdminListGroupsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminListGroups not implemented")
+}
+func (UnimplementedSuperServer) AdminDeleteGroup(context.Context, *AdminDeleteGroupReq) (*AdminDeleteGroupResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminDeleteGroup not implemented")
 }
 func (UnimplementedSuperServer) UpsertUserMemory(context.Context, *UpsertUserMemoryReq) (*UpsertUserMemoryResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpsertUserMemory not implemented")
@@ -2510,6 +2862,402 @@ func _Super_AdminUpdateUser_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SuperServer).AdminUpdateUser(ctx, req.(*AdminUpdateUserReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminListVipPlans_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminListVipPlansReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminListVipPlans(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminListVipPlans_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminListVipPlans(ctx, req.(*AdminListVipPlansReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminGetVipPlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminGetVipPlanReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminGetVipPlan(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminGetVipPlan_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminGetVipPlan(ctx, req.(*AdminGetVipPlanReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminUpdateVipPlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminUpdateVipPlanReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminUpdateVipPlan(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminUpdateVipPlan_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminUpdateVipPlan(ctx, req.(*AdminUpdateVipPlanReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminDeleteVipPlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminDeleteVipPlanReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminDeleteVipPlan(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminDeleteVipPlan_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminDeleteVipPlan(ctx, req.(*AdminDeleteVipPlanReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminBootstrapVipPlans_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminBootstrapVipPlansReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminBootstrapVipPlans(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminBootstrapVipPlans_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminBootstrapVipPlans(ctx, req.(*AdminBootstrapVipPlansReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminBootstrapAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminBootstrapAccountReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminBootstrapAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminBootstrapAccount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminBootstrapAccount(ctx, req.(*AdminBootstrapAccountReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminBootstrapAchievements_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminBootstrapAchievementsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminBootstrapAchievements(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminBootstrapAchievements_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminBootstrapAchievements(ctx, req.(*AdminBootstrapAchievementsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminListGifts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminListGiftsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminListGifts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminListGifts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminListGifts(ctx, req.(*AdminListGiftsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminGetGift_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminGetGiftReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminGetGift(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminGetGift_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminGetGift(ctx, req.(*AdminGetGiftReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminCreateGift_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminCreateGiftReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminCreateGift(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminCreateGift_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminCreateGift(ctx, req.(*AdminCreateGiftReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminUpdateGift_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminUpdateGiftReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminUpdateGift(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminUpdateGift_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminUpdateGift(ctx, req.(*AdminUpdateGiftReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminDeleteGift_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminDeleteGiftReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminDeleteGift(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminDeleteGift_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminDeleteGift(ctx, req.(*AdminDeleteGiftReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminBootstrapGifts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminBootstrapGiftsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminBootstrapGifts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminBootstrapGifts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminBootstrapGifts(ctx, req.(*AdminBootstrapGiftsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminListVipOrders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminListVipOrdersReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminListVipOrders(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminListVipOrders_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminListVipOrders(ctx, req.(*AdminListVipOrdersReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminListGiftPurchaseOrders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminListGiftPurchaseOrdersReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminListGiftPurchaseOrders(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminListGiftPurchaseOrders_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminListGiftPurchaseOrders(ctx, req.(*AdminListGiftPurchaseOrdersReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminListPosts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminListPostsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminListPosts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminListPosts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminListPosts(ctx, req.(*AdminListPostsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminDeletePost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminDeletePostReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminDeletePost(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminDeletePost_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminDeletePost(ctx, req.(*AdminDeletePostReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminListComments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminListCommentsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminListComments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminListComments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminListComments(ctx, req.(*AdminListCommentsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminDeleteComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminDeleteCommentReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminDeleteComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminDeleteComment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminDeleteComment(ctx, req.(*AdminDeleteCommentReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminListPostReports_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminListPostReportsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminListPostReports(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminListPostReports_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminListPostReports(ctx, req.(*AdminListPostReportsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminListGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminListGroupsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminListGroups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminListGroups_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminListGroups(ctx, req.(*AdminListGroupsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminDeleteGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminDeleteGroupReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminDeleteGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminDeleteGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminDeleteGroup(ctx, req.(*AdminDeleteGroupReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4334,6 +5082,94 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AdminUpdateUser",
 			Handler:    _Super_AdminUpdateUser_Handler,
+		},
+		{
+			MethodName: "AdminListVipPlans",
+			Handler:    _Super_AdminListVipPlans_Handler,
+		},
+		{
+			MethodName: "AdminGetVipPlan",
+			Handler:    _Super_AdminGetVipPlan_Handler,
+		},
+		{
+			MethodName: "AdminUpdateVipPlan",
+			Handler:    _Super_AdminUpdateVipPlan_Handler,
+		},
+		{
+			MethodName: "AdminDeleteVipPlan",
+			Handler:    _Super_AdminDeleteVipPlan_Handler,
+		},
+		{
+			MethodName: "AdminBootstrapVipPlans",
+			Handler:    _Super_AdminBootstrapVipPlans_Handler,
+		},
+		{
+			MethodName: "AdminBootstrapAccount",
+			Handler:    _Super_AdminBootstrapAccount_Handler,
+		},
+		{
+			MethodName: "AdminBootstrapAchievements",
+			Handler:    _Super_AdminBootstrapAchievements_Handler,
+		},
+		{
+			MethodName: "AdminListGifts",
+			Handler:    _Super_AdminListGifts_Handler,
+		},
+		{
+			MethodName: "AdminGetGift",
+			Handler:    _Super_AdminGetGift_Handler,
+		},
+		{
+			MethodName: "AdminCreateGift",
+			Handler:    _Super_AdminCreateGift_Handler,
+		},
+		{
+			MethodName: "AdminUpdateGift",
+			Handler:    _Super_AdminUpdateGift_Handler,
+		},
+		{
+			MethodName: "AdminDeleteGift",
+			Handler:    _Super_AdminDeleteGift_Handler,
+		},
+		{
+			MethodName: "AdminBootstrapGifts",
+			Handler:    _Super_AdminBootstrapGifts_Handler,
+		},
+		{
+			MethodName: "AdminListVipOrders",
+			Handler:    _Super_AdminListVipOrders_Handler,
+		},
+		{
+			MethodName: "AdminListGiftPurchaseOrders",
+			Handler:    _Super_AdminListGiftPurchaseOrders_Handler,
+		},
+		{
+			MethodName: "AdminListPosts",
+			Handler:    _Super_AdminListPosts_Handler,
+		},
+		{
+			MethodName: "AdminDeletePost",
+			Handler:    _Super_AdminDeletePost_Handler,
+		},
+		{
+			MethodName: "AdminListComments",
+			Handler:    _Super_AdminListComments_Handler,
+		},
+		{
+			MethodName: "AdminDeleteComment",
+			Handler:    _Super_AdminDeleteComment_Handler,
+		},
+		{
+			MethodName: "AdminListPostReports",
+			Handler:    _Super_AdminListPostReports_Handler,
+		},
+		{
+			MethodName: "AdminListGroups",
+			Handler:    _Super_AdminListGroups_Handler,
+		},
+		{
+			MethodName: "AdminDeleteGroup",
+			Handler:    _Super_AdminDeleteGroup_Handler,
 		},
 		{
 			MethodName: "UpsertUserMemory",

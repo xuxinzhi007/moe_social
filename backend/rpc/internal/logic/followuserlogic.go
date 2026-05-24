@@ -82,10 +82,9 @@ func (l *FollowUserLogic) FollowUser(in *super.FollowUserReq) (*super.FollowUser
 
 	l.Debug("关注用户成功:", followerID, "关注了", followingID)
 
-	tx := l.svcCtx.DB.Begin()
-	engine := achievement.NewEngine(l.svcCtx.DB)
-	_, _ = engine.ApplyEvent(tx, uint(followingID), achievement.Event{Type: achievement.EventNewFollower})
-	_ = tx.Commit()
+	if _, achErr := achievement.ApplyEventAfterCommit(l.svcCtx.DB, uint(followingID), achievement.Event{Type: achievement.EventNewFollower}); achErr != nil {
+		l.Errorf("成就处理失败（关注仍会成功）: %v", achErr)
+	}
 
 	return &super.FollowUserResp{
 		Success: true,

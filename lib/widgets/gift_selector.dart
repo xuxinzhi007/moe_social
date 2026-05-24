@@ -168,7 +168,7 @@ class _GiftSelectorState extends State<GiftSelector>
         giftId: gift.id,
         quantity: 1,
       );
-      unawaited(AchievementHooks.handleServerUnlocks(userId, unlocks));
+      AchievementHooks.scheduleServerUnlocks(userId, unlocks);
       await GiftHapticFeedback.forGiftSuccess(gift);
 
       final refreshed = await ApiService.getUserInfo(userId);

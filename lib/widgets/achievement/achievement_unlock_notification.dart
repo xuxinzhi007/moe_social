@@ -235,8 +235,9 @@ class AchievementNotificationManager {
       },
     );
 
-    // 添加到overlay
-    Overlay.of(context).insert(_currentEntry!);
+    final overlay = Overlay.maybeOf(context);
+    if (overlay == null) return;
+    overlay.insert(_currentEntry!);
   }
 
   static Future<void> showBottomGuideSheet(
@@ -244,7 +245,10 @@ class AchievementNotificationManager {
     required int unlockedCount,
     required VoidCallback onViewAchievements,
   }) async {
-    await showModalBottomSheet<void>(
+    if (!context.mounted) return;
+    if (ModalRoute.of(context)?.isCurrent != true) return;
+    try {
+      await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) {
@@ -306,6 +310,7 @@ class AchievementNotificationManager {
           ),
         );
       },
-    );
+      );
+    } catch (_) {}
   }
 }

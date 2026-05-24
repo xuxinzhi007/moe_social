@@ -40,7 +40,7 @@ var defaultGiftSeeds = []giftSeed{
 }
 
 // SeedDefaultGifts 同步全量礼物到数据库，按名称 upsert。
-// 由 postMigrate 在 RPC 带 -migrate 启动时执行。
+// 由 Admin「导入默认礼物」在表为空时调用；迁移不再自动执行。
 func SeedDefaultGifts(db *gorm.DB) {
 	for _, s := range defaultGiftSeeds {
 		row := model.Gift{

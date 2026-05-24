@@ -580,10 +580,10 @@ class _CheckInPageState extends State<CheckInPage>
     if (success) {
       // 刷新用户等级信息
       levelProvider.loadUserLevel(widget.userId);
-      unawaited(AchievementHooks.handleServerUnlocks(
+      AchievementHooks.scheduleServerUnlocks(
         widget.userId,
         checkInProvider.lastUnlocks,
-      ));
+      );
 
       // 显示成功消息
       if (checkInProvider.successMessage != null) {

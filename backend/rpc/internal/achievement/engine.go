@@ -8,7 +8,6 @@ import (
 
 	"backend/model"
 	"backend/rpc/internal/level"
-	"backend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
@@ -41,20 +40,7 @@ func (e *Engine) loadDefinitions(tx *gorm.DB) ([]model.AchievementDefinition, er
 		return nil, err
 	}
 	if len(defs) == 0 {
-		db := tx
-		if db == nil {
-			db = e.db
-		}
-		if db != nil {
-			if err := utils.SeedAchievementDefinitions(db); err != nil {
-				logx.Errorf("成就定义种子写入失败: %v", err)
-			} else {
-				logx.Info("成就定义表为空，已自动写入默认种子")
-			}
-			if err := db.Where("enabled = ?", true).Order("sort_order ASC").Find(&defs).Error; err != nil {
-				return nil, err
-			}
-		}
+		logx.Infof("成就定义表为空，请在 Moe Admin 执行「导入默认成就」后再触发成就逻辑")
 	}
 	e.mu.Lock()
 	e.definitions = defs

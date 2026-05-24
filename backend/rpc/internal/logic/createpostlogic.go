@@ -115,8 +115,7 @@ func (l *CreatePostLogic) CreatePost(in *super.CreatePostReq) (*super.CreatePost
 	}
 
 	handDrawApproved := in.HandDrawCard != "" && modStatus == "ok"
-	engine := achievement.NewEngine(l.svcCtx.DB)
-	achUnlocks, err := engine.ApplyEvent(tx, uint(userID), achievement.Event{
+	postAchEvent := achievement.Event{
 		Type:             achievement.EventPostCreated,
 		ImageCount:       len(in.Images),
 		HasTopic:         len(topicTags) > 0,
@@ -125,14 +124,18 @@ func (l *CreatePostLogic) CreatePost(in *super.CreatePostReq) (*super.CreatePost
 		HasHandDraw:      in.HandDrawCard != "",
 		HandDrawApproved: handDrawApproved,
 		Hour:             achievement.CurrentEventHour(),
-	})
-	if err != nil {
-		l.Errorf("成就处理失败（帖子仍会发布）: %v；若库内无成就定义请执行 rpc -migrate", err)
-		achUnlocks = nil
 	}
 
 	if err := tx.Commit().Error; err != nil {
 		return nil, errorx.New(500, "创建帖子失败")
+	}
+
+	var achUnlocks []achievement.UnlockResult
+	unlocks, achErr := achievement.ApplyEventAfterCommit(l.svcCtx.DB, uint(userID), postAchEvent)
+	if achErr != nil {
+		l.Errorf("成就处理失败（帖子仍会发布）: %v", achErr)
+	} else {
+		achUnlocks = unlocks
 	}
 
 	responseTopicTags := make([]*super.TopicTag, 0, len(topicTags))

@@ -103,15 +103,16 @@ func (l *CheckInLogic) CheckIn(in *super.CheckInReq) (*super.CheckInResp, error)
 		return nil, err
 	}
 
-	engine := achievement.NewEngine(l.svcCtx.DB)
-	achUnlocks, err := engine.ApplyEvent(tx, uint(userID), achievement.Event{Type: achievement.EventCheckIn})
-	if err != nil {
-		l.Errorf("成就处理失败（签到仍会成功）: %v", err)
-		achUnlocks = nil
-	}
-
 	if err := tx.Commit().Error; err != nil {
 		return nil, fmt.Errorf("提交事务失败: %v", err)
+	}
+
+	var achUnlocks []achievement.UnlockResult
+	unlocks, achErr := achievement.ApplyEventAfterCommit(l.svcCtx.DB, uint(userID), achievement.Event{Type: achievement.EventCheckIn})
+	if achErr != nil {
+		l.Errorf("成就处理失败（签到仍会成功）: %v", achErr)
+	} else {
+		achUnlocks = unlocks
 	}
 
 	specialReward := ""

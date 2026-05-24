@@ -3,14 +3,21 @@ package vip
 import (
 	"net/http"
 
+	"backend/api/internal/common"
 	"backend/api/internal/logic/vip"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func CreateVipPlanHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, br := common.RequireAdminToken(r); br != nil {
+			httpx.OkJsonCtx(r.Context(), w, &types.CreateVipPlanResp{BaseResp: *br})
+			return
+		}
+
 		var req types.CreateVipPlanReq
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)

@@ -96,9 +96,9 @@ func InitDB(runAutoMigrate bool) error {
 		if err := autoMigrate(); err != nil {
 			return fmt.Errorf("自动迁移数据库表失败: %v", err)
 		}
-		postMigrate(DB)
+		log.Println("仅完成表结构迁移；运营数据（VIP/礼物/成就等）请在 Moe Admin 中导入")
 	} else {
-		log.Println("已跳过 AutoMigrate 与启动数据同步（补 moe_no、默认礼物）；改表/改种子后请执行: go run super.go -migrate")
+		log.Println("已跳过 AutoMigrate；改表后请执行: go run super.go -migrate")
 	}
 
 	log.Println("数据库连接成功")
@@ -170,17 +170,7 @@ func autoMigrate() error {
 	return nil
 }
 
-// postMigrate 仅在 -migrate 时调用：与 AutoMigrate 同频，避免每次普通启动扫表、写礼物。
-func postMigrate(db *gorm.DB) {
-	BackfillAllUserMoeNos(db)
-	SeedDefaultGifts(db)
-	if err := EnsureAchievementSeeds(db); err != nil {
-		log.Printf("成就定义种子初始化失败: %v", err)
-	}
-	SeedAdminAccount(db)
-}
-
-// EnsureAchievementSeeds 在成就定义表为空时写入默认徽章（RPC 每次启动也会调用）。
+// EnsureAchievementSeeds 在成就定义表为空时写入默认徽章（由 Admin bootstrap 触发）。
 func EnsureAchievementSeeds(db *gorm.DB) error {
 	if db == nil {
 		return nil

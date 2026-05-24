@@ -31,6 +31,68 @@ type AchievementUnlock struct {
 	NewLevel   int    `json:"new_level"`
 }
 
+type AdminBootstrapAccountData struct {
+	Created int `json:"created"`
+}
+
+type AdminBootstrapAccountResp struct {
+	BaseResp
+	Data AdminBootstrapAccountData `json:"data"`
+}
+
+type AdminBootstrapAchievementsData struct {
+	Created int `json:"created"`
+}
+
+type AdminBootstrapAchievementsResp struct {
+	BaseResp
+	Data AdminBootstrapAchievementsData `json:"data"`
+}
+
+type AdminBootstrapGiftsData struct {
+	Created int `json:"created"`
+}
+
+type AdminBootstrapGiftsResp struct {
+	BaseResp
+	Data AdminBootstrapGiftsData `json:"data"`
+}
+
+type AdminBootstrapVipPlansData struct {
+	Created int `json:"created"`
+}
+
+type AdminBootstrapVipPlansResp struct {
+	BaseResp
+	Data AdminBootstrapVipPlansData `json:"data"`
+}
+
+type AdminCreateGiftReq struct {
+	Name        string `json:"name"`
+	Price       int    `json:"price"`
+	Icon        string `json:"icon,optional"`
+	Description string `json:"description,optional"`
+	Category    string `json:"category,optional"`
+	SortOrder   int    `json:"sort_order,optional"`
+}
+
+type AdminCreateGiftResp struct {
+	BaseResp
+	Data Gift `json:"data"`
+}
+
+type AdminCreateVipPlanReq struct {
+	Name         string  `json:"name"`
+	Description  string  `json:"description"`
+	Price        float64 `json:"price"`
+	DurationDays int     `json:"duration_days"`
+}
+
+type AdminCreateVipPlanResp struct {
+	BaseResp
+	Data VipPlan `json:"data"`
+}
+
 type AdminDashboardData struct {
 	LandingFeedbackTotal int    `json:"landing_feedback_total"`
 	UserTotal            int    `json:"user_total"`
@@ -43,6 +105,55 @@ type AdminDashboardResp struct {
 	Data AdminDashboardData `json:"data"`
 }
 
+type AdminDeleteCommentReq struct {
+	CommentId string `path:"comment_id"`
+}
+
+type AdminDeleteCommentResp struct {
+	BaseResp
+}
+
+type AdminDeleteGiftReq struct {
+	GiftId string `path:"gift_id"`
+}
+
+type AdminDeleteGiftResp struct {
+	BaseResp
+}
+
+type AdminDeleteGroupReq struct {
+	GroupId string `path:"group_id"`
+}
+
+type AdminDeleteGroupResp struct {
+	BaseResp
+}
+
+type AdminDeletePostReq struct {
+	PostId string `path:"post_id"`
+}
+
+type AdminDeletePostResp struct {
+	BaseResp
+}
+
+type AdminDeleteVipPlanReq struct {
+	PlanId string `path:"plan_id"`
+}
+
+type AdminDeleteVipPlanResp struct {
+	BaseResp
+}
+
+type AdminGetGiftReq struct {
+	GiftId string `path:"gift_id"`
+}
+
+type AdminGetGiftResp struct {
+	BaseResp
+	Data Gift `json:"data"`
+}
+
 type AdminGetUserReq struct {
 	UserId uint64 `path:"user_id"`
 }
@@ -50,6 +161,116 @@ type AdminGetUserReq struct {
 type AdminGetUserResp struct {
 	BaseResp
 	Data User `json:"data"`
+}
+
+type AdminGetVipPlanReq struct {
+	PlanId string `path:"plan_id"`
+}
+
+type AdminGetVipPlanResp struct {
+	BaseResp
+	Data VipPlan `json:"data"`
+}
+
+type AdminListCommentsData struct {
+	Items []Comment `json:"items"`
+	Total int       `json:"total"`
+}
+
+type AdminListCommentsReq struct {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Keyword  string `form:"keyword,optional"`
+	PostId   string `form:"post_id,optional"`
+}
+
+type AdminListCommentsResp struct {
+	BaseResp
+	Data AdminListCommentsData `json:"data"`
+}
+
+type AdminListGiftPurchaseOrdersData struct {
+	Items []GiftPurchaseOrder `json:"items"`
+	Total int                 `json:"total"`
+}
+
+type AdminListGiftPurchaseOrdersReq struct {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	UserId   string `form:"user_id,optional"`
+	Keyword  string `form:"keyword,optional"`
+	Status   string `form:"status,optional"`
+}
+
+type AdminListGiftPurchaseOrdersResp struct {
+	BaseResp
+	Data AdminListGiftPurchaseOrdersData `json:"data"`
+}
+
+type AdminListGiftsData struct {
+	Items []Gift `json:"items"`
+	Total int    `json:"total"`
+}
+
+type AdminListGiftsReq struct {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Keyword  string `form:"keyword,optional"`
+	Category string `form:"category,optional"`
+}
+
+type AdminListGiftsResp struct {
+	BaseResp
+	Data AdminListGiftsData `json:"data"`
+}
+
+type AdminListGroupsData struct {
+	Items []Group `json:"items"`
+	Total int     `json:"total"`
+}
+
+type AdminListGroupsReq struct {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Keyword  string `form:"keyword,optional"`
+}
+
+type AdminListGroupsResp struct {
+	BaseResp
+	Data AdminListGroupsData `json:"data"`
+}
+
+type AdminListPostReportsData struct {
+	Items []AdminPostReportItem `json:"items"`
+	Total int                   `json:"total"`
+}
+
+type AdminListPostReportsReq struct {
+	Page     int `form:"page,optional,default=1"`
+	PageSize int `form:"page_size,optional,default=50"`
+}
+
+type AdminListPostReportsResp struct {
+	BaseResp
+	Data AdminListPostReportsData `json:"data"`
+}
+
+type AdminListPostsData struct {
+	Items []Post `json:"items"`
+	Total int    `json:"total"`
+}
+
+type AdminListPostsReq struct {
+	Page             int    `form:"page,optional,default=1"`
+	PageSize         int    `form:"page_size,optional,default=20"`
+	Keyword          string `form:"keyword,optional"`
+	ModerationStatus string `form:"moderation_status,optional"`
+	IncludeDeleted   bool   `form:"include_deleted,optional"`
+}
+
+type AdminListPostsResp struct {
+	BaseResp
+	Data AdminListPostsData `json:"data"`
 }
 
 type AdminListUsersData struct {
@@ -66,6 +287,41 @@ type AdminListUsersReq struct {
 type AdminListUsersResp struct {
 	BaseResp
 	Data AdminListUsersData `json:"data"`
+}
+
+type AdminListVipOrdersData struct {
+	Items []VipOrder `json:"items"`
+	Total int        `json:"total"`
+}
+
+type AdminListVipOrdersReq struct {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	UserId   string `form:"user_id,optional"`
+	Keyword  string `form:"keyword,optional"`
+	Status   string `form:"status,optional"`
+}
+
+type AdminListVipOrdersResp struct {
+	BaseResp
+	Data AdminListVipOrdersData `json:"data"`
+}
+
+type AdminListVipPlansData struct {
+	Items []VipPlan `json:"items"`
+	Total int       `json:"total"`
+}
+
+type AdminListVipPlansReq struct {
+	Page           int    `form:"page,optional,default=1"`
+	PageSize       int    `form:"page_size,optional,default=50"`
+	Keyword        string `form:"keyword,optional"`
+	IncludeDeleted bool   `form:"include_deleted,optional"`
+}
+
+type AdminListVipPlansResp struct {
+	BaseResp
+	Data AdminListVipPlansData `json:"data"`
 }
 
 type AdminLoginData struct {
@@ -97,6 +353,36 @@ type AdminMeResp struct {
 	Data AdminMeData `json:"data"`
 }
 
+type AdminPostReportItem struct {
+	Id                 string `json:"id"`
+	PostId             string `json:"post_id"`
+	ReporterUserId     string `json:"reporter_user_id"`
+	Reason             string `json:"reason"`
+	CreatedAt          string `json:"created_at"`
+	PostContentPreview string `json:"post_content_preview"`
+}
+
+type AdminUpdateGiftReq struct {
+	GiftId            string `path:"gift_id"`
+	Name              string `json:"name,optional"`
+	Price             int    `json:"price,optional"`
+	Icon              string `json:"icon,optional"`
+	Description       string `json:"description,optional"`
+	Category          string `json:"category,optional"`
+	SortOrder         int    `json:"sort_order,optional"`
+	UpdateName        bool   `json:"update_name,optional"`
+	UpdatePrice       bool   `json:"update_price,optional"`
+	UpdateIcon        bool   `json:"update_icon,optional"`
+	UpdateDescription bool   `json:"update_description,optional"`
+	UpdateCategory    bool   `json:"update_category,optional"`
+	UpdateSortOrder   bool   `json:"update_sort_order,optional"`
+}
+
+type AdminUpdateGiftResp struct {
+	BaseResp
+	Data Gift `json:"data"`
+}
+
 type AdminUpdateUserReq struct {
 	UserId          uint64 `path:"user_id"`
 	Role            string `json:"role,optional"`
@@ -109,6 +395,23 @@ type AdminUpdateUserReq struct {
 type AdminUpdateUserResp struct {
 	BaseResp
 	Data User `json:"data"`
+}
+
+type AdminUpdateVipPlanReq struct {
+	PlanId             string  `path:"plan_id"`
+	Name               string  `json:"name,optional"`
+	Description        string  `json:"description,optional"`
+	Price              float64 `json:"price,optional"`
+	DurationDays       int     `json:"duration_days,optional"`
+	UpdateName         bool    `json:"update_name,optional"`
+	UpdateDescription  bool    `json:"update_description,optional"`
+	UpdatePrice        bool    `json:"update_price,optional"`
+	UpdateDurationDays bool    `json:"update_duration_days,optional"`
+}
+
+type AdminUpdateVipPlanResp struct {
+	BaseResp
+	Data VipPlan `json:"data"`
 }
 
 type AiAgentsResp struct {

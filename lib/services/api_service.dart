@@ -1620,7 +1620,10 @@ class ApiService {
   // 同步VIP状态
   static Future<Map<String, dynamic>> syncUserVipStatus(String userId) async {
     final result = await _request('/api/user/$userId/vip/sync', method: 'POST');
-    return result['data'] as Map<String, dynamic>;
+    final data = result['data'];
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return <String, dynamic>{};
   }
 
   // ========== VIP套餐相关API ==========

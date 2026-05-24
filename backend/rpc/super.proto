@@ -1116,6 +1116,234 @@ message AdminUpdateUserResp {
   User user = 1;
 }
 
+// Admin VIP 套餐运营
+message AdminListVipPlansReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  bool include_deleted = 4;
+}
+
+message AdminListVipPlansResp {
+  repeated VipPlan plans = 1;
+  int32 total = 2;
+}
+
+message AdminGetVipPlanReq {
+  string plan_id = 1;
+}
+
+message AdminGetVipPlanResp {
+  VipPlan plan = 1;
+}
+
+message AdminUpdateVipPlanReq {
+  string plan_id = 1;
+  string name = 2;
+  string description = 3;
+  float price = 4;
+  int32 duration_days = 5;
+  bool update_name = 6;
+  bool update_description = 7;
+  bool update_price = 8;
+  bool update_duration_days = 9;
+}
+
+message AdminUpdateVipPlanResp {
+  VipPlan plan = 1;
+}
+
+message AdminDeleteVipPlanReq {
+  string plan_id = 1;
+}
+
+message AdminDeleteVipPlanResp {}
+
+message AdminBootstrapVipPlansReq {}
+
+message AdminBootstrapVipPlansResp {
+  int32 created = 1;
+}
+
+message AdminBootstrapAccountReq {}
+
+message AdminBootstrapAccountResp {
+  int32 created = 1;
+}
+
+message AdminBootstrapAchievementsReq {}
+
+message AdminBootstrapAchievementsResp {
+  int32 created = 1;
+}
+
+// Admin 礼物运营
+message AdminListGiftsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  string category = 4;
+}
+
+message AdminListGiftsResp {
+  repeated Gift gifts = 1;
+  int32 total = 2;
+}
+
+message AdminGetGiftReq {
+  string gift_id = 1;
+}
+
+message AdminGetGiftResp {
+  Gift gift = 1;
+}
+
+message AdminCreateGiftReq {
+  string name = 1;
+  int32 price = 2;
+  string icon = 3;
+  string description = 4;
+  string category = 5;
+  int32 sort_order = 6;
+}
+
+message AdminCreateGiftResp {
+  Gift gift = 1;
+}
+
+message AdminUpdateGiftReq {
+  string gift_id = 1;
+  string name = 2;
+  int32 price = 3;
+  string icon = 4;
+  string description = 5;
+  string category = 6;
+  int32 sort_order = 7;
+  bool update_name = 8;
+  bool update_price = 9;
+  bool update_icon = 10;
+  bool update_description = 11;
+  bool update_category = 12;
+  bool update_sort_order = 13;
+}
+
+message AdminUpdateGiftResp {
+  Gift gift = 1;
+}
+
+message AdminDeleteGiftReq {
+  string gift_id = 1;
+}
+
+message AdminDeleteGiftResp {}
+
+message AdminBootstrapGiftsReq {}
+
+message AdminBootstrapGiftsResp {
+  int32 created = 1;
+}
+
+// Admin 订单（只读）
+message AdminListVipOrdersReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string user_id = 3;
+  string keyword = 4;
+  string status = 5;
+}
+
+message AdminListVipOrdersResp {
+  repeated VipOrder orders = 1;
+  int32 total = 2;
+}
+
+message AdminListGiftPurchaseOrdersReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string user_id = 3;
+  string keyword = 4;
+  string status = 5;
+}
+
+message AdminListGiftPurchaseOrdersResp {
+  repeated GiftPurchaseOrder orders = 1;
+  int32 total = 2;
+}
+
+// Admin 内容与社区
+message AdminListPostsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  string moderation_status = 4;
+  bool include_deleted = 5;
+}
+
+message AdminListPostsResp {
+  repeated Post posts = 1;
+  int32 total = 2;
+}
+
+message AdminDeletePostReq {
+  string post_id = 1;
+}
+
+message AdminDeletePostResp {}
+
+message AdminListCommentsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  string post_id = 4;
+}
+
+message AdminListCommentsResp {
+  repeated Comment comments = 1;
+  int32 total = 2;
+}
+
+message AdminDeleteCommentReq {
+  string comment_id = 1;
+}
+
+message AdminDeleteCommentResp {}
+
+message AdminPostReportItem {
+  string id = 1;
+  string post_id = 2;
+  string reporter_user_id = 3;
+  string reason = 4;
+  string created_at = 5;
+  string post_content_preview = 6;
+}
+
+message AdminListPostReportsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message AdminListPostReportsResp {
+  repeated AdminPostReportItem reports = 1;
+  int32 total = 2;
+}
+
+message AdminListGroupsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+}
+
+message AdminListGroupsResp {
+  repeated Group groups = 1;
+  int32 total = 2;
+}
+
+message AdminDeleteGroupReq {
+  string group_id = 1;
+}
+
+message AdminDeleteGroupResp {}
+
 // 服务定义
 service Super {
   // 用户相关服务
@@ -1145,6 +1373,28 @@ service Super {
   rpc AdminListUsers(AdminListUsersReq) returns (AdminListUsersResp);
   rpc AdminGetUser(AdminGetUserReq) returns (AdminGetUserResp);
   rpc AdminUpdateUser(AdminUpdateUserReq) returns (AdminUpdateUserResp);
+  rpc AdminListVipPlans(AdminListVipPlansReq) returns (AdminListVipPlansResp);
+  rpc AdminGetVipPlan(AdminGetVipPlanReq) returns (AdminGetVipPlanResp);
+  rpc AdminUpdateVipPlan(AdminUpdateVipPlanReq) returns (AdminUpdateVipPlanResp);
+  rpc AdminDeleteVipPlan(AdminDeleteVipPlanReq) returns (AdminDeleteVipPlanResp);
+  rpc AdminBootstrapVipPlans(AdminBootstrapVipPlansReq) returns (AdminBootstrapVipPlansResp);
+  rpc AdminBootstrapAccount(AdminBootstrapAccountReq) returns (AdminBootstrapAccountResp);
+  rpc AdminBootstrapAchievements(AdminBootstrapAchievementsReq) returns (AdminBootstrapAchievementsResp);
+  rpc AdminListGifts(AdminListGiftsReq) returns (AdminListGiftsResp);
+  rpc AdminGetGift(AdminGetGiftReq) returns (AdminGetGiftResp);
+  rpc AdminCreateGift(AdminCreateGiftReq) returns (AdminCreateGiftResp);
+  rpc AdminUpdateGift(AdminUpdateGiftReq) returns (AdminUpdateGiftResp);
+  rpc AdminDeleteGift(AdminDeleteGiftReq) returns (AdminDeleteGiftResp);
+  rpc AdminBootstrapGifts(AdminBootstrapGiftsReq) returns (AdminBootstrapGiftsResp);
+  rpc AdminListVipOrders(AdminListVipOrdersReq) returns (AdminListVipOrdersResp);
+  rpc AdminListGiftPurchaseOrders(AdminListGiftPurchaseOrdersReq) returns (AdminListGiftPurchaseOrdersResp);
+  rpc AdminListPosts(AdminListPostsReq) returns (AdminListPostsResp);
+  rpc AdminDeletePost(AdminDeletePostReq) returns (AdminDeletePostResp);
+  rpc AdminListComments(AdminListCommentsReq) returns (AdminListCommentsResp);
+  rpc AdminDeleteComment(AdminDeleteCommentReq) returns (AdminDeleteCommentResp);
+  rpc AdminListPostReports(AdminListPostReportsReq) returns (AdminListPostReportsResp);
+  rpc AdminListGroups(AdminListGroupsReq) returns (AdminListGroupsResp);
+  rpc AdminDeleteGroup(AdminDeleteGroupReq) returns (AdminDeleteGroupResp);
   rpc UpsertUserMemory(UpsertUserMemoryReq) returns (UpsertUserMemoryResp);
   rpc GetUserMemories(GetUserMemoriesReq) returns (GetUserMemoriesResp);
   rpc GetUserMemoryProfiles(GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp);

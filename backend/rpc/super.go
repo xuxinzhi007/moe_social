@@ -20,8 +20,8 @@ import (
 
 var configFile = flag.String("f", "etc/super.yaml", "the config file")
 
-// 新增模型后执行  go run super.go -migrate
-var migrate = flag.Bool("migrate", false, "run GORM AutoMigrate once at startup (use after adding/changing models); omit for normal start")
+// 新增/变更模型后执行  go run super.go -migrate（仅建表，不写入 VIP/礼物/成就等运营数据）
+var migrate = flag.Bool("migrate", false, "run GORM AutoMigrate once at startup (schema only); omit for normal start")
 
 // 开发调试：暴露 /debug/*（默认 devports :19011）。日常 go run super.go 不要加；用 make rpc-debug。
 var enableDebug = flag.Bool("debug", false, "expose local debug HTTP API on loopback (dev only; use make rpc-debug)")

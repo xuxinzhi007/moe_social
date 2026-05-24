@@ -64,9 +64,64 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		[]rest.Route{
 			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/achievements/bootstrap",
+				Handler: admin.AdminBootstrapAchievementsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/comments",
+				Handler: admin.AdminListCommentsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/admin/comments/:comment_id",
+				Handler: admin.AdminDeleteCommentHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/community/groups",
+				Handler: admin.AdminListGroupsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/admin/community/groups/:group_id",
+				Handler: admin.AdminDeleteGroupHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodGet,
 				Path:    "/api/admin/dashboard",
 				Handler: admin.AdminDashboardHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/gifts",
+				Handler: admin.AdminListGiftsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/gifts",
+				Handler: admin.AdminCreateGiftHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/gifts/:gift_id",
+				Handler: admin.AdminGetGiftHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/admin/gifts/:gift_id",
+				Handler: admin.AdminUpdateGiftHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/admin/gifts/:gift_id",
+				Handler: admin.AdminDeleteGiftHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/gifts/bootstrap",
+				Handler: admin.AdminBootstrapGiftsHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
@@ -77,6 +132,31 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/admin/me",
 				Handler: admin.AdminMeHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/orders/gift-purchase",
+				Handler: admin.AdminListGiftPurchaseOrdersHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/orders/vip",
+				Handler: admin.AdminListVipOrdersHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/post-reports",
+				Handler: admin.AdminListPostReportsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/posts",
+				Handler: admin.AdminListPostsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/admin/posts/:post_id",
+				Handler: admin.AdminDeletePostHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
@@ -93,11 +173,46 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/api/admin/users/:user_id",
 				Handler: admin.AdminUpdateUserHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/vip/plans",
+				Handler: admin.AdminListVipPlansHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/vip/plans",
+				Handler: admin.AdminCreateVipPlanHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/vip/plans/:plan_id",
+				Handler: admin.AdminGetVipPlanHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/admin/vip/plans/:plan_id",
+				Handler: admin.AdminUpdateVipPlanHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/admin/vip/plans/:plan_id",
+				Handler: admin.AdminDeleteVipPlanHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/vip/plans/bootstrap",
+				Handler: admin.AdminBootstrapVipPlansHandler(serverCtx),
+			},
 		},
 	)
 
 	server.AddRoutes(
 		[]rest.Route{
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/bootstrap/account",
+				Handler: admin_public.AdminBootstrapAccountHandler(serverCtx),
+			},
 			{
 				Method:  http.MethodPost,
 				Path:    "/api/admin/login",

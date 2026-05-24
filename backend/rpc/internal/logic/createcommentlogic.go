@@ -126,15 +126,16 @@ func (l *CreateCommentLogic) CreateComment(in *super.CreateCommentReq) (*super.C
 		_ = tx.Create(&notification).Error
 	}
 
-	engine := achievement.NewEngine(l.svcCtx.DB)
-	achUnlocks, err := engine.ApplyEvent(tx, uint(userID), achievement.Event{Type: achievement.EventCommentCreated})
-	if err != nil {
-		l.Errorf("成就处理失败（评论仍会发布）: %v", err)
-		achUnlocks = nil
-	}
-
 	if err := tx.Commit().Error; err != nil {
 		return nil, err
+	}
+
+	var achUnlocks []achievement.UnlockResult
+	unlocks, achErr := achievement.ApplyEventAfterCommit(l.svcCtx.DB, uint(userID), achievement.Event{Type: achievement.EventCommentCreated})
+	if achErr != nil {
+		l.Errorf("成就处理失败（评论仍会发布）: %v", achErr)
+	} else {
+		achUnlocks = unlocks
 	}
 
 	if err := l.svcCtx.DB.Preload("User").First(&comment, comment.ID).Error; err != nil {

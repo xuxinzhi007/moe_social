@@ -36,11 +36,6 @@ func NewServiceContext(c config.Config, autoMigrate bool) *ServiceContext {
 		Config: c,
 		DB:     utils.GetDB(),
 	}
-	if err := utils.EnsureAchievementSeeds(out.DB); err != nil {
-		logx.Errorf("成就定义启动检查失败（若表不存在请在 VPS 执行 rpc -migrate）: %v", err)
-	} else {
-		logx.Info("成就定义种子检查完成")
-	}
 	utils.StartPrivateMessageCleanup(out.DB)
 	return out
 }
