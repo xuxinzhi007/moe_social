@@ -156,9 +156,11 @@ func (l *SendGiftLogic) SendGift(in *super.SendGiftReq) (*super.SendGiftResp, er
 			GiftValue: addValue,
 		})
 		if err != nil {
-			return err
+			l.Errorf("成就处理失败（送礼仍会成功）: %v", err)
+			achUnlocks = nil
+		} else {
+			achUnlocks = unlocks
 		}
-		achUnlocks = unlocks
 		return nil
 	})
 

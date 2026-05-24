@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 import '../auth_service.dart';
 import '../models/achievement_badge.dart';
 import '../models/achievement_unlock.dart';
@@ -28,30 +30,37 @@ class AchievementHooks {
         .toList(growable: false);
     final ctx = AuthService.navigatorKey.currentContext;
     if (ctx == null || !ctx.mounted) return;
+    if (Overlay.maybeOf(ctx) == null) return;
     if (uniqueUnlocked.length == 1) {
       final b = uniqueUnlocked.first;
       final expNote = _expNoteForUnlocks(uniqueUnlocked);
-      AchievementNotificationManager.showUnlockNotification(
-        ctx,
-        b,
-        onView: _openAchievementsCenter,
-      );
+      try {
+        AchievementNotificationManager.showUnlockNotification(
+          ctx,
+          b,
+          onView: _openAchievementsCenter,
+        );
+      } catch (_) {}
       MoeToast.success(ctx, '解锁成就「${b.name}」$expNote');
       return;
     }
     final names = uniqueUnlocked.take(3).map((b) => b.name).join('、');
     final more = uniqueUnlocked.length > 3 ? '…' : '';
     final expNote = _expNoteForUnlocks(uniqueUnlocked);
-    AchievementNotificationManager.showUnlockNotification(
-      ctx,
-      uniqueUnlocked.first,
-      onView: _openAchievementsCenter,
-    );
-    AchievementNotificationManager.showBottomGuideSheet(
-      ctx,
-      unlockedCount: uniqueUnlocked.length,
-      onViewAchievements: _openAchievementsCenter,
-    );
+    try {
+      AchievementNotificationManager.showUnlockNotification(
+        ctx,
+        uniqueUnlocked.first,
+        onView: _openAchievementsCenter,
+      );
+    } catch (_) {}
+    try {
+      AchievementNotificationManager.showBottomGuideSheet(
+        ctx,
+        unlockedCount: uniqueUnlocked.length,
+        onViewAchievements: _openAchievementsCenter,
+      );
+    } catch (_) {}
     MoeToast.success(ctx, '解锁 ${uniqueUnlocked.length} 个成就：$names$more$expNote');
   }
 

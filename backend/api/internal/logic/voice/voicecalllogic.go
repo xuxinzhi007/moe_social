@@ -5,9 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
+	"backend/api/internal/logic/chat"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/super"
 
 	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -28,21 +32,54 @@ func NewVoiceCallLogic(ctx context.Context, svcCtx *svc.ServiceContext) *VoiceCa
 }
 
 func (l *VoiceCallLogic) VoiceCall(req *types.VoiceCallReq) (resp *types.VoiceCallResp, err error) {
-	// 从上下文获取用户ID
-	_, err = l.getUserID()
+	callerID, err := l.getUserID()
 	if err != nil {
 		return nil, err
 	}
+	receiverID := strings.TrimSpace(req.ReceiverId)
+	if receiverID == "" {
+		return nil, errors.New("receiver_id required")
+	}
+	if receiverID == callerID {
+		return nil, errors.New("cannot call yourself")
+	}
 
-	// 生成唯一的呼叫ID和频道名称
 	callID := uuid.New().String()
 	channelName := fmt.Sprintf("call_%s", callID)
 
-	// 创建呼叫记录
-	// 这里需要实现数据库操作，暂时返回成功
-	
-	// 发送推送通知给接收方
-	// 这里需要实现推送通知逻辑
+	callerName := "用户"
+	callerAvatar := ""
+	if l.svcCtx.SuperRpcClient != nil {
+		if u, e := l.svcCtx.SuperRpcClient.GetUser(l.ctx, &super.GetUserReq{UserId: callerID}); e == nil && u.GetUser() != nil {
+			if n := strings.TrimSpace(u.GetUser().GetUsername()); n != "" {
+				callerName = n
+			}
+			callerAvatar = strings.TrimSpace(u.GetUser().GetAvatar())
+		}
+	}
+
+	session := &callSession{
+		CallID:       callID,
+		ChannelName:  channelName,
+		CallerID:     callerID,
+		ReceiverID:   receiverID,
+		CallerName:   callerName,
+		CallerAvatar: callerAvatar,
+		CreatedAt:    time.Now(),
+	}
+	putCall(session)
+
+	payload := map[string]interface{}{
+		"type":          "incoming_call",
+		"call_id":       callID,
+		"channel_name":  channelName,
+		"caller_id":     callerID,
+		"caller_name":   callerName,
+		"caller_avatar": callerAvatar,
+	}
+	if !chat.PushJSONToChatUser(receiverID, payload) {
+		l.Infof("voice call: receiver %s not on chat ws, incoming_call not delivered live", receiverID)
+	}
 
 	return &types.VoiceCallResp{
 		BaseResp: types.BaseResp{
@@ -50,10 +87,7 @@ func (l *VoiceCallLogic) VoiceCall(req *types.VoiceCallReq) (resp *types.VoiceCa
 			Message: "success",
 			Success: true,
 		},
-		Data: struct {
-			CallId      string `json:"call_id"`
-			ChannelName string `json:"channel_name"`
-		}{
+		Data: types.VoiceCallData{
 			CallId:      callID,
 			ChannelName: channelName,
 		},
@@ -61,29 +95,22 @@ func (l *VoiceCallLogic) VoiceCall(req *types.VoiceCallReq) (resp *types.VoiceCa
 }
 
 func (l *VoiceCallLogic) getUserID() (string, error) {
-	// 尝试从Context获取userId
 	uidVal := l.ctx.Value("userId")
 	if uidVal == nil {
-		// 尝试 "user_id"
 		uidVal = l.ctx.Value("user_id")
 	}
-
 	if uidVal == nil {
-		return "", errors.New("User not logged in or userId not found in context")
+		return "", errors.New("user not logged in")
 	}
-
-	// 处理 json.Number 或 string
 	switch v := uidVal.(type) {
 	case string:
 		return v, nil
 	case json.Number:
 		return v.String(), nil
 	default:
-		// 尝试强转 string
 		if s, ok := uidVal.(string); ok {
 			return s, nil
-		} else {
-			return "", errors.New("Invalid userId type in context")
 		}
+		return "", errors.New("invalid userId in context")
 	}
 }

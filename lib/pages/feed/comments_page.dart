@@ -38,6 +38,13 @@ class _CommentsPageState extends State<CommentsPage> {
   bool _isSubmitting = false;
   String? _userName;
   String? _userAvatar;
+  /// 正在回复的评论 ID（作为 parent_id 提交）
+  String? _replyParentId;
+  String? _replyToUserName;
+  /// 每条一级评论下已展开的回复条数
+  final Map<String, int> _visibleReplyCount = {};
+  static const int _initialReplyVisible = 3;
+  static const int _replyLoadStep = 10;
 
   // Moe 风格颜色
   final Color _primaryColor = const Color(0xFF7F7FD5);
@@ -112,6 +119,8 @@ class _CommentsPageState extends State<CommentsPage> {
         likes: 0,
         isLiked: false,
         createdAt: DateTime.now(),
+        parentId: _replyParentId ?? '',
+        replyToUserName: _replyToUserName ?? '',
       );
 
       final result = await ApiService.addCommentWithUnlocks(comment);
@@ -121,8 +130,13 @@ class _CommentsPageState extends State<CommentsPage> {
       );
 
       _commentController.clear();
+      setState(() {
+        _replyParentId = null;
+        _replyToUserName = null;
+      });
       await _fetchComments();
 
+      if (!mounted) return;
       _showCustomSnackBar(context, '评论成功', isError: false);
     } catch (e) {
       print('Failed to add comment: $e');
@@ -158,6 +172,98 @@ class _CommentsPageState extends State<CommentsPage> {
     } else {
       MoeToast.success(context, message);
     }
+  }
+
+  /// 兼容旧版仅 @昵称、未写 parent_id 的回复
+  List<Comment> get _normalizedComments {
+    return _comments.map(_normalizeCommentParent).toList();
+  }
+
+  Comment _normalizeCommentParent(Comment c) {
+    if (!c.isTopLevel) return c;
+    final inferredParentId = _inferParentForOrphanReply(c);
+    if (inferredParentId == null) return c;
+    Comment? parent;
+    for (final x in _comments) {
+      if (x.id == inferredParentId) {
+        parent = x;
+        break;
+      }
+    }
+    return c.copyWith(
+      parentId: inferredParentId,
+      replyToUserName: parent?.userName ?? c.replyToUserName,
+    );
+  }
+
+  String? _inferParentForOrphanReply(Comment c) {
+    final trimmed = c.content.trim();
+    if (!trimmed.startsWith('@')) return null;
+    final match = RegExp(r'^@(\S+)').firstMatch(trimmed);
+    if (match == null) return null;
+    final targetName = match.group(1)!;
+
+    Comment? best;
+    for (final other in _comments) {
+      if (other.id == c.id || other.userName != targetName) continue;
+      if (other.createdAt.isAfter(c.createdAt)) continue;
+      if (best == null || other.createdAt.isAfter(best.createdAt)) {
+        best = other;
+      }
+    }
+    return best?.id;
+  }
+
+  List<Comment> get _topLevelComments {
+    return _normalizedComments.where((c) => c.isTopLevel).toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  }
+
+  List<Comment> _directReplies(String parentId) {
+    return _normalizedComments
+        .where((c) => c.parentId == parentId)
+        .toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  }
+
+  void _startReply(Comment comment) {
+    setState(() {
+      _replyParentId = comment.id;
+      _replyToUserName = comment.userName;
+    });
+    _commentController.clear();
+    _commentFocus.requestFocus();
+  }
+
+  void _cancelReply() {
+    setState(() {
+      _replyParentId = null;
+      _replyToUserName = null;
+    });
+  }
+
+  int _visibleCountForParent(String parentId, int totalReplies) {
+    final v = _visibleReplyCount[parentId] ?? _initialReplyVisible;
+    return v > totalReplies ? totalReplies : v;
+  }
+
+  void _showMoreReplies(String parentId, int totalReplies) {
+    setState(() {
+      final current = _visibleReplyCount[parentId] ?? _initialReplyVisible;
+      _visibleReplyCount[parentId] =
+          (current + _replyLoadStep).clamp(0, totalReplies);
+    });
+  }
+
+  String _displayContent(Comment comment) {
+    final name = comment.replyToUserName.trim();
+    if (name.isEmpty) return comment.content;
+    for (final prefix in ['@$name ', '@$name']) {
+      if (comment.content.startsWith(prefix)) {
+        return comment.content.substring(prefix.length).trimLeft();
+      }
+    }
+    return comment.content;
   }
 
   @override
@@ -324,13 +430,13 @@ class _CommentsPageState extends State<CommentsPage> {
                       sliver: SliverList(
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
-                            final comment = _comments[index];
+                            final comment = _topLevelComments[index];
                             return KeyedSubtree(
                               key: ValueKey('comment_${comment.id}'),
-                              child: _buildBubbleCommentItem(comment),
+                              child: _buildCommentNode(comment, isReply: false),
                             );
                           },
-                          childCount: _comments.length,
+                          childCount: _topLevelComments.length,
                         ),
                       ),
                     ),
@@ -357,7 +463,41 @@ class _CommentsPageState extends State<CommentsPage> {
                 ),
               ],
             ),
-            child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_replyParentId != null && _replyToUserName != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '回复 @$_replyToUserName',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: scheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: _cancelReply,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 18,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(2),
@@ -382,12 +522,14 @@ class _CommentsPageState extends State<CommentsPage> {
                     child: TextField(
                       controller: _commentController,
                       focusNode: _commentFocus,
-                      decoration: const InputDecoration(
-                        hintText: '写下你的想法...',
+                      decoration: InputDecoration(
+                        hintText: _replyToUserName != null
+                            ? '回复 @$_replyToUserName'
+                            : '写下你的想法...',
                         border: InputBorder.none,
                         isDense: true,
-                        hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                        contentPadding: EdgeInsets.symmetric(vertical: 10),
+                        hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       ),
                       minLines: 1,
                       maxLines: 3,
@@ -418,6 +560,8 @@ class _CommentsPageState extends State<CommentsPage> {
                       ),
               ],
             ),
+              ],
+            ),
           ),
         ],
       ),
@@ -425,15 +569,19 @@ class _CommentsPageState extends State<CommentsPage> {
     );
   }
 
-  Widget _buildBubbleCommentItem(Comment comment) {
+  Widget _buildCommentNode(Comment comment, {required bool isReply}) {
+    final replies = _directReplies(comment.id);
+    final visible = _visibleCountForParent(comment.id, replies.length);
+    final shown = replies.take(visible).toList();
+    final remaining = replies.length - visible;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: isReply ? 0 : 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           NetworkAvatarImage(
             imageUrl: comment.userAvatar,
-            radius: 18,
+            radius: isReply ? 14 : 18,
             placeholderIcon: Icons.person,
           ),
           const SizedBox(width: 12),
@@ -463,31 +611,31 @@ class _CommentsPageState extends State<CommentsPage> {
                 ),
                 const SizedBox(height: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isReply ? 12 : 16,
+                    vertical: isReply ? 8 : 12,
+                  ),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: const BorderRadius.only(
-                      topRight: Radius.circular(20),
-                      bottomLeft: Radius.circular(20),
-                      bottomRight: Radius.circular(20),
-                      topLeft: Radius.circular(4),
+                    color: isReply
+                        ? Theme.of(context).colorScheme.surface
+                        : Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.only(
+                      topRight: const Radius.circular(16),
+                      bottomLeft: const Radius.circular(16),
+                      bottomRight: const Radius.circular(16),
+                      topLeft: Radius.circular(isReply ? 12 : 4),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF7F7FD5).withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(2, 4),
-                      ),
-                    ],
+                    boxShadow: isReply
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: const Color(0xFF7F7FD5).withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(2, 4),
+                            ),
+                          ],
                   ),
-                  child: Text(
-                    comment.content,
-                    style: TextStyle(
-                      height: 1.5,
-                      fontSize: 14,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
+                  child: _buildCommentBody(comment, isReply),
                 ),
                 const SizedBox(height: 6),
                 Row(
@@ -532,12 +680,7 @@ class _CommentsPageState extends State<CommentsPage> {
                     ),
                     const SizedBox(width: 16),
                     InkWell(
-                      onTap: () {
-                        _commentController.text = '@${comment.userName} ';
-                        _commentController.selection = TextSelection.collapsed(
-                            offset: _commentController.text.length);
-                        _commentFocus.requestFocus();
-                      },
+                      onTap: () => _startReply(comment),
                       borderRadius: BorderRadius.circular(12),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
@@ -565,9 +708,66 @@ class _CommentsPageState extends State<CommentsPage> {
                     ),
                   ],
                 ),
+                if (shown.isNotEmpty || remaining > 0) ...[
+                  const SizedBox(height: 8),
+                  for (final reply in shown)
+                    _buildCommentNode(reply, isReply: true),
+                  if (remaining > 0)
+                    InkWell(
+                      onTap: () =>
+                          _showMoreReplies(comment.id, replies.length),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4, bottom: 4),
+                        child: Text(
+                          '展开更多 $remaining 条回复',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommentBody(Comment comment, bool isReply) {
+    final text = _displayContent(comment);
+    final replyName = comment.replyToUserName.trim();
+    final showMention = isReply && replyName.isNotEmpty;
+    if (!showMention) {
+      return Text(
+        text,
+        style: TextStyle(
+          height: 1.5,
+          fontSize: isReply ? 13 : 14,
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
+      );
+    }
+    return RichText(
+      text: TextSpan(
+        style: TextStyle(
+          height: 1.5,
+          fontSize: isReply ? 13 : 14,
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
+        children: [
+          TextSpan(
+            text: '@$replyName ',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          TextSpan(text: text),
         ],
       ),
     );

@@ -8,7 +8,9 @@ import (
 
 	"backend/model"
 	"backend/rpc/internal/level"
+	"backend/utils"
 
+	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 )
 
@@ -38,10 +40,33 @@ func (e *Engine) loadDefinitions(tx *gorm.DB) ([]model.AchievementDefinition, er
 	if err := tx.Where("enabled = ?", true).Order("sort_order ASC").Find(&defs).Error; err != nil {
 		return nil, err
 	}
+	if len(defs) == 0 {
+		db := tx
+		if db == nil {
+			db = e.db
+		}
+		if db != nil {
+			if err := utils.SeedAchievementDefinitions(db); err != nil {
+				logx.Errorf("成就定义种子写入失败: %v", err)
+			} else {
+				logx.Info("成就定义表为空，已自动写入默认种子")
+			}
+			if err := db.Where("enabled = ?", true).Order("sort_order ASC").Find(&defs).Error; err != nil {
+				return nil, err
+			}
+		}
+	}
 	e.mu.Lock()
 	e.definitions = defs
 	e.mu.Unlock()
 	return defs, nil
+}
+
+// tryBumpDailyActivity 更新日活；失败只记日志，避免评论/发帖/签到主流程回滚。
+func (e *Engine) tryBumpDailyActivity(tx *gorm.DB, userID uint, now time.Time, post, comment, checkIn bool) {
+	if err := e.bumpDailyActivity(tx, userID, now, post, comment, checkIn); err != nil {
+		logx.Errorf("user %d daily activity bump skipped: %v", userID, err)
+	}
 }
 
 // ApplyEvent processes an achievement event inside tx.
@@ -67,9 +92,7 @@ func (e *Engine) ApplyEvent(tx *gorm.DB, userID uint, ev Event) ([]UnlockResult,
 			return nil, err
 		}
 		unlocked = append(unlocked, u...)
-		if err := e.bumpDailyActivity(tx, userID, now, false, false, true); err != nil {
-			return nil, err
-		}
+		e.tryBumpDailyActivity(tx, userID, now, false, false, true)
 
 	case EventPostCreated:
 		u, err := e.handlePostCreated(tx, userID, ev)
@@ -77,9 +100,7 @@ func (e *Engine) ApplyEvent(tx *gorm.DB, userID uint, ev Event) ([]UnlockResult,
 			return nil, err
 		}
 		unlocked = append(unlocked, u...)
-		if err := e.bumpDailyActivity(tx, userID, now, true, false, false); err != nil {
-			return nil, err
-		}
+		e.tryBumpDailyActivity(tx, userID, now, true, false, false)
 
 	case EventCommentCreated:
 		u, err := e.incrementProgress(tx, userID, "social_butterfly", 1)
@@ -87,9 +108,7 @@ func (e *Engine) ApplyEvent(tx *gorm.DB, userID uint, ev Event) ([]UnlockResult,
 			return nil, err
 		}
 		unlocked = append(unlocked, u...)
-		if err := e.bumpDailyActivity(tx, userID, now, false, true, false); err != nil {
-			return nil, err
-		}
+		e.tryBumpDailyActivity(tx, userID, now, false, true, false)
 
 	case EventPostLiked:
 		u, err := e.setMaxProgress(tx, userID, "like_magnet", ev.PostLikeCount)
@@ -201,8 +220,11 @@ func (e *Engine) handlePostCreated(tx *gorm.DB, userID uint, ev Event) ([]Unlock
 	return unlocked, nil
 }
 
-func (e *Engine) getDefinition(badgeID string) (*model.AchievementDefinition, error) {
-	defs, err := e.loadDefinitions(e.db)
+func (e *Engine) getDefinition(tx *gorm.DB, badgeID string) (*model.AchievementDefinition, error) {
+	if tx == nil {
+		tx = e.db
+	}
+	defs, err := e.loadDefinitions(tx)
 	if err != nil {
 		return nil, err
 	}
@@ -279,9 +301,10 @@ func (e *Engine) evalFollowerCount(tx *gorm.DB, userID uint) ([]UnlockResult, er
 }
 
 func (e *Engine) tryUnlock(tx *gorm.DB, userID uint, badgeID string, p *model.UserAchievementProgress) ([]UnlockResult, error) {
-	def, err := e.getDefinition(badgeID)
+	def, err := e.getDefinition(tx, badgeID)
 	if err != nil {
-		return nil, err
+		// 成就定义未入库时不阻断发帖/点赞等业务（常见于未执行 rpc -migrate 种子）。
+		return nil, nil
 	}
 	if p.UnlockedAt != nil || p.CurrentCount < def.RequiredCount {
 		return nil, nil

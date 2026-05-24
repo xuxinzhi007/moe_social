@@ -286,8 +286,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
       },
       onSuccess: (createdPost) {
         if (!mounted) return;
+        loadingProvider.clearMessages();
         Navigator.pop(context, createdPost);
         WidgetsBinding.instance.addPostFrameCallback((_) {
+          loadingProvider.clearMessages();
           final rootCtx = AuthService.navigatorKey.currentContext;
           if (rootCtx != null) {
             final msg = widget.groupId != null && widget.groupId!.isNotEmpty

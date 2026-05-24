@@ -10,6 +10,7 @@ import (
 type Comment struct {
 	ID        uint           `gorm:"primarykey" json:"id"`
 	PostID    uint           `gorm:"not null;index" json:"post_id"`     // 帖子ID
+	ParentID  uint           `gorm:"index;default:0" json:"parent_id"`  // 父评论ID，0=一级评论
 	UserID    uint           `gorm:"not null;index" json:"user_id"`     // 用户ID
 	Content   string         `gorm:"type:text;not null" json:"content"` // 评论内容
 	Likes     int            `gorm:"default:0" json:"likes"`            // 点赞数

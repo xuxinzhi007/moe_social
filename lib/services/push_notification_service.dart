@@ -26,6 +26,7 @@ class PushNotificationService {
               callerName: callerName,
               callerAvatar: callerAvatar ?? '',
               callId: callId,
+              channelName: data['channel_name']?.toString() ?? callId,
             ),
           ),
         );

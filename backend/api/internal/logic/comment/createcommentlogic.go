@@ -29,9 +29,10 @@ func NewCreateCommentLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cre
 func (l *CreateCommentLogic) CreateComment(req *types.CreateCommentReq) (resp *types.CreateCommentResp, err error) {
 	// 调用RPC服务创建评论
 	rpcResp, err := l.svcCtx.SuperRpcClient.CreateComment(l.ctx, &super.CreateCommentReq{
-		PostId:  req.PostId,
-		UserId:  req.UserId,
-		Content: req.Content,
+		PostId:   req.PostId,
+		UserId:   req.UserId,
+		Content:  req.Content,
+		ParentId: req.ParentId,
 	})
 	if err != nil {
 		return &types.CreateCommentResp{
@@ -44,15 +45,17 @@ func (l *CreateCommentLogic) CreateComment(req *types.CreateCommentReq) (resp *t
 		BaseResp:        common.HandleRPCError(nil, "创建评论成功"),
 		NewAchievements: achlogic.UnlocksFromRPC(rpcResp.NewAchievements),
 		Data: types.Comment{
-			Id:         rpcResp.Comment.Id,
-			PostId:     rpcResp.Comment.PostId,
-			UserId:     rpcResp.Comment.UserId,
-			UserName:   rpcResp.Comment.UserName,
-			UserAvatar: rpcResp.Comment.UserAvatar,
-			Content:    rpcResp.Comment.Content,
-			Likes:      int(rpcResp.Comment.Likes),
-			IsLiked:    rpcResp.Comment.IsLiked,
-			CreatedAt:  rpcResp.Comment.CreatedAt,
+			Id:              rpcResp.Comment.Id,
+			PostId:          rpcResp.Comment.PostId,
+			UserId:          rpcResp.Comment.UserId,
+			UserName:        rpcResp.Comment.UserName,
+			UserAvatar:      rpcResp.Comment.UserAvatar,
+			Content:         rpcResp.Comment.Content,
+			Likes:           int(rpcResp.Comment.Likes),
+			IsLiked:         rpcResp.Comment.IsLiked,
+			CreatedAt:       rpcResp.Comment.CreatedAt,
+			ParentId:        rpcResp.Comment.ParentId,
+			ReplyToUserName: rpcResp.Comment.ReplyToUserName,
 		},
 	}, nil
 }

@@ -194,15 +194,17 @@ type CheckUserVipResp struct {
 }
 
 type Comment struct {
-	Id         string `json:"id"`
-	PostId     string `json:"post_id"`
-	UserId     string `json:"user_id"`
-	UserName   string `json:"user_name"`
-	UserAvatar string `json:"user_avatar"`
-	Content    string `json:"content"`
-	Likes      int    `json:"likes"`
-	IsLiked    bool   `json:"is_liked"`
-	CreatedAt  string `json:"created_at"`
+	Id              string `json:"id"`
+	PostId          string `json:"post_id"`
+	UserId          string `json:"user_id"`
+	UserName        string `json:"user_name"`
+	UserAvatar      string `json:"user_avatar"`
+	Content         string `json:"content"`
+	Likes           int    `json:"likes"`
+	IsLiked         bool   `json:"is_liked"`
+	CreatedAt       string `json:"created_at"`
+	ParentId        string `json:"parent_id,optional"`
+	ReplyToUserName string `json:"reply_to_user_name,optional"`
 }
 
 type ContentGenerationData struct {
@@ -249,9 +251,10 @@ type ContentListResp struct {
 }
 
 type CreateCommentReq struct {
-	PostId  string `json:"post_id"`
-	UserId  string `json:"user_id"`
-	Content string `json:"content"`
+	PostId   string `json:"post_id"`
+	UserId   string `json:"user_id"`
+	Content  string `json:"content"`
+	ParentId string `json:"parent_id,optional"`
 }
 
 type CreateCommentResp struct {

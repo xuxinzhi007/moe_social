@@ -198,9 +198,18 @@ class _FriendsPageState extends State<FriendsPage>
     for (final f in _friends) {
       next[f.id] = current[f.id] ?? false;
     }
+    if (!_onlineStatusChanged(next)) return;
     setState(() {
       _onlineStatus = next;
     });
+  }
+
+  bool _onlineStatusChanged(Map<String, bool> next) {
+    if (next.length != _onlineStatus.length) return true;
+    for (final e in next.entries) {
+      if (_onlineStatus[e.key] != e.value) return true;
+    }
+    return false;
   }
 
   Future<void> _loadFriends({bool silent = false}) async {
@@ -267,15 +276,17 @@ class _FriendsPageState extends State<FriendsPage>
   Future<void> _ensureOnlineStatus() async {
     if (!mounted || _friends.isEmpty) return;
 
-    final presenceMap = PresenceService.online.value;
-    if (PresenceService.isConnected && presenceMap.isNotEmpty) {
+    if (PresenceService.isConnected) {
+      final presenceMap = PresenceService.online.value;
       final next = <String, bool>{};
       for (final f in _friends) {
         next[f.id] = presenceMap[f.id] ?? false;
       }
-      setState(() {
-        _onlineStatus = next;
-      });
+      if (_onlineStatusChanged(next)) {
+        setState(() {
+          _onlineStatus = next;
+        });
+      }
       return;
     }
 
@@ -295,15 +306,17 @@ class _FriendsPageState extends State<FriendsPage>
       return;
     }
 
-    final presenceMap = PresenceService.online.value;
-    if (PresenceService.isConnected && presenceMap.isNotEmpty) {
+    if (PresenceService.isConnected) {
+      final presenceMap = PresenceService.online.value;
       final next = <String, bool>{};
       for (final f in _friends) {
         next[f.id] = presenceMap[f.id] ?? false;
       }
-      setState(() {
-        _onlineStatus = next;
-      });
+      if (_onlineStatusChanged(next)) {
+        setState(() {
+          _onlineStatus = next;
+        });
+      }
       return;
     }
 
@@ -1906,6 +1919,31 @@ class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
           setState(() {
             _isLoading = false;
             _error = '不能添加自己为好友';
+          });
+          return;
+        }
+        final relation = await ApiService.getFriendRelation(
+          currentUserId,
+          targetUser.id,
+        );
+        if (relation == 'friend') {
+          setState(() {
+            _isLoading = false;
+            _error = '你们已经是好友了';
+          });
+          return;
+        }
+        if (relation == 'pending_out') {
+          setState(() {
+            _isLoading = false;
+            _error = '已发送申请，请等待对方确认';
+          });
+          return;
+        }
+        if (relation == 'pending_in') {
+          setState(() {
+            _isLoading = false;
+            _error = '对方已向你发送申请，请在上方「申请」中处理';
           });
           return;
         }

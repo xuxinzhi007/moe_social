@@ -123,8 +123,8 @@ func (l *CreatePostLogic) CreatePost(in *super.CreatePostReq) (*super.CreatePost
 		Hour:             achievement.CurrentEventHour(),
 	})
 	if err != nil {
-		tx.Rollback()
-		return nil, errorx.New(500, "成就处理失败")
+		l.Errorf("成就处理失败（帖子仍会发布）: %v；若库内无成就定义请执行 rpc -migrate", err)
+		achUnlocks = nil
 	}
 
 	if err := tx.Commit().Error; err != nil {

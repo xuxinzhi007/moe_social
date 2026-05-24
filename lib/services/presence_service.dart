@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show ValueNotifier, kIsWeb;
+import 'package:flutter/foundation.dart' show ValueNotifier, kIsWeb, mapEquals;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'api_service.dart';
@@ -24,6 +24,11 @@ class PresenceService {
   static int _reconnectAttempts = 0;
   static const int _maxReconnectDelay = 10;
   static const int _baseReconnectDelay = 3;
+  static const Duration _offlineGrace = Duration(seconds: 4);
+
+  static final Map<String, Timer> _offlineGraceTimers = {};
+  static Timer? _notifyDebounce;
+  static Map<String, bool>? _pendingOnline;
 
   static bool get isConnected => _channel != null;
 
@@ -42,6 +47,13 @@ class PresenceService {
     _channel = null;
     _connecting = false;
     _reconnectAttempts = 0;
+    for (final t in _offlineGraceTimers.values) {
+      t.cancel();
+    }
+    _offlineGraceTimers.clear();
+    _notifyDebounce?.cancel();
+    _notifyDebounce = null;
+    _pendingOnline = null;
   }
 
   static String? _rawToken() {
@@ -173,9 +185,12 @@ class PresenceService {
       final next = <String, bool>{};
       for (final v in list) {
         if (v == null) continue;
-        next[v.toString()] = true;
+        final id = v.toString();
+        _offlineGraceTimers[id]?.cancel();
+        _offlineGraceTimers.remove(id);
+        next[id] = true;
       }
-      online.value = next;
+      _commitOnline(next);
       return;
     }
     if (type == 'presence') {
@@ -184,15 +199,36 @@ class PresenceService {
       final onlineValue = map['online'];
       final isOnline =
           onlineValue == true || onlineValue == 1 || onlineValue == '1';
-      final next = Map<String, bool>.from(online.value);
       if (isOnline) {
+        _offlineGraceTimers[id]?.cancel();
+        _offlineGraceTimers.remove(id);
+        final next = Map<String, bool>.from(online.value);
         next[id] = true;
+        _commitOnline(next);
       } else {
-        next[id] = false;
+        _offlineGraceTimers[id]?.cancel();
+        _offlineGraceTimers[id] = Timer(_offlineGrace, () {
+          _offlineGraceTimers.remove(id);
+          final next = Map<String, bool>.from(online.value);
+          if (next[id] != true) return;
+          next[id] = false;
+          _commitOnline(next);
+        });
       }
-      online.value = next;
       return;
     }
+  }
+
+  static void _commitOnline(Map<String, bool> next) {
+    _pendingOnline = next;
+    _notifyDebounce?.cancel();
+    _notifyDebounce = Timer(const Duration(milliseconds: 300), () {
+      final pending = _pendingOnline;
+      if (pending == null) return;
+      _pendingOnline = null;
+      if (mapEquals(online.value, pending)) return;
+      online.value = pending;
+    });
   }
 
   static bool isUserOnline(String userId) {

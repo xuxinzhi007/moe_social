@@ -93,22 +93,53 @@ class Post {
     );
   }
 
-  factory Post.fromJson(Map<String, dynamic> json) {
-    try {
-      DateTime createdAt;
-      final createdAtStr = json['created_at'] as String;
+  static DateTime _parseCreatedAt(dynamic raw) {
+    if (raw == null) return DateTime.now();
+    if (raw is String) {
+      final s = raw.trim();
+      if (s.isEmpty) return DateTime.now();
       try {
-        createdAt = DateTime.parse(createdAtStr);
-      } catch (e) {
+        return DateTime.parse(s);
+      } catch (_) {
         try {
-          createdAt = DateTime.parse('${createdAtStr.replaceAll(' ', 'T')}Z');
-        } catch (e2) {
+          return DateTime.parse('${s.replaceAll(' ', 'T')}Z');
+        } catch (_) {
           if (kDebugMode) {
-            debugPrint('Post.fromJson: 日期解析失败，使用当前时间: $createdAtStr');
+            debugPrint('Post.fromJson: 日期解析失败，使用当前时间: $s');
           }
-          createdAt = DateTime.now();
+          return DateTime.now();
         }
       }
+    }
+    if (raw is int) {
+      if (raw < 10000000000) {
+        return DateTime.fromMillisecondsSinceEpoch(raw * 1000, isUtc: true);
+      }
+      return DateTime.fromMillisecondsSinceEpoch(raw, isUtc: true);
+    }
+    if (raw is num) {
+      final v = raw.toInt();
+      if (v < 10000000000) {
+        return DateTime.fromMillisecondsSinceEpoch(v * 1000, isUtc: true);
+      }
+      return DateTime.fromMillisecondsSinceEpoch(v, isUtc: true);
+    }
+    return DateTime.now();
+  }
+
+  static bool _parseBool(dynamic raw) {
+    if (raw is bool) return raw;
+    if (raw is num) return raw != 0;
+    if (raw is String) {
+      final s = raw.toLowerCase();
+      return s == 'true' || s == '1';
+    }
+    return false;
+  }
+
+  factory Post.fromJson(Map<String, dynamic> json) {
+    try {
+      final createdAt = _parseCreatedAt(json['created_at']);
 
       List<TopicTag> topicTags = [];
       if (json['topic_tags'] != null) {
@@ -175,12 +206,13 @@ class Post {
         images: images,
         likes: (json['likes'] as num?)?.toInt() ?? 0,
         comments: (json['comments'] as num?)?.toInt() ?? 0,
-        isLiked: (json['is_liked'] as bool?) ?? false,
+        isLiked: _parseBool(json['is_liked']),
         createdAt: createdAt,
         topicTags: topicTags,
         handDrawCardJson: handDrawCardJson,
         handDrawThumbUrl: handDrawThumbUrl,
         moderationStatus: moderationStatus,
+        moodTag: (json['mood_tag'] ?? '').toString(),
       );
     } catch (e, stackTrace) {
       if (kDebugMode) {

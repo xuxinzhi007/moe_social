@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"backend/model"
+	"backend/rpc/internal/achievement"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -39,11 +40,12 @@ func (l *GetCheckInStatusLogic) GetCheckInStatus(in *super.GetCheckInStatusReq) 
 		return nil, fmt.Errorf("用户不存在")
 	}
 
-	// 2. 检查今日是否已签到
-	today := time.Now().Format("2006-01-02")
+	// 2. 检查今日是否已签到（上海自然日，避免 DATE() 与会话时区不一致）
+	now := time.Now()
+	dayStart, dayEnd := achievement.ShanghaiDayBounds(now)
 	var todayCheckIn model.UserCheckIn
-	hasCheckedToday := l.svcCtx.DB.Where("user_id = ? AND DATE(check_in_date) = ?", userID, today).
-		First(&todayCheckIn).Error == nil
+	hasCheckedToday := l.svcCtx.DB.Where("user_id = ? AND check_in_date >= ? AND check_in_date < ?",
+		userID, dayStart, dayEnd).First(&todayCheckIn).Error == nil
 
 	// 3. 获取当前连续签到天数
 	var lastCheckIn model.UserCheckIn
@@ -55,10 +57,8 @@ func (l *GetCheckInStatusLogic) GetCheckInStatus(in *super.GetCheckInStatusReq) 
 			consecutiveDays = lastCheckIn.ConsecutiveDays
 		} else {
 			// 如果今天还没签到，检查最近一次签到是否是昨天
-			yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
-			lastCheckInDate := lastCheckIn.CheckInDate.Format("2006-01-02")
-
-			if lastCheckInDate == yesterday {
+			yesterday := achievement.ShanghaiYesterdayString(now)
+			if achievement.ShanghaiDayStringFrom(lastCheckIn.CheckInDate) == yesterday {
 				consecutiveDays = lastCheckIn.ConsecutiveDays
 			}
 		}

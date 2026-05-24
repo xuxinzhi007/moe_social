@@ -1,3 +1,5 @@
+import '../utils/api_datetime.dart';
+
 class Comment {
   final String id;
   final String postId;
@@ -8,6 +10,9 @@ class Comment {
   final int likes;
   final bool isLiked;
   final DateTime createdAt;
+  /// 父评论 ID；空或 "0" 表示一级评论
+  final String parentId;
+  final String replyToUserName;
 
   Comment({
     required this.id,
@@ -19,7 +24,11 @@ class Comment {
     this.likes = 0,
     this.isLiked = false,
     required this.createdAt,
+    this.parentId = '',
+    this.replyToUserName = '',
   });
+
+  bool get isTopLevel => parentId.isEmpty || parentId == '0';
 
   Comment copyWith({
     String? id,
@@ -31,6 +40,8 @@ class Comment {
     int? likes,
     bool? isLiked,
     DateTime? createdAt,
+    String? parentId,
+    String? replyToUserName,
   }) {
     return Comment(
       id: id ?? this.id,
@@ -42,42 +53,33 @@ class Comment {
       likes: likes ?? this.likes,
       isLiked: isLiked ?? this.isLiked,
       createdAt: createdAt ?? this.createdAt,
+      parentId: parentId ?? this.parentId,
+      replyToUserName: replyToUserName ?? this.replyToUserName,
     );
   }
 
-  // 从JSON创建Comment实例（支持snake_case和camelCase）
   factory Comment.fromJson(Map<String, dynamic> json) {
     try {
-      // 解析日期，支持多种格式
-      DateTime createdAt;
-      final createdAtStr = json['created_at'] as String?;
-      if (createdAtStr != null) {
-        try {
-          createdAt = DateTime.parse(createdAtStr);
-        } catch (e) {
-          // 如果标准格式解析失败，尝试自定义格式
-          try {
-            createdAt = DateTime.parse(createdAtStr.replaceAll(' ', 'T') + 'Z');
-          } catch (e2) {
-            // 如果还是失败，使用当前时间
-            print('⚠️ 日期解析失败: $createdAtStr, 使用当前时间');
-            createdAt = DateTime.now();
-          }
-        }
-      } else {
-        createdAt = DateTime.now();
-      }
+      final createdAt = parseApiDateTime(json['created_at'] as String?);
+
+      final rawParent = json['parent_id'];
+      final parentId = rawParent == null
+          ? ''
+          : rawParent.toString().trim();
 
       return Comment(
         id: (json['id'] ?? '').toString(),
         postId: (json['post_id'] ?? '').toString(),
         userId: (json['user_id'] ?? '').toString(),
         userName: (json['user_name'] ?? '未知用户').toString(),
-        userAvatar: (json['user_avatar'] ?? 'https://picsum.photos/150').toString(),
+        userAvatar:
+            (json['user_avatar'] ?? 'https://picsum.photos/150').toString(),
         content: (json['content'] ?? '').toString(),
         likes: (json['likes'] as int?) ?? 0,
         isLiked: (json['is_liked'] ?? false) as bool,
         createdAt: createdAt,
+        parentId: parentId == '0' ? '' : parentId,
+        replyToUserName: (json['reply_to_user_name'] ?? '').toString(),
       );
     } catch (e, stackTrace) {
       print('❌ Comment.fromJson错误: $e');
@@ -87,12 +89,15 @@ class Comment {
     }
   }
 
-  // 转换为JSON（使用snake_case匹配后端期望）
   Map<String, dynamic> toJson() {
-    return {
+    final map = <String, dynamic>{
       'post_id': postId,
       'user_id': userId,
       'content': content,
     };
+    if (!isTopLevel) {
+      map['parent_id'] = parentId;
+    }
+    return map;
   }
 }

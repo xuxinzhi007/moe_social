@@ -171,7 +171,69 @@ class _ScanPageState extends State<ScanPage>
     final String username = qrData['username'].toString();
     final String? avatar = qrData['avatar']?.toString();
     final String? moeNo = qrData['moeNo']?.toString();
-    await _showUserConfirmDialog(userId, username, avatar, moeNo);
+
+    final currentUserId = await AuthService.getUserId();
+    if (currentUserId == userId) {
+      if (mounted) MoeToast.error(context, '不能添加自己为好友');
+      return;
+    }
+
+    var relation = 'none';
+    try {
+      relation = await ApiService.getFriendRelation(currentUserId, userId);
+    } catch (_) {}
+
+    if (!mounted) return;
+    switch (relation) {
+      case 'friend':
+        await _showAlreadyFriendDialog(userId, username, avatar);
+        return;
+      case 'pending_out':
+        MoeToast.info(context, '已向 $username 发送过申请，请等待对方确认');
+        return;
+      case 'pending_in':
+        MoeToast.info(context, '$username 已向你发送好友申请，请在「好友」页处理');
+        return;
+      default:
+        await _showUserConfirmDialog(userId, username, avatar, moeNo);
+    }
+  }
+
+  Future<void> _showAlreadyFriendDialog(
+    String userId,
+    String username,
+    String? avatar,
+  ) async {
+    final goProfile = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('已是好友'),
+            content: Text('你和 $username 已经是好友了'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('知道了'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('查看主页'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!mounted) return;
+    if (goProfile) {
+      Navigator.pushNamed(
+        context,
+        '/user-profile',
+        arguments: {
+          'userId': userId,
+          'userName': username,
+          'userAvatar': avatar,
+        },
+      );
+    }
   }
 
   Future<void> _showUserConfirmDialog(
@@ -274,17 +336,18 @@ class _ScanPageState extends State<ScanPage>
   Future<void> _sendFriendRequest(String userId, String username) async {
     try {
       final currentUserId = await AuthService.getUserId();
-      if (currentUserId == userId) {
-        MoeToast.error(context, '不能添加自己为好友');
-        return;
-      }
-
-      // 发送好友请求
       await ApiService.sendFriendRequestByUserId(currentUserId, userId);
+      if (!mounted) return;
       MoeToast.success(context, '好友请求已发送给 $username');
       Navigator.pop(context);
     } catch (e) {
-      MoeToast.error(context, '发送好友请求失败: $e');
+      if (!mounted) return;
+      final msg = e.toString();
+      if (msg.contains('已经是好友')) {
+        await _showAlreadyFriendDialog(userId, username, null);
+        return;
+      }
+      MoeToast.error(context, msg.contains('已发送') ? msg : '发送好友请求失败: $e');
     }
   }
 

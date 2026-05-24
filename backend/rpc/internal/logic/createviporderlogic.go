@@ -117,9 +117,11 @@ func (l *CreateVipOrderLogic) CreateVipOrder(in *super.CreateVipOrderReq) (*supe
 		engine := achievement.NewEngine(l.svcCtx.DB)
 		unlocks, err := engine.ApplyEvent(tx, user.ID, achievement.Event{Type: achievement.EventVipActivated})
 		if err != nil {
-			return err
+			l.Errorf("成就处理失败（VIP 订单仍会成功）: %v", err)
+			achUnlocks = nil
+		} else {
+			achUnlocks = unlocks
 		}
-		achUnlocks = unlocks
 		return nil
 	})
 	if err != nil {

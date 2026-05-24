@@ -102,19 +102,27 @@ func (l *FriendRelationLogic) SendFriendRequest(in *super.SendFriendRequestReq) 
 	}
 
 	var fr model.FriendRequest
-	err = db.Where("from_user_id = ? AND to_user_id = ?", me, toID).First(&fr).Error
+	err = db.Where(
+		"(from_user_id = ? AND to_user_id = ?) OR (from_user_id = ? AND to_user_id = ?)",
+		me, toID, toID, me,
+	).Order("id desc").First(&fr).Error
 	if err == nil {
 		switch fr.Status {
 		case "pending":
-			return nil, errorx.AlreadyExists("已发送申请，请等待对方处理")
+			if fr.FromUserID == me {
+				return nil, errorx.AlreadyExists("已发送申请，请等待对方处理")
+			}
+			return nil, errorx.AlreadyExists("对方已向你发送好友申请，请在好友页处理")
 		case "accepted":
 			return nil, errorx.AlreadyExists("你们已经是好友")
 		case "rejected":
-			fr.Status = "pending"
-			if err := db.Save(&fr).Error; err != nil {
-				return nil, errorx.Internal("保存失败")
+			if fr.FromUserID == me && fr.ToUserID == toID {
+				fr.Status = "pending"
+				if err := db.Save(&fr).Error; err != nil {
+					return nil, errorx.Internal("保存失败")
+				}
+				return &super.SendFriendRequestResp{Data: friendRequestViewProto(db, fr)}, nil
 			}
-			return &super.SendFriendRequestResp{Data: friendRequestViewProto(db, fr)}, nil
 		}
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, errorx.Internal("查询失败")

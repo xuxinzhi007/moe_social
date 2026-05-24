@@ -26,23 +26,23 @@ func NewVoiceAnswerLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Voice
 }
 
 func (l *VoiceAnswerLogic) VoiceAnswer(req *types.VoiceAnswerReq) (resp *types.VoiceAnswerResp, err error) {
-	// 从上下文获取用户ID
-	_, err = l.getUserID()
+	userID, err := l.getUserID()
 	if err != nil {
 		return nil, err
 	}
+	session, ok := getCall(req.CallId)
+	if !ok {
+		return nil, errors.New("call not found or expired")
+	}
+	if session.ReceiverID != userID {
+		return nil, errors.New("not allowed to answer this call")
+	}
 
-	// 验证呼叫是否存在
-	// 这里需要实现数据库操作
-
-	// 更新呼叫状态为已接听
-	// 这里需要实现数据库操作
-
-	// 发送通知给呼叫方
-	// 这里需要实现推送通知逻辑
-
-	// 生成频道名称（从数据库获取或根据callId生成）
-	channelName := "call_" + req.CallId
+	pushToUser(session.CallerID, map[string]interface{}{
+		"type":         "call_answered",
+		"call_id":      session.CallID,
+		"channel_name": session.ChannelName,
+	})
 
 	return &types.VoiceAnswerResp{
 		BaseResp: types.BaseResp{
@@ -50,38 +50,29 @@ func (l *VoiceAnswerLogic) VoiceAnswer(req *types.VoiceAnswerReq) (resp *types.V
 			Message: "success",
 			Success: true,
 		},
-		Data: struct {
-			ChannelName string `json:"channel_name"`
-		}{
-			ChannelName: channelName,
+		Data: types.VoiceAnswerData{
+			ChannelName: session.ChannelName,
 		},
 	}, nil
 }
 
 func (l *VoiceAnswerLogic) getUserID() (string, error) {
-	// 尝试从Context获取userId
 	uidVal := l.ctx.Value("userId")
 	if uidVal == nil {
-		// 尝试 "user_id"
 		uidVal = l.ctx.Value("user_id")
 	}
-
 	if uidVal == nil {
-		return "", errors.New("User not logged in or userId not found in context")
+		return "", errors.New("user not logged in")
 	}
-
-	// 处理 json.Number 或 string
 	switch v := uidVal.(type) {
 	case string:
 		return v, nil
 	case json.Number:
 		return v.String(), nil
 	default:
-		// 尝试强转 string
 		if s, ok := uidVal.(string); ok {
 			return s, nil
-		} else {
-			return "", errors.New("Invalid userId type in context")
 		}
+		return "", errors.New("invalid userId in context")
 	}
 }
