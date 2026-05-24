@@ -42,8 +42,15 @@ class _CreatePostPageState extends State<CreatePostPage> {
   List<TopicTag> _selectedTopicTags = [];
   HandDrawCardData? _handDrawCard;
   String? _selectedMoodTag;
+  /// 发到群组时：null=校验中，true=已加入，false=未加入
+  bool? _canPostToGroup;
 
   bool get _isEditMode => widget.initialPost != null;
+
+  bool get _isGroupPost =>
+      !_isEditMode &&
+      widget.groupId != null &&
+      widget.groupId!.trim().isNotEmpty;
 
   Future<void> _openHandDrawEditor() async {
     final data = await Navigator.push<HandDrawCardData>(
@@ -162,6 +169,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
   void initState() {
     super.initState();
     _loadUserInfo();
+    if (_isGroupPost) {
+      _loadGroupPostPermission();
+    }
     // 编辑模式：预填原帖内容
     final init = widget.initialPost;
     if (init != null) {
@@ -198,6 +208,25 @@ class _CreatePostPageState extends State<CreatePostPage> {
     }
   }
 
+  Future<void> _loadGroupPostPermission() async {
+    final gid = widget.groupId?.trim();
+    if (gid == null || gid.isEmpty) return;
+    final uid = AuthService.currentUser;
+    if (uid == null) {
+      if (mounted) setState(() => _canPostToGroup = false);
+      return;
+    }
+    try {
+      final group =
+          await ApiService.getCommunityGroup(groupId: gid, userId: uid);
+      if (!mounted) return;
+      setState(() => _canPostToGroup = group.isJoined);
+    } catch (e) {
+      debugPrint('校验群成员资格失败: $e');
+      if (mounted) setState(() => _canPostToGroup = false);
+    }
+  }
+
   Future<void> _publishPost() async {
     final caption = _contentController.text.trim();
     final hasLocalImages = _selectedImages.isNotEmpty;
@@ -215,6 +244,18 @@ class _CreatePostPageState extends State<CreatePostPage> {
     if (_isEditMode) {
       await _saveEdit(caption);
       return;
+    }
+
+    if (_isGroupPost) {
+      if (_canPostToGroup == null) {
+        await _loadGroupPostPermission();
+      }
+      if (_canPostToGroup != true) {
+        if (mounted) {
+          MoeToast.info(context, '请先加入该群组再发帖');
+        }
+        return;
+      }
     }
 
     final loadingProvider = context.read<LoadingProvider>();
@@ -282,19 +323,28 @@ class _CreatePostPageState extends State<CreatePostPage> {
             created.newAchievements,
           );
         } catch (_) {}
-        return created.post;
+        final apiPost = created.post;
+        // 接口有时不回手绘字段，合并本地已上传数据，避免列表里回放组件布局异常。
+        return apiPost.copyWith(
+          handDrawCardJson: apiPost.handDrawCardJson.isNotEmpty
+              ? apiPost.handDrawCardJson
+              : handJson,
+          handDrawThumbUrl: apiPost.handDrawThumbUrl.isNotEmpty
+              ? apiPost.handDrawThumbUrl
+              : thumbUrl,
+        );
       },
       onSuccess: (createdPost) {
         if (!mounted) return;
         loadingProvider.clearMessages();
+        final msg = widget.groupId != null && widget.groupId!.isNotEmpty
+            ? '已发布并同步到群组 ~(≧∇≦)/~'
+            : '帖子发布成功！(≧∇≦)/';
         Navigator.pop(context, createdPost);
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          loadingProvider.clearMessages();
+          if (!mounted) return;
           final rootCtx = AuthService.navigatorKey.currentContext;
           if (rootCtx != null) {
-            final msg = widget.groupId != null && widget.groupId!.isNotEmpty
-                ? '已发布并同步到群组 ~(≧∇≦)/~'
-                : '帖子发布成功！(≧∇≦)/';
             MoeToast.success(rootCtx, msg);
           }
         });
@@ -375,7 +425,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: Text(
-          _isEditMode ? '编辑动态' : '记录心情',
+          _isEditMode
+              ? '编辑动态'
+              : (_isGroupPost ? '发到本群' : '记录心情'),
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
         ),
         backgroundColor: const Color(0xFFF5F7FA),
@@ -408,7 +460,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
               width: 70,
               child: LoadingButton(
                 operationKey: LoadingKeys.createPost,
-                onPressed: _publishPost,
+                onPressed:
+                    _isGroupPost && _canPostToGroup != true ? null : _publishPost,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
@@ -437,6 +490,34 @@ class _CreatePostPageState extends State<CreatePostPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (_isGroupPost && _canPostToGroup == false)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Material(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info_outline_rounded,
+                                  color: Colors.orange.shade800, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '你还未加入该群组，请先返回群详情页点击「加入」后再发帖。',
+                                  style: TextStyle(
+                                    color: Colors.orange.shade900,
+                                    fontSize: 13,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   // 日期和天气（装饰性）
                   Row(
                     children: [

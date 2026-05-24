@@ -259,14 +259,22 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                 ),
               ] else if (widget.post.handDrawCard != null) ...[
                 if (widget.post.displayCaption.isNotEmpty) const SizedBox(height: 4),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 340),
-                  child: HandDrawCardReplay(
-                    data: widget.post.handDrawCard!,
-                    autoPlay: false,
-                    duration: Duration(
-                      milliseconds: (1600 + widget.post.handDrawCard!.strokes.length * 35)
-                          .clamp(1200, 3800),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _openHandDrawViewer(context, widget.post),
+                    borderRadius: BorderRadius.circular(20),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 280),
+                        child: AspectRatio(
+                          aspectRatio: 3 / 4,
+                          child: HandDrawCardStatic(
+                            data: widget.post.handDrawCard!,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -274,8 +282,8 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                   alignment: Alignment.center,
                   child: TextButton.icon(
                     onPressed: () => _openHandDrawViewer(context, widget.post),
-                    icon: const Icon(Icons.fullscreen_rounded, size: 20),
-                    label: const Text('全屏回放绘画过程'),
+                    icon: const Icon(Icons.play_circle_outline_rounded, size: 20),
+                    label: const Text('回放绘画过程'),
                   ),
                 ),
               ],

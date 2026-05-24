@@ -163,15 +163,25 @@ class _InterestGroupDetailPageState extends State<InterestGroupDetailPage>
   }
 
   Future<void> _postToGroup() async {
-    final g = _group;
-    if (g == null) return;
-    if (!g.isJoined) {
-      MoeToast.info(context, '请先加入群组再发帖');
-      return;
-    }
     final uid = AuthService.currentUser;
     if (uid == null) {
       MoeToast.error(context, '请先登录');
+      return;
+    }
+    CommunityGroup g;
+    try {
+      g = await ApiService.getCommunityGroup(
+        groupId: widget.groupId,
+        userId: uid,
+      );
+      if (!mounted) return;
+      setState(() => _group = g);
+    } catch (e) {
+      if (mounted) MoeToast.error(context, _err(e));
+      return;
+    }
+    if (!g.isJoined) {
+      MoeToast.info(context, '请先加入群组再发帖');
       return;
     }
     final created = await Navigator.push<Post>(

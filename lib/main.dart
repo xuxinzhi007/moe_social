@@ -73,7 +73,8 @@ void _setupErrorHandlers() {
   };
 
   ErrorWidget.builder = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
+    final raw = details.exceptionAsString();
+    final brief = raw.length > 320 ? '${raw.substring(0, 320)}…' : raw;
     return Material(
       color: const Color(0xFFF5F7FA),
       child: SafeArea(
@@ -108,7 +109,7 @@ void _setupErrorHandlers() {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  details.exceptionAsString(),
+                  brief,
                   style: const TextStyle(color: Colors.black87, height: 1.3),
                 ),
                 const SizedBox(height: 10),

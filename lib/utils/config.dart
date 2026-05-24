@@ -13,7 +13,7 @@
 
 class AppConfig {
   /// true = 线上；false = 本地
-  static const bool isProduction = true;
+  static const bool isProduction = false;
 
   /// 线上 API（无末尾 /）
   static const String productionUrl = 'http://47.106.175.49:8888';

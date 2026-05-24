@@ -126,54 +126,71 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return FadeInUp(
-          duration: const Duration(milliseconds: 320),
-          child: Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            decoration: BoxDecoration(
-              color: Theme.of(ctx).cardColor,
-              borderRadius: BorderRadius.circular(28),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '预览手绘卡片',
-                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+        final sheetMaxH = MediaQuery.sizeOf(ctx).height * 0.78;
+        final previewMaxH = MediaQuery.sizeOf(ctx).height * 0.4;
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(ctx).bottom,
+          ),
+          child: FadeInUp(
+            duration: const Duration(milliseconds: 320),
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              decoration: BoxDecoration(
+                color: Theme.of(ctx).cardColor,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: sheetMaxH),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '预览手绘卡片',
+                        style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
-                ),
-                const SizedBox(height: 16),
-                HandDrawCardReplay(
-                  data: data,
-                  autoPlay: true,
-                  duration: Duration(
-                    milliseconds: (1800 + data.strokes.length * 40).clamp(1200, 4000),
+                      const SizedBox(height: 12),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxHeight: previewMaxH),
+                        child: HandDrawCardReplay(
+                          data: data,
+                          autoPlay: true,
+                          showReplayButton: false,
+                          duration: Duration(
+                            milliseconds: (1800 + data.strokes.length * 40)
+                                .clamp(1200, 4000),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('继续画'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: FilledButton(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                Navigator.pop(context, data);
+                              },
+                              child: const Text('使用这张卡片'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text('继续画'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          Navigator.pop(context, data);
-                        },
-                        child: const Text('使用这张卡片'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
         );
