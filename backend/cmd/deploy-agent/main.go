@@ -72,20 +72,18 @@ func main() {
 		log.Printf("cloud SSH %s@%s backend_dir=%s compose=%s",
 			cloud.User, cloud.Host, cloud.BackendDir, cloud.ComposeFile)
 	}
-	dashPath := handler.DashboardPath(cfg.WorkspaceAbs())
-	dashURL := "http://" + cfg.Listen + dashPath
-	if dashPath == "/ops/" {
-		log.Printf("Dashboard: %s  (Moe Ops · React)", dashURL)
-	} else {
-		log.Printf("Dashboard: %s  (Moe Ops · HTML — run: make ops-console-build)", dashURL)
-	}
+	base := "http://" + cfg.Listen
+	log.Printf("devtools: %s/devtools.html", base)
+	log.Printf("deploy-ops (HTML): %s/tools/deploy-ops.html", base)
+	log.Printf("Moe Admin: http://127.0.0.1:5173/ops/  (cd moe-admin && npm run dev)")
 	if browser.ShouldOpen() {
+		openURL := base + handler.DashboardPath(cfg.WorkspaceAbs())
 		go func(url string) {
 			time.Sleep(400 * time.Millisecond)
 			if err := browser.Open(url); err != nil {
 				log.Printf("open browser: %v (open manually: %s)", err, url)
 			}
-		}(dashURL)
+		}(openURL)
 	}
 
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

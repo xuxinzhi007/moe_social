@@ -38,6 +38,13 @@ const (
 	Super_FeishuLogin_FullMethodName                 = "/super.Super/FeishuLogin"
 	Super_WechatAuthorizeURL_FullMethodName          = "/super.Super/WechatAuthorizeURL"
 	Super_WechatLogin_FullMethodName                 = "/super.Super/WechatLogin"
+	Super_SubmitLandingFeedback_FullMethodName       = "/super.Super/SubmitLandingFeedback"
+	Super_ListLandingFeedback_FullMethodName         = "/super.Super/ListLandingFeedback"
+	Super_AdminDashboard_FullMethodName              = "/super.Super/AdminDashboard"
+	Super_AdminLogin_FullMethodName                  = "/super.Super/AdminLogin"
+	Super_AdminListUsers_FullMethodName              = "/super.Super/AdminListUsers"
+	Super_AdminGetUser_FullMethodName                = "/super.Super/AdminGetUser"
+	Super_AdminUpdateUser_FullMethodName             = "/super.Super/AdminUpdateUser"
 	Super_UpsertUserMemory_FullMethodName            = "/super.Super/UpsertUserMemory"
 	Super_GetUserMemories_FullMethodName             = "/super.Super/GetUserMemories"
 	Super_GetUserMemoryProfiles_FullMethodName       = "/super.Super/GetUserMemoryProfiles"
@@ -161,6 +168,13 @@ type SuperClient interface {
 	FeishuLogin(ctx context.Context, in *FeishuLoginReq, opts ...grpc.CallOption) (*FeishuLoginResp, error)
 	WechatAuthorizeURL(ctx context.Context, in *WechatAuthorizeURLReq, opts ...grpc.CallOption) (*WechatAuthorizeURLResp, error)
 	WechatLogin(ctx context.Context, in *WechatLoginReq, opts ...grpc.CallOption) (*WechatLoginResp, error)
+	SubmitLandingFeedback(ctx context.Context, in *SubmitLandingFeedbackReq, opts ...grpc.CallOption) (*SubmitLandingFeedbackResp, error)
+	ListLandingFeedback(ctx context.Context, in *ListLandingFeedbackReq, opts ...grpc.CallOption) (*ListLandingFeedbackResp, error)
+	AdminDashboard(ctx context.Context, in *AdminDashboardReq, opts ...grpc.CallOption) (*AdminDashboardResp, error)
+	AdminLogin(ctx context.Context, in *AdminLoginReq, opts ...grpc.CallOption) (*AdminLoginResp, error)
+	AdminListUsers(ctx context.Context, in *AdminListUsersReq, opts ...grpc.CallOption) (*AdminListUsersResp, error)
+	AdminGetUser(ctx context.Context, in *AdminGetUserReq, opts ...grpc.CallOption) (*AdminGetUserResp, error)
+	AdminUpdateUser(ctx context.Context, in *AdminUpdateUserReq, opts ...grpc.CallOption) (*AdminUpdateUserResp, error)
 	UpsertUserMemory(ctx context.Context, in *UpsertUserMemoryReq, opts ...grpc.CallOption) (*UpsertUserMemoryResp, error)
 	GetUserMemories(ctx context.Context, in *GetUserMemoriesReq, opts ...grpc.CallOption) (*GetUserMemoriesResp, error)
 	GetUserMemoryProfiles(ctx context.Context, in *GetUserMemoryProfilesReq, opts ...grpc.CallOption) (*GetUserMemoryProfilesResp, error)
@@ -467,6 +481,76 @@ func (c *superClient) WechatLogin(ctx context.Context, in *WechatLoginReq, opts 
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(WechatLoginResp)
 	err := c.cc.Invoke(ctx, Super_WechatLogin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) SubmitLandingFeedback(ctx context.Context, in *SubmitLandingFeedbackReq, opts ...grpc.CallOption) (*SubmitLandingFeedbackResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubmitLandingFeedbackResp)
+	err := c.cc.Invoke(ctx, Super_SubmitLandingFeedback_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) ListLandingFeedback(ctx context.Context, in *ListLandingFeedbackReq, opts ...grpc.CallOption) (*ListLandingFeedbackResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListLandingFeedbackResp)
+	err := c.cc.Invoke(ctx, Super_ListLandingFeedback_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminDashboard(ctx context.Context, in *AdminDashboardReq, opts ...grpc.CallOption) (*AdminDashboardResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminDashboardResp)
+	err := c.cc.Invoke(ctx, Super_AdminDashboard_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminLogin(ctx context.Context, in *AdminLoginReq, opts ...grpc.CallOption) (*AdminLoginResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminLoginResp)
+	err := c.cc.Invoke(ctx, Super_AdminLogin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminListUsers(ctx context.Context, in *AdminListUsersReq, opts ...grpc.CallOption) (*AdminListUsersResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminListUsersResp)
+	err := c.cc.Invoke(ctx, Super_AdminListUsers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminGetUser(ctx context.Context, in *AdminGetUserReq, opts ...grpc.CallOption) (*AdminGetUserResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminGetUserResp)
+	err := c.cc.Invoke(ctx, Super_AdminGetUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminUpdateUser(ctx context.Context, in *AdminUpdateUserReq, opts ...grpc.CallOption) (*AdminUpdateUserResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminUpdateUserResp)
+	err := c.cc.Invoke(ctx, Super_AdminUpdateUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1449,6 +1533,13 @@ type SuperServer interface {
 	FeishuLogin(context.Context, *FeishuLoginReq) (*FeishuLoginResp, error)
 	WechatAuthorizeURL(context.Context, *WechatAuthorizeURLReq) (*WechatAuthorizeURLResp, error)
 	WechatLogin(context.Context, *WechatLoginReq) (*WechatLoginResp, error)
+	SubmitLandingFeedback(context.Context, *SubmitLandingFeedbackReq) (*SubmitLandingFeedbackResp, error)
+	ListLandingFeedback(context.Context, *ListLandingFeedbackReq) (*ListLandingFeedbackResp, error)
+	AdminDashboard(context.Context, *AdminDashboardReq) (*AdminDashboardResp, error)
+	AdminLogin(context.Context, *AdminLoginReq) (*AdminLoginResp, error)
+	AdminListUsers(context.Context, *AdminListUsersReq) (*AdminListUsersResp, error)
+	AdminGetUser(context.Context, *AdminGetUserReq) (*AdminGetUserResp, error)
+	AdminUpdateUser(context.Context, *AdminUpdateUserReq) (*AdminUpdateUserResp, error)
 	UpsertUserMemory(context.Context, *UpsertUserMemoryReq) (*UpsertUserMemoryResp, error)
 	GetUserMemories(context.Context, *GetUserMemoriesReq) (*GetUserMemoriesResp, error)
 	GetUserMemoryProfiles(context.Context, *GetUserMemoryProfilesReq) (*GetUserMemoryProfilesResp, error)
@@ -1627,6 +1718,27 @@ func (UnimplementedSuperServer) WechatAuthorizeURL(context.Context, *WechatAutho
 }
 func (UnimplementedSuperServer) WechatLogin(context.Context, *WechatLoginReq) (*WechatLoginResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WechatLogin not implemented")
+}
+func (UnimplementedSuperServer) SubmitLandingFeedback(context.Context, *SubmitLandingFeedbackReq) (*SubmitLandingFeedbackResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SubmitLandingFeedback not implemented")
+}
+func (UnimplementedSuperServer) ListLandingFeedback(context.Context, *ListLandingFeedbackReq) (*ListLandingFeedbackResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListLandingFeedback not implemented")
+}
+func (UnimplementedSuperServer) AdminDashboard(context.Context, *AdminDashboardReq) (*AdminDashboardResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminDashboard not implemented")
+}
+func (UnimplementedSuperServer) AdminLogin(context.Context, *AdminLoginReq) (*AdminLoginResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminLogin not implemented")
+}
+func (UnimplementedSuperServer) AdminListUsers(context.Context, *AdminListUsersReq) (*AdminListUsersResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminListUsers not implemented")
+}
+func (UnimplementedSuperServer) AdminGetUser(context.Context, *AdminGetUserReq) (*AdminGetUserResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminGetUser not implemented")
+}
+func (UnimplementedSuperServer) AdminUpdateUser(context.Context, *AdminUpdateUserReq) (*AdminUpdateUserResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminUpdateUser not implemented")
 }
 func (UnimplementedSuperServer) UpsertUserMemory(context.Context, *UpsertUserMemoryReq) (*UpsertUserMemoryResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpsertUserMemory not implemented")
@@ -2272,6 +2384,132 @@ func _Super_WechatLogin_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SuperServer).WechatLogin(ctx, req.(*WechatLoginReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_SubmitLandingFeedback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SubmitLandingFeedbackReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).SubmitLandingFeedback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_SubmitLandingFeedback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).SubmitLandingFeedback(ctx, req.(*SubmitLandingFeedbackReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_ListLandingFeedback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListLandingFeedbackReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).ListLandingFeedback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_ListLandingFeedback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).ListLandingFeedback(ctx, req.(*ListLandingFeedbackReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminDashboard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminDashboardReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminDashboard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminDashboard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminDashboard(ctx, req.(*AdminDashboardReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminLogin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminLoginReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminLogin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminLogin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminLogin(ctx, req.(*AdminLoginReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminListUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminListUsersReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminListUsers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminListUsers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminListUsers(ctx, req.(*AdminListUsersReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminGetUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminGetUserReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminGetUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminGetUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminGetUser(ctx, req.(*AdminGetUserReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminUpdateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminUpdateUserReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminUpdateUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminUpdateUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminUpdateUser(ctx, req.(*AdminUpdateUserReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4068,6 +4306,34 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "WechatLogin",
 			Handler:    _Super_WechatLogin_Handler,
+		},
+		{
+			MethodName: "SubmitLandingFeedback",
+			Handler:    _Super_SubmitLandingFeedback_Handler,
+		},
+		{
+			MethodName: "ListLandingFeedback",
+			Handler:    _Super_ListLandingFeedback_Handler,
+		},
+		{
+			MethodName: "AdminDashboard",
+			Handler:    _Super_AdminDashboard_Handler,
+		},
+		{
+			MethodName: "AdminLogin",
+			Handler:    _Super_AdminLogin_Handler,
+		},
+		{
+			MethodName: "AdminListUsers",
+			Handler:    _Super_AdminListUsers_Handler,
+		},
+		{
+			MethodName: "AdminGetUser",
+			Handler:    _Super_AdminGetUser_Handler,
+		},
+		{
+			MethodName: "AdminUpdateUser",
+			Handler:    _Super_AdminUpdateUser_Handler,
 		},
 		{
 			MethodName: "UpsertUserMemory",

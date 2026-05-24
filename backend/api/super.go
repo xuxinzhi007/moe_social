@@ -82,6 +82,13 @@ func applyUnifiedConfigOverrides(c *config.Config) {
 	if exp := v.GetInt64("auth.access_expire_seconds"); exp > 0 {
 		c.Auth.AccessExpire = exp
 	}
+	if secret := firstNonEmptyString(v, "admin.jwt_secret"); secret != "" {
+		hours := v.GetInt64("admin.token_expire_hours")
+		if hours <= 0 {
+			hours = 24
+		}
+		_ = utils.ConfigureAdminJWT(secret, hours)
+	}
 	applySuperRpcOverrides(c, v)
 }
 
@@ -143,7 +150,7 @@ func main() {
 		func(header http.Header) {
 			header.Set("Access-Control-Allow-Origin", "*")
 			header.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
-			header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Range")
+			header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Admin-Token, X-Requested-With, Accept, Range")
 			header.Set("Access-Control-Expose-Headers", "Content-Length, Content-Range, Accept-Ranges, X-Model-Sha256")
 			header.Set("Access-Control-Max-Age", "3600")
 		},

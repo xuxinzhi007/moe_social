@@ -119,6 +119,41 @@ func (s *SuperServer) WechatLogin(ctx context.Context, in *super.WechatLoginReq)
 	return l.WechatLogin(in)
 }
 
+func (s *SuperServer) SubmitLandingFeedback(ctx context.Context, in *super.SubmitLandingFeedbackReq) (*super.SubmitLandingFeedbackResp, error) {
+	l := logic.NewSubmitLandingFeedbackLogic(ctx, s.svcCtx)
+	return l.SubmitLandingFeedback(in)
+}
+
+func (s *SuperServer) ListLandingFeedback(ctx context.Context, in *super.ListLandingFeedbackReq) (*super.ListLandingFeedbackResp, error) {
+	l := logic.NewListLandingFeedbackLogic(ctx, s.svcCtx)
+	return l.ListLandingFeedback(in)
+}
+
+func (s *SuperServer) AdminDashboard(ctx context.Context, in *super.AdminDashboardReq) (*super.AdminDashboardResp, error) {
+	l := logic.NewAdminDashboardLogic(ctx, s.svcCtx)
+	return l.AdminDashboard(in)
+}
+
+func (s *SuperServer) AdminLogin(ctx context.Context, in *super.AdminLoginReq) (*super.AdminLoginResp, error) {
+	l := logic.NewAdminLoginLogic(ctx, s.svcCtx)
+	return l.AdminLogin(in)
+}
+
+func (s *SuperServer) AdminListUsers(ctx context.Context, in *super.AdminListUsersReq) (*super.AdminListUsersResp, error) {
+	l := logic.NewAdminListUsersLogic(ctx, s.svcCtx)
+	return l.AdminListUsers(in)
+}
+
+func (s *SuperServer) AdminGetUser(ctx context.Context, in *super.AdminGetUserReq) (*super.AdminGetUserResp, error) {
+	l := logic.NewAdminGetUserLogic(ctx, s.svcCtx)
+	return l.AdminGetUser(in)
+}
+
+func (s *SuperServer) AdminUpdateUser(ctx context.Context, in *super.AdminUpdateUserReq) (*super.AdminUpdateUserResp, error) {
+	l := logic.NewAdminUpdateUserLogic(ctx, s.svcCtx)
+	return l.AdminUpdateUser(in)
+}
+
 func (s *SuperServer) UpsertUserMemory(ctx context.Context, in *super.UpsertUserMemoryReq) (*super.UpsertUserMemoryResp, error) {
 	l := logic.NewUpsertUserMemoryLogic(ctx, s.svcCtx)
 	return l.UpsertUserMemory(in)

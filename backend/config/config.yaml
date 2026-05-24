@@ -11,6 +11,14 @@ auth:
   access_secret: "u8K9x2L1n4Q7v5Z0m3P6r9Y2b5X8j1W4"
   access_expire_seconds: 432000  # 5 天
 
+# Moe Admin 管理后台（本地使用；与 App JWT 分离）
+admin:
+  jwt_secret: "moe-admin-local-jwt-change-me"
+  token_expire_hours: 24
+  bootstrap:
+    username: "admin"
+    password: "admin123"
+
 api:
   # go-zero REST 超时（毫秒）。LLM 首次加载模型可能较慢，建议 >= 180000
   timeout_ms: 600000

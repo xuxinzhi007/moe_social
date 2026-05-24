@@ -41,6 +41,7 @@ type User {
 	FeishuEmail            string `json:"feishu_email,optional"`
 	FeishuName             string `json:"feishu_name,optional"`
 	FeishuBound            bool   `json:"feishu_bound,optional"`
+	Role                   string `json:"role,optional"`
 }
 
 // VIP套餐相关结构
@@ -934,6 +935,45 @@ type FeishuPublicConfigData {
 	Notice              string `json:"notice,omitempty"`
 }
 
+// 官网落地页反馈（无需登录）
+type SubmitLandingFeedbackReq {
+	Email    string `json:"email"`
+	Category string `json:"category,optional"` // feature | bug | other
+	Content  string `json:"content"`
+	Source   string `json:"source,optional"`
+}
+
+type SubmitLandingFeedbackResp {
+	BaseResp
+}
+
+type LandingFeedbackItem {
+	Id        uint64 `json:"id"`
+	Email     string `json:"email"`
+	Category  string `json:"category"`
+	Content   string `json:"content"`
+	Source    string `json:"source"`
+	ClientIp  string `json:"client_ip,optional"`
+	UserAgent string `json:"user_agent,optional"`
+	CreatedAt string `json:"created_at"`
+}
+
+type ListLandingFeedbackReq {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=20"`
+	Category string `form:"category,optional"`
+}
+
+type ListLandingFeedbackData {
+	Items []LandingFeedbackItem `json:"items"`
+	Total int                   `json:"total"`
+}
+
+type ListLandingFeedbackResp {
+	BaseResp
+	Data ListLandingFeedbackData `json:"data"`
+}
+
 type BindFeishuReq {
 	FeishuEmail string `json:"feishu_email"`
 }
@@ -1269,6 +1309,136 @@ service Super {
 
 	@handler getFriendStatus
 	get /api/user/:user_id/friends/status/:other_user_id (FriendStatusPathReq) returns (FriendStatusResp)
+}
+
+// 官网落地页（无需 JWT）
+@server (
+	group: landing
+)
+service Super {
+	@handler submitLandingFeedback
+	post /api/landing/feedback (SubmitLandingFeedbackReq) returns (SubmitLandingFeedbackResp)
+}
+
+// 运维：官网反馈列表（本机/内网运维台使用，无需 App JWT）
+@server (
+	group: ops
+)
+service Super {
+	@handler listLandingFeedback
+	get /api/ops/landing/feedback (ListLandingFeedbackReq) returns (ListLandingFeedbackResp)
+}
+
+// 管理员平台（Moe Admin，使用 X-Admin-Token，非 App JWT）
+type AdminLoginReq {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type AdminLoginData {
+	Token    string `json:"token"`
+	AdminId  uint64 `json:"admin_id"`
+	Username string `json:"username"`
+	Role     string `json:"role"`
+	ExpireAt int64  `json:"expire_at"`
+}
+
+type AdminLoginResp {
+	BaseResp
+	Data AdminLoginData `json:"data"`
+}
+
+type AdminMeData {
+	AdminId  uint64 `json:"admin_id"`
+	Username string `json:"username"`
+	Role     string `json:"role"`
+}
+
+type AdminMeResp {
+	BaseResp
+	Data AdminMeData `json:"data"`
+}
+
+type AdminDashboardData {
+	LandingFeedbackTotal int    `json:"landing_feedback_total"`
+	UserTotal            int    `json:"user_total"`
+	ServerTime           string `json:"server_time"`
+	FeishuEnabled        bool   `json:"feishu_enabled"`
+}
+
+type AdminDashboardResp {
+	BaseResp
+	Data AdminDashboardData `json:"data"`
+}
+
+type AdminListUsersReq {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=20"`
+	Keyword  string `form:"keyword,optional"`
+}
+
+type AdminListUsersData {
+	Items []User `json:"items"`
+	Total int    `json:"total"`
+}
+
+type AdminListUsersResp {
+	BaseResp
+	Data AdminListUsersData `json:"data"`
+}
+
+type AdminGetUserReq {
+	UserId uint64 `path:"user_id"`
+}
+
+type AdminGetUserResp {
+	BaseResp
+	Data User `json:"data"`
+}
+
+type AdminUpdateUserReq {
+	UserId          uint64 `path:"user_id"`
+	Role            string `json:"role,optional"`
+	IsVip           bool   `json:"is_vip,optional"`
+	UpdateIsVip     bool   `json:"update_is_vip,optional"`
+	Signature       string `json:"signature,optional"`
+	UpdateSignature bool   `json:"update_signature,optional"`
+}
+
+type AdminUpdateUserResp {
+	BaseResp
+	Data User `json:"data"`
+}
+
+@server (
+	group: admin_public
+)
+service Super {
+	@handler adminLogin
+	post /api/admin/login (AdminLoginReq) returns (AdminLoginResp)
+}
+
+@server (
+	group: admin
+)
+service Super {
+	@handler adminMe
+	get /api/admin/me (EmptyReq) returns (AdminMeResp)
+
+	@handler adminDashboard
+	get /api/admin/dashboard (EmptyReq) returns (AdminDashboardResp)
+
+	@handler adminListUsers
+	get /api/admin/users (AdminListUsersReq) returns (AdminListUsersResp)
+
+	@handler adminGetUser
+	get /api/admin/users/:user_id (AdminGetUserReq) returns (AdminGetUserResp)
+
+	@handler adminUpdateUser
+	put /api/admin/users/:user_id (AdminUpdateUserReq) returns (AdminUpdateUserResp)
+
+	@handler adminListLandingFeedback
+	get /api/admin/landing/feedback (ListLandingFeedbackReq) returns (ListLandingFeedbackResp)
 }
 
 // VIP相关API服务

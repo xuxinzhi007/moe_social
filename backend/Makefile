@@ -4,7 +4,7 @@
 
 .PHONY: all gen gen-rpc gen-api gen-swagger build build-linux env-status \
 
-	deploy-agent deploy-agent-stop ops-console-install ops-console-dev ops-console-build \
+	deploy-agent deploy-agent-stop admin \
 
 	rpc api rpc-debug rpc-migrate rpc-monitor rpc-monitor-stop \
 
@@ -116,55 +116,28 @@ rpc-debug:
 
 deploy-config-init:
 
-	@if [ ! -f deploy/config.yaml ]; then cp deploy/config.example.yaml deploy/config.yaml && echo "created deploy/config.yaml — please edit token"; else echo "deploy/config.yaml already exists (not overwritten)"; fi
-
-
-
-# 开发者 / 运维统一工具台（Moe 专属 :19010，见 docs/dev/ports.md）
-# 默认打开 React 运维台（/ops/）；无 dist 时自动构建；HTML 版仍可通过 /tools/deploy-ops.html
-
-deploy-agent: ops-console-build-if-needed
-
-	go run ./cmd/deploy-agent -f deploy/config.yaml
-
-
-
-# 仅当 ops-console/dist 不存在时构建（避免每次 npm ci）
-ops-console-build-if-needed:
-
 ifeq ($(OS),Windows_NT)
-	@if not exist "..\ops-console\dist\index.html" (\
-		echo [deploy-agent] building React ops-console... && \
-		cd ../ops-console && if not exist node_modules npm ci && npm run build\
-	) else (echo [deploy-agent] using existing ops-console/dist)
+	@if not exist deploy\config.yaml (copy deploy\config.example.yaml deploy\config.yaml && echo created deploy/config.yaml — please edit token) else (echo deploy/config.yaml already exists (not overwritten))
 else
-	@if [ ! -f ../ops-console/dist/index.html ]; then \
-		echo "[deploy-agent] building React ops-console..."; \
-		cd ../ops-console && ( [ -d node_modules ] || npm ci ) && npm run build; \
-	else \
-		echo "[deploy-agent] using existing ops-console/dist"; \
-	fi
+	@if [ ! -f deploy/config.yaml ]; then cp deploy/config.example.yaml deploy/config.yaml && echo "created deploy/config.yaml — please edit token"; else echo "deploy/config.yaml already exists (not overwritten)"; fi
 endif
 
 
 
-ops-console-install:
+# Deploy Agent（:19010）：Deploy API、admin 代理、RPC debug、docs/dev；不构建/不打开 Moe Admin
+# 管理台：cd moe-admin && npm run dev → :5173/ops/
 
-	cd ../ops-console && npm ci
+deploy-agent:
 
+	go run ./cmd/deploy-agent -f deploy/config.yaml
 
-
-ops-console-dev:
-
-	cd ../ops-console && npm run dev
-
-
-
-ops-console-build:
-
-	cd ../ops-console && npm ci && npm run build
-
-
+admin:
+ifeq ($(OS),Windows_NT)
+	@powershell -ExecutionPolicy Bypass -File ../scripts/start-admin.ps1
+else
+	@chmod +x ../scripts/start-admin.sh ../scripts/stop-admin.sh 2>/dev/null || true
+	@../scripts/start-admin.sh
+endif
 
 deploy-agent-stop:
 
@@ -256,13 +229,13 @@ help:
 
 	@echo --- 开发工具（独立进程）---
 
-	@echo make deploy-agent      - 统一工具台 (:19010)，自动打开 React /ops/
+	@echo make deploy-agent      - Deploy Agent (:19010)，仅网关与运维 API
 
 	@echo make deploy-agent-stop - 释放 Agent 端口
 
-	@echo make ops-console-dev   - React 运维台开发 (:5173/ops/)
+	@echo make admin             - RPC+API+Agent+Moe Admin 一键启动
 
-	@echo make ops-console-build - 构建 React 运维台 → Agent /ops/
+	@echo Moe Admin 前端: cd moe-admin && npm run dev  (:5173/ops/)
 
 	@echo make rpc-debug         - RPC debug API (:19011)
 

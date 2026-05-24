@@ -6,8 +6,8 @@
 |------|------|----------|------|
 | **8080** | RPC 业务 | `go run ./rpc/super.go` / `make rpc` | gRPC |
 | **8888** | API 业务 | `make api` | HTTP REST |
-| **19010** | 开发者工具台 | `make deploy-agent` | 默认 **React** `/ops/`（无 dist 时自动 build）；`/` 会跳转；HTML 备用见 `/tools/deploy-ops.html` |
-| **5173** | React 运维台（开发） | `make ops-console-dev` | Vite 热更新，代理 `/api` → :19010 |
+| **19010** | Deploy Agent 网关 | `make deploy-agent` | Deploy API、`/api/deploy/admin` 代理、RPC debug、`/tools/deploy-ops.html`；**不**自动构建/打开 Moe Admin |
+| **5173** | Moe Admin（开发） | `make moe-admin-dev` | Vite 热更新；业务 `/api/admin` → :8888，运维 `/api/deploy` → :19010 |
 | **19011** | RPC debug API | `make rpc-debug` | pprof / `/debug/live`（进程内） |
 | **19012** | 文档静态站（可选） | `make dev-docs` | 无 Agent 时的纯静态预览 |
 
@@ -16,7 +16,8 @@ Deploy Agent 配置：`backend/deploy/config.yaml` → `listen` / `rpc_debug_ups
 
 **推荐日常流程**
 
-1. `make deploy-agent` → 自动打开 http://127.0.0.1:19010/ops/（React；首次会自动 `npm run build`）
-2. React 日常开发：`make ops-console-dev` → http://127.0.0.1:5173/ops/
-3. 侧栏进入 **RPC 监控**；需另开 `make rpc-debug`
-4. 飞书 / 记忆等扩展工具：侧栏底部链接或 `/devtools.html`
+1. **管理台**：`cd moe-admin && npm run dev` → http://127.0.0.1:5173/ops/（需 RPC + API）
+2. **运维能力**（构建/发布/RPC 监控）：另开 `make deploy-agent` → :19010
+3. 侧栏 **RPC 监控** 需 `make rpc-debug`
+4. 一键全栈：`make admin`（或 `scripts/start-admin.*`）
+5. 生产构建（按需）：`cd moe-admin && npm run build`，由你自己的静态托管或 CI 发布

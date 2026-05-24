@@ -31,6 +31,86 @@ type AchievementUnlock struct {
 	NewLevel   int    `json:"new_level"`
 }
 
+type AdminDashboardData struct {
+	LandingFeedbackTotal int    `json:"landing_feedback_total"`
+	UserTotal            int    `json:"user_total"`
+	ServerTime           string `json:"server_time"`
+	FeishuEnabled        bool   `json:"feishu_enabled"`
+}
+
+type AdminDashboardResp struct {
+	BaseResp
+	Data AdminDashboardData `json:"data"`
+}
+
+type AdminGetUserReq struct {
+	UserId uint64 `path:"user_id"`
+}
+
+type AdminGetUserResp struct {
+	BaseResp
+	Data User `json:"data"`
+}
+
+type AdminListUsersData struct {
+	Items []User `json:"items"`
+	Total int    `json:"total"`
+}
+
+type AdminListUsersReq struct {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=20"`
+	Keyword  string `form:"keyword,optional"`
+}
+
+type AdminListUsersResp struct {
+	BaseResp
+	Data AdminListUsersData `json:"data"`
+}
+
+type AdminLoginData struct {
+	Token    string `json:"token"`
+	AdminId  uint64 `json:"admin_id"`
+	Username string `json:"username"`
+	Role     string `json:"role"`
+	ExpireAt int64  `json:"expire_at"`
+}
+
+type AdminLoginReq struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type AdminLoginResp struct {
+	BaseResp
+	Data AdminLoginData `json:"data"`
+}
+
+type AdminMeData struct {
+	AdminId  uint64 `json:"admin_id"`
+	Username string `json:"username"`
+	Role     string `json:"role"`
+}
+
+type AdminMeResp struct {
+	BaseResp
+	Data AdminMeData `json:"data"`
+}
+
+type AdminUpdateUserReq struct {
+	UserId          uint64 `path:"user_id"`
+	Role            string `json:"role,optional"`
+	IsVip           bool   `json:"is_vip,optional"`
+	UpdateIsVip     bool   `json:"update_is_vip,optional"`
+	Signature       string `json:"signature,optional"`
+	UpdateSignature bool   `json:"update_signature,optional"`
+}
+
+type AdminUpdateUserResp struct {
+	BaseResp
+	Data User `json:"data"`
+}
+
 type AiAgentsResp struct {
 	BaseResp
 	Data []map[string]interface{} `json:"data"`
@@ -1087,6 +1167,17 @@ type JoinGroupReq struct {
 	UserId  string `json:"user_id"`
 }
 
+type LandingFeedbackItem struct {
+	Id        uint64 `json:"id"`
+	Email     string `json:"email"`
+	Category  string `json:"category"`
+	Content   string `json:"content"`
+	Source    string `json:"source"`
+	ClientIp  string `json:"client_ip,optional"`
+	UserAgent string `json:"user_agent,optional"`
+	CreatedAt string `json:"created_at"`
+}
+
 type LeaveGroupReq struct {
 	GroupId string `path:"group_id"`
 	UserId  string `json:"user_id"`
@@ -1120,6 +1211,22 @@ type ListFriendRequestsResp struct {
 type ListFriendsResp struct {
 	BaseResp
 	Data []User `json:"data"`
+}
+
+type ListLandingFeedbackData struct {
+	Items []LandingFeedbackItem `json:"items"`
+	Total int                   `json:"total"`
+}
+
+type ListLandingFeedbackReq struct {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=20"`
+	Category string `form:"category,optional"`
+}
+
+type ListLandingFeedbackResp struct {
+	BaseResp
+	Data ListLandingFeedbackData `json:"data"`
 }
 
 type ListPrivateConversationsReq struct {
@@ -1487,6 +1594,17 @@ type SendPrivateMessageResp struct {
 	Data PrivateMessageItem `json:"data"`
 }
 
+type SubmitLandingFeedbackReq struct {
+	Email    string `json:"email"`
+	Category string `json:"category,optional"` // feature | bug | other
+	Content  string `json:"content"`
+	Source   string `json:"source,optional"`
+}
+
+type SubmitLandingFeedbackResp struct {
+	BaseResp
+}
+
 type SubmitUserMemoryFeedbackReq struct {
 	UserId         string `path:"user_id"`
 	Key            string `json:"key"`
@@ -1691,6 +1809,7 @@ type User struct {
 	FeishuEmail            string  `json:"feishu_email,optional"`
 	FeishuName             string  `json:"feishu_name,optional"`
 	FeishuBound            bool    `json:"feishu_bound,optional"`
+	Role                   string  `json:"role,optional"`
 }
 
 type UserAvatar struct {
