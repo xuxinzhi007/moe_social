@@ -42,3 +42,32 @@ String? readFeishuCodeFromCurrentUrl() {
   if (fromFrag != null && fromFrag.isNotEmpty) return fromFrag;
   return null;
 }
+
+/// 检测授权 URL 里的 redirect_uri 是否与当前 App 请求的 API 主机一致。
+String? feishuRedirectConfigMismatchHint(String authorizeUrl, String apiBaseUrl) {
+  final authUri = Uri.tryParse(authorizeUrl);
+  final apiUri = Uri.tryParse(apiBaseUrl);
+  if (authUri == null || apiUri == null || apiUri.host.isEmpty) return null;
+
+  final redirectRaw = authUri.queryParameters['redirect_uri'];
+  if (redirectRaw == null || redirectRaw.isEmpty) return null;
+  final redirectUri = Uri.tryParse(redirectRaw);
+  if (redirectUri == null || redirectUri.host.isEmpty) return null;
+
+  if (redirectUri.host == apiUri.host) return null;
+
+  final isLocalRedirect =
+      redirectUri.host == '127.0.0.1' || redirectUri.host == 'localhost';
+  final isRemoteApi =
+      apiUri.host != '127.0.0.1' && apiUri.host != 'localhost';
+
+  if (isLocalRedirect && isRemoteApi) {
+    return '飞书回调仍指向本机（${redirectUri.host}），但 App 正在访问 $apiBaseUrl。\n'
+        '请在服务器 config.yaml 将 feishu.redirect_uri 改为：\n'
+        '$apiBaseUrl/api/auth/feishu/callback\n'
+        '并在飞书开放平台添加相同重定向 URL 后重启 API/RPC。';
+  }
+
+  return '飞书回调域名（${redirectUri.host}）与当前 API（${apiUri.host}）不一致，'
+      '请检查服务端 feishu.redirect_uri 与飞书开放平台配置。';
+}

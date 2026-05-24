@@ -19,6 +19,8 @@ import '../../widgets/email_completion_bubble.dart';
 import '../../widgets/feishu_enterprise_invite_banner.dart';
 import '../../utils/feishu_app_launcher.dart';
 import '../../utils/feishu_oauth_helper.dart';
+import 'feishu_login_page.dart';
+import 'feishu_login_result.dart';
 import '../../utils/feishu_web_history.dart';
 import '../../utils/feishu_web_redirect.dart';
 import '../../utils/wechat_app_launcher.dart';
@@ -162,6 +164,11 @@ class _LoginPageState extends State<LoginPage> {
         final url = await ApiService.getFeishuAuthorizeUrl(
           state: buildFeishuOAuthState(),
         );
+        final hint = feishuRedirectConfigMismatchHint(url, ApiService.baseUrl);
+        if (hint != null && mounted) {
+          MoeToast.error(context, hint);
+          return;
+        }
         navigateBrowserToFeishuAuthorize(url);
       } catch (e) {
         if (mounted) MoeToast.error(context, '无法打开飞书授权：$e');
@@ -169,25 +176,50 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    final installed = await FeishuAppLauncher.isFeishuInstalled();
-    if (!mounted) return;
-    if (!installed) {
-      MoeToast.error(context, '未安装飞书 App，请先安装飞书客户端');
-      return;
-    }
-
     try {
       final url = await ApiService.getFeishuAuthorizeUrl(
         state: buildFeishuOAuthState(),
       );
-      final opened = await FeishuAppLauncher.openOAuthAuthorize(url);
+      final hint = feishuRedirectConfigMismatchHint(url, ApiService.baseUrl);
       if (!mounted) return;
-      if (!opened) {
-        MoeToast.error(context, '无法打开飞书，请稍后重试');
+      if (hint != null) {
+        MoeToast.error(context, hint);
+        return;
       }
+
+      final installed = await FeishuAppLauncher.isFeishuInstalled();
+      if (!mounted) return;
+
+      if (installed) {
+        final opened = await FeishuAppLauncher.openOAuthAuthorize(url);
+        if (!mounted) return;
+        if (opened) {
+          MoeToast.info(
+            context,
+            '请在飞书中完成授权；若只打开浏览器且无法回到 App，请返回后再次点击飞书登录',
+          );
+          return;
+        }
+      }
+
+      await _feishuLoginInAppWebView();
     } catch (e) {
       if (mounted) MoeToast.error(context, '无法打开飞书授权：$e');
     }
+  }
+
+  /// App 内 WebView 授权（回调走服务端 /api/auth/feishu/callback，再 302 到深链或带回 code）。
+  Future<void> _feishuLoginInAppWebView() async {
+    final result = await Navigator.of(context).push<FeishuLoginResult>(
+      MaterialPageRoute(builder: (_) => const FeishuLoginPage()),
+    );
+    if (!mounted || result == null) return;
+    if (result.errorMessage != null && result.errorMessage!.isNotEmpty) {
+      MoeToast.error(context, result.errorMessage!);
+      return;
+    }
+    if (!result.hasAuthCode) return;
+    await _completeFeishuLoginWithCode(result.authCode);
   }
 
   Future<void> _tryResumeWechatOAuthFromUrl() async {

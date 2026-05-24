@@ -76,7 +76,10 @@ class _AchievementUnlockNotificationState
   Widget build(BuildContext context) {
     final badge = widget.badge;
 
-    return AnimatedBuilder(
+    // Overlay 插入时没有 Scaffold/Material 祖先，InkWell/IconButton 会崩溃。
+    return Material(
+      type: MaterialType.transparency,
+      child: AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         return Transform(
@@ -155,10 +158,9 @@ class _AchievementUnlockNotificationState
                         ),
                         if (widget.onView != null) ...[
                           const SizedBox(height: 8),
-                          InkWell(
+                          GestureDetector(
                             onTap: widget.onView,
-                            borderRadius: BorderRadius.circular(12),
-                            child: Ink(
+                            child: Container(
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.22),
                                 borderRadius: BorderRadius.circular(12),
@@ -197,6 +199,7 @@ class _AchievementUnlockNotificationState
           ),
         );
       },
+    ),
     );
   }
 }
@@ -214,28 +217,32 @@ class AchievementNotificationManager {
     _currentEntry?.remove();
 
     // 创建新的通知
+    final theme = Theme.of(context);
     _currentEntry = OverlayEntry(
-      builder: (context) {
+      builder: (overlayContext) {
         return Positioned(
           bottom: 24,
           right: 0,
           left: 0,
           child: Align(
             alignment: Alignment.bottomCenter,
-            child: AchievementUnlockNotification(
-              badge: badge,
-              onView: onView,
-              onClose: () {
-                _currentEntry?.remove();
-                _currentEntry = null;
-              },
+            child: Theme(
+              data: theme,
+              child: AchievementUnlockNotification(
+                badge: badge,
+                onView: onView,
+                onClose: () {
+                  _currentEntry?.remove();
+                  _currentEntry = null;
+                },
+              ),
             ),
           ),
         );
       },
     );
 
-    final overlay = Overlay.maybeOf(context);
+    final overlay = Overlay.maybeOf(context, rootOverlay: true);
     if (overlay == null) return;
     overlay.insert(_currentEntry!);
   }

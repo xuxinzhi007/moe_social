@@ -22,15 +22,27 @@ type FeishuOAuthUserInfo struct {
 	Avatar  string
 }
 
+// FeishuOAuthRedirectURI 回调地址；未配置 feishu.redirect_uri 时用 api.public_base_url 拼接。
+func FeishuOAuthRedirectURI() string {
+	if u := strings.TrimSpace(viper.GetString("feishu.redirect_uri")); u != "" {
+		return u
+	}
+	base := strings.TrimRight(strings.TrimSpace(viper.GetString("api.public_base_url")), "/")
+	if base == "" {
+		return ""
+	}
+	return base + "/api/auth/feishu/callback"
+}
+
 // FeishuOAuthAuthorizeURL 生成飞书网页授权地址。
 func FeishuOAuthAuthorizeURL(state string) (string, error) {
 	appID := strings.TrimSpace(viper.GetString("feishu.app_id"))
-	redirectURI := strings.TrimSpace(viper.GetString("feishu.redirect_uri"))
+	redirectURI := FeishuOAuthRedirectURI()
 	if appID == "" {
 		return "", fmt.Errorf("feishu app_id is empty")
 	}
 	if redirectURI == "" {
-		return "", fmt.Errorf("feishu redirect_uri is empty")
+		return "", fmt.Errorf("feishu redirect_uri is empty (set feishu.redirect_uri or api.public_base_url)")
 	}
 	if state == "" {
 		state = "moe_social"
@@ -55,7 +67,7 @@ func ExchangeFeishuOAuthCode(ctx context.Context, code string) (FeishuOAuthUserI
 	}
 	appID := strings.TrimSpace(viper.GetString("feishu.app_id"))
 	appSecret := strings.TrimSpace(viper.GetString("feishu.app_secret"))
-	redirectURI := strings.TrimSpace(viper.GetString("feishu.redirect_uri"))
+	redirectURI := FeishuOAuthRedirectURI()
 	if appID == "" || appSecret == "" {
 		return FeishuOAuthUserInfo{}, fmt.Errorf("feishu app credentials missing")
 	}
