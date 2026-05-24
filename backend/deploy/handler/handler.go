@@ -56,6 +56,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/deploy/releases", h.withCORS(h.auth(h.releases)))
 	mux.HandleFunc("/api/deploy/jobs", h.withCORS(h.auth(h.jobsRoot)))
 	mux.HandleFunc("/api/deploy/jobs/", h.withCORS(h.auth(h.jobByID)))
+	mux.HandleFunc("/api/deploy/build-cache", h.withCORS(h.auth(h.buildCache)))
 }
 
 func (h *Handler) health(w http.ResponseWriter, r *http.Request) {
@@ -84,9 +85,10 @@ func (h *Handler) info(w http.ResponseWriter, r *http.Request) {
 			"ssh_note":    "云平台：config.yaml 配置 identity_file 或 password；推荐 ssh-copy-id 后只用密钥",
 		},
 		"paths": map[string]string{
-			"workspace": h.Cfg.WorkspaceAbs(),
-			"backend":   h.Cfg.BackendAbs(),
-			"compose":   h.Cfg.ComposeFileAbs(),
+			"workspace":    h.Cfg.WorkspaceAbs(),
+			"backend":      h.Cfg.BackendAbs(),
+			"compose":      h.Cfg.ComposeFileAbs(),
+			"build_cache":  h.Cfg.BuildCacheAbs(),
 		},
 		"cloud_deploy": map[string]any{
 			"backend_dir":  cloud.BackendDir,

@@ -119,8 +119,10 @@
       },
       rpc: {
         label: "RPC 性能监控",
-        src: "/?page=rpc",
-        hint: "Moe Ops 侧栏「RPC 监控」；需 make rpc-debug。",
+        src: "tools/rpc-monitor.html",
+        agentSrc: "http://127.0.0.1:19010/?page=rpc",
+        hint: "Moe Ops 侧栏「RPC 监控」；需 make rpc-debug + make deploy-agent。",
+        preferAgent: true,
       },
       memory: {
         label: "记忆系统监控",
@@ -129,9 +131,10 @@
       },
       deploy: {
         label: "运维部署中心",
-        src: "/",
-        hint: "make deploy-agent 后直接打开 http://127.0.0.1:19010/",
-        preferAgent: false,
+        src: "tools/deploy-ops.html",
+        agentSrc: "http://127.0.0.1:19010/",
+        hint: "完整功能需 make deploy-agent → http://127.0.0.1:19010/；静态预览仅可看 UI。",
+        preferAgent: true,
       },
     };
 
@@ -181,7 +184,7 @@
     function resolveOpenUrl(id) {
       const tool = TOOLS[id];
       if (!tool) return null;
-      if (id === "deploy" && tool.agentSrc) return tool.agentSrc;
+      if (tool.preferAgent && tool.agentSrc) return tool.agentSrc;
       return new URL(tool.src, window.location.href).href;
     }
 

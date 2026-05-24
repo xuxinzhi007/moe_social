@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'voice_call_page.dart';
+import 'voice_call_launcher.dart';
 import '../../services/api_service.dart';
 import '../../utils/media_url.dart';
 import '../../widgets/moe_toast.dart';
@@ -22,17 +22,13 @@ class VoiceCallReceivingPage extends StatelessWidget {
     try {
       // 调用后端API接听呼叫
       await ApiService.answerCall(callId);
-      
+
       // 跳转到通话页面
-      Navigator.pushReplacement(
+      await replaceWithVoiceCallPage(
         context,
-        MaterialPageRoute(
-          builder: (context) => VoiceCallPage(
-            channelName: callId,
-            userName: callerName,
-            userAvatar: callerAvatar,
-          ),
-        ),
+        channelName: callId,
+        userName: callerName,
+        userAvatar: callerAvatar,
       );
     } catch (e) {
       _showError(context, '接听呼叫失败: $e');
@@ -68,7 +64,8 @@ class VoiceCallReceivingPage extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             callerName,
-            style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+                color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 32),
           CircleAvatar(
@@ -94,7 +91,8 @@ class VoiceCallReceivingPage extends StatelessWidget {
                     color: Colors.red,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.call_end, color: Colors.white, size: 32),
+                  child:
+                      const Icon(Icons.call_end, color: Colors.white, size: 32),
                 ),
               ),
               GestureDetector(

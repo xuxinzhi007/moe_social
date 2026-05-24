@@ -272,15 +272,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
           moodTag: _selectedMoodTag ?? '',
         );
 
-        final created = await ApiService.createPostWithUnlocks(newPost);
-        final groupId = widget.groupId;
-        if (groupId != null && groupId.isNotEmpty) {
-          await ApiService.linkPostToGroup(
-            groupId: groupId,
-            postId: created.post.id,
-            userId: userId,
-          );
-        }
+        final created = await ApiService.createPostWithUnlocks(
+          newPost,
+          groupId: widget.groupId,
+        );
         try {
           await AchievementHooks.handleServerUnlocks(
             userId,

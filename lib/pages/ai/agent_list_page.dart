@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/ai_character_card_service.dart';
 import '../../services/ai_chat_gateway_service.dart';
 import '../../services/ai_agent_cloud_service.dart';
+import '../../services/ai_platform_local_provider.dart';
 import '../../services/ai_provider_service.dart';
 import '../../services/ai_starter_templates.dart';
 import '../../models/ai_agent.dart';
@@ -53,9 +55,10 @@ class _AgentListPageState extends State<AgentListPage>
   List<String> _squareModels = [];
   bool _isLoadingSquareModels = false;
   List<AiProviderProfile> _providerProfiles = [
-    AiProviderProfile.builtinLocalGguf(),
+    AiPlatformLocalProvider.defaultBuiltinProfileSync(),
   ];
-  String _selectedSquareProviderId = AiProviderProfile.builtinLocalGgufId;
+  String _selectedSquareProviderId =
+      AiPlatformLocalProvider.defaultBuiltinProviderId;
   Map<String, Color> _agentColors = {};
   bool _showFab = true;
 
@@ -129,7 +132,7 @@ class _AgentListPageState extends State<AgentListPage>
 
   String _normalizeProviderId(String? providerId) {
     if (providerId == null || providerId.trim().isEmpty) {
-      return AiProviderProfile.builtinLocalGgufId;
+      return AiPlatformLocalProvider.defaultBuiltinProviderId;
     }
     return providerId.trim();
   }
@@ -142,22 +145,21 @@ class _AgentListPageState extends State<AgentListPage>
   AiProviderProfile _resolveProviderById(String? providerId) {
     if (providerId == null || providerId.trim().isEmpty) {
       return _providerProfiles.firstWhere(
-        (p) => p.isLocalGguf,
-        orElse: () => AiProviderProfile.builtinLocalGguf(),
+        (p) => p.isLlamaCppServer,
+        orElse: () => AiPlatformLocalProvider.defaultBuiltinProfileSync(),
       );
     }
     final normalized = providerId.trim();
     for (final profile in _providerProfiles) {
       if (profile.id == normalized) return profile;
     }
-    return AiProviderProfile.builtinLocalGguf();
+    return AiPlatformLocalProvider.defaultBuiltinProfileSync();
   }
 
   AiProviderProfile get _selectedSquareProvider =>
       _resolveProviderById(_selectedSquareProviderId);
 
   String _providerSourceLabel(AiProviderProfile profile) {
-    if (profile.isLocalGguf) return 'App 内 llama.cpp';
     if (profile.isLlamaCppServer) return '本机 llama-server';
     if (profile.isBuiltinBackend) return '服务器 Ollama';
     return '我的 API';
@@ -172,7 +174,8 @@ class _AgentListPageState extends State<AgentListPage>
       final preferredId = lastSelected ?? _selectedSquareProviderId;
       final exists = profiles.any((item) => item.id == preferredId);
       if (!exists) {
-        _selectedSquareProviderId = AiProviderProfile.builtinLocalGgufId;
+        _selectedSquareProviderId =
+            AiPlatformLocalProvider.defaultBuiltinProviderId;
       } else {
         _selectedSquareProviderId = preferredId;
       }

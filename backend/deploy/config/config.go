@@ -1,4 +1,4 @@
-package config
+﻿package config
 
 import (
 	"backend/devports"
@@ -19,14 +19,15 @@ type Config struct {
 	ComposeFile       string `mapstructure:"compose_file"`
 	JobTimeoutSeconds int    `mapstructure:"job_timeout_seconds"`
 	RpcDebugUpstream  string `mapstructure:"rpc_debug_upstream"`
-	// WindowsShell: auto | git-bash | cmd — 本机任务用哪种 shell（auto 检测到 Git 则用 Git Bash）
-	WindowsShell string `mapstructure:"windows_shell"`
-	// LocalPathExtra 追加到本机任务 PATH 最前（Win 用 ; 分隔，Mac/Linux 用 :）
-	LocalPathExtra string         `mapstructure:"local_path_extra"`
+	WindowsShell   string `mapstructure:"windows_shell"`
+	LocalPathExtra string `mapstructure:"local_path_extra"`
+	BuildCacheDir  string `mapstructure:"build_cache_dir"`
 	GitHub         GitHubConfig   `mapstructure:"github"`
 	Targets        []DeployTarget `mapstructure:"targets"`
 	workspaceAbs   string
 	backendAbs     string
+	buildCacheAbs  string
+	configDir      string
 }
 
 // GitHubConfig optional integration for Releases / Actions.
@@ -49,10 +50,10 @@ func Load(path string) (*Config, error) {
 		v2 := viper.New()
 		v2.SetConfigFile(localPath)
 		if err := v2.ReadInConfig(); err != nil {
-			return nil, fmt.Errorf("读取 config.local.yaml: %w", err)
+			return nil, fmt.Errorf("璇诲彇 config.local.yaml: %w", err)
 		}
 		if err := v.MergeConfigMap(v2.AllSettings()); err != nil {
-			return nil, fmt.Errorf("合并 config.local.yaml: %w", err)
+			return nil, fmt.Errorf("鍚堝苟 config.local.yaml: %w", err)
 		}
 	}
 	var c Config
@@ -82,6 +83,7 @@ func Load(path string) (*Config, error) {
 	}
 
 	configDir := filepath.Dir(path)
+	c.configDir = configDir
 	ws := c.WorkspaceRoot
 	if !filepath.IsAbs(ws) {
 		ws = filepath.Clean(filepath.Join(configDir, ws))
@@ -95,11 +97,21 @@ func Load(path string) (*Config, error) {
 	c.backendAbs = be
 
 	if st, err := os.Stat(c.workspaceAbs); err != nil || !st.IsDir() {
-		return nil, fmt.Errorf("workspace_root 无效（解析为 %s）：请检查 deploy/config.yaml 或设置 MOE_DEPLOY_WORKSPACE", c.workspaceAbs)
+		return nil, fmt.Errorf("workspace_root 鏃犳晥锛堣В鏋愪负 %s锛夛細璇锋鏌?deploy/config.yaml 鎴栬缃?MOE_DEPLOY_WORKSPACE", c.workspaceAbs)
 	}
 	if st, err := os.Stat(c.backendAbs); err != nil || !st.IsDir() {
-		return nil, fmt.Errorf("backend_dir 无效（解析为 %s）", c.backendAbs)
+		return nil, fmt.Errorf("backend_dir invalid: %s", c.backendAbs)
 	}
+
+	cache := strings.TrimSpace(c.BuildCacheDir)
+	if cache == "" {
+		cache = filepath.Join(configDir, ".moe-build-cache")
+	} else if !filepath.IsAbs(cache) {
+		cache = filepath.Clean(filepath.Join(configDir, cache))
+	} else {
+		cache = filepath.Clean(cache)
+	}
+	c.buildCacheAbs = cache
 
 	return &c, nil
 }
@@ -112,6 +124,10 @@ func (c *Config) WorkspaceAbs() string {
 // BackendAbs returns resolved backend directory.
 func (c *Config) BackendAbs() string {
 	return c.backendAbs
+}
+
+func (c *Config) BuildCacheAbs() string {
+	return c.buildCacheAbs
 }
 
 // ComposeFileAbs returns docker compose file path under backend.
@@ -227,5 +243,11 @@ func (c *Config) EnvOverride() {
 	}
 	if v := os.Getenv("MOE_RPC_DEBUG_UPSTREAM"); v != "" {
 		c.RpcDebugUpstream = v
+	}
+	if v := strings.TrimSpace(os.Getenv("MOE_DEPLOY_BUILD_CACHE")); v != "" {
+		if !filepath.IsAbs(v) && c.configDir != "" {
+			v = filepath.Clean(filepath.Join(c.configDir, v))
+		}
+		c.buildCacheAbs = filepath.Clean(v)
 	}
 }

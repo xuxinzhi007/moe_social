@@ -24,14 +24,13 @@ func runLinuxCrossBuild(ctx context.Context, dir string, sink LogSink) (exitCode
 	env = append(env, "CGO_ENABLED=0", "GOOS=linux", "GOARCH=amd64", "LANG=C", "LC_ALL=C")
 
 	if sink != nil {
-		if runtime.GOOS == "windows" && useGitBashOnWindows() {
-			sink("# 本机: go 交叉编译（PATH 来自 Git Bash；临时目录已校正为系统 TEMP）\n")
-		} else if runtime.GOOS == "windows" {
-			sink("# 本机: go 交叉编译（不经过 make；临时目录使用系统 TEMP）\n")
-		}
 		if runtime.GOOS == "windows" {
+			sink("# 本机: go 交叉编译（使用 Deploy Agent 专用编译缓存目录）\n")
 			if td := envMapGet(env, "TMPDIR"); td != "" {
 				sink(fmt.Sprintf("# TMPDIR=%s\n", td))
+			}
+			if gc := envMapGet(env, "GOCACHE"); gc != "" {
+				sink(fmt.Sprintf("# GOCACHE=%s\n", gc))
 			}
 		}
 	}

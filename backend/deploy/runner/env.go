@@ -23,14 +23,24 @@ func BuildProcessEnv(workDir string) []string {
 		merged := mergeEnv(base, extra)
 		merged = ensureWindowsFlutterPath(merged)
 		merged = appendLocalPathExtra(merged)
-		return sanitizeWindowsTempEnv(merged)
+		merged = sanitizeWindowsTempEnv(merged)
+		return applyDeployBuildCacheIfSet(merged)
 	}
 	login := captureLoginShellEnv()
 	if len(login) == 0 {
-		return appendLocalPathExtra(ensureAndroidSDK(base))
+		env := appendLocalPathExtra(ensureAndroidSDK(base))
+		return applyDeployBuildCacheIfSet(env)
 	}
 	merged := mergeEnv(base, login)
-	return appendLocalPathExtra(ensureAndroidSDK(merged))
+	merged = appendLocalPathExtra(ensureAndroidSDK(merged))
+	return applyDeployBuildCacheIfSet(merged)
+}
+
+func applyDeployBuildCacheIfSet(env []string) []string {
+	if deployBuildCacheRoot == "" {
+		return env
+	}
+	return ApplyDeployBuildCache(env, deployBuildCacheRoot)
 }
 
 func captureLoginShellEnv() map[string]string {

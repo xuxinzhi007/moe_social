@@ -10,8 +10,6 @@ import 'ai_models_cache_service.dart';
 import 'ai_provider_service.dart';
 import 'ai_tool_runtime.dart';
 import 'api_service.dart';
-import 'local_llm_chat_service.dart';
-import 'local_model_store.dart';
 import 'llama_cpp_endpoint_config.dart';
 import 'llm_endpoint_config.dart';
 import 'llm_response_parser.dart';
@@ -131,11 +129,6 @@ class AiChatGatewayService {
 
   Future<List<String>> fetchModelsForProfile(AiProviderProfile profile) async {
     try {
-      if (profile.isLocalGguf) {
-        final installed = await LocalModelStore.instance.listInstalled();
-        return installed.map((e) => e.id).toList();
-      }
-
       if (profile.isLlamaCppServer || profile.isOpenAiCompatible) {
         return _fetchOpenAiCompatibleModels(profile);
       }
@@ -215,15 +208,6 @@ class AiChatGatewayService {
       );
     }
 
-    if (profile.isLocalGguf) {
-      return _sendToLocalGguf(
-        agent: agent,
-        profile: profile,
-        messages: messages,
-        temperature: temperature,
-      );
-    }
-
     // llama.cpp server 与 OpenAI 兼容中转均走 chat/completions。
     final model = _effectiveModel(agent, profile);
     if (profile.supportsToolCalls) {
@@ -252,27 +236,6 @@ class AiChatGatewayService {
       temperature: temperature,
       topP: topP,
     );
-  }
-
-  Future<String> _sendToLocalGguf({
-    required AiAgent agent,
-    required AiProviderProfile profile,
-    required List<Map<String, String>> messages,
-    double? temperature,
-  }) async {
-    final modelId = _effectiveModel(agent, profile);
-    final userId = await AiMemoryTools.resolveUserId();
-    try {
-      return await LocalLlmChatService.instance.chat(
-        modelId: modelId,
-        messages: messages,
-        enableTools: profile.supportsToolCalls,
-        userId: userId,
-        temperature: temperature,
-      );
-    } catch (e) {
-      throw Exception(AiChatGatewayService.userFacingError(e));
-    }
   }
 
   Future<String> _sendToBackendOllama({

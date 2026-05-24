@@ -51,9 +51,12 @@ func StartMonitor(preferredAddr string) *Monitor {
 
 	monitorBaseURL = "http://" + addr
 
+	InstallLogCapture()
+
 	http.HandleFunc("/debug/live", handleLive)
 	http.HandleFunc("/debug/heap-top", handleHeapTop)
 	http.HandleFunc("/debug/goroutine-summary", handleGoroutineSummary)
+	http.HandleFunc("/debug/logs", handleLogs)
 
 	srv := &http.Server{
 		Handler: withCORS(http.DefaultServeMux),
@@ -192,6 +195,27 @@ func handleHeapTop(w http.ResponseWriter, r *http.Request) {
 		"top":       entries,
 		"hint":      "关注 inuse_mb 持续偏高的函数；配合 go tool pprof 做火焰图",
 	})
+}
+
+func handleLogs(w http.ResponseWriter, r *http.Request) {
+	q := LogQuery{
+		Level:      LogLevel(strings.TrimSpace(r.URL.Query().Get("level"))),
+		Search:     strings.TrimSpace(r.URL.Query().Get("q")),
+		CountsOnly: strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("counts_only")), "1") ||
+			strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("counts_only")), "true"),
+	}
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			q.Limit = n
+		}
+	}
+	if raw := strings.TrimSpace(r.URL.Query().Get("since")); raw != "" {
+		if ts, err := time.Parse(time.RFC3339, raw); err == nil {
+			q.Since = ts
+		}
+	}
+
+	writeJSON(w, defaultLogBuffer.Query(q))
 }
 
 func handleGoroutineSummary(w http.ResponseWriter, _ *http.Request) {

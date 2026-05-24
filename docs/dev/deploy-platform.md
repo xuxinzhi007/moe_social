@@ -24,7 +24,7 @@ GitHub tag ──► Actions 打 APK（与 VPS 无关）
 ## 架构
 
 ```text
-docs/dev/tools/deploy-ops.html  ──HTTP──►  Deploy Agent (:9100)
+docs/dev/tools/deploy-ops.html  ──HTTP──►  Deploy Agent (:19010)
                                       │
                     ┌─────────────────┼─────────────────┐
                     ▼                 ▼                 ▼
@@ -174,7 +174,7 @@ make deploy-agent-stop   # 端口占用时
 make deploy-agent
 
 # 浏览器（必须由 Agent 提供，勿 file:// 打开 HTML）
-# http://127.0.0.1:9100/
+# http://127.0.0.1:19010/
 # ⚙ 设置 → Token 验证 → 总览看云 VPS 卡片
 ```
 

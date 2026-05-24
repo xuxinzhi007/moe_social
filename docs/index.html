@@ -51,9 +51,12 @@
   <p class="sub">当前有效文档集中入口；过时文档已迁入 <code>docs/archive/</code>。</p>
 
   <div class="tip">
-    预览：<code>cd docs; python -m http.server 8765</code>（PowerShell 用 <code>;</code>） ·
+    <strong>运维台 Moe Ops</strong> 需先启动 Agent：<code>cd backend && make deploy-agent</code>，再打开
+    <a href="http://127.0.0.1:19010/">http://127.0.0.1:19010/</a>。
+    仅用 <code>python -m http.server</code> 预览文档时，部署/RPC 页<strong>无法连 Agent API</strong>。
+    · 文档预览：<code>make dev-docs</code>（:19012）·
     工具台：<a href="dev/devtools.html">devtools.html</a> ·
-    Markdown 总索引：<a href="README.md">README.md</a>
+    <a href="README.md">README.md</a>
   </div>
 
   <section>
@@ -83,7 +86,7 @@
     <h2>开发者工具台 <span class="tag live">HTML</span></h2>
     <ul>
       <li><a href="dev/devtools.html">开发者 / 运维工具台（统一入口）</a><span class="desc">飞书 · RPC · 记忆 · 部署，标签切换 / 新标签打开</span></li>
-      <li><a href="dev/tools/deploy-ops.html">运维部署中心（Moe Ops）</a><span class="path">docs/dev/tools · Agent :9100</span></li>
+      <li><a href="http://127.0.0.1:19010/">运维部署中心（Moe Ops）</a><span class="desc">需 make deploy-agent · :19010</span><span class="path">静态预览见 dev/tools/deploy-ops.html（功能受限）</span></li>
       <li><a href="dev/tools/feishu-export.html">飞书导出命令生成器</a></li>
       <li><a href="dev/tools/rpc-monitor.html">RPC 性能监控</a></li>
       <li><a href="dev/memory-system-dashboard.html">记忆系统监控台</a></li>

@@ -4192,8 +4192,10 @@ type CreatePostReq struct {
 	HandDrawCard     string                 `protobuf:"bytes,5,opt,name=hand_draw_card,json=handDrawCard,proto3" json:"hand_draw_card,omitempty"`
 	HandDrawThumbUrl string                 `protobuf:"bytes,6,opt,name=hand_draw_thumb_url,json=handDrawThumbUrl,proto3" json:"hand_draw_thumb_url,omitempty"`
 	MoodTag          string                 `protobuf:"bytes,7,opt,name=mood_tag,json=moodTag,proto3" json:"mood_tag,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// 可选：创建后自动关联到该群组（需已是群成员）
+	GroupId       string `protobuf:"bytes,8,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CreatePostReq) Reset() {
@@ -4271,6 +4273,13 @@ func (x *CreatePostReq) GetHandDrawThumbUrl() string {
 func (x *CreatePostReq) GetMoodTag() string {
 	if x != nil {
 		return x.MoodTag
+	}
+	return ""
+}
+
+func (x *CreatePostReq) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
 	}
 	return ""
 }
@@ -14730,7 +14739,7 @@ const file_super_proto_rawDesc = "" +
 	"\apost_id\x18\x01 \x01(\tR\x06postId\x12$\n" +
 	"\x0eviewer_user_id\x18\x02 \x01(\tR\fviewerUserId\".\n" +
 	"\vGetPostResp\x12\x1f\n" +
-	"\x04post\x18\x01 \x01(\v2\v.super.PostR\x04post\"\xfa\x01\n" +
+	"\x04post\x18\x01 \x01(\v2\v.super.PostR\x04post\"\x95\x02\n" +
 	"\rCreatePostReq\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12\x16\n" +
@@ -14739,7 +14748,8 @@ const file_super_proto_rawDesc = "" +
 	"topic_tags\x18\x04 \x03(\v2\x0f.super.TopicTagR\ttopicTags\x12$\n" +
 	"\x0ehand_draw_card\x18\x05 \x01(\tR\fhandDrawCard\x12-\n" +
 	"\x13hand_draw_thumb_url\x18\x06 \x01(\tR\x10handDrawThumbUrl\x12\x19\n" +
-	"\bmood_tag\x18\a \x01(\tR\amoodTag\"\xf8\x01\n" +
+	"\bmood_tag\x18\a \x01(\tR\amoodTag\x12\x19\n" +
+	"\bgroup_id\x18\b \x01(\tR\agroupId\"\xf8\x01\n" +
 	"\rUpdatePostReq\x12\x17\n" +
 	"\apost_id\x18\x01 \x01(\tR\x06postId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x18\n" +

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +9,7 @@ import 'package:rive/rive.dart';
 import '../auth_service.dart';
 import '../providers/notification_provider.dart';
 import '../providers/virtual_avatar_provider.dart';
+import '../services/rive_bootstrap.dart';
 import 'moe_toast.dart';
 
 class FloatingVirtualAvatarHost extends StatefulWidget {
@@ -27,7 +31,7 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
   static const double _avatarSize = 74;
 
   late final AnimationController _floatController;
-  late final FileLoader _riveLoader;
+  FileLoader? _riveLoader;
   Offset _offset = Offset.zero;
   bool _positionInitialized = false;
   bool _isAssistantPanelOpen = false;
@@ -38,17 +42,26 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
   @override
   void initState() {
     super.initState();
-    _riveLoader =
-        FileLoader.fromAsset(_assetPath, riveFactory: Factory.rive);
     _floatController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1700),
     )..repeat(reverse: true);
   }
 
+  void _ensureRiveLoader() {
+    if (_riveLoader != null || kIsWeb) return;
+    unawaited(RiveBootstrap.ensureInitialized().then((_) {
+      if (!mounted || _riveLoader != null) return;
+      setState(() {
+        _riveLoader =
+            FileLoader.fromAsset(_assetPath, riveFactory: Factory.rive);
+      });
+    }));
+  }
+
   @override
   void dispose() {
-    _riveLoader.dispose();
+    _riveLoader?.dispose();
     _floatController.dispose();
     super.dispose();
   }
@@ -143,7 +156,8 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF7F7FD5).withValues(alpha: 0.14),
+                          color:
+                              const Color(0xFF7F7FD5).withValues(alpha: 0.14),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(Icons.auto_awesome_rounded,
@@ -152,8 +166,8 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
                       const SizedBox(width: 8),
                       const Text(
                         'Moe 虚拟助手（MVP）',
-                        style:
-                            TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w800),
                       ),
                     ],
                   ),
@@ -368,10 +382,12 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
   }
 
   Widget _buildAvatarCore() {
+    final loader = _riveLoader;
+    if (loader == null) return _fallbackAvatar();
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
       child: RiveWidgetBuilder(
-        fileLoader: _riveLoader,
+        fileLoader: loader,
         builder: (context, state) {
           return switch (state) {
             RiveLoaded() => RiveWidget(
@@ -404,8 +420,13 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
 
   @override
   Widget build(BuildContext context) {
+    if (kIsWeb) return widget.child;
+
     final avatarProvider = context.watch<VirtualAvatarProvider>();
-    if (!AuthService.isLoggedIn || !avatarProvider.isVisible) return widget.child;
+    if (!AuthService.isLoggedIn || !avatarProvider.isVisible)
+      return widget.child;
+
+    _ensureRiveLoader();
 
     final unreadCount = context.watch<NotificationProvider>().unreadCount;
 

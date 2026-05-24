@@ -1,56 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
 import 'package:provider/provider.dart';
-import 'package:rive/rive.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:ui';
+import 'app/app_routes.dart';
 import 'services/achievement_hooks.dart';
 import 'auth_service.dart';
-import 'pages/auth/login_page.dart';
-import 'pages/achievements/achievements_page.dart';
 import 'services/api_service.dart';
 import 'utils/config.dart' as moe_launch_config;
-import 'pages/auth/register_page.dart';
-import 'pages/profile/profile_page.dart';
-import 'pages/settings/settings_page.dart';
-import 'pages/feed/create_post_page.dart';
-import 'pages/feed/comments_page.dart';
-import 'pages/feed/topic_posts_page.dart';
-import 'models/post.dart';
-import 'models/topic_tag.dart';
-import 'pages/profile/edit_profile_page.dart';
-import 'pages/commerce/vip_center_page.dart';
-import 'pages/commerce/vip_purchase_page.dart';
-import 'pages/commerce/vip_orders_page.dart';
-import 'pages/commerce/order_center_page.dart';
-import 'pages/commerce/vip_history_page.dart';
-import 'pages/auth/forgot_password_page.dart';
-import 'pages/auth/verify_code_page.dart';
-import 'pages/auth/reset_password_page.dart';
-import 'pages/notifications/notification_center_page.dart';
-import 'pages/commerce/wallet_page.dart';
-import 'pages/commerce/recharge_page.dart';
-import 'pages/commerce/gacha_page.dart';
-import 'pages/profile/user_profile_page.dart';
-import 'pages/profile/user_qr_code_page.dart';
-import 'pages/scan/scan_page.dart';
 import 'widgets/app_message_widget.dart';
 import 'widgets/floating_virtual_avatar_host.dart';
 import 'widgets/notification_popup_host.dart';
-import 'widgets/moe_bottom_bar.dart';
 import 'services/notification_service.dart';
 import 'services/remote_control_service.dart';
 import 'services/presence_service.dart';
 import 'services/chat_push_service.dart';
 import 'services/push_notification_service.dart';
+import 'services/rive_bootstrap.dart';
 import 'services/startup_update_service.dart';
-import 'pages/gallery/cloud_gallery_page.dart';
-import 'pages/profile/friends_page.dart';
-import 'pages/discover/discover_page.dart';
-import 'pages/discover/explore_match_redirect_page.dart';
-import 'pages/chat/direct_chat_page.dart';
-import 'pages/chat/conversations_page.dart';
 import 'providers/theme_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/device_info_provider.dart';
@@ -60,14 +28,6 @@ import 'providers/user_level_provider.dart';
 import 'providers/game_provider.dart';
 import 'providers/virtual_avatar_provider.dart';
 import 'providers/main_nav_controller.dart';
-import 'pages/feed/home_page.dart';
-import 'pages/community/community_home_page.dart';
-import 'pages/community/community_post_detail_page.dart';
-import 'pages/community/interest_group_detail_page.dart';
-import 'models/community_group.dart';
-import 'pages/checkin/checkin_page.dart';
-import 'pages/settings/virtual_avatar_settings_page.dart';
-import 'pages/settings/message_retention_settings_page.dart';
 import 'utils/startup_manager.dart';
 import 'utils/webview_platform_init.dart';
 import 'widgets/splash_screen.dart';
@@ -77,15 +37,9 @@ void main() {
   runZonedGuarded(() {
     WidgetsFlutterBinding.ensureInitialized();
     ensureWebViewPlatformInitialized();
-
-    RiveNative.init().then((_) {
-      _setupErrorHandlers();
-      runApp(const SplashScreenWrapper());
-    }).catchError((Object e, StackTrace st) {
-      debugPrint('RiveNative.init failed: $e');
-      _setupErrorHandlers();
-      runApp(const SplashScreenWrapper());
-    });
+    _setupErrorHandlers();
+    runApp(const SplashScreenWrapper());
+    unawaited(RiveBootstrap.ensureInitialized());
   }, (error, stack) {
     debugPrint('═══════════════════════════════════════');
     debugPrint('Uncaught Error:');
@@ -185,6 +139,13 @@ void _setupErrorHandlers() {
 class SplashScreenWrapper extends StatelessWidget {
   const SplashScreenWrapper({super.key});
 
+  static Duration get _splashMinDuration {
+    if (kIsWeb || kDebugMode) {
+      return const Duration(milliseconds: 400);
+    }
+    return const Duration(milliseconds: 1200);
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -197,7 +158,7 @@ class SplashScreenWrapper extends StatelessWidget {
       home: SplashScreen(
         onInit: _initializeApp,
         onComplete: (context) => const MyApp(),
-        minDuration: const Duration(milliseconds: 1200),
+        minDuration: _splashMinDuration,
       ),
     );
   }
@@ -337,249 +298,7 @@ class _MyAppState extends State<MyApp> {
             ),
           );
         },
-        routes: {
-          '/login': (context) => const LoginPage(),
-          '/register': (context) => const RegisterPage(),
-          '/home': (context) => const MainPage(),
-          '/profile': (context) => const ProfilePage(),
-          '/achievements': (context) => const AchievementsPage(),
-          '/settings': (context) => const SettingsPage(),
-          '/virtual-avatar-settings': (context) =>
-              const VirtualAvatarSettingsPage(),
-          '/message-retention-settings': (context) =>
-              const MessageRetentionSettingsPage(),
-          '/checkin': (context) {
-            final userId = AuthService.currentUser;
-            if (userId == null || userId.isEmpty) {
-              return const Scaffold(
-                body: Center(child: Text('请先登录后再签到')),
-              );
-            }
-            return CheckInPage(userId: userId);
-          },
-          '/create-post': (context) {
-            final args = ModalRoute.of(context)?.settings.arguments;
-            Post? initialPost;
-            String? groupId;
-            if (args is Map) {
-              if (args['initialPost'] is Post) {
-                initialPost = args['initialPost'] as Post;
-              }
-              groupId = args['groupId'] as String?;
-            } else if (args is Post) {
-              initialPost = args;
-            }
-            return CreatePostPage(initialPost: initialPost, groupId: groupId);
-          },
-          '/comments': (context) => CommentsPage(
-                postId: ModalRoute.of(context)!.settings.arguments as String,
-              ),
-          '/edit-profile': (context) => EditProfilePage(
-                user: ModalRoute.of(context)!.settings.arguments as dynamic,
-              ),
-          '/vip-center': (context) => const VipCenterPage(),
-          '/vip-purchase': (context) => const VipPurchasePage(),
-          '/vip-orders': (context) => const VipOrdersPage(),
-          '/orders': (context) => const OrderCenterPage(),
-          '/vip-history': (context) => const VipHistoryPage(),
-          '/forgot-password': (context) => const ForgotPasswordPage(),
-          '/verify-code': (context) => VerifyCodePage(
-                email: ModalRoute.of(context)!.settings.arguments as String,
-              ),
-          '/reset-password': (context) {
-            final args = ModalRoute.of(context)!.settings.arguments
-                as Map<String, dynamic>;
-            return ResetPasswordPage(
-              email: args['email'] as String,
-              code: args['code'] as String,
-            );
-          },
-          '/notifications': (context) => const NotificationCenterPage(),
-          '/wallet': (context) => const WalletPage(),
-          '/recharge': (context) => const RechargePage(),
-          '/gacha': (context) => const GachaPage(),
-          '/user-profile': (context) {
-            final args = ModalRoute.of(context)?.settings.arguments;
-            if (args is! Map<String, dynamic>) {
-              return const Scaffold(
-                body: Center(child: Text('页面参数丢失，请返回首页重新进入')),
-              );
-            }
-            return UserProfilePage(
-              userId: args['userId'] as String,
-              userName: args['userName'] as String?,
-              userAvatar: args['userAvatar'] as String?,
-              heroTag: args['heroTag'] as String?,
-            );
-          },
-          '/cloud-gallery': (context) => const CloudGalleryPage(),
-          '/topic-posts': (context) {
-            final tag = ModalRoute.of(context)!.settings.arguments as TopicTag;
-            return TopicPostsPage(topicTag: tag);
-          },
-          '/friends': (context) => const FriendsPage(),
-          '/community': (context) => const CommunityHomePage(),
-          '/community/group': (context) {
-            final args = ModalRoute.of(context)?.settings.arguments;
-            if (args is! Map) {
-              return const Scaffold(
-                body: Center(child: Text('缺少群组参数')),
-              );
-            }
-            final groupId = args['groupId'] as String?;
-            if (groupId == null || groupId.isEmpty) {
-              return const Scaffold(
-                body: Center(child: Text('无效的群组 ID')),
-              );
-            }
-            final initial = args['group'] is CommunityGroup
-                ? args['group'] as CommunityGroup
-                : null;
-            return InterestGroupDetailPage(
-              groupId: groupId,
-              initialGroup: initial,
-            );
-          },
-          '/post-detail': (context) {
-            final args = ModalRoute.of(context)?.settings.arguments;
-            if (args is! Map) {
-              return const Scaffold(body: Center(child: Text('缺少动态参数')));
-            }
-            final postId = args['postId'] as String?;
-            if (postId == null || postId.isEmpty) {
-              return const Scaffold(body: Center(child: Text('无效的动态 ID')));
-            }
-            final initial = args['post'] is Post ? args['post'] as Post : null;
-            return CommunityPostDetailPage(
-                postId: postId, initialPost: initial);
-          },
-          '/match': (context) => const ExploreMatchRedirectPage(),
-          '/messages': (context) => const ConversationsPage(),
-          '/direct-chat': (context) {
-            final args = ModalRoute.of(context)?.settings.arguments;
-            if (args is! Map<String, dynamic>) {
-              return const Scaffold(body: Center(child: Text('页面参数丢失，请返回重试')));
-            }
-            return DirectChatPage(
-              userId: args['userId'] as String,
-              username: args['username'] as String,
-              avatar: args['avatar'] as String,
-            );
-          },
-          '/scan': (context) => const ScanPage(),
-          '/user-qr-code': (context) => const UserQrCodePage(),
-          '/interaction': (context) {
-            final args = ModalRoute.of(context)?.settings.arguments;
-            // 历史参数：0=好友页 · 1=申请页 → 新 hub：1=好友 · 2=申请
-            var hub = 1;
-            if (args is Map && args['tab'] is int) {
-              final t = (args['tab'] as int).clamp(0, 1);
-              hub = t == 0 ? 1 : 2;
-            }
-            return FriendsPage(initialHubTabIndex: hub);
-          },
-        },
-      ),
-    );
-  }
-}
-
-class MainPage extends StatefulWidget {
-  const MainPage({super.key});
-
-  @override
-  State<MainPage> createState() => _MainPageState();
-}
-
-class _MainPageState extends State<MainPage> {
-  int _selectedIndex = 0;
-  late final MainNavController _mainNav;
-  late final List<Widget Function()> _pageBuilders = [
-    () => const HomePage(),
-    () => const FriendsPage(),
-    () => const CommunityHomePage(),
-    () => const DiscoverPage(),
-    () => const ProfilePage(),
-  ];
-  late final List<Widget?> _loadedPages =
-      List<Widget?>.filled(_pageBuilders.length, null, growable: false);
-
-  @override
-  void initState() {
-    super.initState();
-    _mainNav = context.read<MainNavController>();
-    _mainNav.addListener(_onMainNavRequested);
-    _loadedPages[_selectedIndex] = _pageBuilders[_selectedIndex]();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    ChatPushService.setGlobalContext(context);
-  }
-
-  @override
-  void dispose() {
-    _mainNav.removeListener(_onMainNavRequested);
-    ChatPushService.clearGlobalContext();
-    super.dispose();
-  }
-
-  void _onMainNavRequested() {
-    final idx = _mainNav.consumeTabRequest();
-    if (!mounted || idx == null) return;
-    if (idx < 0 || idx >= _pageBuilders.length) return;
-    setState(() {
-      _loadedPages[idx] ??= _pageBuilders[idx]();
-      _selectedIndex = idx;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: List.generate(
-          _pageBuilders.length,
-          (index) => _loadedPages[index] ?? const SizedBox.shrink(),
-        ),
-      ),
-      bottomNavigationBar: MoeBottomBar(
-        selectedIndex: _selectedIndex,
-        onItemSelected: (int index) {
-          setState(() {
-            _loadedPages[index] ??= _pageBuilders[index]();
-            _selectedIndex = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: '首页',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.contacts_outlined),
-            selectedIcon: Icon(Icons.contacts_rounded),
-            label: '同好与人脉',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.forum_outlined),
-            selectedIcon: Icon(Icons.forum_rounded),
-            label: '兴趣社区',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore_rounded),
-            label: '探索',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: '我的',
-          ),
-        ],
+        routes: buildAppRoutes(),
       ),
     );
   }

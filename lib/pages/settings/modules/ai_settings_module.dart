@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../services/llm_endpoint_config.dart';
 import '../../../widgets/moe_menu_card.dart';
-import '../../ai/local_model_manager_page.dart';
+import '../../ai/llama_cpp_settings_page.dart';
 import '../../ai/llm_model_config_page.dart';
 import '../../ai/llm_terminal_mode_settings_page.dart';
 import '../../profile/memory_timeline_page.dart';
@@ -64,15 +64,15 @@ class AiSettingsModule extends StatelessWidget {
           },
         ),
         MoeMenuItem(
-          icon: Icons.download_rounded,
-          title: '离线模型下载',
-          subtitle: '从 Hugging Face 直下到手机，供本地 cpp 推理',
-          color: const Color(0xFF7F7FD5),
+          icon: Icons.dns_rounded,
+          title: '本机 llama-server',
+          subtitle: '配置 llama-server 地址（默认 127.0.0.1:6633）',
+          color: const Color(0xFF26A69A),
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const LocalModelManagerPage(),
+                builder: (context) => const LlamaCppSettingsPage(),
               ),
             );
           },

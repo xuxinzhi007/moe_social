@@ -18,7 +18,7 @@ import '../../services/notification_service.dart';
 import '../../models/notification.dart';
 import '../../utils/media_url.dart';
 import '../../models/private_message_item.dart';
-import 'voice_call_page.dart';
+import 'voice_call_launcher.dart';
 
 class DirectChatPage extends StatefulWidget {
   final String userId;
@@ -282,15 +282,11 @@ class _DirectChatPageState extends State<DirectChatPage> {
           'call_${currentUserId}_${widget.userId}_${DateTime.now().millisecondsSinceEpoch}';
       await ApiService.voiceCall(widget.userId, channelName);
       if (!mounted) return;
-      Navigator.push(
+      await openVoiceCallPage(
         context,
-        MaterialPageRoute(
-          builder: (context) => VoiceCallPage(
-            channelName: channelName,
-            userName: widget.username,
-            userAvatar: widget.avatar,
-          ),
-        ),
+        channelName: channelName,
+        userName: widget.username,
+        userAvatar: widget.avatar,
       );
     } catch (_) {
       if (!mounted) return;

@@ -5,6 +5,8 @@
 ## 项目结构（前端）
 
 - `lib/main.dart`：应用入口与全局初始化
+- `lib/app/app_routes.dart`：命名路由（重模块 `deferred import` 懒加载）
+- `lib/app/main_shell.dart`：底部 Tab 主框架
 - `lib/pages/<domain>/`：按业务域组织页面（auth/feed/profile/commerce/...）
 - `lib/widgets/`：可复用 UI 组件
 - `lib/services/`：接口调用与业务服务封装
@@ -46,6 +48,14 @@
 - 错误提示面向用户可读，避免直接暴露底层异常细节。
 - 复用当前目录命名与 import 风格，不引入突兀的新分层。
 - `pubspec.yaml` 中 assets 已按 `assets/` 根目录声明，避免重复声明子目录导致打包冲突。
+
+## 启动与编译性能（已落地约定）
+
+- **入口**：`main()` 立即 `runApp`，`RiveBootstrap.ensureInitialized()` 后台执行，不阻塞首帧。
+- **Splash**：`StartupManager` 只 `await` 关键任务（API Config / Auth / Theme）；通知、Push 等后台跑。
+- **重页面懒加载**：扫码、扭蛋、VIP/钱包、Agora 通话等走 `lib/app/app_routes.dart` 的 `deferred import`；新增重依赖页面请沿用 `DeferredRoute`。
+- **Web**：`FloatingVirtualAvatarHost` 跳过 Rive；开发 Web 时优先 `flutter run -d chrome`，并保持进程不退出用 Hot Reload。
+- **环境**：本机 `flutter` 冷启动可能数分钟，可先 `flutter --version` 预热。
 
 ## 修改前优先检查
 

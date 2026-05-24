@@ -47,6 +47,7 @@ func (l *CreatePostLogic) CreatePost(req *types.CreatePostReq) (resp *types.Crea
 		HandDrawCard:     req.HandDrawCard,
 		HandDrawThumbUrl: req.HandDrawThumbUrl,
 		MoodTag:          req.MoodTag,
+		GroupId:          req.GroupId,
 	})
 	if err != nil {
 		return &types.CreatePostResp{
