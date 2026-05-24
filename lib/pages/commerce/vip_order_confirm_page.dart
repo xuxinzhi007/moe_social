@@ -106,13 +106,13 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
       if (!mounted) {
         return;
       }
-      unawaited(AchievementHooks.handleServerUnlocks(
-        userId,
-        vipResult.newAchievements,
-      ));
+      final unlocked = vipResult.newAchievements;
       final action = await _showPaySuccessDialog(order.amount);
       if (!mounted) {
         return;
+      }
+      if (unlocked.isNotEmpty) {
+        AchievementHooks.scheduleServerUnlocks(userId, unlocked);
       }
       if (action == 'order_center') {
         Navigator.pushReplacement(

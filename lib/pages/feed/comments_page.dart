@@ -126,10 +126,7 @@ class _CommentsPageState extends State<CommentsPage> {
       );
 
       final result = await ApiService.addCommentWithUnlocks(comment);
-      await AchievementHooks.handleServerUnlocks(
-        userId,
-        result.newAchievements,
-      );
+      final unlocked = result.newAchievements;
 
       final expandRootId = _replyThreadRootIdForParent(_replyParentId);
       _commentController.clear();
@@ -143,6 +140,9 @@ class _CommentsPageState extends State<CommentsPage> {
       await _fetchComments();
 
       if (!mounted) return;
+      if (unlocked.isNotEmpty) {
+        AchievementHooks.scheduleServerUnlocks(userId, unlocked);
+      }
       _showCustomSnackBar(context, '评论成功', isError: false);
     } catch (e) {
       print('Failed to add comment: $e');

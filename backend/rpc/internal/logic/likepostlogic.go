@@ -93,21 +93,26 @@ func (l *LikePostLogic) LikePost(in *super.LikePostReq) (*super.LikePostResp, er
 			return nil, err
 		}
 		post.Likes++
-		engine := achievement.NewEngine(l.svcCtx.DB)
-		unlocks, err := engine.ApplyEvent(tx, post.UserID, achievement.Event{
-			Type:          achievement.EventPostLiked,
-			PostLikeCount: post.Likes,
-		})
-		if err != nil {
-			l.Errorf("成就处理失败（点赞仍会成功）: %v", err)
-		}
-		_ = unlocks
 	}
+
+	likedPostAuthor := post.UserID
+	likedCount := post.Likes
+	didLike := !hasLiked
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
 		l.Error("提交事务失败:", err)
 		return nil, err
+	}
+
+	if didLike {
+		_, achErr := achievement.ApplyEventAfterCommit(l.svcCtx.DB, likedPostAuthor, achievement.Event{
+			Type:          achievement.EventPostLiked,
+			PostLikeCount: likedCount,
+		})
+		if achErr != nil {
+			l.Errorf("成就处理失败（点赞仍会成功）: %v", achErr)
+		}
 	}
 
 	// 重新查询帖子（获取最新数据）并加载用户与话题标签

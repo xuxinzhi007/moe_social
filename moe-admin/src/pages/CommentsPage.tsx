@@ -1,0 +1,141 @@
+import { useCallback, useEffect, useState } from 'react'
+import { useAdminAuth } from '../context/AdminAuthContext'
+import { DeployApiError } from '../api/deployClient'
+
+export function CommentsPage() {
+  const { client } = useAdminAuth()
+  const [items, setItems] = useState<
+    Array<{ id: string; post_id: string; user_name: string; content: string; created_at: string }>
+  >([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [keyword, setKeyword] = useState('')
+  const [postId, setPostId] = useState('')
+  const [search, setSearch] = useState('')
+  const [filterPost, setFilterPost] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const pageSize = 30
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await client.listComments({
+        page,
+        page_size: pageSize,
+        keyword: search || undefined,
+        post_id: filterPost || undefined,
+      })
+      if (!res.success || !res.data) {
+        setError(res.message || '加载失败')
+        return
+      }
+      setItems(res.data.items || [])
+      setTotal(res.data.total || 0)
+    } catch (e) {
+      setError(e instanceof DeployApiError ? e.message : '加载失败')
+    } finally {
+      setLoading(false)
+    }
+  }, [client, page, search, filterPost])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+
+  return (
+    <>
+      <div className="page-head">
+        <h2>评论管理</h2>
+        <p>按动态或关键词检索评论并下架</p>
+      </div>
+      <div className="panel">
+        <form
+          className="inline-form"
+          onSubmit={(e) => {
+            e.preventDefault()
+            setPage(1)
+            setSearch(keyword.trim())
+            setFilterPost(postId.trim())
+          }}
+        >
+          <input placeholder="动态 ID" value={postId} onChange={(e) => setPostId(e.target.value)} />
+          <input placeholder="评论内容" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
+          <button type="submit" className="btn btn-primary">
+            搜索
+          </button>
+        </form>
+        {error ? <p className="text-danger">{error}</p> : null}
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>动态</th>
+                <th>用户</th>
+                <th>内容</th>
+                <th>时间</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    加载中…
+                  </td>
+                </tr>
+              ) : items.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    暂无评论
+                  </td>
+                </tr>
+              ) : (
+                items.map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.id}</td>
+                    <td>{row.post_id}</td>
+                    <td>{row.user_name}</td>
+                    <td>{row.content}</td>
+                    <td>{row.created_at}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={async () => {
+                          if (!confirm('删除该评论？')) return
+                          const res = await client.deleteComment(row.id)
+                          if (!res.success) setError(res.message || '删除失败')
+                          else await load()
+                        }}
+                      >
+                        删除
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        {totalPages > 1 ? (
+          <div className="pager">
+            <button type="button" className="btn btn-ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+              上一页
+            </button>
+            <span className="muted">
+              {page}/{totalPages}
+            </span>
+            <button type="button" className="btn btn-ghost" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+              下一页
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </>
+  )
+}

@@ -32,7 +32,7 @@ func NewCreateVipOrderLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cr
 // 用户相关服务
 func (l *CreateVipOrderLogic) CreateVipOrder(in *super.CreateVipOrderReq) (*super.CreateVipOrderResp, error) {
 	var order model.VipOrder
-	var achUnlocks []achievement.UnlockResult
+	var paidUserID uint
 	err := l.svcCtx.DB.Transaction(func(tx *gorm.DB) error {
 		// 验证用户是否存在并加锁
 		var user model.User
@@ -113,19 +113,21 @@ func (l *CreateVipOrderLogic) CreateVipOrder(in *super.CreateVipOrderReq) (*supe
 
 		// 预加载套餐，供响应使用
 		order.Plan = plan
-
-		engine := achievement.NewEngine(l.svcCtx.DB)
-		unlocks, err := engine.ApplyEvent(tx, user.ID, achievement.Event{Type: achievement.EventVipActivated})
-		if err != nil {
-			l.Errorf("成就处理失败（VIP 订单仍会成功）: %v", err)
-			achUnlocks = nil
-		} else {
-			achUnlocks = unlocks
-		}
+		paidUserID = user.ID
 		return nil
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	var achUnlocks []achievement.UnlockResult
+	if paidUserID > 0 {
+		unlocks, achErr := achievement.ApplyEventAfterCommit(l.svcCtx.DB, paidUserID, achievement.Event{Type: achievement.EventVipActivated})
+		if achErr != nil {
+			l.Errorf("成就处理失败（VIP 订单仍会成功）: %v", achErr)
+		} else {
+			achUnlocks = unlocks
+		}
 	}
 
 	return &super.CreateVipOrderResp{

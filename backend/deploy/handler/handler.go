@@ -90,10 +90,10 @@ func (h *Handler) info(w http.ResponseWriter, r *http.Request) {
 			"ssh_note":    "云平台：config.yaml 配置 identity_file 或 password；推荐 ssh-copy-id 后只用密钥",
 		},
 		"paths": map[string]string{
-			"workspace":    h.Cfg.WorkspaceAbs(),
-			"backend":      h.Cfg.BackendAbs(),
-			"compose":      h.Cfg.ComposeFileAbs(),
-			"build_cache":  h.Cfg.BuildCacheAbs(),
+			"workspace":   h.Cfg.WorkspaceAbs(),
+			"backend":     h.Cfg.BackendAbs(),
+			"compose":     h.Cfg.ComposeFileAbs(),
+			"build_cache": h.Cfg.BuildCacheAbs(),
 		},
 		"cloud_deploy": map[string]any{
 			"backend_dir":  cloud.BackendDir,
@@ -144,8 +144,8 @@ func (h *Handler) targets(w http.ResponseWriter, r *http.Request) {
 	}
 	list := h.Cfg.NormalizeTargets()
 	writeJSON(w, http.StatusOK, map[string]any{
-		"success": true,
-		"targets": list,
+		"success":        true,
+		"targets":        list,
 		"default_target": h.Cfg.DefaultTarget(),
 	})
 }
@@ -161,9 +161,9 @@ func (h *Handler) host(w http.ResponseWriter, r *http.Request) {
 	t := h.Cfg.TargetByID(targetID)
 	info := h.Registry.InspectHost(ctx, targetID, h.Cfg)
 	payload := map[string]any{
-		"success":        true,
-		"target":         t,
-		"host":           info,
+		"success": true,
+		"target":  t,
+		"host":    info,
 		"resolved_paths": map[string]string{
 			"workspace": h.Cfg.WorkspaceAbs(),
 			"backend":   h.Cfg.BackendAbs(),

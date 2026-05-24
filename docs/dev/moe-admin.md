@@ -56,6 +56,16 @@ gin-vue-admin 是一整套 **Gin + GORM + Vue3 + Element Plus** 工程，自带�
 
 按 P0 → P1 分期实现；当前仓库已完成工作台、官网反馈、环境切换与跨平台启动脚本。
 
+## 数据库迁移 vs 运营数据初始化
+
+| 操作 | 命令 / 入口 | 作用 |
+|------|-------------|------|
+| **仅建表** | `cd backend/rpc && go run super.go -migrate` | GORM AutoMigrate，**不**写入 VIP/礼物/成就等业务数据 |
+| **首次超管** | `POST /api/admin/bootstrap/account`（无需 Token，表为空时） | 创建默认管理员，再登录 Moe Admin |
+| **运营目录** | Moe Admin 内「导入默认套餐/礼物」等 | 表为空时幂等导入；日常改价改文案走 CRUD |
+
+成就定义：`POST /api/admin/achievements/bootstrap`（需 Admin Token，表为空时）。
+
 ## 启动方式（跨平台）
 
 ### macOS / Linux

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'dart:convert';
 import 'dart:io';
 import '../../auth_service.dart';
+import '../../models/achievement_unlock.dart';
 import '../../models/post.dart';
 import '../../models/topic_tag.dart';
 import '../../services/api_service.dart';
@@ -259,6 +260,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
     }
 
     final loadingProvider = context.read<LoadingProvider>();
+    var pendingUnlocks = const <AchievementUnlock>[];
     await loadingProvider.executeOperation<Post>(
       key: LoadingKeys.createPost,
       operation: () async {
@@ -317,12 +319,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
           newPost,
           groupId: widget.groupId,
         );
-        try {
-          await AchievementHooks.handleServerUnlocks(
-            userId,
-            created.newAchievements,
-          );
-        } catch (_) {}
+        pendingUnlocks = created.newAchievements;
         final apiPost = created.post;
         // 接口有时不回手绘字段，合并本地已上传数据，避免列表里回放组件布局异常。
         return apiPost.copyWith(
@@ -340,9 +337,13 @@ class _CreatePostPageState extends State<CreatePostPage> {
         final msg = widget.groupId != null && widget.groupId!.isNotEmpty
             ? '已发布并同步到群组 ~(≧∇≦)/~'
             : '帖子发布成功！(≧∇≦)/';
+        final uid = AuthService.currentUser;
+        final unlocks = pendingUnlocks;
         Navigator.pop(context, createdPost);
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
+          if (uid != null && unlocks.isNotEmpty) {
+            AchievementHooks.scheduleServerUnlocks(uid, unlocks);
+          }
           final rootCtx = AuthService.navigatorKey.currentContext;
           if (rootCtx != null) {
             MoeToast.success(rootCtx, msg);

@@ -50,7 +50,7 @@ func (l *AdminListUsersLogic) AdminListUsers(in *super.AdminListUsersReq) (*supe
 
 	var users []model.User
 	offset := int((page - 1) * pageSize)
-	if err := q.Order("id DESC").Offset(offset).Limit(int(pageSize)).Find(&users).Error; err != nil {
+	if err := q.Order("id ASC").Offset(offset).Limit(int(pageSize)).Find(&users).Error; err != nil {
 		l.Errorf("[admin] list users: %v", err)
 		return nil, errorx.Internal("服务器内部错误")
 	}

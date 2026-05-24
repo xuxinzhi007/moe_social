@@ -1410,12 +1410,318 @@ type AdminUpdateUserResp {
 	Data User `json:"data"`
 }
 
+type AdminListVipPlansReq {
+	Page           int    `form:"page,optional,default=1"`
+	PageSize       int    `form:"page_size,optional,default=50"`
+	Keyword        string `form:"keyword,optional"`
+	IncludeDeleted bool   `form:"include_deleted,optional"`
+}
+
+type AdminListVipPlansData {
+	Items []VipPlan `json:"items"`
+	Total int       `json:"total"`
+}
+
+type AdminListVipPlansResp {
+	BaseResp
+	Data AdminListVipPlansData `json:"data"`
+}
+
+type AdminGetVipPlanReq {
+	PlanId string `path:"plan_id"`
+}
+
+type AdminGetVipPlanResp {
+	BaseResp
+	Data VipPlan `json:"data"`
+}
+
+type AdminCreateVipPlanReq {
+	Name         string  `json:"name"`
+	Description  string  `json:"description"`
+	Price        float64 `json:"price"`
+	DurationDays int     `json:"duration_days"`
+}
+
+type AdminCreateVipPlanResp {
+	BaseResp
+	Data VipPlan `json:"data"`
+}
+
+type AdminUpdateVipPlanReq {
+	PlanId             string  `path:"plan_id"`
+	Name               string  `json:"name,optional"`
+	Description        string  `json:"description,optional"`
+	Price              float64 `json:"price,optional"`
+	DurationDays       int     `json:"duration_days,optional"`
+	UpdateName         bool    `json:"update_name,optional"`
+	UpdateDescription  bool    `json:"update_description,optional"`
+	UpdatePrice        bool    `json:"update_price,optional"`
+	UpdateDurationDays bool    `json:"update_duration_days,optional"`
+}
+
+type AdminUpdateVipPlanResp {
+	BaseResp
+	Data VipPlan `json:"data"`
+}
+
+type AdminDeleteVipPlanReq {
+	PlanId string `path:"plan_id"`
+}
+
+type AdminDeleteVipPlanResp {
+	BaseResp
+}
+
+type AdminBootstrapVipPlansData {
+	Created int `json:"created"`
+}
+
+type AdminBootstrapVipPlansResp {
+	BaseResp
+	Data AdminBootstrapVipPlansData `json:"data"`
+}
+
+type AdminBootstrapAccountData {
+	Created int `json:"created"`
+}
+
+type AdminBootstrapAccountResp {
+	BaseResp
+	Data AdminBootstrapAccountData `json:"data"`
+}
+
+type AdminBootstrapAchievementsData {
+	Created int `json:"created"`
+}
+
+type AdminBootstrapAchievementsResp {
+	BaseResp
+	Data AdminBootstrapAchievementsData `json:"data"`
+}
+
+type AdminListGiftsReq {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Keyword  string `form:"keyword,optional"`
+	Category string `form:"category,optional"`
+}
+
+type AdminListGiftsData {
+	Items []Gift `json:"items"`
+	Total int    `json:"total"`
+}
+
+type AdminListGiftsResp {
+	BaseResp
+	Data AdminListGiftsData `json:"data"`
+}
+
+type AdminGetGiftReq {
+	GiftId string `path:"gift_id"`
+}
+
+type AdminGetGiftResp {
+	BaseResp
+	Data Gift `json:"data"`
+}
+
+type AdminCreateGiftReq {
+	Name        string `json:"name"`
+	Price       int    `json:"price"`
+	Icon        string `json:"icon,optional"`
+	Description string `json:"description,optional"`
+	Category    string `json:"category,optional"`
+	SortOrder   int    `json:"sort_order,optional"`
+}
+
+type AdminCreateGiftResp {
+	BaseResp
+	Data Gift `json:"data"`
+}
+
+type AdminUpdateGiftReq {
+	GiftId            string `path:"gift_id"`
+	Name              string `json:"name,optional"`
+	Price             int    `json:"price,optional"`
+	Icon              string `json:"icon,optional"`
+	Description       string `json:"description,optional"`
+	Category          string `json:"category,optional"`
+	SortOrder         int    `json:"sort_order,optional"`
+	UpdateName        bool   `json:"update_name,optional"`
+	UpdatePrice       bool   `json:"update_price,optional"`
+	UpdateIcon        bool   `json:"update_icon,optional"`
+	UpdateDescription bool   `json:"update_description,optional"`
+	UpdateCategory    bool   `json:"update_category,optional"`
+	UpdateSortOrder   bool   `json:"update_sort_order,optional"`
+}
+
+type AdminUpdateGiftResp {
+	BaseResp
+	Data Gift `json:"data"`
+}
+
+type AdminDeleteGiftReq {
+	GiftId string `path:"gift_id"`
+}
+
+type AdminDeleteGiftResp {
+	BaseResp
+}
+
+type AdminBootstrapGiftsData {
+	Created int `json:"created"`
+}
+
+type AdminBootstrapGiftsResp {
+	BaseResp
+	Data AdminBootstrapGiftsData `json:"data"`
+}
+
+type AdminListVipOrdersReq {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	UserId   string `form:"user_id,optional"`
+	Keyword  string `form:"keyword,optional"`
+	Status   string `form:"status,optional"`
+}
+
+type AdminListVipOrdersData {
+	Items []VipOrder `json:"items"`
+	Total int        `json:"total"`
+}
+
+type AdminListVipOrdersResp {
+	BaseResp
+	Data AdminListVipOrdersData `json:"data"`
+}
+
+type AdminListGiftPurchaseOrdersReq {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	UserId   string `form:"user_id,optional"`
+	Keyword  string `form:"keyword,optional"`
+	Status   string `form:"status,optional"`
+}
+
+type AdminListGiftPurchaseOrdersData {
+	Items []GiftPurchaseOrder `json:"items"`
+	Total int                 `json:"total"`
+}
+
+type AdminListGiftPurchaseOrdersResp {
+	BaseResp
+	Data AdminListGiftPurchaseOrdersData `json:"data"`
+}
+
+type AdminListPostsReq {
+	Page             int    `form:"page,optional,default=1"`
+	PageSize         int    `form:"page_size,optional,default=20"`
+	Keyword          string `form:"keyword,optional"`
+	ModerationStatus string `form:"moderation_status,optional"`
+	IncludeDeleted   bool   `form:"include_deleted,optional"`
+}
+
+type AdminListPostsData {
+	Items []Post `json:"items"`
+	Total int    `json:"total"`
+}
+
+type AdminListPostsResp {
+	BaseResp
+	Data AdminListPostsData `json:"data"`
+}
+
+type AdminDeletePostReq {
+	PostId string `path:"post_id"`
+}
+
+type AdminDeletePostResp {
+	BaseResp
+}
+
+type AdminListCommentsReq {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Keyword  string `form:"keyword,optional"`
+	PostId   string `form:"post_id,optional"`
+}
+
+type AdminListCommentsData {
+	Items []Comment `json:"items"`
+	Total int       `json:"total"`
+}
+
+type AdminListCommentsResp {
+	BaseResp
+	Data AdminListCommentsData `json:"data"`
+}
+
+type AdminDeleteCommentReq {
+	CommentId string `path:"comment_id"`
+}
+
+type AdminDeleteCommentResp {
+	BaseResp
+}
+
+type AdminPostReportItem {
+	Id                 string `json:"id"`
+	PostId             string `json:"post_id"`
+	ReporterUserId     string `json:"reporter_user_id"`
+	Reason             string `json:"reason"`
+	CreatedAt          string `json:"created_at"`
+	PostContentPreview string `json:"post_content_preview"`
+}
+
+type AdminListPostReportsReq {
+	Page     int `form:"page,optional,default=1"`
+	PageSize int `form:"page_size,optional,default=50"`
+}
+
+type AdminListPostReportsData {
+	Items []AdminPostReportItem `json:"items"`
+	Total int                   `json:"total"`
+}
+
+type AdminListPostReportsResp {
+	BaseResp
+	Data AdminListPostReportsData `json:"data"`
+}
+
+type AdminListGroupsReq {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Keyword  string `form:"keyword,optional"`
+}
+
+type AdminListGroupsData {
+	Items []Group `json:"items"`
+	Total int     `json:"total"`
+}
+
+type AdminListGroupsResp {
+	BaseResp
+	Data AdminListGroupsData `json:"data"`
+}
+
+type AdminDeleteGroupReq {
+	GroupId string `path:"group_id"`
+}
+
+type AdminDeleteGroupResp {
+	BaseResp
+}
+
 @server (
 	group: admin_public
 )
 service Super {
 	@handler adminLogin
 	post /api/admin/login (AdminLoginReq) returns (AdminLoginResp)
+
+	@handler adminBootstrapAccount
+	post /api/admin/bootstrap/account (EmptyReq) returns (AdminBootstrapAccountResp)
 }
 
 @server (
@@ -1439,6 +1745,72 @@ service Super {
 
 	@handler adminListLandingFeedback
 	get /api/admin/landing/feedback (ListLandingFeedbackReq) returns (ListLandingFeedbackResp)
+
+	@handler adminListVipPlans
+	get /api/admin/vip/plans (AdminListVipPlansReq) returns (AdminListVipPlansResp)
+
+	@handler adminGetVipPlan
+	get /api/admin/vip/plans/:plan_id (AdminGetVipPlanReq) returns (AdminGetVipPlanResp)
+
+	@handler adminCreateVipPlan
+	post /api/admin/vip/plans (AdminCreateVipPlanReq) returns (AdminCreateVipPlanResp)
+
+	@handler adminUpdateVipPlan
+	put /api/admin/vip/plans/:plan_id (AdminUpdateVipPlanReq) returns (AdminUpdateVipPlanResp)
+
+	@handler adminDeleteVipPlan
+	delete /api/admin/vip/plans/:plan_id (AdminDeleteVipPlanReq) returns (AdminDeleteVipPlanResp)
+
+	@handler adminBootstrapVipPlans
+	post /api/admin/vip/plans/bootstrap (EmptyReq) returns (AdminBootstrapVipPlansResp)
+
+	@handler adminBootstrapAchievements
+	post /api/admin/achievements/bootstrap (EmptyReq) returns (AdminBootstrapAchievementsResp)
+
+	@handler adminListGifts
+	get /api/admin/gifts (AdminListGiftsReq) returns (AdminListGiftsResp)
+
+	@handler adminGetGift
+	get /api/admin/gifts/:gift_id (AdminGetGiftReq) returns (AdminGetGiftResp)
+
+	@handler adminCreateGift
+	post /api/admin/gifts (AdminCreateGiftReq) returns (AdminCreateGiftResp)
+
+	@handler adminUpdateGift
+	put /api/admin/gifts/:gift_id (AdminUpdateGiftReq) returns (AdminUpdateGiftResp)
+
+	@handler adminDeleteGift
+	delete /api/admin/gifts/:gift_id (AdminDeleteGiftReq) returns (AdminDeleteGiftResp)
+
+	@handler adminBootstrapGifts
+	post /api/admin/gifts/bootstrap (EmptyReq) returns (AdminBootstrapGiftsResp)
+
+	@handler adminListVipOrders
+	get /api/admin/orders/vip (AdminListVipOrdersReq) returns (AdminListVipOrdersResp)
+
+	@handler adminListGiftPurchaseOrders
+	get /api/admin/orders/gift-purchase (AdminListGiftPurchaseOrdersReq) returns (AdminListGiftPurchaseOrdersResp)
+
+	@handler adminListPosts
+	get /api/admin/posts (AdminListPostsReq) returns (AdminListPostsResp)
+
+	@handler adminDeletePost
+	delete /api/admin/posts/:post_id (AdminDeletePostReq) returns (AdminDeletePostResp)
+
+	@handler adminListComments
+	get /api/admin/comments (AdminListCommentsReq) returns (AdminListCommentsResp)
+
+	@handler adminDeleteComment
+	delete /api/admin/comments/:comment_id (AdminDeleteCommentReq) returns (AdminDeleteCommentResp)
+
+	@handler adminListPostReports
+	get /api/admin/post-reports (AdminListPostReportsReq) returns (AdminListPostReportsResp)
+
+	@handler adminListGroups
+	get /api/admin/community/groups (AdminListGroupsReq) returns (AdminListGroupsResp)
+
+	@handler adminDeleteGroup
+	delete /api/admin/community/groups/:group_id (AdminDeleteGroupReq) returns (AdminDeleteGroupResp)
 }
 
 // VIP相关API服务

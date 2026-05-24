@@ -16,6 +16,13 @@ import { PlaceholderPage } from './pages/PlaceholderPage'
 import { ReleasePage } from './pages/ReleasePage'
 import { RpcPage } from './pages/RpcPage'
 import { UsersPage } from './pages/UsersPage'
+import { VipPlansPage } from './pages/VipPlansPage'
+import { GiftsPage } from './pages/GiftsPage'
+import { WalletOrdersPage } from './pages/WalletOrdersPage'
+import { PostsPage } from './pages/PostsPage'
+import { CommentsPage } from './pages/CommentsPage'
+import { CommunityGroupsPage } from './pages/CommunityGroupsPage'
+import { ReportsPage } from './pages/ReportsPage'
 
 export default function App() {
   return (
@@ -30,6 +37,13 @@ export default function App() {
                   <Route element={<AppShell />}>
                     <Route index element={<DashboardPage />} />
                     <Route path="users" element={<UsersPage />} />
+                    <Route path="vip/plans" element={<VipPlansPage />} />
+                    <Route path="wallet/orders" element={<WalletOrdersPage />} />
+                    <Route path="gifts/catalog" element={<GiftsPage />} />
+                    <Route path="content/posts" element={<PostsPage />} />
+                    <Route path="content/comments" element={<CommentsPage />} />
+                    <Route path="content/community" element={<CommunityGroupsPage />} />
+                    <Route path="content/reports" element={<ReportsPage />} />
                     <Route path="feedback" element={<FeedbackPage />} />
                     <Route path="deploy" element={<OverviewPage />} />
                     <Route path="rpc" element={<RpcPage />} />

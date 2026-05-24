@@ -149,18 +149,6 @@ func (l *SendGiftLogic) SendGift(in *super.SendGiftReq) (*super.SendGiftResp, er
 			return err
 		}
 
-		engine := achievement.NewEngine(db)
-		unlocks, err := engine.ApplyEvent(tx, uint(fromUserID), achievement.Event{
-			Type:      achievement.EventGiftSent,
-			GiftCount: int(quantity),
-			GiftValue: addValue,
-		})
-		if err != nil {
-			l.Errorf("成就处理失败（送礼仍会成功）: %v", err)
-			achUnlocks = nil
-		} else {
-			achUnlocks = unlocks
-		}
 		return nil
 	})
 
@@ -176,6 +164,18 @@ func (l *SendGiftLogic) SendGift(in *super.SendGiftReq) (*super.SendGiftResp, er
 			Success: false,
 			Message: "failed to send gift: " + msg,
 		}, nil
+	}
+
+	addValue := float64(gift.Price) * float64(quantity)
+	unlocks, achErr := achievement.ApplyEventAfterCommit(db, uint(fromUserID), achievement.Event{
+		Type:      achievement.EventGiftSent,
+		GiftCount: int(quantity),
+		GiftValue: addValue,
+	})
+	if achErr != nil {
+		l.Errorf("成就处理失败（送礼仍会成功）: %v", achErr)
+	} else {
+		achUnlocks = unlocks
 	}
 
 	return &super.SendGiftResp{

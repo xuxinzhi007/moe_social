@@ -68,22 +68,56 @@ class AchievementHooks {
     return '';
   }
 
-  /// 处理业务接口返回的解锁列表（含经验提示）。
+  /// 延后展示成就（下一帧 + 短延迟），避免与 AlertDialog / BottomSheet / 页面转场抢 Navigator。
+  static void scheduleServerUnlocks(
+    String userId,
+    List<AchievementUnlock> unlocks,
+  ) {
+    if (userId.isEmpty || unlocks.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 320));
+      final ctx = AuthService.navigatorKey.currentContext;
+      if (ctx != null && ctx.mounted && !_routeAllowsAchievementUi(ctx)) {
+        await Future<void>.delayed(const Duration(milliseconds: 450));
+      }
+      await handleServerUnlocks(userId, unlocks);
+    });
+  }
+
+  static bool _routeAllowsAchievementUi(BuildContext context) {
+    final route = ModalRoute.of(context);
+    if (route == null) return false;
+    return route.isCurrent;
+  }
+
+  /// 处理业务接口返回的解锁列表（含经验提示）。失败不向外抛，避免影响支付/发帖主流程。
   static Future<void> handleServerUnlocks(
     String userId,
     List<AchievementUnlock> unlocks,
   ) async {
     if (userId.isEmpty || unlocks.isEmpty) return;
-    await _svc.refreshFromServer(userId);
-    final badges = unlocks.map((u) => u.toDisplayBadge()).toList();
-    final ctx = AuthService.navigatorKey.currentContext;
-    if (ctx != null && ctx.mounted && unlocks.isNotEmpty) {
-      final totalExp =
-          unlocks.fold<int>(0, (sum, u) => sum + u.expGranted);
-      if (totalExp > 0) {
-        MoeToast.success(ctx, '获得 $totalExp 经验');
+    try {
+      try {
+        await _svc.refreshFromServer(userId);
+      } catch (e) {
+        debugPrint('成就缓存刷新失败（忽略）: $e');
       }
+      final badges = unlocks.map((u) => u.toDisplayBadge()).toList();
+      final ctx = AuthService.navigatorKey.currentContext;
+      if (ctx != null && ctx.mounted) {
+        final totalExp =
+            unlocks.fold<int>(0, (sum, u) => sum + u.expGranted);
+        if (totalExp > 0) {
+          try {
+            MoeToast.success(ctx, '获得 $totalExp 经验');
+          } catch (_) {}
+        }
+      }
+      if (ctx != null && ctx.mounted && _routeAllowsAchievementUi(ctx)) {
+        _toastUnlocks(badges);
+      }
+    } catch (e, st) {
+      debugPrint('成就解锁展示失败（忽略）: $e\n$st');
     }
-    _toastUnlocks(badges);
   }
 }

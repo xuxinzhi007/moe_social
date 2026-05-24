@@ -6,6 +6,7 @@
 
 | 文档 | 用途 |
 |------|------|
+| [../product/moe-app-product-assessment.md](../product/moe-app-product-assessment.md) | **产品成熟度**（官网 vs App、稳定性、Admin 运营商品） |
 | [环境配置说明.md](./环境配置说明.md) | 本地 / 线上环境 |
 | [快速调试步骤.md](./快速调试步骤.md) | Flutter 模拟器与运行 |
 | [API调试指南.md](./API调试指南.md) | 接口调试 |

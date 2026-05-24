@@ -154,6 +154,116 @@ func (s *SuperServer) AdminUpdateUser(ctx context.Context, in *super.AdminUpdate
 	return l.AdminUpdateUser(in)
 }
 
+func (s *SuperServer) AdminListVipPlans(ctx context.Context, in *super.AdminListVipPlansReq) (*super.AdminListVipPlansResp, error) {
+	l := logic.NewAdminListVipPlansLogic(ctx, s.svcCtx)
+	return l.AdminListVipPlans(in)
+}
+
+func (s *SuperServer) AdminGetVipPlan(ctx context.Context, in *super.AdminGetVipPlanReq) (*super.AdminGetVipPlanResp, error) {
+	l := logic.NewAdminGetVipPlanLogic(ctx, s.svcCtx)
+	return l.AdminGetVipPlan(in)
+}
+
+func (s *SuperServer) AdminUpdateVipPlan(ctx context.Context, in *super.AdminUpdateVipPlanReq) (*super.AdminUpdateVipPlanResp, error) {
+	l := logic.NewAdminUpdateVipPlanLogic(ctx, s.svcCtx)
+	return l.AdminUpdateVipPlan(in)
+}
+
+func (s *SuperServer) AdminDeleteVipPlan(ctx context.Context, in *super.AdminDeleteVipPlanReq) (*super.AdminDeleteVipPlanResp, error) {
+	l := logic.NewAdminDeleteVipPlanLogic(ctx, s.svcCtx)
+	return l.AdminDeleteVipPlan(in)
+}
+
+func (s *SuperServer) AdminBootstrapVipPlans(ctx context.Context, in *super.AdminBootstrapVipPlansReq) (*super.AdminBootstrapVipPlansResp, error) {
+	l := logic.NewAdminBootstrapVipPlansLogic(ctx, s.svcCtx)
+	return l.AdminBootstrapVipPlans(in)
+}
+
+func (s *SuperServer) AdminBootstrapAccount(ctx context.Context, in *super.AdminBootstrapAccountReq) (*super.AdminBootstrapAccountResp, error) {
+	l := logic.NewAdminBootstrapAccountLogic(ctx, s.svcCtx)
+	return l.AdminBootstrapAccount(in)
+}
+
+func (s *SuperServer) AdminBootstrapAchievements(ctx context.Context, in *super.AdminBootstrapAchievementsReq) (*super.AdminBootstrapAchievementsResp, error) {
+	l := logic.NewAdminBootstrapAchievementsLogic(ctx, s.svcCtx)
+	return l.AdminBootstrapAchievements(in)
+}
+
+func (s *SuperServer) AdminListGifts(ctx context.Context, in *super.AdminListGiftsReq) (*super.AdminListGiftsResp, error) {
+	l := logic.NewAdminListGiftsLogic(ctx, s.svcCtx)
+	return l.AdminListGifts(in)
+}
+
+func (s *SuperServer) AdminGetGift(ctx context.Context, in *super.AdminGetGiftReq) (*super.AdminGetGiftResp, error) {
+	l := logic.NewAdminGetGiftLogic(ctx, s.svcCtx)
+	return l.AdminGetGift(in)
+}
+
+func (s *SuperServer) AdminCreateGift(ctx context.Context, in *super.AdminCreateGiftReq) (*super.AdminCreateGiftResp, error) {
+	l := logic.NewAdminCreateGiftLogic(ctx, s.svcCtx)
+	return l.AdminCreateGift(in)
+}
+
+func (s *SuperServer) AdminUpdateGift(ctx context.Context, in *super.AdminUpdateGiftReq) (*super.AdminUpdateGiftResp, error) {
+	l := logic.NewAdminUpdateGiftLogic(ctx, s.svcCtx)
+	return l.AdminUpdateGift(in)
+}
+
+func (s *SuperServer) AdminDeleteGift(ctx context.Context, in *super.AdminDeleteGiftReq) (*super.AdminDeleteGiftResp, error) {
+	l := logic.NewAdminDeleteGiftLogic(ctx, s.svcCtx)
+	return l.AdminDeleteGift(in)
+}
+
+func (s *SuperServer) AdminBootstrapGifts(ctx context.Context, in *super.AdminBootstrapGiftsReq) (*super.AdminBootstrapGiftsResp, error) {
+	l := logic.NewAdminBootstrapGiftsLogic(ctx, s.svcCtx)
+	return l.AdminBootstrapGifts(in)
+}
+
+func (s *SuperServer) AdminListVipOrders(ctx context.Context, in *super.AdminListVipOrdersReq) (*super.AdminListVipOrdersResp, error) {
+	l := logic.NewAdminListVipOrdersLogic(ctx, s.svcCtx)
+	return l.AdminListVipOrders(in)
+}
+
+func (s *SuperServer) AdminListGiftPurchaseOrders(ctx context.Context, in *super.AdminListGiftPurchaseOrdersReq) (*super.AdminListGiftPurchaseOrdersResp, error) {
+	l := logic.NewAdminListGiftPurchaseOrdersLogic(ctx, s.svcCtx)
+	return l.AdminListGiftPurchaseOrders(in)
+}
+
+func (s *SuperServer) AdminListPosts(ctx context.Context, in *super.AdminListPostsReq) (*super.AdminListPostsResp, error) {
+	l := logic.NewAdminListPostsLogic(ctx, s.svcCtx)
+	return l.AdminListPosts(in)
+}
+
+func (s *SuperServer) AdminDeletePost(ctx context.Context, in *super.AdminDeletePostReq) (*super.AdminDeletePostResp, error) {
+	l := logic.NewAdminDeletePostLogic(ctx, s.svcCtx)
+	return l.AdminDeletePost(in)
+}
+
+func (s *SuperServer) AdminListComments(ctx context.Context, in *super.AdminListCommentsReq) (*super.AdminListCommentsResp, error) {
+	l := logic.NewAdminListCommentsLogic(ctx, s.svcCtx)
+	return l.AdminListComments(in)
+}
+
+func (s *SuperServer) AdminDeleteComment(ctx context.Context, in *super.AdminDeleteCommentReq) (*super.AdminDeleteCommentResp, error) {
+	l := logic.NewAdminDeleteCommentLogic(ctx, s.svcCtx)
+	return l.AdminDeleteComment(in)
+}
+
+func (s *SuperServer) AdminListPostReports(ctx context.Context, in *super.AdminListPostReportsReq) (*super.AdminListPostReportsResp, error) {
+	l := logic.NewAdminListPostReportsLogic(ctx, s.svcCtx)
+	return l.AdminListPostReports(in)
+}
+
+func (s *SuperServer) AdminListGroups(ctx context.Context, in *super.AdminListGroupsReq) (*super.AdminListGroupsResp, error) {
+	l := logic.NewAdminListGroupsLogic(ctx, s.svcCtx)
+	return l.AdminListGroups(in)
+}
+
+func (s *SuperServer) AdminDeleteGroup(ctx context.Context, in *super.AdminDeleteGroupReq) (*super.AdminDeleteGroupResp, error) {
+	l := logic.NewAdminDeleteGroupLogic(ctx, s.svcCtx)
+	return l.AdminDeleteGroup(in)
+}
+
 func (s *SuperServer) UpsertUserMemory(ctx context.Context, in *super.UpsertUserMemoryReq) (*super.UpsertUserMemoryResp, error) {
 	l := logic.NewUpsertUserMemoryLogic(ctx, s.svcCtx)
 	return l.UpsertUserMemory(in)

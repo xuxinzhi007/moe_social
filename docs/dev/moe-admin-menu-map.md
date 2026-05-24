@@ -15,7 +15,8 @@
 |------|--------|------|----------------------|
 | — | 工作台 | ready | — |
 | App 用户 | 用户列表 | ready | profile, auth |
-| | 会员与套餐 | P1 | commerce, vip |
+| | 会员与套餐 | P1 | commerce, vip — Admin CRUD + 可选一键初始化（迁移只建表） |
+| | 礼物目录 | P1 | gifts — 见 [产品评估 §8](../product/moe-app-product-assessment.md#8-商业化配置vip--礼物应走-admin而非迁移种子) |
 | | 钱包与订单 | P2 | wallet |
 | | 签到·等级·成就 | P2 | checkin, level, achievements |
 | 内容与社区 | 动态审核 | P2 | feed |
