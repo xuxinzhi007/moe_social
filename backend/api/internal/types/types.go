@@ -31,6 +31,60 @@ type AchievementUnlock struct {
 	NewLevel   int    `json:"new_level"`
 }
 
+type AdminAccountItem struct {
+	Id          string `json:"id"`
+	Username    string `json:"username"`
+	Role        string `json:"role"`
+	LastLoginAt string `json:"last_login_at,optional"`
+	CreatedAt   string `json:"created_at"`
+}
+
+type AdminAchievementItem struct {
+	Id            string `json:"id"`
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	Category      string `json:"category"`
+	Rarity        string `json:"rarity"`
+	ConditionText string `json:"condition_text"`
+	RuleType      string `json:"rule_type"`
+	RequiredCount int    `json:"required_count"`
+	RuleParams    string `json:"rule_params"`
+	ExpReward     int    `json:"exp_reward"`
+	Enabled       bool   `json:"enabled"`
+	SortOrder     int    `json:"sort_order"`
+	CreatedAt     string `json:"created_at"`
+}
+
+type AdminAiAgentItem struct {
+	Id          string `json:"id"`
+	OwnerUserId string `json:"owner_user_id"`
+	OwnerName   string `json:"owner_name"`
+	PayloadJson string `json:"payload_json"`
+}
+
+type AdminAnnouncementItem struct {
+	Id          string `json:"id"`
+	Title       string `json:"title"`
+	Content     string `json:"content"`
+	Status      string `json:"status"`
+	PublishedAt string `json:"published_at,optional"`
+	CreatedBy   string `json:"created_by"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
+}
+
+type AdminAuditLogItem struct {
+	Id         string `json:"id"`
+	AdminId    string `json:"admin_id"`
+	AdminName  string `json:"admin_name"`
+	Action     string `json:"action"`
+	Resource   string `json:"resource"`
+	ResourceId string `json:"resource_id"`
+	Detail     string `json:"detail"`
+	Ip         string `json:"ip"`
+	CreatedAt  string `json:"created_at"`
+}
+
 type AdminBootstrapAccountData struct {
 	Created int `json:"created"`
 }
@@ -58,6 +112,25 @@ type AdminBootstrapGiftsResp struct {
 	Data AdminBootstrapGiftsData `json:"data"`
 }
 
+type AdminBootstrapLevelsData struct {
+	LevelConfigsCreated   int `json:"level_configs_created"`
+	CheckInRewardsCreated int `json:"check_in_rewards_created"`
+}
+
+type AdminBootstrapLevelsResp struct {
+	BaseResp
+	Data AdminBootstrapLevelsData `json:"data"`
+}
+
+type AdminBootstrapMenusData struct {
+	Created int `json:"created"`
+}
+
+type AdminBootstrapMenusResp struct {
+	BaseResp
+	Data AdminBootstrapMenusData `json:"data"`
+}
+
 type AdminBootstrapVipPlansData struct {
 	Created int `json:"created"`
 }
@@ -65,6 +138,49 @@ type AdminBootstrapVipPlansData struct {
 type AdminBootstrapVipPlansResp struct {
 	BaseResp
 	Data AdminBootstrapVipPlansData `json:"data"`
+}
+
+type AdminBroadcastNotificationData struct {
+	NotificationsCreated int `json:"notifications_created"`
+	WsSent               int `json:"ws_sent"`
+}
+
+type AdminBroadcastNotificationReq struct {
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
+type AdminBroadcastNotificationResp struct {
+	BaseResp
+	Data AdminBroadcastNotificationData `json:"data"`
+}
+
+type AdminCheckInRewardItem struct {
+	Id              string `json:"id"`
+	ConsecutiveDays int    `json:"consecutive_days"`
+	ExpReward       int    `json:"exp_reward"`
+	ExtraReward     string `json:"extra_reward"`
+}
+
+type AdminCreateAccountReq struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Role     string `json:"role,optional"`
+}
+
+type AdminCreateAccountResp struct {
+	BaseResp
+	Data AdminAccountItem `json:"data"`
+}
+
+type AdminCreateAnnouncementReq struct {
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
+type AdminCreateAnnouncementResp struct {
+	BaseResp
+	Data AdminAnnouncementItem `json:"data"`
 }
 
 type AdminCreateGiftReq struct {
@@ -105,11 +221,44 @@ type AdminDashboardResp struct {
 	Data AdminDashboardData `json:"data"`
 }
 
+type AdminDeleteAccountReq struct {
+	AccountId string `path:"account_id"`
+}
+
+type AdminDeleteAccountResp struct {
+	BaseResp
+}
+
+type AdminDeleteAiAgentReq struct {
+	UserId  string `json:"user_id"`
+	AgentId string `json:"agent_id"`
+}
+
+type AdminDeleteAiAgentResp struct {
+	BaseResp
+}
+
+type AdminDeleteAnnouncementReq struct {
+	AnnouncementId string `path:"announcement_id"`
+}
+
+type AdminDeleteAnnouncementResp struct {
+	BaseResp
+}
+
 type AdminDeleteCommentReq struct {
 	CommentId string `path:"comment_id"`
 }
 
 type AdminDeleteCommentResp struct {
+	BaseResp
+}
+
+type AdminDeleteFollowReq struct {
+	FollowId string `path:"follow_id"`
+}
+
+type AdminDeleteFollowResp struct {
 	BaseResp
 }
 
@@ -129,6 +278,30 @@ type AdminDeleteGroupResp struct {
 	BaseResp
 }
 
+type AdminDeleteMediaImageReq struct {
+	Filename string `path:"filename"`
+}
+
+type AdminDeleteMediaImageResp struct {
+	BaseResp
+}
+
+type AdminDeleteMemoryReq struct {
+	MemoryId uint64 `path:"memory_id"`
+}
+
+type AdminDeleteMemoryResp struct {
+	BaseResp
+}
+
+type AdminDeleteMenuReq struct {
+	MenuKey string `path:"menu_key"`
+}
+
+type AdminDeleteMenuResp struct {
+	BaseResp
+}
+
 type AdminDeletePostReq struct {
 	PostId string `path:"post_id"`
 }
@@ -145,6 +318,34 @@ type AdminDeleteVipPlanResp struct {
 	BaseResp
 }
 
+type AdminFollowItem struct {
+	Id            string `json:"id"`
+	FollowerId    string `json:"follower_id"`
+	FollowerName  string `json:"follower_name"`
+	FollowingId   string `json:"following_id"`
+	FollowingName string `json:"following_name"`
+	CreatedAt     string `json:"created_at"`
+}
+
+type AdminFriendRequestItem struct {
+	Id           string `json:"id"`
+	FromUserId   string `json:"from_user_id"`
+	FromUserName string `json:"from_user_name"`
+	ToUserId     string `json:"to_user_id"`
+	ToUserName   string `json:"to_user_name"`
+	Status       string `json:"status"`
+	CreatedAt    string `json:"created_at"`
+}
+
+type AdminGetAnnouncementReq struct {
+	AnnouncementId string `path:"announcement_id"`
+}
+
+type AdminGetAnnouncementResp struct {
+	BaseResp
+	Data AdminAnnouncementItem `json:"data"`
+}
+
 type AdminGetGiftReq struct {
 	GiftId string `path:"gift_id"`
 }
@@ -152,6 +353,25 @@ type AdminGetGiftReq struct {
 type AdminGetGiftResp struct {
 	BaseResp
 	Data Gift `json:"data"`
+}
+
+type AdminGetGrowthStatsResp struct {
+	BaseResp
+	Data AdminGrowthStats `json:"data"`
+}
+
+type AdminGetMemoryStatsResp struct {
+	BaseResp
+	Data AdminMemoryStats `json:"data"`
+}
+
+type AdminGetUserProfileReq struct {
+	UserId uint64 `path:"user_id"`
+}
+
+type AdminGetUserProfileResp struct {
+	BaseResp
+	Data AdminUserProfileData `json:"data"`
 }
 
 type AdminGetUserReq struct {
@@ -172,6 +392,115 @@ type AdminGetVipPlanResp struct {
 	Data VipPlan `json:"data"`
 }
 
+type AdminGrowthStats struct {
+	AchievementDefinitions  int `json:"achievement_definitions"`
+	UnlockedProgressRecords int `json:"unlocked_progress_records"`
+	LevelConfigs            int `json:"level_configs"`
+	CheckInRewards          int `json:"check_in_rewards"`
+	UserLevels              int `json:"user_levels"`
+	CheckInsToday           int `json:"check_ins_today"`
+	TotalCheckIns           int `json:"total_check_ins"`
+}
+
+type AdminLevelConfigItem struct {
+	Id         string `json:"id"`
+	Level      int    `json:"level"`
+	Title      string `json:"title"`
+	MinExp     int    `json:"min_exp"`
+	MaxExp     int    `json:"max_exp"`
+	Privileges string `json:"privileges"`
+	BadgeUrl   string `json:"badge_url"`
+}
+
+type AdminListAccountsData struct {
+	Items []AdminAccountItem `json:"items"`
+	Total int                `json:"total"`
+}
+
+type AdminListAccountsReq struct {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Keyword  string `form:"keyword,optional"`
+}
+
+type AdminListAccountsResp struct {
+	BaseResp
+	Data AdminListAccountsData `json:"data"`
+}
+
+type AdminListAchievementsData struct {
+	Items []AdminAchievementItem `json:"items"`
+	Total int                    `json:"total"`
+}
+
+type AdminListAchievementsReq struct {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Keyword  string `form:"keyword,optional"`
+	Category string `form:"category,optional"`
+}
+
+type AdminListAchievementsResp struct {
+	BaseResp
+	Data AdminListAchievementsData `json:"data"`
+}
+
+type AdminListAiAgentsData struct {
+	Items []AdminAiAgentItem `json:"items"`
+	Total int                `json:"total"`
+}
+
+type AdminListAiAgentsReq struct {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Keyword  string `form:"keyword,optional"`
+}
+
+type AdminListAiAgentsResp struct {
+	BaseResp
+	Data AdminListAiAgentsData `json:"data"`
+}
+
+type AdminListAnnouncementsData struct {
+	Items []AdminAnnouncementItem `json:"items"`
+	Total int                     `json:"total"`
+}
+
+type AdminListAnnouncementsReq struct {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Keyword  string `form:"keyword,optional"`
+	Status   string `form:"status,optional"`
+}
+
+type AdminListAnnouncementsResp struct {
+	BaseResp
+	Data AdminListAnnouncementsData `json:"data"`
+}
+
+type AdminListAuditLogsData struct {
+	Items []AdminAuditLogItem `json:"items"`
+	Total int                 `json:"total"`
+}
+
+type AdminListAuditLogsReq struct {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Action   string `form:"action,optional"`
+	Resource string `form:"resource,optional"`
+	AdminId  string `form:"admin_id,optional"`
+}
+
+type AdminListAuditLogsResp struct {
+	BaseResp
+	Data AdminListAuditLogsData `json:"data"`
+}
+
+type AdminListCheckInRewardsResp struct {
+	BaseResp
+	Data []AdminCheckInRewardItem `json:"data"`
+}
+
 type AdminListCommentsData struct {
 	Items []Comment `json:"items"`
 	Total int       `json:"total"`
@@ -187,6 +516,40 @@ type AdminListCommentsReq struct {
 type AdminListCommentsResp struct {
 	BaseResp
 	Data AdminListCommentsData `json:"data"`
+}
+
+type AdminListFollowsData struct {
+	Items []AdminFollowItem `json:"items"`
+	Total int               `json:"total"`
+}
+
+type AdminListFollowsReq struct {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Keyword  string `form:"keyword,optional"`
+	UserId   string `form:"user_id,optional"`
+}
+
+type AdminListFollowsResp struct {
+	BaseResp
+	Data AdminListFollowsData `json:"data"`
+}
+
+type AdminListFriendRequestsData struct {
+	Items []AdminFriendRequestItem `json:"items"`
+	Total int                      `json:"total"`
+}
+
+type AdminListFriendRequestsReq struct {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Status   string `form:"status,optional"`
+	Keyword  string `form:"keyword,optional"`
+}
+
+type AdminListFriendRequestsResp struct {
+	BaseResp
+	Data AdminListFriendRequestsData `json:"data"`
 }
 
 type AdminListGiftPurchaseOrdersData struct {
@@ -238,6 +601,53 @@ type AdminListGroupsReq struct {
 type AdminListGroupsResp struct {
 	BaseResp
 	Data AdminListGroupsData `json:"data"`
+}
+
+type AdminListLevelConfigsResp struct {
+	BaseResp
+	Data []AdminLevelConfigItem `json:"data"`
+}
+
+type AdminListMediaImagesData struct {
+	Items  []AdminMediaImageItem    `json:"items"`
+	Total  int                      `json:"total"`
+	Owners []AdminMediaOwnerSummary `json:"owners"`
+}
+
+type AdminListMediaImagesReq struct {
+	Page        int    `form:"page,optional,default=1"`
+	PageSize    int    `form:"page_size,optional,default=30"`
+	Keyword     string `form:"keyword,optional"`
+	OwnerFolder string `form:"owner_folder,optional"`
+	MediaKind   string `form:"media_kind,optional"`
+}
+
+type AdminListMediaImagesResp struct {
+	BaseResp
+	Data AdminListMediaImagesData `json:"data"`
+}
+
+type AdminListMemoriesData struct {
+	Items []AdminMemoryItem `json:"items"`
+	Total int               `json:"total"`
+}
+
+type AdminListMemoriesReq struct {
+	Page       int    `form:"page,optional,default=1"`
+	PageSize   int    `form:"page_size,optional,default=30"`
+	UserId     string `form:"user_id,optional"`
+	Keyword    string `form:"keyword,optional"`
+	MemoryType string `form:"memory_type,optional"`
+}
+
+type AdminListMemoriesResp struct {
+	BaseResp
+	Data AdminListMemoriesData `json:"data"`
+}
+
+type AdminListMenusResp struct {
+	BaseResp
+	Data []AdminMenuItem `json:"data"`
 }
 
 type AdminListPostReportsData struct {
@@ -353,6 +763,68 @@ type AdminMeResp struct {
 	Data AdminMeData `json:"data"`
 }
 
+type AdminMediaImageItem struct {
+	Filename    string `json:"filename"`
+	FileName    string `json:"file_name"`
+	OwnerFolder string `json:"owner_folder"`
+	MediaKind   string `json:"media_kind"`
+	Url         string `json:"url"`
+	Size        int64  `json:"size"`
+	CreatedAt   string `json:"created_at"`
+	OwnerHint   string `json:"owner_hint,optional"`
+}
+
+type AdminMediaOwnerSummary struct {
+	OwnerFolder  string `json:"owner_folder"`
+	UserId       string `json:"user_id,optional"`
+	UsernameHint string `json:"username_hint,optional"`
+	FileCount    int    `json:"file_count"`
+	TotalBytes   int64  `json:"total_bytes"`
+}
+
+type AdminMemoryItem struct {
+	Id         string  `json:"id"`
+	UserId     string  `json:"user_id"`
+	Username   string  `json:"username,optional"`
+	Key        string  `json:"key"`
+	Value      string  `json:"value"`
+	MemoryType string  `json:"memory_type"`
+	Confidence float64 `json:"confidence"`
+	Source     string  `json:"source"`
+	UpdatedAt  string  `json:"updated_at"`
+}
+
+type AdminMemoryStats struct {
+	TotalMemories     int                   `json:"total_memories"`
+	UsersWithMemories int                   `json:"users_with_memories"`
+	TotalFeedbacks    int                   `json:"total_feedbacks"`
+	TotalEmbeddings   int                   `json:"total_embeddings"`
+	ByType            []AdminMemoryTypeStat `json:"by_type"`
+}
+
+type AdminMemoryTypeStat struct {
+	MemoryType string `json:"memory_type"`
+	Count      int    `json:"count"`
+}
+
+type AdminMenuItem struct {
+	Id           string `json:"id"`
+	Key          string `json:"key"`
+	Kind         string `json:"kind"`
+	ParentKey    string `json:"parent_key"`
+	Path         string `json:"path"`
+	Label        string `json:"label"`
+	Icon         string `json:"icon"`
+	Caption      string `json:"caption"`
+	Status       string `json:"status"`
+	AppDomain    string `json:"app_domain"`
+	SortOrder    int    `json:"sort_order"`
+	DefaultOpen  bool   `json:"default_open"`
+	End          bool   `json:"end"`
+	ExternalHref string `json:"external_href"`
+	Enabled      bool   `json:"enabled"`
+}
+
 type AdminPostReportItem struct {
 	Id                 string `json:"id"`
 	PostId             string `json:"post_id"`
@@ -360,6 +832,134 @@ type AdminPostReportItem struct {
 	Reason             string `json:"reason"`
 	CreatedAt          string `json:"created_at"`
 	PostContentPreview string `json:"post_content_preview"`
+}
+
+type AdminPublishAnnouncementReq struct {
+	AnnouncementId string `path:"announcement_id"`
+}
+
+type AdminPublishAnnouncementResp struct {
+	BaseResp
+	Data AdminAnnouncementItem `json:"data"`
+}
+
+type AdminRuntimeConfigData struct {
+	PublicApiBaseUrl   string `json:"public_api_base_url"`
+	ApiPublicBaseUrl   string `json:"api_public_base_url"`
+	ImagePublicBaseUrl string `json:"image_public_base_url"`
+	ImageLocalDir      string `json:"image_local_dir"`
+	ImageMaxBytes      int64  `json:"image_max_bytes"`
+	ConfigFile         string `json:"config_file"`
+	RequiresRestart    bool   `json:"requires_restart"`
+}
+
+type AdminRuntimeConfigResp struct {
+	BaseResp
+	Data AdminRuntimeConfigData `json:"data"`
+}
+
+type AdminSchemaCatalogData struct {
+	Summary AdminSchemaCatalogSummary `json:"summary"`
+	Items   []AdminSchemaTableItem    `json:"items"`
+}
+
+type AdminSchemaCatalogResp struct {
+	BaseResp
+	Data AdminSchemaCatalogData `json:"data"`
+}
+
+type AdminSchemaCatalogSummary struct {
+	TotalTables    int   `json:"total_tables"`
+	ManagedFull    int   `json:"managed_full"`
+	ManagedPartial int   `json:"managed_partial"`
+	Unmanaged      int   `json:"unmanaged"`
+	TotalRows      int64 `json:"total_rows"`
+}
+
+type AdminSchemaTableItem struct {
+	Key          string   `json:"key"`
+	TableName    string   `json:"table_name"`
+	Label        string   `json:"label"`
+	Domain       string   `json:"domain"`
+	Coverage     string   `json:"coverage"`
+	Capabilities []string `json:"capabilities"`
+	AdminRoute   string   `json:"admin_route,optional"`
+	BootstrapKey string   `json:"bootstrap_key,optional"`
+	RowCount     int64    `json:"row_count"`
+	Note         string   `json:"note,optional"`
+}
+
+type AdminSendNotificationData struct {
+	NotificationId string `json:"notification_id"`
+	WsSent         bool   `json:"ws_sent"`
+}
+
+type AdminSendNotificationReq struct {
+	UserId  string `json:"user_id"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
+type AdminSendNotificationResp struct {
+	BaseResp
+	Data AdminSendNotificationData `json:"data"`
+}
+
+type AdminUpdateAccountReq struct {
+	AccountId string `path:"account_id"`
+	Username  string `json:"username,optional"`
+	Password  string `json:"password,optional"`
+	Role      string `json:"role,optional"`
+}
+
+type AdminUpdateAccountResp struct {
+	BaseResp
+	Data AdminAccountItem `json:"data"`
+}
+
+type AdminUpdateAchievementReq struct {
+	AchievementId     string `path:"achievement_id"`
+	Name              string `json:"name,optional"`
+	Description       string `json:"description,optional"`
+	Enabled           bool   `json:"enabled,optional"`
+	ExpReward         int    `json:"exp_reward,optional"`
+	SortOrder         int    `json:"sort_order,optional"`
+	UpdateName        bool   `json:"update_name,optional"`
+	UpdateDescription bool   `json:"update_description,optional"`
+	UpdateEnabled     bool   `json:"update_enabled,optional"`
+	UpdateExpReward   bool   `json:"update_exp_reward,optional"`
+	UpdateSortOrder   bool   `json:"update_sort_order,optional"`
+}
+
+type AdminUpdateAchievementResp struct {
+	BaseResp
+	Data AdminAchievementItem `json:"data"`
+}
+
+type AdminUpdateAnnouncementReq struct {
+	AnnouncementId string `path:"announcement_id"`
+	Title          string `json:"title,optional"`
+	Content        string `json:"content,optional"`
+}
+
+type AdminUpdateAnnouncementResp struct {
+	BaseResp
+	Data AdminAnnouncementItem `json:"data"`
+}
+
+type AdminUpdateCheckInRewardReq struct {
+	RewardId              uint64 `path:"reward_id"`
+	ConsecutiveDays       int    `json:"consecutive_days,optional"`
+	ExpReward             int    `json:"exp_reward,optional"`
+	ExtraReward           string `json:"extra_reward,optional"`
+	UpdateConsecutiveDays bool   `json:"update_consecutive_days,optional"`
+	UpdateExpReward       bool   `json:"update_exp_reward,optional"`
+	UpdateExtraReward     bool   `json:"update_extra_reward,optional"`
+}
+
+type AdminUpdateCheckInRewardResp struct {
+	BaseResp
+	Data AdminCheckInRewardItem `json:"data"`
 }
 
 type AdminUpdateGiftReq struct {
@@ -383,6 +983,43 @@ type AdminUpdateGiftResp struct {
 	Data Gift `json:"data"`
 }
 
+type AdminUpdateLevelConfigReq struct {
+	LevelId          uint64 `path:"level_id"`
+	Title            string `json:"title,optional"`
+	MinExp           int    `json:"min_exp,optional"`
+	MaxExp           int    `json:"max_exp,optional"`
+	Privileges       string `json:"privileges,optional"`
+	BadgeUrl         string `json:"badge_url,optional"`
+	UpdateTitle      bool   `json:"update_title,optional"`
+	UpdateMinExp     bool   `json:"update_min_exp,optional"`
+	UpdateMaxExp     bool   `json:"update_max_exp,optional"`
+	UpdatePrivileges bool   `json:"update_privileges,optional"`
+	UpdateBadgeUrl   bool   `json:"update_badge_url,optional"`
+}
+
+type AdminUpdateLevelConfigResp struct {
+	BaseResp
+	Data AdminLevelConfigItem `json:"data"`
+}
+
+type AdminUpdateRuntimeConfigReq struct {
+	PublicApiBaseUrl         string `json:"public_api_base_url,optional"`
+	UpdatePublicApiBaseUrl   bool   `json:"update_public_api_base_url,optional"`
+	ApiPublicBaseUrl         string `json:"api_public_base_url,optional"`
+	UpdateApiPublicBaseUrl   bool   `json:"update_api_public_base_url,optional"`
+	ImagePublicBaseUrl       string `json:"image_public_base_url,optional"`
+	UpdateImagePublicBaseUrl bool   `json:"update_image_public_base_url,optional"`
+	ImageLocalDir            string `json:"image_local_dir,optional"`
+	UpdateImageLocalDir      bool   `json:"update_image_local_dir,optional"`
+	ImageMaxBytes            int64  `json:"image_max_bytes,optional"`
+	UpdateImageMaxBytes      bool   `json:"update_image_max_bytes,optional"`
+}
+
+type AdminUpdateRuntimeConfigResp struct {
+	BaseResp
+	Data AdminRuntimeConfigData `json:"data"`
+}
+
 type AdminUpdateUserReq struct {
 	UserId          uint64 `path:"user_id"`
 	Role            string `json:"role,optional"`
@@ -390,6 +1027,8 @@ type AdminUpdateUserReq struct {
 	UpdateIsVip     bool   `json:"update_is_vip,optional"`
 	Signature       string `json:"signature,optional"`
 	UpdateSignature bool   `json:"update_signature,optional"`
+	Avatar          string `json:"avatar,optional"`
+	UpdateAvatar    bool   `json:"update_avatar,optional"`
 }
 
 type AdminUpdateUserResp struct {
@@ -412,6 +1051,79 @@ type AdminUpdateVipPlanReq struct {
 type AdminUpdateVipPlanResp struct {
 	BaseResp
 	Data VipPlan `json:"data"`
+}
+
+type AdminUpsertMenuReq struct {
+	Key          string `json:"key"`
+	Kind         string `json:"kind"`
+	ParentKey    string `json:"parent_key,optional"`
+	Path         string `json:"path,optional"`
+	Label        string `json:"label"`
+	Icon         string `json:"icon,optional"`
+	Caption      string `json:"caption,optional"`
+	Status       string `json:"status,optional"`
+	AppDomain    string `json:"app_domain,optional"`
+	SortOrder    int    `json:"sort_order,optional"`
+	DefaultOpen  bool   `json:"default_open,optional"`
+	End          bool   `json:"end,optional"`
+	ExternalHref string `json:"external_href,optional"`
+	Enabled      bool   `json:"enabled,optional"`
+}
+
+type AdminUpsertMenuResp struct {
+	BaseResp
+	Data AdminMenuItem `json:"data"`
+}
+
+type AdminUserBehaviorScreenStat struct {
+	Screen          string `json:"screen"`
+	Label           string `json:"label"`
+	VisitCount      int    `json:"visit_count"`
+	TotalDurationMs int64  `json:"total_duration_ms"`
+}
+
+type AdminUserBehaviorSummary struct {
+	TopScreens    []AdminUserBehaviorScreenStat `json:"top_screens"`
+	Tags          []string                      `json:"tags"`
+	LastActiveAt  string                        `json:"last_active_at,optional"`
+	TotalEvents7d int                           `json:"total_events_7d"`
+}
+
+type AdminUserLevelSnapshot struct {
+	Level      int    `json:"level"`
+	Experience int    `json:"experience"`
+	TotalExp   int    `json:"total_exp"`
+	LevelTitle string `json:"level_title,optional"`
+}
+
+type AdminUserProfileData struct {
+	User     User                     `json:"user"`
+	Counts   AdminUserRelationCounts  `json:"counts"`
+	Level    AdminUserLevelSnapshot   `json:"level,optional"`
+	Links    []AdminUserRelationLink  `json:"links"`
+	Behavior AdminUserBehaviorSummary `json:"behavior,optional"`
+}
+
+type AdminUserRelationCounts struct {
+	Posts                int `json:"posts"`
+	Comments             int `json:"comments"`
+	Following            int `json:"following"`
+	Followers            int `json:"followers"`
+	CheckIns             int `json:"check_ins"`
+	AchievementsUnlocked int `json:"achievements_unlocked"`
+	VipOrders            int `json:"vip_orders"`
+	GiftSent             int `json:"gift_sent"`
+	GiftReceived         int `json:"gift_received"`
+	GiftStocks           int `json:"gift_stocks"`
+	Transactions         int `json:"transactions"`
+	AiAgents             int `json:"ai_agents"`
+	GroupsJoined         int `json:"groups_joined"`
+}
+
+type AdminUserRelationLink struct {
+	Label      string `json:"label"`
+	AdminRoute string `json:"admin_route"`
+	Hint       string `json:"hint,optional"`
 }
 
 type AiAgentsResp struct {
@@ -1958,6 +2670,20 @@ type TopicTag struct {
 	CreatedAt string `json:"created_at,optional"`
 }
 
+type TrackUserBehaviorEventsData struct {
+	Accepted int `json:"accepted"`
+}
+
+type TrackUserBehaviorEventsReq struct {
+	UserId string                  `path:"user_id"`
+	Events []UserBehaviorEventItem `json:"events"`
+}
+
+type TrackUserBehaviorEventsResp struct {
+	BaseResp
+	Data TrackUserBehaviorEventsData `json:"data"`
+}
+
 type Transaction struct {
 	Id          string  `json:"id"`
 	UserId      string  `json:"user_id"`
@@ -2120,6 +2846,15 @@ type UserAvatar struct {
 	BaseConfig    BaseConfig   `json:"base_config"`
 	CurrentOutfit OutfitConfig `json:"current_outfit"`
 	OwnedOutfits  []string     `json:"owned_outfits"`
+}
+
+type UserBehaviorEventItem struct {
+	Event      string            `json:"event"`
+	Screen     string            `json:"screen"`
+	Params     map[string]string `json:"params,optional"`
+	DurationMs int64             `json:"duration_ms,optional"`
+	SessionId  string            `json:"session_id"`
+	ClientTs   int64             `json:"client_ts"`
 }
 
 type UserDeviceRecord struct {

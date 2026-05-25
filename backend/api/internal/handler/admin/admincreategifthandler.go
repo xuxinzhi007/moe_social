@@ -16,8 +16,8 @@ import (
 
 func AdminCreateGiftHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if _, br := common.RequireAdminToken(r); br != nil {
-			httpx.OkJsonCtx(r.Context(), w, &types.AdminCreateGiftResp{BaseResp: *br})
+		ctx, ok := common.PrepareAdminContext(w, r)
+		if !ok {
 			return
 		}
 
@@ -27,7 +27,7 @@ func AdminCreateGiftHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := admin.NewAdminCreateGiftLogic(r.Context(), svcCtx)
+		l := admin.NewAdminCreateGiftLogic(ctx, svcCtx)
 		resp, err := l.AdminCreateGift(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)

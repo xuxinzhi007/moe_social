@@ -37,7 +37,7 @@ const AdminAuthContext = createContext<AdminAuthContextValue | null>(null)
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const { baseUrl } = useDeploy()
-  const { apiTarget } = usePlatform()
+  const { apiTarget, health } = usePlatform()
   const [token, setToken] = useState(() => loadAdminToken())
   const [user, setUser] = useState<StoredAdminUser | null>(() => loadAdminUser())
   const [bootstrapped, setBootstrapped] = useState(false)
@@ -49,8 +49,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         baseUrl,
         token,
         apiTarget,
+        cloudApiBaseUrl: health?.cloud_api?.base_url,
       }),
-    [apiTarget, baseUrl, token],
+    [apiTarget, baseUrl, health?.cloud_api?.base_url, token],
   )
 
   const refreshMe = useCallback(async () => {

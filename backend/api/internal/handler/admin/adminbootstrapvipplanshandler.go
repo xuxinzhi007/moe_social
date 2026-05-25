@@ -16,8 +16,8 @@ import (
 
 func AdminBootstrapVipPlansHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if _, br := common.RequireAdminToken(r); br != nil {
-			httpx.OkJsonCtx(r.Context(), w, &types.AdminBootstrapVipPlansResp{BaseResp: *br})
+		ctx, ok := common.PrepareAdminContext(w, r)
+		if !ok {
 			return
 		}
 
@@ -27,7 +27,7 @@ func AdminBootstrapVipPlansHandler(svcCtx *svc.ServiceContext) http.HandlerFunc 
 			return
 		}
 
-		l := admin.NewAdminBootstrapVipPlansLogic(r.Context(), svcCtx)
+		l := admin.NewAdminBootstrapVipPlansLogic(ctx, svcCtx)
 		resp, err := l.AdminBootstrapVipPlans(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)

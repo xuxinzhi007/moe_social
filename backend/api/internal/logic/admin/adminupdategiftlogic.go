@@ -45,8 +45,12 @@ func (l *AdminUpdateGiftLogic) AdminUpdateGift(req *types.AdminUpdateGiftReq) (r
 		return &types.AdminUpdateGiftResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}
 
-	return &types.AdminUpdateGiftResp{
+	resp = &types.AdminUpdateGiftResp{
 		BaseResp: common.HandleRPCError(nil, "保存成功"),
 		Data:     common.RpcGiftToTypes(rpcResp.GetGift()),
-	}, nil
+	}
+	if resp.BaseResp.Success {
+		common.TryRecordAdminAudit(l.ctx, l.svcCtx, "update", "gift", req.GiftId, "更新礼物")
+	}
+	return resp, nil
 }

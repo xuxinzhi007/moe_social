@@ -36,11 +36,15 @@ export function AppShell() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand">
-          <h1>Moe Admin</h1>
-          <p>Moe Social 管理后台</p>
+        <div className="sidebar-brand-wrap">
+          <div className="brand">
+            <h1>Moe Admin</h1>
+            <p>Moe Social 管理后台</p>
+          </div>
         </div>
-        <SidebarNav legacyHref={legacyRoot} devtoolsHref={devtoolsHref} />
+        <div className="sidebar-nav-wrap">
+          <SidebarNav legacyHref={legacyRoot} devtoolsHref={devtoolsHref} />
+        </div>
         <div className="sidebar-foot">业务 API · Deploy Agent</div>
       </aside>
 

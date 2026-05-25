@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/user.dart';
 import 'services/api_service.dart';
+import 'services/behavior_analytics_service.dart';
 import 'services/chat_push_service.dart';
 import 'services/presence_service.dart';
 import 'widgets/moe_toast.dart';
@@ -112,6 +113,7 @@ class AuthService {
         ApiService.setToken(_token);
         PresenceService.start();
         ChatPushService.start();
+        BehaviorAnalyticsService.instance.start();
 
         return AuthResult.success();
       } on ApiException catch (e) {
@@ -256,6 +258,7 @@ class AuthService {
 
   static void logout() {
     MoeToast.dismiss();
+    unawaited(BehaviorAnalyticsService.instance.stop());
     final uid = _currentUser;
     _currentUser = null;
     _token = null;

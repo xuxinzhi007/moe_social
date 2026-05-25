@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
+import { AdminFormDrawer } from '../components/AdminFormDrawer'
+import { FormField } from '../components/FormField'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { usePlatform } from '../context/PlatformContext'
 import { DeployApiError } from '../api/deployClient'
@@ -36,6 +38,7 @@ export function VipPlansPage() {
   const [modal, setModal] = useState<'create' | 'edit' | null>(null)
   const [editing, setEditing] = useState<VipPlanRow | null>(null)
   const [form, setForm] = useState(emptyForm)
+  const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
 
   const pageSize = 20
@@ -74,6 +77,7 @@ export function VipPlansPage() {
   function openCreate() {
     setEditing(null)
     setForm(emptyForm)
+    setFormError('')
     setModal('create')
   }
 
@@ -85,7 +89,13 @@ export function VipPlansPage() {
       price: String(row.price),
       duration_days: String(row.duration_days),
     })
+    setFormError('')
     setModal('edit')
+  }
+
+  function closeModal() {
+    setModal(null)
+    setFormError('')
   }
 
   async function savePlan() {
@@ -93,20 +103,20 @@ export function VipPlansPage() {
     const price = Number(form.price)
     const durationDays = Number(form.duration_days)
     if (!name) {
-      setError('请填写套餐名称')
+      setFormError('请填写套餐名称')
       return
     }
     if (!Number.isFinite(price) || price < 0) {
-      setError('请填写有效价格')
+      setFormError('请填写有效价格')
       return
     }
     if (!Number.isFinite(durationDays) || durationDays <= 0) {
-      setError('有效期天数必须大于 0')
+      setFormError('有效期天数必须大于 0')
       return
     }
 
     setSaving(true)
-    setError('')
+    setFormError('')
     try {
       if (modal === 'create') {
         const res = await client.createVipPlan({
@@ -116,7 +126,7 @@ export function VipPlansPage() {
           duration_days: durationDays,
         })
         if (!res.success) {
-          setError(res.message || '创建失败')
+          setFormError(res.message || '创建失败')
           return
         }
         setMessage('套餐已创建')
@@ -132,15 +142,15 @@ export function VipPlansPage() {
           update_duration_days: true,
         })
         if (!res.success) {
-          setError(res.message || '保存失败')
+          setFormError(res.message || '保存失败')
           return
         }
         setMessage('套餐已更新')
       }
-      setModal(null)
+      closeModal()
       await load()
     } catch (e) {
-      setError(e instanceof DeployApiError ? e.message : '保存失败')
+      setFormError(e instanceof DeployApiError ? e.message : '保存失败')
     } finally {
       setSaving(false)
     }
@@ -327,19 +337,24 @@ export function VipPlansPage() {
       </div>
 
       {modal ? (
-        <div className="drawer-backdrop" onClick={() => setModal(null)}>
-          <div className="drawer" onClick={(e) => e.stopPropagation()}>
-            <h3>{modal === 'create' ? '新建 VIP 套餐' : '编辑 VIP 套餐'}</h3>
-            {editing ? <p className="muted">ID {editing.id}</p> : null}
-            <label>
-              <span>名称</span>
-              <input
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              />
-            </label>
-            <label>
-              <span>价格（元）</span>
+        <AdminFormDrawer
+          open
+          title={modal === 'create' ? '新建 VIP 套餐' : '编辑 VIP 套餐'}
+          subtitle={editing ? `ID ${editing.id}` : undefined}
+          error={formError}
+          saving={saving}
+          onClose={closeModal}
+          onSave={() => void savePlan()}
+        >
+          <FormField label="名称" required>
+            <input
+              value={form.name}
+              placeholder="如：月度会员"
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            />
+          </FormField>
+          <div className="form-grid-2">
+            <FormField label="价格（元）" required>
               <input
                 type="number"
                 min={0}
@@ -347,9 +362,8 @@ export function VipPlansPage() {
                 value={form.price}
                 onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
               />
-            </label>
-            <label>
-              <span>有效天数</span>
+            </FormField>
+            <FormField label="有效天数" required>
               <input
                 type="number"
                 min={1}
@@ -358,32 +372,19 @@ export function VipPlansPage() {
                   setForm((f) => ({ ...f, duration_days: e.target.value }))
                 }
               />
-            </label>
-            <label>
-              <span>说明</span>
-              <textarea
-                rows={3}
-                value={form.description}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, description: e.target.value }))
-                }
-              />
-            </label>
-            <div className="drawer-actions">
-              <button type="button" className="btn btn-ghost" onClick={() => setModal(null)}>
-                取消
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={saving}
-                onClick={() => void savePlan()}
-              >
-                {saving ? '保存中…' : '保存'}
-              </button>
-            </div>
+            </FormField>
           </div>
-        </div>
+          <FormField label="说明" hint="App 端展示的套餐描述">
+            <textarea
+              rows={3}
+              value={form.description}
+              placeholder="如：解锁全部 VIP 特权"
+              onChange={(e) =>
+                setForm((f) => ({ ...f, description: e.target.value }))
+              }
+            />
+          </FormField>
+        </AdminFormDrawer>
       ) : null}
     </>
   )

@@ -32,7 +32,11 @@ func (l *AdminDeleteCommentLogic) AdminDeleteComment(req *types.AdminDeleteComme
 	if err != nil {
 		return &types.AdminDeleteCommentResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}
-	return &types.AdminDeleteCommentResp{
+	resp = &types.AdminDeleteCommentResp{
 		BaseResp: common.HandleRPCError(nil, "已删除"),
-	}, nil
+	}
+	if resp.BaseResp.Success {
+		common.TryRecordAdminAudit(l.ctx, l.svcCtx, "delete", "comment", req.CommentId, "删除评论")
+	}
+	return resp, nil
 }

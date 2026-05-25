@@ -32,7 +32,11 @@ func (l *AdminDeleteGroupLogic) AdminDeleteGroup(req *types.AdminDeleteGroupReq)
 	if err != nil {
 		return &types.AdminDeleteGroupResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}
-	return &types.AdminDeleteGroupResp{
+	resp = &types.AdminDeleteGroupResp{
 		BaseResp: common.HandleRPCError(nil, "已删除"),
-	}, nil
+	}
+	if resp.BaseResp.Success {
+		common.TryRecordAdminAudit(l.ctx, l.svcCtx, "delete", "group", req.GroupId, "删除群组")
+	}
+	return resp, nil
 }

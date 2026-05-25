@@ -27,7 +27,7 @@ func NewAdminUpdateVipPlanLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
-func (l *AdminUpdateVipPlanLogic) AdminUpdateVipPlan(req *types.AdminUpdateVipPlanReq) (resp *types.AdminUpdateVipPlanResp, err error) {
+func (l *AdminUpdateVipPlanLogic) AdminUpdateVipPlan(req *types.AdminUpdateVipPlanReq) (*types.AdminUpdateVipPlanResp, error) {
 	rpcResp, err := l.svcCtx.SuperRpcClient.AdminUpdateVipPlan(l.ctx, &super.AdminUpdateVipPlanReq{
 		PlanId:             req.PlanId,
 		Name:               req.Name,
@@ -45,8 +45,12 @@ func (l *AdminUpdateVipPlanLogic) AdminUpdateVipPlan(req *types.AdminUpdateVipPl
 		}, nil
 	}
 
-	return &types.AdminUpdateVipPlanResp{
+	resp := &types.AdminUpdateVipPlanResp{
 		BaseResp: common.HandleRPCError(nil, "更新成功"),
 		Data:     common.RpcVipPlanToTypes(rpcResp.GetPlan()),
-	}, nil
+	}
+	if resp.BaseResp.Success {
+		common.TryRecordAdminAudit(l.ctx, l.svcCtx, "update", "vip_plan", req.PlanId, "更新 VIP 套餐")
+	}
+	return resp, nil
 }

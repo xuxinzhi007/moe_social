@@ -16,8 +16,8 @@ import (
 
 func AdminDeleteVipPlanHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if _, br := common.RequireAdminToken(r); br != nil {
-			httpx.OkJsonCtx(r.Context(), w, &types.AdminDeleteVipPlanResp{BaseResp: *br})
+		ctx, ok := common.PrepareAdminContext(w, r)
+		if !ok {
 			return
 		}
 
@@ -27,7 +27,7 @@ func AdminDeleteVipPlanHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := admin.NewAdminDeleteVipPlanLogic(r.Context(), svcCtx)
+		l := admin.NewAdminDeleteVipPlanLogic(ctx, svcCtx)
 		resp, err := l.AdminDeleteVipPlan(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)

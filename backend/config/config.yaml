@@ -66,15 +66,15 @@ wechat:
   # redirect_uri: "http://127.0.0.1:8888/api/auth/wechat/callback"
   app_return_url: ""
   app:
-    # 正式：填开放平台「移动应用」凭证；调试可暂与 mp 相同（须与 lib/utils/wechat_config.dart 的 appId 一致）
-    app_id: "wxf640612c0ad331d9"
-    app_secret: "b8d8a2887474b31a66639da1a7c08fff"
+    # 开放平台「Moe Social Dev」移动应用（须与 lib/utils/wechat_config.dart appId 一致）
+    app_id: "wx67e8f053879adcc8"
+    app_secret: "54b017a98b99db757be90a19af72163a"
   website:
-    app_id: ""      # 网站应用 AppID（Web/PC 扫码登录）
+    app_id: ""      # 网站应用 AppID（Web/PC 扫码登录，与移动应用不同 ID）
     app_secret: ""
   mp:
-    app_id: "wxf640612c0ad331d9"
-    app_secret: "b8d8a2887474b31a66639da1a7c08fff"
+    app_id: ""
+    app_secret: ""
   oauth_scope: "snsapi_userinfo"
 
 #local

@@ -12,7 +12,6 @@ import { FeedbackPage } from './pages/FeedbackPage'
 import { JobsPage } from './pages/JobsPage'
 import { LoginPage } from './pages/LoginPage'
 import { OverviewPage } from './pages/OverviewPage'
-import { PlaceholderPage } from './pages/PlaceholderPage'
 import { ReleasePage } from './pages/ReleasePage'
 import { RpcPage } from './pages/RpcPage'
 import { UsersPage } from './pages/UsersPage'
@@ -23,6 +22,19 @@ import { PostsPage } from './pages/PostsPage'
 import { CommentsPage } from './pages/CommentsPage'
 import { CommunityGroupsPage } from './pages/CommunityGroupsPage'
 import { ReportsPage } from './pages/ReportsPage'
+import { GrowthPage } from './pages/GrowthPage'
+import { AnnouncementsPage } from './pages/AnnouncementsPage'
+import { NotifyPage } from './pages/NotifyPage'
+import { AiAgentsPage } from './pages/AiAgentsPage'
+import { SocialPage } from './pages/SocialPage'
+import { AdminAccountsPage } from './pages/AdminAccountsPage'
+import { MenusPage } from './pages/MenusPage'
+import { AuditLogsPage } from './pages/AuditLogsPage'
+import { PlatformPage } from './pages/PlatformPage'
+
+function PlatformRedirect({ tab }: { tab: string }) {
+  return <Navigate to={`/system/platform?tab=${tab}`} replace />
+}
 
 export default function App() {
   return (
@@ -45,14 +57,24 @@ export default function App() {
                     <Route path="content/community" element={<CommunityGroupsPage />} />
                     <Route path="content/reports" element={<ReportsPage />} />
                     <Route path="feedback" element={<FeedbackPage />} />
+                    <Route path="app/growth" element={<GrowthPage />} />
+                    <Route path="app/announcements" element={<AnnouncementsPage />} />
+                    <Route path="app/notify" element={<NotifyPage />} />
+                    <Route path="app/ai" element={<AiAgentsPage />} />
+                    <Route path="app/social" element={<SocialPage />} />
+                    <Route path="system/admins" element={<AdminAccountsPage />} />
+                    <Route path="system/menus" element={<MenusPage />} />
+                    <Route path="system/platform" element={<PlatformPage />} />
+                    <Route path="system/data" element={<PlatformRedirect tab="data" />} />
+                    <Route path="system/app-config" element={<PlatformRedirect tab="config" />} />
+                    <Route path="system/media" element={<PlatformRedirect tab="media" />} />
+                    <Route path="system/audit" element={<AuditLogsPage />} />
                     <Route path="deploy" element={<OverviewPage />} />
                     <Route path="rpc" element={<RpcPage />} />
                     <Route path="docker" element={<DockerPage />} />
                     <Route path="build" element={<BuildPage />} />
                     <Route path="release" element={<ReleasePage />} />
                     <Route path="jobs" element={<JobsPage />} />
-                    <Route path="app/*" element={<PlaceholderPage />} />
-                    <Route path="system/*" element={<PlaceholderPage />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Route>
                 </Route>

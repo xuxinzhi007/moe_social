@@ -16,8 +16,8 @@ import (
 
 func AdminDeleteGiftHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if _, br := common.RequireAdminToken(r); br != nil {
-			httpx.OkJsonCtx(r.Context(), w, &types.AdminDeleteGiftResp{BaseResp: *br})
+		ctx, ok := common.PrepareAdminContext(w, r)
+		if !ok {
 			return
 		}
 
@@ -27,7 +27,7 @@ func AdminDeleteGiftHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := admin.NewAdminDeleteGiftLogic(r.Context(), svcCtx)
+		l := admin.NewAdminDeleteGiftLogic(ctx, svcCtx)
 		resp, err := l.AdminDeleteGift(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)

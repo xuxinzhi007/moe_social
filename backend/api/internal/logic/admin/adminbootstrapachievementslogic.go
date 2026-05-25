@@ -34,8 +34,12 @@ func (l *AdminBootstrapAchievementsLogic) AdminBootstrapAchievements(_ *types.Em
 	if rpcResp.GetCreated() > 0 {
 		msg = "已导入默认成就定义"
 	}
-	return &types.AdminBootstrapAchievementsResp{
+	resp = &types.AdminBootstrapAchievementsResp{
 		BaseResp: common.HandleRPCError(nil, msg),
 		Data:     types.AdminBootstrapAchievementsData{Created: int(rpcResp.GetCreated())},
-	}, nil
+	}
+	if resp.BaseResp.Success {
+		common.TryRecordAdminAudit(l.ctx, l.svcCtx, "bootstrap", "achievement", "", "导入默认成就定义")
+	}
+	return resp, nil
 }

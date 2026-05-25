@@ -7,6 +7,8 @@ export type MenuItem = {
   label: string
   end?: boolean
   status?: MenuStatus
+  /** 侧栏图标（emoji / 单字符） */
+  icon?: string
   /** 对应 App / lib/pages 域，便于对照 */
   appDomain?: string
 }
@@ -15,6 +17,8 @@ export type MenuGroup = {
   kind: 'group'
   id: string
   label: string
+  /** 侧栏图标（emoji / 单字符） */
+  icon?: string
   /** 侧栏分组说明（可选） */
   caption?: string
   defaultOpen?: boolean
@@ -39,6 +43,7 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
     kind: 'item',
     to: '/',
     label: '工作台',
+    icon: '🏠',
     end: true,
     status: 'ready',
     appDomain: 'dashboard',
@@ -47,6 +52,7 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
     kind: 'group',
     id: 'app-users',
     label: 'App 用户',
+    icon: '👤',
     caption: '账号 · 会员 · 成长',
     defaultOpen: true,
     children: [
@@ -75,7 +81,7 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
         kind: 'item',
         to: '/app/growth',
         label: '签到 · 等级 · 成就',
-        status: 'planned',
+        status: 'ready',
         appDomain: 'checkin / level / achievements',
       },
     ],
@@ -84,6 +90,7 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
     kind: 'group',
     id: 'app-content',
     label: '内容与社区',
+    icon: '📝',
     caption: '动态 · 社区 · 审核',
     defaultOpen: false,
     children: [
@@ -121,6 +128,7 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
     kind: 'group',
     id: 'app-ops',
     label: '运营触达',
+    icon: '📢',
     caption: '官网 · 公告 · 推送',
     defaultOpen: true,
     children: [
@@ -135,14 +143,14 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
         kind: 'item',
         to: '/app/announcements',
         label: '公告管理',
-        status: 'planned',
+        status: 'ready',
         appDomain: '—',
       },
       {
         kind: 'item',
         to: '/app/notify',
         label: '通知推送',
-        status: 'planned',
+        status: 'ready',
         appDomain: 'notification',
       },
     ],
@@ -151,6 +159,7 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
     kind: 'group',
     id: 'app-play',
     label: 'AI 与玩法',
+    icon: '🎮',
     caption: '酒馆 · 礼物 · 社交',
     defaultOpen: false,
     children: [
@@ -158,7 +167,7 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
         kind: 'item',
         to: '/app/ai',
         label: 'AI 角色酒馆',
-        status: 'planned',
+        status: 'ready',
         appDomain: 'ai',
       },
       {
@@ -172,7 +181,7 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
         kind: 'item',
         to: '/app/social',
         label: '好友与关注',
-        status: 'planned',
+        status: 'ready',
         appDomain: 'discover / friend',
       },
     ],
@@ -181,28 +190,36 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
     kind: 'group',
     id: 'system',
     label: '系统管理',
+    icon: '⚙️',
     caption: '账号 · 菜单 · 审计',
     defaultOpen: false,
     children: [
       {
         kind: 'item',
+        to: '/system/platform',
+        label: '平台治理',
+        status: 'ready',
+        appDomain: 'platform',
+      },
+      {
+        kind: 'item',
         to: '/system/admins',
         label: '管理员账号',
-        status: 'planned',
+        status: 'ready',
         appDomain: 'admin_account',
       },
       {
         kind: 'item',
         to: '/system/menus',
         label: '侧栏菜单配置',
-        status: 'planned',
+        status: 'ready',
         appDomain: 'admin_menu',
       },
       {
         kind: 'item',
         to: '/system/audit',
         label: '操作日志',
-        status: 'planned',
+        status: 'ready',
         appDomain: 'admin_audit_log',
       },
     ],
@@ -211,6 +228,7 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
     kind: 'group',
     id: 'devops',
     label: '运维与监控',
+    icon: '🚀',
     caption: '构建 · 发布 · Agent',
     defaultOpen: false,
     children: [

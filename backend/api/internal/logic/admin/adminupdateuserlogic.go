@@ -5,6 +5,7 @@ package admin
 
 import (
 	"context"
+	"fmt"
 
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
@@ -28,7 +29,7 @@ func NewAdminUpdateUserLogic(ctx context.Context, svcCtx *svc.ServiceContext) *A
 	}
 }
 
-func (l *AdminUpdateUserLogic) AdminUpdateUser(req *types.AdminUpdateUserReq) (resp *types.AdminUpdateUserResp, err error) {
+func (l *AdminUpdateUserLogic) AdminUpdateUser(req *types.AdminUpdateUserReq) (*types.AdminUpdateUserResp, error) {
 	rpcResp, err := l.svcCtx.SuperRpcClient.AdminUpdateUser(l.ctx, &super.AdminUpdateUserReq{
 		UserId:          req.UserId,
 		Role:            req.Role,
@@ -36,6 +37,8 @@ func (l *AdminUpdateUserLogic) AdminUpdateUser(req *types.AdminUpdateUserReq) (r
 		UpdateIsVip:     req.UpdateIsVip,
 		Signature:       req.Signature,
 		UpdateSignature: req.UpdateSignature,
+		Avatar:          req.Avatar,
+		UpdateAvatar:    req.UpdateAvatar,
 	})
 	if err != nil {
 		return &types.AdminUpdateUserResp{
@@ -43,8 +46,12 @@ func (l *AdminUpdateUserLogic) AdminUpdateUser(req *types.AdminUpdateUserReq) (r
 		}, nil
 	}
 
-	return &types.AdminUpdateUserResp{
+	resp := &types.AdminUpdateUserResp{
 		BaseResp: common.HandleRPCError(nil, "ok"),
 		Data:     common.RpcUserToTypes(rpcResp.User),
-	}, nil
+	}
+	if resp.BaseResp.Success {
+		common.TryRecordAdminAudit(l.ctx, l.svcCtx, "update", "user", fmt.Sprintf("%d", req.UserId), "更新 App 用户")
+	}
+	return resp, nil
 }

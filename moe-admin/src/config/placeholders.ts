@@ -108,9 +108,9 @@ export const PLACEHOLDER_PAGES: Record<string, PlaceholderMeta> = {
   },
   'system/audit': {
     title: '操作日志',
-    phase: 'P2',
+    phase: 'P1',
     appDomain: 'admin_audit_log',
     summary: '记录管理员关键操作便于追溯。',
-    apis: ['待新增 /api/admin/audit-logs'],
+    apis: ['GET /api/admin/audit-logs'],
   },
 }

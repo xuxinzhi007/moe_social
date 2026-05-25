@@ -56,12 +56,11 @@ export function SettingsDrawer({ open, onClose }: Props) {
   }
 
   return (
-    <>
-      <div className="drawer-backdrop" onClick={onClose} aria-hidden />
-      <aside className="drawer" aria-label="连接设置">
+    <div className="drawer-backdrop" onClick={onClose}>
+      <aside className="drawer" aria-label="连接设置" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-head">
           <h3>连接与鉴权</h3>
-          <button type="button" className="btn btn-ghost" onClick={onClose}>
+          <button type="button" className="btn btn-ghost drawer-close" onClick={onClose}>
             ✕
           </button>
         </div>
@@ -132,6 +131,6 @@ export function SettingsDrawer({ open, onClose }: Props) {
           </p>
         </div>
       </aside>
-    </>
+    </div>
   )
 }
