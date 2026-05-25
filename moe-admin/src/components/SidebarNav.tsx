@@ -87,19 +87,27 @@ export function SidebarNav({ legacyHref, devtoolsHref }: SidebarNavProps) {
     })
   }, [])
 
-  function renderItem(item: MenuItem) {
+  function renderItem(item: MenuItem, topLevel = false) {
     const badge = statusLabel(item.status)
     const active = itemActive(pathname, item.to, item.end)
+    const planned = item.status === 'planned'
     return (
       <NavLink
         key={item.to}
         to={item.to}
         end={item.end === true}
-        className={`nav-item nav-item-child${active ? ' active' : ''}${
-          item.status === 'planned' ? ' nav-item-planned' : ''
+        className={`nav-item${topLevel ? ' nav-item-top' : ' nav-item-child'}${active ? ' active' : ''}${
+          planned ? ' nav-item-planned' : ' nav-item-ready'
         }`}
         title={item.appDomain ? `App: ${item.appDomain}` : undefined}
       >
+        {item.icon ? (
+          <span className="nav-item-icon" aria-hidden>
+            {item.icon}
+          </span>
+        ) : topLevel ? null : (
+          <span className="nav-item-dot" aria-hidden />
+        )}
         <span className="nav-item-label">{item.label}</span>
         {badge ? <span className="nav-badge">{badge}</span> : null}
       </NavLink>
@@ -108,7 +116,7 @@ export function SidebarNav({ legacyHref, devtoolsHref }: SidebarNavProps) {
 
   function renderEntry(entry: MenuEntry) {
     if (entry.kind === 'item') {
-      return renderItem(entry)
+      return renderItem(entry, true)
     }
     if (entry.kind === 'group') {
       const open = openMap[entry.id] ?? false
@@ -127,6 +135,11 @@ export function SidebarNav({ legacyHref, devtoolsHref }: SidebarNavProps) {
             <span className="nav-group-chevron" aria-hidden>
               {open ? '▾' : '▸'}
             </span>
+            {entry.icon ? (
+              <span className="nav-group-icon" aria-hidden>
+                {entry.icon}
+              </span>
+            ) : null}
             <span className="nav-group-text">
               <span className="nav-group-title">{entry.label}</span>
               {entry.caption ? (
@@ -135,7 +148,7 @@ export function SidebarNav({ legacyHref, devtoolsHref }: SidebarNavProps) {
             </span>
           </button>
           {open ? (
-            <div className="nav-group-body">{entry.children.map(renderItem)}</div>
+            <div className="nav-group-body">{entry.children.map((child) => renderItem(child))}</div>
           ) : null}
         </div>
       )

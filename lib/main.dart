@@ -8,6 +8,8 @@ import 'app/app_routes.dart';
 import 'services/achievement_hooks.dart';
 import 'auth_service.dart';
 import 'services/api_service.dart';
+import 'services/behavior_analytics_service.dart';
+import 'utils/behavior_route_observer.dart';
 import 'utils/config.dart' as moe_launch_config;
 import 'widgets/app_message_widget.dart';
 import 'widgets/floating_virtual_avatar_host.dart';
@@ -219,6 +221,7 @@ class SplashScreenWrapper extends StatelessWidget {
     if (AuthService.isLoggedIn) {
       PresenceService.start();
       ChatPushService.start();
+      BehaviorAnalyticsService.instance.start();
       final uid = AuthService.currentUser;
       if (uid != null) {
         unawaited(AchievementHooks.ensureReady(uid));
@@ -306,6 +309,7 @@ class _MyAppState extends State<MyApp> {
           );
         },
         routes: buildAppRoutes(),
+        navigatorObservers: [behaviorRouteObserver],
       ),
     );
   }

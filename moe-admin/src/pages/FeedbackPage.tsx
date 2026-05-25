@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
+import { AdminTag } from '../components/AdminTag'
+import { DataEnvBar } from '../components/DataEnvBar'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { useDeploy } from '../context/DeployContext'
-import { usePlatform } from '../context/PlatformContext'
+import { feedbackCategoryTag } from '../lib/adminLabels'
+import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
 
 type FeedbackItem = {
@@ -14,31 +17,9 @@ type FeedbackItem = {
   created_at: string
 }
 
-const CATEGORY_LABEL: Record<string, string> = {
-  feature: '功能建议',
-  bug: '问题反馈',
-  other: '其他',
-  all: '全部',
-}
-
-function categoryTagClass(cat: string) {
-  if (cat === 'feature') return 'fb-tag fb-tag-feature'
-  if (cat === 'bug') return 'fb-tag fb-tag-bug'
-  return 'fb-tag fb-tag-other'
-}
-
-function formatTime(iso: string) {
-  try {
-    return new Date(iso).toLocaleString('zh-CN', { hour12: false })
-  } catch {
-    return iso
-  }
-}
-
 export function FeedbackPage() {
   const { client } = useAdminAuth()
   const { showToast } = useDeploy()
-  const { apiTargetLabel } = usePlatform()
   const [items, setItems] = useState<FeedbackItem[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -84,10 +65,7 @@ export function FeedbackPage() {
       <div className="page-head page-head-row">
         <div>
           <h2>官网意见反馈</h2>
-          <p>
-            来自落地页 <code>#join</code> 的提交 · 数据环境{' '}
-            <code>{apiTargetLabel}</code>
-          </p>
+          <p>来自落地页 #join 的提交</p>
         </div>
         <div className="btn-row">
           <select
@@ -113,6 +91,8 @@ export function FeedbackPage() {
           </button>
         </div>
       </div>
+
+      <DataEnvBar />
 
       <div className="panel fb-panel">
         <div className="panel-head">
@@ -148,9 +128,7 @@ export function FeedbackPage() {
                   >
                     <td>#{row.id}</td>
                     <td>
-                      <span className={categoryTagClass(row.category)}>
-                        {CATEGORY_LABEL[row.category] || row.category}
-                      </span>
+                      <AdminTag spec={feedbackCategoryTag(row.category)} />
                     </td>
                     <td>{row.email}</td>
                     <td className="fb-snippet">
@@ -158,7 +136,7 @@ export function FeedbackPage() {
                         ? `${row.content.slice(0, 48)}…`
                         : row.content}
                     </td>
-                    <td>{formatTime(row.created_at)}</td>
+                    <td>{formatDateTime(row.created_at)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -207,9 +185,7 @@ export function FeedbackPage() {
               <div className="env-kv-row">
                 <dt>类型</dt>
                 <dd>
-                  <span className={categoryTagClass(selected.category)}>
-                    {CATEGORY_LABEL[selected.category] || selected.category}
-                  </span>
+                  <AdminTag spec={feedbackCategoryTag(selected.category)} />
                 </dd>
               </div>
               <div className="env-kv-row">
@@ -226,7 +202,7 @@ export function FeedbackPage() {
               </div>
               <div className="env-kv-row">
                 <dt>时间</dt>
-                <dd>{formatTime(selected.created_at)}</dd>
+                <dd>{formatDateTime(selected.created_at)}</dd>
               </div>
             </div>
             <p className="fb-detail-content">{selected.content}</p>

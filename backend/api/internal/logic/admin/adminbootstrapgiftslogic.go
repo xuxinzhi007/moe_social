@@ -34,8 +34,12 @@ func (l *AdminBootstrapGiftsLogic) AdminBootstrapGifts(_ *types.EmptyReq) (resp 
 	if rpcResp.GetCreated() > 0 {
 		msg = "已导入默认礼物"
 	}
-	return &types.AdminBootstrapGiftsResp{
+	resp = &types.AdminBootstrapGiftsResp{
 		BaseResp: common.HandleRPCError(nil, msg),
 		Data:     types.AdminBootstrapGiftsData{Created: int(rpcResp.GetCreated())},
-	}, nil
+	}
+	if resp.BaseResp.Success {
+		common.TryRecordAdminAudit(l.ctx, l.svcCtx, "bootstrap", "gift", "", "导入默认礼物")
+	}
+	return resp, nil
 }

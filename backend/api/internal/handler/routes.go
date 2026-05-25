@@ -12,6 +12,7 @@ import (
 	ai "backend/api/internal/handler/ai"
 	appcfg "backend/api/internal/handler/appcfg"
 	avatar "backend/api/internal/handler/avatar"
+	behavior "backend/api/internal/handler/behavior"
 	chat "backend/api/internal/handler/chat"
 	checkin "backend/api/internal/handler/checkin"
 	comment "backend/api/internal/handler/comment"
@@ -64,9 +65,74 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		[]rest.Route{
 			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/accounts",
+				Handler: admin.AdminListAccountsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/accounts",
+				Handler: admin.AdminCreateAccountHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/admin/accounts/:account_id",
+				Handler: admin.AdminUpdateAccountHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/admin/accounts/:account_id",
+				Handler: admin.AdminDeleteAccountHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodPost,
 				Path:    "/api/admin/achievements/bootstrap",
 				Handler: admin.AdminBootstrapAchievementsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/ai/agents",
+				Handler: admin.AdminListAiAgentsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/admin/ai/agents",
+				Handler: admin.AdminDeleteAiAgentHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/announcements",
+				Handler: admin.AdminListAnnouncementsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/announcements",
+				Handler: admin.AdminCreateAnnouncementHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/announcements/:announcement_id",
+				Handler: admin.AdminGetAnnouncementHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/admin/announcements/:announcement_id",
+				Handler: admin.AdminUpdateAnnouncementHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/admin/announcements/:announcement_id",
+				Handler: admin.AdminDeleteAnnouncementHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/announcements/:announcement_id/publish",
+				Handler: admin.AdminPublishAnnouncementHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/audit-logs",
+				Handler: admin.AdminListAuditLogsHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
@@ -125,6 +191,46 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
+				Path:    "/api/admin/growth/achievements",
+				Handler: admin.AdminListAchievementsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/admin/growth/achievements/:achievement_id",
+				Handler: admin.AdminUpdateAchievementHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/growth/check-in-rewards",
+				Handler: admin.AdminListCheckInRewardsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/admin/growth/check-in-rewards/:reward_id",
+				Handler: admin.AdminUpdateCheckInRewardHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/growth/levels",
+				Handler: admin.AdminListLevelConfigsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/admin/growth/levels/:level_id",
+				Handler: admin.AdminUpdateLevelConfigHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/growth/levels/bootstrap",
+				Handler: admin.AdminBootstrapLevelsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/growth/stats",
+				Handler: admin.AdminGetGrowthStatsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/admin/landing/feedback",
 				Handler: admin.AdminListLandingFeedbackHandler(serverCtx),
 			},
@@ -132,6 +238,61 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/admin/me",
 				Handler: admin.AdminMeHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/media/images",
+				Handler: admin.AdminListMediaImagesHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/admin/media/images/:filename",
+				Handler: admin.AdminDeleteMediaImageHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/memories",
+				Handler: admin.AdminListMemoriesHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/admin/memories/:memory_id",
+				Handler: admin.AdminDeleteMemoryHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/memories/stats",
+				Handler: admin.AdminGetMemoryStatsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/menus",
+				Handler: admin.AdminListMenusHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/admin/menus",
+				Handler: admin.AdminUpsertMenuHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/admin/menus/:menu_key",
+				Handler: admin.AdminDeleteMenuHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/menus/bootstrap",
+				Handler: admin.AdminBootstrapMenusHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/notifications/broadcast",
+				Handler: admin.AdminBroadcastNotificationHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/notifications/send",
+				Handler: admin.AdminSendNotificationHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
@@ -160,6 +321,36 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
+				Path:    "/api/admin/runtime-config",
+				Handler: admin.AdminGetRuntimeConfigHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/admin/runtime-config",
+				Handler: admin.AdminUpdateRuntimeConfigHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/schema/catalog",
+				Handler: admin.AdminGetSchemaCatalogHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/social/follows",
+				Handler: admin.AdminListFollowsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/admin/social/follows/:follow_id",
+				Handler: admin.AdminDeleteFollowHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/social/friend-requests",
+				Handler: admin.AdminListFriendRequestsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/admin/users",
 				Handler: admin.AdminListUsersHandler(serverCtx),
 			},
@@ -172,6 +363,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodPut,
 				Path:    "/api/admin/users/:user_id",
 				Handler: admin.AdminUpdateUserHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/users/:user_id/profile",
+				Handler: admin.AdminGetUserProfileHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
@@ -323,6 +519,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodPost,
 				Path:    "/api/avatar/outfits/:outfit_id/purchase",
 				Handler: avatar.PurchaseAvatarOutfitHandler(serverCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/user/:user_id/behavior/events",
+				Handler: behavior.TrackUserBehaviorEventsHandler(serverCtx),
 			},
 		},
 	)

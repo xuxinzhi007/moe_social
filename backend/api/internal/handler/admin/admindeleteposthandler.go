@@ -16,8 +16,8 @@ import (
 
 func AdminDeletePostHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if _, br := common.RequireAdminToken(r); br != nil {
-			httpx.OkJsonCtx(r.Context(), w, &types.AdminDeletePostResp{BaseResp: *br})
+		ctx, ok := common.PrepareAdminContext(w, r)
+		if !ok {
 			return
 		}
 
@@ -27,7 +27,7 @@ func AdminDeletePostHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := admin.NewAdminDeletePostLogic(r.Context(), svcCtx)
+		l := admin.NewAdminDeletePostLogic(ctx, svcCtx)
 		resp, err := l.AdminDeletePost(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)

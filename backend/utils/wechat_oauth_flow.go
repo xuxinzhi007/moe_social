@@ -38,10 +38,7 @@ func wechatFlowCredentials(flow string) (appID, appSecret string, err error) {
 			"wechat.mobile_app_secret",
 			"wechat.mobile.app_secret",
 		)
-		// 未单独配置移动应用时，回退 mp（须与客户端 fluwx 注册的 appId 一致）
-		if appID == "" || appSecret == "" {
-			return wechatFlowCredentials("mp")
-		}
+		// 勿回退公众号(mp)：移动应用 code 只能用 wechat.app 凭证换取，混用会报 10005「公众号没有 scope 权限」
 	case "website":
 		appID = firstNonEmptyConfig(
 			"wechat.website.app_id",

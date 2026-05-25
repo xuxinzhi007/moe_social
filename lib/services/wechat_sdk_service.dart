@@ -91,18 +91,24 @@ class WechatSdkService {
 
   static String _formatWechatAuthError(int errCode, String? errStr) {
     final detail = errStr?.trim();
+    if (errCode == 10005 ||
+        (detail != null &&
+            (detail.contains('10005') || detail.contains('scope')))) {
+      return '微信返回 10005：当前 AppID 不是移动应用授权，或 VPS 与 App 的 AppID/Secret 不一致。'
+          '请用 Moe Social Dev（${WechatConfig.appId}）凭证，并完整重装 App 后再试';
+    }
     switch (errCode) {
       case -2:
         return '已取消微信授权';
       case -4:
         return '您拒绝了微信授权';
       case -6:
-        return '微信授权失败：请检查开放平台是否登记本 App 包名与签名（debug 包为 com.example.moe_social.dev）';
+        return '微信授权失败：请在开放平台登记包名与签名（debug：com.example.moe_social.dev，release：com.example.moe_social）';
       default:
         if (detail != null && detail.isNotEmpty) {
           return '微信授权失败（$errCode）：$detail';
         }
-        return '微信授权失败（$errCode），请确认使用开放平台「移动应用」AppID 而非小程序测试号';
+        return '微信授权失败（$errCode），请确认使用开放平台「移动应用」AppID（${WechatConfig.appId}）';
     }
   }
 }

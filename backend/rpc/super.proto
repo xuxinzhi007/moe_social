@@ -1110,6 +1110,8 @@ message AdminUpdateUserReq {
   bool update_is_vip = 4;
   string signature = 5;
   bool update_signature = 6;
+  string avatar = 7;
+  bool update_avatar = 8;
 }
 
 message AdminUpdateUserResp {
@@ -1344,6 +1346,603 @@ message AdminDeleteGroupReq {
 
 message AdminDeleteGroupResp {}
 
+// Admin 成长（签到 · 等级 · 成就）
+message AdminAchievementItem {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string category = 4;
+  string rarity = 5;
+  string condition_text = 6;
+  string rule_type = 7;
+  int32 required_count = 8;
+  string rule_params = 9;
+  int32 exp_reward = 10;
+  bool enabled = 11;
+  int32 sort_order = 12;
+  string created_at = 13;
+}
+
+message AdminListAchievementsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  string category = 4;
+}
+
+message AdminListAchievementsResp {
+  repeated AdminAchievementItem items = 1;
+  int32 total = 2;
+}
+
+message AdminBootstrapLevelsReq {}
+
+message AdminBootstrapLevelsResp {
+  int32 level_configs_created = 1;
+  int32 check_in_rewards_created = 2;
+}
+
+message AdminGrowthStats {
+  int32 achievement_definitions = 1;
+  int32 unlocked_progress_records = 2;
+  int32 level_configs = 3;
+  int32 check_in_rewards = 4;
+  int32 user_levels = 5;
+  int32 check_ins_today = 6;
+  int32 total_check_ins = 7;
+}
+
+message AdminGetGrowthStatsReq {}
+
+message AdminGetGrowthStatsResp {
+  AdminGrowthStats stats = 1;
+}
+
+message AdminLevelConfigItem {
+  string id = 1;
+  int32 level = 2;
+  string title = 3;
+  int32 min_exp = 4;
+  int32 max_exp = 5;
+  string privileges = 6;
+  string badge_url = 7;
+}
+
+message AdminListLevelConfigsReq {}
+
+message AdminListLevelConfigsResp {
+  repeated AdminLevelConfigItem items = 1;
+}
+
+message AdminUpdateLevelConfigReq {
+  uint64 id = 1;
+  string title = 2;
+  int32 min_exp = 3;
+  int32 max_exp = 4;
+  string privileges = 5;
+  string badge_url = 6;
+  bool update_title = 7;
+  bool update_min_exp = 8;
+  bool update_max_exp = 9;
+  bool update_privileges = 10;
+  bool update_badge_url = 11;
+}
+
+message AdminUpdateLevelConfigResp {
+  AdminLevelConfigItem item = 1;
+}
+
+message AdminCheckInRewardItem {
+  string id = 1;
+  int32 consecutive_days = 2;
+  int32 exp_reward = 3;
+  string extra_reward = 4;
+}
+
+message AdminListCheckInRewardsReq {}
+
+message AdminListCheckInRewardsResp {
+  repeated AdminCheckInRewardItem items = 1;
+}
+
+message AdminUpdateCheckInRewardReq {
+  uint64 id = 1;
+  int32 consecutive_days = 2;
+  int32 exp_reward = 3;
+  string extra_reward = 4;
+  bool update_consecutive_days = 5;
+  bool update_exp_reward = 6;
+  bool update_extra_reward = 7;
+}
+
+message AdminUpdateCheckInRewardResp {
+  AdminCheckInRewardItem item = 1;
+}
+
+message AdminUpdateAchievementReq {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  bool enabled = 4;
+  int32 exp_reward = 5;
+  int32 sort_order = 6;
+  bool update_name = 7;
+  bool update_description = 8;
+  bool update_enabled = 9;
+  bool update_exp_reward = 10;
+  bool update_sort_order = 11;
+}
+
+message AdminUpdateAchievementResp {
+  AdminAchievementItem item = 1;
+}
+
+message AdminUserRelationCounts {
+  int32 posts = 1;
+  int32 comments = 2;
+  int32 following = 3;
+  int32 followers = 4;
+  int32 check_ins = 5;
+  int32 achievements_unlocked = 6;
+  int32 vip_orders = 7;
+  int32 gift_sent = 8;
+  int32 gift_received = 9;
+  int32 gift_stocks = 10;
+  int32 transactions = 11;
+  int32 ai_agents = 12;
+  int32 groups_joined = 13;
+}
+
+message AdminUserLevelSnapshot {
+  int32 level = 1;
+  int32 experience = 2;
+  int32 total_exp = 3;
+  string level_title = 4;
+}
+
+message AdminUserRelationLink {
+  string label = 1;
+  string admin_route = 2;
+  string hint = 3;
+}
+
+message AdminUserProfileData {
+  User user = 1;
+  AdminUserRelationCounts counts = 2;
+  AdminUserLevelSnapshot level = 3;
+  repeated AdminUserRelationLink links = 4;
+  AdminUserBehaviorSummary behavior = 5;
+}
+
+message AdminUserBehaviorScreenStat {
+  string screen = 1;
+  string label = 2;
+  int32 visit_count = 3;
+  int64 total_duration_ms = 4;
+}
+
+message AdminUserBehaviorSummary {
+  repeated AdminUserBehaviorScreenStat top_screens = 1;
+  repeated string tags = 2;
+  string last_active_at = 3;
+  int32 total_events_7d = 4;
+}
+
+message UserBehaviorEventInput {
+  string event = 1;
+  string screen = 2;
+  string params_json = 3;
+  int64 duration_ms = 4;
+  string session_id = 5;
+  int64 client_ts_ms = 6;
+}
+
+message TrackUserBehaviorEventsReq {
+  uint64 user_id = 1;
+  repeated UserBehaviorEventInput events = 2;
+}
+
+message TrackUserBehaviorEventsResp {
+  int32 accepted = 1;
+}
+
+message AdminGetUserProfileReq {
+  uint64 user_id = 1;
+}
+
+message AdminGetUserProfileResp {
+  AdminUserProfileData data = 1;
+}
+
+// Admin 公告
+message AdminAnnouncementItem {
+  string id = 1;
+  string title = 2;
+  string content = 3;
+  string status = 4;
+  string published_at = 5;
+  string created_by = 6;
+  string created_at = 7;
+  string updated_at = 8;
+}
+
+message AdminListAnnouncementsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  string status = 4;
+}
+
+message AdminListAnnouncementsResp {
+  repeated AdminAnnouncementItem items = 1;
+  int32 total = 2;
+}
+
+message AdminGetAnnouncementReq {
+  string announcement_id = 1;
+}
+
+message AdminGetAnnouncementResp {
+  AdminAnnouncementItem announcement = 1;
+}
+
+message AdminCreateAnnouncementReq {
+  string title = 1;
+  string content = 2;
+  string created_by = 3;
+}
+
+message AdminCreateAnnouncementResp {
+  AdminAnnouncementItem announcement = 1;
+}
+
+message AdminUpdateAnnouncementReq {
+  string announcement_id = 1;
+  string title = 2;
+  string content = 3;
+  bool update_title = 4;
+  bool update_content = 5;
+}
+
+message AdminUpdateAnnouncementResp {
+  AdminAnnouncementItem announcement = 1;
+}
+
+message AdminDeleteAnnouncementReq {
+  string announcement_id = 1;
+}
+
+message AdminDeleteAnnouncementResp {}
+
+message AdminPublishAnnouncementReq {
+  string announcement_id = 1;
+}
+
+message AdminPublishAnnouncementResp {
+  AdminAnnouncementItem announcement = 1;
+}
+
+// Admin 通知推送
+message AdminBroadcastNotificationReq {
+  string title = 1;
+  string content = 2;
+}
+
+message AdminBroadcastNotificationResp {
+  int32 notifications_created = 1;
+}
+
+message AdminSendNotificationReq {
+  string user_id = 1;
+  string title = 2;
+  string content = 3;
+}
+
+message AdminSendNotificationResp {
+  string notification_id = 1;
+}
+
+// Admin AI 角色
+message AdminAiAgentItem {
+  string id = 1;
+  string owner_user_id = 2;
+  string owner_name = 3;
+  string payload_json = 4;
+}
+
+message AdminListAiAgentsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+}
+
+message AdminListAiAgentsResp {
+  repeated AdminAiAgentItem items = 1;
+  int32 total = 2;
+}
+
+message AdminDeleteAiAgentReq {
+  string user_id = 1;
+  string agent_id = 2;
+}
+
+message AdminDeleteAiAgentResp {}
+
+// Admin 社交
+message AdminFollowItem {
+  string id = 1;
+  string follower_id = 2;
+  string follower_name = 3;
+  string following_id = 4;
+  string following_name = 5;
+  string created_at = 6;
+}
+
+message AdminListFollowsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  string user_id = 4;
+}
+
+message AdminListFollowsResp {
+  repeated AdminFollowItem items = 1;
+  int32 total = 2;
+}
+
+message AdminFriendRequestItem {
+  string id = 1;
+  string from_user_id = 2;
+  string from_user_name = 3;
+  string to_user_id = 4;
+  string to_user_name = 5;
+  string status = 6;
+  string created_at = 7;
+}
+
+message AdminListFriendRequestsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string status = 3;
+  string keyword = 4;
+}
+
+message AdminListFriendRequestsResp {
+  repeated AdminFriendRequestItem items = 1;
+  int32 total = 2;
+}
+
+message AdminDeleteFollowReq {
+  string follow_id = 1;
+}
+
+message AdminDeleteFollowResp {}
+
+// Admin 账号
+message AdminAccountItem {
+  string id = 1;
+  string username = 2;
+  string role = 3;
+  string last_login_at = 4;
+  string created_at = 5;
+}
+
+message AdminListAccountsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+}
+
+message AdminListAccountsResp {
+  repeated AdminAccountItem items = 1;
+  int32 total = 2;
+}
+
+message AdminCreateAccountReq {
+  string username = 1;
+  string password = 2;
+  string role = 3;
+}
+
+message AdminCreateAccountResp {
+  AdminAccountItem account = 1;
+}
+
+message AdminUpdateAccountReq {
+  string account_id = 1;
+  string username = 2;
+  string password = 3;
+  string role = 4;
+  bool update_username = 5;
+  bool update_password = 6;
+  bool update_role = 7;
+}
+
+message AdminUpdateAccountResp {
+  AdminAccountItem account = 1;
+}
+
+message AdminDeleteAccountReq {
+  string account_id = 1;
+}
+
+message AdminDeleteAccountResp {}
+
+// Admin 菜单
+message AdminMenuItem {
+  string id = 1;
+  string key = 2;
+  string kind = 3;
+  string parent_key = 4;
+  string path = 5;
+  string label = 6;
+  string icon = 7;
+  string caption = 8;
+  string status = 9;
+  string app_domain = 10;
+  int32 sort_order = 11;
+  bool default_open = 12;
+  bool end = 13;
+  string external_href = 14;
+  bool enabled = 15;
+}
+
+message AdminListMenusReq {}
+
+message AdminListMenusResp {
+  repeated AdminMenuItem items = 1;
+}
+
+message AdminUpsertMenuReq {
+  string key = 1;
+  string kind = 2;
+  string parent_key = 3;
+  string path = 4;
+  string label = 5;
+  string icon = 6;
+  string caption = 7;
+  string status = 8;
+  string app_domain = 9;
+  int32 sort_order = 10;
+  bool default_open = 11;
+  bool end = 12;
+  string external_href = 13;
+  bool enabled = 14;
+}
+
+message AdminUpsertMenuResp {
+  AdminMenuItem menu = 1;
+}
+
+message AdminDeleteMenuReq {
+  string menu_key = 1;
+}
+
+message AdminDeleteMenuResp {}
+
+message AdminBootstrapMenusReq {}
+
+message AdminBootstrapMenusResp {
+  int32 created = 1;
+}
+
+// Admin 数据目录（AutoMigrate 表与管理能力）
+message AdminSchemaTableItem {
+  string key = 1;
+  string table_name = 2;
+  string label = 3;
+  string domain = 4;
+  string coverage = 5;
+  repeated string capabilities = 6;
+  string admin_route = 7;
+  string bootstrap_key = 8;
+  int64 row_count = 9;
+  string note = 10;
+}
+
+message AdminSchemaCatalogSummary {
+  int32 total_tables = 1;
+  int32 managed_full = 2;
+  int32 managed_partial = 3;
+  int32 unmanaged = 4;
+  int64 total_rows = 5;
+}
+
+message AdminGetSchemaCatalogReq {}
+
+message AdminMemoryItem {
+  string id = 1;
+  string user_id = 2;
+  string username = 3;
+  string key = 4;
+  string value = 5;
+  string memory_type = 6;
+  double confidence = 7;
+  string source = 8;
+  string updated_at = 9;
+}
+
+message AdminMemoryTypeStat {
+  string memory_type = 1;
+  int32 count = 2;
+}
+
+message AdminMemoryStats {
+  int32 total_memories = 1;
+  int32 users_with_memories = 2;
+  int32 total_feedbacks = 3;
+  int32 total_embeddings = 4;
+  repeated AdminMemoryTypeStat by_type = 5;
+}
+
+message AdminListMemoriesReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string user_id = 3;
+  string keyword = 4;
+  string memory_type = 5;
+}
+
+message AdminListMemoriesResp {
+  repeated AdminMemoryItem items = 1;
+  int32 total = 2;
+}
+
+message AdminGetMemoryStatsReq {}
+
+message AdminGetMemoryStatsResp {
+  AdminMemoryStats stats = 1;
+}
+
+message AdminDeleteMemoryReq {
+  uint64 memory_id = 1;
+}
+
+message AdminDeleteMemoryResp {}
+
+message AdminGetSchemaCatalogResp {
+  AdminSchemaCatalogSummary summary = 1;
+  repeated AdminSchemaTableItem items = 2;
+}
+
+// Admin 审计
+message AdminAuditLogItem {
+  string id = 1;
+  string admin_id = 2;
+  string admin_name = 3;
+  string action = 4;
+  string resource = 5;
+  string resource_id = 6;
+  string detail = 7;
+  string ip = 8;
+  string created_at = 9;
+}
+
+message AdminListAuditLogsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string action = 3;
+  string resource = 4;
+  string admin_id = 5;
+}
+
+message AdminListAuditLogsResp {
+  repeated AdminAuditLogItem items = 1;
+  int32 total = 2;
+}
+
+message RecordAdminAuditLogReq {
+  uint64 admin_id = 1;
+  string admin_name = 2;
+  string action = 3;
+  string resource = 4;
+  string resource_id = 5;
+  string detail = 6;
+  string ip = 7;
+}
+
+message RecordAdminAuditLogResp {}
+
 // 服务定义
 service Super {
   // 用户相关服务
@@ -1395,6 +1994,43 @@ service Super {
   rpc AdminListPostReports(AdminListPostReportsReq) returns (AdminListPostReportsResp);
   rpc AdminListGroups(AdminListGroupsReq) returns (AdminListGroupsResp);
   rpc AdminDeleteGroup(AdminDeleteGroupReq) returns (AdminDeleteGroupResp);
+  rpc AdminListAchievements(AdminListAchievementsReq) returns (AdminListAchievementsResp);
+  rpc AdminBootstrapLevels(AdminBootstrapLevelsReq) returns (AdminBootstrapLevelsResp);
+  rpc AdminGetGrowthStats(AdminGetGrowthStatsReq) returns (AdminGetGrowthStatsResp);
+  rpc AdminListLevelConfigs(AdminListLevelConfigsReq) returns (AdminListLevelConfigsResp);
+  rpc AdminUpdateLevelConfig(AdminUpdateLevelConfigReq) returns (AdminUpdateLevelConfigResp);
+  rpc AdminListCheckInRewards(AdminListCheckInRewardsReq) returns (AdminListCheckInRewardsResp);
+  rpc AdminUpdateCheckInReward(AdminUpdateCheckInRewardReq) returns (AdminUpdateCheckInRewardResp);
+  rpc AdminUpdateAchievement(AdminUpdateAchievementReq) returns (AdminUpdateAchievementResp);
+  rpc AdminGetUserProfile(AdminGetUserProfileReq) returns (AdminGetUserProfileResp);
+  rpc TrackUserBehaviorEvents(TrackUserBehaviorEventsReq) returns (TrackUserBehaviorEventsResp);
+  rpc AdminListAnnouncements(AdminListAnnouncementsReq) returns (AdminListAnnouncementsResp);
+  rpc AdminGetAnnouncement(AdminGetAnnouncementReq) returns (AdminGetAnnouncementResp);
+  rpc AdminCreateAnnouncement(AdminCreateAnnouncementReq) returns (AdminCreateAnnouncementResp);
+  rpc AdminUpdateAnnouncement(AdminUpdateAnnouncementReq) returns (AdminUpdateAnnouncementResp);
+  rpc AdminDeleteAnnouncement(AdminDeleteAnnouncementReq) returns (AdminDeleteAnnouncementResp);
+  rpc AdminPublishAnnouncement(AdminPublishAnnouncementReq) returns (AdminPublishAnnouncementResp);
+  rpc AdminBroadcastNotification(AdminBroadcastNotificationReq) returns (AdminBroadcastNotificationResp);
+  rpc AdminSendNotification(AdminSendNotificationReq) returns (AdminSendNotificationResp);
+  rpc AdminListAiAgents(AdminListAiAgentsReq) returns (AdminListAiAgentsResp);
+  rpc AdminDeleteAiAgent(AdminDeleteAiAgentReq) returns (AdminDeleteAiAgentResp);
+  rpc AdminListFollows(AdminListFollowsReq) returns (AdminListFollowsResp);
+  rpc AdminListFriendRequests(AdminListFriendRequestsReq) returns (AdminListFriendRequestsResp);
+  rpc AdminDeleteFollow(AdminDeleteFollowReq) returns (AdminDeleteFollowResp);
+  rpc AdminListAccounts(AdminListAccountsReq) returns (AdminListAccountsResp);
+  rpc AdminCreateAccount(AdminCreateAccountReq) returns (AdminCreateAccountResp);
+  rpc AdminUpdateAccount(AdminUpdateAccountReq) returns (AdminUpdateAccountResp);
+  rpc AdminDeleteAccount(AdminDeleteAccountReq) returns (AdminDeleteAccountResp);
+  rpc AdminListMenus(AdminListMenusReq) returns (AdminListMenusResp);
+  rpc AdminUpsertMenu(AdminUpsertMenuReq) returns (AdminUpsertMenuResp);
+  rpc AdminDeleteMenu(AdminDeleteMenuReq) returns (AdminDeleteMenuResp);
+  rpc AdminBootstrapMenus(AdminBootstrapMenusReq) returns (AdminBootstrapMenusResp);
+  rpc AdminListMemories(AdminListMemoriesReq) returns (AdminListMemoriesResp);
+  rpc AdminGetMemoryStats(AdminGetMemoryStatsReq) returns (AdminGetMemoryStatsResp);
+  rpc AdminDeleteMemory(AdminDeleteMemoryReq) returns (AdminDeleteMemoryResp);
+  rpc AdminGetSchemaCatalog(AdminGetSchemaCatalogReq) returns (AdminGetSchemaCatalogResp);
+  rpc AdminListAuditLogs(AdminListAuditLogsReq) returns (AdminListAuditLogsResp);
+  rpc RecordAdminAuditLog(RecordAdminAuditLogReq) returns (RecordAdminAuditLogResp);
   rpc UpsertUserMemory(UpsertUserMemoryReq) returns (UpsertUserMemoryResp);
   rpc GetUserMemories(GetUserMemoriesReq) returns (GetUserMemoriesResp);
   rpc GetUserMemoryProfiles(GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp);

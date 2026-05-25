@@ -160,6 +160,11 @@ func autoMigrate() error {
 		&model.PrivateMessage{},
 		&model.LandingFeedback{},
 		&model.AdminAccount{},
+		&model.AdminAnnouncement{},
+		&model.AdminMenu{},
+		&model.AdminAuditLog{},
+		&model.UserBehaviorEvent{},
+		&model.UserBehaviorDaily{},
 	}
 
 	if err := DB.AutoMigrate(models...); err != nil {

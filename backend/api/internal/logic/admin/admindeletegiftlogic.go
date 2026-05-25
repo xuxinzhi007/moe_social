@@ -32,7 +32,11 @@ func (l *AdminDeleteGiftLogic) AdminDeleteGift(req *types.AdminDeleteGiftReq) (r
 	if err != nil {
 		return &types.AdminDeleteGiftResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}
-	return &types.AdminDeleteGiftResp{
+	resp = &types.AdminDeleteGiftResp{
 		BaseResp: common.HandleRPCError(nil, "已删除"),
-	}, nil
+	}
+	if resp.BaseResp.Success {
+		common.TryRecordAdminAudit(l.ctx, l.svcCtx, "delete", "gift", req.GiftId, "删除礼物")
+	}
+	return resp, nil
 }

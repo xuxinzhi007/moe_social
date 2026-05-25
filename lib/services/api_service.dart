@@ -2134,6 +2134,19 @@ class ApiService {
     };
   }
 
+  /// 批量上报用户行为事件（埋点）
+  static Future<void> trackBehaviorEvents(
+    String userId,
+    List<Map<String, dynamic>> events,
+  ) async {
+    if (events.isEmpty) return;
+    await _request(
+      '/api/user/$userId/behavior/events',
+      method: 'POST',
+      body: {'events': events},
+    );
+  }
+
   /// 获取经验日志
   static Future<Map<String, dynamic>> getExpLogs(String userId,
       {int page = 1, int pageSize = 20}) async {

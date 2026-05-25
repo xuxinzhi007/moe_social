@@ -16,8 +16,8 @@ import (
 
 func AdminUpdateUserHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if _, br := common.RequireAdminToken(r); br != nil {
-			httpx.OkJsonCtx(r.Context(), w, &types.AdminUpdateUserResp{BaseResp: *br})
+		ctx, ok := common.PrepareAdminContext(w, r)
+		if !ok {
 			return
 		}
 
@@ -27,7 +27,7 @@ func AdminUpdateUserHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := admin.NewAdminUpdateUserLogic(r.Context(), svcCtx)
+		l := admin.NewAdminUpdateUserLogic(ctx, svcCtx)
 		resp, err := l.AdminUpdateUser(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)

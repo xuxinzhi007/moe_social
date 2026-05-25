@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
+import { AdminTag } from '../components/AdminTag'
+import { IdCell } from '../components/IdCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
+import { reportReasonTag } from '../lib/adminLabels'
+import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
 
 export function ReportsPage() {
@@ -81,12 +85,20 @@ export function ReportsPage() {
               ) : (
                 items.map((row) => (
                   <tr key={row.id}>
-                    <td>{row.id}</td>
-                    <td>{row.post_id}</td>
-                    <td>{row.reporter_user_id}</td>
-                    <td>{row.reason}</td>
+                    <td>
+                      <IdCell id={row.id} />
+                    </td>
+                    <td>
+                      <IdCell id={row.post_id} />
+                    </td>
+                    <td>
+                      <IdCell id={row.reporter_user_id} title="举报人 UID" />
+                    </td>
+                    <td>
+                      <AdminTag spec={reportReasonTag(row.reason)} />
+                    </td>
                     <td>{row.post_content_preview || '—'}</td>
-                    <td>{row.created_at}</td>
+                    <td className="muted">{formatDateTime(row.created_at)}</td>
                     <td>
                       <button
                         type="button"

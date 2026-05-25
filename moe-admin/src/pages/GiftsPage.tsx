@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
+import { AdminFormDrawer } from '../components/AdminFormDrawer'
+import { EmojiIconField } from '../components/EmojiIconField'
+import { FormField } from '../components/FormField'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { usePlatform } from '../context/PlatformContext'
 import { DeployApiError } from '../api/deployClient'
+import { GIFT_CATEGORIES, giftCategoryLabel } from '../lib/giftCategories'
 
 type GiftRow = {
   id: string
@@ -22,8 +26,6 @@ const emptyForm = {
   sort_order: '0',
 }
 
-const categories = ['emotion', 'food', 'luxury', 'special']
-
 export function GiftsPage() {
   const { client } = useAdminAuth()
   const { apiTargetLabel } = usePlatform()
@@ -38,6 +40,7 @@ export function GiftsPage() {
   const [modal, setModal] = useState<'create' | 'edit' | null>(null)
   const [editing, setEditing] = useState<GiftRow | null>(null)
   const [form, setForm] = useState(emptyForm)
+  const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
   const pageSize = 20
 
@@ -65,16 +68,42 @@ export function GiftsPage() {
     void load()
   }, [load])
 
+  function openCreate() {
+    setEditing(null)
+    setForm(emptyForm)
+    setFormError('')
+    setModal('create')
+  }
+
+  function openEdit(row: GiftRow) {
+    setEditing(row)
+    setForm({
+      name: row.name,
+      price: String(row.price),
+      icon: row.icon || '',
+      description: row.description || '',
+      category: row.category || 'special',
+      sort_order: String(row.sort_order ?? 0),
+    })
+    setFormError('')
+    setModal('edit')
+  }
+
+  function closeModal() {
+    setModal(null)
+    setFormError('')
+  }
+
   async function saveGift() {
     const name = form.name.trim()
     const price = Number(form.price)
     const sortOrder = Number(form.sort_order)
     if (!name || !Number.isFinite(price) || price < 0) {
-      setError('请填写名称与有效价格')
+      setFormError('请填写名称与有效价格')
       return
     }
     setSaving(true)
-    setError('')
+    setFormError('')
     try {
       if (modal === 'create') {
         const res = await client.createGift({
@@ -86,7 +115,7 @@ export function GiftsPage() {
           sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
         })
         if (!res.success) {
-          setError(res.message || '创建失败')
+          setFormError(res.message || '创建失败')
           return
         }
         setMessage('礼物已创建')
@@ -106,15 +135,15 @@ export function GiftsPage() {
           update_sort_order: true,
         })
         if (!res.success) {
-          setError(res.message || '保存失败')
+          setFormError(res.message || '保存失败')
           return
         }
         setMessage('礼物已更新')
       }
-      setModal(null)
+      closeModal()
       await load()
     } catch (e) {
-      setError(e instanceof DeployApiError ? e.message : '保存失败')
+      setFormError(e instanceof DeployApiError ? e.message : '保存失败')
     } finally {
       setSaving(false)
     }
@@ -142,15 +171,7 @@ export function GiftsPage() {
           >
             导入默认礼物
           </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => {
-              setEditing(null)
-              setForm(emptyForm)
-              setModal('create')
-            }}
-          >
+          <button type="button" className="btn btn-primary" onClick={openCreate}>
             新建礼物
           </button>
         </div>
@@ -213,25 +234,10 @@ export function GiftsPage() {
                     <td>{row.icon || '—'}</td>
                     <td>{row.name}</td>
                     <td>{row.price}</td>
-                    <td>{row.category}</td>
+                    <td>{giftCategoryLabel(row.category)}</td>
                     <td>{row.sort_order}</td>
                     <td>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => {
-                          setEditing(row)
-                          setForm({
-                            name: row.name,
-                            price: String(row.price),
-                            icon: row.icon || '',
-                            description: row.description || '',
-                            category: row.category || 'special',
-                            sort_order: String(row.sort_order ?? 0),
-                          })
-                          setModal('edit')
-                        }}
-                      >
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => openEdit(row)}>
                         编辑
                       </button>
                       <button
@@ -273,51 +279,65 @@ export function GiftsPage() {
         ) : null}
       </div>
 
-      {modal ? (
-        <div className="drawer-backdrop" onClick={() => setModal(null)}>
-          <div className="drawer" onClick={(e) => e.stopPropagation()}>
-            <h3>{modal === 'create' ? '新建礼物' : '编辑礼物'}</h3>
-            <label>
-              <span>名称</span>
-              <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-            </label>
-            <label>
-              <span>价格（心意币）</span>
-              <input type="number" min={0} value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
-            </label>
-            <label>
-              <span>图标（emoji）</span>
-              <input value={form.icon} onChange={(e) => setForm((f) => ({ ...f, icon: e.target.value }))} />
-            </label>
-            <label>
-              <span>分类</span>
-              <select value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
-                {categories.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>排序</span>
-              <input type="number" value={form.sort_order} onChange={(e) => setForm((f) => ({ ...f, sort_order: e.target.value }))} />
-            </label>
-            <label>
-              <span>说明</span>
-              <textarea rows={2} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
-            </label>
-            <div className="drawer-actions">
-              <button type="button" className="btn btn-ghost" onClick={() => setModal(null)}>
-                取消
-              </button>
-              <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveGift()}>
-                {saving ? '保存中…' : '保存'}
-              </button>
-            </div>
-          </div>
+      <AdminFormDrawer
+        open={modal !== null}
+        title={modal === 'create' ? '新建礼物' : '编辑礼物'}
+        subtitle={editing ? `ID ${editing.id}` : undefined}
+        error={formError}
+        saving={saving}
+        onClose={closeModal}
+        onSave={() => void saveGift()}
+      >
+        <FormField label="名称" required>
+          <input
+            value={form.name}
+            placeholder="如：爱心"
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+          />
+        </FormField>
+
+        <div className="form-grid-2">
+          <FormField label="价格（心意币）" required>
+            <input
+              type="number"
+              min={0}
+              value={form.price}
+              onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+            />
+          </FormField>
+          <FormField label="排序" hint="数值越小越靠前">
+            <input
+              type="number"
+              value={form.sort_order}
+              onChange={(e) => setForm((f) => ({ ...f, sort_order: e.target.value }))}
+            />
+          </FormField>
         </div>
-      ) : null}
+
+        <EmojiIconField
+          value={form.icon}
+          onChange={(icon) => setForm((f) => ({ ...f, icon }))}
+        />
+
+        <FormField label="分类">
+          <select value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
+            {GIFT_CATEGORIES.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </FormField>
+
+        <FormField label="说明" hint="展示给用户的礼物描述">
+          <textarea
+            rows={3}
+            value={form.description}
+            placeholder="如：传递温暖的爱意"
+            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+          />
+        </FormField>
+      </AdminFormDrawer>
     </>
   )
 }

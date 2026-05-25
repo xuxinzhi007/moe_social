@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
+import { IdCell } from '../components/IdCell'
+import { UserCell } from '../components/UserCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
+import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
 
 export function CommentsPage() {
@@ -97,11 +100,17 @@ export function CommentsPage() {
               ) : (
                 items.map((row) => (
                   <tr key={row.id}>
-                    <td>{row.id}</td>
-                    <td>{row.post_id}</td>
-                    <td>{row.user_name}</td>
+                    <td>
+                      <IdCell id={row.id} />
+                    </td>
+                    <td>
+                      <IdCell id={row.post_id} />
+                    </td>
+                    <td>
+                      <UserCell name={row.user_name} />
+                    </td>
                     <td>{row.content}</td>
-                    <td>{row.created_at}</td>
+                    <td className="muted">{formatDateTime(row.created_at)}</td>
                     <td>
                       <button
                         type="button"

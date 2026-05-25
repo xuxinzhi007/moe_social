@@ -52,6 +52,9 @@ func (l *AdminUpdateUserLogic) AdminUpdateUser(in *super.AdminUpdateUserReq) (*s
 	if in.GetUpdateSignature() {
 		updates["signature"] = strings.TrimSpace(in.GetSignature())
 	}
+	if in.GetUpdateAvatar() {
+		updates["avatar"] = strings.TrimSpace(in.GetAvatar())
+	}
 	if len(updates) == 0 {
 		return &super.AdminUpdateUserResp{User: modelUserToProto(&user)}, nil
 	}

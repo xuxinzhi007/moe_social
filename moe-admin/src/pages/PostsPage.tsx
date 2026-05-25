@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
+import { AdminTag } from '../components/AdminTag'
+import { DataEnvBar } from '../components/DataEnvBar'
+import { IdCell } from '../components/IdCell'
+import { UserCell } from '../components/UserCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
+import { moderationTag } from '../lib/adminLabels'
+import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
 
 export function PostsPage() {
@@ -7,7 +13,9 @@ export function PostsPage() {
   const [items, setItems] = useState<
     Array<{
       id: string
+      user_id?: string
       user_name: string
+      user_avatar?: string
       content: string
       moderation_status?: string
       likes: number
@@ -57,8 +65,9 @@ export function PostsPage() {
     <>
       <div className="page-head">
         <h2>动态审核</h2>
-        <p>查看与下架用户动态（含 pending / rejected）</p>
+        <p>查看与下架用户动态，支持审核状态筛选</p>
       </div>
+      <DataEnvBar />
       <div className="panel">
         <form
           className="inline-form"
@@ -71,9 +80,9 @@ export function PostsPage() {
           <input placeholder="搜索正文" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
           <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }}>
             <option value="">全部状态</option>
-            <option value="ok">ok</option>
-            <option value="pending">pending</option>
-            <option value="rejected">rejected</option>
+            <option value="ok">已通过</option>
+            <option value="pending">待审核</option>
+            <option value="rejected">已拒绝</option>
           </select>
           <button type="submit" className="btn btn-primary">
             搜索
@@ -84,8 +93,8 @@ export function PostsPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>ID</th>
                 <th>作者</th>
+                <th>ID</th>
                 <th>内容</th>
                 <th>状态</th>
                 <th>赞/评</th>
@@ -109,14 +118,29 @@ export function PostsPage() {
               ) : (
                 items.map((row) => (
                   <tr key={row.id}>
-                    <td>{row.id}</td>
-                    <td>{row.user_name}</td>
-                    <td style={{ maxWidth: 320 }}>{row.content.slice(0, 80)}{row.content.length > 80 ? '…' : ''}</td>
-                    <td>{row.moderation_status || 'ok'}</td>
                     <td>
-                      {row.likes}/{row.comments}
+                      <UserCell
+                        name={row.user_name}
+                        avatar={row.user_avatar}
+                        sub={row.user_id ? `UID ${row.user_id}` : undefined}
+                      />
                     </td>
-                    <td>{row.created_at}</td>
+                    <td>
+                      <IdCell id={row.id} />
+                    </td>
+                    <td style={{ maxWidth: 320 }}>
+                      {row.content.slice(0, 80)}
+                      {row.content.length > 80 ? '…' : ''}
+                    </td>
+                    <td>
+                      <AdminTag spec={moderationTag(row.moderation_status)} />
+                    </td>
+                    <td>
+                      <AdminTag label={`${row.likes} 赞`} tone="neutral" />
+                      <span className="muted" style={{ margin: '0 4px' }}>/</span>
+                      <AdminTag label={`${row.comments} 评`} tone="info" />
+                    </td>
+                    <td className="muted">{formatDateTime(row.created_at)}</td>
                     <td>
                       <button
                         type="button"

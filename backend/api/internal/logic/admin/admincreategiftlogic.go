@@ -50,8 +50,12 @@ func (l *AdminCreateGiftLogic) AdminCreateGift(req *types.AdminCreateGiftReq) (r
 		return &types.AdminCreateGiftResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}
 
-	return &types.AdminCreateGiftResp{
+	resp = &types.AdminCreateGiftResp{
 		BaseResp: common.HandleRPCError(nil, "创建成功"),
 		Data:     common.RpcGiftToTypes(rpcResp.GetGift()),
-	}, nil
+	}
+	if resp.BaseResp.Success {
+		common.TryRecordAdminAudit(l.ctx, l.svcCtx, "create", "gift", resp.Data.Id, "创建礼物")
+	}
+	return resp, nil
 }

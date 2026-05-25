@@ -1403,6 +1403,8 @@ type AdminUpdateUserReq {
 	UpdateIsVip     bool   `json:"update_is_vip,optional"`
 	Signature       string `json:"signature,optional"`
 	UpdateSignature bool   `json:"update_signature,optional"`
+	Avatar          string `json:"avatar,optional"`
+	UpdateAvatar    bool   `json:"update_avatar,optional"`
 }
 
 type AdminUpdateUserResp {
@@ -1713,6 +1715,727 @@ type AdminDeleteGroupResp {
 	BaseResp
 }
 
+// Admin 成长
+type AdminAchievementItem {
+	Id            string `json:"id"`
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	Category      string `json:"category"`
+	Rarity        string `json:"rarity"`
+	ConditionText string `json:"condition_text"`
+	RuleType      string `json:"rule_type"`
+	RequiredCount int    `json:"required_count"`
+	RuleParams    string `json:"rule_params"`
+	ExpReward     int    `json:"exp_reward"`
+	Enabled       bool   `json:"enabled"`
+	SortOrder     int    `json:"sort_order"`
+	CreatedAt     string `json:"created_at"`
+}
+
+type AdminListAchievementsReq {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Keyword  string `form:"keyword,optional"`
+	Category string `form:"category,optional"`
+}
+
+type AdminListAchievementsData {
+	Items []AdminAchievementItem `json:"items"`
+	Total int                    `json:"total"`
+}
+
+type AdminListAchievementsResp {
+	BaseResp
+	Data AdminListAchievementsData `json:"data"`
+}
+
+type AdminBootstrapLevelsData {
+	LevelConfigsCreated   int `json:"level_configs_created"`
+	CheckInRewardsCreated int `json:"check_in_rewards_created"`
+}
+
+type AdminBootstrapLevelsResp {
+	BaseResp
+	Data AdminBootstrapLevelsData `json:"data"`
+}
+
+type AdminGrowthStats {
+	AchievementDefinitions  int `json:"achievement_definitions"`
+	UnlockedProgressRecords int `json:"unlocked_progress_records"`
+	LevelConfigs            int `json:"level_configs"`
+	CheckInRewards          int `json:"check_in_rewards"`
+	UserLevels              int `json:"user_levels"`
+	CheckInsToday           int `json:"check_ins_today"`
+	TotalCheckIns           int `json:"total_check_ins"`
+}
+
+type AdminGetGrowthStatsResp {
+	BaseResp
+	Data AdminGrowthStats `json:"data"`
+}
+
+type AdminLevelConfigItem {
+	Id         string `json:"id"`
+	Level      int    `json:"level"`
+	Title      string `json:"title"`
+	MinExp     int    `json:"min_exp"`
+	MaxExp     int    `json:"max_exp"`
+	Privileges string `json:"privileges"`
+	BadgeUrl   string `json:"badge_url"`
+}
+
+type AdminListLevelConfigsResp {
+	BaseResp
+	Data []AdminLevelConfigItem `json:"data"`
+}
+
+type AdminUpdateLevelConfigReq {
+	LevelId          uint64 `path:"level_id"`
+	Title            string `json:"title,optional"`
+	MinExp           int    `json:"min_exp,optional"`
+	MaxExp           int    `json:"max_exp,optional"`
+	Privileges       string `json:"privileges,optional"`
+	BadgeUrl         string `json:"badge_url,optional"`
+	UpdateTitle      bool   `json:"update_title,optional"`
+	UpdateMinExp     bool   `json:"update_min_exp,optional"`
+	UpdateMaxExp     bool   `json:"update_max_exp,optional"`
+	UpdatePrivileges bool   `json:"update_privileges,optional"`
+	UpdateBadgeUrl   bool   `json:"update_badge_url,optional"`
+}
+
+type AdminUpdateLevelConfigResp {
+	BaseResp
+	Data AdminLevelConfigItem `json:"data"`
+}
+
+type AdminCheckInRewardItem {
+	Id              string `json:"id"`
+	ConsecutiveDays int    `json:"consecutive_days"`
+	ExpReward       int    `json:"exp_reward"`
+	ExtraReward     string `json:"extra_reward"`
+}
+
+type AdminListCheckInRewardsResp {
+	BaseResp
+	Data []AdminCheckInRewardItem `json:"data"`
+}
+
+type AdminUpdateCheckInRewardReq {
+	RewardId              uint64 `path:"reward_id"`
+	ConsecutiveDays       int    `json:"consecutive_days,optional"`
+	ExpReward             int    `json:"exp_reward,optional"`
+	ExtraReward           string `json:"extra_reward,optional"`
+	UpdateConsecutiveDays bool   `json:"update_consecutive_days,optional"`
+	UpdateExpReward       bool   `json:"update_exp_reward,optional"`
+	UpdateExtraReward     bool   `json:"update_extra_reward,optional"`
+}
+
+type AdminUpdateCheckInRewardResp {
+	BaseResp
+	Data AdminCheckInRewardItem `json:"data"`
+}
+
+type AdminUpdateAchievementReq {
+	AchievementId     string `path:"achievement_id"`
+	Name              string `json:"name,optional"`
+	Description       string `json:"description,optional"`
+	Enabled           bool   `json:"enabled,optional"`
+	ExpReward         int    `json:"exp_reward,optional"`
+	SortOrder         int    `json:"sort_order,optional"`
+	UpdateName        bool   `json:"update_name,optional"`
+	UpdateDescription bool   `json:"update_description,optional"`
+	UpdateEnabled     bool   `json:"update_enabled,optional"`
+	UpdateExpReward   bool   `json:"update_exp_reward,optional"`
+	UpdateSortOrder   bool   `json:"update_sort_order,optional"`
+}
+
+type AdminUpdateAchievementResp {
+	BaseResp
+	Data AdminAchievementItem `json:"data"`
+}
+
+type AdminUserRelationCounts {
+	Posts                int `json:"posts"`
+	Comments             int `json:"comments"`
+	Following            int `json:"following"`
+	Followers            int `json:"followers"`
+	CheckIns             int `json:"check_ins"`
+	AchievementsUnlocked int `json:"achievements_unlocked"`
+	VipOrders            int `json:"vip_orders"`
+	GiftSent             int `json:"gift_sent"`
+	GiftReceived         int `json:"gift_received"`
+	GiftStocks           int `json:"gift_stocks"`
+	Transactions         int `json:"transactions"`
+	AiAgents             int `json:"ai_agents"`
+	GroupsJoined         int `json:"groups_joined"`
+}
+
+type AdminUserLevelSnapshot {
+	Level      int    `json:"level"`
+	Experience int    `json:"experience"`
+	TotalExp   int    `json:"total_exp"`
+	LevelTitle string `json:"level_title,optional"`
+}
+
+type AdminUserRelationLink {
+	Label      string `json:"label"`
+	AdminRoute string `json:"admin_route"`
+	Hint       string `json:"hint,optional"`
+}
+
+type AdminUserProfileData {
+	User     User                     `json:"user"`
+	Counts   AdminUserRelationCounts  `json:"counts"`
+	Level    AdminUserLevelSnapshot   `json:"level,optional"`
+	Links    []AdminUserRelationLink  `json:"links"`
+	Behavior AdminUserBehaviorSummary `json:"behavior,optional"`
+}
+
+type AdminUserBehaviorScreenStat {
+	Screen          string `json:"screen"`
+	Label           string `json:"label"`
+	VisitCount      int    `json:"visit_count"`
+	TotalDurationMs int64  `json:"total_duration_ms"`
+}
+
+type AdminUserBehaviorSummary {
+	TopScreens    []AdminUserBehaviorScreenStat `json:"top_screens"`
+	Tags          []string                      `json:"tags"`
+	LastActiveAt  string                        `json:"last_active_at,optional"`
+	TotalEvents7d int                           `json:"total_events_7d"`
+}
+
+type AdminGetUserProfileReq {
+	UserId uint64 `path:"user_id"`
+}
+
+type AdminGetUserProfileResp {
+	BaseResp
+	Data AdminUserProfileData `json:"data"`
+}
+
+type AdminMediaImageItem {
+	Filename    string `json:"filename"`
+	FileName    string `json:"file_name"`
+	OwnerFolder string `json:"owner_folder"`
+	MediaKind   string `json:"media_kind"`
+	Url         string `json:"url"`
+	Size        int64  `json:"size"`
+	CreatedAt   string `json:"created_at"`
+	OwnerHint   string `json:"owner_hint,optional"`
+}
+
+type AdminMediaOwnerSummary {
+	OwnerFolder  string `json:"owner_folder"`
+	UserId       string `json:"user_id,optional"`
+	UsernameHint string `json:"username_hint,optional"`
+	FileCount    int    `json:"file_count"`
+	TotalBytes   int64  `json:"total_bytes"`
+}
+
+type AdminListMediaImagesReq {
+	Page        int    `form:"page,optional,default=1"`
+	PageSize    int    `form:"page_size,optional,default=30"`
+	Keyword     string `form:"keyword,optional"`
+	OwnerFolder string `form:"owner_folder,optional"`
+	MediaKind   string `form:"media_kind,optional"`
+}
+
+type AdminListMediaImagesData {
+	Items  []AdminMediaImageItem    `json:"items"`
+	Total  int                      `json:"total"`
+	Owners []AdminMediaOwnerSummary `json:"owners"`
+}
+
+type AdminListMediaImagesResp {
+	BaseResp
+	Data AdminListMediaImagesData `json:"data"`
+}
+
+type AdminDeleteMediaImageReq {
+	Filename string `path:"filename"`
+}
+
+type AdminDeleteMediaImageResp {
+	BaseResp
+}
+
+// Admin 记忆治理
+type AdminMemoryItem {
+	Id         string  `json:"id"`
+	UserId     string  `json:"user_id"`
+	Username   string  `json:"username,optional"`
+	Key        string  `json:"key"`
+	Value      string  `json:"value"`
+	MemoryType string  `json:"memory_type"`
+	Confidence float64 `json:"confidence"`
+	Source     string  `json:"source"`
+	UpdatedAt  string  `json:"updated_at"`
+}
+
+type AdminMemoryTypeStat {
+	MemoryType string `json:"memory_type"`
+	Count      int    `json:"count"`
+}
+
+type AdminMemoryStats {
+	TotalMemories     int                   `json:"total_memories"`
+	UsersWithMemories int                   `json:"users_with_memories"`
+	TotalFeedbacks    int                   `json:"total_feedbacks"`
+	TotalEmbeddings   int                   `json:"total_embeddings"`
+	ByType            []AdminMemoryTypeStat `json:"by_type"`
+}
+
+type AdminListMemoriesReq {
+	Page       int    `form:"page,optional,default=1"`
+	PageSize   int    `form:"page_size,optional,default=30"`
+	UserId     string `form:"user_id,optional"`
+	Keyword    string `form:"keyword,optional"`
+	MemoryType string `form:"memory_type,optional"`
+}
+
+type AdminListMemoriesData {
+	Items []AdminMemoryItem `json:"items"`
+	Total int               `json:"total"`
+}
+
+type AdminListMemoriesResp {
+	BaseResp
+	Data AdminListMemoriesData `json:"data"`
+}
+
+type AdminGetMemoryStatsResp {
+	BaseResp
+	Data AdminMemoryStats `json:"data"`
+}
+
+type AdminDeleteMemoryReq {
+	MemoryId uint64 `path:"memory_id"`
+}
+
+type AdminDeleteMemoryResp {
+	BaseResp
+}
+
+// Admin 公告
+type AdminAnnouncementItem {
+	Id          string `json:"id"`
+	Title       string `json:"title"`
+	Content     string `json:"content"`
+	Status      string `json:"status"`
+	PublishedAt string `json:"published_at,optional"`
+	CreatedBy   string `json:"created_by"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
+}
+
+type AdminListAnnouncementsReq {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Keyword  string `form:"keyword,optional"`
+	Status   string `form:"status,optional"`
+}
+
+type AdminListAnnouncementsData {
+	Items []AdminAnnouncementItem `json:"items"`
+	Total int                     `json:"total"`
+}
+
+type AdminListAnnouncementsResp {
+	BaseResp
+	Data AdminListAnnouncementsData `json:"data"`
+}
+
+type AdminGetAnnouncementReq {
+	AnnouncementId string `path:"announcement_id"`
+}
+
+type AdminGetAnnouncementResp {
+	BaseResp
+	Data AdminAnnouncementItem `json:"data"`
+}
+
+type AdminCreateAnnouncementReq {
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
+type AdminCreateAnnouncementResp {
+	BaseResp
+	Data AdminAnnouncementItem `json:"data"`
+}
+
+type AdminUpdateAnnouncementReq {
+	AnnouncementId string `path:"announcement_id"`
+	Title          string `json:"title,optional"`
+	Content        string `json:"content,optional"`
+}
+
+type AdminUpdateAnnouncementResp {
+	BaseResp
+	Data AdminAnnouncementItem `json:"data"`
+}
+
+type AdminDeleteAnnouncementReq {
+	AnnouncementId string `path:"announcement_id"`
+}
+
+type AdminDeleteAnnouncementResp {
+	BaseResp
+}
+
+type AdminPublishAnnouncementReq {
+	AnnouncementId string `path:"announcement_id"`
+}
+
+type AdminPublishAnnouncementResp {
+	BaseResp
+	Data AdminAnnouncementItem `json:"data"`
+}
+
+// Admin 通知
+type AdminBroadcastNotificationReq {
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
+type AdminBroadcastNotificationData {
+	NotificationsCreated int `json:"notifications_created"`
+	WsSent               int `json:"ws_sent"`
+}
+
+type AdminBroadcastNotificationResp {
+	BaseResp
+	Data AdminBroadcastNotificationData `json:"data"`
+}
+
+type AdminSendNotificationReq {
+	UserId  string `json:"user_id"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
+type AdminSendNotificationData {
+	NotificationId string `json:"notification_id"`
+	WsSent         bool   `json:"ws_sent"`
+}
+
+type AdminSendNotificationResp {
+	BaseResp
+	Data AdminSendNotificationData `json:"data"`
+}
+
+// Admin AI 角色
+type AdminAiAgentItem {
+	Id          string `json:"id"`
+	OwnerUserId string `json:"owner_user_id"`
+	OwnerName   string `json:"owner_name"`
+	PayloadJson string `json:"payload_json"`
+}
+
+type AdminListAiAgentsReq {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Keyword  string `form:"keyword,optional"`
+}
+
+type AdminListAiAgentsData {
+	Items []AdminAiAgentItem `json:"items"`
+	Total int                `json:"total"`
+}
+
+type AdminListAiAgentsResp {
+	BaseResp
+	Data AdminListAiAgentsData `json:"data"`
+}
+
+type AdminDeleteAiAgentReq {
+	UserId  string `json:"user_id"`
+	AgentId string `json:"agent_id"`
+}
+
+type AdminDeleteAiAgentResp {
+	BaseResp
+}
+
+// Admin 社交
+type AdminFollowItem {
+	Id            string `json:"id"`
+	FollowerId    string `json:"follower_id"`
+	FollowerName  string `json:"follower_name"`
+	FollowingId   string `json:"following_id"`
+	FollowingName string `json:"following_name"`
+	CreatedAt     string `json:"created_at"`
+}
+
+type AdminListFollowsReq {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Keyword  string `form:"keyword,optional"`
+	UserId   string `form:"user_id,optional"`
+}
+
+type AdminListFollowsData {
+	Items []AdminFollowItem `json:"items"`
+	Total int               `json:"total"`
+}
+
+type AdminListFollowsResp {
+	BaseResp
+	Data AdminListFollowsData `json:"data"`
+}
+
+type AdminFriendRequestItem {
+	Id           string `json:"id"`
+	FromUserId   string `json:"from_user_id"`
+	FromUserName string `json:"from_user_name"`
+	ToUserId     string `json:"to_user_id"`
+	ToUserName   string `json:"to_user_name"`
+	Status       string `json:"status"`
+	CreatedAt    string `json:"created_at"`
+}
+
+type AdminListFriendRequestsReq {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Status   string `form:"status,optional"`
+	Keyword  string `form:"keyword,optional"`
+}
+
+type AdminListFriendRequestsData {
+	Items []AdminFriendRequestItem `json:"items"`
+	Total int                      `json:"total"`
+}
+
+type AdminListFriendRequestsResp {
+	BaseResp
+	Data AdminListFriendRequestsData `json:"data"`
+}
+
+type AdminDeleteFollowReq {
+	FollowId string `path:"follow_id"`
+}
+
+type AdminDeleteFollowResp {
+	BaseResp
+}
+
+// Admin 账号
+type AdminAccountItem {
+	Id          string `json:"id"`
+	Username    string `json:"username"`
+	Role        string `json:"role"`
+	LastLoginAt string `json:"last_login_at,optional"`
+	CreatedAt   string `json:"created_at"`
+}
+
+type AdminListAccountsReq {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Keyword  string `form:"keyword,optional"`
+}
+
+type AdminListAccountsData {
+	Items []AdminAccountItem `json:"items"`
+	Total int                `json:"total"`
+}
+
+type AdminListAccountsResp {
+	BaseResp
+	Data AdminListAccountsData `json:"data"`
+}
+
+type AdminCreateAccountReq {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Role     string `json:"role,optional"`
+}
+
+type AdminCreateAccountResp {
+	BaseResp
+	Data AdminAccountItem `json:"data"`
+}
+
+type AdminUpdateAccountReq {
+	AccountId string `path:"account_id"`
+	Username  string `json:"username,optional"`
+	Password  string `json:"password,optional"`
+	Role      string `json:"role,optional"`
+}
+
+type AdminUpdateAccountResp {
+	BaseResp
+	Data AdminAccountItem `json:"data"`
+}
+
+type AdminDeleteAccountReq {
+	AccountId string `path:"account_id"`
+}
+
+type AdminDeleteAccountResp {
+	BaseResp
+}
+
+// Admin 菜单
+type AdminMenuItem {
+	Id           string `json:"id"`
+	Key          string `json:"key"`
+	Kind         string `json:"kind"`
+	ParentKey    string `json:"parent_key"`
+	Path         string `json:"path"`
+	Label        string `json:"label"`
+	Icon         string `json:"icon"`
+	Caption      string `json:"caption"`
+	Status       string `json:"status"`
+	AppDomain    string `json:"app_domain"`
+	SortOrder    int    `json:"sort_order"`
+	DefaultOpen  bool   `json:"default_open"`
+	End          bool   `json:"end"`
+	ExternalHref string `json:"external_href"`
+	Enabled      bool   `json:"enabled"`
+}
+
+type AdminListMenusResp {
+	BaseResp
+	Data []AdminMenuItem `json:"data"`
+}
+
+type AdminUpsertMenuReq {
+	Key          string `json:"key"`
+	Kind         string `json:"kind"`
+	ParentKey    string `json:"parent_key,optional"`
+	Path         string `json:"path,optional"`
+	Label        string `json:"label"`
+	Icon         string `json:"icon,optional"`
+	Caption      string `json:"caption,optional"`
+	Status       string `json:"status,optional"`
+	AppDomain    string `json:"app_domain,optional"`
+	SortOrder    int    `json:"sort_order,optional"`
+	DefaultOpen  bool   `json:"default_open,optional"`
+	End          bool   `json:"end,optional"`
+	ExternalHref string `json:"external_href,optional"`
+	Enabled      bool   `json:"enabled,optional"`
+}
+
+type AdminUpsertMenuResp {
+	BaseResp
+	Data AdminMenuItem `json:"data"`
+}
+
+type AdminDeleteMenuReq {
+	MenuKey string `path:"menu_key"`
+}
+
+type AdminDeleteMenuResp {
+	BaseResp
+}
+
+type AdminBootstrapMenusData {
+	Created int `json:"created"`
+}
+
+type AdminBootstrapMenusResp {
+	BaseResp
+	Data AdminBootstrapMenusData `json:"data"`
+}
+
+// Admin 数据目录（AutoMigrate 表与管理能力）
+type AdminSchemaTableItem {
+	Key          string   `json:"key"`
+	TableName    string   `json:"table_name"`
+	Label        string   `json:"label"`
+	Domain       string   `json:"domain"`
+	Coverage     string   `json:"coverage"`
+	Capabilities []string `json:"capabilities"`
+	AdminRoute   string   `json:"admin_route,optional"`
+	BootstrapKey string   `json:"bootstrap_key,optional"`
+	RowCount     int64    `json:"row_count"`
+	Note         string   `json:"note,optional"`
+}
+
+type AdminSchemaCatalogSummary {
+	TotalTables    int   `json:"total_tables"`
+	ManagedFull    int   `json:"managed_full"`
+	ManagedPartial int   `json:"managed_partial"`
+	Unmanaged      int   `json:"unmanaged"`
+	TotalRows      int64 `json:"total_rows"`
+}
+
+type AdminSchemaCatalogData {
+	Summary AdminSchemaCatalogSummary `json:"summary"`
+	Items   []AdminSchemaTableItem    `json:"items"`
+}
+
+type AdminSchemaCatalogResp {
+	BaseResp
+	Data AdminSchemaCatalogData `json:"data"`
+}
+
+// Admin 运行时配置（URL / 图片云空间）
+type AdminRuntimeConfigData {
+	PublicApiBaseUrl   string `json:"public_api_base_url"`
+	ApiPublicBaseUrl   string `json:"api_public_base_url"`
+	ImagePublicBaseUrl string `json:"image_public_base_url"`
+	ImageLocalDir      string `json:"image_local_dir"`
+	ImageMaxBytes      int64  `json:"image_max_bytes"`
+	ConfigFile         string `json:"config_file"`
+	RequiresRestart    bool   `json:"requires_restart"`
+}
+
+type AdminRuntimeConfigResp {
+	BaseResp
+	Data AdminRuntimeConfigData `json:"data"`
+}
+
+type AdminUpdateRuntimeConfigReq {
+	PublicApiBaseUrl         string `json:"public_api_base_url,optional"`
+	UpdatePublicApiBaseUrl   bool   `json:"update_public_api_base_url,optional"`
+	ApiPublicBaseUrl         string `json:"api_public_base_url,optional"`
+	UpdateApiPublicBaseUrl   bool   `json:"update_api_public_base_url,optional"`
+	ImagePublicBaseUrl       string `json:"image_public_base_url,optional"`
+	UpdateImagePublicBaseUrl bool   `json:"update_image_public_base_url,optional"`
+	ImageLocalDir            string `json:"image_local_dir,optional"`
+	UpdateImageLocalDir      bool   `json:"update_image_local_dir,optional"`
+	ImageMaxBytes            int64  `json:"image_max_bytes,optional"`
+	UpdateImageMaxBytes      bool   `json:"update_image_max_bytes,optional"`
+}
+
+type AdminUpdateRuntimeConfigResp {
+	BaseResp
+	Data AdminRuntimeConfigData `json:"data"`
+}
+
+// Admin 审计
+type AdminAuditLogItem {
+	Id         string `json:"id"`
+	AdminId    string `json:"admin_id"`
+	AdminName  string `json:"admin_name"`
+	Action     string `json:"action"`
+	Resource   string `json:"resource"`
+	ResourceId string `json:"resource_id"`
+	Detail     string `json:"detail"`
+	Ip         string `json:"ip"`
+	CreatedAt  string `json:"created_at"`
+}
+
+type AdminListAuditLogsReq {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Action   string `form:"action,optional"`
+	Resource string `form:"resource,optional"`
+	AdminId  string `form:"admin_id,optional"`
+}
+
+type AdminListAuditLogsData {
+	Items []AdminAuditLogItem `json:"items"`
+	Total int                 `json:"total"`
+}
+
+type AdminListAuditLogsResp {
+	BaseResp
+	Data AdminListAuditLogsData `json:"data"`
+}
+
 @server (
 	group: admin_public
 )
@@ -1739,6 +2462,9 @@ service Super {
 
 	@handler adminGetUser
 	get /api/admin/users/:user_id (AdminGetUserReq) returns (AdminGetUserResp)
+
+	@handler adminGetUserProfile
+	get /api/admin/users/:user_id/profile (AdminGetUserProfileReq) returns (AdminGetUserProfileResp)
 
 	@handler adminUpdateUser
 	put /api/admin/users/:user_id (AdminUpdateUserReq) returns (AdminUpdateUserResp)
@@ -1811,6 +2537,120 @@ service Super {
 
 	@handler adminDeleteGroup
 	delete /api/admin/community/groups/:group_id (AdminDeleteGroupReq) returns (AdminDeleteGroupResp)
+
+	@handler adminListAchievements
+	get /api/admin/growth/achievements (AdminListAchievementsReq) returns (AdminListAchievementsResp)
+
+	@handler adminBootstrapLevels
+	post /api/admin/growth/levels/bootstrap (EmptyReq) returns (AdminBootstrapLevelsResp)
+
+	@handler adminGetGrowthStats
+	get /api/admin/growth/stats (EmptyReq) returns (AdminGetGrowthStatsResp)
+
+	@handler adminListLevelConfigs
+	get /api/admin/growth/levels (EmptyReq) returns (AdminListLevelConfigsResp)
+
+	@handler adminUpdateLevelConfig
+	put /api/admin/growth/levels/:level_id (AdminUpdateLevelConfigReq) returns (AdminUpdateLevelConfigResp)
+
+	@handler adminListCheckInRewards
+	get /api/admin/growth/check-in-rewards (EmptyReq) returns (AdminListCheckInRewardsResp)
+
+	@handler adminUpdateCheckInReward
+	put /api/admin/growth/check-in-rewards/:reward_id (AdminUpdateCheckInRewardReq) returns (AdminUpdateCheckInRewardResp)
+
+	@handler adminUpdateAchievement
+	put /api/admin/growth/achievements/:achievement_id (AdminUpdateAchievementReq) returns (AdminUpdateAchievementResp)
+
+	@handler adminListAnnouncements
+	get /api/admin/announcements (AdminListAnnouncementsReq) returns (AdminListAnnouncementsResp)
+
+	@handler adminGetAnnouncement
+	get /api/admin/announcements/:announcement_id (AdminGetAnnouncementReq) returns (AdminGetAnnouncementResp)
+
+	@handler adminCreateAnnouncement
+	post /api/admin/announcements (AdminCreateAnnouncementReq) returns (AdminCreateAnnouncementResp)
+
+	@handler adminUpdateAnnouncement
+	put /api/admin/announcements/:announcement_id (AdminUpdateAnnouncementReq) returns (AdminUpdateAnnouncementResp)
+
+	@handler adminDeleteAnnouncement
+	delete /api/admin/announcements/:announcement_id (AdminDeleteAnnouncementReq) returns (AdminDeleteAnnouncementResp)
+
+	@handler adminPublishAnnouncement
+	post /api/admin/announcements/:announcement_id/publish (AdminPublishAnnouncementReq) returns (AdminPublishAnnouncementResp)
+
+	@handler adminBroadcastNotification
+	post /api/admin/notifications/broadcast (AdminBroadcastNotificationReq) returns (AdminBroadcastNotificationResp)
+
+	@handler adminSendNotification
+	post /api/admin/notifications/send (AdminSendNotificationReq) returns (AdminSendNotificationResp)
+
+	@handler adminListAiAgents
+	get /api/admin/ai/agents (AdminListAiAgentsReq) returns (AdminListAiAgentsResp)
+
+	@handler adminDeleteAiAgent
+	delete /api/admin/ai/agents (AdminDeleteAiAgentReq) returns (AdminDeleteAiAgentResp)
+
+	@handler adminListFollows
+	get /api/admin/social/follows (AdminListFollowsReq) returns (AdminListFollowsResp)
+
+	@handler adminListFriendRequests
+	get /api/admin/social/friend-requests (AdminListFriendRequestsReq) returns (AdminListFriendRequestsResp)
+
+	@handler adminDeleteFollow
+	delete /api/admin/social/follows/:follow_id (AdminDeleteFollowReq) returns (AdminDeleteFollowResp)
+
+	@handler adminListAccounts
+	get /api/admin/accounts (AdminListAccountsReq) returns (AdminListAccountsResp)
+
+	@handler adminCreateAccount
+	post /api/admin/accounts (AdminCreateAccountReq) returns (AdminCreateAccountResp)
+
+	@handler adminUpdateAccount
+	put /api/admin/accounts/:account_id (AdminUpdateAccountReq) returns (AdminUpdateAccountResp)
+
+	@handler adminDeleteAccount
+	delete /api/admin/accounts/:account_id (AdminDeleteAccountReq) returns (AdminDeleteAccountResp)
+
+	@handler adminListMenus
+	get /api/admin/menus (EmptyReq) returns (AdminListMenusResp)
+
+	@handler adminUpsertMenu
+	put /api/admin/menus (AdminUpsertMenuReq) returns (AdminUpsertMenuResp)
+
+	@handler adminDeleteMenu
+	delete /api/admin/menus/:menu_key (AdminDeleteMenuReq) returns (AdminDeleteMenuResp)
+
+	@handler adminBootstrapMenus
+	post /api/admin/menus/bootstrap (EmptyReq) returns (AdminBootstrapMenusResp)
+
+	@handler adminGetSchemaCatalog
+	get /api/admin/schema/catalog (EmptyReq) returns (AdminSchemaCatalogResp)
+
+	@handler adminListAuditLogs
+	get /api/admin/audit-logs (AdminListAuditLogsReq) returns (AdminListAuditLogsResp)
+
+	@handler adminGetRuntimeConfig
+	get /api/admin/runtime-config (EmptyReq) returns (AdminRuntimeConfigResp)
+
+	@handler adminUpdateRuntimeConfig
+	put /api/admin/runtime-config (AdminUpdateRuntimeConfigReq) returns (AdminUpdateRuntimeConfigResp)
+
+	@handler adminListMediaImages
+	get /api/admin/media/images (AdminListMediaImagesReq) returns (AdminListMediaImagesResp)
+
+	@handler adminDeleteMediaImage
+	delete /api/admin/media/images/:filename (AdminDeleteMediaImageReq) returns (AdminDeleteMediaImageResp)
+
+	@handler adminListMemories
+	get /api/admin/memories (AdminListMemoriesReq) returns (AdminListMemoriesResp)
+
+	@handler adminGetMemoryStats
+	get /api/admin/memories/stats (EmptyReq) returns (AdminGetMemoryStatsResp)
+
+	@handler adminDeleteMemory
+	delete /api/admin/memories/:memory_id (AdminDeleteMemoryReq) returns (AdminDeleteMemoryResp)
 }
 
 // VIP相关API服务
@@ -3120,6 +3960,38 @@ service Super {
 	// 获取群组帖子列表
 	@handler getGroupPosts
 	get /api/community/groups/:group_id/posts (GetGroupPostsReq) returns (GetGroupPostsResp)
+}
+
+// 用户行为采集（App 埋点）
+type UserBehaviorEventItem {
+	Event      string            `json:"event"`
+	Screen     string            `json:"screen"`
+	Params     map[string]string `json:"params,optional"`
+	DurationMs int64             `json:"duration_ms,optional"`
+	SessionId  string            `json:"session_id"`
+	ClientTs   int64             `json:"client_ts"`
+}
+
+type TrackUserBehaviorEventsReq {
+	UserId string                  `path:"user_id"`
+	Events []UserBehaviorEventItem `json:"events"`
+}
+
+type TrackUserBehaviorEventsData {
+	Accepted int `json:"accepted"`
+}
+
+type TrackUserBehaviorEventsResp {
+	BaseResp
+	Data TrackUserBehaviorEventsData `json:"data"`
+}
+
+@server (
+	group: behavior
+)
+service Super {
+	@handler trackUserBehaviorEvents
+	post /api/user/:user_id/behavior/events (TrackUserBehaviorEventsReq) returns (TrackUserBehaviorEventsResp)
 }
 
 // WebSocket 服务组 (不使用JWT middleware，在handler内部验证token)

@@ -57,8 +57,12 @@ func (l *AdminCreateVipPlanLogic) AdminCreateVipPlan(req *types.AdminCreateVipPl
 		}, nil
 	}
 
-	return &types.AdminCreateVipPlanResp{
+	resp = &types.AdminCreateVipPlanResp{
 		BaseResp: common.HandleRPCError(nil, "创建成功"),
 		Data:     common.RpcVipPlanToTypes(rpcResp.GetPlan()),
-	}, nil
+	}
+	if resp.BaseResp.Success {
+		common.TryRecordAdminAudit(l.ctx, l.svcCtx, "create", "vip_plan", resp.Data.Id, "创建 VIP 套餐")
+	}
+	return resp, nil
 }

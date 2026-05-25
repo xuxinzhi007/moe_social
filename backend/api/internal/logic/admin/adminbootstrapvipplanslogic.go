@@ -42,10 +42,14 @@ func (l *AdminBootstrapVipPlansLogic) AdminBootstrapVipPlans(_ *types.EmptyReq) 
 		msg = "已有套餐，未导入"
 	}
 
-	return &types.AdminBootstrapVipPlansResp{
+	resp = &types.AdminBootstrapVipPlansResp{
 		BaseResp: common.HandleRPCError(nil, msg),
 		Data: types.AdminBootstrapVipPlansData{
 			Created: int(rpcResp.GetCreated()),
 		},
-	}, nil
+	}
+	if resp.BaseResp.Success {
+		common.TryRecordAdminAudit(l.ctx, l.svcCtx, "bootstrap", "vip_plan", "", "导入默认 VIP 套餐")
+	}
+	return resp, nil
 }

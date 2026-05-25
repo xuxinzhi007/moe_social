@@ -32,7 +32,11 @@ func (l *AdminDeletePostLogic) AdminDeletePost(req *types.AdminDeletePostReq) (r
 	if err != nil {
 		return &types.AdminDeletePostResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}
-	return &types.AdminDeletePostResp{
+	resp = &types.AdminDeletePostResp{
 		BaseResp: common.HandleRPCError(nil, "已删除"),
-	}, nil
+	}
+	if resp.BaseResp.Success {
+		common.TryRecordAdminAudit(l.ctx, l.svcCtx, "delete", "post", req.PostId, "删除帖子")
+	}
+	return resp, nil
 }

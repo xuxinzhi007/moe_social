@@ -16,8 +16,8 @@ import (
 
 func AdminBootstrapGiftsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if _, br := common.RequireAdminToken(r); br != nil {
-			httpx.OkJsonCtx(r.Context(), w, &types.AdminBootstrapGiftsResp{BaseResp: *br})
+		ctx, ok := common.PrepareAdminContext(w, r)
+		if !ok {
 			return
 		}
 
@@ -27,7 +27,7 @@ func AdminBootstrapGiftsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := admin.NewAdminBootstrapGiftsLogic(r.Context(), svcCtx)
+		l := admin.NewAdminBootstrapGiftsLogic(ctx, svcCtx)
 		resp, err := l.AdminBootstrapGifts(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)

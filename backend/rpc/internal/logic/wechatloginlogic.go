@@ -49,9 +49,11 @@ func (l *WechatLoginLogic) WechatLogin(in *super.WechatLoginReq) (*super.WechatL
 		msg := "微信授权失败，请重试"
 		errText := err.Error()
 		if strings.Contains(errText, "credentials missing") {
-			msg = "服务端未配置微信 AppID/Secret（wechat.app 或 wechat.mp）"
+			msg = "服务端未配置微信移动应用凭证（config.yaml → wechat.app.app_id / app_secret）"
+		} else if strings.Contains(errText, "10005") || strings.Contains(errText, "scope") {
+			msg = "微信 AppID 与 scope 不匹配：请确认客户端与 VPS 均使用开放平台「移动应用」Moe Social Dev 凭证，且勿用公众号 AppID"
 		} else if strings.Contains(errText, "wechat token api") {
-			msg = "微信拒绝授权：AppID/包名/签名与开放平台移动应用不一致"
+			msg = "微信 code 无效或 AppID/Secret 不一致（请核对 VPS config.yaml 与 App 内 wechat_config.dart）"
 		}
 		return nil, errorx.New(401, msg)
 	}

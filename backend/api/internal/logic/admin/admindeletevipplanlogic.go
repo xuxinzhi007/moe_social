@@ -27,8 +27,8 @@ func NewAdminDeleteVipPlanLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
-func (l *AdminDeleteVipPlanLogic) AdminDeleteVipPlan(req *types.AdminDeleteVipPlanReq) (resp *types.AdminDeleteVipPlanResp, err error) {
-	_, err = l.svcCtx.SuperRpcClient.AdminDeleteVipPlan(l.ctx, &super.AdminDeleteVipPlanReq{
+func (l *AdminDeleteVipPlanLogic) AdminDeleteVipPlan(req *types.AdminDeleteVipPlanReq) (*types.AdminDeleteVipPlanResp, error) {
+	_, err := l.svcCtx.SuperRpcClient.AdminDeleteVipPlan(l.ctx, &super.AdminDeleteVipPlanReq{
 		PlanId: req.PlanId,
 	})
 	if err != nil {
@@ -37,7 +37,11 @@ func (l *AdminDeleteVipPlanLogic) AdminDeleteVipPlan(req *types.AdminDeleteVipPl
 		}, nil
 	}
 
-	return &types.AdminDeleteVipPlanResp{
+	resp := &types.AdminDeleteVipPlanResp{
 		BaseResp: common.HandleRPCError(nil, "已删除"),
-	}, nil
+	}
+	if resp.BaseResp.Success {
+		common.TryRecordAdminAudit(l.ctx, l.svcCtx, "delete", "vip_plan", req.PlanId, "删除 VIP 套餐")
+	}
+	return resp, nil
 }
