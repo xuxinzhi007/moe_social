@@ -38,6 +38,10 @@ message User {
   // 是否已通过飞书 OAuth 绑定
   bool feishu_bound = 23;
   string role = 24; // App 用户角色 user | admin | super_admin
+  // 微信 OAuth 昵称
+  string wechat_nickname = 25;
+  // 是否已通过微信 OAuth 绑定
+  bool wechat_bound = 26;
 }
 
 message FeishuAuthorizeURLReq {

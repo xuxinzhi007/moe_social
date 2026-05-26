@@ -2,6 +2,8 @@ package logic
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"backend/model"
 	"backend/rpc/internal/errorx"
@@ -26,7 +28,6 @@ func NewDeleteUserLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Delete
 }
 
 func (l *DeleteUserLogic) DeleteUser(in *super.DeleteUserReq) (*super.DeleteUserResp, error) {
-	// 1. 查找用户，确认用户存在
 	var user model.User
 	result := l.svcCtx.DB.First(&user, in.UserId)
 	if result.Error != nil {
@@ -34,13 +35,37 @@ func (l *DeleteUserLogic) DeleteUser(in *super.DeleteUserReq) (*super.DeleteUser
 		return nil, errorx.NotFound("用户不存在")
 	}
 
-	// 2. 删除用户
-	err := l.svcCtx.DB.Delete(&user).Error
-	if err != nil {
-		l.Error("删除用户失败: ", err)
-		return nil, errorx.Internal("删除用户失败，请稍后重试")
+	if err := scrubUserBeforeDelete(&user); err != nil {
+		l.Errorf("[认证] 注销账号：清理用户资料失败 用户ID=%d 错误=%v", user.ID, err)
+		return nil, errorx.Internal("注销账号失败，请稍后重试")
+	}
+	if err := l.svcCtx.DB.Save(&user).Error; err != nil {
+		l.Errorf("[认证] 注销账号：保存清理结果失败 用户ID=%d 错误=%v", user.ID, err)
+		return nil, errorx.Internal("注销账号失败，请稍后重试")
 	}
 
-	// 3. 构建响应
+	if err := l.svcCtx.DB.Delete(&user).Error; err != nil {
+		l.Errorf("[认证] 注销账号：删除用户失败 用户ID=%d 错误=%v", user.ID, err)
+		return nil, errorx.Internal("注销账号失败，请稍后重试")
+	}
+
+	l.Infof("[认证] 用户已注销 用户ID=%d", user.ID)
 	return &super.DeleteUserResp{}, nil
+}
+
+func scrubUserBeforeDelete(user *model.User) error {
+	if user == nil {
+		return fmt.Errorf("user is nil")
+	}
+	ts := time.Now().Unix()
+	user.Username = fmt.Sprintf("deleted_%d", user.ID)
+	user.Email = fmt.Sprintf("deleted_%d_%d@deleted.local", user.ID, ts)
+	user.WechatOpenID = nil
+	user.WechatUnionID = ""
+	user.WechatNickname = ""
+	user.FeishuOpenID = nil
+	user.FeishuEmail = ""
+	user.FeishuName = ""
+	user.Password = randomWechatPassword()
+	return nil
 }

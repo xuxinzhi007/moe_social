@@ -1475,6 +1475,11 @@ class ApiService {
     await _request('/api/user/$userId', method: 'DELETE');
   }
 
+  // 注销当前登录账号（需 JWT）
+  static Future<void> deleteMyAccount() async {
+    await _request('/api/user/account', method: 'DELETE');
+  }
+
   // 获取用户列表
   static Future<Map<String, dynamic>> getUsers(
       {int page = 1, int pageSize = 10}) async {

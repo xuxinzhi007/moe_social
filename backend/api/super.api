@@ -41,6 +41,8 @@ type User {
 	FeishuEmail            string `json:"feishu_email,optional"`
 	FeishuName             string `json:"feishu_name,optional"`
 	FeishuBound            bool   `json:"feishu_bound,optional"`
+	WechatNickname         string `json:"wechat_nickname,optional"`
+	WechatBound            bool   `json:"wechat_bound,optional"`
 	Role                   string `json:"role,optional"`
 }
 
@@ -3096,6 +3098,9 @@ service Super {
 
 	@handler sendFeishuTestCard
 	post /api/user/feishu/test-card (EmptyReq) returns (SendFeishuTestCardResp)
+
+	@handler deleteMyAccount
+	delete /api/user/account (EmptyReq) returns (DeleteUserResp)
 }
 
 // AI 配置与资源（需 JWT）

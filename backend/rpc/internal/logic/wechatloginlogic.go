@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
+	"unicode"
 
 	"backend/model"
 	"backend/rpc/internal/errorx"
@@ -89,6 +90,9 @@ func (l *WechatLoginLogic) findOrCreateWechatUser(info utils.WechatOAuthUserInfo
 	err := l.svcCtx.DB.Where("wechat_open_id = ?", openID).First(&user).Error
 	if err == nil {
 		l.applyWechatProfile(&user, info)
+		if err := l.syncWechatUsername(&user, info); err != nil {
+			return model.User{}, false, err
+		}
 		if err := l.svcCtx.DB.Save(&user).Error; err != nil {
 			return model.User{}, false, errorx.Internal("更新微信资料失败")
 		}
@@ -98,7 +102,7 @@ func (l *WechatLoginLogic) findOrCreateWechatUser(info utils.WechatOAuthUserInfo
 		return model.User{}, false, errorx.Internal("查询用户失败")
 	}
 
-	username, err := l.allocateWechatUsername(info.Nickname, openID)
+	username, err := l.allocateWechatUsername(info.Nickname, openID, 0)
 	if err != nil {
 		return model.User{}, false, err
 	}
@@ -140,8 +144,24 @@ func (l *WechatLoginLogic) applyWechatProfile(user *model.User, info utils.Wecha
 	}
 }
 
-func (l *WechatLoginLogic) allocateWechatUsername(nickname, openID string) (string, error) {
-	base := sanitizeWechatUsername(nickname)
+func (l *WechatLoginLogic) syncWechatUsername(user *model.User, info utils.WechatOAuthUserInfo) error {
+	nickname := normalizeWechatDisplayName(info.Nickname)
+	if nickname == "" || !isAutoWechatUsername(user.Username) {
+		return nil
+	}
+	if user.Username == nickname {
+		return nil
+	}
+	username, err := l.allocateWechatUsername(nickname, strings.TrimSpace(info.OpenID), user.ID)
+	if err != nil {
+		return err
+	}
+	user.Username = username
+	return nil
+}
+
+func (l *WechatLoginLogic) allocateWechatUsername(nickname, openID string, excludeUserID uint) (string, error) {
+	base := normalizeWechatDisplayName(nickname)
 	if base == "" && len(openID) >= 6 {
 		base = "wx_" + openID[len(openID)-6:]
 	}
@@ -158,25 +178,50 @@ func (l *WechatLoginLogic) allocateWechatUsername(nickname, openID string) (stri
 		if err != nil {
 			return "", errorx.Internal("检查用户名失败")
 		}
+		if excludeUserID > 0 && existing.ID == excludeUserID {
+			return candidate, nil
+		}
 		suffix, _ := randomHex(3)
-		candidate = fmt.Sprintf("%s_%s", base, suffix)
+		candidate = fmt.Sprintf("%s_%s", truncateWechatRunes(base, 44), suffix)
 	}
 	return "", errorx.Internal("无法分配用户名")
 }
 
-func sanitizeWechatUsername(raw string) string {
+func normalizeWechatDisplayName(raw string) string {
 	raw = strings.TrimSpace(raw)
 	var b strings.Builder
 	for _, r := range raw {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' {
-			b.WriteRune(r)
+		if r == 0 || unicode.IsControl(r) {
+			continue
 		}
+		b.WriteRune(r)
 	}
-	s := b.String()
-	if len(s) > 20 {
-		s = s[:20]
+	return truncateWechatRunes(strings.TrimSpace(b.String()), 50)
+}
+
+func truncateWechatRunes(raw string, max int) string {
+	if max <= 0 {
+		return ""
 	}
-	return s
+	rs := []rune(raw)
+	if len(rs) <= max {
+		return raw
+	}
+	return string(rs[:max])
+}
+
+func isAutoWechatUsername(username string) bool {
+	u := strings.TrimSpace(username)
+	if u == "" {
+		return true
+	}
+	if strings.HasPrefix(u, "wechat_user") {
+		return true
+	}
+	if strings.HasPrefix(u, "wx_") && len(u) <= 12 {
+		return true
+	}
+	return false
 }
 
 func randomWechatPassword() string {

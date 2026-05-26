@@ -11,6 +11,10 @@ class User {
   final String feishuName;
   /// 是否已通过飞书 OAuth 登录绑定
   final bool feishuBound;
+  /// 微信 OAuth 昵称
+  final String wechatNickname;
+  /// 是否已通过微信 OAuth 绑定
+  final bool wechatBound;
   /// 10 位数字 Moe 号（登录账号之一）
   final String moeNo;
   /// 对外展示 ID（与后端 `display_user_id`，一般为 Moe 号）
@@ -42,6 +46,8 @@ class User {
     this.feishuEmail = '',
     this.feishuName = '',
     this.feishuBound = false,
+    this.wechatNickname = '',
+    this.wechatBound = false,
     this.moeNo = '',
     this.displayUserId = '',
     this.messageRetentionChoice = 0,
@@ -77,6 +83,8 @@ class User {
       feishuEmail: json['feishu_email'] as String? ?? '',
       feishuName: json['feishu_name'] as String? ?? '',
       feishuBound: json['feishu_bound'] as bool? ?? false,
+      wechatNickname: json['wechat_nickname'] as String? ?? '',
+      wechatBound: json['wechat_bound'] as bool? ?? false,
       moeNo: json['moe_no'] as String? ?? '',
       displayUserId: json['display_user_id'] as String? ??
           json['moe_no'] as String? ??
@@ -111,6 +119,8 @@ class User {
       'feishu_email': feishuEmail,
       'feishu_name': feishuName,
       'feishu_bound': feishuBound,
+      'wechat_nickname': wechatNickname,
+      'wechat_bound': wechatBound,
       'moe_no': moeNo,
       'display_user_id': displayUserId,
       'message_retention_choice': messageRetentionChoice,

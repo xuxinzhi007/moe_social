@@ -52,8 +52,12 @@ type User struct {
 	// 飞书 OAuth 显示名（通知卡片「操作者」会附带）
 	FeishuName string `protobuf:"bytes,22,opt,name=feishu_name,json=feishuName,proto3" json:"feishu_name,omitempty"`
 	// 是否已通过飞书 OAuth 绑定
-	FeishuBound   bool   `protobuf:"varint,23,opt,name=feishu_bound,json=feishuBound,proto3" json:"feishu_bound,omitempty"`
-	Role          string `protobuf:"bytes,24,opt,name=role,proto3" json:"role,omitempty"` // App 用户角色 user | admin | super_admin
+	FeishuBound bool   `protobuf:"varint,23,opt,name=feishu_bound,json=feishuBound,proto3" json:"feishu_bound,omitempty"`
+	Role        string `protobuf:"bytes,24,opt,name=role,proto3" json:"role,omitempty"` // App 用户角色 user | admin | super_admin
+	// 微信 OAuth 昵称
+	WechatNickname string `protobuf:"bytes,25,opt,name=wechat_nickname,json=wechatNickname,proto3" json:"wechat_nickname,omitempty"`
+	// 是否已通过微信 OAuth 绑定
+	WechatBound   bool `protobuf:"varint,26,opt,name=wechat_bound,json=wechatBound,proto3" json:"wechat_bound,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -254,6 +258,20 @@ func (x *User) GetRole() string {
 		return x.Role
 	}
 	return ""
+}
+
+func (x *User) GetWechatNickname() string {
+	if x != nil {
+		return x.WechatNickname
+	}
+	return ""
+}
+
+func (x *User) GetWechatBound() bool {
+	if x != nil {
+		return x.WechatBound
+	}
+	return false
 }
 
 type FeishuAuthorizeURLReq struct {
@@ -24018,7 +24036,7 @@ var File_super_proto protoreflect.FileDescriptor
 
 const file_super_proto_rawDesc = "" +
 	"\n" +
-	"\vsuper.proto\x12\x05super\"\xf3\x05\n" +
+	"\vsuper.proto\x12\x05super\"\xbf\x06\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
@@ -24049,7 +24067,9 @@ const file_super_proto_rawDesc = "" +
 	"\vfeishu_name\x18\x16 \x01(\tR\n" +
 	"feishuName\x12!\n" +
 	"\ffeishu_bound\x18\x17 \x01(\bR\vfeishuBound\x12\x12\n" +
-	"\x04role\x18\x18 \x01(\tR\x04role\"-\n" +
+	"\x04role\x18\x18 \x01(\tR\x04role\x12'\n" +
+	"\x0fwechat_nickname\x18\x19 \x01(\tR\x0ewechatNickname\x12!\n" +
+	"\fwechat_bound\x18\x1a \x01(\bR\vwechatBound\"-\n" +
 	"\x15FeishuAuthorizeURLReq\x12\x14\n" +
 	"\x05state\x18\x01 \x01(\tR\x05state\"=\n" +
 	"\x16FeishuAuthorizeURLResp\x12#\n" +
