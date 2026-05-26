@@ -19,6 +19,7 @@
 | 文档 | 用途 |
 |------|------|
 | [用户记忆系统-OpenClaw式演进设计.md](./用户记忆系统-OpenClaw式演进设计.md) | **架构唯一事实源** |
+| [Moe-Intelligence-Stack-v1.md](./Moe-Intelligence-Stack-v1.md) | **Moe Core v1**（工具 / Post Pulse / Bot Runtime） |
 | [记忆系统-2026-05-20-变更整理.md](./记忆系统-2026-05-20-变更整理.md) | 近期变更与验收 |
 | [记忆系统-开源对标调研.md](./记忆系统-开源对标调研.md) | OpenClaw / 酒馆对标 |
 | [用户级记忆统一改造验收脚本.md](./用户级记忆统一改造验收脚本.md) | E2E 验收 |

@@ -172,6 +172,27 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
       },
       {
         kind: 'item',
+        to: '/app/moe-bots',
+        label: '社区 AI Bot',
+        status: 'ready',
+        appDomain: 'moe / bot',
+      },
+      {
+        kind: 'item',
+        to: '/app/moe-brain?agent=moe_guide',
+        label: 'AI 大脑',
+        status: 'ready',
+        appDomain: 'moe / brain',
+      },
+      {
+        kind: 'item',
+        to: '/app/moe',
+        label: 'Moe 工具与 Bot',
+        status: 'ready',
+        appDomain: 'moe — 概览 / 工具 / 调用',
+      },
+      {
+        kind: 'item',
         to: '/gifts/catalog',
         label: '礼物与扭蛋',
         status: 'ready',

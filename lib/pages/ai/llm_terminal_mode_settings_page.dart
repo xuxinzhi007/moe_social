@@ -75,7 +75,7 @@ class _LlmTerminalModeSettingsPageState
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('终端同款（本地 Ollama）'),
+        title: const Text('终端同款（本地推理）'),
         centerTitle: true,
       ),
       body: _loading
@@ -177,8 +177,8 @@ class _LlmTerminalModeSettingsPageState
                     ],
                   ),
                   child: const Text(
-                    '提示：要做到“和电脑终端一致”，手机必须能访问到同一台电脑上的 Ollama。\n'
-                    '当前模式通过后端(8888/cpolar)转发到本机 Ollama(11434)，手机无需直接连 11434。',
+                    '提示：要做到“和电脑终端一致”，手机需能访问运行 llama-server 的电脑。\n'
+                    '当前模式通过后端(8888/cpolar)转发到本机 llama.cpp（默认 6633），手机无需直连 6633。',
                     style: TextStyle(color: Colors.black87, height: 1.35),
                   ),
                 ),

@@ -69,7 +69,7 @@ flowchart LR
 ```yaml
 admin:
   jwt_secret: "单独的管理员密钥-勿与-auth.access_secret-混用"
-  token_expire_hours: 24
+  token_expire_hours: 168  # 7 天；生产可按安全策略缩短
   # 首个超管（仅首次启动无账号时由 -migrate 种子写入，之后改库或后台改密）
   bootstrap:
     username: "admin"

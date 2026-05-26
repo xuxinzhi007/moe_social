@@ -44,6 +44,8 @@ type User {
 	WechatNickname         string `json:"wechat_nickname,optional"`
 	WechatBound            bool   `json:"wechat_bound,optional"`
 	Role                   string `json:"role,optional"`
+	IsBot                  bool   `json:"is_bot,optional"`
+	BotAgentKey            string `json:"bot_agent_key,optional"`
 }
 
 // VIP套餐相关结构
@@ -110,20 +112,22 @@ type Transaction {
 
 // 帖子相关结构
 type Post {
-	Id               string     `json:"id"`
-	UserId           string     `json:"user_id"`
-	UserName         string     `json:"user_name"`
-	UserAvatar       string     `json:"user_avatar"`
-	Content          string     `json:"content"`
-	Images           []string   `json:"images"`
-	TopicTags        []TopicTag `json:"topic_tags"`
-	Likes            int        `json:"likes"`
-	Comments         int        `json:"comments"`
-	IsLiked          bool       `json:"is_liked"`
-	CreatedAt        string     `json:"created_at"`
-	HandDrawCard     string     `json:"hand_draw_card,optional"`
-	HandDrawThumbUrl string     `json:"hand_draw_thumb_url,optional"`
-	ModerationStatus string     `json:"moderation_status,optional"`
+	Id                string     `json:"id"`
+	UserId            string     `json:"user_id"`
+	UserName          string     `json:"user_name"`
+	UserAvatar        string     `json:"user_avatar"`
+	Content           string     `json:"content"`
+	Images            []string   `json:"images"`
+	TopicTags         []TopicTag `json:"topic_tags"`
+	Likes             int        `json:"likes"`
+	Comments          int        `json:"comments"`
+	IsLiked           bool       `json:"is_liked"`
+	CreatedAt         string     `json:"created_at"`
+	HandDrawCard      string     `json:"hand_draw_card,optional"`
+	HandDrawThumbUrl  string     `json:"hand_draw_thumb_url,optional"`
+	ModerationStatus  string     `json:"moderation_status,optional"`
+	AuthorIsBot       bool       `json:"author_is_bot,optional"`
+	AuthorBotAgentKey string     `json:"author_bot_agent_key,optional"`
 }
 
 // 话题标签结构
@@ -546,6 +550,323 @@ type GetPostsReq {
 	FeedMode     string `form:"feed_mode,optional"`
 	TopicTagId   string `form:"topic_tag_id,optional"`
 	AuthorUserId string `form:"author_user_id,optional"`
+}
+
+// Post Pulse P0：站内动态关键词检索
+type SearchPostsReq {
+	Q            string `form:"q,optional"`
+	Page         int    `form:"page,default=1"`
+	PageSize     int    `form:"page_size,default=10"`
+	ViewerUserId string `form:"viewer_user_id,optional"`
+	MoodTag      string `form:"mood_tag,optional"`
+	TopicTagId   string `form:"topic_tag_id,optional"`
+}
+
+type SearchPostHit {
+	PostId      string  `json:"post_id"`
+	UserId      string  `json:"user_id"`
+	UserName    string  `json:"user_name"`
+	Content     string  `json:"content"`
+	Snippet     string  `json:"snippet"`
+	MoodTag     string  `json:"mood_tag"`
+	Likes       int     `json:"likes"`
+	Comments    int     `json:"comments"`
+	CreatedAt   string  `json:"created_at"`
+	Score       float64 `json:"score"`
+	ScoreReason string  `json:"score_reason"`
+}
+
+type SearchPostsData {
+	Items []SearchPostHit `json:"items"`
+	Total int             `json:"total"`
+}
+
+type SearchPostsResp {
+	BaseResp
+	Data SearchPostsData `json:"data"`
+}
+
+// Moe Intelligence Stack v1
+type MoeToolSchemaResp {
+	BaseResp
+	Data MoeToolSchemaData `json:"data"`
+}
+
+type MoeToolSchemaData {
+	Tools []interface{} `json:"tools"`
+	Tier  string        `json:"tier"`
+}
+
+type MoeToolExecuteReq {
+	Tool           string `json:"tool"`
+	Arguments      string `json:"arguments"`
+	AgentKey       string `json:"agent_key,optional"`
+	IdempotencyKey string `json:"idempotency_key,optional"`
+}
+
+type MoeToolExecuteData {
+	Ok     bool   `json:"ok"`
+	Result string `json:"result"`
+	Error  string `json:"error,optional"`
+}
+
+type MoeToolExecuteResp {
+	BaseResp
+	Data MoeToolExecuteData `json:"data"`
+}
+
+type MoeAgentRuntimeItem {
+	AgentKey          string `json:"agent_key"`
+	DisplayName       string `json:"display_name"`
+	BotUserId         string `json:"bot_user_id"`
+	CapabilityTier    string `json:"capability_tier"`
+	ModelName         string `json:"model_name"`
+	ProviderProfileId string `json:"provider_profile_id,optional"`
+	ToolsEnabled      bool   `json:"tools_enabled"`
+	PostQuotaDaily    int    `json:"post_quota_daily"`
+	PostsToday        int    `json:"posts_today"`
+	Enabled           bool   `json:"enabled"`
+	LastRunAt         string `json:"last_run_at,optional"`
+	LastPostId        string `json:"last_post_id,optional"`
+	PostScheduleMode  string `json:"post_schedule_mode,optional"`
+	ScheduleCron      string `json:"schedule_cron,optional"`
+	NextRunAt         string `json:"next_run_at,optional"`
+	SystemPrompt      string `json:"system_prompt,optional"`
+	PostRules         string `json:"post_rules,optional"`
+	ForbiddenTags     string `json:"forbidden_tags,optional"`
+	PreferredTags     string `json:"preferred_tags,optional"`
+}
+
+type AdminListMoeRuntimesData {
+	Items []MoeAgentRuntimeItem `json:"items"`
+}
+
+type AdminListMoeRuntimesResp {
+	BaseResp
+	Data AdminListMoeRuntimesData `json:"data"`
+}
+
+type AdminUpsertMoeRuntimeReq {
+	AgentKey          string `json:"agent_key"`
+	DisplayName       string `json:"display_name"`
+	BotUserId         string `json:"bot_user_id"`
+	CapabilityTier    string `json:"capability_tier,optional"`
+	ModelName         string `json:"model_name,optional"`
+	ProviderProfileId string `json:"provider_profile_id,optional"`
+	ToolsEnabled      bool   `json:"tools_enabled,optional"`
+	PostQuotaDaily    int    `json:"post_quota_daily,optional"`
+	Enabled           bool   `json:"enabled,optional"`
+	SystemPrompt      string `json:"system_prompt,optional"`
+	PostRules         string `json:"post_rules,optional"`
+	ForbiddenTags     string `json:"forbidden_tags,optional"`
+	PreferredTags     string `json:"preferred_tags,optional"`
+	PostScheduleMode  string `json:"post_schedule_mode,optional"`
+	ScheduleCron      string `json:"schedule_cron,optional"`
+}
+
+type AdminUpsertMoeRuntimeResp {
+	BaseResp
+	Data MoeAgentRuntimeItem `json:"data"`
+}
+
+type AdminRunMoeAgentReq {
+	AgentKey string `path:"agent_key"`
+}
+
+type AdminRunMoeAgentData {
+	AgentKey string `json:"agent_key"`
+	Ok       bool   `json:"ok"`
+	Detail   string `json:"detail"`
+	PostId   string `json:"post_id,optional"`
+}
+
+type AdminRunMoeAgentResp {
+	BaseResp
+	Data AdminRunMoeAgentData `json:"data"`
+}
+
+type AdminGetMoeBrainReq {
+	AgentKey string `path:"agent_key"`
+}
+
+type MoeBrainTagStat {
+	Tag   string `json:"tag"`
+	Count int    `json:"count"`
+}
+
+type MoeBrainEpisodeItem {
+	Id            uint     `json:"id"`
+	PostId        string   `json:"post_id"`
+	Content       string   `json:"content"`
+	Tags          []string `json:"tags"`
+	MoodTag       string   `json:"mood_tag"`
+	StyleScore    int      `json:"style_score"`
+	QualityScore  int      `json:"quality_score"`
+	Approved      bool     `json:"approved"`
+	RevisionCount int      `json:"revision_count"`
+	MemoryKey     string   `json:"memory_key"`
+	Source        string   `json:"source"`
+	CreatedAt     string   `json:"created_at"`
+}
+
+type MoeBrainMemoryItem {
+	Key        string `json:"key"`
+	Value      string `json:"value"`
+	MemoryType string `json:"memory_type"`
+	UpdatedAt  string `json:"updated_at"`
+}
+
+type AdminGetMoeBrainData {
+	AgentKey      string               `json:"agent_key"`
+	DisplayName   string               `json:"display_name"`
+	BotUserId     string               `json:"bot_user_id"`
+	ForbiddenTags []string             `json:"forbidden_tags"`
+	PreferredTags []string             `json:"preferred_tags"`
+	TagStats      []MoeBrainTagStat    `json:"tag_stats"`
+	Episodes      []MoeBrainEpisodeItem `json:"episodes"`
+	Memories      []MoeBrainMemoryItem `json:"memories"`
+}
+
+type AdminGetMoeBrainResp {
+	BaseResp
+	Data AdminGetMoeBrainData `json:"data"`
+}
+
+type AdminUpdateMoeBrainPolicyReq {
+	AgentKey      string   `path:"agent_key"`
+	ForbiddenTags []string `json:"forbidden_tags,optional"`
+	PreferredTags []string `json:"preferred_tags,optional"`
+}
+
+type AdminDeleteMoeBrainEpisodeReq {
+	Id uint `path:"id"`
+}
+
+type AdminRefineMoeBrainEpisodeReq {
+	Id          uint `path:"id"`
+	MaxAttempts int  `json:"max_attempts,optional,default=5"`
+}
+
+type AdminRefineMoeBrainEpisodeData {
+	EpisodeId     uint   `json:"episode_id"`
+	Ok            bool   `json:"ok"`
+	Approved      bool   `json:"approved"`
+	QualityScore  int    `json:"quality_score"`
+	BeforeContent string `json:"before_content"`
+	AfterContent  string `json:"after_content"`
+	Attempts      int    `json:"attempts"`
+	Detail        string `json:"detail"`
+}
+
+type AdminRefineMoeBrainEpisodeResp {
+	BaseResp
+	Data AdminRefineMoeBrainEpisodeData `json:"data"`
+}
+
+type AdminCurateMoeBrainReq {
+	AgentKey    string `path:"agent_key"`
+	MaxEpisodes int    `json:"max_episodes,optional,default=10"`
+	MaxAttempts int    `json:"max_attempts,optional,default=5"`
+	MinQuality  int    `json:"min_quality,optional,default=70"`
+	Force       bool   `json:"force,optional"`
+}
+
+type AdminCurateMoeBrainData {
+	AgentKey string                          `json:"agent_key"`
+	Total    int                             `json:"total"`
+	Approved int                             `json:"approved"`
+	Results  []AdminRefineMoeBrainEpisodeData `json:"results"`
+}
+
+type AdminCurateMoeBrainResp {
+	BaseResp
+	Data AdminCurateMoeBrainData `json:"data"`
+}
+
+type AdminMoeToolSchemaItem {
+	Name         string   `json:"name"`
+	Description  string   `json:"description"`
+	AllowedTiers []string `json:"allowed_tiers"`
+}
+
+type AdminMoeToolsSchemaData {
+	DefaultTier string                   `json:"default_tier"`
+	Tools       []AdminMoeToolSchemaItem `json:"tools"`
+	OpenAITools []interface{}            `json:"openai_tools"`
+}
+
+type AdminGetMoeToolsSchemaResp {
+	BaseResp
+	Data AdminMoeToolsSchemaData `json:"data"`
+}
+
+type AdminMoeToolStatRow {
+	Tool         string `json:"tool"`
+	TotalCalls   int64  `json:"total_calls"`
+	SuccessCalls int64  `json:"success_calls"`
+	FailedCalls  int64  `json:"failed_calls"`
+}
+
+type AdminMoeToolDayStat {
+	Date         string `json:"date"`
+	TotalCalls   int64  `json:"total_calls"`
+	SuccessCalls int64  `json:"success_calls"`
+}
+
+type AdminGetMoeToolStatsReq {
+	From     string `form:"from,optional"`
+	To       string `form:"to,optional"`
+	AgentKey string `form:"agent_key,optional"`
+	Tool     string `form:"tool,optional"`
+}
+
+type AdminMoeToolStatsData {
+	TotalCalls   int64                 `json:"total_calls"`
+	SuccessCalls int64                 `json:"success_calls"`
+	FailedCalls  int64                 `json:"failed_calls"`
+	ByTool       []AdminMoeToolStatRow `json:"by_tool"`
+	ByDay        []AdminMoeToolDayStat `json:"by_day"`
+}
+
+type AdminGetMoeToolStatsResp {
+	BaseResp
+	Data AdminMoeToolStatsData `json:"data"`
+}
+
+type AdminListMoeToolCallsReq {
+	Page        int    `form:"page,optional"`
+	PageSize    int    `form:"page_size,optional"`
+	Tool        string `form:"tool,optional"`
+	AgentKey    string `form:"agent_key,optional"`
+	ActorUserId string `form:"actor_user_id,optional"`
+	Source      string `form:"source,optional"`
+	OkOnly      bool   `form:"ok_only,optional"`
+	FailedOnly  bool   `form:"failed_only,optional"`
+	From        string `form:"from,optional"`
+	To          string `form:"to,optional"`
+}
+
+type AdminMoeToolCallItem {
+	Id               string `json:"id"`
+	Tool             string `json:"tool"`
+	ActorUserId      string `json:"actor_user_id"`
+	AgentKey         string `json:"agent_key,optional"`
+	Ok               bool   `json:"ok"`
+	ErrorMsg         string `json:"error_msg,optional"`
+	LatencyMs        int    `json:"latency_ms"`
+	Source           string `json:"source"`
+	ArgumentsPreview string `json:"arguments_preview,optional"`
+	CreatedAt        string `json:"created_at"`
+}
+
+type AdminListMoeToolCallsData {
+	Items []AdminMoeToolCallItem `json:"items"`
+	Total int64                  `json:"total"`
+}
+
+type AdminListMoeToolCallsResp {
+	BaseResp
+	Data AdminListMoeToolCallsData `json:"data"`
 }
 
 type GetPostReq {
@@ -2653,6 +2974,36 @@ service Super {
 
 	@handler adminDeleteMemory
 	delete /api/admin/memories/:memory_id (AdminDeleteMemoryReq) returns (AdminDeleteMemoryResp)
+
+	@handler adminListMoeRuntimes
+	get /api/admin/moe/runtimes returns (AdminListMoeRuntimesResp)
+
+	@handler adminUpsertMoeRuntime
+	post /api/admin/moe/runtimes (AdminUpsertMoeRuntimeReq) returns (AdminUpsertMoeRuntimeResp)
+
+	@handler adminRunMoeAgentOnce
+	post /api/admin/moe/runtimes/:agent_key/run-once (AdminRunMoeAgentReq) returns (AdminRunMoeAgentResp)
+
+	get /api/admin/moe/runtimes/:agent_key/brain returns (AdminGetMoeBrainResp)
+
+	put /api/admin/moe/runtimes/:agent_key/brain/policy (AdminUpdateMoeBrainPolicyReq) returns (AdminGetMoeBrainResp)
+
+	delete /api/admin/moe/brain/episodes/:id (AdminDeleteMoeBrainEpisodeReq) returns (BaseResp)
+
+	@handler AdminRefineMoeBrainEpisode
+	post /api/admin/moe/brain/episodes/:id/refine (AdminRefineMoeBrainEpisodeReq) returns (AdminRefineMoeBrainEpisodeResp)
+
+	@handler AdminCurateMoeBrain
+	post /api/admin/moe/runtimes/:agent_key/brain/curate (AdminCurateMoeBrainReq) returns (AdminCurateMoeBrainResp)
+
+	@handler adminGetMoeToolsSchema
+	get /api/admin/moe/tools/schema (EmptyReq) returns (AdminGetMoeToolsSchemaResp)
+
+	@handler adminGetMoeToolStats
+	get /api/admin/moe/tools/stats (AdminGetMoeToolStatsReq) returns (AdminGetMoeToolStatsResp)
+
+	@handler adminListMoeToolCalls
+	get /api/admin/moe/tools/calls (AdminListMoeToolCallsReq) returns (AdminListMoeToolCallsResp)
 }
 
 // VIP相关API服务
@@ -2677,6 +3028,9 @@ service Super {
 service Super {
 	@handler getPosts
 	get /api/posts (GetPostsReq) returns (GetPostsResp)
+
+	@handler searchPosts
+	get /api/posts/search (SearchPostsReq) returns (SearchPostsResp)
 
 	@handler getPost
 	get /api/posts/:post_id (GetPostReq) returns (GetPostResp)
@@ -3989,6 +4343,17 @@ type TrackUserBehaviorEventsData {
 type TrackUserBehaviorEventsResp {
 	BaseResp
 	Data TrackUserBehaviorEventsData `json:"data"`
+}
+
+@server (
+	group: moe
+)
+service Super {
+	@handler getMoeToolsSchema
+	get /api/moe/tools/schema returns (MoeToolSchemaResp)
+
+	@handler executeMoeTool
+	post /api/moe/tools/execute (MoeToolExecuteReq) returns (MoeToolExecuteResp)
 }
 
 @server (

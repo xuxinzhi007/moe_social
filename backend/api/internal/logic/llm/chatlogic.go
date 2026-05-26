@@ -531,12 +531,7 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		l.Infof("llm chat without memory, model=%s, messages=%d", req.Model, len(req.Messages))
 	}
 
-	timeoutSeconds := l.svcCtx.Config.Ollama.TimeoutSeconds
-	if timeoutSeconds <= 0 {
-		timeoutSeconds = 60
-	}
-
-	baseUrl, err := common.ResolveOllamaBaseURL(l.svcCtx.Config.Ollama.BaseUrl)
+	inferenceCfg, err := inferenceConfigFromSvc(l.svcCtx)
 	if err != nil {
 		return &types.LlmChatResp{
 			BaseResp:       common.HandleError(err),
@@ -545,6 +540,8 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 			Summarized:     false,
 		}, nil
 	}
+	timeoutSeconds := inferenceCfg.TimeoutSeconds
+	baseUrl := inferenceCfg.BaseURL
 
 	client := utils.NewHTTPClient(timeoutSeconds)
 
@@ -671,96 +668,97 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		}
 	}
 
-	// 构建请求参数
-	request := ollamaRequest{
-		Model:    req.Model,
-		Messages: messages,
-		Stream:   req.Stream,
-	}
-
-	// 设置可选参数
-	if req.Temperature > 0 {
-		request.Temperature = req.Temperature
-	}
-	if req.TopP > 0 {
-		request.TopP = req.TopP
-	}
-	if req.MaxTokens > 0 {
-		request.MaxTokens = req.MaxTokens
-	}
-	if req.RepeatPenalty > 0 {
-		request.RepeatPenalty = req.RepeatPenalty
-	}
-
-	body, err := json.Marshal(request)
-	if err != nil {
-		return &types.LlmChatResp{
-			BaseResp:       common.HandleError(err),
-			Content:        "",
-			RemainingRatio: 1,
-			Summarized:     false,
-		}, nil
-	}
-
-	ctx, cancel := context.WithTimeout(l.ctx, time.Duration(timeoutSeconds)*time.Second)
-	defer cancel()
-
-	url := baseUrl + "/api/chat"
-
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
-	if err != nil {
-		return &types.LlmChatResp{
-			BaseResp:       common.HandleError(err),
-			Content:        "",
-			RemainingRatio: 1,
-			Summarized:     false,
-		}, nil
-	}
-	common.ApplyOllamaForwardHeaders(httpReq)
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	var httpResp *http.Response
-	var retryErr error
-	for i := 0; i <= utils.DefaultRetryConfig.MaxRetries; i++ {
-		httpResp, retryErr = client.Do(httpReq)
-		if retryErr == nil && httpResp.StatusCode == http.StatusOK {
-			break
-		}
-		if retryErr == nil && !utils.IsRetryableStatus(httpResp.StatusCode) {
-			break
-		}
-		if i < utils.DefaultRetryConfig.MaxRetries {
-			delay := time.Duration(float64(utils.DefaultRetryConfig.InitialDelay) * (utils.DefaultRetryConfig.BackoffFactor * float64(i)))
-			if delay > utils.DefaultRetryConfig.MaxDelay {
-				delay = utils.DefaultRetryConfig.MaxDelay
-			}
-			time.Sleep(delay)
-		}
-	}
-
-	if retryErr != nil {
-		return &types.LlmChatResp{
-			BaseResp:       common.HandleError(retryErr),
-			Content:        "",
-			RemainingRatio: 1,
-			Summarized:     summarized,
-		}, nil
-	}
-	defer httpResp.Body.Close()
-
-	if httpResp.StatusCode != http.StatusOK {
-		raw, _ := io.ReadAll(httpResp.Body)
-		return &types.LlmChatResp{
-			BaseResp:       common.HandleError(fmt.Errorf("调用 Ollama 失败: %d %s", httpResp.StatusCode, string(raw))),
-			Content:        "",
-			RemainingRatio: 1,
-			Summarized:     summarized,
-		}, nil
+	chatOpts := common.ChatOptions{
+		Temperature:   req.Temperature,
+		TopP:          req.TopP,
+		MaxTokens:     req.MaxTokens,
+		RepeatPenalty: req.RepeatPenalty,
 	}
 
 	var oResp ollamaResponse
 
-	// 处理流式响应
+	if inferenceCfg.ApiStyle == common.InferenceAPIOpenAI || !req.Stream {
+		content, chatErr := l.postInferenceChat(inferenceCfg, req.Model, messages, chatOpts)
+		if chatErr != nil {
+			return &types.LlmChatResp{
+				BaseResp:       common.HandleError(fmt.Errorf("调用推理服务失败: %w", chatErr)),
+				Content:        "",
+				RemainingRatio: 1,
+				Summarized:     summarized,
+			}, nil
+		}
+		oResp.Message.Content = content
+	} else if req.Stream {
+		request := ollamaRequest{
+			Model:         req.Model,
+			Messages:      messages,
+			Stream:        true,
+			Temperature:   chatOpts.Temperature,
+			TopP:          chatOpts.TopP,
+			MaxTokens:     chatOpts.MaxTokens,
+			RepeatPenalty: chatOpts.RepeatPenalty,
+		}
+		body, marshalErr := json.Marshal(request)
+		if marshalErr != nil {
+			return &types.LlmChatResp{
+				BaseResp:       common.HandleError(marshalErr),
+				Content:        "",
+				RemainingRatio: 1,
+				Summarized:     summarized,
+			}, nil
+		}
+		ctx, cancel := context.WithTimeout(l.ctx, time.Duration(timeoutSeconds)*time.Second)
+		defer cancel()
+		url := baseUrl + "/api/chat"
+		httpReq, reqErr := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+		if reqErr != nil {
+			return &types.LlmChatResp{
+				BaseResp:       common.HandleError(reqErr),
+				Content:        "",
+				RemainingRatio: 1,
+				Summarized:     summarized,
+			}, nil
+		}
+		common.ApplyInferenceForwardHeaders(httpReq)
+		httpReq.Header.Set("Content-Type", "application/json")
+		var httpResp *http.Response
+		var retryErr error
+		for i := 0; i <= utils.DefaultRetryConfig.MaxRetries; i++ {
+			httpResp, retryErr = client.Do(httpReq)
+			if retryErr == nil && httpResp.StatusCode == http.StatusOK {
+				break
+			}
+			if retryErr == nil && !utils.IsRetryableStatus(httpResp.StatusCode) {
+				break
+			}
+			if i < utils.DefaultRetryConfig.MaxRetries {
+				delay := time.Duration(float64(utils.DefaultRetryConfig.InitialDelay) * (utils.DefaultRetryConfig.BackoffFactor * float64(i)))
+				if delay > utils.DefaultRetryConfig.MaxDelay {
+					delay = utils.DefaultRetryConfig.MaxDelay
+				}
+				time.Sleep(delay)
+			}
+		}
+		if retryErr != nil {
+			return &types.LlmChatResp{
+				BaseResp:       common.HandleError(retryErr),
+				Content:        "",
+				RemainingRatio: 1,
+				Summarized:     summarized,
+			}, nil
+		}
+		defer httpResp.Body.Close()
+		if httpResp.StatusCode != http.StatusOK {
+			raw, _ := io.ReadAll(httpResp.Body)
+			return &types.LlmChatResp{
+				BaseResp:       common.HandleError(fmt.Errorf("调用推理服务失败: %d %s", httpResp.StatusCode, string(raw))),
+				Content:        "",
+				RemainingRatio: 1,
+				Summarized:     summarized,
+			}, nil
+		}
+
+	// 处理流式响应（仅遗留 Ollama）
 	if req.Stream {
 		// 这里应该返回流式响应，但由于当前接口设计，我们先收集所有内容
 		// 实际生产环境中，应该使用Server-Sent Events或WebSocket
@@ -791,16 +789,7 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		}
 
 		oResp.Message.Content = fullContent.String()
-	} else {
-		// 处理非流式响应
-		if err := json.NewDecoder(httpResp.Body).Decode(&oResp); err != nil {
-			return &types.LlmChatResp{
-				BaseResp:       common.HandleError(err),
-				Content:        "",
-				RemainingRatio: 1,
-				Summarized:     summarized,
-			}, nil
-		}
+	}
 	}
 	oResp.Message.Content = sanitizePersonaResponse(oResp.Message.Content)
 
@@ -902,71 +891,16 @@ func (l *ChatLogic) summarizeMessages(model, baseUrl string, timeoutSeconds int,
 		systemPrompt = "你是对话总结助手，需要用简短的中文总结下面的多轮对话，提炼出对后续对话有用的关键信息和记忆点，尽量控制在三到六条以内。"
 	}
 
-	reqBody, err := json.Marshal(ollamaRequest{
-		Model: model,
-		Messages: []ollamaMessage{
-			{
-				Role:    "system",
-				Content: systemPrompt,
-			},
-			{
-				Role:    "user",
-				Content: sb.String(),
-			},
-		},
-		Stream: false,
-	})
+	cfg, err := inferenceConfigFromSvc(l.svcCtx)
 	if err != nil {
 		return "", err
 	}
-
-	ctx, cancel := context.WithTimeout(l.ctx, time.Duration(timeoutSeconds)*time.Second)
-	defer cancel()
-
-	url := strings.TrimRight(baseUrl, "/") + "/api/chat"
-
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(reqBody))
-	if err != nil {
-		return "", err
-	}
-	common.ApplyOllamaForwardHeaders(httpReq)
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	var httpResp *http.Response
-	var retryErr error
-	for i := 0; i <= utils.DefaultRetryConfig.MaxRetries; i++ {
-		httpResp, retryErr = client.Do(httpReq)
-		if retryErr == nil && httpResp.StatusCode == http.StatusOK {
-			break
-		}
-		if retryErr == nil && !utils.IsRetryableStatus(httpResp.StatusCode) {
-			break
-		}
-		if i < utils.DefaultRetryConfig.MaxRetries {
-			delay := time.Duration(float64(utils.DefaultRetryConfig.InitialDelay) * (utils.DefaultRetryConfig.BackoffFactor * float64(i)))
-			if delay > utils.DefaultRetryConfig.MaxDelay {
-				delay = utils.DefaultRetryConfig.MaxDelay
-			}
-			time.Sleep(delay)
-		}
-	}
-
-	if retryErr != nil {
-		return "", retryErr
-	}
-	defer httpResp.Body.Close()
-
-	if httpResp.StatusCode != http.StatusOK {
-		raw, _ := io.ReadAll(httpResp.Body)
-		return "", fmt.Errorf("summarize request failed: %d %s", httpResp.StatusCode, string(raw))
-	}
-
-	var oResp ollamaResponse
-	if err := json.NewDecoder(httpResp.Body).Decode(&oResp); err != nil {
-		return "", err
-	}
-
-	return oResp.Message.Content, nil
+	_ = baseUrl
+	_ = client
+	return l.postInferenceChat(cfg, model, []ollamaMessage{
+		{Role: "system", Content: systemPrompt},
+		{Role: "user", Content: sb.String()},
+	}, common.ChatOptions{})
 }
 
 type memoryItem struct {
@@ -1027,71 +961,22 @@ func (l *ChatLogic) extractAndSaveMemoriesWithSource(ctx context.Context, userID
 请直接返回 JSON 字符串，不要包含 Markdown 格式（如 code block），不要包含其他解释文字。`
 	}
 
-	reqBody, err := json.Marshal(ollamaRequest{
-		Model: model,
-		Messages: []ollamaMessage{
-			{
-				Role:    "user",
-				Content: sb.String() + "\n\n" + prompt,
-			},
-		},
-		Stream: false,
-	})
-	if err != nil {
-		logger.Errorf("marshal extract memory req failed: %v", err)
+	cfg, cfgErr := common.InferenceFromOllamaConf(l.svcCtx.Config.Ollama)
+	if cfgErr != nil {
+		logger.Errorf("inference config failed: %v", cfgErr)
+		return
+	}
+	_ = baseUrl
+	extractLogic := &ChatLogic{Logger: logger, ctx: ctx, svcCtx: l.svcCtx}
+	rawContent, chatErr := extractLogic.postInferenceChat(cfg, model, []ollamaMessage{
+		{Role: "user", Content: sb.String() + "\n\n" + prompt},
+	}, common.ChatOptions{})
+	if chatErr != nil {
+		logger.Errorf("extract memory inference failed: %v", chatErr)
 		return
 	}
 
-	reqCtx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
-	defer cancel()
-
-	url := strings.TrimRight(baseUrl, "/") + "/api/chat"
-	httpReq, err := http.NewRequestWithContext(reqCtx, http.MethodPost, url, bytes.NewReader(reqBody))
-	if err != nil {
-		logger.Errorf("create extract memory req failed: %v", err)
-		return
-	}
-	common.ApplyOllamaForwardHeaders(httpReq)
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	client := utils.NewHTTPClient(timeoutSeconds)
-	var httpResp *http.Response
-	var retryErr error
-	for i := 0; i <= utils.DefaultRetryConfig.MaxRetries; i++ {
-		httpResp, retryErr = client.Do(httpReq)
-		if retryErr == nil && httpResp.StatusCode == http.StatusOK {
-			break
-		}
-		if retryErr == nil && !utils.IsRetryableStatus(httpResp.StatusCode) {
-			break
-		}
-		if i < utils.DefaultRetryConfig.MaxRetries {
-			delay := time.Duration(float64(utils.DefaultRetryConfig.InitialDelay) * (utils.DefaultRetryConfig.BackoffFactor * float64(i)))
-			if delay > utils.DefaultRetryConfig.MaxDelay {
-				delay = utils.DefaultRetryConfig.MaxDelay
-			}
-			time.Sleep(delay)
-		}
-	}
-
-	if retryErr != nil {
-		logger.Errorf("extract memory http request failed: %v", retryErr)
-		return
-	}
-	defer httpResp.Body.Close()
-
-	if httpResp.StatusCode != http.StatusOK {
-		logger.Errorf("extract memory api failed: %d", httpResp.StatusCode)
-		return
-	}
-
-	var oResp ollamaResponse
-	if err := json.NewDecoder(httpResp.Body).Decode(&oResp); err != nil {
-		logger.Errorf("decode extract memory resp failed: %v", err)
-		return
-	}
-
-	content := strings.TrimSpace(oResp.Message.Content)
+	content := strings.TrimSpace(rawContent)
 	logger.Infof("memory extraction response received: chars=%d", len([]rune(content)))
 
 	// Clean up potential markdown code blocks

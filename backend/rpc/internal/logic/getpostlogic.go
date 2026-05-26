@@ -2,7 +2,6 @@ package logic
 
 import (
 	"context"
-	"encoding/json"
 	"strconv"
 
 	"backend/model"
@@ -73,58 +72,14 @@ func (l *GetPostLogic) GetPost(in *super.GetPostReq) (*super.GetPostResp, error)
 		return nil, errorx.New(500, "服务器内部错误")
 	}
 	
-	// 处理图片数组
-	var images []string
-	if post.Images != "" {
-		json.Unmarshal([]byte(post.Images), &images)
-	}
-	
-	// 获取用户名和头像
-	username := "未知用户"
-	avatar := "https://picsum.photos/150"
-	if user.Username != "" {
-		username = user.Username
-	} else if user.Email != "" {
-		username = user.Email
-	}
-	if user.Avatar != "" {
-		avatar = user.Avatar
-	}
-	
-	// 转换话题标签为响应格式
-	topicTags := make([]*super.TopicTag, 0, len(post.TopicTags))
-	for _, tag := range post.TopicTags {
-		topicTags = append(topicTags, &super.TopicTag{
-			Id:        strconv.FormatUint(uint64(tag.ID), 10),
-			Name:      tag.Name,
-			Color:     tag.Color,
-			CreatedAt: tag.CreatedAt.Format("2006-01-02 15:04:05"),
-		})
-	}
-	
 	isLiked := false
 	if viewerUID > 0 {
 		liked := LikedTargetIDSet(l.svcCtx.DB, viewerUID, "post", []uint{post.ID})
 		isLiked = liked[post.ID]
 	}
+	rpcPost := buildSuperPost(post, user, isLiked)
+	rpcPost.Id = in.PostId
+	rpcPost.ModerationStatus = ms
 
-	// 构建响应
-	return &super.GetPostResp{
-		Post: &super.Post{
-			Id:                in.PostId,
-			UserId:            strconv.FormatUint(uint64(post.UserID), 10),
-			UserName:          username,
-			UserAvatar:        avatar,
-			Content:           post.Content,
-			Images:            images,
-			TopicTags:         topicTags,
-			Likes:             int32(post.Likes),
-			Comments:          int32(post.Comments),
-			IsLiked:           isLiked,
-			CreatedAt:         post.CreatedAt.Format("2006-01-02 15:04:05"),
-			HandDrawCard:      post.HandDrawCard,
-			HandDrawThumbUrl:  post.HandDrawThumbURL,
-			ModerationStatus:  ms,
-		},
-	}, nil
+	return &super.GetPostResp{Post: rpcPost}, nil
 }

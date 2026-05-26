@@ -104,7 +104,7 @@ class AiProviderService {
       return _resolveLlamaCppProfile();
     }
     if (id == AiProviderProfile.builtinBackendId) {
-      return AiProviderProfile.builtinBackend();
+      return _resolveLlamaCppProfile();
     }
     final profiles = await listProfiles();
     for (final item in profiles) {

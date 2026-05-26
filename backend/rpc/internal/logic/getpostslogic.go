@@ -2,7 +2,6 @@ package logic
 
 import (
 	"context"
-	"encoding/json"
 	"strconv"
 	"strings"
 
@@ -131,52 +130,8 @@ func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, er
 	likedPosts := LikedTargetIDSet(l.svcCtx.DB, viewerUID, "post", postIDs)
 
 	for _, post := range posts {
-		var images []string
-		if post.Images != "" {
-			json.Unmarshal([]byte(post.Images), &images)
-		}
-
-		username := "未知用户"
-		avatar := "https://picsum.photos/150"
-		if user, ok := userMap[post.UserID]; ok {
-			if user.Username != "" {
-				username = user.Username
-			} else if user.Email != "" {
-				username = user.Email
-			}
-			if user.Avatar != "" {
-				avatar = user.Avatar
-			}
-		}
-
-		topicTags := make([]*super.TopicTag, 0, len(post.TopicTags))
-		for _, tag := range post.TopicTags {
-			topicTags = append(topicTags, &super.TopicTag{
-				Id:        strconv.FormatUint(uint64(tag.ID), 10),
-				Name:      tag.Name,
-				Color:     tag.Color,
-				CreatedAt: tag.CreatedAt.Format("2006-01-02 15:04:05"),
-			})
-		}
-
-		// 列表须下发完整 content：Flutter 用 HandDrawCardCodec.tryDecode 解析旧版内嵌手绘；
-		// 展示配文由客户端 strip。HandDrawCard 须下发：否则仅有缩略图 URL 时若加载失败则无手绘可看。
-		rpcPost := &super.Post{
-			Id:                 strconv.FormatUint(uint64(post.ID), 10),
-			UserId:             strconv.FormatUint(uint64(post.UserID), 10),
-			UserName:           username,
-			UserAvatar:         avatar,
-			Content:            post.Content,
-			Images:             images,
-			TopicTags:          topicTags,
-			Likes:              int32(post.Likes),
-			Comments:           int32(post.Comments),
-			IsLiked:            likedPosts[post.ID],
-			CreatedAt:          post.CreatedAt.Format("2006-01-02 15:04:05"),
-			HandDrawCard:       post.HandDrawCard,
-			HandDrawThumbUrl:   post.HandDrawThumbURL,
-			ModerationStatus:   moderationStatusOrDefault(post.ModerationStatus),
-		}
+		user := userMap[post.UserID]
+		rpcPost := buildSuperPost(post, user, likedPosts[post.ID])
 
 		resp.Posts = append(resp.Posts, rpcPost)
 	}

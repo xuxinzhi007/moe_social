@@ -48,5 +48,7 @@ func modelUserToProto(user *model.User) *super.User {
 		Role:                   user.Role,
 		WechatNickname:         user.WechatNickname,
 		WechatBound:            user.WechatOpenID != nil && strings.TrimSpace(*user.WechatOpenID) != "",
+		IsBot:                  user.IsBot,
+		BotAgentKey:            strings.TrimSpace(user.BotAgentKey),
 	}
 }

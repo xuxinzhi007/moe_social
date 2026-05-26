@@ -21,6 +21,8 @@ class Post {
   /// ok | pending | rejected
   final String moderationStatus;
   final String moodTag;
+  final bool authorIsBot;
+  final String authorBotAgentKey;
 
   Post({
     required this.id,
@@ -38,6 +40,8 @@ class Post {
     this.handDrawThumbUrl = '',
     this.moderationStatus = '',
     this.moodTag = '',
+    this.authorIsBot = false,
+    this.authorBotAgentKey = '',
   });
 
   /// 展示用正文（独立手绘字段时 content 即为配文；旧数据则去掉内嵌块）
@@ -73,6 +77,8 @@ class Post {
     String? handDrawThumbUrl,
     String? moderationStatus,
     String? moodTag,
+    bool? authorIsBot,
+    String? authorBotAgentKey,
   }) {
     return Post(
       id: id ?? this.id,
@@ -90,6 +96,8 @@ class Post {
       handDrawThumbUrl: handDrawThumbUrl ?? this.handDrawThumbUrl,
       moderationStatus: moderationStatus ?? this.moderationStatus,
       moodTag: moodTag ?? this.moodTag,
+      authorIsBot: authorIsBot ?? this.authorIsBot,
+      authorBotAgentKey: authorBotAgentKey ?? this.authorBotAgentKey,
     );
   }
 
@@ -213,6 +221,8 @@ class Post {
         handDrawThumbUrl: handDrawThumbUrl,
         moderationStatus: moderationStatus,
         moodTag: (json['mood_tag'] ?? '').toString(),
+        authorIsBot: _parseBool(json['author_is_bot']),
+        authorBotAgentKey: (json['author_bot_agent_key'] ?? '').toString(),
       );
     } catch (e, stackTrace) {
       if (kDebugMode) {

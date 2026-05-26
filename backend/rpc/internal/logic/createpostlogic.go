@@ -148,23 +148,12 @@ func (l *CreatePostLogic) CreatePost(in *super.CreatePostReq) (*super.CreatePost
 		})
 	}
 
+	rpcPost := buildSuperPost(post, user, false)
+	rpcPost.Images = in.Images
+	rpcPost.TopicTags = responseTopicTags
+
 	return &super.CreatePostResp{
-		Post: &super.Post{
-			Id:               strconv.FormatUint(uint64(post.ID), 10),
-			UserId:           in.UserId,
-			UserName:         user.Username,
-			UserAvatar:       user.Avatar,
-			Content:          post.Content,
-			Images:           in.Images,
-			TopicTags:        responseTopicTags,
-			Likes:            0,
-			Comments:         0,
-			IsLiked:          false,
-			CreatedAt:        post.CreatedAt.Format("2006-01-02 15:04:05"),
-			HandDrawCard:     post.HandDrawCard,
-			HandDrawThumbUrl: post.HandDrawThumbURL,
-			ModerationStatus: moderationStatusOrDefault(post.ModerationStatus),
-		},
+		Post:            rpcPost,
 		NewAchievements: achievement.UnlocksToProto(achUnlocks),
 	}, nil
 }

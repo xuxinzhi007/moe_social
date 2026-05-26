@@ -12,6 +12,7 @@ import {
   formatFetchError,
   type AdminClient,
 } from '../api/adminClient'
+import { DeployApiError } from '../api/deployClient'
 import { useDeploy } from './DeployContext'
 import { usePlatform } from './PlatformContext'
 import {
@@ -21,6 +22,7 @@ import {
   saveAdminSession,
   type StoredAdminUser,
 } from '../lib/adminStorage'
+import { redirectToAdminLogin } from '../lib/adminSession'
 
 type AdminAuthContextValue = {
   token: string
@@ -43,6 +45,13 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [bootstrapped, setBootstrapped] = useState(false)
   const [loggingIn, setLoggingIn] = useState(false)
 
+  const handleUnauthorized = useCallback(() => {
+    clearAdminSession()
+    setToken('')
+    setUser(null)
+    redirectToAdminLogin(true)
+  }, [])
+
   const client = useMemo(
     () =>
       createAdminClient({
@@ -50,8 +59,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         token,
         apiTarget,
         cloudApiBaseUrl: health?.cloud_api?.base_url,
+        onUnauthorized: handleUnauthorized,
       }),
-    [apiTarget, baseUrl, health?.cloud_api?.base_url, token],
+    [apiTarget, baseUrl, handleUnauthorized, health?.cloud_api?.base_url, token],
   )
 
   const refreshMe = useCallback(async () => {
@@ -67,12 +77,21 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         setUser(u)
         saveAdminSession(token, u)
       }
-    } catch {
+    } catch (e) {
+      if (
+        e instanceof DeployApiError &&
+        (e.status === 401 ||
+          e.message.includes('登录已过期') ||
+          e.message.includes('请先登录'))
+      ) {
+        handleUnauthorized()
+        return
+      }
       clearAdminSession()
       setToken('')
       setUser(null)
     }
-  }, [client, token])
+  }, [client, handleUnauthorized, token])
 
   useEffect(() => {
     let cancelled = false

@@ -60,37 +60,51 @@ func LoadProviders(ollamaBaseURL string) []ProviderConfig {
 	}
 
 	if len(out) == 0 {
-		base := strings.TrimSpace(ollamaBaseURL)
-		if base == "" {
-			base = strings.TrimSpace(viper.GetString("ollama.base_url"))
-		}
-		model := strings.TrimSpace(viper.GetString("memory.embedding.ollama_model"))
-		if model == "" {
-			model = "nomic-embed-text"
-		}
-		if base != "" {
-			out = append(out, ProviderConfig{
-				Type:     "ollama",
-				BaseURL:  base,
-				Model:    model,
-				Priority: 1,
-			})
-		}
 		oBase := strings.TrimSpace(viper.GetString("memory.embedding.openai_base_url"))
+		if oBase == "" {
+			oBase = strings.TrimSpace(viper.GetString("llm_inference.base_url"))
+		}
+		if oBase == "" {
+			oBase = strings.TrimSpace(ollamaBaseURL)
+		}
+		if oBase == "" {
+			oBase = strings.TrimSpace(viper.GetString("ollama.base_url"))
+		}
 		oKey := strings.TrimSpace(viper.GetString("memory.embedding.openai_api_key"))
 		if oKey == "" {
 			oKey = strings.TrimSpace(os.Getenv("MOE_MEMORY_EMBED_API_KEY"))
 		}
+		if oKey == "" && oBase != "" {
+			oKey = "local"
+		}
 		oModel := strings.TrimSpace(viper.GetString("memory.embedding.openai_model"))
 		if oModel == "" {
-			oModel = "text-embedding-3-small"
+			oModel = strings.TrimSpace(viper.GetString("llm_inference.memory_model"))
 		}
-		if oBase != "" && oKey != "" {
+		if oBase != "" {
 			out = append(out, ProviderConfig{
 				Type:     "openai_compatible",
 				BaseURL:  oBase,
 				APIKey:   oKey,
 				Model:    oModel,
+				Priority: 1,
+			})
+		}
+		// 遗留 Ollama embedding（仅当显式配置 ollama_model 且 api_style=ollama）
+		legacyBase := strings.TrimSpace(ollamaBaseURL)
+		if legacyBase == "" {
+			legacyBase = strings.TrimSpace(viper.GetString("ollama.base_url"))
+		}
+		legacyStyle := strings.ToLower(strings.TrimSpace(viper.GetString("llm_inference.api_style")))
+		if legacyStyle == "" {
+			legacyStyle = strings.ToLower(strings.TrimSpace(viper.GetString("ollama.api_style")))
+		}
+		legacyModel := strings.TrimSpace(viper.GetString("memory.embedding.ollama_model"))
+		if legacyModel != "" && legacyStyle == "ollama" && legacyBase != "" {
+			out = append(out, ProviderConfig{
+				Type:     "ollama",
+				BaseURL:  legacyBase,
+				Model:    legacyModel,
 				Priority: 2,
 			})
 		}

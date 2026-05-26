@@ -2466,6 +2466,12 @@ a {
   color: var(--ok);
 }
 
+.admin-hint-err {
+  background: rgba(245, 108, 108, 0.1);
+  border: 1px solid rgba(245, 108, 108, 0.35);
+  color: var(--danger);
+}
+
 .btn-sm {
   padding: 4px 10px;
   font-size: 11px;
@@ -2803,5 +2809,387 @@ a {
 
   .media-owner-sidebar {
     max-height: none;
+  }
+}
+
+/* —— Moe Intelligence（对齐平台治理） —— */
+.moe-intel-hero {
+  background: linear-gradient(135deg, #5b6ee1 0%, #91eaea 55%, #f0f4ff 100%);
+}
+
+.moe-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.moe-tool-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  background: var(--panel);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.moe-tool-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(127, 127, 213, 0.12);
+  border-color: rgba(127, 127, 213, 0.4);
+}
+
+.moe-tool-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.moe-tool-card-name {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(127, 127, 213, 0.12);
+}
+
+.moe-tool-card-desc {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.moe-stat-ring-btn {
+  cursor: pointer;
+  border: 1px solid transparent;
+  font: inherit;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.moe-stat-ring-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(127, 127, 213, 0.2);
+}
+
+.moe-recent-calls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.moe-recent-call-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.moe-recent-call-row:hover {
+  border-color: rgba(127, 127, 213, 0.45);
+  background: rgba(127, 127, 213, 0.04);
+}
+
+.moe-trend-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  min-height: 120px;
+  padding: 8px 4px 0;
+}
+
+.moe-trend-bar {
+  flex: 1;
+  min-width: 28px;
+  max-width: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100px;
+}
+
+.moe-trend-bar-fill {
+  width: 100%;
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(180deg, var(--accent), rgba(127, 127, 213, 0.35));
+  margin-top: auto;
+  transition: height 0.3s ease;
+}
+
+.moe-trend-bar-label {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* —— Moe 工具调用明细 —— */
+.moe-calls-panel {
+  margin-top: 0;
+}
+
+.moe-calls-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.moe-calls-head h3 {
+  margin: 0 0 4px;
+}
+
+.moe-calls-sub {
+  margin: 0;
+  font-size: 12px;
+}
+
+.moe-calls-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: rgba(127, 127, 213, 0.06);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.moe-calls-filters select,
+.moe-calls-filters input {
+  min-width: 120px;
+  max-width: 200px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--panel);
+}
+
+.moe-calls-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.moe-calls-empty {
+  padding: 32px 16px;
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.moe-call-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.moe-call-card:hover {
+  border-color: rgba(127, 127, 213, 0.45);
+}
+
+.moe-call-card.is-expanded {
+  border-color: rgba(127, 127, 213, 0.55);
+  box-shadow: 0 4px 20px rgba(127, 127, 213, 0.12);
+}
+
+.moe-call-card.is-failed {
+  border-left: 3px solid var(--danger);
+}
+
+.moe-call-card-main {
+  display: block;
+  width: 100%;
+  padding: 14px 16px 8px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.moe-call-card-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.moe-call-tool {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(127, 127, 213, 0.12);
+}
+
+.moe-call-latency {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.moe-call-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.moe-call-summary {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.moe-call-card-expand {
+  padding: 0 16px 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 12px;
+}
+
+.moe-call-fields {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.moe-call-field {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 8px;
+  font-size: 13px;
+}
+
+.moe-call-field dt {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.moe-call-field dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.moe-call-error {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(245, 108, 108, 0.08);
+  border: 1px solid rgba(245, 108, 108, 0.25);
+}
+
+.moe-call-error strong {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 6px;
+  color: var(--danger);
+}
+
+.moe-call-error pre {
+  margin: 0;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.moe-call-json {
+  margin: 0;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
+  overflow-x: auto;
+  max-height: 240px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.moe-call-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px 12px;
+  border-top: 1px solid var(--border);
+  background: rgba(127, 127, 127, 0.04);
+}
+
+.moe-call-detail-drawer {
+  max-width: 520px;
+}
+
+.moe-call-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+  margin: 0 0 16px;
+  font-size: 13px;
+}
+
+.moe-call-detail-grid dt {
+  margin: 0 0 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.moe-call-detail-grid dd {
+  margin: 0;
+}
+
+.moe-call-detail-json-wrap {
+  margin-top: 8px;
+}
+
+.moe-call-detail-json-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.moe-call-detail-json-head strong {
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .moe-calls-filters select,
+  .moe-calls-filters input {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  .moe-call-latency {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .moe-call-detail-grid {
+    grid-template-columns: 1fr;
   }
 }

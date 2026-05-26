@@ -237,20 +237,18 @@ class AiCharacterCardService {
 
     final providerId = agent.providerProfileId?.trim() ?? '';
     if (providerId.isEmpty) {
-      binding['provider_type'] = AiProviderType.backendOllama.value;
-      binding['provider_label'] = '内置 Ollama';
+      binding['provider_type'] = AiProviderType.llamaCppServer.value;
+      binding['provider_label'] = '本机 llama.cpp';
       return binding;
     }
 
     try {
       final profile = await AiProviderService().resolveProfile(providerId);
-      if (!profile.isBackendOllama) {
-        binding['provider_type'] = profile.providerType.value;
-        binding['provider_label'] = profile.name;
-      } else {
-        binding['provider_type'] = AiProviderType.backendOllama.value;
-        binding['provider_label'] = '内置 Ollama';
-      }
+      binding['provider_type'] = profile.isBackendOllama
+          ? AiProviderType.llamaCppServer.value
+          : profile.providerType.value;
+      binding['provider_label'] =
+          profile.isBackendOllama ? '本机 llama.cpp' : profile.name;
     } catch (_) {
       binding['provider_type'] = AiProviderType.openAiCompatible.value;
     }

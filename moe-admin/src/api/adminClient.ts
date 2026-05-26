@@ -17,6 +17,25 @@ export type AdminClientOptions = {
   token: string
   apiTarget: string
   cloudApiBaseUrl?: string
+  /** Token 失效时清会话并跳转登录（由 AdminAuthProvider 注入） */
+  onUnauthorized?: () => void
+}
+
+/** 判断管理端 API 是否因未登录/过期而失败（含 HTTP 200 + success:false）。 */
+export function isAdminUnauthorized(
+  data: Record<string, unknown>,
+  httpStatus: number,
+): boolean {
+  if (httpStatus === 401 || httpStatus === 403) return true
+  if (data.success !== false) return false
+  const code = Number(data.code)
+  const msg = String(data.message || '')
+  if (code === 401 || code === 1005) return true
+  return (
+    msg.includes('登录已过期') ||
+    msg.includes('请先登录') ||
+    msg.includes('未授权')
+  )
 }
 
 function resolveAdminRequestUrl(path: string, opts: AdminClientOptions): string {
@@ -129,7 +148,16 @@ export function createAdminClient(opts: AdminClientOptions) {
         (data.error as string) ||
         res.statusText ||
         text
+      if (useAuth && isAdminUnauthorized(data, res.status)) {
+        opts.onUnauthorized?.()
+      }
       throw new DeployApiError(msg, res.status)
+    }
+    if (useAuth && isAdminUnauthorized(data, res.status)) {
+      const msg =
+        (data.message as string) || '登录已过期，请重新登录'
+      opts.onUnauthorized?.()
+      throw new DeployApiError(msg, 401)
     }
     return data as T
   }
@@ -1189,6 +1217,256 @@ export function createAdminClient(opts: AdminClientOptions) {
 
     deleteMemory: (memoryId: string | number) =>
       api<BaseResp<unknown>>(adminApiPath(`/memories/${memoryId}`), { method: 'DELETE' }),
+
+    getMoeToolsSchema: () =>
+      api<
+        BaseResp<{
+          default_tier: string
+          tools: Array<{
+            name: string
+            description: string
+            allowed_tiers: string[]
+          }>
+          openai_tools: unknown[]
+        }>
+      >(adminApiPath('/moe/tools/schema')),
+
+    getMoeToolStats: (params: {
+      from?: string
+      to?: string
+      agent_key?: string
+      tool?: string
+    } = {}) => {
+      const q = new URLSearchParams()
+      if (params.from) q.set('from', params.from)
+      if (params.to) q.set('to', params.to)
+      if (params.agent_key) q.set('agent_key', params.agent_key)
+      if (params.tool) q.set('tool', params.tool)
+      const qs = q.toString()
+      return api<
+        BaseResp<{
+          total_calls: number
+          success_calls: number
+          failed_calls: number
+          by_tool: Array<{
+            tool: string
+            total_calls: number
+            success_calls: number
+            failed_calls: number
+          }>
+          by_day: Array<{
+            date: string
+            total_calls: number
+            success_calls: number
+          }>
+        }>
+      >(`${adminApiPath('/moe/tools/stats')}${qs ? `?${qs}` : ''}`)
+    },
+
+    listMoeToolCalls: (params: {
+      page?: number
+      page_size?: number
+      tool?: string
+      agent_key?: string
+      actor_user_id?: string
+      source?: string
+      ok_only?: boolean
+      failed_only?: boolean
+      from?: string
+      to?: string
+    } = {}) => {
+      const q = new URLSearchParams()
+      if (params.page) q.set('page', String(params.page))
+      if (params.page_size) q.set('page_size', String(params.page_size))
+      if (params.tool) q.set('tool', params.tool)
+      if (params.agent_key) q.set('agent_key', params.agent_key)
+      if (params.actor_user_id) q.set('actor_user_id', params.actor_user_id)
+      if (params.source) q.set('source', params.source)
+      if (params.ok_only) q.set('ok_only', 'true')
+      if (params.failed_only) q.set('failed_only', 'true')
+      if (params.from) q.set('from', params.from)
+      if (params.to) q.set('to', params.to)
+      const qs = q.toString()
+      return api<
+        BaseResp<{
+          items: Array<{
+            id: string
+            tool: string
+            actor_user_id: string
+            agent_key?: string
+            ok: boolean
+            error_msg?: string
+            latency_ms: number
+            source: string
+            arguments_preview?: string
+            created_at: string
+          }>
+          total: number
+        }>
+      >(`${adminApiPath('/moe/tools/calls')}${qs ? `?${qs}` : ''}`)
+    },
+
+    listMoeRuntimes: () =>
+      api<
+        BaseResp<{
+          items: Array<{
+            agent_key: string
+            display_name: string
+            bot_user_id: string
+            capability_tier: string
+            model_name: string
+            tools_enabled: boolean
+            post_quota_daily: number
+            posts_today: number
+            enabled: boolean
+            last_run_at?: string
+            last_post_id?: string
+            post_schedule_mode?: string
+            schedule_cron?: string
+            next_run_at?: string
+            system_prompt?: string
+            post_rules?: string
+          }>
+        }>
+      >(adminApiPath('/moe/runtimes')),
+
+    upsertMoeRuntime: (body: {
+      agent_key: string
+      display_name: string
+      bot_user_id: string
+      capability_tier?: string
+      model_name?: string
+      tools_enabled?: boolean
+      post_quota_daily?: number
+      enabled?: boolean
+      system_prompt?: string
+      post_rules?: string
+      post_schedule_mode?: string
+      schedule_cron?: string
+    }) =>
+      api<BaseResp<unknown>>(adminApiPath('/moe/runtimes'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+
+    runMoeAgentOnce: (agentKey: string) =>
+      api<
+        BaseResp<{
+          agent_key: string
+          ok: boolean
+          detail: string
+          post_id?: string
+        }>
+      >(adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/run-once`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      }),
+
+    getMoeBrain: (agentKey: string) =>
+      api<
+        BaseResp<{
+          agent_key: string
+          display_name: string
+          bot_user_id: string
+          forbidden_tags: string[]
+          preferred_tags: string[]
+          tag_stats: Array<{ tag: string; count: number }>
+          episodes: Array<{
+            id: number
+            post_id: string
+            content: string
+            tags: string[]
+            mood_tag: string
+            style_score: number
+            quality_score: number
+            approved: boolean
+            revision_count: number
+            memory_key: string
+            source: string
+            created_at: string
+          }>
+          memories: Array<{
+            key: string
+            value: string
+            memory_type: string
+            updated_at: string
+          }>
+        }>
+      >(adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/brain`)),
+
+    updateMoeBrainPolicy: (
+      agentKey: string,
+      body: { forbidden_tags?: string[]; preferred_tags?: string[] },
+    ) =>
+      api<
+        BaseResp<{
+          agent_key: string
+          display_name: string
+          bot_user_id: string
+          forbidden_tags: string[]
+          preferred_tags: string[]
+          tag_stats: Array<{ tag: string; count: number }>
+          episodes: unknown[]
+          memories: unknown[]
+        }>
+      >(adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/brain/policy`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+
+    deleteMoeBrainEpisode: (id: number) =>
+      api<BaseResp<unknown>>(adminApiPath(`/moe/brain/episodes/${id}`), {
+        method: 'DELETE',
+      }),
+
+    refineMoeBrainEpisode: (id: number, body?: { max_attempts?: number }) =>
+      api<
+        BaseResp<{
+          episode_id: number
+          ok: boolean
+          approved: boolean
+          quality_score: number
+          before_content: string
+          after_content: string
+          attempts: number
+          detail: string
+        }>
+      >(adminApiPath(`/moe/brain/episodes/${id}/refine`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body ?? {}),
+      }),
+
+    curateMoeBrain: (
+      agentKey: string,
+      body?: {
+        max_episodes?: number
+        max_attempts?: number
+        min_quality?: number
+        force?: boolean
+      },
+    ) =>
+      api<
+        BaseResp<{
+          agent_key: string
+          total: number
+          approved: number
+          results: Array<{
+            episode_id: number
+            ok: boolean
+            approved: boolean
+            quality_score: number
+            detail: string
+          }>
+        }>
+      >(adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/brain/curate`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body ?? {}),
+      }),
   }
 }
 

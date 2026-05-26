@@ -449,6 +449,67 @@ func (s *SuperServer) RecordAdminAuditLog(ctx context.Context, in *super.RecordA
 	return l.RecordAdminAuditLog(in)
 }
 
+// Moe Intelligence Stack
+func (s *SuperServer) AdminListMoeRuntimes(ctx context.Context, in *super.AdminListMoeRuntimesReq) (*super.AdminListMoeRuntimesResp, error) {
+	l := logic.NewAdminListMoeRuntimesLogic(ctx, s.svcCtx)
+	return l.AdminListMoeRuntimes(in)
+}
+
+func (s *SuperServer) AdminUpsertMoeRuntime(ctx context.Context, in *super.AdminUpsertMoeRuntimeReq) (*super.AdminUpsertMoeRuntimeResp, error) {
+	l := logic.NewAdminUpsertMoeRuntimeLogic(ctx, s.svcCtx)
+	return l.AdminUpsertMoeRuntime(in)
+}
+
+func (s *SuperServer) AdminRunMoeAgentOnce(ctx context.Context, in *super.AdminRunMoeAgentOnceReq) (*super.AdminRunMoeAgentOnceResp, error) {
+	l := logic.NewAdminRunMoeAgentOnceLogic(ctx, s.svcCtx)
+	return l.AdminRunMoeAgentOnce(in)
+}
+
+func (s *SuperServer) AdminGetMoeBrain(ctx context.Context, in *super.AdminGetMoeBrainReq) (*super.AdminGetMoeBrainResp, error) {
+	l := logic.NewAdminGetMoeBrainLogic(ctx, s.svcCtx)
+	return l.AdminGetMoeBrain(in)
+}
+
+func (s *SuperServer) AdminUpdateMoeBrainPolicy(ctx context.Context, in *super.AdminUpdateMoeBrainPolicyReq) (*super.AdminGetMoeBrainResp, error) {
+	l := logic.NewAdminUpdateMoeBrainPolicyLogic(ctx, s.svcCtx)
+	return l.AdminUpdateMoeBrainPolicy(in)
+}
+
+func (s *SuperServer) AdminDeleteMoeBrainEpisode(ctx context.Context, in *super.AdminDeleteMoeBrainEpisodeReq) (*super.AdminDeleteMoeBrainEpisodeResp, error) {
+	l := logic.NewAdminDeleteMoeBrainEpisodeLogic(ctx, s.svcCtx)
+	return l.AdminDeleteMoeBrainEpisode(in)
+}
+
+func (s *SuperServer) AdminRefineMoeBrainEpisode(ctx context.Context, in *super.AdminRefineMoeBrainEpisodeReq) (*super.AdminRefineMoeBrainEpisodeResp, error) {
+	l := logic.NewAdminRefineMoeBrainEpisodeLogic(ctx, s.svcCtx)
+	return l.AdminRefineMoeBrainEpisode(in)
+}
+
+func (s *SuperServer) AdminCurateMoeBrain(ctx context.Context, in *super.AdminCurateMoeBrainReq) (*super.AdminCurateMoeBrainResp, error) {
+	l := logic.NewAdminCurateMoeBrainLogic(ctx, s.svcCtx)
+	return l.AdminCurateMoeBrain(in)
+}
+
+func (s *SuperServer) AdminGetMoeToolStats(ctx context.Context, in *super.AdminGetMoeToolStatsReq) (*super.AdminGetMoeToolStatsResp, error) {
+	l := logic.NewAdminGetMoeToolStatsLogic(ctx, s.svcCtx)
+	return l.AdminGetMoeToolStats(in)
+}
+
+func (s *SuperServer) AdminListMoeToolCalls(ctx context.Context, in *super.AdminListMoeToolCallsReq) (*super.AdminListMoeToolCallsResp, error) {
+	l := logic.NewAdminListMoeToolCallsLogic(ctx, s.svcCtx)
+	return l.AdminListMoeToolCalls(in)
+}
+
+func (s *SuperServer) MoeExecuteTool(ctx context.Context, in *super.MoeExecuteToolReq) (*super.MoeExecuteToolResp, error) {
+	l := logic.NewMoeExecuteToolLogic(ctx, s.svcCtx)
+	return l.MoeExecuteTool(in)
+}
+
+func (s *SuperServer) MoeSearchPosts(ctx context.Context, in *super.MoeSearchPostsReq) (*super.MoeSearchPostsResp, error) {
+	l := logic.NewMoeSearchPostsLogic(ctx, s.svcCtx)
+	return l.MoeSearchPosts(in)
+}
+
 func (s *SuperServer) UpsertUserMemory(ctx context.Context, in *super.UpsertUserMemoryReq) (*super.UpsertUserMemoryResp, error) {
 	l := logic.NewUpsertUserMemoryLogic(ctx, s.svcCtx)
 	return l.UpsertUserMemory(in)

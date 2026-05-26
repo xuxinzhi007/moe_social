@@ -15,7 +15,7 @@ type ServiceContext struct {
 	DB     *gorm.DB
 }
 
-func NewServiceContext(c config.Config, autoMigrate bool) *ServiceContext {
+func NewServiceContext(c config.Config, migrateOpts utils.MigrateOptions) *ServiceContext {
 	// 初始化配置
 	if err := utils.InitConfig(); err != nil {
 		panic(err)
@@ -27,8 +27,8 @@ func NewServiceContext(c config.Config, autoMigrate bool) *ServiceContext {
 		logx.Errorf("Admin JWT 未配置: %v（管理后台登录不可用）", err)
 	}
 
-	// 初始化数据库连接（autoMigrate：见 rpc main 的 -migrate）
-	if err := utils.InitDB(autoMigrate); err != nil {
+	// 初始化数据库连接（-migrate / -migrate-models：见 rpc/super.go）
+	if err := utils.InitDBWithMigrate(migrateOpts); err != nil {
 		panic(err)
 	}
 

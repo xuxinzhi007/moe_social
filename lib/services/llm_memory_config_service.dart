@@ -15,12 +15,12 @@ class LlmMemoryConfigService {
   factory LlmMemoryConfigService() => _instance;
 
   static const Duration _cacheTtl = Duration(minutes: 5);
-  static const String _defaultMemoryModel = 'llama3';
+  static const String _defaultMemoryModel = 'qwen2';
 
   String? _cachedMemoryModel;
   DateTime? _cachedAt;
 
-  /// 用于记忆提取/整理的模型 ID（来自 `GET /api/llm/config` → `ollama.memory_model`）。
+  /// 用于记忆提取/整理的模型 ID（来自 `GET /api/llm/config` → `llm_inference.memory_model`）。
   Future<String> resolveMemoryModel({String fallback = _defaultMemoryModel}) async {
     await _ensureLoaded();
     final model = _cachedMemoryModel?.trim() ?? '';
@@ -56,9 +56,9 @@ class LlmMemoryConfigService {
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
       if (decoded is! Map || decoded['data'] is! Map) return;
       final data = Map<String, dynamic>.from(decoded['data'] as Map);
-      final ollama = data['ollama'];
-      if (ollama is Map) {
-        final raw = (ollama['memory_model'] as String?)?.trim() ?? '';
+      final inference = data['llm_inference'] ?? data['ollama'];
+      if (inference is Map) {
+        final raw = (inference['memory_model'] as String?)?.trim() ?? '';
         if (raw.isNotEmpty) {
           _cachedMemoryModel = raw;
           _cachedAt = DateTime.now();

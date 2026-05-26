@@ -26,6 +26,9 @@ import { GrowthPage } from './pages/GrowthPage'
 import { AnnouncementsPage } from './pages/AnnouncementsPage'
 import { NotifyPage } from './pages/NotifyPage'
 import { AiAgentsPage } from './pages/AiAgentsPage'
+import { MoeBotsPage } from './pages/MoeBotsPage'
+import { MoeBrainPage } from './pages/MoeBrainPage'
+import { MoeToolsPage } from './pages/MoeToolsPage'
 import { SocialPage } from './pages/SocialPage'
 import { AdminAccountsPage } from './pages/AdminAccountsPage'
 import { MenusPage } from './pages/MenusPage'
@@ -61,6 +64,10 @@ export default function App() {
                     <Route path="app/announcements" element={<AnnouncementsPage />} />
                     <Route path="app/notify" element={<NotifyPage />} />
                     <Route path="app/ai" element={<AiAgentsPage />} />
+                    <Route path="app/moe-bots" element={<MoeBotsPage />} />
+                    <Route path="app/moe-bots/:agentKey/brain" element={<MoeBrainPage />} />
+                    <Route path="app/moe-brain" element={<MoeBrainPage />} />
+                    <Route path="app/moe" element={<MoeToolsPage />} />
                     <Route path="app/social" element={<SocialPage />} />
                     <Route path="system/admins" element={<AdminAccountsPage />} />
                     <Route path="system/menus" element={<MenusPage />} />

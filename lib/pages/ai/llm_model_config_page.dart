@@ -62,17 +62,17 @@ class _LlmModelConfigPageState extends State<LlmModelConfigPage> {
         throw Exception('配置数据为空');
       }
 
-      final ollama = data['ollama'];
+      final inference = data['llm_inference'] ?? data['ollama'];
       final memoryBudget = data['memory_budget'];
       final runtime = data['runtime'];
-      if (ollama is! Map || memoryBudget is! Map) {
+      if (inference is! Map || memoryBudget is! Map) {
         throw Exception('配置字段缺失');
       }
 
       if (!mounted) return;
       setState(() {
         _terminalModeEnabled = terminalMode;
-        _ollama = Map<String, dynamic>.from(ollama);
+        _ollama = Map<String, dynamic>.from(inference);
         _memoryBudget = Map<String, dynamic>.from(memoryBudget);
         if (runtime is Map) {
           _runtime = Map<String, dynamic>.from(runtime);
@@ -224,8 +224,10 @@ class _LlmModelConfigPageState extends State<LlmModelConfigPage> {
                             ),
                           ),
                           const SizedBox(height: 10),
-                          _kv('Ollama Base URL',
+                          _kv('推理服务地址',
                               '${_ollama?['base_url'] ?? '-'}'),
+                          _kv('API 风格',
+                              '${_ollama?['api_style'] ?? 'openai'}'),
                           _kv('请求超时（秒）',
                               '${_ollama?['timeout_seconds'] ?? '-'}'),
                           _kv(

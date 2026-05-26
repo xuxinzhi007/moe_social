@@ -37,5 +37,7 @@ func RpcUserToTypes(u *super.User) types.User {
 		WechatNickname:         u.GetWechatNickname(),
 		WechatBound:            u.GetWechatBound(),
 		Role:                   u.GetRole(),
+		IsBot:                  u.GetIsBot(),
+		BotAgentKey:            u.GetBotAgentKey(),
 	}
 }

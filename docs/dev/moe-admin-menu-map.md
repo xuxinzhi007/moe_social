@@ -26,7 +26,8 @@
 | 运营触达 | 官网反馈 | ready | website |
 | | 公告管理 | P1 | — |
 | | 通知推送 | P1 | notification |
-| AI 与玩法 | AI 角色酒馆 | P2 | ai |
+| AI 与玩法 | AI 角色酒馆 | ready | ai |
+| | Moe 工具与 Bot | ready | moe — 工具目录、调用统计、Bot 运行时 |
 | | 礼物与扭蛋 | P2 | gacha, gifts |
 | | 好友与关注 | P2 | discover, friend |
 | 系统管理 | 管理员账号 | P1 | admin_account |
