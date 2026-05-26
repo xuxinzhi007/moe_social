@@ -361,6 +361,16 @@ class _SettingsPageState extends State<SettingsPage> {
         'target': '账户与安全',
       },
       {
+        'title': '注销账号',
+        'description': '永久删除账号与登录绑定',
+        'icon': Icons.person_off_rounded,
+        'color': Colors.red,
+        'module': '账户与安全',
+        'keywords': ['注销', '删除账号', '销号', '账号'],
+        'action': 'scroll',
+        'target': '账户与安全',
+      },
+      {
         'title': '软件版本',
         'description': '点击检查更新',
         'icon': Icons.info_rounded,

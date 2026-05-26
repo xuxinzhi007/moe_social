@@ -34,6 +34,8 @@ func RpcUserToTypes(u *super.User) types.User {
 		FeishuEmail:            u.GetFeishuEmail(),
 		FeishuName:             u.GetFeishuName(),
 		FeishuBound:            u.GetFeishuBound(),
+		WechatNickname:         u.GetWechatNickname(),
+		WechatBound:            u.GetWechatBound(),
 		Role:                   u.GetRole(),
 	}
 }

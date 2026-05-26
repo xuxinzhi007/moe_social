@@ -1256,6 +1256,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		[]rest.Route{
 			{
+				Method:  http.MethodDelete,
+				Path:    "/api/user/account",
+				Handler: user.DeleteMyAccountHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodPut,
 				Path:    "/api/user/feishu/bind",
 				Handler: user.BindFeishuHandler(serverCtx),

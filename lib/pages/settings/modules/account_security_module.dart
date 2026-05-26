@@ -57,9 +57,52 @@ class AccountSecurityModule extends StatelessWidget {
             color: const Color(0xFF3370FF),
             onTap: () => _showFeishuBindSheet(context),
           ),
+          MoeMenuItem(
+            icon: Icons.person_off_rounded,
+            title: '注销账号',
+            subtitle: '永久删除账号与登录绑定，不可恢复',
+            color: Colors.red,
+            onTap: () => _confirmDeleteAccount(context),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final userId = AuthService.currentUser;
+    if (userId == null || userId.isEmpty) {
+      MoeToast.error(context, '请先登录');
+      return;
+    }
+
+    final ok = await showConfirmDialog(
+      context,
+      title: '注销账号',
+      message: '注销后账号资料将被删除，微信/飞书绑定会解除，且无法恢复。确定继续吗？',
+      confirmText: '确认注销',
+      isDestructive: true,
+    );
+    if (!ok || !context.mounted) return;
+
+    final okAgain = await showConfirmDialog(
+      context,
+      title: '再次确认',
+      message: '这是最后一步。注销完成后将退出登录。',
+      confirmText: '仍要注销',
+      isDestructive: true,
+    );
+    if (!okAgain || !context.mounted) return;
+
+    try {
+      await ApiService.deleteMyAccount();
+      if (!context.mounted) return;
+      MoeToast.success(context, '账号已注销');
+      AuthService.logout();
+    } catch (e) {
+      if (!context.mounted) return;
+      MoeToast.error(context, '注销失败，请稍后重试');
+    }
   }
 
   Future<void> _showFeishuBindSheet(BuildContext context) async {

@@ -2838,6 +2838,8 @@ type User struct {
 	FeishuEmail            string  `json:"feishu_email,optional"`
 	FeishuName             string  `json:"feishu_name,optional"`
 	FeishuBound            bool    `json:"feishu_bound,optional"`
+	WechatNickname         string  `json:"wechat_nickname,optional"`
+	WechatBound            bool    `json:"wechat_bound,optional"`
 	Role                   string  `json:"role,optional"`
 }
 
