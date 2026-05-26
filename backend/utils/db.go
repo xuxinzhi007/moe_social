@@ -55,9 +55,18 @@ func InitConfig() error {
 // InitDB 初始化数据库连接。
 // runAutoMigrate 为 true 时执行 GORM AutoMigrate（改模型/首启库时用）；日常启动传 false，避免多副本抢 DDL、加快启动。
 func InitDB(runAutoMigrate bool) error {
-	// 配置gorm日志
+	return InitDBWithMigrate(MigrateOptions{Enabled: runAutoMigrate})
+}
+
+// InitDBWithMigrate 初始化数据库；迁移时使用 Silent 日志并按 schema hash 跳过未变更表。
+func InitDBWithMigrate(opts MigrateOptions) error {
+	logMode := logger.Info
+	if opts.Enabled {
+		logMode = logger.Silent
+	}
 	gormConfig := &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger:                                   logger.Default.LogMode(logMode),
+		DisableForeignKeyConstraintWhenMigrating: true,
 	}
 
 	// 构建MySQL连接DSN
@@ -92,8 +101,8 @@ func InitDB(runAutoMigrate bool) error {
 	// 设置连接最大生命周期
 	sqlDB.SetConnMaxLifetime(1 * time.Hour)
 
-	if runAutoMigrate {
-		if err := autoMigrate(); err != nil {
+	if opts.Enabled {
+		if err := RunAutoMigrate(DB, opts); err != nil {
 			return fmt.Errorf("自动迁移数据库表失败: %v", err)
 		}
 		log.Println("仅完成表结构迁移；运营数据（VIP/礼物/成就等）请在 Moe Admin 中导入")
@@ -102,76 +111,6 @@ func InitDB(runAutoMigrate bool) error {
 	}
 
 	log.Println("数据库连接成功")
-	return nil
-}
-
-// autoMigrate 自动迁移数据库表（串行执行，避免并发建表竞争）
-func autoMigrate() error {
-	// 模型之间存在外键/关联依赖，并发迁移会在首次建表时竞争创建同一张表（如 users）。
-	// 串行迁移能保证幂等和稳定，避免 "Table already exists" 导致启动失败。
-	models := []interface{}{
-		// 用户和VIP相关
-		&model.User{},
-		&model.VipPlan{},
-		&model.VipOrder{},
-		&model.VipRecord{},
-		&model.Transaction{},
-		// 社交相关
-		&model.Post{},
-		&model.PostReport{},
-		&model.Like{},
-		&model.TopicTag{},
-		&model.PostTopic{},
-		&model.Comment{},
-		&model.Follow{},
-		// 通知和形象相关
-		&model.Notification{},
-		&model.UserAvatar{},
-		&model.AvatarOutfit{},
-		&model.Emoji{},
-		&model.EmojiPack{},
-		&model.UserEmojiPack{},
-		&model.UserMemory{},
-		&model.UserMemoryFeedback{},
-		&model.UserMemoryProfileCache{},
-		&model.UserDevice{},
-		&model.UserMemoryEmbedding{},
-		&model.UserMemoryRelation{},
-		&model.AiUserConfig{},
-		// 签到等级系统
-		&model.UserLevel{},
-		&model.LevelConfig{},
-		&model.UserCheckIn{},
-		&model.CheckInReward{},
-		&model.ExpLog{},
-		&model.AchievementDefinition{},
-		&model.UserAchievementProgress{},
-		&model.UserDailyActivity{},
-		&model.UserWeeklyActivity{},
-		&model.FriendRequest{},
-		// 礼物和社区相关
-		&model.Gift{},
-		&model.GiftRecord{},
-		&model.UserGiftStock{},
-		&model.GiftPurchaseOrder{},
-		&model.Group{},
-		&model.GroupMember{},
-		&model.GroupPost{},
-		&model.PrivateMessage{},
-		&model.LandingFeedback{},
-		&model.AdminAccount{},
-		&model.AdminAnnouncement{},
-		&model.AdminMenu{},
-		&model.AdminAuditLog{},
-		&model.UserBehaviorEvent{},
-		&model.UserBehaviorDaily{},
-	}
-
-	if err := DB.AutoMigrate(models...); err != nil {
-		return fmt.Errorf("迁移失败: %v", err)
-	}
-
-	log.Println("数据库表迁移完成（串行执行）")
 	return nil
 }
 

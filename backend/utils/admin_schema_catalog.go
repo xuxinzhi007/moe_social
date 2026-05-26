@@ -58,6 +58,8 @@ func AdminSchemaCatalog() []AdminSchemaEntry {
 
 		// AI 与形象
 		{Key: "ai_user_configs", Label: "AI 用户配置", Domain: "AI 与形象", Capabilities: []string{"list", "delete"}, AdminRoute: "/app/ai", Note: "公开 Agent 治理", Model: &model.AiUserConfig{}},
+		{Key: "moe_agent_runtimes", Label: "Moe Bot 运行时", Domain: "AI 与形象", Capabilities: []string{"list", "create", "update"}, AdminRoute: "/app/moe", Note: "社区 AI Bot 配置与 run-once", Model: &model.MoeAgentRuntime{}},
+		{Key: "moe_tool_calls", Label: "Moe 工具调用", Domain: "AI 与形象", Capabilities: []string{"list", "stats"}, AdminRoute: "/app/moe", Note: "AI 工具执行审计与统计", Model: &model.MoeToolCall{}},
 		{Key: "user_avatars", Label: "用户形象", Domain: "AI 与形象", Capabilities: nil, Note: "App 内编辑，暂无 Admin CRUD", Model: &model.UserAvatar{}},
 		{Key: "avatar_outfits", Label: "形象装扮", Domain: "AI 与形象", Capabilities: nil, Note: "商城装扮，后续可接商品管理", Model: &model.AvatarOutfit{}},
 		{Key: "emojis", Label: "表情", Domain: "AI 与形象", Capabilities: nil, Note: "表情资源，后续可接素材管理", Model: &model.Emoji{}},

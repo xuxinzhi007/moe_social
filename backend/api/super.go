@@ -39,11 +39,25 @@ func applyUnifiedConfigOverrides(c *config.Config) {
 		return
 	}
 
-	if base := v.GetString("ollama.base_url"); base != "" {
+	if base := v.GetString("llm_inference.base_url"); base != "" {
+		c.Ollama.BaseUrl = base
+	} else if base := v.GetString("ollama.base_url"); base != "" {
 		c.Ollama.BaseUrl = base
 	}
-	if ts := v.GetInt("ollama.timeout_seconds"); ts > 0 {
+	if style := strings.TrimSpace(v.GetString("llm_inference.api_style")); style != "" {
+		c.Ollama.ApiStyle = style
+	} else if style := strings.TrimSpace(v.GetString("ollama.api_style")); style != "" {
+		c.Ollama.ApiStyle = style
+	}
+	if ts := v.GetInt("llm_inference.timeout_seconds"); ts > 0 {
 		c.Ollama.TimeoutSeconds = ts
+	} else if ts := v.GetInt("ollama.timeout_seconds"); ts > 0 {
+		c.Ollama.TimeoutSeconds = ts
+	}
+	if m := strings.TrimSpace(v.GetString("llm_inference.memory_model")); m != "" {
+		c.Ollama.MemoryModel = m
+	} else if m := strings.TrimSpace(v.GetString("ollama.memory_model")); m != "" {
+		c.Ollama.MemoryModel = m
 	}
 	if dir := v.GetString("local_models.storage_dir"); dir != "" {
 		c.LocalModels.StorageDir = dir
@@ -97,12 +111,17 @@ func applyUnifiedConfigOverrides(c *config.Config) {
 func applySuperRpcOverrides(c *config.Config, v *viper.Viper) {
 	if ep := strings.TrimSpace(os.Getenv("MOE_SUPER_RPC_ENDPOINT")); ep != "" {
 		c.SuperRpc.Endpoints = splitRPCEndpoints(ep)
-		return
 	}
 	if v != nil {
 		if eps := v.GetStringSlice("api.super_rpc_endpoints"); len(eps) > 0 {
 			c.SuperRpc.Endpoints = eps
 		}
+		if ms := v.GetInt64("api.super_rpc_timeout_ms"); ms > 0 {
+			c.SuperRpc.Timeout = ms
+		}
+	}
+	if c.SuperRpc.Timeout <= 0 {
+		c.SuperRpc.Timeout = 600000
 	}
 }
 
@@ -165,7 +184,7 @@ func main() {
 	fmt.Printf("Effective image config: local_dir=%s public_base_url=%s max_bytes=%d\n",
 		c.Image.LocalDir, c.Image.PublicBaseUrl, c.Image.MaxBytes)
 
-	fmt.Printf("SuperRpc endpoints: %v\n", c.SuperRpc.Endpoints)
+	fmt.Printf("SuperRpc endpoints: %v timeout_ms: %d\n", c.SuperRpc.Endpoints, c.SuperRpc.Timeout)
 	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
 	server.Start()
 }

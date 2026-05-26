@@ -4,9 +4,8 @@ import (
 	"net/http"
 )
 
-// ApplyOllamaForwardHeaders adds compatibility headers for Ollama proxy targets.
-// Free ngrok domains may reject programmatic requests without this header.
-func ApplyOllamaForwardHeaders(req *http.Request) {
+// ApplyInferenceForwardHeaders adds compatibility headers for local inference proxies.
+func ApplyInferenceForwardHeaders(req *http.Request) {
 	if req == nil || req.URL == nil {
 		return
 	}
@@ -14,4 +13,9 @@ func ApplyOllamaForwardHeaders(req *http.Request) {
 	if req.Header.Get("User-Agent") == "" {
 		req.Header.Set("User-Agent", "moe-social-backend/1.0")
 	}
+}
+
+// ApplyOllamaForwardHeaders 已废弃，请使用 ApplyInferenceForwardHeaders。
+func ApplyOllamaForwardHeaders(req *http.Request) {
+	ApplyInferenceForwardHeaders(req)
 }

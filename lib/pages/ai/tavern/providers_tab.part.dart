@@ -59,7 +59,7 @@ extension TavernProvidersTabPart on _AgentListPageState {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text(
               provider.isBackendOllama
-                  ? '请检查服务器内置 Ollama 是否可用'
+                  ? '请检查本机 llama-server 是否已启动（默认 6633）'
                   : provider.isLlamaCppServer
                       ? '请先启动 llama-server（默认端口 6633），并在「模型来源 → 本机 llama.cpp → 设置」检查地址。\n'
                           '模型 ID 通常与 gguf 文件名一致，例如 qwen2。'

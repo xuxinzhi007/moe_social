@@ -1,4 +1,4 @@
-import { genderLabel, roleTag, vipTag } from '../lib/adminLabels'
+import { botTag, genderLabel, roleTag, vipTag } from '../lib/adminLabels'
 import { formatDateTime } from '../lib/format'
 import { AdminTag, TagRow } from './AdminTag'
 import { UserAvatar } from './UserAvatar'
@@ -18,6 +18,8 @@ export type UserProfile = {
   gift_charm?: number
   created_at?: string
   feishu_bound?: boolean
+  is_bot?: boolean
+  bot_agent_key?: string
 }
 
 export function UserProfileCard({ user }: { user: UserProfile }) {
@@ -30,6 +32,9 @@ export function UserProfileCard({ user }: { user: UserProfile }) {
           <AdminTag spec={roleTag(user.role)} />
           <AdminTag spec={vipTag(user.is_vip)} />
           {user.feishu_bound ? <AdminTag label="飞书已绑" tone="mint" /> : null}
+          {botTag(user.is_bot ?? false, user.bot_agent_key) ? (
+            <AdminTag spec={botTag(user.is_bot ?? false, user.bot_agent_key)!} />
+          ) : null}
         </TagRow>
         {user.signature ? <p className="user-profile-signature">{user.signature}</p> : null}
       </div>
@@ -72,6 +77,12 @@ export function UserProfileCard({ user }: { user: UserProfile }) {
           <dt>注册时间</dt>
           <dd>{formatDateTime(user.created_at)}</dd>
         </div>
+        {user.is_bot ? (
+          <div>
+            <dt>Bot Agent</dt>
+            <dd>{user.bot_agent_key || '—'}</dd>
+          </div>
+        ) : null}
       </dl>
     </div>
   )

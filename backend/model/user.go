@@ -37,6 +37,8 @@ type User struct {
 	Inventory       string         `gorm:"type:text" json:"inventory"`        // JSON: ["item1", "item2"]
 	EquippedFrameId string         `gorm:"size:100" json:"equipped_frame_id"` // 佩戴的头像框ID
 	Role            string         `gorm:"size:20;default:user" json:"role"`  // 用户角色：user/admin/super_admin
+	IsBot           bool           `gorm:"default:false;index" json:"is_bot"`
+	BotAgentKey     string         `gorm:"size:64;index" json:"bot_agent_key"`
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`

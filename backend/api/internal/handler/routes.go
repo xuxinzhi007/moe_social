@@ -24,6 +24,7 @@ import (
 	image "backend/api/internal/handler/image"
 	landing "backend/api/internal/handler/landing"
 	llm "backend/api/internal/handler/llm"
+	moe "backend/api/internal/handler/moe"
 	notification "backend/api/internal/handler/notification"
 	ops "backend/api/internal/handler/ops"
 	post "backend/api/internal/handler/post"
@@ -283,6 +284,61 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodPost,
 				Path:    "/api/admin/menus/bootstrap",
 				Handler: admin.AdminBootstrapMenusHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/moe/runtimes",
+				Handler: admin.AdminListMoeRuntimesHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/moe/runtimes",
+				Handler: admin.AdminUpsertMoeRuntimeHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/moe/runtimes/:agent_key/run-once",
+				Handler: admin.AdminRunMoeAgentOnceHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/moe/runtimes/:agent_key/brain",
+				Handler: admin.AdminGetMoeBrainHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/admin/moe/runtimes/:agent_key/brain/policy",
+				Handler: admin.AdminUpdateMoeBrainPolicyHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/admin/moe/brain/episodes/:id",
+				Handler: admin.AdminDeleteMoeBrainEpisodeHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/moe/brain/episodes/:id/refine",
+				Handler: admin.AdminRefineMoeBrainEpisodeHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/moe/runtimes/:agent_key/brain/curate",
+				Handler: admin.AdminCurateMoeBrainHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/moe/tools/calls",
+				Handler: admin.AdminListMoeToolCallsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/moe/tools/schema",
+				Handler: admin.AdminGetMoeToolsSchemaHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/moe/tools/stats",
+				Handler: admin.AdminGetMoeToolStatsHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodPost,
@@ -871,6 +927,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodPost,
+				Path:    "/api/moe/tools/execute",
+				Handler: moe.ExecuteMoeToolHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/moe/tools/schema",
+				Handler: moe.GetMoeToolsSchemaHandler(serverCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPost,
 				Path:    "/api/notification/broadcast",
 				Handler: notification.BroadcastNotificationHandler(serverCtx),
 			},
@@ -958,6 +1029,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodPost,
 				Path:    "/api/posts/:post_id/report",
 				Handler: post.ReportPostHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/posts/search",
+				Handler: post.SearchPostsHandler(serverCtx),
 			},
 		},
 	)

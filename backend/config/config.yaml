@@ -14,7 +14,8 @@ auth:
 # Moe Admin 管理后台（本地使用；与 App JWT 分离）
 admin:
   jwt_secret: "moe-admin-local-jwt-change-me"
-  token_expire_hours: 24
+  # 管理后台 JWT 有效期（小时）；本地开发建议 168 = 7 天
+  token_expire_hours: 168
   bootstrap:
     username: "admin"
     password: "admin123"
@@ -28,6 +29,8 @@ api:
   # 本机 go run 勿配置此项，沿用 api/etc/super.yaml 的 127.0.0.1:8080。
   # super_rpc_endpoints:
   #   - rpc:8080
+  # API→RPC gRPC 超时（毫秒）。Moe 试跑/润色/工具执行需与 LLM 同量级，建议 >= 600000
+  super_rpc_timeout_ms: 600000
 
 # 飞书：企业自建应用机器人（非群自定义 Webhook）
 # 1. 开放平台创建企业自建应用，拿到 App ID / App Secret
@@ -79,11 +82,18 @@ wechat:
 
 #local
 
-ollama:
-  # 后端能访问到的 Ollama 地址（注意：不是前端能访问，是后端进程所在机器能访问）
-  base_url: "http://127.0.0.1:11434"
-  # 后端请求 Ollama 的超时（秒）
+# 后端 /api/llm/* 转发的本地推理（默认 llama-server OpenAI 兼容，端口 6633）
+llm_inference:
+  base_url: "http://127.0.0.1:6633"
+  api_style: openai
   timeout_seconds: 300
+  memory_model: "qwen2"
+
+# 遗留 Ollama（已废弃，仅当仍运行 :11434 时取消注释并设 api_style: ollama）
+#ollama:
+#  base_url: "http://127.0.0.1:11434"
+#  api_style: ollama
+#  timeout_seconds: 300
 
 # 手机 App 可下载的离线 GGUF（文件放 storage_dir，勿提交大文件进 Git）
 local_models:
@@ -149,6 +159,20 @@ private_message:
 
 
 
+# Moe Intelligence Stack v1（与 LLM 解耦；默认档位 s2 = 7B）
+moe:
+  enabled: true
+  default_capability_tier: s2
+  bot_post_daily_limit_default: 5
+  # API 进程内 Bot 定时发帖（cron + smart 模式）
+  bot_scheduler_enabled: true
+  bot_scheduler_tick_seconds: 60
+  # 智能发送：LLM 判断此刻是否发帖
+  bot_smart_retry_minutes: 30
+  bot_smart_min_interval_hours: 2
+  # Bot 发帖专用模型 ID（llama-server 的基座名，如 qwen2）；勿填酒馆「创建角色」派生模型名
+  bot_post_model: "qwen2"
+
 # 用户记忆 Phase 2：混合检索 + 多路 embedding（不偏向单一厂商，按链式回退）
 memory:
   search:
@@ -164,16 +188,17 @@ memory:
     graph_boost: 0.35
     graph_max_expand: 6
   embedding:
-    # 默认链：先 Ollama（ollama.base_url），再 OpenAI 兼容中转（需同时配置 base_url + api_key）
-    ollama_model: nomic-embed-text
-    openai_base_url: ""   # 例：https://api.openai.com/v1 或你的中转 /v1
-    openai_api_key: ""   # 也可用环境变量 MOE_MEMORY_EMBED_API_KEY
-    openai_model: text-embedding-3-small
-    # 显式优先级（可选）；配置后覆盖默认链
+    # 默认链：先本机 llama.cpp（/v1/embeddings），再 OpenAI 兼容中转
+    openai_base_url: "http://127.0.0.1:6633"
+    openai_api_key: "local"
+    openai_model: ""
+    # 遗留 Ollama embedding（已废弃）
+    # ollama_model: nomic-embed-text
     # providers:
-    #   - type: ollama
-    #     base_url: "http://127.0.0.1:11434"
-    #     model: nomic-embed-text
+    #   - type: openai_compatible
+    #     base_url: "http://127.0.0.1:6633"
+    #     api_key: "local"
+    #     model: ""
     #     priority: 1
     #   - type: openai_compatible
     #     base_url: "https://your-relay/v1"

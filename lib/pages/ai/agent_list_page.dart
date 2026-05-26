@@ -161,7 +161,7 @@ class _AgentListPageState extends State<AgentListPage>
 
   String _providerSourceLabel(AiProviderProfile profile) {
     if (profile.isLlamaCppServer) return '本机 llama-server';
-    if (profile.isBuiltinBackend) return '服务器 Ollama';
+    if (profile.isBuiltinBackend) return '本机 llama.cpp';
     return '我的 API';
   }
 

@@ -30,6 +30,14 @@ export function vipTag(isVip: boolean): TagSpec {
   return isVip ? { label: 'VIP', tone: 'vip' } : { label: '普通', tone: 'neutral' }
 }
 
+export function botTag(isBot: boolean, agentKey?: string): TagSpec | null {
+  if (!isBot) return null
+  const key = (agentKey || '').trim()
+  if (key === 'moe_guide') return { label: 'AI 向导', tone: 'mint' }
+  if (key) return { label: `AI · ${key}`, tone: 'mint' }
+  return { label: 'AI Bot', tone: 'mint' }
+}
+
 export function boolTag(on: boolean, onLabel = '启用', offLabel = '禁用'): TagSpec {
   return on ? { label: onLabel, tone: 'ok' } : { label: offLabel, tone: 'pending' }
 }

@@ -42,6 +42,9 @@ message User {
   string wechat_nickname = 25;
   // 是否已通过微信 OAuth 绑定
   bool wechat_bound = 26;
+  // 社区 AI Bot 账号（由 moe_agent_runtimes 绑定）
+  bool is_bot = 27;
+  string bot_agent_key = 28;
 }
 
 message FeishuAuthorizeURLReq {
@@ -457,6 +460,8 @@ message Post {
   string hand_draw_card = 12;
   string hand_draw_thumb_url = 13;
   string moderation_status = 14;
+  bool author_is_bot = 15;
+  string author_bot_agent_key = 16;
 }
 
 // 获取帖子列表请求
@@ -1947,6 +1952,254 @@ message RecordAdminAuditLogReq {
 
 message RecordAdminAuditLogResp {}
 
+// --- Moe Intelligence Stack (Admin + App) ---
+
+message MoeAgentRuntimeItem {
+  string agent_key = 1;
+  string display_name = 2;
+  string bot_user_id = 3;
+  string capability_tier = 4;
+  string model_name = 5;
+  string provider_profile_id = 6;
+  bool tools_enabled = 7;
+  int32 post_quota_daily = 8;
+  int32 posts_today = 9;
+  bool enabled = 10;
+  string last_run_at = 11;
+  string last_post_id = 12;
+  string post_schedule_mode = 13;
+  string schedule_cron = 14;
+  string next_run_at = 15;
+  string system_prompt = 16;
+  string post_rules = 17;
+  string forbidden_tags = 18;
+  string preferred_tags = 19;
+}
+
+message AdminListMoeRuntimesReq {}
+message AdminListMoeRuntimesResp {
+  repeated MoeAgentRuntimeItem items = 1;
+}
+
+message AdminUpsertMoeRuntimeReq {
+  string agent_key = 1;
+  string display_name = 2;
+  string bot_user_id = 3;
+  string capability_tier = 4;
+  string model_name = 5;
+  string provider_profile_id = 6;
+  bool tools_enabled = 7;
+  int32 post_quota_daily = 8;
+  bool enabled = 9;
+  string system_prompt = 10;
+  string post_rules = 11;
+  string forbidden_tags = 12;
+  string preferred_tags = 13;
+  string post_schedule_mode = 14;
+  string schedule_cron = 15;
+}
+
+message AdminUpsertMoeRuntimeResp {
+  MoeAgentRuntimeItem item = 1;
+}
+
+message AdminRunMoeAgentOnceReq {
+  string agent_key = 1;
+}
+
+message AdminRunMoeAgentOnceResp {
+  string agent_key = 1;
+  bool ok = 2;
+  string detail = 3;
+  string post_id = 4;
+}
+
+message MoeBrainTagStat {
+  string tag = 1;
+  int32 count = 2;
+}
+
+message MoeBrainEpisodeItem {
+  uint64 id = 1;
+  string post_id = 2;
+  string content = 3;
+  repeated string tags = 4;
+  string mood_tag = 5;
+  int32 style_score = 6;
+  int32 quality_score = 7;
+  bool approved = 8;
+  int32 revision_count = 9;
+  string memory_key = 10;
+  string source = 11;
+  string created_at = 12;
+}
+
+message MoeBrainMemoryItem {
+  string key = 1;
+  string value = 2;
+  string memory_type = 3;
+  string updated_at = 4;
+}
+
+message AdminGetMoeBrainReq {
+  string agent_key = 1;
+}
+
+message AdminGetMoeBrainResp {
+  string agent_key = 1;
+  string display_name = 2;
+  string bot_user_id = 3;
+  repeated string forbidden_tags = 4;
+  repeated string preferred_tags = 5;
+  repeated MoeBrainTagStat tag_stats = 6;
+  repeated MoeBrainEpisodeItem episodes = 7;
+  repeated MoeBrainMemoryItem memories = 8;
+}
+
+message AdminUpdateMoeBrainPolicyReq {
+  string agent_key = 1;
+  repeated string forbidden_tags = 2;
+  repeated string preferred_tags = 3;
+}
+
+message AdminDeleteMoeBrainEpisodeReq {
+  uint64 id = 1;
+}
+
+message AdminDeleteMoeBrainEpisodeResp {}
+
+message AdminRefineMoeBrainEpisodeReq {
+  uint64 id = 1;
+  int32 max_attempts = 2;
+}
+
+message AdminRefineMoeBrainEpisodeResp {
+  uint64 episode_id = 1;
+  bool ok = 2;
+  bool approved = 3;
+  int32 quality_score = 4;
+  string before_content = 5;
+  string after_content = 6;
+  int32 attempts = 7;
+  string detail = 8;
+}
+
+message AdminCurateMoeBrainReq {
+  string agent_key = 1;
+  int32 max_episodes = 2;
+  int32 max_attempts = 3;
+  int32 min_quality = 4;
+  bool force = 5;
+}
+
+message AdminCurateMoeBrainResp {
+  string agent_key = 1;
+  int32 total = 2;
+  int32 approved = 3;
+  repeated AdminRefineMoeBrainEpisodeResp results = 4;
+}
+
+message AdminMoeToolStatRow {
+  string tool = 1;
+  int64 total_calls = 2;
+  int64 success_calls = 3;
+  int64 failed_calls = 4;
+}
+
+message AdminMoeToolDayStat {
+  string date = 1;
+  int64 total_calls = 2;
+  int64 success_calls = 3;
+}
+
+message AdminGetMoeToolStatsReq {
+  string from = 1;
+  string to = 2;
+  string agent_key = 3;
+  string tool = 4;
+}
+
+message AdminGetMoeToolStatsResp {
+  int64 total_calls = 1;
+  int64 success_calls = 2;
+  int64 failed_calls = 3;
+  repeated AdminMoeToolStatRow by_tool = 4;
+  repeated AdminMoeToolDayStat by_day = 5;
+}
+
+message AdminMoeToolCallItem {
+  string id = 1;
+  string tool = 2;
+  string actor_user_id = 3;
+  string agent_key = 4;
+  bool ok = 5;
+  string error_msg = 6;
+  int32 latency_ms = 7;
+  string source = 8;
+  string arguments_preview = 9;
+  string created_at = 10;
+}
+
+message AdminListMoeToolCallsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string tool = 3;
+  string agent_key = 4;
+  string actor_user_id = 5;
+  string source = 6;
+  bool ok_only = 7;
+  bool failed_only = 8;
+  string from = 9;
+  string to = 10;
+}
+
+message AdminListMoeToolCallsResp {
+  repeated AdminMoeToolCallItem items = 1;
+  int64 total = 2;
+}
+
+message MoeExecuteToolReq {
+  string tool = 1;
+  string arguments_json = 2;
+  string agent_key = 3;
+  uint64 actor_user_id = 4;
+  string idempotency_key = 5;
+  string source = 6;
+}
+
+message MoeExecuteToolResp {
+  bool ok = 1;
+  string result = 2;
+  string error = 3;
+}
+
+message MoeSearchPostsReq {
+  string query = 1;
+  int32 limit = 2;
+  uint64 viewer_user_id = 3;
+  string mood_tag = 4;
+  uint64 topic_tag_id = 5;
+}
+
+message MoeSearchPostHit {
+  string post_id = 1;
+  string user_id = 2;
+  string user_name = 3;
+  string content = 4;
+  string snippet = 5;
+  string mood_tag = 6;
+  int32 likes = 7;
+  int32 comments = 8;
+  string created_at = 9;
+  double score = 10;
+  string score_reason = 11;
+}
+
+message MoeSearchPostsResp {
+  repeated MoeSearchPostHit items = 1;
+  int32 total = 2;
+}
+
 // 服务定义
 service Super {
   // 用户相关服务
@@ -2035,6 +2288,21 @@ service Super {
   rpc AdminGetSchemaCatalog(AdminGetSchemaCatalogReq) returns (AdminGetSchemaCatalogResp);
   rpc AdminListAuditLogs(AdminListAuditLogsReq) returns (AdminListAuditLogsResp);
   rpc RecordAdminAuditLog(RecordAdminAuditLogReq) returns (RecordAdminAuditLogResp);
+
+  // Moe Intelligence Stack
+  rpc AdminListMoeRuntimes(AdminListMoeRuntimesReq) returns (AdminListMoeRuntimesResp);
+  rpc AdminUpsertMoeRuntime(AdminUpsertMoeRuntimeReq) returns (AdminUpsertMoeRuntimeResp);
+  rpc AdminRunMoeAgentOnce(AdminRunMoeAgentOnceReq) returns (AdminRunMoeAgentOnceResp);
+  rpc AdminGetMoeBrain(AdminGetMoeBrainReq) returns (AdminGetMoeBrainResp);
+  rpc AdminUpdateMoeBrainPolicy(AdminUpdateMoeBrainPolicyReq) returns (AdminGetMoeBrainResp);
+  rpc AdminDeleteMoeBrainEpisode(AdminDeleteMoeBrainEpisodeReq) returns (AdminDeleteMoeBrainEpisodeResp);
+  rpc AdminRefineMoeBrainEpisode(AdminRefineMoeBrainEpisodeReq) returns (AdminRefineMoeBrainEpisodeResp);
+  rpc AdminCurateMoeBrain(AdminCurateMoeBrainReq) returns (AdminCurateMoeBrainResp);
+  rpc AdminGetMoeToolStats(AdminGetMoeToolStatsReq) returns (AdminGetMoeToolStatsResp);
+  rpc AdminListMoeToolCalls(AdminListMoeToolCallsReq) returns (AdminListMoeToolCallsResp);
+  rpc MoeExecuteTool(MoeExecuteToolReq) returns (MoeExecuteToolResp);
+  rpc MoeSearchPosts(MoeSearchPostsReq) returns (MoeSearchPostsResp);
+
   rpc UpsertUserMemory(UpsertUserMemoryReq) returns (UpsertUserMemoryResp);
   rpc GetUserMemories(GetUserMemoriesReq) returns (GetUserMemoriesResp);
   rpc GetUserMemoryProfiles(GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp);

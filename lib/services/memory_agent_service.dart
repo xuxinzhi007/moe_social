@@ -79,7 +79,7 @@ class MemoryAgentService {
     return buffer.toString();
   }
 
-  /// 账号级记忆：回合结束后提取并 Upsert（优先当前聊天中转站，回退 Ollama）。
+  /// 账号级记忆：回合结束后提取并 Upsert（优先中转站，回退本机 llama.cpp）。
   Future<AiMemoryLearnResult> extractAndUpsertServerMemories({
     required String userId,
     required String userMessage,
@@ -94,8 +94,13 @@ class MemoryAgentService {
       return const AiMemoryLearnResult();
     }
 
-    final ollamaModel = await LlmMemoryConfigService().resolveMemoryModel(
+    final configModel = await LlmMemoryConfigService().resolveMemoryModel(
       fallback: model?.trim() ?? '',
+    );
+    final extractModel = _resolveExtractModel(
+      providerProfile: providerProfile,
+      chatModel: chatModel,
+      configModel: configModel,
     );
     final relayModel = _resolveRelayExtractModel(
       providerProfile: providerProfile,
@@ -119,11 +124,11 @@ class MemoryAgentService {
     String? extractError;
     try {
       final raw = await MemoryExtractLlmClient.complete(
-        relayProfile: providerProfile?.isOpenAiCompatible == true
-            ? providerProfile
-            : null,
-        relayModel: relayModel,
-        ollamaModel: ollamaModel,
+        providerProfile: providerProfile,
+        relayModel: providerProfile?.isOpenAiCompatible == true
+            ? relayModel
+            : '',
+        extractModel: extractModel,
         userPrompt: prompt,
       );
       final items = _parseServerMemoryItems(raw);
@@ -190,6 +195,23 @@ class MemoryAgentService {
       );
     }
     return AiMemoryLearnResult(savedCount: saved);
+  }
+
+  String _resolveExtractModel({
+    AiProviderProfile? providerProfile,
+    String? chatModel,
+    required String configModel,
+  }) {
+    final fromAgent = chatModel?.trim() ?? '';
+    if (fromAgent.isNotEmpty) return fromAgent;
+    if (providerProfile != null) {
+      final def = providerProfile.defaultModel.trim();
+      if (def.isNotEmpty) return def;
+      final manual = providerProfile.effectiveModelIds;
+      if (manual.isNotEmpty) return manual.first;
+    }
+    final fb = configModel.trim();
+    return fb.isNotEmpty ? fb : 'qwen2';
   }
 
   String _resolveRelayExtractModel({
@@ -468,7 +490,7 @@ class MemoryAgentService {
     return '${String.fromCharCodes(r.take(max))}…';
   }
 
-  /// 本地 Agent 记忆整理（仅后端 Ollama）。
+  /// 本地 Agent 记忆整理（优先本机 llama.cpp）。
   Future<String> _callModel({
     required String model,
     required String userPrompt,
@@ -476,9 +498,9 @@ class MemoryAgentService {
     required Duration timeout,
   }) async {
     return MemoryExtractLlmClient.complete(
-      relayProfile: null,
+      providerProfile: null,
       relayModel: '',
-      ollamaModel: model,
+      extractModel: model,
       userPrompt: userPrompt,
       timeout: timeout,
     );

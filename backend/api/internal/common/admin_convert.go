@@ -34,7 +34,9 @@ func RpcPostToTypes(p *super.Post) types.Post {
 		CreatedAt:        p.GetCreatedAt(),
 		HandDrawCard:     p.GetHandDrawCard(),
 		HandDrawThumbUrl: p.GetHandDrawThumbUrl(),
-		ModerationStatus: p.GetModerationStatus(),
+		ModerationStatus:  p.GetModerationStatus(),
+		AuthorIsBot:       p.GetAuthorIsBot(),
+		AuthorBotAgentKey: p.GetAuthorBotAgentKey(),
 	}
 }
 

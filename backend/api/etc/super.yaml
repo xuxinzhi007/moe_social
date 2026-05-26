@@ -13,9 +13,10 @@ Agora:
   AppId: "40f005107bf94a8fb09a17aabdcdf329"
   AppCertificate: "c5282c8b440342b78e767a7e86b99107"
 
-# Ollama 配置（后端需要能访问到该地址）
+# 本地推理（llama-server / 遗留 Ollama）；详细地址由 backend/config/config.yaml 的 llm_inference 覆盖
 Ollama:
-  BaseUrl: http://127.0.0.1:11434
+  BaseUrl: http://127.0.0.1:6633
+  ApiStyle: openai
   TimeoutSeconds: 300
   # 可选：用于总结和记忆提取的模型，不填则默认使用聊天时指定的模型
   MemoryModel: ""
@@ -45,6 +46,8 @@ SuperRpc:
   Endpoints:
     - 127.0.0.1:8080
   NonBlock: true
+  # gRPC 客户端超时（毫秒）。Moe 试跑/润色会调 LLM，默认 2s 会 DeadlineExceeded
+  Timeout: 600000
 #  Etcd:
 #    Hosts:
 #    - 127.0.0.1:2379

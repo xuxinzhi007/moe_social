@@ -14,6 +14,7 @@ import '../widgets/moe_toast.dart';
 
 import '../widgets/post_image_viewer.dart';
 import '../widgets/hand_draw/hand_draw_card_view.dart';
+import 'ai_bot_badge.dart';
 import 'moe_loading.dart';
 import '../utils/media_url.dart';
 import '../utils/post_navigation.dart';
@@ -127,13 +128,27 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          widget.post.userName,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: theme.textTheme.titleLarge?.color,
-                          ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                widget.post.userName,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: theme.textTheme.titleLarge?.color,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (widget.post.authorIsBot) ...[
+                              const SizedBox(width: 6),
+                              AiBotBadge(
+                                compact: true,
+                                agentKey: widget.post.authorBotAgentKey,
+                              ),
+                            ],
+                          ],
                         ),
                         Text(
                           _formatTime(widget.post.createdAt),

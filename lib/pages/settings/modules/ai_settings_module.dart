@@ -15,7 +15,7 @@ class AiSettingsModule extends StatelessWidget {
       items: [
         MoeMenuItem(
           icon: Icons.terminal_rounded,
-          title: 'raw 调试模式（本地 Ollama）',
+          title: 'raw 调试模式（本地推理）',
           subtitle: '仅调试时开启；日常建议走服务端记忆链路',
           color: Colors.deepPurpleAccent,
           onTap: () async {

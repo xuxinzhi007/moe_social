@@ -365,6 +365,23 @@ type AdminGetMemoryStatsResp struct {
 	Data AdminMemoryStats `json:"data"`
 }
 
+type AdminGetMoeToolStatsReq struct {
+	From     string `form:"from,optional"`
+	To       string `form:"to,optional"`
+	AgentKey string `form:"agent_key,optional"`
+	Tool     string `form:"tool,optional"`
+}
+
+type AdminGetMoeToolStatsResp struct {
+	BaseResp
+	Data AdminMoeToolStatsData `json:"data"`
+}
+
+type AdminGetMoeToolsSchemaResp struct {
+	BaseResp
+	Data AdminMoeToolsSchemaData `json:"data"`
+}
+
 type AdminGetUserProfileReq struct {
 	UserId uint64 `path:"user_id"`
 }
@@ -650,6 +667,38 @@ type AdminListMenusResp struct {
 	Data []AdminMenuItem `json:"data"`
 }
 
+type AdminListMoeRuntimesData struct {
+	Items []MoeAgentRuntimeItem `json:"items"`
+}
+
+type AdminListMoeRuntimesResp struct {
+	BaseResp
+	Data AdminListMoeRuntimesData `json:"data"`
+}
+
+type AdminListMoeToolCallsData struct {
+	Items []AdminMoeToolCallItem `json:"items"`
+	Total int64                  `json:"total"`
+}
+
+type AdminListMoeToolCallsReq struct {
+	Page        int    `form:"page,optional"`
+	PageSize    int    `form:"page_size,optional"`
+	Tool        string `form:"tool,optional"`
+	AgentKey    string `form:"agent_key,optional"`
+	ActorUserId string `form:"actor_user_id,optional"`
+	Source      string `form:"source,optional"`
+	OkOnly      bool   `form:"ok_only,optional"`
+	FailedOnly  bool   `form:"failed_only,optional"`
+	From        string `form:"from,optional"`
+	To          string `form:"to,optional"`
+}
+
+type AdminListMoeToolCallsResp struct {
+	BaseResp
+	Data AdminListMoeToolCallsData `json:"data"`
+}
+
 type AdminListPostReportsData struct {
 	Items []AdminPostReportItem `json:"items"`
 	Total int                   `json:"total"`
@@ -825,6 +874,52 @@ type AdminMenuItem struct {
 	Enabled      bool   `json:"enabled"`
 }
 
+type AdminMoeToolCallItem struct {
+	Id               string `json:"id"`
+	Tool             string `json:"tool"`
+	ActorUserId      string `json:"actor_user_id"`
+	AgentKey         string `json:"agent_key,optional"`
+	Ok               bool   `json:"ok"`
+	ErrorMsg         string `json:"error_msg,optional"`
+	LatencyMs        int    `json:"latency_ms"`
+	Source           string `json:"source"`
+	ArgumentsPreview string `json:"arguments_preview,optional"`
+	CreatedAt        string `json:"created_at"`
+}
+
+type AdminMoeToolDayStat struct {
+	Date         string `json:"date"`
+	TotalCalls   int64  `json:"total_calls"`
+	SuccessCalls int64  `json:"success_calls"`
+}
+
+type AdminMoeToolSchemaItem struct {
+	Name         string   `json:"name"`
+	Description  string   `json:"description"`
+	AllowedTiers []string `json:"allowed_tiers"`
+}
+
+type AdminMoeToolStatRow struct {
+	Tool         string `json:"tool"`
+	TotalCalls   int64  `json:"total_calls"`
+	SuccessCalls int64  `json:"success_calls"`
+	FailedCalls  int64  `json:"failed_calls"`
+}
+
+type AdminMoeToolStatsData struct {
+	TotalCalls   int64                 `json:"total_calls"`
+	SuccessCalls int64                 `json:"success_calls"`
+	FailedCalls  int64                 `json:"failed_calls"`
+	ByTool       []AdminMoeToolStatRow `json:"by_tool"`
+	ByDay        []AdminMoeToolDayStat `json:"by_day"`
+}
+
+type AdminMoeToolsSchemaData struct {
+	DefaultTier string                   `json:"default_tier"`
+	Tools       []AdminMoeToolSchemaItem `json:"tools"`
+	OpenAITools []interface{}            `json:"openai_tools"`
+}
+
 type AdminPostReportItem struct {
 	Id                 string `json:"id"`
 	PostId             string `json:"post_id"`
@@ -841,6 +936,22 @@ type AdminPublishAnnouncementReq struct {
 type AdminPublishAnnouncementResp struct {
 	BaseResp
 	Data AdminAnnouncementItem `json:"data"`
+}
+
+type AdminRunMoeAgentData struct {
+	AgentKey string `json:"agent_key"`
+	Ok       bool   `json:"ok"`
+	Detail   string `json:"detail"`
+	PostId   string `json:"post_id,optional"`
+}
+
+type AdminRunMoeAgentReq struct {
+	AgentKey string `path:"agent_key"`
+}
+
+type AdminRunMoeAgentResp struct {
+	BaseResp
+	Data AdminRunMoeAgentData `json:"data"`
 }
 
 type AdminRuntimeConfigData struct {
@@ -1073,6 +1184,127 @@ type AdminUpsertMenuReq struct {
 type AdminUpsertMenuResp struct {
 	BaseResp
 	Data AdminMenuItem `json:"data"`
+}
+
+type AdminUpsertMoeRuntimeReq struct {
+	AgentKey          string `json:"agent_key"`
+	DisplayName       string `json:"display_name"`
+	BotUserId         string `json:"bot_user_id"`
+	CapabilityTier    string `json:"capability_tier,optional"`
+	ModelName         string `json:"model_name,optional"`
+	ProviderProfileId string `json:"provider_profile_id,optional"`
+	ToolsEnabled      bool   `json:"tools_enabled,optional"`
+	PostQuotaDaily    int    `json:"post_quota_daily,optional"`
+	Enabled           bool   `json:"enabled,optional"`
+	SystemPrompt      string `json:"system_prompt,optional"`
+	PostRules         string `json:"post_rules,optional"`
+	ForbiddenTags     string `json:"forbidden_tags,optional"`
+	PreferredTags     string `json:"preferred_tags,optional"`
+	PostScheduleMode  string `json:"post_schedule_mode,optional"`
+	ScheduleCron      string `json:"schedule_cron,optional"`
+}
+
+type AdminUpsertMoeRuntimeResp struct {
+	BaseResp
+	Data MoeAgentRuntimeItem `json:"data"`
+}
+
+type AdminGetMoeBrainReq struct {
+	AgentKey string `path:"agent_key"`
+}
+
+type MoeBrainTagStat struct {
+	Tag   string `json:"tag"`
+	Count int    `json:"count"`
+}
+
+type MoeBrainEpisodeItem struct {
+	Id            uint     `json:"id"`
+	PostId        string   `json:"post_id"`
+	Content       string   `json:"content"`
+	Tags          []string `json:"tags"`
+	MoodTag       string   `json:"mood_tag"`
+	StyleScore    int      `json:"style_score"`
+	QualityScore  int      `json:"quality_score"`
+	Approved      bool     `json:"approved"`
+	RevisionCount int      `json:"revision_count"`
+	MemoryKey     string   `json:"memory_key"`
+	Source        string   `json:"source"`
+	CreatedAt     string   `json:"created_at"`
+}
+
+type MoeBrainMemoryItem struct {
+	Key        string `json:"key"`
+	Value      string `json:"value"`
+	MemoryType string `json:"memory_type"`
+	UpdatedAt  string `json:"updated_at"`
+}
+
+type AdminGetMoeBrainData struct {
+	AgentKey      string                `json:"agent_key"`
+	DisplayName   string                `json:"display_name"`
+	BotUserId     string                `json:"bot_user_id"`
+	ForbiddenTags []string              `json:"forbidden_tags"`
+	PreferredTags []string              `json:"preferred_tags"`
+	TagStats      []MoeBrainTagStat     `json:"tag_stats"`
+	Episodes      []MoeBrainEpisodeItem `json:"episodes"`
+	Memories      []MoeBrainMemoryItem  `json:"memories"`
+}
+
+type AdminGetMoeBrainResp struct {
+	BaseResp
+	Data AdminGetMoeBrainData `json:"data"`
+}
+
+type AdminUpdateMoeBrainPolicyReq struct {
+	AgentKey      string   `path:"agent_key"`
+	ForbiddenTags []string `json:"forbidden_tags,optional"`
+	PreferredTags []string `json:"preferred_tags,optional"`
+}
+
+type AdminDeleteMoeBrainEpisodeReq struct {
+	Id uint `path:"id"`
+}
+
+type AdminRefineMoeBrainEpisodeReq struct {
+	Id          uint `path:"id"`
+	MaxAttempts int  `json:"max_attempts,optional,default=5"`
+}
+
+type AdminRefineMoeBrainEpisodeData struct {
+	EpisodeId     uint   `json:"episode_id"`
+	Ok            bool   `json:"ok"`
+	Approved      bool   `json:"approved"`
+	QualityScore  int    `json:"quality_score"`
+	BeforeContent string `json:"before_content"`
+	AfterContent  string `json:"after_content"`
+	Attempts      int    `json:"attempts"`
+	Detail        string `json:"detail"`
+}
+
+type AdminRefineMoeBrainEpisodeResp struct {
+	BaseResp
+	Data AdminRefineMoeBrainEpisodeData `json:"data"`
+}
+
+type AdminCurateMoeBrainReq struct {
+	AgentKey    string `path:"agent_key"`
+	MaxEpisodes int    `json:"max_episodes,optional,default=10"`
+	MaxAttempts int    `json:"max_attempts,optional,default=5"`
+	MinQuality  int    `json:"min_quality,optional,default=70"`
+	Force       bool   `json:"force,optional"`
+}
+
+type AdminCurateMoeBrainData struct {
+	AgentKey string                           `json:"agent_key"`
+	Total    int                              `json:"total"`
+	Approved int                              `json:"approved"`
+	Results  []AdminRefineMoeBrainEpisodeData `json:"results"`
+}
+
+type AdminCurateMoeBrainResp struct {
+	BaseResp
+	Data AdminCurateMoeBrainData `json:"data"`
 }
 
 type AdminUserBehaviorScreenStat struct {
@@ -2366,6 +2598,56 @@ type LoginResp struct {
 	Data LoginData `json:"data"`
 }
 
+type MoeAgentRuntimeItem struct {
+	AgentKey          string `json:"agent_key"`
+	DisplayName       string `json:"display_name"`
+	BotUserId         string `json:"bot_user_id"`
+	CapabilityTier    string `json:"capability_tier"`
+	ModelName         string `json:"model_name"`
+	ProviderProfileId string `json:"provider_profile_id,optional"`
+	ToolsEnabled      bool   `json:"tools_enabled"`
+	PostQuotaDaily    int    `json:"post_quota_daily"`
+	PostsToday        int    `json:"posts_today"`
+	Enabled           bool   `json:"enabled"`
+	LastRunAt         string `json:"last_run_at,optional"`
+	LastPostId        string `json:"last_post_id,optional"`
+	PostScheduleMode  string `json:"post_schedule_mode,optional"`
+	ScheduleCron      string `json:"schedule_cron,optional"`
+	NextRunAt         string `json:"next_run_at,optional"`
+	SystemPrompt      string `json:"system_prompt,optional"`
+	PostRules         string `json:"post_rules,optional"`
+	ForbiddenTags     string `json:"forbidden_tags,optional"`
+	PreferredTags     string `json:"preferred_tags,optional"`
+}
+
+type MoeToolExecuteData struct {
+	Ok     bool   `json:"ok"`
+	Result string `json:"result"`
+	Error  string `json:"error,optional"`
+}
+
+type MoeToolExecuteReq struct {
+	Tool           string `json:"tool"`
+	Arguments      string `json:"arguments"`
+	AgentKey       string `json:"agent_key,optional"`
+	IdempotencyKey string `json:"idempotency_key,optional"`
+}
+
+type MoeToolExecuteResp struct {
+	BaseResp
+	Data MoeToolExecuteData `json:"data"`
+}
+
+type MoeToolSchemaData struct {
+	Tools []interface{} `json:"tools"`
+	Tier  string        `json:"tier"`
+}
+
+type MoeToolSchemaResp struct {
+	BaseResp
+	Data MoeToolSchemaData `json:"data"`
+}
+
 type Notification struct {
 	Id           string `json:"id"`
 	UserId       string `json:"user_id"`
@@ -2392,20 +2674,22 @@ type OutfitPart struct {
 }
 
 type Post struct {
-	Id               string     `json:"id"`
-	UserId           string     `json:"user_id"`
-	UserName         string     `json:"user_name"`
-	UserAvatar       string     `json:"user_avatar"`
-	Content          string     `json:"content"`
-	Images           []string   `json:"images"`
-	TopicTags        []TopicTag `json:"topic_tags"`
-	Likes            int        `json:"likes"`
-	Comments         int        `json:"comments"`
-	IsLiked          bool       `json:"is_liked"`
-	CreatedAt        string     `json:"created_at"`
-	HandDrawCard     string     `json:"hand_draw_card,optional"`
-	HandDrawThumbUrl string     `json:"hand_draw_thumb_url,optional"`
-	ModerationStatus string     `json:"moderation_status,optional"`
+	Id                string     `json:"id"`
+	UserId            string     `json:"user_id"`
+	UserName          string     `json:"user_name"`
+	UserAvatar        string     `json:"user_avatar"`
+	Content           string     `json:"content"`
+	Images            []string   `json:"images"`
+	TopicTags         []TopicTag `json:"topic_tags"`
+	Likes             int        `json:"likes"`
+	Comments          int        `json:"comments"`
+	IsLiked           bool       `json:"is_liked"`
+	CreatedAt         string     `json:"created_at"`
+	HandDrawCard      string     `json:"hand_draw_card,optional"`
+	HandDrawThumbUrl  string     `json:"hand_draw_thumb_url,optional"`
+	ModerationStatus  string     `json:"moderation_status,optional"`
+	AuthorIsBot       bool       `json:"author_is_bot,optional"`
+	AuthorBotAgentKey string     `json:"author_bot_agent_key,optional"`
 }
 
 type PrivateConversationItem struct {
@@ -2538,6 +2822,39 @@ type ResetPasswordReq struct {
 
 type ResetPasswordResp struct {
 	BaseResp
+}
+
+type SearchPostHit struct {
+	PostId      string  `json:"post_id"`
+	UserId      string  `json:"user_id"`
+	UserName    string  `json:"user_name"`
+	Content     string  `json:"content"`
+	Snippet     string  `json:"snippet"`
+	MoodTag     string  `json:"mood_tag"`
+	Likes       int     `json:"likes"`
+	Comments    int     `json:"comments"`
+	CreatedAt   string  `json:"created_at"`
+	Score       float64 `json:"score"`
+	ScoreReason string  `json:"score_reason"`
+}
+
+type SearchPostsData struct {
+	Items []SearchPostHit `json:"items"`
+	Total int             `json:"total"`
+}
+
+type SearchPostsReq struct {
+	Q            string `form:"q,optional"`
+	Page         int    `form:"page,default=1"`
+	PageSize     int    `form:"page_size,default=10"`
+	ViewerUserId string `form:"viewer_user_id,optional"`
+	MoodTag      string `form:"mood_tag,optional"`
+	TopicTagId   string `form:"topic_tag_id,optional"`
+}
+
+type SearchPostsResp struct {
+	BaseResp
+	Data SearchPostsData `json:"data"`
 }
 
 type SearchUserMemoriesData struct {
@@ -2841,6 +3158,8 @@ type User struct {
 	WechatNickname         string  `json:"wechat_nickname,optional"`
 	WechatBound            bool    `json:"wechat_bound,optional"`
 	Role                   string  `json:"role,optional"`
+	IsBot                  bool    `json:"is_bot,optional"`
+	BotAgentKey            string  `json:"bot_agent_key,optional"`
 }
 
 type UserAvatar struct {

@@ -94,7 +94,7 @@ func (l *ChatLogic) memoryFlushBeforeCompact(
 	invalidateCachedUserMemories(userID)
 
 	model := l.memoryExtractModel()
-	baseURL := l.ollamaBaseURL()
+	baseURL := l.inferenceBaseURL()
 	go func(uid, sid, msgID, mdl, base string, msgs []ollamaMessage) {
 		bgCtx, cancel := backgroundMemoryExtractContext(60)
 		defer cancel()
@@ -165,7 +165,10 @@ func (l *ChatLogic) memoryExtractModel() string {
 	return m
 }
 
-func (l *ChatLogic) ollamaBaseURL() string {
-	base, _ := common.ResolveOllamaBaseURL(l.svcCtx.Config.Ollama.BaseUrl)
-	return base
+func (l *ChatLogic) inferenceBaseURL() string {
+	cfg, err := common.InferenceFromOllamaConf(l.svcCtx.Config.Ollama)
+	if err != nil {
+		return ""
+	}
+	return cfg.BaseURL
 }

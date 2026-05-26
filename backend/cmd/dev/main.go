@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	migrate  = flag.Bool("migrate", false, "pass -migrate to RPC (run GORM AutoMigrate once)")
+	migrate  = flag.Bool("migrate", false, "run schema migrate (make db-migrate) before starting RPC/API")
 	withDocs = flag.Bool("docs", true, "start docs static server on :19012 (python -m http.server)")
 )
 
@@ -84,10 +84,13 @@ func startAll(root string) ([]*managedProc, error) {
 	if err != nil {
 		return nil, fmt.Errorf("build rpc: %w", err)
 	}
-	rpcArgs := []string{"-f", "rpc/etc/super.yaml"}
 	if *migrate {
-		rpcArgs = append(rpcArgs, "-migrate")
+		if err := runMigrate(root); err != nil {
+			log.Fatalf("migrate: %v", err)
+		}
 	}
+
+	rpcArgs := []string{"-f", "rpc/etc/super.yaml"}
 	rpc, err := startProc("rpc", root, rpcBin, rpcArgs...)
 	if err != nil {
 		stopAll(procs)
@@ -125,6 +128,15 @@ func startAll(root string) ([]*managedProc, error) {
 	log.Print("ready — RPC :8080, API :8888 (tools: make deploy-agent → http://127.0.0.1:19010/)")
 	log.Print("press Ctrl+C to stop all services")
 	return procs, nil
+}
+
+func runMigrate(root string) error {
+	log.Print("running schema migrate ...")
+	cmd := exec.Command(goExecutable(), "run", "./cmd/migrate")
+	cmd.Dir = root
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func buildDevBinary(root, devBin, name, pkg string) (string, error) {

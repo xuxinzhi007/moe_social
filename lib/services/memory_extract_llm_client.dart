@@ -7,27 +7,25 @@ import '../models/ai_provider_profile.dart';
 import 'ai_chat_gateway_service.dart';
 import 'ai_provider_service.dart';
 import 'api_service.dart';
-import 'llm_endpoint_config.dart';
-import 'llm_response_parser.dart';
-
-/// 记忆提取专用 LLM 调用：优先当前聊天中转站，失败再回退后端 Ollama。
+import 'llama_cpp_endpoint_config.dart';
+/// 记忆提取专用 LLM 调用：优先当前中转 Provider → 本机 llama.cpp。
 class MemoryExtractLlmClient {
   MemoryExtractLlmClient._();
 
   static Future<String> complete({
-    required AiProviderProfile? relayProfile,
+    AiProviderProfile? providerProfile,
     required String relayModel,
-    required String ollamaModel,
+    required String extractModel,
     required String userPrompt,
     Duration timeout = const Duration(seconds: 45),
   }) async {
     String? relayError;
-    if (relayProfile != null &&
-        relayProfile.isOpenAiCompatible &&
+    if (providerProfile != null &&
+        providerProfile.isOpenAiCompatible &&
         relayModel.trim().isNotEmpty) {
       try {
         final content = await _viaRelay(
-          profile: relayProfile,
+          profile: providerProfile,
           model: relayModel.trim(),
           userPrompt: userPrompt,
           timeout: timeout,
@@ -35,7 +33,7 @@ class MemoryExtractLlmClient {
         if (content.trim().isNotEmpty) {
           if (kDebugMode) {
             debugPrint(
-              '🧠 [Memory] extract via relay model=$relayModel profile=${relayProfile.name}',
+              '🧠 [Memory] extract via relay model=$relayModel profile=${providerProfile.name}',
             );
           }
           return content;
@@ -49,26 +47,105 @@ class MemoryExtractLlmClient {
       }
     }
 
+    // 本机 llama-server（OpenAI 兼容）— 替代已停用的 Ollama 11434
+    var llamaError = '';
     try {
-      final content = await _viaBackendOllama(
-        model: ollamaModel,
+      final model = _resolveLlamaExtractModel(
+        providerProfile: providerProfile,
+        extractModel: extractModel,
+        relayModel: relayModel,
+      );
+      final content = await _viaLlamaCpp(
+        model: model,
         userPrompt: userPrompt,
         timeout: timeout,
       );
-      if (content.trim().isNotEmpty) return content;
-    } catch (e) {
-      final ollamaErr =
-          e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
-      if (relayError != null && relayError.isNotEmpty) {
-        throw Exception('中转提取失败（$relayError）；Ollama 回退也失败（$ollamaErr）');
+      if (content.trim().isNotEmpty) {
+        if (kDebugMode) {
+          debugPrint('🧠 [Memory] extract via llama.cpp model=$model');
+        }
+        return content;
       }
-      rethrow;
+      llamaError = 'llama.cpp 返回空内容';
+    } catch (e) {
+      llamaError = e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+      if (kDebugMode) {
+        debugPrint('🧠 [Memory] llama.cpp extract failed: $llamaError');
+      }
     }
 
     if (relayError != null && relayError.isNotEmpty) {
-      throw Exception('记忆提取失败：$relayError（且 Ollama 回退无内容）');
+      throw Exception(
+        '中转提取失败（$relayError）；本机 llama.cpp 也失败（$llamaError）。'
+        '请确认 llama-server 已启动（默认 6633）且模型 ID 与聊天一致。',
+      );
     }
-    return '';
+    throw Exception(
+      llamaError.isNotEmpty
+          ? '本机 llama.cpp 记忆提取失败：$llamaError'
+          : '本机 llama.cpp 记忆提取失败，请确认 llama-server 已启动（默认端口 6633）',
+    );
+  }
+
+  static String _resolveLlamaExtractModel({
+    AiProviderProfile? providerProfile,
+    required String extractModel,
+    required String relayModel,
+  }) {
+    final fromRelay = relayModel.trim();
+    if (fromRelay.isNotEmpty) return fromRelay;
+    final fromProfile = providerProfile?.defaultModel.trim() ?? '';
+    if (fromProfile.isNotEmpty) return fromProfile;
+    final manual = providerProfile?.effectiveModelIds ?? const [];
+    if (manual.isNotEmpty) return manual.first;
+    final fb = extractModel.trim();
+    if (fb.isNotEmpty) return fb;
+    return 'qwen2';
+  }
+
+  static Future<String> _viaLlamaCpp({
+    required String model,
+    required String userPrompt,
+    required Duration timeout,
+  }) async {
+    final baseUrl = await LlamaCppEndpointConfig.resolveV1BaseUrl();
+    final uri = Uri.parse('${_normalizeBaseUrl(baseUrl)}/chat/completions');
+    ApiService.logDirectHttp('POST', uri);
+
+    final response = await http
+        .post(
+          uri,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'model': model,
+            'messages': [
+              {
+                'role': 'system',
+                'content':
+                    '你是记忆提取助手。只输出 JSON 数组，不要 Markdown，不要解释。',
+              },
+              {'role': 'user', 'content': userPrompt},
+            ],
+            'stream': false,
+            'temperature': 0.1,
+          }),
+        )
+        .timeout(timeout);
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'llama.cpp 提取失败: HTTP ${response.statusCode}（请确认 llama-server 已启动且模型 ID 正确）',
+      );
+    }
+
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    final content = _extractOpenAiContent(decoded);
+    if (content.isEmpty) {
+      throw Exception('llama.cpp 提取返回空内容');
+    }
+    return content;
   }
 
   static Future<String> _viaRelay({
@@ -98,8 +175,7 @@ class MemoryExtractLlmClient {
       if (profile.supportsSystemMessages)
         {
           'role': 'system',
-          'content':
-              '你是记忆提取助手。只输出 JSON 数组，不要 Markdown，不要解释。',
+          'content': '你是记忆提取助手。只输出 JSON 数组，不要 Markdown，不要解释。',
         },
       {'role': 'user', 'content': userPrompt},
     ];
@@ -127,61 +203,6 @@ class MemoryExtractLlmClient {
       throw Exception('中转站提取返回空内容');
     }
     return content;
-  }
-
-  static Future<String> _viaBackendOllama({
-    required String model,
-    required String userPrompt,
-    required Duration timeout,
-  }) async {
-    final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
-    final uri = await LlmEndpointConfig.chatUri();
-    ApiService.logDirectHttp('POST', uri);
-    final token = ApiService.token;
-    final headers = ApiService.mergeTunnelHeaders(uri, headers: {
-      'Content-Type': 'application/json',
-      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-    });
-
-    final response = await http
-        .post(
-          uri,
-          headers: headers,
-          body: jsonEncode({
-            'model': model,
-            'messages': [
-              {'role': 'user', 'content': userPrompt},
-            ],
-            'temperature': 0.1,
-            if (terminalMode) 'stream': false,
-          }),
-        )
-        .timeout(timeout);
-
-    if (response.statusCode != 200) {
-      throw Exception('Ollama 提取失败: HTTP ${response.statusCode}');
-    }
-
-    final data = jsonDecode(utf8.decode(response.bodyBytes));
-    if (data is Map) {
-      if (data['success'] == false) {
-        final msg = (data['message'] as String?)?.trim();
-        throw Exception(
-          msg != null && msg.isNotEmpty ? msg : 'Ollama 记忆提取失败',
-        );
-      }
-      final content = LlmResponseParser.extractChatContent(
-        data,
-        terminalMode: terminalMode,
-      );
-      if (content.trim().isNotEmpty) {
-        if (kDebugMode) {
-          debugPrint('🧠 [Memory] extract via backend ollama model=$model');
-        }
-        return content;
-      }
-    }
-    throw Exception('Ollama 记忆提取返回空内容（请确认本机 Ollama 已启动且模型可用）');
   }
 
   static String _extractOpenAiContent(dynamic decoded) {

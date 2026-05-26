@@ -29,9 +29,9 @@ func NewChatRawLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ChatRawLo
 	}
 }
 
-// ChatRaw 将请求体原样转发到 Ollama /api/chat，流式响应时逐块写出。
+// ChatRaw 将请求体原样转发到本地推理服务（llama.cpp /v1 或遗留 Ollama /api/chat）。
 func (l *ChatRawLogic) ChatRaw(w http.ResponseWriter, r *http.Request) error {
-	baseURL, err := common.ResolveOllamaBaseURL(l.svcCtx.Config.Ollama.BaseUrl)
+	cfg, err := common.InferenceFromOllamaConf(l.svcCtx.Config.Ollama)
 	if err != nil {
 		return err
 	}
@@ -41,9 +41,10 @@ func (l *ChatRawLogic) ChatRaw(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
+	target := strings.TrimRight(cfg.BaseURL, "/") + common.InferenceChatPath(cfg.ApiStyle)
 	client := &http.Client{Timeout: 0}
 	req, err := http.NewRequestWithContext(
-		r.Context(), http.MethodPost, baseURL+"/api/chat", strings.NewReader(string(body)))
+		r.Context(), http.MethodPost, target, strings.NewReader(string(body)))
 	if err != nil {
 		return err
 	}

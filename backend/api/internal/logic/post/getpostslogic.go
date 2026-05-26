@@ -80,7 +80,9 @@ func (l *GetPostsLogic) GetPosts(req *types.GetPostsReq) (resp *types.GetPostsRe
 			CreatedAt:        post.CreatedAt,
 			HandDrawCard:     post.HandDrawCard,
 			HandDrawThumbUrl: post.HandDrawThumbUrl,
-			ModerationStatus: post.ModerationStatus,
+			ModerationStatus:  post.ModerationStatus,
+			AuthorIsBot:       post.GetAuthorIsBot(),
+			AuthorBotAgentKey: post.GetAuthorBotAgentKey(),
 		})
 	}
 

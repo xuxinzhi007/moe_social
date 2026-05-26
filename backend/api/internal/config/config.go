@@ -17,7 +17,7 @@ type Config struct {
 	// RPC服务配置
 	SuperRpc zrpc.RpcClientConf `json:"SuperRpc" yaml:"SuperRpc"`
 
-	// Ollama 配置（用于 /api/llm/*）
+	// Ollama 配置名保留兼容 go-zero；实际为 llama.cpp / 旧 Ollama 推理转发（见 llm_inference.*）。
 	Ollama OllamaConf `json:"Ollama" yaml:"Ollama"`
 
 	// LocalModels 手机可下载的 GGUF 托管目录与清单
@@ -52,9 +52,11 @@ type LocalModelsConf struct {
 }
 
 type OllamaConf struct {
-	// BaseUrl 例如：http://127.0.0.1:11434
+	// BaseUrl 例如：http://127.0.0.1:6633（llama-server）或旧 Ollama :11434
 	BaseUrl string `json:"BaseUrl" yaml:"BaseUrl"`
-	// TimeoutSeconds 请求 Ollama 的超时（秒），建议比反代/客户端超时更长
+	// ApiStyle openai（默认，llama.cpp）| ollama（遗留）
+	ApiStyle string `json:"ApiStyle" yaml:"ApiStyle"`
+	// TimeoutSeconds 请求推理服务的超时（秒）
 	TimeoutSeconds int `json:"TimeoutSeconds" yaml:"TimeoutSeconds"`
 	// MemoryModel 用于总结和记忆提取的模型，不配置则默认使用聊天模型
 	MemoryModel string `json:"MemoryModel" yaml:"MemoryModel"`

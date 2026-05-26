@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { usePlatform } from '../context/PlatformContext'
 import type { ApiTarget } from '../lib/apiTarget'
@@ -9,9 +9,16 @@ export function LoginPage() {
   const { apiTarget, setApiTarget, apiTargetLabel } = usePlatform()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const [username, setUsername] = useState('admin')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (searchParams.get('expired') === '1') {
+      setError('登录已过期，请重新登录')
+    }
+  }, [searchParams])
 
   const from =
     (location.state as { from?: string } | null)?.from?.replace(/^\/ops/, '') ||

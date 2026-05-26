@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 enum AiProviderType {
-  backendOllama('backend_ollama', '后端 Ollama'),
+  backendOllama('backend_ollama', '后端推理（已废弃）'),
   llamaCppServer('llama_cpp_server', '本机 llama.cpp'),
   openAiCompatible('openai_compatible', 'OpenAI 兼容'),
   ;
@@ -19,7 +19,7 @@ enum AiProviderType {
     for (final item in AiProviderType.values) {
       if (item.value == raw) return item;
     }
-    return AiProviderType.backendOllama;
+    return AiProviderType.llamaCppServer;
   }
 }
 
@@ -150,7 +150,7 @@ class AiProviderProfile {
     final now = DateTime.fromMillisecondsSinceEpoch(0);
     return AiProviderProfile(
       id: builtinBackendId,
-      name: '内置 Ollama',
+      name: '后端推理（已废弃）',
       providerType: AiProviderType.backendOllama,
       baseUrl: '',
       defaultModel: '',

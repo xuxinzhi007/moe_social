@@ -13,14 +13,18 @@ import (
 func ConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		budget := logic.CurrentMemoryBudgetConfig()
+		inference := map[string]interface{}{
+			"base_url":           svcCtx.Config.Ollama.BaseUrl,
+			"api_style":          svcCtx.Config.Ollama.ApiStyle,
+			"timeout_seconds":    svcCtx.Config.Ollama.TimeoutSeconds,
+			"memory_model":       svcCtx.Config.Ollama.MemoryModel,
+			"has_summary_prompt": svcCtx.Config.Ollama.MemorySummaryPrompt != "",
+			"has_extract_prompt": svcCtx.Config.Ollama.MemoryExtractPrompt != "",
+		}
 		data := map[string]interface{}{
-			"ollama": map[string]interface{}{
-				"base_url":           svcCtx.Config.Ollama.BaseUrl,
-				"timeout_seconds":    svcCtx.Config.Ollama.TimeoutSeconds,
-				"memory_model":       svcCtx.Config.Ollama.MemoryModel,
-				"has_summary_prompt": svcCtx.Config.Ollama.MemorySummaryPrompt != "",
-				"has_extract_prompt": svcCtx.Config.Ollama.MemoryExtractPrompt != "",
-			},
+			"llm_inference": inference,
+			// 兼容旧版 App 字段名
+			"ollama": inference,
 			"memory_budget": budget,
 			"local_models": map[string]interface{}{
 				"storage_dir":   svcCtx.Config.LocalModels.StorageDir,

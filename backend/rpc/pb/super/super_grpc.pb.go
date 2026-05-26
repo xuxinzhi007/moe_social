@@ -104,6 +104,18 @@ const (
 	Super_AdminGetSchemaCatalog_FullMethodName       = "/super.Super/AdminGetSchemaCatalog"
 	Super_AdminListAuditLogs_FullMethodName          = "/super.Super/AdminListAuditLogs"
 	Super_RecordAdminAuditLog_FullMethodName         = "/super.Super/RecordAdminAuditLog"
+	Super_AdminListMoeRuntimes_FullMethodName        = "/super.Super/AdminListMoeRuntimes"
+	Super_AdminUpsertMoeRuntime_FullMethodName       = "/super.Super/AdminUpsertMoeRuntime"
+	Super_AdminRunMoeAgentOnce_FullMethodName        = "/super.Super/AdminRunMoeAgentOnce"
+	Super_AdminGetMoeBrain_FullMethodName            = "/super.Super/AdminGetMoeBrain"
+	Super_AdminUpdateMoeBrainPolicy_FullMethodName   = "/super.Super/AdminUpdateMoeBrainPolicy"
+	Super_AdminDeleteMoeBrainEpisode_FullMethodName  = "/super.Super/AdminDeleteMoeBrainEpisode"
+	Super_AdminRefineMoeBrainEpisode_FullMethodName  = "/super.Super/AdminRefineMoeBrainEpisode"
+	Super_AdminCurateMoeBrain_FullMethodName         = "/super.Super/AdminCurateMoeBrain"
+	Super_AdminGetMoeToolStats_FullMethodName        = "/super.Super/AdminGetMoeToolStats"
+	Super_AdminListMoeToolCalls_FullMethodName       = "/super.Super/AdminListMoeToolCalls"
+	Super_MoeExecuteTool_FullMethodName              = "/super.Super/MoeExecuteTool"
+	Super_MoeSearchPosts_FullMethodName              = "/super.Super/MoeSearchPosts"
 	Super_UpsertUserMemory_FullMethodName            = "/super.Super/UpsertUserMemory"
 	Super_GetUserMemories_FullMethodName             = "/super.Super/GetUserMemories"
 	Super_GetUserMemoryProfiles_FullMethodName       = "/super.Super/GetUserMemoryProfiles"
@@ -293,6 +305,19 @@ type SuperClient interface {
 	AdminGetSchemaCatalog(ctx context.Context, in *AdminGetSchemaCatalogReq, opts ...grpc.CallOption) (*AdminGetSchemaCatalogResp, error)
 	AdminListAuditLogs(ctx context.Context, in *AdminListAuditLogsReq, opts ...grpc.CallOption) (*AdminListAuditLogsResp, error)
 	RecordAdminAuditLog(ctx context.Context, in *RecordAdminAuditLogReq, opts ...grpc.CallOption) (*RecordAdminAuditLogResp, error)
+	// Moe Intelligence Stack
+	AdminListMoeRuntimes(ctx context.Context, in *AdminListMoeRuntimesReq, opts ...grpc.CallOption) (*AdminListMoeRuntimesResp, error)
+	AdminUpsertMoeRuntime(ctx context.Context, in *AdminUpsertMoeRuntimeReq, opts ...grpc.CallOption) (*AdminUpsertMoeRuntimeResp, error)
+	AdminRunMoeAgentOnce(ctx context.Context, in *AdminRunMoeAgentOnceReq, opts ...grpc.CallOption) (*AdminRunMoeAgentOnceResp, error)
+	AdminGetMoeBrain(ctx context.Context, in *AdminGetMoeBrainReq, opts ...grpc.CallOption) (*AdminGetMoeBrainResp, error)
+	AdminUpdateMoeBrainPolicy(ctx context.Context, in *AdminUpdateMoeBrainPolicyReq, opts ...grpc.CallOption) (*AdminGetMoeBrainResp, error)
+	AdminDeleteMoeBrainEpisode(ctx context.Context, in *AdminDeleteMoeBrainEpisodeReq, opts ...grpc.CallOption) (*AdminDeleteMoeBrainEpisodeResp, error)
+	AdminRefineMoeBrainEpisode(ctx context.Context, in *AdminRefineMoeBrainEpisodeReq, opts ...grpc.CallOption) (*AdminRefineMoeBrainEpisodeResp, error)
+	AdminCurateMoeBrain(ctx context.Context, in *AdminCurateMoeBrainReq, opts ...grpc.CallOption) (*AdminCurateMoeBrainResp, error)
+	AdminGetMoeToolStats(ctx context.Context, in *AdminGetMoeToolStatsReq, opts ...grpc.CallOption) (*AdminGetMoeToolStatsResp, error)
+	AdminListMoeToolCalls(ctx context.Context, in *AdminListMoeToolCallsReq, opts ...grpc.CallOption) (*AdminListMoeToolCallsResp, error)
+	MoeExecuteTool(ctx context.Context, in *MoeExecuteToolReq, opts ...grpc.CallOption) (*MoeExecuteToolResp, error)
+	MoeSearchPosts(ctx context.Context, in *MoeSearchPostsReq, opts ...grpc.CallOption) (*MoeSearchPostsResp, error)
 	UpsertUserMemory(ctx context.Context, in *UpsertUserMemoryReq, opts ...grpc.CallOption) (*UpsertUserMemoryResp, error)
 	GetUserMemories(ctx context.Context, in *GetUserMemoriesReq, opts ...grpc.CallOption) (*GetUserMemoriesResp, error)
 	GetUserMemoryProfiles(ctx context.Context, in *GetUserMemoryProfilesReq, opts ...grpc.CallOption) (*GetUserMemoryProfilesResp, error)
@@ -1259,6 +1284,126 @@ func (c *superClient) RecordAdminAuditLog(ctx context.Context, in *RecordAdminAu
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RecordAdminAuditLogResp)
 	err := c.cc.Invoke(ctx, Super_RecordAdminAuditLog_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminListMoeRuntimes(ctx context.Context, in *AdminListMoeRuntimesReq, opts ...grpc.CallOption) (*AdminListMoeRuntimesResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminListMoeRuntimesResp)
+	err := c.cc.Invoke(ctx, Super_AdminListMoeRuntimes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminUpsertMoeRuntime(ctx context.Context, in *AdminUpsertMoeRuntimeReq, opts ...grpc.CallOption) (*AdminUpsertMoeRuntimeResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminUpsertMoeRuntimeResp)
+	err := c.cc.Invoke(ctx, Super_AdminUpsertMoeRuntime_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminRunMoeAgentOnce(ctx context.Context, in *AdminRunMoeAgentOnceReq, opts ...grpc.CallOption) (*AdminRunMoeAgentOnceResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminRunMoeAgentOnceResp)
+	err := c.cc.Invoke(ctx, Super_AdminRunMoeAgentOnce_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminGetMoeBrain(ctx context.Context, in *AdminGetMoeBrainReq, opts ...grpc.CallOption) (*AdminGetMoeBrainResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminGetMoeBrainResp)
+	err := c.cc.Invoke(ctx, Super_AdminGetMoeBrain_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminUpdateMoeBrainPolicy(ctx context.Context, in *AdminUpdateMoeBrainPolicyReq, opts ...grpc.CallOption) (*AdminGetMoeBrainResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminGetMoeBrainResp)
+	err := c.cc.Invoke(ctx, Super_AdminUpdateMoeBrainPolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminDeleteMoeBrainEpisode(ctx context.Context, in *AdminDeleteMoeBrainEpisodeReq, opts ...grpc.CallOption) (*AdminDeleteMoeBrainEpisodeResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminDeleteMoeBrainEpisodeResp)
+	err := c.cc.Invoke(ctx, Super_AdminDeleteMoeBrainEpisode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminRefineMoeBrainEpisode(ctx context.Context, in *AdminRefineMoeBrainEpisodeReq, opts ...grpc.CallOption) (*AdminRefineMoeBrainEpisodeResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminRefineMoeBrainEpisodeResp)
+	err := c.cc.Invoke(ctx, Super_AdminRefineMoeBrainEpisode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminCurateMoeBrain(ctx context.Context, in *AdminCurateMoeBrainReq, opts ...grpc.CallOption) (*AdminCurateMoeBrainResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminCurateMoeBrainResp)
+	err := c.cc.Invoke(ctx, Super_AdminCurateMoeBrain_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminGetMoeToolStats(ctx context.Context, in *AdminGetMoeToolStatsReq, opts ...grpc.CallOption) (*AdminGetMoeToolStatsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminGetMoeToolStatsResp)
+	err := c.cc.Invoke(ctx, Super_AdminGetMoeToolStats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminListMoeToolCalls(ctx context.Context, in *AdminListMoeToolCallsReq, opts ...grpc.CallOption) (*AdminListMoeToolCallsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminListMoeToolCallsResp)
+	err := c.cc.Invoke(ctx, Super_AdminListMoeToolCalls_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) MoeExecuteTool(ctx context.Context, in *MoeExecuteToolReq, opts ...grpc.CallOption) (*MoeExecuteToolResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MoeExecuteToolResp)
+	err := c.cc.Invoke(ctx, Super_MoeExecuteTool_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) MoeSearchPosts(ctx context.Context, in *MoeSearchPostsReq, opts ...grpc.CallOption) (*MoeSearchPostsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MoeSearchPostsResp)
+	err := c.cc.Invoke(ctx, Super_MoeSearchPosts_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2307,6 +2452,19 @@ type SuperServer interface {
 	AdminGetSchemaCatalog(context.Context, *AdminGetSchemaCatalogReq) (*AdminGetSchemaCatalogResp, error)
 	AdminListAuditLogs(context.Context, *AdminListAuditLogsReq) (*AdminListAuditLogsResp, error)
 	RecordAdminAuditLog(context.Context, *RecordAdminAuditLogReq) (*RecordAdminAuditLogResp, error)
+	// Moe Intelligence Stack
+	AdminListMoeRuntimes(context.Context, *AdminListMoeRuntimesReq) (*AdminListMoeRuntimesResp, error)
+	AdminUpsertMoeRuntime(context.Context, *AdminUpsertMoeRuntimeReq) (*AdminUpsertMoeRuntimeResp, error)
+	AdminRunMoeAgentOnce(context.Context, *AdminRunMoeAgentOnceReq) (*AdminRunMoeAgentOnceResp, error)
+	AdminGetMoeBrain(context.Context, *AdminGetMoeBrainReq) (*AdminGetMoeBrainResp, error)
+	AdminUpdateMoeBrainPolicy(context.Context, *AdminUpdateMoeBrainPolicyReq) (*AdminGetMoeBrainResp, error)
+	AdminDeleteMoeBrainEpisode(context.Context, *AdminDeleteMoeBrainEpisodeReq) (*AdminDeleteMoeBrainEpisodeResp, error)
+	AdminRefineMoeBrainEpisode(context.Context, *AdminRefineMoeBrainEpisodeReq) (*AdminRefineMoeBrainEpisodeResp, error)
+	AdminCurateMoeBrain(context.Context, *AdminCurateMoeBrainReq) (*AdminCurateMoeBrainResp, error)
+	AdminGetMoeToolStats(context.Context, *AdminGetMoeToolStatsReq) (*AdminGetMoeToolStatsResp, error)
+	AdminListMoeToolCalls(context.Context, *AdminListMoeToolCallsReq) (*AdminListMoeToolCallsResp, error)
+	MoeExecuteTool(context.Context, *MoeExecuteToolReq) (*MoeExecuteToolResp, error)
+	MoeSearchPosts(context.Context, *MoeSearchPostsReq) (*MoeSearchPostsResp, error)
 	UpsertUserMemory(context.Context, *UpsertUserMemoryReq) (*UpsertUserMemoryResp, error)
 	GetUserMemories(context.Context, *GetUserMemoriesReq) (*GetUserMemoriesResp, error)
 	GetUserMemoryProfiles(context.Context, *GetUserMemoryProfilesReq) (*GetUserMemoryProfilesResp, error)
@@ -2683,6 +2841,42 @@ func (UnimplementedSuperServer) AdminListAuditLogs(context.Context, *AdminListAu
 }
 func (UnimplementedSuperServer) RecordAdminAuditLog(context.Context, *RecordAdminAuditLogReq) (*RecordAdminAuditLogResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RecordAdminAuditLog not implemented")
+}
+func (UnimplementedSuperServer) AdminListMoeRuntimes(context.Context, *AdminListMoeRuntimesReq) (*AdminListMoeRuntimesResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminListMoeRuntimes not implemented")
+}
+func (UnimplementedSuperServer) AdminUpsertMoeRuntime(context.Context, *AdminUpsertMoeRuntimeReq) (*AdminUpsertMoeRuntimeResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminUpsertMoeRuntime not implemented")
+}
+func (UnimplementedSuperServer) AdminRunMoeAgentOnce(context.Context, *AdminRunMoeAgentOnceReq) (*AdminRunMoeAgentOnceResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminRunMoeAgentOnce not implemented")
+}
+func (UnimplementedSuperServer) AdminGetMoeBrain(context.Context, *AdminGetMoeBrainReq) (*AdminGetMoeBrainResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminGetMoeBrain not implemented")
+}
+func (UnimplementedSuperServer) AdminUpdateMoeBrainPolicy(context.Context, *AdminUpdateMoeBrainPolicyReq) (*AdminGetMoeBrainResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminUpdateMoeBrainPolicy not implemented")
+}
+func (UnimplementedSuperServer) AdminDeleteMoeBrainEpisode(context.Context, *AdminDeleteMoeBrainEpisodeReq) (*AdminDeleteMoeBrainEpisodeResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminDeleteMoeBrainEpisode not implemented")
+}
+func (UnimplementedSuperServer) AdminRefineMoeBrainEpisode(context.Context, *AdminRefineMoeBrainEpisodeReq) (*AdminRefineMoeBrainEpisodeResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminRefineMoeBrainEpisode not implemented")
+}
+func (UnimplementedSuperServer) AdminCurateMoeBrain(context.Context, *AdminCurateMoeBrainReq) (*AdminCurateMoeBrainResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminCurateMoeBrain not implemented")
+}
+func (UnimplementedSuperServer) AdminGetMoeToolStats(context.Context, *AdminGetMoeToolStatsReq) (*AdminGetMoeToolStatsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminGetMoeToolStats not implemented")
+}
+func (UnimplementedSuperServer) AdminListMoeToolCalls(context.Context, *AdminListMoeToolCallsReq) (*AdminListMoeToolCallsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminListMoeToolCalls not implemented")
+}
+func (UnimplementedSuperServer) MoeExecuteTool(context.Context, *MoeExecuteToolReq) (*MoeExecuteToolResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MoeExecuteTool not implemented")
+}
+func (UnimplementedSuperServer) MoeSearchPosts(context.Context, *MoeSearchPostsReq) (*MoeSearchPostsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MoeSearchPosts not implemented")
 }
 func (UnimplementedSuperServer) UpsertUserMemory(context.Context, *UpsertUserMemoryReq) (*UpsertUserMemoryResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpsertUserMemory not implemented")
@@ -4516,6 +4710,222 @@ func _Super_RecordAdminAuditLog_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SuperServer).RecordAdminAuditLog(ctx, req.(*RecordAdminAuditLogReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminListMoeRuntimes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminListMoeRuntimesReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminListMoeRuntimes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminListMoeRuntimes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminListMoeRuntimes(ctx, req.(*AdminListMoeRuntimesReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminUpsertMoeRuntime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminUpsertMoeRuntimeReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminUpsertMoeRuntime(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminUpsertMoeRuntime_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminUpsertMoeRuntime(ctx, req.(*AdminUpsertMoeRuntimeReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminRunMoeAgentOnce_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminRunMoeAgentOnceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminRunMoeAgentOnce(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminRunMoeAgentOnce_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminRunMoeAgentOnce(ctx, req.(*AdminRunMoeAgentOnceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminGetMoeBrain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminGetMoeBrainReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminGetMoeBrain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminGetMoeBrain_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminGetMoeBrain(ctx, req.(*AdminGetMoeBrainReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminUpdateMoeBrainPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminUpdateMoeBrainPolicyReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminUpdateMoeBrainPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminUpdateMoeBrainPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminUpdateMoeBrainPolicy(ctx, req.(*AdminUpdateMoeBrainPolicyReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminDeleteMoeBrainEpisode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminDeleteMoeBrainEpisodeReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminDeleteMoeBrainEpisode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminDeleteMoeBrainEpisode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminDeleteMoeBrainEpisode(ctx, req.(*AdminDeleteMoeBrainEpisodeReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminRefineMoeBrainEpisode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminRefineMoeBrainEpisodeReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminRefineMoeBrainEpisode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminRefineMoeBrainEpisode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminRefineMoeBrainEpisode(ctx, req.(*AdminRefineMoeBrainEpisodeReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminCurateMoeBrain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminCurateMoeBrainReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminCurateMoeBrain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminCurateMoeBrain_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminCurateMoeBrain(ctx, req.(*AdminCurateMoeBrainReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminGetMoeToolStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminGetMoeToolStatsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminGetMoeToolStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminGetMoeToolStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminGetMoeToolStats(ctx, req.(*AdminGetMoeToolStatsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminListMoeToolCalls_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminListMoeToolCallsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminListMoeToolCalls(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminListMoeToolCalls_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminListMoeToolCalls(ctx, req.(*AdminListMoeToolCallsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_MoeExecuteTool_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MoeExecuteToolReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).MoeExecuteTool(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_MoeExecuteTool_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).MoeExecuteTool(ctx, req.(*MoeExecuteToolReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_MoeSearchPosts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MoeSearchPostsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).MoeSearchPosts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_MoeSearchPosts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).MoeSearchPosts(ctx, req.(*MoeSearchPostsReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -6576,6 +6986,54 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RecordAdminAuditLog",
 			Handler:    _Super_RecordAdminAuditLog_Handler,
+		},
+		{
+			MethodName: "AdminListMoeRuntimes",
+			Handler:    _Super_AdminListMoeRuntimes_Handler,
+		},
+		{
+			MethodName: "AdminUpsertMoeRuntime",
+			Handler:    _Super_AdminUpsertMoeRuntime_Handler,
+		},
+		{
+			MethodName: "AdminRunMoeAgentOnce",
+			Handler:    _Super_AdminRunMoeAgentOnce_Handler,
+		},
+		{
+			MethodName: "AdminGetMoeBrain",
+			Handler:    _Super_AdminGetMoeBrain_Handler,
+		},
+		{
+			MethodName: "AdminUpdateMoeBrainPolicy",
+			Handler:    _Super_AdminUpdateMoeBrainPolicy_Handler,
+		},
+		{
+			MethodName: "AdminDeleteMoeBrainEpisode",
+			Handler:    _Super_AdminDeleteMoeBrainEpisode_Handler,
+		},
+		{
+			MethodName: "AdminRefineMoeBrainEpisode",
+			Handler:    _Super_AdminRefineMoeBrainEpisode_Handler,
+		},
+		{
+			MethodName: "AdminCurateMoeBrain",
+			Handler:    _Super_AdminCurateMoeBrain_Handler,
+		},
+		{
+			MethodName: "AdminGetMoeToolStats",
+			Handler:    _Super_AdminGetMoeToolStats_Handler,
+		},
+		{
+			MethodName: "AdminListMoeToolCalls",
+			Handler:    _Super_AdminListMoeToolCalls_Handler,
+		},
+		{
+			MethodName: "MoeExecuteTool",
+			Handler:    _Super_MoeExecuteTool_Handler,
+		},
+		{
+			MethodName: "MoeSearchPosts",
+			Handler:    _Super_MoeSearchPosts_Handler,
 		},
 		{
 			MethodName: "UpsertUserMemory",

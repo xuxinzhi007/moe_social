@@ -6,7 +6,7 @@
 
 	deploy-agent deploy-agent-stop admin \
 
-	rpc api rpc-debug rpc-migrate rpc-monitor rpc-monitor-stop \
+	rpc api rpc-debug db-migrate rpc-migrate rpc-monitor rpc-monitor-stop \
 
 	dev-docs dev help
 
@@ -94,9 +94,14 @@ api:
 
 
 
-rpc-migrate:
+db-migrate:
 
-	go run ./rpc/super.go -f rpc/etc/super.yaml -migrate
+	go run ./cmd/migrate
+
+
+
+# 兼容旧命令：等价于 db-migrate（不再启动 RPC 进程）
+rpc-migrate: db-migrate
 
 
 
@@ -221,7 +226,9 @@ help:
 
 	@echo make api           - 仅 API (:8888)
 
-	@echo make rpc-migrate   - RPC + 数据库迁移
+	@echo make db-migrate    - 仅 schema 迁移（推荐，跑完即退出）
+
+	@echo make rpc-migrate   - 同 db-migrate（兼容旧命令）
 
 	@echo make dev           - RPC + API 联调，Ctrl+C 全停
 

@@ -8,7 +8,7 @@ import { IdCell } from '../components/IdCell'
 import { UserCell } from '../components/UserCell'
 import { UserProfileCard, type UserProfile } from '../components/UserProfileCard'
 import { useAdminAuth } from '../context/AdminAuthContext'
-import { roleTag, vipTag } from '../lib/adminLabels'
+import { botTag, roleTag, vipTag } from '../lib/adminLabels'
 import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
 import type { AdminUserBehaviorSummary } from '../api/adminClient'
@@ -169,6 +169,7 @@ export function UsersPage() {
                 <th>ID</th>
                 <th>邮箱</th>
                 <th>角色</th>
+                <th>AI</th>
                 <th>会员</th>
                 <th>注册时间</th>
                 <th />
@@ -177,13 +178,13 @@ export function UsersPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="muted">
+                  <td colSpan={8} className="muted">
                     加载中…
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="muted">
+                  <td colSpan={8} className="muted">
                     暂无数据
                   </td>
                 </tr>
@@ -206,6 +207,13 @@ export function UsersPage() {
                     </td>
                     <td>
                       <AdminTag spec={roleTag(row.role)} />
+                    </td>
+                    <td>
+                      {botTag(row.is_bot ?? false, row.bot_agent_key) ? (
+                        <AdminTag spec={botTag(row.is_bot ?? false, row.bot_agent_key)!} />
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
                     </td>
                     <td>
                       <AdminTag spec={vipTag(row.is_vip)} />
