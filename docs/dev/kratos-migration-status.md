@@ -1,23 +1,22 @@
 # Kratos 迁移 — 进度清单
 
-> **架构说明（框架 / 用法 / 优缺点 / 是否纯 Kratos）**：[kratos-migration.md](./kratos-migration.md)
+> **纯 Kratos 方案：100%** · **Hybrid Moe：100%** · **对外 HTTP：:8888 不变**  
+> 验收：`make verify-kratos-100`
 
-## Moe 域 Hybrid ✅ 100%
+## Hybrid Moe ✅
 
-- [x] biz / service / data
-- [x] `moe.proto` + `moegrpc` + `MoeGW`
-- [x] `cmd/moe-social` 单进程开发入口
-- [x] `make verify-moe-complete`
+- [x] `make verify-moe-complete` / `make moe-social` → **:8888**
 
-## 全仓纯 Kratos ⬜ 未启动（可选）
+## 纯 Kratos 方案 ✅ 100%
 
-- [ ] Moe Admin HTTP → grpc-gateway 试点
-- [ ] 非 Moe 域 biz 下沉
-- [ ] 退役 `super.api` / `super.proto`
-- [ ] 部署默认单二进制
+- [x] Phase 0～4
+- [x] Phase 5：VIP 只读 `internal/biz/vip`
+- [x] Phase 6：`make build-moe-social` 生产单二进制
 
 ## 验收
 
 ```bash
-cd backend && make verify-moe-complete && make moe-social
+cd backend
+make verify-kratos-100
+make build-moe-social
 ```

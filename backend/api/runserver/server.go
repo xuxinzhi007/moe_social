@@ -52,8 +52,11 @@ func Start(opts Options) (*rest.Server, error) {
 			log.Print("moe api_in_process: enabled (Admin Moe HTTP uses in-process MoeAdmin)")
 		}
 	}
-	ctx.MoeGW = moeadmingw.New(ctx.MoeAdmin, ctx.MoeGRPC, ctx.SuperRpcClient)
+	ctx.MoeGW = moeadmingw.NewConfigured(ctx.MoeAdmin, ctx.MoeGRPC, ctx.SuperRpcClient)
 	log.Printf("moe admin gateway route: %s", ctx.MoeGW.Route())
+	if moewiring.KratosAdminHTTPEnabled() {
+		log.Printf("moe kratos admin http: enabled → %s (ListRuntimes, GetBrainPipeline)", moewiring.KratosAdminBaseURL())
+	}
 	handler.RegisterHandlers(server, ctx)
 
 	LogEffectiveConfig(&c)

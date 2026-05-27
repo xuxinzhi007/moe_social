@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package moe.conf.v1;
+
+option go_package = "backend/internal/conf/moe/v1;moeconfv1";
+
+// PilotServer 纯 Kratos 试点进程监听（Phase 4）。
+message PilotServer {
+  string grpc_addr = 1;
+  string http_addr = 2;
+  string super_rpc_endpoint = 3;
+}
+
+// PilotMoe Moe 域运行时开关（与 config.yaml moe 段对齐）。
+message PilotMoe {
+  bool api_in_process = 1;
+  bool register_moe_grpc = 2;
+  bool use_moe_grpc = 3;
+  bool single_process = 4;
+  bool kratos_admin_http_enabled = 5;
+  string kratos_admin_base_url = 6;
+}
+
+// ProductionPorts 对外与对内端口（生产不变 :8888）。
+message ProductionPorts {
+  string unified_entry = 1;       // moe-social
+  string external_http_port = 2;  // 8888 Flutter / moe-admin
+  string internal_grpc_port = 3;  // 8080 API→RPC
+  string pilot_http_port = 4;     // 19032 仅开发试点
+  string pilot_grpc_port = 5;     // 19031
+}
+
+// PilotVip Phase 5：VIP 只读试点（biz 直连 DB）。
+message PilotVip {
+  bool admin_read_enabled = 1;
+}
+
+// Bootstrap 试点装配 SSOT（由 config.yaml 映射加载）。
+message Bootstrap {
+  PilotServer server = 1;
+  PilotMoe moe = 2;
+  ProductionPorts production = 3;
+  PilotVip vip = 4;
+}

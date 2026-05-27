@@ -1,8 +1,7 @@
 # Moe Social：go-zero → Kratos 混合迁移方案（完整版）
 
-> **Moe 域迁移已 100%**（含 `cmd/moe-social` 单进程）；全仓非 Moe 域仍走 legacy super。  
-> **总览（类型 / 统计 / 目录树 / 框架）**：[kratos-migration.md](./kratos-migration.md)  
-> 纯 Kratos 终态：[kratos-phase3-roadmap.md](./kratos-phase3-roadmap.md)  
+> **Hybrid Moe 域已 100%**（`make moe-social`）；**纯 Kratos 试点 60%**（`make verify-kratos-60`）。  
+> **总览**：[kratos-migration.md](./kratos-migration.md) · **纯 Kratos**：[kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md)  
 > 勾选清单：[kratos-migration-status.md](./kratos-migration-status.md)
 
 > 分支：`feat/kratos-hybrid-migration`  

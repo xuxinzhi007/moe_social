@@ -18,27 +18,35 @@ import (
 
 var errNoBackend = errors.New("Moe Admin 后端未配置")
 
-// Gateway 统一 Admin Moe 路由：进程内 MoeAdmin → moe.v1 gRPC → legacy super.Super。
+// Gateway 统一 Admin Moe 路由：kratos HTTP（灰度）→ 进程内 → moe gRPC → legacy super。
 type Gateway struct {
-	local *moeadmin.AdminService
+	kratos  *KratosHTTPClient
+	local   *moeadmin.AdminService
 	moeGRPC moepb.MoeAdminClient
 	super   super.SuperClient
 }
 
-// New 构造网关。
-func New(local *moeadmin.AdminService, moeGRPC moepb.MoeAdminClient, legacy super.SuperClient) *Gateway {
-	return &Gateway{local: local, moeGRPC: moeGRPC, super: legacy}
+// New 构造网关；kratos 非 nil 且配置启用时，ListRuntimes/GetBrainPipeline 走纯 Kratos HTTP。
+func New(local *moeadmin.AdminService, moeGRPC moepb.MoeAdminClient, legacy super.SuperClient, kratos *KratosHTTPClient) *Gateway {
+	return &Gateway{local: local, moeGRPC: moeGRPC, super: legacy, kratos: kratos}
 }
 
 // Available 是否至少有一个后端。
 func (g *Gateway) Available() bool {
-	return g != nil && (g.local != nil || g.moeGRPC != nil || g.super != nil)
+	return g != nil && (g.kratosHTTPReady() || g.local != nil || g.moeGRPC != nil || g.super != nil)
+}
+
+func (g *Gateway) kratosHTTPReady() bool {
+	return g != nil && g.kratos != nil && g.kratos.enabled()
 }
 
 // Route 当前优先路由（日志/观测）。
 func (g *Gateway) Route() string {
 	if g == nil {
 		return "none"
+	}
+	if g.kratosHTTPReady() {
+		return "kratos_http"
 	}
 	if g.local != nil {
 		return "in_process"
@@ -55,6 +63,9 @@ func (g *Gateway) Route() string {
 func (g *Gateway) ListRuntimes(ctx context.Context) ([]model.MoeAgentRuntime, error) {
 	if g == nil {
 		return nil, errNoBackend
+	}
+	if g.kratosHTTPReady() {
+		return g.kratos.ListRuntimes(ctx)
 	}
 	if g.local != nil {
 		return g.local.ListRuntimes(ctx)
@@ -135,6 +146,9 @@ func (g *Gateway) UpsertRuntime(ctx context.Context, p moebiz.UpsertRuntimeParam
 func (g *Gateway) GetBrainPipeline(ctx context.Context, agentKey string) (moebiz.PipelineSnapshot, error) {
 	if g == nil {
 		return moebiz.PipelineSnapshot{}, errNoBackend
+	}
+	if g.kratosHTTPReady() {
+		return g.kratos.GetBrainPipeline(ctx, agentKey)
 	}
 	if g.local != nil {
 		return g.local.GetBrainPipeline(ctx, agentKey)

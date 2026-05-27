@@ -36,6 +36,40 @@ func runtimeModelFromProto(item *moepb.AgentRuntime) model.MoeAgentRuntime {
 	}
 }
 
+func pipelineFromTypesData(d types.AdminGetMoeBrainPipelineData) moebiz.PipelineSnapshot {
+	snap := moebiz.PipelineSnapshot{
+		AgentKey:        d.AgentKey,
+		OK:              d.Ok,
+		Detail:          d.Detail,
+		PostID:          d.PostId,
+		TotalDurationMS: d.TotalDurationMs,
+		Steps:           make([]moebiz.PipelineStep, 0, len(d.Steps)),
+	}
+	if d.RunAt != "" {
+		if t, err := time.ParseInLocation("2006-01-02 15:04:05", d.RunAt, time.Local); err == nil {
+			snap.RunAt = t
+			snap.HasRun = true
+		}
+	}
+	m := d.HostMetrics
+	snap.Metrics = moebiz.HostMetrics{
+		ProcAllocMB: m.ProcAllocMB, ProcSysMB: m.ProcSysMB, NumCPU: m.NumCPU,
+		NumGoroutine: m.NumGoroutine, InferenceOnline: m.InferenceOnline,
+		InferenceBaseURL: m.InferenceBaseURL, InferenceModels: m.InferenceModels, GpuNote: m.GpuNote,
+	}
+	for _, s := range d.Steps {
+		snap.Steps = append(snap.Steps, moebiz.PipelineStep{
+			Key: s.Key, Label: s.Label, Status: s.Status, Detail: s.Detail, DurationMS: s.DurationMs,
+		})
+	}
+	for _, a := range d.GenerateAttempts {
+		snap.GenerateAttempts = append(snap.GenerateAttempts, moebiz.GenAttemptView{
+			Attempt: a.Attempt, Outcome: a.Outcome, Snippet: a.Snippet, Note: a.Note,
+		})
+	}
+	return snap
+}
+
 func pipelineFromProto(d *moepb.GetBrainPipelineReply) moebiz.PipelineSnapshot {
 	if d == nil {
 		return moebiz.PipelineSnapshot{}

@@ -2,7 +2,7 @@
 
 
 
-.PHONY: all gen gen-moe-proto gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto verify-moe-migration verify-moe-grpc verify-moe-gateway verify-moe-complete moe-social moe-platform migrate-moe build build-linux env-status \
+.PHONY: all gen gen-moe-proto gen-moe-conf gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto verify-moe-migration verify-moe-grpc verify-moe-gateway verify-moe-complete verify-kratos-pilot verify-kratos-50 verify-kratos-60 verify-kratos-80 verify-kratos-100 moe-social moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
 
 	deploy-agent deploy-agent-stop admin \
 
@@ -21,10 +21,13 @@ all: gen
 
 
 # 生成：api/**/v1 proto（Kratos 风格目录）+ legacy goctl（super.api / super.proto）
-gen: gen-moe-proto gen-rpc gen-api gen-swagger
+gen: gen-moe-proto gen-moe-conf gen-rpc gen-api gen-swagger
 
 gen-moe-proto:
 	bash scripts/gen-moe-proto.sh
+
+gen-moe-conf:
+	bash scripts/gen-moe-conf.sh
 
 
 
@@ -85,11 +88,40 @@ moe-platform:
 
 	go run ./cmd/moe-platform
 
+verify-kratos-pilot:
+
+	bash scripts/verify-kratos-pilot.sh
+
+verify-kratos-50:
+
+	bash scripts/verify-kratos-50.sh
+
+verify-kratos-60:
+
+	bash scripts/verify-kratos-60.sh
+
+verify-kratos-80:
+
+	bash scripts/verify-kratos-80.sh
+
+verify-kratos-100:
+
+	bash scripts/verify-kratos-100.sh
+
+moe-kratos:
+
+	go run ./cmd/moe-kratos
+
 
 
 # 本机构建（当前系统）
 
-build:
+build-moe-social:
+
+	@mkdir -p bin
+	go build -o bin/moe-social ./cmd/moe-social
+
+build: build-moe-social
 
 	go build -o api/moe-social-api ./api
 
@@ -102,6 +134,9 @@ build:
 build-linux:
 
 	@echo Building Linux amd64...
+
+	@mkdir -p bin
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/moe-social ./cmd/moe-social
 
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o api/moe-social-api ./api
 
@@ -295,6 +330,23 @@ help:
 	@echo make rpc-monitor       - 等同 deploy-agent（兼容别名）
 
 	@echo make dev-docs          - 静态文档 (:19012)
+
+	@echo ""
+
+	@echo --- Kratos 迁移 ---
+
+	@echo make moe-social          - Hybrid 单进程 (:8888+:8080，推荐)
+
+	@echo make moe-kratos            - 纯 Kratos 试点 (:19031+:19032，并行)
+
+	@echo make verify-kratos-100     - 纯 Kratos 100%% + Hybrid 回归（推荐）
+	@echo make verify-kratos-80      - 纯 Kratos 80%% 验收（Phase 0-4）
+	@echo make build-moe-social      - 生产推荐单二进制（:8888+:8080）
+	@echo make verify-kratos-60      - 纯 Kratos 60%% 验收（Phase 0-3）
+	@echo make verify-kratos-50      - 纯 Kratos 50%% 验收（Phase 0-2）
+	@echo make verify-kratos-pilot   - 同 verify-kratos-50 子集（兼容）
+
+	@echo make moe-platform          - 迁移观测 (:19020)
 
 	@echo make help          - 本说明
 

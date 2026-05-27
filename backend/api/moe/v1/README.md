@@ -11,4 +11,4 @@
 
 实现：`internal/server/moegrpc` → `internal/service/moe` → `internal/biz/moe`。
 
-总览：`docs/dev/kratos-migration.md` §7（端口与 Flutter）。
+总览：`docs/dev/kratos-migration.md` · 纯 Kratos 试点 60%：`docs/dev/kratos-pure-migration-plan.md`（`make verify-kratos-60`）。

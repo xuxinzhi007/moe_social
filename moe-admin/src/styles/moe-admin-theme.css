@@ -1424,9 +1424,27 @@ a {
   z-index: 100;
   display: flex;
   justify-content: flex-end;
+  align-items: stretch;
+}
+
+.drawer-backdrop-hint {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .drawer {
+  position: relative;
+  z-index: 1;
   width: min(400px, 92vw);
   height: 100%;
   background: var(--panel);
@@ -1434,6 +1452,12 @@ a {
   box-shadow: -8px 0 24px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
+}
+
+.topbar .btn.is-active {
+  color: var(--accent);
+  background: rgba(127, 127, 213, 0.12);
 }
 
 .drawer-head {

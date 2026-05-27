@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package vip.v1;
+
+option go_package = "backend/api/vip/v1;vipv1";
+
+// VipReadAdmin Phase 5 只读契约（HTTP 仍由 super.api 对外 :8888）。
+message VipPlanView {
+  uint64 id = 1;
+  string name = 2;
+  double price = 3;
+  int32 duration_days = 4;
+}
+
+message ListPlansRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+}
+
+message ListPlansReply {
+  repeated VipPlanView items = 1;
+  int64 total = 2;
+}
+
+service VipReadAdmin {
+  rpc ListPlans(ListPlansRequest) returns (ListPlansReply);
+}
