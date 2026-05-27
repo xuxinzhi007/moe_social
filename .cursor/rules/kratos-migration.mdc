@@ -8,8 +8,9 @@ alwaysApply: false
 
 | 进度 | 文档 | 验收 |
 |------|------|------|
-| Hybrid Moe 100% | `docs/dev/kratos-migration.md` | `make verify-moe-complete` |
-| 纯 Kratos 100% | `docs/dev/kratos-pure-migration-plan.md` | `make verify-kratos-100` |
+| Hybrid Moe 100% (A) | `docs/dev/kratos-migration.md` | `make verify-moe-complete` |
+| 纯 Kratos 试点 100% (B) | `docs/dev/kratos-pure-migration-plan.md` | `make verify-kratos-100` |
+| 全站迁移 ~22% (F) | `docs/dev/kratos-full-site-migration-plan.md` | FS-0～8 |
 
 ## 新功能（Moe）
 
@@ -36,6 +37,10 @@ make gen-moe-admin   # 改 super.api 后
 
 - `internal/biz/vip`；试点 HTTP `/api/admin/vip/plans` @ :19032
 
+## 全站迁移（下一域建议 VIP）
+
+见 `docs/dev/kratos-full-site-migration-plan.md` FS-2。
+
 ## Legacy
 
-User/VIP/社交仍 `super.api` / `super.proto`。
+User/社交等仍 `super.api` / `super.proto`；VIP 仅只读 biz 试点。

@@ -111,11 +111,14 @@ moe:
 
 ---
 
-## 6. 后续（全仓，非本方案范围）
+## 6. 后续：全站迁移（Phase 4+）
 
-- User/社交等域下沉 `internal/biz`
-- 逐步减少 `super.proto` 中 Moe/VIP 重复定义
-- 部署默认单容器 `moe-social`（改 compose / deploy-agent）
+本方案 **B=100%** 不等于全站迁完。下一执行文档：
+
+**[kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md)**（全站 **F ~22%**，FS-0 准备中）
+
+- FS-2：VIP 全量（建议首个业务域）
+- FS-3～FS-8：User、Admin、社交、AI、实时、退役 `super.*`
 
 ---
 
