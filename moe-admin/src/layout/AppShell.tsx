@@ -118,7 +118,9 @@ export function AppShell() {
               <strong>{apiTargetLabel}</strong>。
             </div>
           ) : null}
-          <Outlet />
+          <div className={isRpc ? undefined : 'admin-page'}>
+            <Outlet />
+          </div>
         </div>
       </div>
 

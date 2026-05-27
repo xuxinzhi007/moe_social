@@ -17,10 +17,10 @@ func ToolDeps(svcCtx *svc.ServiceContext) (tools.Deps, error) {
 	return tools.Deps{
 		RPC: port.GRPCAdapter{Client: svcCtx.SuperRpcClient},
 		Inference: llminference.ConfigFrom(
-			svcCtx.Config.Ollama.BaseUrl,
-			svcCtx.Config.Ollama.ApiStyle,
-			int(svcCtx.Config.Ollama.TimeoutSeconds),
-			svcCtx.Config.Ollama.MemoryModel,
+			svcCtx.Config.LLMInference.BaseUrl,
+			svcCtx.Config.LLMInference.ApiStyle,
+			int(svcCtx.Config.LLMInference.TimeoutSeconds),
+			svcCtx.Config.LLMInference.MemoryModel,
 		),
 	}, nil
 }

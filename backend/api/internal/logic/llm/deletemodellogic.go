@@ -37,12 +37,12 @@ func (l *DeleteModelLogic) DeleteModel(req *types.LlmDeleteModelReq) (resp *type
 		return &resp, nil
 	}
 
-	timeoutSeconds := l.svcCtx.Config.Ollama.TimeoutSeconds
+	timeoutSeconds := l.svcCtx.Config.LLMInference.TimeoutSeconds
 	if timeoutSeconds <= 0 {
 		timeoutSeconds = 60
 	}
 
-	baseUrl, err := common.ResolveOllamaBaseURL(l.svcCtx.Config.Ollama.BaseUrl)
+	baseUrl, err := common.ResolveInferenceBaseURL(l.svcCtx.Config.LLMInference.BaseUrl)
 	if err != nil {
 		resp := common.HandleError(err)
 		return &resp, nil
@@ -66,7 +66,7 @@ func (l *DeleteModelLogic) DeleteModel(req *types.LlmDeleteModelReq) (resp *type
 		resp := common.HandleError(err)
 		return &resp, nil
 	}
-	common.ApplyOllamaForwardHeaders(httpReq)
+	common.ApplyInferenceForwardHeaders(httpReq)
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	var httpResp *http.Response

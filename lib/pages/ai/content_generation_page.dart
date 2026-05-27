@@ -117,7 +117,7 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
       widget.agent.providerProfileId == AiProviderProfile.builtinBackendId;
 
   String get _providerSourceLabel =>
-      _isBackendProviderAgent ? '服务器 Ollama' : '我的 API';
+      _isBackendProviderAgent ? '本机推理' : '我的 API';
 
   _ContentTypeMeta get _currentMeta => _typeMeta[_selectedContentType]!;
 

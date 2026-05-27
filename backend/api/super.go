@@ -21,7 +21,7 @@ import (
 var configFile = flag.String("f", "etc/super.yaml", "the config file")
 
 // applyUnifiedConfigOverrides 尝试从 backend/config/config.yaml 读取统一配置并覆盖部分字段。
-// 例如 Ollama、REST 超时、app_client.public_api_base_url、image.*（不必写进 etc/super.yaml）。
+// 例如 llm_inference、REST 超时、app_client.public_api_base_url、image.*（不必写进 etc/super.yaml）。
 // 注意：如果找不到/读取失败，会静默跳过，保持原有 go-zero 配置行为不变。
 func applyUnifiedConfigOverrides(c *config.Config) {
 	v := viper.New()
@@ -40,24 +40,24 @@ func applyUnifiedConfigOverrides(c *config.Config) {
 	}
 
 	if base := v.GetString("llm_inference.base_url"); base != "" {
-		c.Ollama.BaseUrl = base
+		c.LLMInference.BaseUrl = base
 	} else if base := v.GetString("ollama.base_url"); base != "" {
-		c.Ollama.BaseUrl = base
+		c.LLMInference.BaseUrl = base
 	}
 	if style := strings.TrimSpace(v.GetString("llm_inference.api_style")); style != "" {
-		c.Ollama.ApiStyle = style
+		c.LLMInference.ApiStyle = style
 	} else if style := strings.TrimSpace(v.GetString("ollama.api_style")); style != "" {
-		c.Ollama.ApiStyle = style
+		c.LLMInference.ApiStyle = style
 	}
 	if ts := v.GetInt("llm_inference.timeout_seconds"); ts > 0 {
-		c.Ollama.TimeoutSeconds = ts
+		c.LLMInference.TimeoutSeconds = ts
 	} else if ts := v.GetInt("ollama.timeout_seconds"); ts > 0 {
-		c.Ollama.TimeoutSeconds = ts
+		c.LLMInference.TimeoutSeconds = ts
 	}
 	if m := strings.TrimSpace(v.GetString("llm_inference.memory_model")); m != "" {
-		c.Ollama.MemoryModel = m
+		c.LLMInference.MemoryModel = m
 	} else if m := strings.TrimSpace(v.GetString("ollama.memory_model")); m != "" {
-		c.Ollama.MemoryModel = m
+		c.LLMInference.MemoryModel = m
 	}
 	if dir := v.GetString("local_models.storage_dir"); dir != "" {
 		c.LocalModels.StorageDir = dir

@@ -1,12 +1,11 @@
 import { useState } from 'react'
+import { DataEnvBar } from '../components/DataEnvBar'
 import { FormField } from '../components/FormField'
 import { useAdminAuth } from '../context/AdminAuthContext'
-import { usePlatform } from '../context/PlatformContext'
 import { DeployApiError } from '../api/deployClient'
 
 export function NotifyPage() {
   const { client } = useAdminAuth()
-  const { apiTargetLabel } = usePlatform()
   const [broadcast, setBroadcast] = useState({ title: '', content: '' })
   const [target, setTarget] = useState({ user_id: '', title: '', content: '' })
   const [error, setError] = useState('')
@@ -66,10 +65,13 @@ export function NotifyPage() {
 
   return (
     <>
-      <div className="page-head">
-        <h2>通知推送</h2>
-        <p>系统通知广播或指定用户 · {apiTargetLabel}</p>
+      <div className="page-head page-head-row">
+        <div>
+          <h2>通知推送</h2>
+          <p className="muted">系统通知广播或指定用户</p>
+        </div>
       </div>
+      <DataEnvBar />
 
       {message ? (
         <div className="admin-hint admin-hint-ok" style={{ marginBottom: 12 }}>

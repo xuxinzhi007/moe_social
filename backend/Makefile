@@ -2,7 +2,7 @@
 
 
 
-.PHONY: all gen gen-rpc gen-api gen-swagger build build-linux env-status \
+.PHONY: all gen gen-rpc gen-api gen-swagger gen-moe-admin build build-linux env-status \
 
 	deploy-agent deploy-agent-stop admin \
 
@@ -43,6 +43,13 @@ gen-swagger:
 	@command -v goctl-swagger >/dev/null 2>&1 || (echo "goctl-swagger 未安装，请先执行: go install github.com/zeromicro/goctl-swagger@latest" && exit 1)
 
 	cd api && goctl api plugin -plugin goctl-swagger="swagger -filename ../rest.swagger.json" -api super.api -dir ./
+
+
+
+# Moe 管理台相关：gen + 删除与 moe_admin_logic.go 冲突的空壳 + 编译（见 scripts/gen-moe-admin.sh）
+gen-moe-admin:
+
+	bash scripts/gen-moe-admin.sh
 
 
 

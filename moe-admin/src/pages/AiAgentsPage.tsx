@@ -1,22 +1,27 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AdminTag } from '../components/AdminTag'
+import { AiAgentEditDrawer, type AiAgentRow } from '../components/AiAgentEditDrawer'
 import { DataEnvBar } from '../components/DataEnvBar'
+import { PageInsightStrip } from '../components/PageInsightStrip'
 import { IdCell } from '../components/IdCell'
 import { UserCell } from '../components/UserCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
+import { useDeploy } from '../context/DeployContext'
 import { DeployApiError } from '../api/deployClient'
 
 export function AiAgentsPage() {
   const { client } = useAdminAuth()
-  const [items, setItems] = useState<
-    Array<{ id: string; owner_user_id: string; owner_name: string; payload_json: string }>
-  >([])
+  const { showToast } = useDeploy()
+  const [items, setItems] = useState<AiAgentRow[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [keyword, setKeyword] = useState('')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [editRow, setEditRow] = useState<AiAgentRow | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState('')
   const pageSize = 20
 
   const load = useCallback(async () => {
@@ -52,15 +57,43 @@ export function AiAgentsPage() {
     }
   }
 
+  async function saveAgent(payloadJson: string) {
+    if (!editRow) return
+    setSaving(true)
+    setFormError('')
+    try {
+      const res = await client.updateAiAgent({
+        user_id: editRow.owner_user_id,
+        agent_id: editRow.id,
+        payload_json: payloadJson,
+      })
+      if (!res.success) {
+        setFormError(res.message || '保存失败')
+        return
+      }
+      showToast('角色卡已更新')
+      setEditRow(null)
+      await load()
+    } catch (e) {
+      setFormError(e instanceof DeployApiError ? e.message : '保存失败')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   return (
     <>
-      <div className="page-head">
-        <h2>AI 角色酒馆</h2>
-        <p>公开 Agent 列表与治理</p>
+      <div className="page-head page-head-row">
+        <div>
+          <h2>AI 角色酒馆</h2>
+          <p className="muted">公开 Agent 列表与治理 · 可编辑角色卡 JSON 核心字段</p>
+        </div>
       </div>
-      <DataEnvBar />      <div className="panel">
+      <DataEnvBar />
+      <PageInsightStrip items={[{ label: '公开 Agent', value: loading ? '…' : total }]} />
+      <div className="panel">
         <form
           className="inline-form"
           onSubmit={(e) => {
@@ -112,22 +145,35 @@ export function AiAgentsPage() {
                         name={row.owner_name || row.owner_user_id}
                         sub={`UID ${row.owner_user_id}`}
                       />
-                    </td>                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={async () => {
-                          if (!confirm('删除该 Agent？')) return
-                          const res = await client.deleteAiAgent({
-                            user_id: row.owner_user_id,
-                            agent_id: row.id,
-                          })
-                          if (!res.success) setError(res.message || '删除失败')
-                          else await load()
-                        }}
-                      >
-                        删除
-                      </button>
+                    </td>
+                    <td>
+                      <div className="btn-row">
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => {
+                            setFormError('')
+                            setEditRow(row)
+                          }}
+                        >
+                          编辑
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={async () => {
+                            if (!confirm('删除该 Agent？')) return
+                            const res = await client.deleteAiAgent({
+                              user_id: row.owner_user_id,
+                              agent_id: row.id,
+                            })
+                            if (!res.success) setError(res.message || '删除失败')
+                            else await load()
+                          }}
+                        >
+                          删除
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -154,6 +200,14 @@ export function AiAgentsPage() {
           </div>
         ) : null}
       </div>
+
+      <AiAgentEditDrawer
+        row={editRow}
+        saving={saving}
+        error={formError}
+        onClose={() => setEditRow(null)}
+        onSave={(json) => void saveAgent(json)}
+      />
     </>
   )
 }

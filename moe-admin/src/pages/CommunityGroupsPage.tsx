@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
+import { DataEnvBar } from '../components/DataEnvBar'
+import { PageInsightStrip } from '../components/PageInsightStrip'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { DeployApiError } from '../api/deployClient'
 
@@ -50,10 +52,14 @@ export function CommunityGroupsPage() {
 
   return (
     <>
-      <div className="page-head">
-        <h2>兴趣社区</h2>
-        <p>社区小组列表与运营下架</p>
+      <div className="page-head page-head-row">
+        <div>
+          <h2>兴趣社区</h2>
+          <p className="muted">社区小组列表与运营下架</p>
+        </div>
       </div>
+      <DataEnvBar />
+      <PageInsightStrip items={[{ label: '小组数量', value: loading ? '…' : total }]} />
       <div className="panel">
         <form
           className="inline-form"

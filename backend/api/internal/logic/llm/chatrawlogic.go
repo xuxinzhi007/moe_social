@@ -31,7 +31,7 @@ func NewChatRawLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ChatRawLo
 
 // ChatRaw 将请求体原样转发到本地推理服务（llama.cpp /v1 或遗留 Ollama /api/chat）。
 func (l *ChatRawLogic) ChatRaw(w http.ResponseWriter, r *http.Request) error {
-	cfg, err := common.InferenceFromOllamaConf(l.svcCtx.Config.Ollama)
+	cfg, err := common.InferenceFromLLMConf(l.svcCtx.Config.LLMInference)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (l *ChatRawLogic) ChatRaw(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	common.ApplyOllamaForwardHeaders(req)
+	common.ApplyInferenceForwardHeaders(req)
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 
 	resp, err := client.Do(req)

@@ -1,13 +1,19 @@
 import { useCallback, useEffect, useState } from 'react'
+import { DataEnvBar } from '../components/DataEnvBar'
+import { PageInsightStrip } from '../components/PageInsightStrip'
+import { PageTabs } from '../components/PageTabs'
 import { useAdminAuth } from '../context/AdminAuthContext'
-import { usePlatform } from '../context/PlatformContext'
 import { DeployApiError } from '../api/deployClient'
 
 type Tab = 'vip' | 'gift'
 
+const ORDER_TABS: { key: Tab; label: string; hint: string }[] = [
+  { key: 'vip', label: 'VIP 订单', hint: '订阅与会员' },
+  { key: 'gift', label: '礼物购买', hint: '虚拟礼物订单' },
+]
+
 export function WalletOrdersPage() {
   const { client } = useAdminAuth()
-  const { apiTargetLabel } = usePlatform()
   const [tab, setTab] = useState<Tab>('vip')
   const [page, setPage] = useState(1)
   const [userId, setUserId] = useState('')
@@ -71,19 +77,23 @@ export function WalletOrdersPage() {
 
   return (
     <>
-      <div className="page-head">
-        <h2>钱包与订单</h2>
-        <p>VIP 订阅订单与礼物购买订单（只读）· {apiTargetLabel}</p>
-      </div>
-      <div className="panel">
-        <div className="inline-form" style={{ marginBottom: 12 }}>
-          <button type="button" className={`btn ${tab === 'vip' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => { setTab('vip'); setPage(1) }}>
-            VIP 订单
-          </button>
-          <button type="button" className={`btn ${tab === 'gift' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => { setTab('gift'); setPage(1) }}>
-            礼物购买
-          </button>
+      <div className="page-head page-head-row">
+        <div>
+          <h2>钱包与订单</h2>
+          <p className="muted">VIP 订阅与礼物购买订单（只读查询）</p>
         </div>
+      </div>
+      <DataEnvBar />
+      <PageTabs
+        tabs={ORDER_TABS}
+        active={tab}
+        onChange={(next) => {
+          setTab(next)
+          setPage(1)
+        }}
+      />
+      <PageInsightStrip items={[{ label: '匹配结果', value: loading ? '…' : total }]} />
+      <div className="panel">
         <form
           className="inline-form"
           onSubmit={(e) => {

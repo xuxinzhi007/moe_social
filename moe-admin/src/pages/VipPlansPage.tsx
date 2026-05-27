@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AdminFormDrawer } from '../components/AdminFormDrawer'
 import { FormField } from '../components/FormField'
+import { DataEnvBar } from '../components/DataEnvBar'
+import { PageInsightStrip } from '../components/PageInsightStrip'
 import { useAdminAuth } from '../context/AdminAuthContext'
-import { usePlatform } from '../context/PlatformContext'
 import { DeployApiError } from '../api/deployClient'
 
 type VipPlanRow = {
@@ -24,7 +25,6 @@ const emptyForm = {
 
 export function VipPlansPage() {
   const { client } = useAdminAuth()
-  const { apiTargetLabel } = usePlatform()
   const [items, setItems] = useState<VipPlanRow[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -195,11 +195,9 @@ export function VipPlansPage() {
       <div className="page-head page-head-row">
         <div>
           <h2>会员与套餐</h2>
-          <p>
-            运营配置 VIP 套餐（App 只读展示）· 环境 {apiTargetLabel}
-          </p>
+          <p className="muted">运营配置 VIP 套餐（App 只读展示）</p>
         </div>
-        <div className="inline-form" style={{ flexWrap: 'wrap' }}>
+        <div className="btn-row">
           <button type="button" className="btn btn-ghost" onClick={() => void bootstrap()}>
             导入默认套餐
           </button>
@@ -208,6 +206,14 @@ export function VipPlansPage() {
           </button>
         </div>
       </div>
+
+      <DataEnvBar />
+      <PageInsightStrip
+        items={[
+          { label: '套餐数量', value: loading ? '…' : total },
+          { label: '含已删除', value: includeDeleted ? '是' : '否' },
+        ]}
+      />
 
       {message ? (
         <div className="admin-hint admin-hint-ok" style={{ marginBottom: 12 }}>

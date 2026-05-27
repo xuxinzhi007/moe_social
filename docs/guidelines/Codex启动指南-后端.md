@@ -63,6 +63,34 @@
 - 目标模块的 `backend/api/super.api` 或 `backend/rpc/super.proto`
 - 相关 `backend/api/internal/handler/*`、`backend/api/internal/logic/*`
 - 若涉及 LLM/raw 路由，检查 `backend/api/internal/handler/routes_llm_raw.go`
+- 若改动 `moe-admin/`（React 管理台），另读 `docs/guidelines/Codex启动指南-前端.md`（路径为 `moe-admin/src/`，非 `lib/`）
+
+## `make gen` 后必查（避免重复 logic 与编译失败）
+
+`goctl` 会为**每个**带 `@handler` 的接口生成独立 `*_logic.go`。本仓库部分 Moe 管理接口已**手工合并**到：
+
+- API：`backend/api/internal/logic/admin/` 下已有完整实现的文件
+- RPC：`backend/rpc/internal/logic/moe_admin_logic.go`
+
+若在 `super.api` / `super.proto` 上补 `@handler` 后执行 `make gen`，可能新增**同名** `AdminXxxLogic` 空壳文件（含 `return` 无值、`// todo`），导致：
+
+- `redeclared in this block`（同 package 两个 Logic 结构体）
+- `not enough return values`（空壳函数）
+
+**处理原则：**
+
+1. 生成后执行 `go build ./api ./rpc`，立刻发现冲突。
+2. 保留已有完整实现；**删除** goctl 新生成的空壳或重复文件（勿留 `admindeletemoebotepisodelogic.go` 这类拼写错误副本）。
+3. RPC 侧 Moe Brain 系列优先只维护 `moe_admin_logic.go`，删除重复的 `admin*moebrain*logic.go` 单文件。
+4. `super.api` 中每个路由必须带 `@handler`，且与现有 handler 命名一致，避免半生成状态。
+5. **推荐**：改 Moe/Admin 相关接口后执行 `cd backend && make gen-moe-admin`（`scripts/gen-moe-admin.sh` 会跑 gen 并自动删已知空壳再编译）。
+
+**是否拆分 `super.api` / `super.proto`？**
+
+- 当前仍是**单服务、单进程**：App API + Admin API 共用一个 `super.api`；业务 RPC 共用一个 `Super` service（`super.proto` 约 3k 行，含 ~76 个 `Admin*` RPC）。
+- **短期不建议**拆成多个 go-zero 微服务或多套 `goctl` 工程：要拆 routes 合并、多份 `ServiceContext`、部署与鉴权都要改，收益主要是「文件变短」，不解决 goctl 空壳问题。
+- **中期可选**：在**同一 repo** 用 `import` 把 `super.api` 拆成 `api/defs/app.api` + `api/defs/admin.api` + `api/defs/moe.api` 再 `goctl` 生成到同一 `internal/`（仍是一个 API 二进制）。RPC 同理可用多 proto + 同一 `Super` service，但 goctl 合并成本较高。
+- 空壳冲突的根因是「合并 logic」与 goctl「一接口一文件」冲突，用 `make gen-moe-admin` 清理即可，不必为此拆服务。
 
 ## 交付前检查（最少）
 

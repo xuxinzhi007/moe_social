@@ -28,7 +28,7 @@ func indexMemoryEmbeddingAsync(db *gorm.DB, userID uint, key, value, source stri
 		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 		defer cancel()
 		text := key + ": " + value
-		chain := embed.NewChain(embed.LoadProviders(viperOllamaBaseURL()))
+		chain := embed.NewChain(embed.LoadProviders(viperInferenceBaseURL()))
 		vecs, provider, model, err := chain.Embed(ctx, []string{text})
 		if err != nil {
 			if logger != nil {

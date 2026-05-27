@@ -149,9 +149,9 @@ export function DashboardPage() {
             <strong>官网反馈</strong>
             <span>落地页留言</span>
           </Link>
-          <Link to="/app/announcements" className="quick-card quick-card-planned">
+          <Link to="/app/announcements" className="quick-card">
             <strong>公告管理</strong>
-            <span>P1 待开发</span>
+            <span>运营公告发布</span>
           </Link>
           <Link to="/deploy" className="quick-card">
             <strong>运维部署</strong>
@@ -161,9 +161,9 @@ export function DashboardPage() {
             <strong>RPC 监控</strong>
             <span>调试与指标</span>
           </Link>
-          <Link to="/app/feed" className="quick-card quick-card-planned">
+          <Link to="/content/posts" className="quick-card">
             <strong>动态审核</strong>
-            <span>P2 待开发</span>
+            <span>列表 · 筛选 · 下架</span>
           </Link>
         </div>
       </div>

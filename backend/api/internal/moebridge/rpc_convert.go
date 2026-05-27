@@ -70,6 +70,19 @@ func BrainDataFromRPC(d *super.AdminGetMoeBrainResp) types.AdminGetMoeBrainData 
 			UpdatedAt:  m.UpdatedAt,
 		})
 	}
+	if gm := d.GenerationMeta; gm != nil {
+		out.GenerationMeta = types.MoeBrainGenerationMeta{
+			PostUsesToolMemory: gm.PostUsesToolMemory,
+			MemoriesSynced:     int(gm.MemoriesSynced),
+			EpisodesInPrompt:   int(gm.EpisodesInPrompt),
+			PromptMemoryLines:  int(gm.PromptMemoryLines),
+			PromptPreview:      gm.PromptPreview,
+			PromptEstTokens:    int(gm.PromptEstTokens),
+			ContextLimit:       int(gm.ContextLimit),
+			ContextUsedPct:     gm.ContextUsedPct,
+			Note:               gm.Note,
+		}
+	}
 	return out
 }
 

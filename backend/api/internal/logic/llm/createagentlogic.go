@@ -46,6 +46,14 @@ func NewCreateAgentLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Creat
 }
 
 func (l *CreateAgentLogic) CreateAgent(req *types.LlmCreateAgentReq) (*types.BaseResp, error) {
+	style := strings.ToLower(strings.TrimSpace(l.svcCtx.Config.LLMInference.ApiStyle))
+	if style != "ollama" {
+		return &types.BaseResp{
+			Code:    400,
+			Message: "创建派生模型仅适用于遗留 Ollama；当前推理为 llama-server（openai），请使用角色卡 system 提示词",
+			Success: false,
+		}, nil
+	}
 	name := strings.TrimSpace(req.Name)
 	baseModel := strings.TrimSpace(req.BaseModel)
 	systemPrompt := strings.TrimSpace(req.SystemPrompt)
@@ -97,7 +105,7 @@ func (l *CreateAgentLogic) CreateAgent(req *types.LlmCreateAgentReq) (*types.Bas
 		Timeout: 10 * time.Minute,
 	}
 
-	baseURL, err := common.ResolveOllamaBaseURL(l.svcCtx.Config.Ollama.BaseUrl)
+	baseURL, err := common.ResolveInferenceBaseURL(l.svcCtx.Config.LLMInference.BaseUrl)
 	if err != nil {
 		resp := common.HandleError(err)
 		return &resp, nil
@@ -113,7 +121,7 @@ func (l *CreateAgentLogic) CreateAgent(req *types.LlmCreateAgentReq) (*types.Bas
 		resp := common.HandleError(err)
 		return &resp, nil
 	}
-	common.ApplyOllamaForwardHeaders(httpReq)
+	common.ApplyInferenceForwardHeaders(httpReq)
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	httpResp, err := client.Do(httpReq)
@@ -144,7 +152,7 @@ func (l *CreateAgentLogic) CreateAgent(req *types.LlmCreateAgentReq) (*types.Bas
 			if merr == nil {
 				fallbackReq, nerr := http.NewRequestWithContext(l.ctx, http.MethodPost, createURL, bytes.NewReader(fallbackPayload))
 				if nerr == nil {
-					common.ApplyOllamaForwardHeaders(fallbackReq)
+					common.ApplyInferenceForwardHeaders(fallbackReq)
 					fallbackReq.Header.Set("Content-Type", "application/json")
 					fallbackResp, derr := client.Do(fallbackReq)
 					if derr == nil {

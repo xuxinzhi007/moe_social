@@ -30,3 +30,7 @@ alwaysApply: false
 - 仅修改 `backend/` 相关文件，不混入前端文件。
 - 确认没有破坏现有接口契约（字段名、类型、状态码）。
 - 确认关键路径有基础测试或最小可验证步骤。
+- 若执行过 `make gen`：`go build ./api ./rpc`，并检查是否产生与 `moe_admin_logic.go` 等文件**重复**的空壳 logic（见 `docs/guidelines/Codex启动指南-后端.md` § make gen 后必查）。
+
+## 管理台前端（moe-admin）
+- 路径为 `moe-admin/`，读 `.cursor/rules/moe-admin-ai-spec.mdc` 与 `docs/guidelines/Codex启动指南-前端.md`（两套前端表）。

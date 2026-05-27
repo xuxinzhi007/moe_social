@@ -270,7 +270,9 @@ export function PlatformPage() {
       <div className="page-head page-head-row">
         <div>
           <h2>平台治理</h2>
-          <p>运行配置 · 数据地图 · 云图库 · 记忆治理 — 统一入口</p>
+          <p className="muted">
+            App → API → 数据资产 · 连接配置、图库、数据地图与记忆治理在同一页切换
+          </p>
         </div>
         <button type="button" className="btn btn-ghost" disabled={loading} onClick={() => void loadCore()}>
           刷新
@@ -305,25 +307,6 @@ export function PlatformPage() {
 
       {tab === 'overview' ? (
         <div className="platform-overview">
-          <section className="platform-hero">
-            <div className="platform-hero-copy">
-              <p className="platform-hero-kicker">Platform Control</p>
-              <h3>一眼掌握平台健康与数据资产</h3>
-              <p className="muted">连接状态、client-config 与数据治理进度 — 统一入口</p>
-              <div className="btn-row platform-hero-actions">
-                <button type="button" className="btn btn-primary btn-sm" onClick={() => setTab('config')}>连接与地址</button>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setTab('data')}>数据星系</button>
-                <Link className="btn btn-ghost btn-sm" to="/system/data">数据目录</Link>
-              </div>
-            </div>
-            <div className="platform-hero-flow" aria-hidden>
-              <span className="platform-flow-node">App</span>
-              <span className="platform-flow-line" />
-              <span className="platform-flow-node is-accent">API</span>
-              <span className="platform-flow-line" />
-              <span className="platform-flow-node">Data</span>
-            </div>
-          </section>
           <div className="platform-health-grid">
             <div className={`platform-health-card${apiOnline ? ' is-ok' : ''}`}>
               <div className="label">业务 API</div>

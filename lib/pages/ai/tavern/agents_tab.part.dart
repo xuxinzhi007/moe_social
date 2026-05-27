@@ -92,7 +92,7 @@ extension TavernAgentsTabPart on _AgentListPageState {
             child: tavernStatCard(
               title: '服务器模型',
               value: '$backendAgents',
-              hint: '来自 Ollama',
+              hint: '来自本机推理',
               color: const Color(0xFF5B8DEF),
             ),
           ),

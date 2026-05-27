@@ -12,13 +12,10 @@ import (
 	"backend/api/internal/config"
 )
 
-// InferenceAPIStyle 推理服务 API 风格：openai = llama-server 等；ollama = 旧版 Ollama（已废弃）。
+// InferenceAPIStyle 推理服务 API 风格（当前仅 OpenAI 兼容，如 llama-server）。
 type InferenceAPIStyle string
 
-const (
-	InferenceAPIOpenAI InferenceAPIStyle = "openai"
-	InferenceAPIOllama   InferenceAPIStyle = "ollama"
-)
+const InferenceAPIOpenAI InferenceAPIStyle = "openai"
 
 // InferenceConfig 后端 /api/llm/* 转发目标。
 type InferenceConfig struct {
@@ -27,7 +24,7 @@ type InferenceConfig struct {
 	TimeoutSeconds int
 }
 
-// ChatMessage OpenAI / Ollama 通用消息体。
+// ChatMessage OpenAI 兼容消息体。
 type ChatMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
@@ -41,8 +38,8 @@ type ChatOptions struct {
 	RepeatPenalty float64
 }
 
-// InferenceFromOllamaConf 从配置构建推理客户端（字段名保留 Ollama 以兼容 go-zero 结构体）。
-func InferenceFromOllamaConf(c config.OllamaConf) (InferenceConfig, error) {
+// InferenceFromLLMConf 从 go-zero 配置构建推理客户端。
+func InferenceFromLLMConf(c config.LLMInferenceConf) (InferenceConfig, error) {
 	base, err := ResolveInferenceBaseURL(c.BaseUrl)
 	if err != nil {
 		return InferenceConfig{}, err
@@ -58,7 +55,7 @@ func InferenceFromOllamaConf(c config.OllamaConf) (InferenceConfig, error) {
 	}, nil
 }
 
-// ResolveInferenceBaseURL 解析推理服务根地址（llama.cpp / 旧 Ollama）。
+// ResolveInferenceBaseURL 解析推理服务根地址（llama-server / llama.cpp）。
 func ResolveInferenceBaseURL(configured string) (string, error) {
 	baseURL := strings.TrimRight(strings.TrimSpace(configured), "/")
 	if baseURL == "" {
@@ -67,19 +64,15 @@ func ResolveInferenceBaseURL(configured string) (string, error) {
 	return baseURL, nil
 }
 
-// ResolveInferenceAPIStyle 决定 API 风格；未配置时按端口推断。
+// ResolveInferenceAPIStyle 决定 API 风格；未配置或非 openai 别名时统一为 OpenAI 兼容。
 func ResolveInferenceAPIStyle(configured, baseURL string) InferenceAPIStyle {
+	_ = baseURL
 	switch strings.ToLower(strings.TrimSpace(configured)) {
-	case "ollama":
-		return InferenceAPIOllama
-	case "openai", "openai_compatible", "llama_cpp", "llamacpp":
+	case "openai", "openai_compatible", "llama_cpp", "llamacpp", "":
+		return InferenceAPIOpenAI
+	default:
 		return InferenceAPIOpenAI
 	}
-	lower := strings.ToLower(baseURL)
-	if strings.Contains(lower, ":11434") {
-		return InferenceAPIOllama
-	}
-	return InferenceAPIOpenAI
 }
 
 // PostChatCompletion 非流式对话补全。
@@ -91,17 +84,11 @@ func PostChatCompletion(
 	messages []ChatMessage,
 	opts ChatOptions,
 ) (content string, err error) {
-	if cfg.ApiStyle == InferenceAPIOllama {
-		return postOllamaChat(ctx, client, cfg.BaseURL, model, messages, false, opts)
-	}
 	return postOpenAIChat(ctx, client, cfg.BaseURL, model, messages, opts)
 }
 
-// ListModelNames 拉取可用模型 ID 列表。
+// ListModelNames 拉取可用模型 ID 列表（OpenAI 兼容 /v1/models）。
 func ListModelNames(ctx context.Context, client *http.Client, cfg InferenceConfig) ([]string, error) {
-	if cfg.ApiStyle == InferenceAPIOllama {
-		return listOllamaModels(ctx, client, cfg.BaseURL)
-	}
 	return listOpenAIModels(ctx, client, cfg.BaseURL)
 }
 
@@ -168,75 +155,6 @@ func postOpenAIChat(
 	return strings.TrimSpace(parsed.Choices[0].Message.Content), nil
 }
 
-type ollamaChatRequest struct {
-	Model         string        `json:"model"`
-	Messages      []ChatMessage `json:"messages"`
-	Stream        bool          `json:"stream"`
-	Temperature   float64       `json:"temperature,omitempty"`
-	TopP          float64       `json:"top_p,omitempty"`
-	MaxTokens     int           `json:"max_tokens,omitempty"`
-	RepeatPenalty float64       `json:"repeat_penalty,omitempty"`
-}
-
-type ollamaChatResponse struct {
-	Message struct {
-		Content string `json:"content"`
-	} `json:"message"`
-}
-
-func postOllamaChat(
-	ctx context.Context,
-	client *http.Client,
-	baseURL, model string,
-	messages []ChatMessage,
-	stream bool,
-	opts ChatOptions,
-) (string, error) {
-	reqBody := ollamaChatRequest{
-		Model:    model,
-		Messages: messages,
-		Stream:   stream,
-	}
-	if opts.Temperature > 0 {
-		reqBody.Temperature = opts.Temperature
-	}
-	if opts.TopP > 0 {
-		reqBody.TopP = opts.TopP
-	}
-	if opts.MaxTokens > 0 {
-		reqBody.MaxTokens = opts.MaxTokens
-	}
-	if opts.RepeatPenalty > 0 {
-		reqBody.RepeatPenalty = opts.RepeatPenalty
-	}
-	raw, err := json.Marshal(reqBody)
-	if err != nil {
-		return "", err
-	}
-	url := strings.TrimRight(baseURL, "/") + "/api/chat"
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(raw))
-	if err != nil {
-		return "", err
-	}
-	ApplyInferenceForwardHeaders(req)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("ollama chat failed: %d %s", resp.StatusCode, string(b))
-	}
-	var oResp ollamaChatResponse
-	if err := json.NewDecoder(resp.Body).Decode(&oResp); err != nil {
-		return "", err
-	}
-	return oResp.Message.Content, nil
-}
-
 func listOpenAIModels(ctx context.Context, client *http.Client, baseURL string) ([]string, error) {
 	root := strings.TrimRight(strings.TrimSpace(baseURL), "/")
 	apiRoot := root
@@ -274,44 +192,8 @@ func listOpenAIModels(ctx context.Context, client *http.Client, baseURL string) 
 	return out, nil
 }
 
-func listOllamaModels(ctx context.Context, client *http.Client, baseURL string) ([]string, error) {
-	url := strings.TrimRight(baseURL, "/") + "/api/tags"
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-	ApplyInferenceForwardHeaders(req)
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("ollama list models failed: %d %s", resp.StatusCode, string(b))
-	}
-	var parsed struct {
-		Models []struct {
-			Name string `json:"name"`
-		} `json:"models"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
-		return nil, err
-	}
-	out := make([]string, 0, len(parsed.Models))
-	for _, m := range parsed.Models {
-		if m.Name != "" {
-			out = append(out, m.Name)
-		}
-	}
-	return out, nil
-}
-
 // InferenceChatPath 返回 raw 转发用的路径（含前导 /）。
 func InferenceChatPath(style InferenceAPIStyle) string {
-	if style == InferenceAPIOllama {
-		return "/api/chat"
-	}
-	root := "/v1"
-	return root + "/chat/completions"
+	_ = style
+	return "/v1/chat/completions"
 }

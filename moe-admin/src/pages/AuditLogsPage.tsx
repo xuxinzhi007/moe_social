@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { PageInsightStrip } from '../components/PageInsightStrip'
 import { AdminTag } from '../components/AdminTag'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { auditActionTag, auditResourceTag } from '../lib/adminLabels'
@@ -58,10 +59,13 @@ export function AuditLogsPage() {
 
   return (
     <>
-      <div className="page-head">
-        <h2>操作日志</h2>
-        <p>管理员关键操作审计记录</p>
+      <div className="page-head page-head-row">
+        <div>
+          <h2>操作日志</h2>
+          <p className="muted">管理员关键操作审计记录</p>
+        </div>
       </div>
+      <PageInsightStrip items={[{ label: '匹配记录', value: loading ? '…' : total }]} />
       <div className="panel">
         <form
           className="inline-form"

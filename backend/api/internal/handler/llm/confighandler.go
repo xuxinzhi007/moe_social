@@ -14,17 +14,16 @@ func ConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		budget := logic.CurrentMemoryBudgetConfig()
 		inference := map[string]interface{}{
-			"base_url":           svcCtx.Config.Ollama.BaseUrl,
-			"api_style":          svcCtx.Config.Ollama.ApiStyle,
-			"timeout_seconds":    svcCtx.Config.Ollama.TimeoutSeconds,
-			"memory_model":       svcCtx.Config.Ollama.MemoryModel,
-			"has_summary_prompt": svcCtx.Config.Ollama.MemorySummaryPrompt != "",
-			"has_extract_prompt": svcCtx.Config.Ollama.MemoryExtractPrompt != "",
+			"base_url":           svcCtx.Config.LLMInference.BaseUrl,
+			"api_style":          svcCtx.Config.LLMInference.ApiStyle,
+			"timeout_seconds":    svcCtx.Config.LLMInference.TimeoutSeconds,
+			"memory_model":       svcCtx.Config.LLMInference.MemoryModel,
+			"has_summary_prompt": svcCtx.Config.LLMInference.MemorySummaryPrompt != "",
+			"has_extract_prompt": svcCtx.Config.LLMInference.MemoryExtractPrompt != "",
 		}
 		data := map[string]interface{}{
 			"llm_inference": inference,
-			// 兼容旧版 App 字段名
-			"ollama": inference,
+			"ollama":        inference, // 遗留键，App 仍可读；新代码请用 llm_inference
 			"memory_budget": budget,
 			"local_models": map[string]interface{}{
 				"storage_dir":   svcCtx.Config.LocalModels.StorageDir,

@@ -64,10 +64,8 @@ func gatherPostContext(ctx context.Context, deps Deps, rt model.MoeAgentRuntime)
 			}
 		}
 	}
-	if deps.RPC != nil && rt.BotUserID > 0 {
-		if mem := fetchBotMemories(ctx, deps, rt.BotUserID); mem != "" {
-			out.memories = mem
-		}
+	if block := brain.BuildPostMemoryBlock(ctx, deps.DB, deps.RPC, rt); block != "" {
+		out.memories = block
 	}
 	var episodes []model.MoeBotEpisode
 	if deps.DB != nil {

@@ -23,7 +23,8 @@ type Snapshot struct {
 	PreferredTags []string
 	TagStats      []TagStat
 	Episodes      []EpisodeItem
-	Memories      []MemoryItem
+	Memories       []MemoryItem
+	GenerationMeta GenerationMeta
 }
 
 type TagStat struct {
@@ -121,14 +122,15 @@ func LoadSnapshot(ctx context.Context, db *gorm.DB, rpc port.SuperPort, agentKey
 	}
 
 	return &Snapshot{
-		AgentKey:      rt.AgentKey,
-		DisplayName:   rt.DisplayName,
-		BotUserID:     rt.BotUserID,
-		ForbiddenTags: ParseTagList(rt.ForbiddenTags),
-		PreferredTags: ParseTagList(rt.PreferredTags),
-		TagStats:      tagStats,
-		Episodes:      items,
-		Memories:      memories,
+		AgentKey:       rt.AgentKey,
+		DisplayName:    rt.DisplayName,
+		BotUserID:      rt.BotUserID,
+		ForbiddenTags:  ParseTagList(rt.ForbiddenTags),
+		PreferredTags:  ParseTagList(rt.PreferredTags),
+		TagStats:       tagStats,
+		Episodes:       items,
+		Memories:       memories,
+		GenerationMeta: BuildGenerationMeta(ctx, db, rpc, rt, len(memories)),
 	}, nil
 }
 

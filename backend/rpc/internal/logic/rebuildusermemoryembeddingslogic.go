@@ -60,7 +60,7 @@ func (l *RebuildUserMemoryEmbeddingsLogic) RebuildUserMemoryEmbeddings(in *super
 		return &super.RebuildUserMemoryEmbeddingsResp{Indexed: 0}, nil
 	}
 
-	chain := embed.NewChain(embed.LoadProviders(viperOllamaBaseURL()))
+	chain := embed.NewChain(embed.LoadProviders(viperInferenceBaseURL()))
 	vecs, provider, model, err := chain.Embed(l.ctx, texts)
 	if err != nil {
 		return nil, errorx.Internal("生成记忆向量失败: " + err.Error())

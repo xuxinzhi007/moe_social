@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
+import { DataEnvBar } from '../components/DataEnvBar'
+import { PageInsightStrip } from '../components/PageInsightStrip'
 import { AdminTag } from '../components/AdminTag'
 import { IdCell } from '../components/IdCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
@@ -50,10 +52,14 @@ export function ReportsPage() {
 
   return (
     <>
-      <div className="page-head">
-        <h2>举报处理</h2>
-        <p>用户举报动态记录，可跳转动态页下架</p>
+      <div className="page-head page-head-row">
+        <div>
+          <h2>举报处理</h2>
+          <p className="muted">用户举报动态记录，可跳转动态页下架</p>
+        </div>
       </div>
+      <DataEnvBar />
+      <PageInsightStrip items={[{ label: '待处理举报', value: loading ? '…' : total }]} />
       <div className="panel">
         {error ? <p className="text-danger">{error}</p> : null}
         <div className="table-wrap">
