@@ -35,7 +35,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Config:         c,
 		SuperRpcClient: superClient,
 		MoeGRPC:        moeGRPC,
-		MoeGW:          moeadmingw.New(nil, moeGRPC, superClient),
+		MoeGW:          moeadmingw.NewConfigured(nil, moeGRPC, superClient),
 		ModelCache:     utils.NewModelCache(),
 	}
 }

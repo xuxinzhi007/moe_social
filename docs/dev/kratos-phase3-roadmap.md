@@ -1,23 +1,18 @@
-# Phase 3：纯 Kratos 路线图（后续里程碑）
+# Phase 3+：纯 Kratos 路线图
 
-> 混合迁移（Phase 1+2）已 100% 完成；本阶段为**下一阶段**，不阻塞当前上线。
+> **方案 100% 完成** · 对外 **:8888 不变**  
+> 验收：`make verify-kratos-100` · 生产二进制：`make build-moe-social`
 
-## 目标
+| 里程碑 | 状态 |
+|--------|------|
+| Hybrid Moe | ✅ `make moe-social` :8888 |
+| 纯 Kratos 方案 Phase 0～6 | ✅ 100% |
+| 全仓退役 super | 后续迭代（非本方案） |
 
-- 单进程 `cmd/moe-social` + `kratos.App`
-- HTTP / gRPC 统一注册
-- 配置 `conf.proto` + Wire 注入
-- 按域退役 `super.api` / go-zero 启动
+```bash
+make moe-social          # 日常 / 生产 HTTP
+make build-moe-social    # bin/moe-social
+make verify-kratos-100
+```
 
-## 建议顺序
-
-1. 引入 `github.com/go-kratos/kratos/v2` 与 `cmd/moe-social` 空壳（health + 现有 go-zero 并行）
-2. 将 `api/moe/v1` 注册为 gRPC 服务（与 legacy Super 并存）
-3. Admin HTTP 从 grpc-gateway 或 Kratos HTTP 注解生成
-4. User / VIP 等域按模块迁移
-5. 下线 `api/super.go` / `rpc/super.go` 双进程
-
-## 参考
-
-- [kratos-hybrid-migration-plan.md](./kratos-hybrid-migration-plan.md)
-- [go-kratos/kratos](https://github.com/go-kratos/kratos)
+见 [kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md)。

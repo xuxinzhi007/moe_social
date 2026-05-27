@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { SidebarNav } from '../components/SidebarNav'
 import { SettingsDrawer } from '../components/SettingsDrawer'
@@ -16,6 +16,11 @@ export function AppShell() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const location = useLocation()
   const isRpc = location.pathname === '/rpc' || location.pathname.endsWith('/rpc')
+
+  // 切换页面时关闭设置抽屉，避免半透明蒙版挡住工作台却无法察觉侧栏已打开。
+  useEffect(() => {
+    setSettingsOpen(false)
+  }, [location.pathname])
 
   const path = location.pathname.replace(/\/$/, '') || '/'
   const isReadyHome = READY_ROUTES.has(path)
@@ -104,10 +109,11 @@ export function AppShell() {
           </button>
           <button
             type="button"
-            className="btn btn-ghost"
-            onClick={() => setSettingsOpen(true)}
+            className={`btn btn-ghost${settingsOpen ? ' is-active' : ''}`}
+            aria-expanded={settingsOpen}
+            onClick={() => setSettingsOpen((open) => !open)}
           >
-            设置
+            {settingsOpen ? '关闭设置' : '设置'}
           </button>
         </header>
 

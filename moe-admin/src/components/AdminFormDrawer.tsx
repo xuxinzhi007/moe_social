@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useDrawerDismiss } from '../hooks/useDrawerDismiss'
 
 type AdminFormDrawerProps = {
   open: boolean
@@ -23,12 +24,17 @@ export function AdminFormDrawer({
   saveLabel = '保存',
   children,
 }: AdminFormDrawerProps) {
+  useDrawerDismiss(open, onClose)
+
   if (!open) return null
 
   return (
-    <div className="drawer-backdrop" onClick={onClose}>
+    <div className="drawer-backdrop" role="presentation" onClick={onClose}>
+      <p className="drawer-backdrop-hint">点击空白处或按 Esc 关闭</p>
       <aside
         className="drawer"
+        role="dialog"
+        aria-modal="true"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
       >

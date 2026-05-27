@@ -6,35 +6,36 @@ alwaysApply: false
 
 # Kratos 混合迁移纪律（Moe 域）
 
-**总览（混合类型、目录树、框架、进度）**：`docs/dev/kratos-migration.md`  
-**方案**：`docs/dev/kratos-hybrid-migration-plan.md`
+| 进度 | 文档 | 验收 |
+|------|------|------|
+| Hybrid Moe 100% | `docs/dev/kratos-migration.md` | `make verify-moe-complete` |
+| 纯 Kratos 100% | `docs/dev/kratos-pure-migration-plan.md` | `make verify-kratos-100` |
 
-## 新功能（Moe / Bot 运行时 / 大脑 / 流水线 / 推理观测）
+## 新功能（Moe）
 
-1. 契约写在 `backend/api/moe/v1/moe.proto`，禁止在 `super.proto` 扩张 Moe 消息（修 bug 除外）。
-2. 业务写在 `internal/biz/moe`、`internal/data/moedata`、`internal/service/moe`。
-3. Admin HTTP 经 `api/internal/moeadmingw`（勿在 logic 内三分支重复）。
-4. gRPC 实现放在 `internal/server/moegrpc`（勿新建 `moev1` 包名目录）。
-5. `rpc/internal/logic` 只做 legacy super 协议转换。
-6. **禁止** goctl 为新 Moe 接口生成独立空壳 logic；`make gen-moe-admin` 或 `make verify-moe-migration`。
+1. 契约：`api/moe/v1/moe.proto`；配置 SSOT：`internal/conf/moe/v1/pilot.proto`。
+2. 业务：`internal/biz|service|data/moe`。
+3. Admin HTTP：`moeadmingw.NewConfigured`；试点：`api/moekratospilot`。
+4. gRPC：`internal/server/moegrpc`。
+5. 试点启动：`make moe-kratos`（Wire：`moekratos/wire_gen.go`）。
 
-## Legacy（User / VIP / 社交等）
+## 生成
 
-- 仍走 `super.api` / `super.proto` + goctl。
-- 不在 legacy 模块引入对 `internal/biz/moe` 的循环依赖。
-
-## 依赖方向
-
-`data` → `biz` → `service` → `moegrpc` / `rpc/logic` / `moeadmingw`  
-`biz` **不得** import `rpc/internal/logic`。
+```bash
+make gen-moe-proto
+make gen-moe-conf
+make gen-moe-admin   # 改 super.api 后
+```
 
 ## 运行
 
-- 推荐单进程：`make moe-social`
-- 经典双进程：`make dev`
+- 生产对外 **:8888**：`make moe-social` / `make build-moe-social`
+- 试点（非对外）：`make moe-kratos`（:19031/:19032）
 
-## 验收
+## VIP 试点（Phase 5）
 
-```bash
-cd backend && make verify-moe-complete
-```
+- `internal/biz/vip`；试点 HTTP `/api/admin/vip/plans` @ :19032
+
+## Legacy
+
+User/VIP/社交仍 `super.api` / `super.proto`。

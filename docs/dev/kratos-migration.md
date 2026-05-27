@@ -1,7 +1,8 @@
 # Kratos 混合架构说明（SSOT）
 
-> 本文档描述 **当前已落地的 Hybrid 架构**：Kratos 风格分层 + go-zero 运行时，Moe 域迁移完成。  
-> 勾选清单：[kratos-migration-status.md](./kratos-migration-status.md) · 是否上纯 Kratos：见 [§9](#9-是否需要纯-kratos-迁移决策)
+> **Hybrid Moe：100%** · **纯 Kratos 方案：100%** · **对外 HTTP 始终 :8888**（`make verify-kratos-100`）  
+> 本文档描述 **Hybrid 生产架构**；纯 Kratos 执行方案见 [kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md)。  
+> 勾选：[kratos-migration-status.md](./kratos-migration-status.md) · 决策：[§9](#9-是否需要纯-kratos-迁移决策)
 
 ---
 
@@ -12,7 +13,8 @@
 | **Hybrid（混合）** | 业务按 Kratos 分层（`biz` / `service` / `data`），**启动与契约仍大量依赖 go-zero**（`super.api`、`super.proto`、`rest` + `zrpc`） |
 | **不是纯 Kratos** | 尚未用 `kratos.App` 统一替代 go-zero 的 HTTP/gRPC 传输；未全面 `conf.proto` + Wire；未退役 `super.*` |
 | **Moe 域** | 分层 + `moe.proto` + `moegrpc` + `MoeGW` + 单进程 `moe-social` → **本域 100%** |
-| **全仓** | User/VIP/社交等仍在 `api/internal/logic`、`rpc/internal/logic` → **约 30%** |
+| **全仓** | User/VIP/社交等仍在 legacy logic → **约 45%**（含纯 Kratos **80%**） |
+| **纯 Kratos 方案** | Phase 0～6 → **100%**；试点端口 1903x **非对外**，见 [kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md) |
 
 ```text
   对外（Flutter / 管理台 / 第三方）
@@ -21,7 +23,7 @@
   ┌────────────────────────────────────────────┐
   │  API（go-zero rest）                        │
   │  · 非 Moe：logic → SuperRpcClient            │
-  │  · Moe Admin：moeadmingw → in_process（默认）│
+  │  · Moe Admin：moeadmingw（默认 in_process；可灰度 kratos_http）│
   └──────────────────┬─────────────────────────┘
                      │  gRPC 127.0.0.1:8080（本机或容器内网）
                      ▼
@@ -79,15 +81,36 @@ make gen-moe-admin        # gen 后清理 Moe 空壳 logic 并编译
 
 ### 2.4 验收
 
+**Hybrid（生产路径）**
+
 ```bash
 make verify-moe-complete  # 推荐：一键
-# 或分步：
-make verify-moe-migration
-make verify-moe-grpc
-make verify-moe-gateway
+# 或分步：verify-moe-migration / verify-moe-grpc / verify-moe-gateway
 ```
 
-### 2.5 构建与部署（注意）
+**纯 Kratos 试点（并行，当前 60%）**
+
+```bash
+make verify-kratos-100    # 纯 Kratos 100% + Hybrid 回归
+make build-moe-social     # 生产单二进制 :8888+:8080
+make verify-kratos-80     # Phase 0～4
+make verify-kratos-60     # Phase 0～3
+make verify-kratos-50     # Phase 0～2
+make moe-kratos           # 试点进程 :19031 gRPC + :19032 HTTP
+```
+
+详见 [kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md)。
+
+### 2.5 纯 Kratos 试点（开发可选）
+
+| 命令 | 端口 | 说明 |
+|------|------|------|
+| `make moe-kratos` | 19031 + 19032 | 与 :8888/:8080 **并行**，非生产默认 |
+| `bash scripts/grpcurl-moe-kratos.sh` | 19031 | gRPC reflection 探针 |
+
+灰度（Phase 3）：`config.yaml` 设 `kratos_admin_http_enabled: true` 且先起 `moe-kratos`，则 :8888 的 **ListRuntimes / GetBrainPipeline** 经 `MoeGW` 转发到 :19032；日志 `moe admin gateway route: kratos_http`。
+
+### 2.6 构建与部署（注意）
 
 | 场景 | 命令/产物 | 进程数 |
 |------|-----------|--------|
@@ -97,11 +120,12 @@ make verify-moe-gateway
 
 Compose / `deploy-agent` 尚未默认改为单二进制；见 [DEPLOY.md](../../backend/DEPLOY.md)。
 
-### 2.6 观测
+### 2.7 观测
 
 ```bash
 make moe-platform
-curl -s http://127.0.0.1:19020/migration
+curl -s http://127.0.0.1:19020/migration    # Hybrid 总览
+curl -s http://127.0.0.1:19032/migration    # 纯 Kratos 试点进度（需 make moe-kratos）
 ```
 
 ---
@@ -140,6 +164,8 @@ curl -s http://127.0.0.1:19020/migration
 | `register_moe_grpc` | `true` | RPC 端口注册 `moe.v1.MoeAdmin` |
 | `use_moe_grpc` | `true` | 无 in_process 时 API 走 moe gRPC |
 | `single_process` | `false` | 使用 `make moe-social` 时可设 `true`（标记） |
+| `kratos_admin_http_enabled` | `false` | Phase 3：Admin 两接口 HTTP 转发到 `moe-kratos` |
+| `kratos_admin_base_url` | `http://127.0.0.1:19032` | 灰度目标（需 `make moe-kratos`） |
 
 API→RPC 地址：`api/etc/super.yaml` 的 `SuperRpc.Endpoints`（本机 `127.0.0.1:8080`）；Docker 用 `MOE_SUPER_RPC_ENDPOINT=rpc:8080`。
 
@@ -192,13 +218,18 @@ API→RPC 地址：`api/etc/super.yaml` 的 `SuperRpc.Endpoints`（本机 `127.0
 
 ```text
 backend/
-├── cmd/moe-social/           # 推荐：单进程入口
-├── cmd/moe-platform/         # 观测
+├── cmd/moe-social/           # 推荐：Hybrid 单进程
+├── cmd/moe-kratos/           # 纯 Kratos 试点（80%，Wire）
+├── internal/conf/moe/v1/     # pilot.proto Bootstrap SSOT
+├── internal/platform/moeconf/
+├── internal/platform/moekratos/  # wire_gen.go
+├── cmd/moe-platform/         # 观测 :19020
 ├── api/
 │   ├── super.api             # HTTP SSOT（全站）
+│   ├── moekratospilot/       # 试点 Admin HTTP（:19032）
 │   ├── runserver/            # API 启动
 │   ├── moe/v1/moe.proto      # Moe gRPC SSOT
-│   └── internal/moeadmingw/  # Admin Moe 路由网关
+│   └── internal/moeadmingw/  # Admin 网关（in_process / kratos_http / …）
 ├── rpc/
 │   ├── super.proto           # gRPC SSOT（全站）
 │   └── runserver/            # RPC 启动
@@ -285,6 +316,7 @@ backend/
 | 文件 | 用途 |
 |------|------|
 | [kratos-hybrid-migration-plan.md](./kratos-hybrid-migration-plan.md) | 纪律与禁止项 |
-| [kratos-phase3-roadmap.md](./kratos-phase3-roadmap.md) | 纯 Kratos 路线图 |
+| [kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md) | **纯 Kratos 执行方案（80%）** |
+| [kratos-phase3-roadmap.md](./kratos-phase3-roadmap.md) | 里程碑索引 |
 | [kratos-migration-status.md](./kratos-migration-status.md) | 勾选 |
 | [docs/guidelines/Codex启动指南-后端.md](../guidelines/Codex启动指南-后端.md) | 日常命令 |

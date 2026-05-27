@@ -176,6 +176,22 @@ moe:
   use_moe_grpc: true
   # 单进程：make moe-social 时为 true；与 api_in_process 搭配，Moe Admin 全走进程内分层
   single_process: false
+  # Phase 3 纯 Kratos 灰度：:8888 Admin 的 ListRuntimes / GetBrainPipeline 转发到 moe-kratos HTTP
+  kratos_admin_http_enabled: false
+  kratos_admin_base_url: "http://127.0.0.1:19032"
+  # Phase 4 试点进程默认值（cmd/moe-kratos；CLI 参数可覆盖）
+  # 生产对外端口不变：Flutter / moe-admin 仍 :8888（由 moe-social / go-zero API 提供）
+  production:
+    unified_entry: moe-social
+    external_http_port: "8888"
+    internal_grpc_port: "8080"
+    pilot_http_port: "19032"
+    pilot_grpc_port: "19031"
+  pilot:
+    grpc_addr: ":19031"
+    http_addr: ":19032"
+    super_rpc_endpoint: ""
+    vip_admin_read_enabled: true
 
 # 用户记忆 Phase 2：混合检索 + 多路 embedding（不偏向单一厂商，按链式回退）
 memory:

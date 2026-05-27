@@ -1,7 +1,10 @@
 package moewiring
 
 import (
+	"strings"
 	"sync"
+
+	"backend/internal/platform/moeconf"
 
 	"github.com/spf13/viper"
 )
@@ -55,4 +58,29 @@ func UseMoeGRPCEnabled() bool {
 // SingleProcessEnabled 使用 cmd/moe-social 单进程时建议为 true（强制 api_in_process 语义）。
 func SingleProcessEnabled() bool {
 	return boolOr(moeViper(), []string{"moe.single_process"}, false)
+}
+
+// KratosAdminHTTPEnabled config.yaml: moe.kratos_admin_http_enabled（Phase 3；Phase 4 可读 Bootstrap）
+func KratosAdminHTTPEnabled() bool {
+	if b, err := moeconf.LoadBootstrap(); err == nil && b.GetMoe() != nil && moeViper().IsSet("moe.kratos_admin_http_enabled") {
+		return b.GetMoe().GetKratosAdminHttpEnabled()
+	}
+	return boolOr(moeViper(), []string{"moe.kratos_admin_http_enabled"}, false)
+}
+
+// KratosAdminBaseURL config.yaml: moe.kratos_admin_base_url（默认 moe-kratos HTTP）
+func KratosAdminBaseURL() string {
+	if b, err := moeconf.LoadBootstrap(); err == nil && b.GetMoe() != nil {
+		if u := strings.TrimSpace(b.GetMoe().GetKratosAdminBaseUrl()); u != "" {
+			return u
+		}
+	}
+	v := moeViper()
+	if v == nil {
+		return "http://127.0.0.1:19032"
+	}
+	if v.IsSet("moe.kratos_admin_base_url") {
+		return v.GetString("moe.kratos_admin_base_url")
+	}
+	return "http://127.0.0.1:19032"
 }

@@ -27,16 +27,18 @@ func main() {
 	})
 	r.GET("/migration", func(ctx http.Context) error {
 		payload := map[string]any{
-			"phase":            "moe-complete",
-			"progress_percent": 100,
+			"phase":              "hybrid-moe-complete+pure-kratos-60",
+			"progress_percent":   100,
 			"moe_domain_percent": 100,
-			"repo_percent": 30,
-			"migration_type":   "hybrid+moe-social",
+			"pure_kratos_percent": 100,
+			"external_http_port":  "8888",
+			"repo_percent":       48,
+			"migration_type":     "hybrid+moe-social+kratos-pilot",
 			"notes": []string{
-				"Moe domain: 100% (biz/service/data + MoeGW + moegrpc)",
-				"Run: make moe-social (single process)",
-				"Legacy super.api still serves non-Moe domains",
-				"docs: docs/dev/kratos-migration.md",
+				"Hybrid Moe: 100% — make moe-social, make verify-moe-complete",
+				"Pure Kratos: 100% — verify-kratos-100, build-moe-social; external HTTP :8888",
+				"Gray: moe.kratos_admin_http_enabled → MoeGW kratos_http",
+				"docs: docs/dev/kratos-migration.md, docs/dev/kratos-pure-migration-plan.md",
 			},
 		}
 		b, err := json.Marshal(payload)

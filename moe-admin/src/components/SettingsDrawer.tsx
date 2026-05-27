@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { AGENT_URL } from '../lib/storage'
 import { useDeploy } from '../context/DeployContext'
+import { useDrawerDismiss } from '../hooks/useDrawerDismiss'
+import { AGENT_URL } from '../lib/storage'
 
 type Props = {
   open: boolean
@@ -32,6 +33,8 @@ export function SettingsDrawer({ open, onClose }: Props) {
     }
   }, [open, baseUrl, token, deployTarget])
 
+  useDrawerDismiss(open, onClose)
+
   if (!open) return null
 
   async function handleSave() {
@@ -56,8 +59,20 @@ export function SettingsDrawer({ open, onClose }: Props) {
   }
 
   return (
-    <div className="drawer-backdrop" onClick={onClose}>
-      <aside className="drawer" aria-label="连接设置" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="drawer-backdrop"
+      role="presentation"
+      onClick={onClose}
+      aria-hidden={false}
+    >
+      <p className="drawer-backdrop-hint">点击空白处或按 Esc 关闭</p>
+      <aside
+        className="drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-label="连接设置"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="drawer-head">
           <h3>连接与鉴权</h3>
           <button type="button" className="btn btn-ghost drawer-close" onClick={onClose}>

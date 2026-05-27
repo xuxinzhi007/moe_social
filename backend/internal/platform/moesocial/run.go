@@ -58,8 +58,9 @@ func Run(opts Options) error {
 	)
 	rpcAddr, _ := rpcListenAddr(opts.RPCConfigFile)
 	apiAddr := apiListenAddr(opts.APIConfigFile)
-	log.Printf("moe-social: 单进程已就绪（非单端口）— gRPC %s + HTTP %s", rpcAddr, apiAddr)
-	log.Print("  · 管理台/App 请访问 HTTP 端口；API 内 Moe 走 in_process，无需再开第二个终端")
+	log.Printf("moe-social: 单进程已就绪 — gRPC %s + HTTP %s", rpcAddr, apiAddr)
+	log.Printf("moe-social: 对外请使用 HTTP %s（Flutter / moe-admin / 第三方 REST 不变）", apiAddr)
+	log.Print("  · 内网 gRPC 仅后端；Moe 默认 in_process；纯 Kratos 试点端口 1903x 非生产")
 	_ = rpcDone
 	return app.Run()
 }
