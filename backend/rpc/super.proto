@@ -1909,6 +1909,191 @@ message AdminDeleteMemoryReq {
 
 message AdminDeleteMemoryResp {}
 
+message AdminAiChatSessionItem {
+  string id = 1;
+  string user_id = 2;
+  string username = 3;
+  string session_id = 4;
+  string model = 5;
+  int32 message_count = 6;
+  string last_message_at = 7;
+  string created_at = 8;
+  string updated_at = 9;
+}
+
+message AdminListAiChatSessionsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string user_id = 3;
+  string session_id = 4;
+  string from = 5;
+  string to = 6;
+}
+
+message AdminListAiChatSessionsResp {
+  repeated AdminAiChatSessionItem items = 1;
+  int32 total = 2;
+}
+
+message AdminAiChatMessageItem {
+  string id = 1;
+  string user_id = 2;
+  string username = 3;
+  string session_id = 4;
+  string source_msg_id = 5;
+  string role = 6;
+  string content = 7;
+  string model = 8;
+  string created_at = 9;
+}
+
+message AdminListAiChatMessagesReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string user_id = 3;
+  string session_id = 4;
+  string role = 5;
+  string keyword = 6;
+  string from = 7;
+  string to = 8;
+}
+
+message AdminListAiChatMessagesResp {
+  repeated AdminAiChatMessageItem items = 1;
+  int32 total = 2;
+}
+
+message AdminExportAiChatMessagesReq {
+  string user_id = 1;
+  string session_id = 2;
+  string role = 3;
+  string keyword = 4;
+  string from = 5;
+  string to = 6;
+  int32 limit = 7;
+}
+
+message AdminExportAiChatMessagesResp {
+  string csv = 1;
+  int32 row_count = 2;
+  bool truncated = 3;
+}
+
+message AdminDayStat {
+  string date = 1;
+  int32 count = 2;
+}
+
+message AdminAnalyticsOverviewResp {
+  int32 user_total = 1;
+  int32 users_new_7d = 2;
+  repeated AdminDayStat users_by_day = 3;
+  int32 memory_total = 4;
+  int32 memory_users = 5;
+  repeated AdminDayStat memories_by_day = 6;
+  repeated AdminMemoryTypeStat memory_by_type = 7;
+  int32 moe_tool_calls_7d = 8;
+  double moe_tool_success_rate = 9;
+  repeated AdminDayStat moe_tools_by_day = 10;
+  int32 chat_sessions_total = 11;
+  int32 chat_messages_7d = 12;
+  repeated AdminDayStat chat_messages_by_day = 13;
+}
+
+message AdminListTopicTagsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+}
+
+message AdminListTopicTagsResp {
+  repeated TopicTag items = 1;
+  int32 total = 2;
+}
+
+message AdminCreateTopicTagReq {
+  string name = 1;
+  string color = 2;
+}
+
+message AdminCreateTopicTagResp {
+  TopicTag item = 1;
+}
+
+message AdminUpdateTopicTagReq {
+  uint64 tag_id = 1;
+  string name = 2;
+  string color = 3;
+}
+
+message AdminUpdateTopicTagResp {
+  TopicTag item = 1;
+}
+
+message AdminDeleteTopicTagReq {
+  uint64 tag_id = 1;
+}
+
+message AdminDeleteTopicTagResp {}
+
+message AdminTagDictionaryItem {
+  string id = 1;
+  string category = 2;
+  string tag = 3;
+  string label = 4;
+  string note = 5;
+  int32 sort_order = 6;
+  bool enabled = 7;
+  string created_at = 8;
+  string updated_at = 9;
+}
+
+message AdminListTagDictionaryReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string category = 3;
+  string keyword = 4;
+}
+
+message AdminListTagDictionaryResp {
+  repeated AdminTagDictionaryItem items = 1;
+  int32 total = 2;
+}
+
+message AdminCreateTagDictionaryReq {
+  string category = 1;
+  string tag = 2;
+  string label = 3;
+  string note = 4;
+  int32 sort_order = 5;
+  bool enabled = 6;
+}
+
+message AdminCreateTagDictionaryResp {
+  AdminTagDictionaryItem item = 1;
+}
+
+message AdminUpdateTagDictionaryReq {
+  uint64 entry_id = 1;
+  string category = 2;
+  string tag = 3;
+  string label = 4;
+  string note = 5;
+  int32 sort_order = 6;
+  bool enabled = 7;
+  bool update_enabled = 8;
+}
+
+message AdminUpdateTagDictionaryResp {
+  AdminTagDictionaryItem item = 1;
+}
+
+message AdminDeleteTagDictionaryReq {
+  uint64 entry_id = 1;
+}
+
+message AdminDeleteTagDictionaryResp {}
+
 message AdminGetSchemaCatalogResp {
   AdminSchemaCatalogSummary summary = 1;
   repeated AdminSchemaTableItem items = 2;
@@ -2354,6 +2539,18 @@ service Super {
   rpc AdminListMemories(AdminListMemoriesReq) returns (AdminListMemoriesResp);
   rpc AdminGetMemoryStats(AdminGetMemoryStatsReq) returns (AdminGetMemoryStatsResp);
   rpc AdminDeleteMemory(AdminDeleteMemoryReq) returns (AdminDeleteMemoryResp);
+  rpc AdminListAiChatSessions(AdminListAiChatSessionsReq) returns (AdminListAiChatSessionsResp);
+  rpc AdminListAiChatMessages(AdminListAiChatMessagesReq) returns (AdminListAiChatMessagesResp);
+  rpc AdminExportAiChatMessages(AdminExportAiChatMessagesReq) returns (AdminExportAiChatMessagesResp);
+  rpc AdminAnalyticsOverview(AdminGetMemoryStatsReq) returns (AdminAnalyticsOverviewResp);
+  rpc AdminListTopicTags(AdminListTopicTagsReq) returns (AdminListTopicTagsResp);
+  rpc AdminCreateTopicTag(AdminCreateTopicTagReq) returns (AdminCreateTopicTagResp);
+  rpc AdminUpdateTopicTag(AdminUpdateTopicTagReq) returns (AdminUpdateTopicTagResp);
+  rpc AdminDeleteTopicTag(AdminDeleteTopicTagReq) returns (AdminDeleteTopicTagResp);
+  rpc AdminListTagDictionary(AdminListTagDictionaryReq) returns (AdminListTagDictionaryResp);
+  rpc AdminCreateTagDictionary(AdminCreateTagDictionaryReq) returns (AdminCreateTagDictionaryResp);
+  rpc AdminUpdateTagDictionary(AdminUpdateTagDictionaryReq) returns (AdminUpdateTagDictionaryResp);
+  rpc AdminDeleteTagDictionary(AdminDeleteTagDictionaryReq) returns (AdminDeleteTagDictionaryResp);
   rpc AdminGetSchemaCatalog(AdminGetSchemaCatalogReq) returns (AdminGetSchemaCatalogResp);
   rpc AdminListAuditLogs(AdminListAuditLogsReq) returns (AdminListAuditLogsResp);
   rpc RecordAdminAuditLog(RecordAdminAuditLogReq) returns (RecordAdminAuditLogResp);

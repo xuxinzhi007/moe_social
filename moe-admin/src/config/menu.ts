@@ -193,6 +193,27 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
       },
       {
         kind: 'item',
+        to: '/app/ai/chat-logs',
+        label: 'AI 对话日志',
+        status: 'ready',
+        appDomain: 'ai / audit',
+      },
+      {
+        kind: 'item',
+        to: '/app/analytics',
+        label: '数据分析看板',
+        status: 'ready',
+        appDomain: 'analytics',
+      },
+      {
+        kind: 'item',
+        to: '/app/tags',
+        label: '统一标签中心',
+        status: 'ready',
+        appDomain: 'tags',
+      },
+      {
+        kind: 'item',
         to: '/gifts/catalog',
         label: '礼物与扭蛋',
         status: 'ready',

@@ -8,7 +8,6 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -28,15 +27,15 @@ func NewAdminBootstrapVipPlansLogic(ctx context.Context, svcCtx *svc.ServiceCont
 }
 
 func (l *AdminBootstrapVipPlansLogic) AdminBootstrapVipPlans(_ *types.EmptyReq) (resp *types.AdminBootstrapVipPlansResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminBootstrapVipPlans(l.ctx, &super.AdminBootstrapVipPlansReq{})
+	created, err := l.svcCtx.VipGW.BootstrapPlans(l.ctx)
 	if err != nil {
 		return &types.AdminBootstrapVipPlansResp{
-			BaseResp: common.HandleRPCError(err, ""),
+			BaseResp: common.HandleVipGWError(err, ""),
 		}, nil
 	}
 
 	msg := "ok"
-	if rpcResp.GetCreated() > 0 {
+	if created > 0 {
 		msg = "已导入默认套餐"
 	} else {
 		msg = "已有套餐，未导入"
@@ -45,7 +44,7 @@ func (l *AdminBootstrapVipPlansLogic) AdminBootstrapVipPlans(_ *types.EmptyReq) 
 	resp = &types.AdminBootstrapVipPlansResp{
 		BaseResp: common.HandleRPCError(nil, msg),
 		Data: types.AdminBootstrapVipPlansData{
-			Created: int(rpcResp.GetCreated()),
+			Created: created,
 		},
 	}
 	if resp.BaseResp.Success {

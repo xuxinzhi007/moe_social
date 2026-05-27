@@ -27,7 +27,7 @@ func NewLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LoginLogic 
 
 func (l *LoginLogic) Login(req *types.LoginReq) (resp *types.LoginResp, err error) {
 	// 调用RPC服务
-	rpcResp, err := l.svcCtx.SuperRpcClient.Login(l.ctx, &super.LoginReq{
+	rpcResp, err := l.svcCtx.UserGW.Login(l.ctx, &super.LoginReq{
 		Username: req.Username,
 		Password: req.Password,
 		Email:    req.Email,
@@ -35,7 +35,7 @@ func (l *LoginLogic) Login(req *types.LoginReq) (resp *types.LoginResp, err erro
 	if err != nil {
 		l.Errorf("[认证] 登录：调用用户服务失败 错误=%v", err)
 		return &types.LoginResp{
-			BaseResp: common.HandleRPCError(err, ""),
+			BaseResp: common.HandleUserGWError(err, ""),
 		}, nil
 	}
 

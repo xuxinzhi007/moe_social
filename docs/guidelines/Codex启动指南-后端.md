@@ -96,9 +96,9 @@ make migrate-moe    # 仅 Moe / AI 聊天相关表
 3. RPC 侧 Moe Brain 系列优先只维护 `moe_admin_logic.go`，删除重复的 `admin*moebrain*logic.go` 单文件。
 4. `super.api` 中每个路由必须带 `@handler`，且与现有 handler 命名一致，避免半生成状态。
 5. **推荐**：改 Moe/Admin 相关接口后执行 `cd backend && make gen-moe-admin`（`scripts/gen-moe-admin.sh` 会跑 gen 并自动删已知空壳再编译）。
-6. **Kratos**：**必读** `docs/dev/kratos-migration.md`；全站迁移 `docs/dev/kratos-full-site-migration-plan.md`（**F ~22%**）。**生产**：`make moe-social` / `make build-moe-social` → **:8888**。试点方案 **B 100%**：`make verify-kratos-100`；`make moe-kratos`（:1903x，非对外）。
-7. **生成**：`make gen` = `gen-moe-proto` + `gen-rpc` + `gen-api`；Moe 业务只写 `internal/biz|service|data`。**验收**：`make verify-moe-complete`。
-8. **配置**（`moe`）：`api_in_process`、`register_moe_grpc`、`use_moe_grpc`。**对外仍 :8888**；8080 仅后端 gRPC，Flutter 不受影响。
+6. **Kratos（2026-05-27）**：**必读** `docs/dev/kratos-migration.md`（架构 SSOT）；全站 `kratos-full-site-migration-plan.md`（**F ~48%**，阶段 **FS-3b**）。**生产**：`make moe-social` → **:8888**（日志应见 `moe`/`vip`/`user` gateway route: in_process）。验收：`make verify-full-site-50`、`make verify-domain-vip`、`make verify-domain-user`。
+7. **生成**：`make gen` = `gen-moe-proto` + `gen-rpc` + `gen-api`；已迁域写 `internal/biz|service`（moe/vip/user）。**验收**：`make verify-moe-complete`。
+8. **配置**（`moe`）：`api_in_process`、`vip_api_in_process`、`user_api_in_process`、`register_moe_grpc`、`use_moe_grpc`。**对外 :8888**；8080 仅后端 gRPC。
 9. **部署**：开发可单进程；`make build` 默认仍产出 api+rpc 两个二进制，见迁移文档 §2.5。
 10. **推理模型**：发帖从 `/v1/models` 自动匹配；管理台显示 `effective_model` / `auto_discovered`。
 

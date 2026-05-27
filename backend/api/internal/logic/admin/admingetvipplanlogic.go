@@ -8,7 +8,6 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -28,17 +27,15 @@ func NewAdminGetVipPlanLogic(ctx context.Context, svcCtx *svc.ServiceContext) *A
 }
 
 func (l *AdminGetVipPlanLogic) AdminGetVipPlan(req *types.AdminGetVipPlanReq) (resp *types.AdminGetVipPlanResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminGetVipPlan(l.ctx, &super.AdminGetVipPlanReq{
-		PlanId: req.PlanId,
-	})
+	plan, err := l.svcCtx.VipGW.GetPlan(l.ctx, req.PlanId)
 	if err != nil {
 		return &types.AdminGetVipPlanResp{
-			BaseResp: common.HandleRPCError(err, ""),
+			BaseResp: common.HandleVipGWError(err, ""),
 		}, nil
 	}
 
 	return &types.AdminGetVipPlanResp{
 		BaseResp: common.HandleRPCError(nil, "ok"),
-		Data:     common.RpcVipPlanToTypes(rpcResp.GetPlan()),
+		Data:     common.VipPlanModelToTypes(plan),
 	}, nil
 }

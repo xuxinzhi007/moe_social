@@ -2,7 +2,7 @@
 
 
 
-.PHONY: all gen gen-moe-proto gen-moe-conf gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto verify-moe-migration verify-moe-grpc verify-moe-gateway verify-moe-complete verify-kratos-pilot verify-kratos-50 verify-kratos-60 verify-kratos-80 verify-kratos-100 moe-social moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
+.PHONY: all gen gen-moe-proto gen-moe-conf gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto verify-moe-migration verify-moe-grpc verify-moe-gateway verify-moe-complete verify-domain-vip verify-domain-user verify-platform verify-full-site-50 verify-kratos-pilot verify-kratos-50 verify-kratos-60 verify-kratos-80 verify-kratos-100 moe-social moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
 
 	deploy-agent deploy-agent-stop admin \
 
@@ -79,6 +79,22 @@ verify-moe-gateway:
 verify-moe-complete:
 
 	bash scripts/verify-moe-complete.sh
+
+verify-domain-vip:
+
+	bash scripts/verify-domain-vip.sh
+
+verify-domain-user:
+
+	bash scripts/verify-domain-user.sh
+
+verify-platform:
+
+	bash scripts/verify-platform.sh
+
+verify-full-site-50:
+
+	bash scripts/verify-full-site-50.sh
 
 moe-social:
 

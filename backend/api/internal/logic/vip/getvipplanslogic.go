@@ -6,7 +6,6 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,28 +24,18 @@ func NewGetVipPlansLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetVi
 	}
 }
 
-func (l *GetVipPlansLogic) GetVipPlans(req *types.EmptyReq) (resp *types.GetVipPlansResp, err error) {
-	// 调用RPC服务获取VIP套餐列表
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetVipPlans(l.ctx, &super.GetVipPlansReq{})
+func (l *GetVipPlansLogic) GetVipPlans(_ *types.EmptyReq) (resp *types.GetVipPlansResp, err error) {
+	rows, err := l.svcCtx.VipGW.ListAllPlans(l.ctx)
 	if err != nil {
 		return &types.GetVipPlansResp{
-			BaseResp: common.HandleRPCError(err, ""),
+			BaseResp: common.HandleVipGWError(err, ""),
 			Data:     nil,
 		}, nil
 	}
 
-	// 转换为API响应格式
-	respPlans := make([]types.VipPlan, 0, len(rpcResp.Plans))
-	for _, plan := range rpcResp.Plans {
-		respPlans = append(respPlans, types.VipPlan{
-			Id:           plan.Id,
-			Name:         plan.Name,
-			Description:  plan.Description,
-			Price:        float64(plan.Price),
-			DurationDays: int(plan.DurationDays),
-			CreatedAt:    plan.CreatedAt,
-			UpdatedAt:    plan.UpdatedAt,
-		})
+	respPlans := make([]types.VipPlan, 0, len(rows))
+	for _, plan := range rows {
+		respPlans = append(respPlans, common.VipPlanModelToTypes(plan))
 	}
 
 	return &types.GetVipPlansResp{

@@ -2,23 +2,19 @@ package logic
 
 import (
 	"strconv"
-	"strings"
 
+	vipbiz "backend/internal/biz/vip"
 	"backend/model"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/pb/super"
 )
 
 func parseVipPlanID(raw string) (uint, error) {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return 0, errorx.InvalidArgument("套餐 ID 不能为空")
-	}
-	n, err := strconv.ParseUint(raw, 10, 64)
-	if err != nil || n == 0 {
+	id, err := vipbiz.ParsePlanID(raw)
+	if err != nil {
 		return 0, errorx.InvalidArgument("无效的套餐 ID")
 	}
-	return uint(n), nil
+	return id, nil
 }
 
 func vipPlanModelToProto(plan model.VipPlan) *super.VipPlan {

@@ -2,10 +2,8 @@ package logic
 
 import (
 	"context"
-	"strings"
 
-	"backend/model"
-	"backend/rpc/internal/errorx"
+	vipbiz "backend/internal/biz/vip"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -27,38 +25,17 @@ func NewAdminListVipPlansLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *AdminListVipPlansLogic) AdminListVipPlans(in *super.AdminListVipPlansReq) (*super.AdminListVipPlansResp, error) {
-	page := in.GetPage()
-	if page <= 0 {
-		page = 1
-	}
-	pageSize := in.GetPageSize()
-	if pageSize <= 0 {
-		pageSize = 50
-	}
-	if pageSize > 200 {
-		pageSize = 200
-	}
-
-	q := l.svcCtx.DB.Model(&model.VipPlan{})
-	if in.GetIncludeDeleted() {
-		q = q.Unscoped()
-	}
-	if kw := strings.TrimSpace(in.GetKeyword()); kw != "" {
-		like := "%" + kw + "%"
-		q = q.Where("name LIKE ? OR features LIKE ?", like, like)
-	}
-
-	var total int64
-	if err := q.Count(&total).Error; err != nil {
-		l.Errorf("[admin] count vip plans: %v", err)
-		return nil, errorx.Internal("查询 VIP 套餐失败")
-	}
-
-	var rows []model.VipPlan
-	offset := int((page - 1) * pageSize)
-	if err := q.Order("id ASC").Offset(offset).Limit(int(pageSize)).Find(&rows).Error; err != nil {
+	page := int(in.GetPage())
+	pageSize := int(in.GetPageSize())
+	rows, total, err := vipbiz.ListPlans(l.ctx, l.svcCtx.DB, vipbiz.ListPlansFilter{
+		Page:           page,
+		PageSize:       pageSize,
+		Keyword:        in.GetKeyword(),
+		IncludeDeleted: in.GetIncludeDeleted(),
+	})
+	if err != nil {
 		l.Errorf("[admin] list vip plans: %v", err)
-		return nil, errorx.Internal("查询 VIP 套餐失败")
+		return nil, mapVipBizErr(err)
 	}
 
 	plans := make([]*super.VipPlan, len(rows))

@@ -27,14 +27,14 @@ func NewRegisterLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Register
 
 func (l *RegisterLogic) Register(req *types.RegisterReq) (resp *types.RegisterResp, err error) {
 	// 调用RPC服务
-	rpcResp, err := l.svcCtx.SuperRpcClient.Register(l.ctx, &super.RegisterReq{
+	rpcResp, err := l.svcCtx.UserGW.Register(l.ctx, &super.RegisterReq{
 		Username: req.Username,
 		Password: req.Password,
 		Email:    req.Email,
 	})
 	if err != nil {
 		return &types.RegisterResp{
-			BaseResp: common.HandleRPCError(err, ""),
+			BaseResp: common.HandleUserGWError(err, ""),
 		}, nil
 	}
 

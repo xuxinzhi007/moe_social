@@ -29,6 +29,9 @@ import { AiAgentsPage } from './pages/AiAgentsPage'
 import { MoeBotsPage } from './pages/MoeBotsPage'
 import { MoeBrainPage } from './pages/MoeBrainPage'
 import { MoeToolsPage } from './pages/MoeToolsPage'
+import { AiChatLogsPage } from './pages/AiChatLogsPage'
+import { AnalyticsPage } from './pages/AnalyticsPage'
+import { TagsCenterPage } from './pages/TagsCenterPage'
 import { SocialPage } from './pages/SocialPage'
 import { AdminAccountsPage } from './pages/AdminAccountsPage'
 import { MenusPage } from './pages/MenusPage'
@@ -68,6 +71,9 @@ export default function App() {
                     <Route path="app/moe-bots/:agentKey/brain" element={<MoeBrainPage />} />
                     <Route path="app/moe-brain" element={<MoeBrainPage />} />
                     <Route path="app/moe" element={<MoeToolsPage />} />
+                    <Route path="app/ai/chat-logs" element={<AiChatLogsPage />} />
+                    <Route path="app/analytics" element={<AnalyticsPage />} />
+                    <Route path="app/tags" element={<TagsCenterPage />} />
                     <Route path="app/social" element={<SocialPage />} />
                     <Route path="system/admins" element={<AdminAccountsPage />} />
                     <Route path="system/menus" element={<MenusPage />} />

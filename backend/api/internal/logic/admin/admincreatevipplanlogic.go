@@ -9,7 +9,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	vipbiz "backend/internal/biz/vip"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -45,21 +45,21 @@ func (l *AdminCreateVipPlanLogic) AdminCreateVipPlan(req *types.AdminCreateVipPl
 		}, nil
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.CreateVipPlan(l.ctx, &super.CreateVipPlanReq{
+	plan, err := l.svcCtx.VipGW.CreatePlan(l.ctx, vipbiz.CreatePlanInput{
 		Name:         strings.TrimSpace(req.Name),
 		Description:  strings.TrimSpace(req.Description),
-		Price:        float32(req.Price),
-		DurationDays: int32(req.DurationDays),
+		Price:        req.Price,
+		DurationDays: req.DurationDays,
 	})
 	if err != nil {
 		return &types.AdminCreateVipPlanResp{
-			BaseResp: common.HandleRPCError(err, ""),
+			BaseResp: common.HandleVipGWError(err, ""),
 		}, nil
 	}
 
 	resp = &types.AdminCreateVipPlanResp{
 		BaseResp: common.HandleRPCError(nil, "创建成功"),
-		Data:     common.RpcVipPlanToTypes(rpcResp.GetPlan()),
+		Data:     common.VipPlanModelToTypes(plan),
 	}
 	if resp.BaseResp.Success {
 		common.TryRecordAdminAudit(l.ctx, l.svcCtx, "create", "vip_plan", resp.Data.Id, "创建 VIP 套餐")

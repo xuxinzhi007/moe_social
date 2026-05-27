@@ -8,7 +8,6 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -28,12 +27,10 @@ func NewAdminDeleteVipPlanLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *AdminDeleteVipPlanLogic) AdminDeleteVipPlan(req *types.AdminDeleteVipPlanReq) (*types.AdminDeleteVipPlanResp, error) {
-	_, err := l.svcCtx.SuperRpcClient.AdminDeleteVipPlan(l.ctx, &super.AdminDeleteVipPlanReq{
-		PlanId: req.PlanId,
-	})
+	err := l.svcCtx.VipGW.DeletePlan(l.ctx, req.PlanId)
 	if err != nil {
 		return &types.AdminDeleteVipPlanResp{
-			BaseResp: common.HandleRPCError(err, ""),
+			BaseResp: common.HandleVipGWError(err, ""),
 		}, nil
 	}
 

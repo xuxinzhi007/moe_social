@@ -2,10 +2,8 @@ package logic
 
 import (
 	"context"
-	"strconv"
 
-	"backend/model"
-	"backend/rpc/internal/errorx"
+	vipbiz "backend/internal/biz/vip"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -26,30 +24,16 @@ func NewGetVipPlansLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetVi
 	}
 }
 
-// VIP套餐相关服务
 func (l *GetVipPlansLogic) GetVipPlans(in *super.GetVipPlansReq) (*super.GetVipPlansResp, error) {
-	var plans []model.VipPlan
-	result := l.svcCtx.DB.Find(&plans)
-	if result.Error != nil {
-		l.Errorf("获取VIP套餐失败: %v", result.Error)
-		return nil, errorx.Internal("获取VIP套餐失败: " + result.Error.Error())
+	_ = in
+	plans, err := vipbiz.ListAllPlans(l.ctx, l.svcCtx.DB)
+	if err != nil {
+		l.Errorf("get vip plans: %v", err)
+		return nil, mapVipBizErr(err)
 	}
-
-	// 构建响应
 	respPlans := make([]*super.VipPlan, len(plans))
 	for i, plan := range plans {
-		respPlans[i] = &super.VipPlan{
-			Id:           strconv.FormatUint(uint64(plan.ID), 10),
-			Name:         plan.Name,
-			Description:  plan.Features,
-			Price:        float32(plan.Price),
-			DurationDays: int32(plan.Duration),
-			CreatedAt:    plan.CreatedAt.Format("2006-01-02 15:04:05"),
-			UpdatedAt:    plan.UpdatedAt.Format("2006-01-02 15:04:05"),
-		}
+		respPlans[i] = vipPlanModelToProto(plan)
 	}
-
-	return &super.GetVipPlansResp{
-		Plans: respPlans,
-	}, nil
+	return &super.GetVipPlansResp{Plans: respPlans}, nil
 }

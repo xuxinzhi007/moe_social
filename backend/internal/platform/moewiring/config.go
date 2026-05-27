@@ -68,6 +68,22 @@ func KratosAdminHTTPEnabled() bool {
 	return boolOr(moeViper(), []string{"moe.kratos_admin_http_enabled"}, false)
 }
 
+// UserAPIInProcessEnabled config.yaml: moe.user_api_in_process（默认随 api_in_process / single_process 开启）
+func UserAPIInProcessEnabled() bool {
+	if SingleProcessEnabled() || APIInProcessEnabled() {
+		return boolOr(moeViper(), []string{"moe.user_api_in_process"}, true)
+	}
+	return boolOr(moeViper(), []string{"moe.user_api_in_process"}, false)
+}
+
+// VIPAPIInProcessEnabled config.yaml: moe.vip_api_in_process（默认随 api_in_process / single_process 开启）
+func VIPAPIInProcessEnabled() bool {
+	if SingleProcessEnabled() || APIInProcessEnabled() {
+		return boolOr(moeViper(), []string{"moe.vip_api_in_process"}, true)
+	}
+	return boolOr(moeViper(), []string{"moe.vip_api_in_process"}, false)
+}
+
 // KratosAdminBaseURL config.yaml: moe.kratos_admin_base_url（默认 moe-kratos HTTP）
 func KratosAdminBaseURL() string {
 	if b, err := moeconf.LoadBootstrap(); err == nil && b.GetMoe() != nil {

@@ -27,12 +27,12 @@ func NewGetUserInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetUs
 
 func (l *GetUserInfoLogic) GetUserInfo(req *types.GetUserInfoReq) (resp *types.GetUserInfoResp, err error) {
 	// 调用RPC服务获取用户信息
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetUserInfo(l.ctx, &super.GetUserInfoReq{
+	rpcResp, err := l.svcCtx.UserGW.GetUserInfo(l.ctx, &super.GetUserInfoReq{
 		UserId: req.UserId,
 	})
 	if err != nil {
 		return &types.GetUserInfoResp{
-			BaseResp: common.HandleRPCError(err, ""),
+			BaseResp: common.HandleUserGWError(err, ""),
 		}, nil
 	}
 

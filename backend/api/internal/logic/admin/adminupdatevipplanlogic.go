@@ -8,7 +8,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	vipbiz "backend/internal/biz/vip"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -28,12 +28,11 @@ func NewAdminUpdateVipPlanLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *AdminUpdateVipPlanLogic) AdminUpdateVipPlan(req *types.AdminUpdateVipPlanReq) (*types.AdminUpdateVipPlanResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminUpdateVipPlan(l.ctx, &super.AdminUpdateVipPlanReq{
-		PlanId:             req.PlanId,
+	plan, err := l.svcCtx.VipGW.UpdatePlan(l.ctx, req.PlanId, vipbiz.UpdatePlanPatch{
 		Name:               req.Name,
 		Description:        req.Description,
-		Price:              float32(req.Price),
-		DurationDays:       int32(req.DurationDays),
+		Price:              req.Price,
+		DurationDays:       req.DurationDays,
 		UpdateName:         req.UpdateName,
 		UpdateDescription:  req.UpdateDescription,
 		UpdatePrice:        req.UpdatePrice,
@@ -41,13 +40,13 @@ func (l *AdminUpdateVipPlanLogic) AdminUpdateVipPlan(req *types.AdminUpdateVipPl
 	})
 	if err != nil {
 		return &types.AdminUpdateVipPlanResp{
-			BaseResp: common.HandleRPCError(err, ""),
+			BaseResp: common.HandleVipGWError(err, ""),
 		}, nil
 	}
 
 	resp := &types.AdminUpdateVipPlanResp{
 		BaseResp: common.HandleRPCError(nil, "更新成功"),
-		Data:     common.RpcVipPlanToTypes(rpcResp.GetPlan()),
+		Data:     common.VipPlanModelToTypes(plan),
 	}
 	if resp.BaseResp.Success {
 		common.TryRecordAdminAudit(l.ctx, l.svcCtx, "update", "vip_plan", req.PlanId, "更新 VIP 套餐")

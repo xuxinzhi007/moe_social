@@ -2,15 +2,12 @@ package logic
 
 import (
 	"context"
-	"errors"
 
-	"backend/model"
-	"backend/rpc/internal/errorx"
+	vipbiz "backend/internal/biz/vip"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
-	"gorm.io/gorm"
 )
 
 type AdminGetVipPlanLogic struct {
@@ -32,16 +29,11 @@ func (l *AdminGetVipPlanLogic) AdminGetVipPlan(in *super.AdminGetVipPlanReq) (*s
 	if err != nil {
 		return nil, err
 	}
-
-	var plan model.VipPlan
-	if err := l.svcCtx.DB.Unscoped().First(&plan, planID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errorx.NotFound("VIP 套餐不存在")
-		}
+	plan, err := vipbiz.GetPlan(l.ctx, l.svcCtx.DB, planID)
+	if err != nil {
 		l.Errorf("[admin] get vip plan: %v", err)
-		return nil, errorx.Internal("查询 VIP 套餐失败")
+		return nil, mapVipBizErr(err)
 	}
-
 	return &super.AdminGetVipPlanResp{
 		Plan: vipPlanModelToProto(plan),
 	}, nil

@@ -4,21 +4,41 @@ globs: backend/**/*
 alwaysApply: false
 ---
 
-# Kratos 混合迁移纪律（Moe 域）
+# Kratos 混合迁移纪律
+
+> **更新：2026-05-27** · **阶段 FS-3b** · SSOT：[docs/dev/kratos-migration.md](../docs/dev/kratos-migration.md)
 
 | 进度 | 文档 | 验收 |
 |------|------|------|
-| Hybrid Moe 100% (A) | `docs/dev/kratos-migration.md` | `make verify-moe-complete` |
-| 纯 Kratos 试点 100% (B) | `docs/dev/kratos-pure-migration-plan.md` | `make verify-kratos-100` |
-| 全站迁移 ~22% (F) | `docs/dev/kratos-full-site-migration-plan.md` | FS-0～8 |
+| Hybrid Moe 100% (A) | `kratos-migration.md` | `make verify-moe-complete` |
+| 纯 Kratos 试点 100% (B) | `kratos-pure-migration-plan.md` | `make verify-kratos-100` |
+| VIP 套餐 100% | `kratos-full-site-migration-plan.md` FS-2 | `make verify-domain-vip` |
+| User 核心 FS-3a | 同上 FS-3a | `make verify-domain-user` |
+| 全站迁移 ~48% (F) | `kratos-full-site-migration-plan.md` | `make verify-full-site-50` |
 
-## 新功能（Moe）
+## 生产架构（当前）
 
-1. 契约：`api/moe/v1/moe.proto`；配置 SSOT：`internal/conf/moe/v1/pilot.proto`。
-2. 业务：`internal/biz|service|data/moe`。
-3. Admin HTTP：`moeadmingw.NewConfigured`；试点：`api/moekratospilot`。
-4. gRPC：`internal/server/moegrpc`。
-5. 试点启动：`make moe-kratos`（Wire：`moekratos/wire_gen.go`）。
+- 对外 **:8888**：`make moe-social`
+- 三网关 **in_process**（默认）：`moeadmingw` / `vipadmingw` / `usergw`
+- 内网 **:8080**：`super.Super` + `moe.v1`；非 in_process 路由仍走 RPC
+- 试点（非对外）：`make moe-kratos` → :19031/:19032
+
+## 配置（`config.yaml` → `moe`）
+
+| 键 | 默认 | 作用 |
+|----|------|------|
+| `api_in_process` | true | Moe Admin → `biz/moe` |
+| `vip_api_in_process` | true | VIP 套餐 → `biz/vip` |
+| `user_api_in_process` | true | User 核心 → `biz/user` |
+
+## 新功能写在哪
+
+| 域 | 契约 | 实现 |
+|----|------|------|
+| Moe | `api/moe/v1/moe.proto` | `biz/moe` + `moeadmingw` |
+| VIP 套餐 | `api/vip/v1/` | `biz/vip` + `vipadmingw` |
+| User 核心 | 暂 `super.api` | `biz/user` + `usergw` |
+| 其它 | `super.api` / `super.proto` | legacy logic（迁移中） |
 
 ## 生成
 
@@ -28,19 +48,14 @@ make gen-moe-conf
 make gen-moe-admin   # 改 super.api 后
 ```
 
-## 运行
+## 验收
 
-- 生产对外 **:8888**：`make moe-social` / `make build-moe-social`
-- 试点（非对外）：`make moe-kratos`（:19031/:19032）
+```bash
+make moe-social
+make verify-full-site-50
+```
 
-## VIP 试点（Phase 5）
+## 禁止
 
-- `internal/biz/vip`；试点 HTTP `/api/admin/vip/plans` @ :19032
-
-## 全站迁移（下一域建议 VIP）
-
-见 `docs/dev/kratos-full-site-migration-plan.md` FS-2。
-
-## Legacy
-
-User/社交等仍 `super.api` / `super.proto`；VIP 仅只读 biz 试点。
+- Moe 已迁路径禁止回退巨型 logic
+- 勿把「B=100%」说成「全站纯 Kratos」

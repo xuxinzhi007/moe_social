@@ -107,6 +107,26 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
+				Path:    "/api/admin/ai/chat/messages",
+				Handler: admin.AdminListAiChatMessagesHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/ai/chat/messages/export",
+				Handler: admin.AdminExportAiChatMessagesHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/ai/chat/sessions",
+				Handler: admin.AdminListAiChatSessionsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/analytics/overview",
+				Handler: admin.AdminAnalyticsOverviewHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/admin/announcements",
 				Handler: admin.AdminListAnnouncementsHandler(serverCtx),
 			},
@@ -419,6 +439,46 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/admin/social/friend-requests",
 				Handler: admin.AdminListFriendRequestsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/tag-dictionary",
+				Handler: admin.AdminListTagDictionaryHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/tag-dictionary",
+				Handler: admin.AdminCreateTagDictionaryHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/admin/tag-dictionary/:entry_id",
+				Handler: admin.AdminUpdateTagDictionaryHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/admin/tag-dictionary/:entry_id",
+				Handler: admin.AdminDeleteTagDictionaryHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/admin/topic-tags",
+				Handler: admin.AdminListTopicTagsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/admin/topic-tags",
+				Handler: admin.AdminCreateTopicTagHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/admin/topic-tags/:tag_id",
+				Handler: admin.AdminUpdateTopicTagHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodDelete,
+				Path:    "/api/admin/topic-tags/:tag_id",
+				Handler: admin.AdminDeleteTopicTagHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
