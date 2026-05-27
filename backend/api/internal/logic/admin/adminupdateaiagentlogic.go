@@ -37,12 +37,12 @@ func (l *AdminUpdateAiAgentLogic) AdminUpdateAiAgent(req *types.AdminUpdateAiAge
 			BaseResp: types.BaseResp{Success: false, Message: "payload_json 不是合法 JSON"},
 		}, nil
 	}
-	if l.svcCtx.SuperRpcClient == nil {
+	if l.svcCtx.AIGW == nil {
 		return &types.AdminUpdateAiAgentResp{
-			BaseResp: types.BaseResp{Success: false, Message: "RPC 未就绪"},
+			BaseResp: types.BaseResp{Success: false, Message: "AI 网关未就绪"},
 		}, nil
 	}
-	_, err := l.svcCtx.SuperRpcClient.UpsertAiAgent(l.ctx, &super.UpsertAiResourceReq{
+	_, err := l.svcCtx.AIGW.UpsertAiAgent(l.ctx, &super.UpsertAiResourceReq{
 		UserId:      uid,
 		Id:          aid,
 		PayloadJson: payload,

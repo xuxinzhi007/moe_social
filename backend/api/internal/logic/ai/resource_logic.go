@@ -38,11 +38,11 @@ func (l *ResourceLogic) list(userID uint, kind string) ([]map[string]interface{}
 
 	switch kind {
 	case "providers":
-		resp, err = l.svcCtx.SuperRpcClient.ListAiProviders(l.ctx, req)
+		resp, err = l.svcCtx.AIGW.ListAiProviders(l.ctx, req)
 	case "agents":
-		resp, err = l.svcCtx.SuperRpcClient.ListAiAgents(l.ctx, req)
+		resp, err = l.svcCtx.AIGW.ListAiAgents(l.ctx, req)
 	case "lorebooks":
-		resp, err = l.svcCtx.SuperRpcClient.ListAiLorebooks(l.ctx, req)
+		resp, err = l.svcCtx.AIGW.ListAiLorebooks(l.ctx, req)
 	default:
 		return []map[string]interface{}{}, common.HandleError(fmt.Errorf("unknown ai resource kind: %s", kind))
 	}
@@ -75,11 +75,11 @@ func (l *ResourceLogic) upsert(userID uint, kind string, item map[string]interfa
 	var rpcErr error
 	switch kind {
 	case "providers":
-		_, rpcErr = l.svcCtx.SuperRpcClient.UpsertAiProvider(l.ctx, req)
+		_, rpcErr = l.svcCtx.AIGW.UpsertAiProvider(l.ctx, req)
 	case "agents":
-		_, rpcErr = l.svcCtx.SuperRpcClient.UpsertAiAgent(l.ctx, req)
+		_, rpcErr = l.svcCtx.AIGW.UpsertAiAgent(l.ctx, req)
 	case "lorebooks":
-		_, rpcErr = l.svcCtx.SuperRpcClient.UpsertAiLorebook(l.ctx, req)
+		_, rpcErr = l.svcCtx.AIGW.UpsertAiLorebook(l.ctx, req)
 	default:
 		return []map[string]interface{}{}, common.HandleError(fmt.Errorf("unknown ai resource kind: %s", kind))
 	}
@@ -99,11 +99,11 @@ func (l *ResourceLogic) delete(userID uint, kind, id string) ([]map[string]inter
 	var err error
 	switch kind {
 	case "providers":
-		_, err = l.svcCtx.SuperRpcClient.DeleteAiProvider(l.ctx, req)
+		_, err = l.svcCtx.AIGW.DeleteAiProvider(l.ctx, req)
 	case "agents":
-		_, err = l.svcCtx.SuperRpcClient.DeleteAiAgent(l.ctx, req)
+		_, err = l.svcCtx.AIGW.DeleteAiAgent(l.ctx, req)
 	case "lorebooks":
-		_, err = l.svcCtx.SuperRpcClient.DeleteAiLorebook(l.ctx, req)
+		_, err = l.svcCtx.AIGW.DeleteAiLorebook(l.ctx, req)
 	default:
 		return []map[string]interface{}{}, common.HandleError(fmt.Errorf("unknown ai resource kind: %s", kind))
 	}

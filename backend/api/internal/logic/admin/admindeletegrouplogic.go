@@ -26,7 +26,7 @@ func NewAdminDeleteGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *AdminDeleteGroupLogic) AdminDeleteGroup(req *types.AdminDeleteGroupReq) (resp *types.AdminDeleteGroupResp, err error) {
-	_, err = l.svcCtx.SuperRpcClient.AdminDeleteGroup(l.ctx, &super.AdminDeleteGroupReq{
+	_, err = l.svcCtx.AdminGW.AdminDeleteGroup(l.ctx, &super.AdminDeleteGroupReq{
 		GroupId: req.GroupId,
 	})
 	if err != nil {

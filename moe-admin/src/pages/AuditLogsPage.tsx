@@ -1,24 +1,26 @@
-import { useCallback, useEffect, useState } from 'react'
-import { PageInsightStrip } from '../components/PageInsightStrip'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AdminTag } from '../components/AdminTag'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { auditActionTag, auditResourceTag } from '../lib/adminLabels'
 import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
+import { AdminTable, AdminToolbar, ListPageLayout } from '../ui'
+import type { AdminTableColumn } from '../ui'
+
+type AuditRow = {
+  id: string
+  admin_name: string
+  action: string
+  resource: string
+  resource_id: string
+  detail: string
+  ip: string
+  created_at: string
+}
+
 export function AuditLogsPage() {
   const { client } = useAdminAuth()
-  const [items, setItems] = useState<
-    Array<{
-      id: string
-      admin_name: string
-      action: string
-      resource: string
-      resource_id: string
-      detail: string
-      ip: string
-      created_at: string
-    }>
-  >([])
+  const [items, setItems] = useState<AuditRow[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [action, setAction] = useState('')
@@ -57,98 +59,76 @@ export function AuditLogsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
+  const columns = useMemo(
+    (): AdminTableColumn<AuditRow>[] => [
+      {
+        key: 'time',
+        header: '时间',
+        cellClassName: 'muted',
+        render: (row) => formatDateTime(row.created_at),
+      },
+      { key: 'admin', header: '管理员', render: (row) => row.admin_name || row.id },
+      {
+        key: 'action',
+        header: '操作',
+        render: (row) => <AdminTag spec={auditActionTag(row.action)} />,
+      },
+      {
+        key: 'resource',
+        header: '资源',
+        render: (row) => (
+          <>
+            <AdminTag spec={auditResourceTag(row.resource)} />
+            {row.resource_id ? (
+              <span className="muted" style={{ marginLeft: 6, fontSize: 11 }}>
+                #{row.resource_id}
+              </span>
+            ) : null}
+          </>
+        ),
+      },
+      { key: 'detail', header: '详情', render: (row) => row.detail || '—' },
+      { key: 'ip', header: 'IP', cellClassName: 'muted', render: (row) => row.ip || '—' },
+    ],
+    [],
+  )
+
   return (
-    <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>操作日志</h2>
-          <p className="muted">管理员关键操作审计记录</p>
-        </div>
-      </div>
-      <PageInsightStrip items={[{ label: '匹配记录', value: loading ? '…' : total }]} />
-      <div className="panel">
-        <form
-          className="inline-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            setPage(1)
-            setFilters({ action: action.trim(), resource: resource.trim() })
+    <ListPageLayout
+      title="操作日志"
+      description="管理员关键操作审计记录"
+      metrics={[{ label: '匹配记录', value: loading ? '…' : total }]}
+      toolbar={
+        <AdminToolbar
+          search={{
+            value: action,
+            onChange: setAction,
+            onSubmit: () => {
+              setPage(1)
+              setFilters({ action: action.trim(), resource: resource.trim() })
+            },
+            placeholder: '操作 action',
+            submitLabel: '筛选',
           }}
-        >
-          <input placeholder="操作 action" value={action} onChange={(e) => setAction(e.target.value)} />
-          <input placeholder="资源 resource" value={resource} onChange={(e) => setResource(e.target.value)} />
-          <button type="submit" className="btn btn-primary">
-            筛选
-          </button>
-        </form>
-        {error ? <p className="text-danger">{error}</p> : null}
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>时间</th>
-                <th>管理员</th>
-                <th>操作</th>
-                <th>资源</th>
-                <th>详情</th>
-                <th>IP</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="muted">
-                    加载中…
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="muted">
-                    暂无操作记录
-                  </td>
-                </tr>
-              ) : (
-                items.map((row) => (
-                  <tr key={row.id}>
-                    <td className="muted">{formatDateTime(row.created_at)}</td>
-                    <td>{row.admin_name || row.id}</td>
-                    <td>
-                      <AdminTag spec={auditActionTag(row.action)} />
-                    </td>
-                    <td>
-                      <AdminTag spec={auditResourceTag(row.resource)} />
-                      {row.resource_id ? (
-                        <span className="muted" style={{ marginLeft: 6, fontSize: 11 }}>
-                          #{row.resource_id}
-                        </span>
-                      ) : null}
-                    </td>
-                    <td>{row.detail || '—'}</td>
-                    <td className="muted">{row.ip || '—'}</td>
-                  </tr>                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        {totalPages > 1 ? (
-          <div className="pager">
-            <button type="button" className="btn btn-ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              上一页
-            </button>
-            <span className="muted">
-              {page}/{totalPages} · 共 {total} 条
-            </span>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              下一页
-            </button>
-          </div>
-        ) : null}
-      </div>
-    </>
+          filters={
+            <input
+              placeholder="资源 resource"
+              value={resource}
+              onChange={(e) => setResource(e.target.value)}
+            />
+          }
+        />
+      }
+      error={error}
+      pagination={{ page, totalPages, total, onPageChange: setPage }}
+    >
+      <AdminTable
+        columns={columns}
+        rows={items}
+        rowKey={(row) => row.id}
+        loading={loading}
+        emptyText="暂无操作记录"
+      />
+    </ListPageLayout>
   )
 }

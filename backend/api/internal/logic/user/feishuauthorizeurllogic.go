@@ -30,7 +30,7 @@ func NewFeishuAuthorizeURLLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *FeishuAuthorizeURLLogic) FeishuAuthorizeURL(req *types.FeishuAuthorizeURLReq) (resp *types.FeishuAuthorizeURLResp, err error) {
-	rpcResp, rpcErr := l.svcCtx.SuperRpcClient.FeishuAuthorizeURL(l.ctx, &super.FeishuAuthorizeURLReq{
+	rpcResp, rpcErr := l.svcCtx.UserGW.FeishuAuthorizeURL(l.ctx, &super.FeishuAuthorizeURLReq{
 		State: strings.TrimSpace(req.State),
 	})
 	if rpcErr != nil {

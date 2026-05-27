@@ -38,7 +38,7 @@ func (l *AdminListUsersLogic) AdminListUsers(req *types.AdminListUsersReq) (resp
 		pageSize = 20
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListUsers(l.ctx, &super.AdminListUsersReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListUsers(l.ctx, &super.AdminListUsersReq{
 		Page:     int32(page),
 		PageSize: int32(pageSize),
 		Keyword:  req.Keyword,

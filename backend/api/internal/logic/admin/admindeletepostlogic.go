@@ -26,7 +26,7 @@ func NewAdminDeletePostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *A
 }
 
 func (l *AdminDeletePostLogic) AdminDeletePost(req *types.AdminDeletePostReq) (resp *types.AdminDeletePostResp, err error) {
-	_, err = l.svcCtx.SuperRpcClient.AdminDeletePost(l.ctx, &super.AdminDeletePostReq{
+	_, err = l.svcCtx.AdminGW.AdminDeletePost(l.ctx, &super.AdminDeletePostReq{
 		PostId: req.PostId,
 	})
 	if err != nil {

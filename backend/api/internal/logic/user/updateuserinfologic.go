@@ -27,7 +27,7 @@ func NewUpdateUserInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Up
 
 func (l *UpdateUserInfoLogic) UpdateUserInfo(req *types.UpdateUserInfoReq) (resp *types.UpdateUserInfoResp, err error) {
 	// 调用RPC服务
-	rpcResp, err := l.svcCtx.SuperRpcClient.UpdateUserInfo(l.ctx, &super.UpdateUserInfoReq{
+	rpcResp, err := l.svcCtx.UserGW.UpdateUserInfo(l.ctx, &super.UpdateUserInfoReq{
 		UserId:             req.UserId,
 		Username:           req.Username,
 		Email:              req.Email,

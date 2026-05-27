@@ -181,7 +181,9 @@ moe:
   achievement_api_in_process: true
   gift_api_in_process: true
   llm_api_in_process: true
+  ai_api_in_process: true
   community_api_in_process: true
+  chat_api_in_process: true
   admin_readonly_api_in_process: true
   # 在 RPC :8080 同时注册 moe.v1.MoeAdmin gRPC（与 super.Super 并存）
   register_moe_grpc: true

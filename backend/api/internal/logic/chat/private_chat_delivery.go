@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"backend/api/internal/svc"
+	notifybiz "backend/internal/biz/notify"
 	"backend/rpc/pb/super"
 
 	"github.com/gorilla/websocket"
@@ -111,8 +112,8 @@ func ResolvePrivateMessageSenderProfile(
 	senderAvatar = strings.TrimSpace(clientAvatar)
 	senderName = ""
 	var username string
-	if svc != nil && svc.SuperRpcClient != nil {
-		rpcResp, err := svc.SuperRpcClient.GetUser(ctx, &super.GetUserReq{UserId: senderID})
+	if svc != nil && svc.UserGW != nil {
+		rpcResp, err := svc.UserGW.GetUser(ctx, &super.GetUserReq{UserId: senderID})
 		if err == nil && rpcResp != nil && rpcResp.User != nil {
 			u := rpcResp.User
 			username = strings.TrimSpace(u.Username)
@@ -151,13 +152,19 @@ func PersistOfflinePrivateChatNotification(ctx context.Context, svc *svc.Service
 			body = body[:200]
 		}
 	}
-	_, err := svc.SuperRpcClient.CreateNotification(ctx, &super.CreateNotificationReq{
+	req := &super.CreateNotificationReq{
 		UserId:   targetUserID,
 		SenderId: fromUserID,
 		Type:     NotificationTypePrivateChat,
 		PostId:   "",
 		Content:  body,
-	})
+	}
+	var err error
+	if svc.UserApp != nil && svc.UserApp.DB() != nil {
+		err = notifybiz.CreateInbox(ctx, svc.UserApp.DB(), req)
+	} else if svc.SuperRpcClient != nil {
+		_, err = svc.SuperRpcClient.CreateNotification(ctx, req)
+	}
 	if err != nil {
 		logx.WithContext(ctx).Errorf("offline private chat notify to=%s from=%s: %v", targetUserID, fromUserID, err)
 		return

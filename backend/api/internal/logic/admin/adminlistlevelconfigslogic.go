@@ -26,7 +26,7 @@ func NewAdminListLevelConfigsLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *AdminListLevelConfigsLogic) AdminListLevelConfigs(_ *types.EmptyReq) (*types.AdminListLevelConfigsResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListLevelConfigs(l.ctx, &super.AdminListLevelConfigsReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminListLevelConfigs(l.ctx, &super.AdminListLevelConfigsReq{})
 	if err != nil {
 		return &types.AdminListLevelConfigsResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

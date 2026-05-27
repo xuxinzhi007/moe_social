@@ -8,7 +8,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { DataEnvBar } from '../components/DataEnvBar'
+import { MonitorPageLayout } from '../ui'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { DeployApiError } from '../api/deployClient'
 import {
@@ -174,14 +174,10 @@ export function RpcPage() {
   }, [live])
 
   return (
-    <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>RPC 监控</h2>
-          <p className="muted">
-            原生管理台页面 · Go 堆内存与 RPC 日志 · 经 Agent 转发 debug API
-          </p>
-        </div>
+    <MonitorPageLayout
+      title="RPC 监控"
+      description="原生管理台页面 · Go 堆内存与 RPC 日志 · 经 Agent 转发 debug API"
+      headActions={
         <div className="btn-row">
           <label className="checkbox-inline">
             <input
@@ -200,10 +196,8 @@ export function RpcPage() {
             {loading ? '刷新中…' : '立即刷新'}
           </button>
         </div>
-      </div>
-
-      <DataEnvBar />
-
+      }
+    >
       {runtime && (
         <div className="card rpc-runtime-card">
           <h3 className="rpc-section-title">本机服务内存</h3>
@@ -407,6 +401,6 @@ export function RpcPage() {
           </div>
         </div>
       )}
-    </>
+    </MonitorPageLayout>
   )
 }

@@ -26,7 +26,7 @@ func NewAdminListCheckInRewardsLogic(ctx context.Context, svcCtx *svc.ServiceCon
 }
 
 func (l *AdminListCheckInRewardsLogic) AdminListCheckInRewards(_ *types.EmptyReq) (*types.AdminListCheckInRewardsResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListCheckInRewards(l.ctx, &super.AdminListCheckInRewardsReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminListCheckInRewards(l.ctx, &super.AdminListCheckInRewardsReq{})
 	if err != nil {
 		return &types.AdminListCheckInRewardsResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

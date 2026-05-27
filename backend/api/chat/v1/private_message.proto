@@ -1,0 +1,20 @@
+// SSOT stub (documentation-only). Mirrors super.proto private message RPCs.
+syntax = "proto3";
+
+package chat.v1;
+
+option go_package = "backend/api/chat/v1;chatv1";
+
+message PrivateMessage {}
+message SendPrivateMessageReq {}
+message SendPrivateMessageResp {}
+message ListPrivateMessagesReq {}
+message ListPrivateMessagesResp {}
+message ListPrivateConversationsReq {}
+message ListPrivateConversationsResp {}
+
+service PrivateMessageService {
+  rpc SendPrivateMessage(SendPrivateMessageReq) returns (SendPrivateMessageResp);
+  rpc ListPrivateMessages(ListPrivateMessagesReq) returns (ListPrivateMessagesResp);
+  rpc ListPrivateConversations(ListPrivateConversationsReq) returns (ListPrivateConversationsResp);
+}

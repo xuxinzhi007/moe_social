@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { DataEnvBar } from '../components/DataEnvBar'
 import { FormField } from '../components/FormField'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { DeployApiError } from '../api/deployClient'
+import { AdminPanel, ListPageLayout } from '../ui'
 
 export function NotifyPage() {
   const { client } = useAdminAuth()
@@ -64,36 +64,20 @@ export function NotifyPage() {
   }
 
   return (
-    <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>通知推送</h2>
-          <p className="muted">系统通知广播或指定用户</p>
-        </div>
-      </div>
-      <DataEnvBar />
-
-      {message ? (
-        <div className="admin-hint admin-hint-ok" style={{ marginBottom: 12 }}>
-          {message}
-          <button type="button" className="btn btn-ghost" style={{ marginLeft: 8 }} onClick={() => setMessage('')}>
-            关闭
-          </button>
-        </div>
-      ) : null}
-      {error ? <p className="text-danger">{error}</p> : null}
-
+    <ListPageLayout
+      title="通知推送"
+      description="系统通知广播或指定用户"
+      banner={message ? { message, tone: 'ok', onClose: () => setMessage('') } : undefined}
+      error={error}
+    >
       <div className="overview-bottom">
-        <div className="panel">
+        <AdminPanel>
           <div className="panel-head">
             <h3>全员广播</h3>
           </div>
           <div className="panel-body">
             <FormField label="标题" required>
-              <input
-                value={broadcast.title}
-                onChange={(e) => setBroadcast((f) => ({ ...f, title: e.target.value }))}
-              />
+              <input value={broadcast.title} onChange={(e) => setBroadcast((f) => ({ ...f, title: e.target.value }))} />
             </FormField>
             <FormField label="内容" required>
               <textarea
@@ -111,24 +95,18 @@ export function NotifyPage() {
               {sending ? '发送中…' : '全员广播'}
             </button>
           </div>
-        </div>
+        </AdminPanel>
 
-        <div className="panel">
+        <AdminPanel>
           <div className="panel-head">
             <h3>指定用户</h3>
           </div>
           <div className="panel-body">
             <FormField label="用户 ID" required hint="App users 表主键">
-              <input
-                value={target.user_id}
-                onChange={(e) => setTarget((f) => ({ ...f, user_id: e.target.value }))}
-              />
+              <input value={target.user_id} onChange={(e) => setTarget((f) => ({ ...f, user_id: e.target.value }))} />
             </FormField>
             <FormField label="标题" required>
-              <input
-                value={target.title}
-                onChange={(e) => setTarget((f) => ({ ...f, title: e.target.value }))}
-              />
+              <input value={target.title} onChange={(e) => setTarget((f) => ({ ...f, title: e.target.value }))} />
             </FormField>
             <FormField label="内容" required>
               <textarea
@@ -137,17 +115,12 @@ export function NotifyPage() {
                 onChange={(e) => setTarget((f) => ({ ...f, content: e.target.value }))}
               />
             </FormField>
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={sending}
-              onClick={() => void sendTarget()}
-            >
+            <button type="button" className="btn btn-primary" disabled={sending} onClick={() => void sendTarget()}>
               {sending ? '发送中…' : '发送'}
             </button>
           </div>
-        </div>
+        </AdminPanel>
       </div>
-    </>
+    </ListPageLayout>
   )
 }

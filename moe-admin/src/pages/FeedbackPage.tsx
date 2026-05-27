@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AdminTag } from '../components/AdminTag'
-import { DataEnvBar } from '../components/DataEnvBar'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { useDeploy } from '../context/DeployContext'
 import { feedbackCategoryTag } from '../lib/adminLabels'
 import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
+import { AdminPanel, AdminTable, ListPageLayout } from '../ui'
+import type { AdminTableColumn } from '../ui'
 
 type FeedbackItem = {
   id: number
@@ -60,123 +61,76 @@ export function FeedbackPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
+  const columns = useMemo(
+    (): AdminTableColumn<FeedbackItem>[] => [
+      {
+        key: 'id',
+        header: 'ID',
+        render: (row) => (
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setSelected(row)}>
+            #{row.id}
+          </button>
+        ),
+      },
+      {
+        key: 'category',
+        header: '类型',
+        render: (row) => <AdminTag spec={feedbackCategoryTag(row.category)} />,
+      },
+      { key: 'email', header: '邮箱', render: (row) => row.email },
+      {
+        key: 'snippet',
+        header: '摘要',
+        cellClassName: 'fb-snippet',
+        render: (row) => (row.content.length > 48 ? `${row.content.slice(0, 48)}…` : row.content),
+      },
+      { key: 'time', header: '时间', render: (row) => formatDateTime(row.created_at) },
+    ],
+    [],
+  )
+
   return (
     <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>官网意见反馈</h2>
-          <p>来自落地页 #join 的提交</p>
-        </div>
-        <div className="btn-row">
-          <select
-            className="select-inline"
-            value={category}
-            onChange={(e) => {
-              setCategory(e.target.value)
-              setPage(1)
-            }}
-          >
-            <option value="all">全部类型</option>
-            <option value="feature">功能建议</option>
-            <option value="bug">问题反馈</option>
-            <option value="other">其他</option>
-          </select>
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={loading}
-            onClick={() => void load()}
-          >
-            {loading ? '刷新中…' : '刷新'}
-          </button>
-        </div>
-      </div>
-
-      <DataEnvBar />
-
-      <div className="panel fb-panel">
-        <div className="panel-head">
-          <h3>反馈列表</h3>
-          <span className="tag tag-pending">共 {total} 条</span>
-        </div>
-        <div className="panel-body" style={{ padding: 0 }}>
-          {loading && items.length === 0 ? (
-            <p className="loading-hint" style={{ padding: 16 }}>
-              正在加载…
-            </p>
-          ) : items.length === 0 ? (
-            <p className="loading-hint" style={{ padding: 16 }}>
-              暂无反馈，或云端 API 尚未部署含列表接口的版本。
-            </p>
-          ) : (
-            <table className="jobs-table fb-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>类型</th>
-                  <th>邮箱</th>
-                  <th>摘要</th>
-                  <th>时间</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((row) => (
-                  <tr
-                    key={row.id}
-                    className={selected?.id === row.id ? 'selected' : ''}
-                    onClick={() => setSelected(row)}
-                  >
-                    <td>#{row.id}</td>
-                    <td>
-                      <AdminTag spec={feedbackCategoryTag(row.category)} />
-                    </td>
-                    <td>{row.email}</td>
-                    <td className="fb-snippet">
-                      {row.content.length > 48
-                        ? `${row.content.slice(0, 48)}…`
-                        : row.content}
-                    </td>
-                    <td>{formatDateTime(row.created_at)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-        {total > pageSize ? (
-          <div className="panel-body fb-pager">
-            <button
-              type="button"
-              className="btn btn-ghost"
-              disabled={page <= 1 || loading}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+      <ListPageLayout
+        title="官网意见反馈"
+        description="来自落地页 #join 的提交"
+        metrics={[{ label: '反馈总数', value: loading ? '…' : total }]}
+        headActions={
+          <div className="btn-row">
+            <select
+              className="select-inline"
+              value={category}
+              onChange={(e) => {
+                setCategory(e.target.value)
+                setPage(1)
+              }}
             >
-              上一页
-            </button>
-            <span>
-              {page} / {totalPages}
-            </span>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              disabled={page >= totalPages || loading}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              下一页
+              <option value="all">全部类型</option>
+              <option value="feature">功能建议</option>
+              <option value="bug">问题反馈</option>
+              <option value="other">其他</option>
+            </select>
+            <button type="button" className="btn btn-primary" disabled={loading} onClick={() => void load()}>
+              {loading ? '刷新中…' : '刷新'}
             </button>
           </div>
-        ) : null}
-      </div>
+        }
+        pagination={{ page, totalPages, total, onPageChange: setPage }}
+      >
+        <AdminTable
+          columns={columns}
+          rows={items}
+          rowKey={(row) => String(row.id)}
+          loading={loading}
+          emptyText="暂无反馈，或云端 API 尚未部署含列表接口的版本。"
+        />
+      </ListPageLayout>
 
       {selected ? (
-        <div className="panel fb-detail">
+        <AdminPanel className="fb-detail">
           <div className="panel-head">
             <h3>反馈 #{selected.id}</h3>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={() => setSelected(null)}
-            >
+            <button type="button" className="btn btn-ghost" onClick={() => setSelected(null)}>
               关闭
             </button>
           </div>
@@ -207,7 +161,7 @@ export function FeedbackPage() {
             </div>
             <p className="fb-detail-content">{selected.content}</p>
           </div>
-        </div>
+        </AdminPanel>
       ) : null}
     </>
   )

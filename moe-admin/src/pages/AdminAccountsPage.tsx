@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
-import { PageInsightStrip } from '../components/PageInsightStrip'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AdminFormDrawer } from '../components/AdminFormDrawer'
 import { AdminTag } from '../components/AdminTag'
 import { FormField } from '../components/FormField'
@@ -9,6 +8,8 @@ import { useAdminAuth } from '../context/AdminAuthContext'
 import { roleTag } from '../lib/adminLabels'
 import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
+import { AdminTable, ListPageLayout } from '../ui'
+import type { AdminTableColumn } from '../ui'
 
 type Row = { id: string; username: string; role: string; last_login_at?: string; created_at: string }
 
@@ -101,127 +102,87 @@ export function AdminAccountsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
-  return (
-    <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>管理员账号</h2>
-          <p className="muted">Moe Admin 后台账号（与 App 用户分离）</p>
-        </div>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => {
-            setEditing(null)
-            setForm(emptyForm)
-            setFormError('')
-            setModal('create')
-          }}
-        >
-          新建管理员
-        </button>
-      </div>
-
-      <PageInsightStrip items={[{ label: '管理员', value: loading ? '…' : total }]} />
-
-      {message ? (
-        <div className="admin-hint admin-hint-ok" style={{ marginBottom: 12 }}>
-          {message}
-          <button type="button" className="btn btn-ghost" style={{ marginLeft: 8 }} onClick={() => setMessage('')}>
-            关闭
-          </button>
-        </div>
-      ) : null}
-
-      <div className="panel">
-        {error ? <p className="text-danger">{error}</p> : null}
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>用户名</th>
-                <th>角色</th>
-                <th>上次登录</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={5} className="muted">
-                    加载中…
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="muted">
-                    暂无账号
-                  </td>
-                </tr>
-              ) : (
-                items.map((row) => (
-                  <tr key={row.id}>
-                    <td>
-                      <IdCell id={row.id} />
-                    </td>
-                    <td>
-                      <UserCell name={row.username} sub="Moe Admin" />
-                    </td>
-                    <td>
-                      <AdminTag spec={roleTag(row.role)} />
-                    </td>
-                    <td className="muted">{formatDateTime(row.last_login_at)}</td>                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => {
-                          setEditing(row)
-                          setForm({ username: row.username, password: '', role: row.role })
-                          setFormError('')
-                          setModal('edit')
-                        }}
-                      >
-                        编辑
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={async () => {
-                          if (!confirm(`删除管理员「${row.username}」？`)) return
-                          const res = await client.deleteAccount(row.id)
-                          if (!res.success) setError(res.message || '删除失败')
-                          else await load()
-                        }}
-                      >
-                        删除
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        {totalPages > 1 ? (
-          <div className="pager">
-            <button type="button" className="btn btn-ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              上一页
-            </button>
-            <span className="muted">
-              {page}/{totalPages} · 共 {total} 条
-            </span>
+  const columns = useMemo(
+    (): AdminTableColumn<Row>[] => [
+      { key: 'id', header: 'ID', render: (row) => <IdCell id={row.id} /> },
+      {
+        key: 'user',
+        header: '用户名',
+        render: (row) => <UserCell name={row.username} sub="Moe Admin" />,
+      },
+      {
+        key: 'role',
+        header: '角色',
+        render: (row) => <AdminTag spec={roleTag(row.role)} />,
+      },
+      {
+        key: 'login',
+        header: '上次登录',
+        cellClassName: 'muted',
+        render: (row) => formatDateTime(row.last_login_at),
+      },
+      {
+        key: 'actions',
+        header: '',
+        render: (row) => (
+          <>
             <button
               type="button"
-              className="btn btn-ghost"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                setEditing(row)
+                setForm({ username: row.username, password: '', role: row.role })
+                setFormError('')
+                setModal('edit')
+              }}
             >
-              下一页
+              编辑
             </button>
-          </div>
-        ) : null}
-      </div>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={async () => {
+                if (!confirm(`删除管理员「${row.username}」？`)) return
+                const res = await client.deleteAccount(row.id)
+                if (!res.success) setError(res.message || '删除失败')
+                else await load()
+              }}
+            >
+              删除
+            </button>
+          </>
+        ),
+      },
+    ],
+    [client, load],
+  )
+
+  return (
+    <>
+      <ListPageLayout
+        title="管理员账号"
+        description="Moe Admin 后台账号（与 App 用户分离）"
+        metrics={[{ label: '管理员', value: loading ? '…' : total }]}
+        headActions={
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => {
+              setEditing(null)
+              setForm(emptyForm)
+              setFormError('')
+              setModal('create')
+            }}
+          >
+            新建管理员
+          </button>
+        }
+        banner={message ? { message, tone: 'ok', onClose: () => setMessage('') } : undefined}
+        error={error}
+        pagination={{ page, totalPages, total, onPageChange: setPage }}
+      >
+        <AdminTable columns={columns} rows={items} rowKey={(row) => row.id} loading={loading} emptyText="暂无账号" />
+      </ListPageLayout>
 
       <AdminFormDrawer
         open={modal !== null}

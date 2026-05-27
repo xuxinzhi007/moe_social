@@ -119,6 +119,52 @@ func MarkAllRead(ctx context.Context, db *gorm.DB, userIDRaw string) error {
 		Update("is_read", true).Error
 }
 
+// CreateInbox 写入一条用户通知（等同 CreateNotification RPC）。
+func CreateInbox(ctx context.Context, db *gorm.DB, in *super.CreateNotificationReq) error {
+	if db == nil {
+		return gorm.ErrInvalidDB
+	}
+	userID, err := parseUserID32(in.GetUserId())
+	if err != nil {
+		return err
+	}
+	senderID, err := parseUserID32(in.GetSenderId())
+	if err != nil {
+		return err
+	}
+
+	var postID uint
+	if raw := strings.TrimSpace(in.GetPostId()); raw != "" {
+		n, err := strconv.ParseUint(raw, 10, 32)
+		if err != nil {
+			return ErrInvalidNotificationID
+		}
+		postID = uint(n)
+	}
+
+	content := in.GetContent()
+	if len(content) > 200 {
+		content = content[:200]
+	}
+
+	notification := model.Notification{
+		UserID:   userID,
+		SenderID: senderID,
+		Type:     int(in.GetType()),
+		Content:  content,
+		IsRead:   false,
+	}
+	if postID > 0 {
+		notification.PostID = postID
+	}
+
+	createDB := db.WithContext(ctx)
+	if postID == 0 {
+		createDB = createDB.Omit("PostID")
+	}
+	return createDB.Create(&notification).Error
+}
+
 func modelToProto(n *model.Notification) *super.Notification {
 	if n == nil {
 		return nil

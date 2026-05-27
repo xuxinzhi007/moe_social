@@ -22,7 +22,7 @@ func NewAdminUpsertMenuLogic(ctx context.Context, svcCtx *svc.ServiceContext) *A
 }
 
 func (l *AdminUpsertMenuLogic) AdminUpsertMenu(req *types.AdminUpsertMenuReq) (*types.AdminUpsertMenuResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminUpsertMenu(l.ctx, &super.AdminUpsertMenuReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminUpsertMenu(l.ctx, &super.AdminUpsertMenuReq{
 		Key:          req.Key,
 		Kind:         req.Kind,
 		ParentKey:    req.ParentKey,

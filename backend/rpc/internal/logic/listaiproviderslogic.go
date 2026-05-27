@@ -16,13 +16,17 @@ type ListAiProvidersLogic struct {
 }
 
 func NewListAiProvidersLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ListAiProvidersLogic {
-	return &ListAiProvidersLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+	return &ListAiProvidersLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
 func (l *ListAiProvidersLogic) ListAiProviders(in *super.ListAiResourceReq) (*super.ListAiResourceResp, error) {
-	return NewAiResourcesLogic(l.ctx, l.svcCtx).list("providers", in)
+	resp, err := aiApp(l.svcCtx).ListAiProviders(l.ctx, in)
+	if err != nil {
+		if mapped := mapAIResourceErr(err); mapped != nil {
+			return nil, mapped
+		}
+		l.Errorf("list ai providers: %v", err)
+		return nil, mapAIResourceErr(err)
+	}
+	return resp, nil
 }

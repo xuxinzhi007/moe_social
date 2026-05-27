@@ -1,3 +1,6 @@
+// DEPRECATED: super.proto is legacy SSOT. New RPC contracts belong in domain protos
+// under api/<domain>/v1/ (e.g. api/chat/v1/private_message.proto). Do not add new
+// RPCs here unless bridging legacy super.Super during migration.
 
 syntax = "proto3";
 
@@ -1254,6 +1257,12 @@ message AdminBootstrapGiftsResp {
   int32 created = 1;
 }
 
+message AdminDedupeGiftsReq {}
+
+message AdminDedupeGiftsResp {
+  int32 removed = 1;
+}
+
 // Admin 订单（只读）
 message AdminListVipOrdersReq {
   int32 page = 1;
@@ -2036,6 +2045,12 @@ message AdminDeleteTopicTagReq {
 
 message AdminDeleteTopicTagResp {}
 
+message AdminBootstrapTopicTagsReq {}
+
+message AdminBootstrapTopicTagsResp {
+  int32 created = 1;
+}
+
 message AdminTagDictionaryItem {
   string id = 1;
   string category = 2;
@@ -2496,6 +2511,7 @@ service Super {
   rpc AdminUpdateGift(AdminUpdateGiftReq) returns (AdminUpdateGiftResp);
   rpc AdminDeleteGift(AdminDeleteGiftReq) returns (AdminDeleteGiftResp);
   rpc AdminBootstrapGifts(AdminBootstrapGiftsReq) returns (AdminBootstrapGiftsResp);
+  rpc AdminDedupeGifts(AdminDedupeGiftsReq) returns (AdminDedupeGiftsResp);
   rpc AdminListVipOrders(AdminListVipOrdersReq) returns (AdminListVipOrdersResp);
   rpc AdminListGiftPurchaseOrders(AdminListGiftPurchaseOrdersReq) returns (AdminListGiftPurchaseOrdersResp);
   rpc AdminListPosts(AdminListPostsReq) returns (AdminListPostsResp);
@@ -2547,6 +2563,7 @@ service Super {
   rpc AdminCreateTopicTag(AdminCreateTopicTagReq) returns (AdminCreateTopicTagResp);
   rpc AdminUpdateTopicTag(AdminUpdateTopicTagReq) returns (AdminUpdateTopicTagResp);
   rpc AdminDeleteTopicTag(AdminDeleteTopicTagReq) returns (AdminDeleteTopicTagResp);
+  rpc AdminBootstrapTopicTags(AdminBootstrapTopicTagsReq) returns (AdminBootstrapTopicTagsResp);
   rpc AdminListTagDictionary(AdminListTagDictionaryReq) returns (AdminListTagDictionaryResp);
   rpc AdminCreateTagDictionary(AdminCreateTagDictionaryReq) returns (AdminCreateTagDictionaryResp);
   rpc AdminUpdateTagDictionary(AdminUpdateTagDictionaryReq) returns (AdminUpdateTagDictionaryResp);

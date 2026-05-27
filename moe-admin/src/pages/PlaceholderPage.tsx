@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { PLACEHOLDER_PAGES } from '../config/placeholders'
+import { PageHead } from '../ui'
 
 export function PlaceholderPage() {
   const location = useLocation()
@@ -20,12 +21,14 @@ export function PlaceholderPage() {
 
   return (
     <>
-      <div className="page-head">
-        <h2>{meta.title}</h2>
-        <p>
-          规划阶段 <strong>{meta.phase}</strong> · 对应 App：{meta.appDomain}
-        </p>
-      </div>
+      <PageHead
+        title={meta.title}
+        description={
+          <>
+            规划阶段 <strong>{meta.phase}</strong> · 对应 App：{meta.appDomain}
+          </>
+        }
+      />
 
       <div className="panel">
         <div className="panel-body placeholder-body">

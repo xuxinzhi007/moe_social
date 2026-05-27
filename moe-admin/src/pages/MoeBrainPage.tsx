@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { AdminIcon } from '../components/AdminIcon'
 import { AdminTag } from '../components/AdminTag'
-import { DataEnvBar } from '../components/DataEnvBar'
 import { BrainPipelinePanel } from '../components/BrainPipelinePanel'
+import { MonitorPageLayout } from '../ui'
 import { InferenceStatusBar } from '../components/InferenceStatusBar'
 import { MemoryInfluencePanel } from '../components/MemoryInfluencePanel'
 import type { MoeBrainGenerationMeta } from '../api/adminClient'
@@ -269,57 +269,50 @@ export function MoeBrainPage() {
   const approvedCount = (brain?.episodes || []).filter((episode) => episode.approved).length
 
   return (
-    <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>AI 大脑</h2>
-          <p className="muted">单 Bot 标签策略、生成结果与记忆整理 · 先选对象再编辑规则</p>
-        </div>
-        <div className="btn-row">
+    <MonitorPageLayout
+      title="AI 大脑"
+      description="单 Bot 标签策略、生成结果与记忆整理 · 先选对象再编辑规则"
+      headActions={
+        <div className="btn-row page-head-toolbar">
           <Link className="btn btn-ghost btn-sm" to="/app/moe-bots">
             <AdminIcon name="bot" />
             Bot 配置
           </Link>
           <button
             type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => {
-              bumpOpsRefresh()
-              void loadBrain()
-            }}
-          >
-            刷新
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            disabled={runningOnce}
+            className="btn btn-primary btn-sm"
+            disabled={runningOnce || curating}
             onClick={() => void runOncePost()}
           >
             {runningOnce ? '试跑中…' : '试跑发帖'}
           </button>
           <button
             type="button"
-            className="btn btn-primary btn-sm"
-            disabled={curating}
+            className="btn btn-ghost btn-sm"
+            disabled={curating || runningOnce}
             onClick={() => void curateMemories()}
           >
             {curating ? '整理中…' : '整理低分记忆'}
           </button>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            disabled={loading || runningOnce || curating}
+            onClick={() => {
+              bumpOpsRefresh()
+              void loadBrain()
+            }}
+          >
+            {loading ? '刷新中…' : '刷新'}
+          </button>
         </div>
-      </div>
-
-      <DataEnvBar />
+      }
+      error={error || undefined}
+    >
       <InferenceStatusBar agentKey={activeKey} refreshKey={opsRefresh} />
-      <BrainPipelinePanel
-        agentKey={activeKey}
-        refreshKey={opsRefresh}
-        runningOnce={runningOnce}
-        onRunOnce={() => void runOncePost()}
-      />
+      <BrainPipelinePanel agentKey={activeKey} refreshKey={opsRefresh} />
       <MemoryInfluencePanel meta={brain?.generation_meta} />
       <PageMessage message={message} tone={messageTone} onClose={() => setMessage('')} />
-      {error ? <p className="text-danger">{error}</p> : null}
 
       <section className="panel content-panel-table brain-object-panel">
         <div className="content-toolbar">
@@ -575,6 +568,6 @@ export function MoeBrainPage() {
           </div>
         </section>
       ) : null}
-    </>
+    </MonitorPageLayout>
   )
 }

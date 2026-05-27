@@ -1,4 +1,5 @@
 import { BuildCacheActions } from '../components/BuildCacheActions'
+import { PageHead } from '../ui'
 import { useDeploy } from '../context/DeployContext'
 
 export function BuildPage() {
@@ -18,10 +19,7 @@ export function BuildPage() {
 
   return (
     <>
-      <div className="page-head">
-        <h2>构建流水线</h2>
-        <p>本机交叉编译与 Flutter 调试（较慢）</p>
-      </div>
+      <PageHead title="构建流水线" description="本机交叉编译与 Flutter 调试（较慢）" />
 
       <div className="split">
         <div className="panel">

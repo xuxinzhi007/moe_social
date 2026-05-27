@@ -26,7 +26,7 @@ func NewAdminUpdateAchievementLogic(ctx context.Context, svcCtx *svc.ServiceCont
 }
 
 func (l *AdminUpdateAchievementLogic) AdminUpdateAchievement(req *types.AdminUpdateAchievementReq) (*types.AdminUpdateAchievementResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminUpdateAchievement(l.ctx, &super.AdminUpdateAchievementReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminUpdateAchievement(l.ctx, &super.AdminUpdateAchievementReq{
 		Id:                req.AchievementId,
 		Name:              req.Name,
 		Description:       req.Description,

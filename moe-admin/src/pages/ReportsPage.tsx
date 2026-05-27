@@ -1,25 +1,25 @@
-import { useCallback, useEffect, useState } from 'react'
-import { DataEnvBar } from '../components/DataEnvBar'
-import { PageInsightStrip } from '../components/PageInsightStrip'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AdminTag } from '../components/AdminTag'
 import { IdCell } from '../components/IdCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { reportReasonTag } from '../lib/adminLabels'
 import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
+import { AdminTable, ListPageLayout } from '../ui'
+import type { AdminTableColumn } from '../ui'
+
+type ReportRow = {
+  id: string
+  post_id: string
+  reporter_user_id: string
+  reason: string
+  post_content_preview: string
+  created_at: string
+}
 
 export function ReportsPage() {
   const { client } = useAdminAuth()
-  const [items, setItems] = useState<
-    Array<{
-      id: string
-      post_id: string
-      reporter_user_id: string
-      reason: string
-      post_content_preview: string
-      created_at: string
-    }>
-  >([])
+  const [items, setItems] = useState<ReportRow[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
@@ -50,95 +50,58 @@ export function ReportsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
+  const columns = useMemo(
+    (): AdminTableColumn<ReportRow>[] => [
+      { key: 'id', header: 'ID', render: (row) => <IdCell id={row.id} /> },
+      { key: 'post', header: '动态', render: (row) => <IdCell id={row.post_id} /> },
+      {
+        key: 'reporter',
+        header: '举报人',
+        render: (row) => <IdCell id={row.reporter_user_id} title="举报人 UID" />,
+      },
+      {
+        key: 'reason',
+        header: '原因',
+        render: (row) => <AdminTag spec={reportReasonTag(row.reason)} />,
+      },
+      { key: 'preview', header: '预览', render: (row) => row.post_content_preview || '—' },
+      {
+        key: 'time',
+        header: '时间',
+        cellClassName: 'muted',
+        render: (row) => formatDateTime(row.created_at),
+      },
+      {
+        key: 'actions',
+        header: '',
+        render: (row) => (
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={async () => {
+              if (!confirm('删除被举报动态？')) return
+              const res = await client.deletePost(row.post_id)
+              if (!res.success) setError(res.message || '删除失败')
+              else await load()
+            }}
+          >
+            删动态
+          </button>
+        ),
+      },
+    ],
+    [client, load],
+  )
+
   return (
-    <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>举报处理</h2>
-          <p className="muted">用户举报动态记录，可跳转动态页下架</p>
-        </div>
-      </div>
-      <DataEnvBar />
-      <PageInsightStrip items={[{ label: '待处理举报', value: loading ? '…' : total }]} />
-      <div className="panel">
-        {error ? <p className="text-danger">{error}</p> : null}
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>动态</th>
-                <th>举报人</th>
-                <th>原因</th>
-                <th>预览</th>
-                <th>时间</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="muted">
-                    加载中…
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="muted">
-                    暂无举报
-                  </td>
-                </tr>
-              ) : (
-                items.map((row) => (
-                  <tr key={row.id}>
-                    <td>
-                      <IdCell id={row.id} />
-                    </td>
-                    <td>
-                      <IdCell id={row.post_id} />
-                    </td>
-                    <td>
-                      <IdCell id={row.reporter_user_id} title="举报人 UID" />
-                    </td>
-                    <td>
-                      <AdminTag spec={reportReasonTag(row.reason)} />
-                    </td>
-                    <td>{row.post_content_preview || '—'}</td>
-                    <td className="muted">{formatDateTime(row.created_at)}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={async () => {
-                          if (!confirm('删除被举报动态？')) return
-                          const res = await client.deletePost(row.post_id)
-                          if (!res.success) setError(res.message || '删除失败')
-                          else await load()
-                        }}
-                      >
-                        删动态
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        {totalPages > 1 ? (
-          <div className="pager">
-            <button type="button" className="btn btn-ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              上一页
-            </button>
-            <span className="muted">
-              {page}/{totalPages}
-            </span>
-            <button type="button" className="btn btn-ghost" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-              下一页
-            </button>
-          </div>
-        ) : null}
-      </div>
-    </>
+    <ListPageLayout
+      title="举报处理"
+      description="用户举报动态记录，可跳转动态页下架"
+      metrics={[{ label: '待处理举报', value: loading ? '…' : total }]}
+      error={error}
+      pagination={{ page, totalPages, total, onPageChange: setPage }}
+    >
+      <AdminTable columns={columns} rows={items} rowKey={(row) => row.id} loading={loading} emptyText="暂无举报" />
+    </ListPageLayout>
   )
 }

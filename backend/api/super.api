@@ -1,3 +1,6 @@
+// DEPRECATED: super.api is legacy SSOT. New HTTP contracts belong in domain protos
+// under api/<domain>/v1/ (e.g. api/chat/v1/private_message.proto). Do not add new
+// routes here unless bridging legacy go-zero handlers during migration.
 syntax = "v1"
 
 info (
@@ -2027,6 +2030,15 @@ type AdminBootstrapGiftsResp {
 	Data AdminBootstrapGiftsData `json:"data"`
 }
 
+type AdminDedupeGiftsData {
+	Removed int `json:"removed"`
+}
+
+type AdminDedupeGiftsResp {
+	BaseResp
+	Data AdminDedupeGiftsData `json:"data"`
+}
+
 type AdminListVipOrdersReq {
 	Page     int    `form:"page,optional,default=1"`
 	PageSize int    `form:"page_size,optional,default=50"`
@@ -2623,6 +2635,15 @@ type AdminDeleteTopicTagResp {
 	BaseResp
 }
 
+type AdminBootstrapTopicTagsData {
+	Created int `json:"created"`
+}
+
+type AdminBootstrapTopicTagsResp {
+	BaseResp
+	Data AdminBootstrapTopicTagsData `json:"data"`
+}
+
 // —— Bot 策略标签字典 ——
 type AdminTagDictionaryItem {
 	Id        string `json:"id"`
@@ -3195,6 +3216,9 @@ service Super {
 	@handler adminBootstrapGifts
 	post /api/admin/gifts/bootstrap (EmptyReq) returns (AdminBootstrapGiftsResp)
 
+	@handler adminDedupeGifts
+	post /api/admin/gifts/dedupe (EmptyReq) returns (AdminDedupeGiftsResp)
+
 	@handler adminListVipOrders
 	get /api/admin/orders/vip (AdminListVipOrdersReq) returns (AdminListVipOrdersResp)
 
@@ -3365,6 +3389,9 @@ service Super {
 
 	@handler adminDeleteTopicTag
 	delete /api/admin/topic-tags/:tag_id (AdminDeleteTopicTagReq) returns (AdminDeleteTopicTagResp)
+
+	@handler adminBootstrapTopicTags
+	post /api/admin/topic-tags/bootstrap (EmptyReq) returns (AdminBootstrapTopicTagsResp)
 
 	@handler adminListTagDictionary
 	get /api/admin/tag-dictionary (AdminListTagDictionaryReq) returns (AdminListTagDictionaryResp)

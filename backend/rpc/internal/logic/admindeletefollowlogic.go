@@ -2,11 +2,8 @@ package logic
 
 import (
 	"context"
-	"strconv"
-	"strings"
 
-	"backend/model"
-	"backend/rpc/internal/errorx"
+	adminapp "backend/internal/service/admin"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -24,13 +21,9 @@ func NewAdminDeleteFollowLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *AdminDeleteFollowLogic) AdminDeleteFollow(in *super.AdminDeleteFollowReq) (*super.AdminDeleteFollowResp, error) {
-	id, err := strconv.ParseUint(strings.TrimSpace(in.GetFollowId()), 10, 64)
-	if err != nil || id == 0 {
-		return nil, errorx.InvalidArgument("关注 ID 无效")
+	resp, err := adminapp.New(l.svcCtx.DB).DeleteFollow(l.ctx, in)
+	if err != nil {
+		return nil, mapAdminModerationErr(err)
 	}
-	if err := l.svcCtx.DB.Delete(&model.Follow{}, id).Error; err != nil {
-		l.Errorf("[admin] delete follow: %v", err)
-		return nil, errorx.Internal("删除关注失败")
-	}
-	return &super.AdminDeleteFollowResp{}, nil
+	return resp, nil
 }

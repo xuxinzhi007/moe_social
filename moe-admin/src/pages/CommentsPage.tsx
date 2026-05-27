@@ -1,17 +1,23 @@
-import { useCallback, useEffect, useState } from 'react'
-import { DataEnvBar } from '../components/DataEnvBar'
-import { PageInsightStrip } from '../components/PageInsightStrip'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { IdCell } from '../components/IdCell'
 import { UserCell } from '../components/UserCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
+import { AdminTable, AdminToolbar, ListPageLayout } from '../ui'
+import type { AdminTableColumn } from '../ui'
+
+type CommentRow = {
+  id: string
+  post_id: string
+  user_name: string
+  content: string
+  created_at: string
+}
 
 export function CommentsPage() {
   const { client } = useAdminAuth()
-  const [items, setItems] = useState<
-    Array<{ id: string; post_id: string; user_name: string; content: string; created_at: string }>
-  >([])
+  const [items, setItems] = useState<CommentRow[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [keyword, setKeyword] = useState('')
@@ -51,106 +57,72 @@ export function CommentsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
-  return (
-    <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>评论管理</h2>
-          <p className="muted">按动态或关键词检索评论并下架</p>
-        </div>
-      </div>
-      <DataEnvBar />
-      <PageInsightStrip items={[{ label: '匹配结果', value: loading ? '…' : total }]} />
-      <div className="panel">
-        <form
-          className="inline-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            setPage(1)
-            setSearch(keyword.trim())
-            setFilterPost(postId.trim())
-          }}
-        >
-          <input placeholder="动态 ID" value={postId} onChange={(e) => setPostId(e.target.value)} />
-          <input placeholder="评论内容" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
-          <button type="submit" className="btn btn-primary">
-            搜索
+  const columns = useMemo(
+    (): AdminTableColumn<CommentRow>[] => [
+      { key: 'id', header: 'ID', render: (row) => <IdCell id={row.id} /> },
+      { key: 'post', header: '动态', render: (row) => <IdCell id={row.post_id} /> },
+      { key: 'user', header: '用户', render: (row) => <UserCell name={row.user_name} /> },
+      { key: 'content', header: '内容', render: (row) => row.content },
+      {
+        key: 'time',
+        header: '时间',
+        cellClassName: 'muted',
+        render: (row) => formatDateTime(row.created_at),
+      },
+      {
+        key: 'actions',
+        header: '',
+        render: (row) => (
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={async () => {
+              if (!confirm('删除该评论？')) return
+              const res = await client.deleteComment(row.id)
+              if (!res.success) setError(res.message || '删除失败')
+              else await load()
+            }}
+          >
+            删除
           </button>
-        </form>
-        {error ? <p className="text-danger">{error}</p> : null}
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>动态</th>
-                <th>用户</th>
-                <th>内容</th>
-                <th>时间</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="muted">
-                    加载中…
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="muted">
-                    暂无评论
-                  </td>
-                </tr>
-              ) : (
-                items.map((row) => (
-                  <tr key={row.id}>
-                    <td>
-                      <IdCell id={row.id} />
-                    </td>
-                    <td>
-                      <IdCell id={row.post_id} />
-                    </td>
-                    <td>
-                      <UserCell name={row.user_name} />
-                    </td>
-                    <td>{row.content}</td>
-                    <td className="muted">{formatDateTime(row.created_at)}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={async () => {
-                          if (!confirm('删除该评论？')) return
-                          const res = await client.deleteComment(row.id)
-                          if (!res.success) setError(res.message || '删除失败')
-                          else await load()
-                        }}
-                      >
-                        删除
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        {totalPages > 1 ? (
-          <div className="pager">
-            <button type="button" className="btn btn-ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              上一页
-            </button>
-            <span className="muted">
-              {page}/{totalPages}
-            </span>
-            <button type="button" className="btn btn-ghost" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-              下一页
-            </button>
-          </div>
-        ) : null}
-      </div>
-    </>
+        ),
+      },
+    ],
+    [client, load],
+  )
+
+  function applySearch() {
+    setPage(1)
+    setSearch(keyword.trim())
+    setFilterPost(postId.trim())
+  }
+
+  return (
+    <ListPageLayout
+      title="评论管理"
+      description="按动态或关键词检索评论并下架"
+      metrics={[{ label: '匹配结果', value: loading ? '…' : total }]}
+      toolbar={
+        <AdminToolbar
+          search={{
+            value: keyword,
+            onChange: setKeyword,
+            onSubmit: applySearch,
+            placeholder: '评论内容',
+          }}
+          filters={
+            <input
+              placeholder="动态 ID"
+              value={postId}
+              onChange={(e) => setPostId(e.target.value)}
+            />
+          }
+        />
+      }
+      error={error}
+      pagination={{ page, totalPages, total, onPageChange: setPage }}
+    >
+      <AdminTable columns={columns} rows={items} rowKey={(row) => row.id} loading={loading} emptyText="暂无评论" />
+    </ListPageLayout>
   )
 }

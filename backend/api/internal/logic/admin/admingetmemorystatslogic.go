@@ -22,7 +22,7 @@ func NewAdminGetMemoryStatsLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *AdminGetMemoryStatsLogic) AdminGetMemoryStats(_ *types.EmptyReq) (*types.AdminGetMemoryStatsResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminGetMemoryStats(l.ctx, &super.AdminGetMemoryStatsReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminGetMemoryStats(l.ctx, &super.AdminGetMemoryStatsReq{})
 	if err != nil {
 		return &types.AdminGetMemoryStatsResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

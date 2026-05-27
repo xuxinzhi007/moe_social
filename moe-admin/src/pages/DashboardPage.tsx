@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { usePlatform } from '../context/PlatformContext'
 import { useEffect, useState } from 'react'
+import { MonitorPageLayout } from '../ui'
 import { DeployApiError } from '../api/deployClient'
 
 export function DashboardPage() {
@@ -46,20 +47,20 @@ export function DashboardPage() {
     apiTarget === 'cloud' ? health?.cloud_api : health?.local_api
 
   return (
-    <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>管理员工作台</h2>
-          <p>
-            统一入口 · 当前数据环境 <code>{apiTargetLabel}</code>
-            {currentApi?.base_url ? (
-              <>
-                {' '}
-                · <code>{currentApi.base_url}</code>
-              </>
-            ) : null}
-          </p>
-        </div>
+    <MonitorPageLayout
+      title="管理员工作台"
+      description={
+        <>
+          统一入口 · 当前数据环境 <code>{apiTargetLabel}</code>
+          {currentApi?.base_url ? (
+            <>
+              {' '}
+              · <code>{currentApi.base_url}</code>
+            </>
+          ) : null}
+        </>
+      }
+      headActions={
         <button
           type="button"
           className="btn btn-primary"
@@ -68,9 +69,9 @@ export function DashboardPage() {
         >
           {healthLoading ? '检测中…' : '刷新状态'}
         </button>
-      </div>
-
-      <div className="admin-metrics">
+      }
+    >
+      <div className="admin-metrics page-insight-strip">
         <div className="metric">
           <span className="label">Deploy Agent</span>
           <span className="value">
@@ -173,6 +174,6 @@ export function DashboardPage() {
           API 时间：{stats.server_time}
         </p>
       ) : null}
-    </>
+    </MonitorPageLayout>
   )
 }

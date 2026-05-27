@@ -28,7 +28,7 @@ func NewCreateVipOrderLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cr
 
 func (l *CreateVipOrderLogic) CreateVipOrder(req *types.CreateVipOrderReq) (resp *types.CreateVipOrderResp, err error) {
 	// 调用RPC服务创建VIP订单
-	rpcResp, err := l.svcCtx.SuperRpcClient.CreateVipOrder(l.ctx, &super.CreateVipOrderReq{
+	rpcResp, err := l.svcCtx.UserGW.CreateVipOrder(l.ctx, &super.CreateVipOrderReq{
 		UserId: req.UserId,
 		PlanId: req.PlanId,
 	})

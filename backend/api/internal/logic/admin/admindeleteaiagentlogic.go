@@ -22,7 +22,7 @@ func NewAdminDeleteAiAgentLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *AdminDeleteAiAgentLogic) AdminDeleteAiAgent(req *types.AdminDeleteAiAgentReq) (*types.AdminDeleteAiAgentResp, error) {
-	_, err := l.svcCtx.SuperRpcClient.AdminDeleteAiAgent(l.ctx, &super.AdminDeleteAiAgentReq{
+	_, err := l.svcCtx.AdminGW.AdminDeleteAiAgent(l.ctx, &super.AdminDeleteAiAgentReq{
 		UserId:  req.UserId,
 		AgentId: req.AgentId,
 	})

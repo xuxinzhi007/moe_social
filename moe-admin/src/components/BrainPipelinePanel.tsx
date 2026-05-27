@@ -8,8 +8,6 @@ import type { TagTone } from '../lib/adminLabels'
 type Props = {
   agentKey: string
   refreshKey?: number
-  onRunOnce?: () => void
-  runningOnce?: boolean
 }
 
 function stepTone(status: string): TagTone {
@@ -111,7 +109,7 @@ function PipelineStepRow({
 }
 
 /** 展示 Bot 试跑流水线：分步耗时、总耗时、进程与推理环境快照。 */
-export function BrainPipelinePanel({ agentKey, refreshKey = 0, onRunOnce, runningOnce }: Props) {
+export function BrainPipelinePanel({ agentKey, refreshKey = 0 }: Props) {
   const { client } = useAdminAuth()
   const [data, setData] = useState<MoeBrainPipelineData | null>(null)
   const [loading, setLoading] = useState(false)
@@ -159,28 +157,8 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, onRunOnce, runnin
         <div>
           <h3>发帖流水线</h3>
           <p className="muted">
-            试跑时按代码路径逐步执行；<strong>LLM 生成</strong> 通常占绝大部分时间。
+            试跑时按代码路径逐步执行；<strong>LLM 生成</strong> 通常占绝大部分时间。使用页头「试跑发帖」触发，「刷新」同步本页与流水线。
           </p>
-        </div>
-        <div className="btn-row">
-          {onRunOnce ? (
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              disabled={runningOnce}
-              onClick={onRunOnce}
-            >
-              {runningOnce ? '试跑中…' : '试跑并刷新'}
-            </button>
-          ) : null}
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            disabled={loading}
-            onClick={() => void load()}
-          >
-            {loading ? '刷新中…' : '刷新'}
-          </button>
         </div>
       </header>
 

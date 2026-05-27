@@ -1,0 +1,31 @@
+package adminbiz
+
+import "errors"
+
+var (
+	ErrListFollows          = errors.New("list follows failed")
+	ErrListPosts            = errors.New("list posts failed")
+	ErrListComments         = errors.New("list comments failed")
+	ErrListGroups           = errors.New("list groups failed")
+	ErrListFriendRequests   = errors.New("list friend requests failed")
+	ErrListPostReports      = errors.New("list post reports failed")
+	ErrListMemories         = errors.New("list memories failed")
+	ErrInvalidFollowID      = errors.New("invalid follow id")
+	ErrInvalidPostID        = errors.New("invalid post id")
+	ErrEmptyPostID          = errors.New("empty post id")
+	ErrPostNotFound         = errors.New("post not found")
+	ErrInvalidCommentID     = errors.New("invalid comment id")
+	ErrEmptyCommentID       = errors.New("empty comment id")
+	ErrCommentNotFound      = errors.New("comment not found")
+	ErrInvalidMemoryID      = errors.New("invalid memory id")
+	ErrMemoryNotFound       = errors.New("memory not found")
+	ErrInvalidFollowUserID  = errors.New("invalid follow user id")
+	ErrDeleteFollow         = errors.New("delete follow failed")
+	ErrDeletePost           = errors.New("delete post failed")
+	ErrDeleteComment        = errors.New("delete comment failed")
+	ErrDeleteMemory         = errors.New("delete memory failed")
+	ErrMemoryStats          = errors.New("memory stats failed")
+	ErrDashboard            = errors.New("dashboard failed")
+	ErrInvalidProfileUserID = errors.New("invalid profile user id")
+	ErrProfileUserNotFound  = errors.New("profile user not found")
+)

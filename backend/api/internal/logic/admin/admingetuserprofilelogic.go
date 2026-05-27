@@ -26,7 +26,7 @@ func NewAdminGetUserProfileLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *AdminGetUserProfileLogic) AdminGetUserProfile(req *types.AdminGetUserProfileReq) (*types.AdminGetUserProfileResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminGetUserProfile(l.ctx, &super.AdminGetUserProfileReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminGetUserProfile(l.ctx, &super.AdminGetUserProfileReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

@@ -22,7 +22,7 @@ func NewAdminListAiAgentsLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *AdminListAiAgentsLogic) AdminListAiAgents(req *types.AdminListAiAgentsReq) (*types.AdminListAiAgentsResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListAiAgents(l.ctx, &super.AdminListAiAgentsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListAiAgents(l.ctx, &super.AdminListAiAgentsReq{
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
 		Keyword:  req.Keyword,

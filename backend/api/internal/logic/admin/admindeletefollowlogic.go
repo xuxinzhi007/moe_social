@@ -22,7 +22,7 @@ func NewAdminDeleteFollowLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *AdminDeleteFollowLogic) AdminDeleteFollow(req *types.AdminDeleteFollowReq) (*types.AdminDeleteFollowResp, error) {
-	_, err := l.svcCtx.SuperRpcClient.AdminDeleteFollow(l.ctx, &super.AdminDeleteFollowReq{
+	_, err := l.svcCtx.AdminGW.AdminDeleteFollow(l.ctx, &super.AdminDeleteFollowReq{
 		FollowId: req.FollowId,
 	})
 	if err != nil {

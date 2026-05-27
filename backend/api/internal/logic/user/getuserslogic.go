@@ -27,7 +27,7 @@ func NewGetUsersLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetUsers
 
 func (l *GetUsersLogic) GetUsers(req *types.GetUsersReq) (resp *types.GetUsersResp, err error) {
 	// 调用RPC服务获取用户列表
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetUsers(l.ctx, &super.GetUsersReq{
+	rpcResp, err := l.svcCtx.UserGW.GetUsers(l.ctx, &super.GetUsersReq{
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
 	})

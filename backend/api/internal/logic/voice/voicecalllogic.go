@@ -49,8 +49,8 @@ func (l *VoiceCallLogic) VoiceCall(req *types.VoiceCallReq) (resp *types.VoiceCa
 
 	callerName := "用户"
 	callerAvatar := ""
-	if l.svcCtx.SuperRpcClient != nil {
-		if u, e := l.svcCtx.SuperRpcClient.GetUser(l.ctx, &super.GetUserReq{UserId: callerID}); e == nil && u.GetUser() != nil {
+	if l.svcCtx.UserGW != nil {
+		if u, e := l.svcCtx.UserGW.GetUser(l.ctx, &super.GetUserReq{UserId: callerID}); e == nil && u.GetUser() != nil {
 			if n := strings.TrimSpace(u.GetUser().GetUsername()); n != "" {
 				callerName = n
 			}

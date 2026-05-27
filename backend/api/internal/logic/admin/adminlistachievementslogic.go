@@ -22,7 +22,7 @@ func NewAdminListAchievementsLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *AdminListAchievementsLogic) AdminListAchievements(req *types.AdminListAchievementsReq) (*types.AdminListAchievementsResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListAchievements(l.ctx, &super.AdminListAchievementsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListAchievements(l.ctx, &super.AdminListAchievementsReq{
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
 		Keyword:  req.Keyword,

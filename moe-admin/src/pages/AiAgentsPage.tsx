@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AdminTag } from '../components/AdminTag'
 import { AiAgentEditDrawer, type AiAgentRow } from '../components/AiAgentEditDrawer'
-import { DataEnvBar } from '../components/DataEnvBar'
-import { PageInsightStrip } from '../components/PageInsightStrip'
 import { IdCell } from '../components/IdCell'
 import { UserCell } from '../components/UserCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { useDeploy } from '../context/DeployContext'
 import { DeployApiError } from '../api/deployClient'
+import { AdminTable, AdminToolbar, ListPageLayout } from '../ui'
+import type { AdminTableColumn } from '../ui'
 
 export function AiAgentsPage() {
   const { client } = useAdminAuth()
@@ -83,123 +83,88 @@ export function AiAgentsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
-  return (
-    <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>AI 角色酒馆</h2>
-          <p className="muted">公开 Agent 列表与治理 · 可编辑角色卡 JSON 核心字段</p>
-        </div>
-      </div>
-      <DataEnvBar />
-      <PageInsightStrip items={[{ label: '公开 Agent', value: loading ? '…' : total }]} />
-      <div className="panel">
-        <form
-          className="inline-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            setPage(1)
-            setSearch(keyword.trim())
-          }}
-        >
-          <input placeholder="搜索角色名 / 用户" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
-          <button type="submit" className="btn btn-primary">
-            搜索
-          </button>
-        </form>
-        {error ? <p className="text-danger">{error}</p> : null}
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Agent ID</th>
-                <th>角色名</th>
-                <th>所属用户</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={4} className="muted">
-                    加载中…
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="muted">
-                    暂无公开 Agent
-                  </td>
-                </tr>
-              ) : (
-                items.map((row) => (
-                  <tr key={`${row.owner_user_id}-${row.id}`}>
-                    <td>
-                      <IdCell id={row.id} />
-                    </td>
-                    <td>
-                      <AdminTag label={parseName(row.payload_json)} tone="purple" />
-                    </td>
-                    <td>
-                      <UserCell
-                        name={row.owner_name || row.owner_user_id}
-                        sub={`UID ${row.owner_user_id}`}
-                      />
-                    </td>
-                    <td>
-                      <div className="btn-row">
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => {
-                            setFormError('')
-                            setEditRow(row)
-                          }}
-                        >
-                          编辑
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
-                          onClick={async () => {
-                            if (!confirm('删除该 Agent？')) return
-                            const res = await client.deleteAiAgent({
-                              user_id: row.owner_user_id,
-                              agent_id: row.id,
-                            })
-                            if (!res.success) setError(res.message || '删除失败')
-                            else await load()
-                          }}
-                        >
-                          删除
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        {totalPages > 1 ? (
-          <div className="pager">
-            <button type="button" className="btn btn-ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              上一页
-            </button>
-            <span className="muted">
-              {page}/{totalPages} · 共 {total} 条
-            </span>
+  const columns = useMemo(
+    (): AdminTableColumn<AiAgentRow>[] => [
+      { key: 'id', header: 'Agent ID', render: (row) => <IdCell id={row.id} /> },
+      {
+        key: 'name',
+        header: '角色名',
+        render: (row) => <AdminTag label={parseName(row.payload_json)} tone="purple" />,
+      },
+      {
+        key: 'owner',
+        header: '所属用户',
+        render: (row) => (
+          <UserCell name={row.owner_name || row.owner_user_id} sub={`UID ${row.owner_user_id}`} />
+        ),
+      },
+      {
+        key: 'actions',
+        header: '',
+        render: (row) => (
+          <div className="btn-row">
             <button
               type="button"
-              className="btn btn-ghost"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                setFormError('')
+                setEditRow(row)
+              }}
             >
-              下一页
+              编辑
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={async () => {
+                if (!confirm('删除该 Agent？')) return
+                const res = await client.deleteAiAgent({
+                  user_id: row.owner_user_id,
+                  agent_id: row.id,
+                })
+                if (!res.success) setError(res.message || '删除失败')
+                else await load()
+              }}
+            >
+              删除
             </button>
           </div>
-        ) : null}
-      </div>
+        ),
+      },
+    ],
+    [client, load],
+  )
+
+  return (
+    <>
+      <ListPageLayout
+        title="AI 角色酒馆"
+        description="公开 Agent 列表与治理 · 可编辑角色卡 JSON 核心字段"
+        metrics={[{ label: '公开 Agent', value: loading ? '…' : total }]}
+        toolbar={
+          <AdminToolbar
+            search={{
+              value: keyword,
+              onChange: setKeyword,
+              onSubmit: () => {
+                setPage(1)
+                setSearch(keyword.trim())
+              },
+              placeholder: '搜索角色名 / 用户',
+            }}
+          />
+        }
+        error={error}
+        pagination={{ page, totalPages, total, onPageChange: setPage }}
+      >
+        <AdminTable
+          columns={columns}
+          rows={items}
+          rowKey={(row) => `${row.owner_user_id}-${row.id}`}
+          loading={loading}
+          emptyText="暂无公开 Agent"
+        />
+      </ListPageLayout>
 
       <AiAgentEditDrawer
         row={editRow}

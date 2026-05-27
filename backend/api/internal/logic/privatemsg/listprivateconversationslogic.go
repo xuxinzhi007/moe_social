@@ -34,7 +34,7 @@ func (l *ListPrivateConversationsLogic) ListPrivateConversations(req *types.List
 		return nil, err
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.ListPrivateConversations(l.ctx, &super.ListPrivateConversationsReq{
+	rpcResp, err := l.svcCtx.ChatGW.ListPrivateConversations(l.ctx, &super.ListPrivateConversationsReq{
 		ViewerId: viewerID,
 		Limit:    int32(req.Limit),
 		Offset:   int32(req.Offset),

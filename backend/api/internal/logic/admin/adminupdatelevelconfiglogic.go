@@ -27,7 +27,7 @@ func NewAdminUpdateLevelConfigLogic(ctx context.Context, svcCtx *svc.ServiceCont
 }
 
 func (l *AdminUpdateLevelConfigLogic) AdminUpdateLevelConfig(req *types.AdminUpdateLevelConfigReq) (*types.AdminUpdateLevelConfigResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminUpdateLevelConfig(l.ctx, &super.AdminUpdateLevelConfigReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminUpdateLevelConfig(l.ctx, &super.AdminUpdateLevelConfigReq{
 		Id:               req.LevelId,
 		Title:            req.Title,
 		MinExp:           int32(req.MinExp),

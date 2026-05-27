@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AdminTag, TagRow } from '../components/AdminTag'
-import { DataEnvBar } from '../components/DataEnvBar'
 import { MoeToolCallsPanel, type MoeCallsFilters } from '../components/MoeToolCallsPanel'
+import { TabbedPageLayout } from '../ui'
 import type { MoeToolCallRow } from '../lib/moeToolCallFormat'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { useDeploy } from '../context/DeployContext'
@@ -179,14 +179,11 @@ export function MoeToolsPage() {
   }
 
   return (
-    <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>Moe 工具与 Bot</h2>
-          <p className="muted">
-            Chat → tool_calls → Executor → 审计埋点 · 概览指标与工具目录、调用明细在同一页切换
-          </p>
-        </div>
+    <TabbedPageLayout
+      title="Moe 工具与 Bot"
+      description="Chat → tool_calls → Executor → 审计埋点 · 概览指标与工具目录、调用明细在同一页切换"
+      envNote={`当前数据环境：${apiTargetLabel} · 工具执行经 /api/moe/tools/execute 埋点`}
+      headActions={
         <div className="btn-row">
           <Link className="btn btn-ghost btn-sm" to="/app/moe-bots">
             社区 Bot
@@ -195,25 +192,12 @@ export function MoeToolsPage() {
             刷新
           </button>
         </div>
-      </div>
-
-      <DataEnvBar note={`当前数据环境：${apiTargetLabel} · 工具执行经 /api/moe/tools/execute 埋点`} />
-
+      }
+      tabs={TABS}
+      activeTab={tab}
+      onTabChange={(next) => setTab(next)}
+    >
       {error ? <p className="text-danger">{error}</p> : null}
-
-      <div className="platform-tab-rail">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            className={`platform-tab-pill${tab === t.key ? ' is-active' : ''}`}
-            onClick={() => setTab(t.key)}
-          >
-            <span className="platform-tab-label">{t.label}</span>
-            <span className="platform-tab-hint">{t.hint}</span>
-          </button>
-        ))}
-      </div>
 
       {tab === 'overview' ? (
         <div className="platform-overview">
@@ -381,6 +365,6 @@ export function MoeToolsPage() {
           showToast={showToast}
         />
       ) : null}
-    </>
+    </TabbedPageLayout>
   )
 }

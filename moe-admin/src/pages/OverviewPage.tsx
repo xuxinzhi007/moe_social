@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { BuildCacheActions } from '../components/BuildCacheActions'
 import { EnvKv } from '../components/EnvKv'
-import { StatusTag } from '../components/StatusTag'
+import { AdminTag } from '../components/AdminTag'
+import { deployJobStatusTag } from '../lib/adminLabels'
 import { UploadProgressBar } from '../components/UploadProgressBar'
 import { stripUploadProgressLines } from '../lib/uploadProgress'
+import { PageHead } from '../ui'
 import { useDeploy } from '../context/DeployContext'
 import { useOverviewData } from '../hooks/useOverviewData'
 
@@ -43,23 +45,24 @@ export function OverviewPage() {
 
   return (
     <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>运维总览</h2>
-          <p>
-            本机编 Linux 二进制 · 云 VPS <code>/root/gowork/backend</code> ·
-            APK 走 GitHub tag
-          </p>
-        </div>
-        <button
-          type="button"
-          className="btn btn-ghost"
-          disabled={!bootstrapped || authOk !== true}
-          onClick={() => void overview.refreshAll()}
-        >
-          刷新总览
-        </button>
-      </div>
+      <PageHead
+        title="运维总览"
+        description={
+          <>
+            本机编 Linux 二进制 · 云 VPS <code>/root/gowork/backend</code> · APK 走 GitHub tag
+          </>
+        }
+        actions={
+          <button
+            type="button"
+            className="btn btn-ghost"
+            disabled={!bootstrapped || authOk !== true}
+            onClick={() => void overview.refreshAll()}
+          >
+            刷新总览
+          </button>
+        }
+      />
 
       {!bootstrapped ? (
         <p className="loading-hint">正在连接 Agent 并验证 Token…</p>
@@ -144,7 +147,7 @@ export function OverviewPage() {
         <div className="live-job-dock">
           <div className="live-job-head">
             <strong>{activeJob.type}</strong>
-            <StatusTag status={activeJob.status} />
+            <AdminTag spec={deployJobStatusTag(activeJob.status)} />
             <span className="tag tag-pending">
               {activeJob.target || deployTarget}
             </span>

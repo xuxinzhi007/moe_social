@@ -30,7 +30,7 @@ func NewWechatLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Wecha
 }
 
 func (l *WechatLoginLogic) WechatLogin(req *types.WechatLoginReq) (resp *types.WechatLoginResp, err error) {
-	rpcResp, rpcErr := l.svcCtx.SuperRpcClient.WechatLogin(l.ctx, &super.WechatLoginReq{
+	rpcResp, rpcErr := l.svcCtx.UserGW.WechatLogin(l.ctx, &super.WechatLoginReq{
 		Code: strings.TrimSpace(req.Code),
 		Flow: strings.TrimSpace(req.Flow),
 	})

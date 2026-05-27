@@ -34,7 +34,7 @@ func (l *DeleteMyAccountLogic) DeleteMyAccount(req *types.EmptyReq) (resp *types
 		return nil, err
 	}
 
-	_, err = l.svcCtx.SuperRpcClient.DeleteUser(l.ctx, &super.DeleteUserReq{
+	_, err = l.svcCtx.UserGW.DeleteUser(l.ctx, &super.DeleteUserReq{
 		UserId: userID,
 	})
 	if err != nil {

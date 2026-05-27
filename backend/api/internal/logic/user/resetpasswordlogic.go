@@ -40,7 +40,7 @@ func (l *ResetPasswordLogic) ResetPassword(req *types.ResetPasswordReq) (resp *t
 	}
 
 	// 2. 调用 RPC 服务重置密码
-	_, err = l.svcCtx.SuperRpcClient.ResetPassword(l.ctx, &super.ResetPasswordReq{
+	_, err = l.svcCtx.UserGW.ResetPassword(l.ctx, &super.ResetPasswordReq{
 		Email:       req.Email,
 		NewPassword: req.NewPassword,
 	})

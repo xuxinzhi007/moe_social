@@ -26,7 +26,7 @@ func NewGetTransactionsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 
 func (l *GetTransactionsLogic) GetTransactions(req *types.GetTransactionsReq) (resp *types.GetTransactionsResp, err error) {
 	// 调用RPC接口
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetTransactions(l.ctx, &super.GetTransactionsReq{
+	rpcResp, err := l.svcCtx.UserGW.GetTransactions(l.ctx, &super.GetTransactionsReq{
 		UserId:   req.UserId,
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),

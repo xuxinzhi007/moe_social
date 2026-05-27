@@ -29,7 +29,7 @@ func HybridSearchUserFacingMemories(
 	}
 
 	embMap := map[string][]float32{}
-	if embResp, err := svcCtx.SuperRpcClient.ListUserMemoryEmbeddings(ctx, &super.ListUserMemoryEmbeddingsReq{
+	if embResp, err := svcCtx.LLMGW.ListUserMemoryEmbeddings(ctx, &super.ListUserMemoryEmbeddingsReq{
 		UserId: userID,
 	}); err == nil {
 		for _, it := range embResp.Items {
@@ -45,11 +45,11 @@ func HybridSearchUserFacingMemories(
 	}
 
 	if len(embMap) == 0 && len(records) > 0 {
-		if rebuild, err := svcCtx.SuperRpcClient.RebuildUserMemoryEmbeddings(ctx, &super.RebuildUserMemoryEmbeddingsReq{
+		if rebuild, err := svcCtx.LLMGW.RebuildUserMemoryEmbeddings(ctx, &super.RebuildUserMemoryEmbeddingsReq{
 			UserId: userID,
 		}); err == nil && rebuild.Indexed > 0 {
 			logger.Infof("memory embeddings rebuilt user_id=%s indexed=%d provider=%s", userID, rebuild.Indexed, rebuild.Provider)
-			if embResp, err2 := svcCtx.SuperRpcClient.ListUserMemoryEmbeddings(ctx, &super.ListUserMemoryEmbeddingsReq{UserId: userID}); err2 == nil {
+			if embResp, err2 := svcCtx.LLMGW.ListUserMemoryEmbeddings(ctx, &super.ListUserMemoryEmbeddingsReq{UserId: userID}); err2 == nil {
 				for _, it := range embResp.Items {
 					if it == nil || it.MemoryKey == "" {
 						continue
@@ -108,7 +108,7 @@ func HybridSearchUserFacingMemories(
 }
 
 func loadMemoryRelations(ctx context.Context, svcCtx *svc.ServiceContext, userID string) []memory.Relation {
-	resp, err := svcCtx.SuperRpcClient.ListUserMemoryRelations(ctx, &super.ListUserMemoryRelationsReq{UserId: userID})
+	resp, err := svcCtx.LLMGW.ListUserMemoryRelations(ctx, &super.ListUserMemoryRelationsReq{UserId: userID})
 	if err != nil || resp == nil {
 		return nil
 	}

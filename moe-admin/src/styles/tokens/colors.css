@@ -10,12 +10,12 @@
   --brand-cyan: #34d3c8;
   --brand-gold: #f3b74f;
 
-  /* Chrome (sidebar / topbar) */
-  --chrome-bg: #15121f;
-  --chrome-surface: #1f1a2e;
-  --chrome-border: #2d2640;
-  --chrome-text: #e8e4f0;
-  --chrome-muted: #9b93ad;
+  /* Chrome (sidebar — soft light, 与 canvas 同系) */
+  --chrome-bg: #eef1f8;
+  --chrome-surface: #ffffff;
+  --chrome-border: #e2e6f0;
+  --chrome-text: #1a1d26;
+  --chrome-muted: #6b7280;
 
   /* Workbench */
   --canvas: #f4f6fb;

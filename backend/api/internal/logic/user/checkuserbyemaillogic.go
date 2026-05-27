@@ -34,7 +34,7 @@ func (l *CheckUserByEmailLogic) CheckUserByEmail(req *types.GetUserByEmailReq) (
 	}
 
 	// 调用 RPC 服务查找用户
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetUserByEmail(l.ctx, &super.GetUserByEmailReq{
+	rpcResp, err := l.svcCtx.UserGW.GetUserByEmail(l.ctx, &super.GetUserByEmailReq{
 		Email: req.Email,
 	})
 

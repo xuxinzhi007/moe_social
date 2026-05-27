@@ -27,7 +27,7 @@ func NewAdminUpdateCheckInRewardLogic(ctx context.Context, svcCtx *svc.ServiceCo
 }
 
 func (l *AdminUpdateCheckInRewardLogic) AdminUpdateCheckInReward(req *types.AdminUpdateCheckInRewardReq) (*types.AdminUpdateCheckInRewardResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminUpdateCheckInReward(l.ctx, &super.AdminUpdateCheckInRewardReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminUpdateCheckInReward(l.ctx, &super.AdminUpdateCheckInRewardReq{
 		Id:                    req.RewardId,
 		ConsecutiveDays:       int32(req.ConsecutiveDays),
 		ExpReward:             int32(req.ExpReward),

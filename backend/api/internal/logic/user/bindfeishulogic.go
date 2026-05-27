@@ -33,7 +33,7 @@ func (l *BindFeishuLogic) BindFeishu(req *types.BindFeishuReq) (resp *types.Bind
 	if err != nil {
 		return nil, err
 	}
-	rpcResp, rpcErr := l.svcCtx.SuperRpcClient.BindFeishu(l.ctx, &super.BindFeishuReq{
+	rpcResp, rpcErr := l.svcCtx.UserGW.BindFeishu(l.ctx, &super.BindFeishuReq{
 		UserId:      userID,
 		FeishuEmail: req.FeishuEmail,
 	})

@@ -16,13 +16,17 @@ type DeleteAiAgentLogic struct {
 }
 
 func NewDeleteAiAgentLogic(ctx context.Context, svcCtx *svc.ServiceContext) *DeleteAiAgentLogic {
-	return &DeleteAiAgentLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+	return &DeleteAiAgentLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
 func (l *DeleteAiAgentLogic) DeleteAiAgent(in *super.DeleteAiResourceReq) (*super.DeleteAiResourceResp, error) {
-	return NewAiResourcesLogic(l.ctx, l.svcCtx).delete("agents", in)
+	resp, err := aiApp(l.svcCtx).DeleteAiAgent(l.ctx, in)
+	if err != nil {
+		if mapped := mapAIResourceErr(err); mapped != nil {
+			return nil, mapped
+		}
+		l.Errorf("delete ai agent: %v", err)
+		return nil, mapAIResourceErr(err)
+	}
+	return resp, nil
 }

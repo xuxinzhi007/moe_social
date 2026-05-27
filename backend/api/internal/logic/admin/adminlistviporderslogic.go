@@ -35,7 +35,7 @@ func (l *AdminListVipOrdersLogic) AdminListVipOrders(req *types.AdminListVipOrde
 		pageSize = 50
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListVipOrders(l.ctx, &super.AdminListVipOrdersReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListVipOrders(l.ctx, &super.AdminListVipOrdersReq{
 		Page:     int32(page),
 		PageSize: int32(pageSize),
 		UserId:   req.UserId,

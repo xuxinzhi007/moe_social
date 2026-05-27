@@ -1,28 +1,29 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AdminTag } from '../components/AdminTag'
-import { DataEnvBar } from '../components/DataEnvBar'
 import { IdCell } from '../components/IdCell'
 import { UserCell } from '../components/UserCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { moderationTag } from '../lib/adminLabels'
 import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
+import { AdminTable, AdminToolbar, ListPageLayout } from '../ui'
+import type { AdminTableColumn } from '../ui'
+
+type PostRow = {
+  id: string
+  user_id?: string
+  user_name: string
+  user_avatar?: string
+  content: string
+  moderation_status?: string
+  likes: number
+  comments: number
+  created_at: string
+}
 
 export function PostsPage() {
   const { client } = useAdminAuth()
-  const [items, setItems] = useState<
-    Array<{
-      id: string
-      user_id?: string
-      user_name: string
-      user_avatar?: string
-      content: string
-      moderation_status?: string
-      likes: number
-      comments: number
-      created_at: string
-    }>
-  >([])
+  const [items, setItems] = useState<PostRow[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [keyword, setKeyword] = useState('')
@@ -61,128 +62,112 @@ export function PostsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
-  return (
-    <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>动态审核</h2>
-          <p className="muted">查看与下架用户动态，支持按审核状态筛选</p>
-        </div>
-      </div>
-      <DataEnvBar />
-      <div className="admin-metrics page-insight-strip">
-        <div className="metric">
-          <div className="label">匹配结果</div>
-          <div className="value">{loading ? '…' : total}</div>
-        </div>
-      </div>
-      <div className="panel">
-        <form
-          className="inline-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            setPage(1)
-            setSearch(keyword.trim())
-          }}
-        >
-          <input placeholder="搜索正文" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
-          <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }}>
-            <option value="">全部状态</option>
-            <option value="ok">已通过</option>
-            <option value="pending">待审核</option>
-            <option value="rejected">已拒绝</option>
-          </select>
-          <button type="submit" className="btn btn-primary">
-            搜索
-          </button>
-        </form>
-        {error ? <p className="text-danger">{error}</p> : null}
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>作者</th>
-                <th>ID</th>
-                <th>内容</th>
-                <th>状态</th>
-                <th>赞/评</th>
-                <th>时间</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="muted">
-                    加载中…
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="muted">
-                    暂无动态
-                  </td>
-                </tr>
-              ) : (
-                items.map((row) => (
-                  <tr key={row.id}>
-                    <td>
-                      <UserCell
-                        name={row.user_name}
-                        avatar={row.user_avatar}
-                        sub={row.user_id ? `UID ${row.user_id}` : undefined}
-                      />
-                    </td>
-                    <td>
-                      <IdCell id={row.id} />
-                    </td>
-                    <td style={{ maxWidth: 320 }}>
-                      {row.content.slice(0, 80)}
-                      {row.content.length > 80 ? '…' : ''}
-                    </td>
-                    <td>
-                      <AdminTag spec={moderationTag(row.moderation_status)} />
-                    </td>
-                    <td>
-                      <AdminTag label={`${row.likes} 赞`} tone="neutral" />
-                      <span className="muted" style={{ margin: '0 4px' }}>/</span>
-                      <AdminTag label={`${row.comments} 评`} tone="info" />
-                    </td>
-                    <td className="muted">{formatDateTime(row.created_at)}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={async () => {
-                          if (!confirm('确定删除该动态？')) return
-                          const res = await client.deletePost(row.id)
-                          if (!res.success) setError(res.message || '删除失败')
-                          else await load()
-                        }}
-                      >
-                        删除
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        {totalPages > 1 ? (
-          <div className="pager">
-            <button type="button" className="btn btn-ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              上一页
-            </button>
-            <span className="muted">
-              {page}/{totalPages}
+  const columns = useMemo(
+    (): AdminTableColumn<PostRow>[] => [
+      {
+        key: 'author',
+        header: '作者',
+        render: (row) => (
+          <UserCell
+            name={row.user_name}
+            avatar={row.user_avatar}
+            sub={row.user_id ? `UID ${row.user_id}` : undefined}
+          />
+        ),
+      },
+      { key: 'id', header: 'ID', render: (row) => <IdCell id={row.id} /> },
+      {
+        key: 'content',
+        header: '内容',
+        render: (row) => (
+          <span style={{ maxWidth: 320, display: 'inline-block' }}>
+            {row.content.slice(0, 80)}
+            {row.content.length > 80 ? '…' : ''}
+          </span>
+        ),
+      },
+      {
+        key: 'status',
+        header: '状态',
+        render: (row) => <AdminTag spec={moderationTag(row.moderation_status)} />,
+      },
+      {
+        key: 'stats',
+        header: '赞/评',
+        render: (row) => (
+          <>
+            <AdminTag label={`${row.likes} 赞`} tone="neutral" />
+            <span className="muted" style={{ margin: '0 4px' }}>
+              /
             </span>
-            <button type="button" className="btn btn-ghost" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-              下一页
-            </button>
-          </div>
-        ) : null}
-      </div>
-    </>
+            <AdminTag label={`${row.comments} 评`} tone="info" />
+          </>
+        ),
+      },
+      {
+        key: 'time',
+        header: '时间',
+        cellClassName: 'muted',
+        render: (row) => formatDateTime(row.created_at),
+      },
+      {
+        key: 'actions',
+        header: '',
+        render: (row) => (
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={async () => {
+              if (!confirm('确定删除该动态？')) return
+              const res = await client.deletePost(row.id)
+              if (!res.success) setError(res.message || '删除失败')
+              else await load()
+            }}
+          >
+            删除
+          </button>
+        ),
+      },
+    ],
+    [client, load],
+  )
+
+  return (
+    <ListPageLayout
+      title="动态审核"
+      description="查看与下架用户动态，支持按审核状态筛选"
+      metrics={[{ label: '匹配结果', value: loading ? '…' : total }]}
+      toolbar={
+        <AdminToolbar
+          search={{
+            value: keyword,
+            onChange: setKeyword,
+            onSubmit: () => {
+              setPage(1)
+              setSearch(keyword.trim())
+            },
+            placeholder: '搜索正文',
+          }}
+          filters={
+            <select
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value)
+                setPage(1)
+              }}
+            >
+              <option value="">全部状态</option>
+              <option value="ok">已通过</option>
+              <option value="pending">待审核</option>
+              <option value="rejected">已拒绝</option>
+            </select>
+          }
+        />
+      }
+      error={error}
+      pagination={{ page, totalPages, total, onPageChange: setPage }}
+    >
+      <AdminTable columns={columns} rows={items} rowKey={(row) => row.id} loading={loading} emptyText="暂无动态" />
+    </ListPageLayout>
   )
 }

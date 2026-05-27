@@ -32,7 +32,7 @@ func (l *SearchUserMemoriesLogic) SearchUserMemories(req *types.SearchUserMemori
 		limit = 8
 	}
 
-	memResp, err := l.svcCtx.SuperRpcClient.GetUserMemories(l.ctx, &super.GetUserMemoriesReq{
+	memResp, err := l.svcCtx.LLMGW.GetUserMemories(l.ctx, &super.GetUserMemoriesReq{
 		UserId: req.UserId,
 		Limit:  listLimit,
 		Offset: 0,

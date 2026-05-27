@@ -29,7 +29,7 @@ func NewAdminGetUserLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Admi
 }
 
 func (l *AdminGetUserLogic) AdminGetUser(req *types.AdminGetUserReq) (resp *types.AdminGetUserResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminGetUser(l.ctx, &super.AdminGetUserReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminGetUser(l.ctx, &super.AdminGetUserReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

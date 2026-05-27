@@ -1,0 +1,27 @@
+// SSOT stub (documentation-only). Mirrors super.proto AI resource RPCs.
+syntax = "proto3";
+
+package ai.v1;
+
+option go_package = "backend/api/ai/v1;aiv1";
+
+message ListAiResourceReq {}
+message ListAiResourceResp {}
+message UpsertAiResourceReq {}
+message UpsertAiResourceResp {}
+message DeleteAiResourceReq {}
+message DeleteAiResourceResp {}
+message ListPublicAiAgentsReq {}
+
+service AiResources {
+  rpc ListAiProviders(ListAiResourceReq) returns (ListAiResourceResp);
+  rpc UpsertAiProvider(UpsertAiResourceReq) returns (UpsertAiResourceResp);
+  rpc DeleteAiProvider(DeleteAiResourceReq) returns (DeleteAiResourceResp);
+  rpc ListAiAgents(ListAiResourceReq) returns (ListAiResourceResp);
+  rpc ListPublicAiAgents(ListPublicAiAgentsReq) returns (ListAiResourceResp);
+  rpc UpsertAiAgent(UpsertAiResourceReq) returns (UpsertAiResourceResp);
+  rpc DeleteAiAgent(DeleteAiResourceReq) returns (DeleteAiResourceResp);
+  rpc ListAiLorebooks(ListAiResourceReq) returns (ListAiResourceResp);
+  rpc UpsertAiLorebook(UpsertAiResourceReq) returns (UpsertAiResourceResp);
+  rpc DeleteAiLorebook(DeleteAiResourceReq) returns (DeleteAiResourceResp);
+}

@@ -1,0 +1,26 @@
+// SSOT stub (documentation-only). Mirrors super.proto admin insights RPCs.
+// Regenerate with make gen when this domain is promoted to generated handlers.
+syntax = "proto3";
+
+package admin.v1;
+
+option go_package = "backend/api/admin/v1;adminv1";
+
+message AdminListAiChatSessionsReq {}
+message AdminListAiChatSessionsResp {}
+message AdminListAiChatMessagesReq {}
+message AdminListAiChatMessagesResp {}
+message AdminExportAiChatMessagesReq {}
+message AdminExportAiChatMessagesResp {}
+message AdminGetMemoryStatsReq {}
+message AdminAnalyticsOverviewResp {}
+message AdminListTopicTagsReq {}
+message AdminListTopicTagsResp {}
+
+service AdminInsights {
+  rpc AdminListAiChatSessions(AdminListAiChatSessionsReq) returns (AdminListAiChatSessionsResp);
+  rpc AdminListAiChatMessages(AdminListAiChatMessagesReq) returns (AdminListAiChatMessagesResp);
+  rpc AdminExportAiChatMessages(AdminExportAiChatMessagesReq) returns (AdminExportAiChatMessagesResp);
+  rpc AdminAnalyticsOverview(AdminGetMemoryStatsReq) returns (AdminAnalyticsOverviewResp);
+  rpc AdminListTopicTags(AdminListTopicTagsReq) returns (AdminListTopicTagsResp);
+}

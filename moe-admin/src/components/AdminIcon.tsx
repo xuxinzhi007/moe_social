@@ -16,7 +16,7 @@ type AdminIconProps = {
   className?: string
 }
 
-export function AdminIcon({ name, className = '' }: AdminIconProps) {
+export function AdminIcon({ name, className = 'admin-icon' }: AdminIconProps) {
   const paths = ICONS[name]
   return (
     <svg

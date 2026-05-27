@@ -84,6 +84,13 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
         status: 'ready',
         appDomain: 'checkin / level / achievements',
       },
+      {
+        kind: 'item',
+        to: '/app/social',
+        label: '好友与关注',
+        status: 'ready',
+        appDomain: 'discover / friend',
+      },
     ],
   },
   {
@@ -160,7 +167,7 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
     id: 'app-play',
     label: 'AI 与玩法',
     icon: '🎮',
-    caption: '酒馆 · 礼物 · 社交',
+    caption: '酒馆 · 礼物 · 工具',
     defaultOpen: false,
     children: [
       {
@@ -218,13 +225,6 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
         label: '礼物与扭蛋',
         status: 'ready',
         appDomain: 'gacha / gifts',
-      },
-      {
-        kind: 'item',
-        to: '/app/social',
-        label: '好友与关注',
-        status: 'ready',
-        appDomain: 'discover / friend',
       },
     ],
   },

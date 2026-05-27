@@ -29,7 +29,7 @@ func NewGetUserMemoryProfilesLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *GetUserMemoryProfilesLogic) GetUserMemoryProfiles(req *types.GetUserMemoryProfilesReq) (resp *types.GetUserMemoryProfilesResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetUserMemoryProfiles(l.ctx, &super.GetUserMemoryProfilesReq{
+	rpcResp, err := l.svcCtx.LLMGW.GetUserMemoryProfiles(l.ctx, &super.GetUserMemoryProfilesReq{
 		UserId: req.UserId,
 		Limit:  int32(req.Limit),
 	})

@@ -495,6 +495,11 @@ export function createAdminClient(opts: AdminClientOptions) {
         method: 'POST',
       }),
 
+    dedupeGifts: () =>
+      api<BaseResp<{ removed: number }>>(adminApiPath('/gifts/dedupe'), {
+        method: 'POST',
+      }),
+
     listVipOrders: (params: {
       page?: number
       page_size?: number
@@ -1738,6 +1743,11 @@ export function createAdminClient(opts: AdminClientOptions) {
           body: JSON.stringify(body),
         },
       ),
+
+    bootstrapTopicTags: () =>
+      api<BaseResp<{ created: number }>>(adminApiPath('/topic-tags/bootstrap'), {
+        method: 'POST',
+      }),
 
     updateTopicTag: (tagId: string, body: { name?: string; color?: string }) =>
       api<BaseResp<{ id: string; name: string; color: string; created_at: string }>>(

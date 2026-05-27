@@ -1,8 +1,7 @@
 # Moe Social：go-zero → Kratos 混合迁移方案（完整版）
 
-> **更新：2026-05-27** · **Hybrid Moe 100%** · **VIP/User 核心 in_process** · **全站 F ~48%** · **阶段 FS-3b**  
-> **总览**：[kratos-migration.md](./kratos-migration.md) · **全站**：[kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md)  
-> 勾选：[kratos-migration-status.md](./kratos-migration-status.md)
+> **更新：2026-05-28** · **F109 完成** · **F ~98%** · **G ~78%**  
+> **总览**：[kratos-migration.md](./kratos-migration.md) · **勾选**：[kratos-migration-status.md](./kratos-migration-status.md) · **路线图**：[kratos-migration-sprint-f100.md](./kratos-migration-sprint-f100.md)
 
 > 分支：`feat/kratos-hybrid-migration`  
 > 目标：**先混合（Kratos 分层 + go-zero 运行时）→ 再纯 Kratos（单进程 + 单契约）**  

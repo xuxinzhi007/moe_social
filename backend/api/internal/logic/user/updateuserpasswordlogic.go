@@ -27,7 +27,7 @@ func NewUpdateUserPasswordLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 
 func (l *UpdateUserPasswordLogic) UpdateUserPassword(req *types.UpdateUserPasswordReq) (resp *types.UpdateUserPasswordResp, err error) {
 	// 调用RPC服务
-	_, err = l.svcCtx.SuperRpcClient.UpdateUserPassword(l.ctx, &super.UpdateUserPasswordReq{
+	_, err = l.svcCtx.UserGW.UpdateUserPassword(l.ctx, &super.UpdateUserPasswordReq{
 		UserId:      req.UserId,
 		OldPassword: req.OldPassword,
 		NewPassword: req.NewPassword,

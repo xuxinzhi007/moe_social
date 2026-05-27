@@ -7,7 +7,7 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from 'recharts'
-import { DataEnvBar } from '../components/DataEnvBar'
+import { MonitorPageLayout } from '../ui'
 import { DayTrendChart } from '../components/DayTrendChart'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { DeployApiError } from '../api/deployClient'
@@ -28,7 +28,7 @@ type Overview = {
   chat_messages_by_day: Array<{ date: string; count: number }>
 }
 
-const PIE_COLORS = ['#7f7fd5', '#86a8e7', '#91eae4', '#ffb347', '#c9b6ff', '#a8d8ea']
+const PIE_COLORS = ['#6b5fc1', '#34d3c8', '#86a8e7', '#f3b74f', '#c9b6ff', '#a8d8ea']
 
 export function AnalyticsPage() {
   const { client } = useAdminAuth()
@@ -73,19 +73,16 @@ export function AnalyticsPage() {
   )
 
   return (
-    <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>数据分析看板</h2>
-          <p>用户增长 · 记忆写入 · Moe 工具调用 · AI 对话量（近 14 日趋势）</p>
-        </div>
+    <MonitorPageLayout
+      title="数据分析看板"
+      description="用户增长 · 记忆写入 · Moe 工具调用 · AI 对话量（近 14 日趋势）"
+      headActions={
         <button type="button" className="btn btn-secondary" disabled={loading} onClick={() => void load()}>
           刷新
         </button>
-      </div>
-
-      <DataEnvBar />
-      {error && <p className="form-error">{error}</p>}
+      }
+      error={error || undefined}
+    >
       {loading && !data && <p className="muted">加载中…</p>}
 
       {data && (
@@ -150,6 +147,6 @@ export function AnalyticsPage() {
           )}
         </>
       )}
-    </>
+    </MonitorPageLayout>
   )
 }
