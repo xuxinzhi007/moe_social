@@ -98,7 +98,7 @@ make migrate-moe    # 仅 Moe / AI 聊天相关表
 5. **推荐**：改 Moe/Admin 相关接口后执行 `cd backend && make gen-moe-admin`（`scripts/gen-moe-admin.sh` 会跑 gen 并自动删已知空壳再编译）。
 6. **Kratos（2026-05-27）**：**必读** `docs/dev/kratos-migration.md`（架构 SSOT）；全站 `kratos-full-site-migration-plan.md`（**F ~48%**，阶段 **FS-3b**）。**开发**：`make moe-social` / `make dev` 默认同时起 **deploy-agent :19010**（配置首次从 `deploy/config.example.yaml` 复制）；不要 Agent 时 `-agent=false`。**生产二进制** `make build-moe-social` 仍为纯 `cmd/moe-social`（不含 Agent）。验收：`make verify-full-site-50` 等。
 7. **生成**：`make gen` = `gen-moe-proto` + `gen-rpc` + `gen-api`；已迁域写 `internal/biz|service`（moe/vip/user）。**验收**：`make verify-moe-complete`。
-8. **配置**（`moe`）：`api_in_process`、`vip_api_in_process`、`user_api_in_process`、`register_moe_grpc`、`use_moe_grpc`。**对外 :8888**；8080 仅后端 gRPC。
+8. **配置**（`moe`）：`api_in_process`、`vip_api_in_process`、`user_api_in_process`、`register_moe_grpc`、`use_moe_grpc`。**对外 :8888**；8080 仅后端 gRPC。开发启动 / RPC 监控 / 内存展示见 [docs/dev/admin-rpc-runtime-guide.md](../dev/admin-rpc-runtime-guide.md)。
 9. **部署**：开发可单进程；`make build` 默认仍产出 api+rpc 两个二进制，见迁移文档 §2.5。
 10. **推理模型**：发帖从 `/v1/models` 自动匹配；管理台显示 `effective_model` / `auto_discovered`。
 
