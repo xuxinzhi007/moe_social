@@ -1,6 +1,6 @@
 # 全站 Kratos 迁移方案（Phase 4+）
 
-> **状态**：**FS-3b（关注）** · **F ~57%**（+3 点目标已达成）· 70% 见 §1.6  
+> **状态**：**FS-3b（关注+好友）** · **F ~60%** · 70% 见 §1.6  
 > **前置已完成**：Hybrid Moe **100%** · 纯 Kratos 试点方案 **100%** · 生产对外仍 **:8888**（`moe-social`）  
 > **SSOT 总览**：[kratos-migration.md](./kratos-migration.md) · **勾选**：[kratos-migration-status.md](./kratos-migration-status.md)
 
@@ -14,7 +14,7 @@
 |------|------|------|------|
 | Moe 域 Hybrid | **A** | **100%** | `biz/service/data` + `MoeGW` + `moe.proto`；`make verify-moe-complete` |
 | 纯 Kratos 试点方案 | **B** | **100%** | Phase 0～6（`moe-kratos`、Wire、VIP 只读试点）；`make verify-kratos-100` |
-| **全站迁移总进度** | **F** | **~57%** | 各业务域下沉 `biz` + 契约拆分 + 最终退役 `super.*` |
+| **全站迁移总进度** | **F** | **~60%** | 各业务域下沉 `biz` + 契约拆分 + 最终退役 `super.*` |
 | 工程现代化就绪度 | **G** | **~55%** | A+B+F 折算 + 单二进制；**不等于** F |
 
 **「100%」仅指 A 或 B**；**不等于全站已是纯 Kratos**。
@@ -40,14 +40,14 @@ F = Σ (域权重 × 域内进度)
 |----|------|----------|------|----------------|
 | **Moe** | 12% | 100% | 12.0% | `internal/biz/moe`（7 文件）、`moeadmingw`、16 条 HTTP 走 GW |
 | **VIP** | 8% | **100%** | **8.0%** | `biz/vip` CRUD + `vipadmingw` + RPC/API 薄层；`make verify-domain-vip` |
-| **User** | 20% | **~85%** | **~17%** | FS-3a 核心 + FS-3b 关注五接口 `usergw` in_process；好友/订单/记忆/OAuth 仍 legacy |
+| **User** | 20% | **~95%** | **~19%** | FS-3a/3b：核心+关注+好友 `usergw`；VIP 订单/记忆/OAuth 仍 legacy |
 | **Admin（非 Moe）** | 14% | 0% | 0% | `logic/admin` 约 **66** 文件（81−15 Moe 薄壳） |
 | **社交** | 18% | 0% | 0% | post/community/chat/comment/privatemsg 等 |
 | **AI / LLM** | 14% | 0% | 0% | `ai` 19 + `llm` 15 文件 |
 | **实时 / 通知** | 8% | 0% | 0% | voice/chat/notification |
 | **其它** | 6% | **100%** | **6.0%** | FS-3c：`biz/landing`、`biz/behavior`、`biz/appcfg`；checkin/achievement 仍 legacy |
 | **平台基建** | 10% | **100%** | **10.0%** | `make verify-platform` / `bin/moe-social` |
-| **合计 F** | 100% | — | **~57%** | 验收：`make verify-full-site-50` |
+| **合计 F** | 100% | — | **~60%** | 验收：`make verify-full-site-50` |
 
 ### 1.5 能否提升到 50%？（结论）
 
@@ -64,8 +64,9 @@ F = Σ (域权重 × 域内进度)
 - **VIP 全量**：F → **~28%**。
 - **FS-3a User 核心 + 平台 100%**：F → **~48%**。
 - **FS-3c 小域快迁**（landing/behavior/appcfg）：**其它** 6% → F **~54%**。
-- **FS-3b 关注子集**（follow/unfollow/check/列表）：User **70%→85%** → F **+3%** → **~57%**。
-- **到 60%**：好友关系或 User 域 **100%**（+3%）。
+- **FS-3b 关注子集**：User **70%→85%** → F **+3%** → **~57%**。
+- **FS-3b 好友子集**（7 接口）：User **85%→95%** → F **+2%** → **~60%**。
+- **User 域 100%**：VIP 订单/记忆/OAuth（约 +1% F）。
 - **不建议** 为凑数修改域权重；里程碑用 **F-50 / F-70 清单**（§1.6）与 SSOT 公式并行汇报。
 
 ### 1.6 能否提升到 70%？（诚实路径）
@@ -74,8 +75,8 @@ F = Σ (域权重 × 域内进度)
 
 | 阶段 | 动作 | 增量（约） | 累计 F |
 |------|------|------------|--------|
-| 已完成 | Moe+VIP+平台+User核心+FS-3c+关注 | — | **~57%** |
-| FS-3b 余量 | 好友/订单/记忆/OAuth → User **100%** | +3% | **~60%** |
+| 已完成 | Moe+VIP+平台+FS-3c+关注+好友 | — | **~60%** |
+| FS-3b 余量 | VIP 订单/记忆/OAuth → User **100%** | +1% | **~61%** |
 | FS-4a | Admin 只读/配置类 **30%** | +4.2% | **~64%** |
 | FS-4b | 社交 comment/content **40%** | +7.2% | **~71%** |
 
@@ -201,8 +202,8 @@ G ≈ 30% (A) + 15% (B) + 10% (F 折算) ≈ 55%
 
 | 项 | 说明 |
 |----|------|
-| 已完成 | 关注五接口 → `biz/user/follow` + `usergw`（`make verify-domain-user`） |
-| 待办 | 好友、VIP 订单、记忆、OAuth |
+| 已完成 | 关注 → `biz/user/follow`；好友 7 接口 → `biz/user/friend` + `usergw` |
+| 待办 | VIP 订单、记忆、OAuth |
 | 风险 | 最高流量；需灰度 |
 
 ### FS-4 Admin 非 Moe（~3～4 周）

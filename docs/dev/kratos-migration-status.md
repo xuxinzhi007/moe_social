@@ -2,7 +2,7 @@
 
 > **更新：2026-05-27**  
 > **当前阶段：FS-3b**（User 扩展）  
-> **全站迁移 F：~57%** · **工程就绪度 G：~55%**  
+> **全站迁移 F：~60%** · **工程就绪度 G：~55%**  
 > 口径：[kratos-full-site-migration-plan.md §1](./kratos-full-site-migration-plan.md#1-进度口径必读避免歧义) · 架构 SSOT：[kratos-migration.md](./kratos-migration.md)
 
 ---
@@ -13,7 +13,7 @@
 |------|------|------|
 | A · Hybrid Moe | **100%** | `make verify-moe-complete` |
 | B · 纯 Kratos 试点方案 | **100%** | `make verify-kratos-100` |
-| **F · 全站迁移** | **~57%** | `make verify-full-site-50` |
+| **F · 全站迁移** | **~60%** | `make verify-full-site-50` |
 | G · 工程现代化就绪 | **~55%** | 可上线 Hybrid；≠ 全站迁完 |
 
 ---
@@ -57,8 +57,9 @@
 
 ## 进行中 🔄
 
-- [ ] **FS-3b** User 扩展余量（好友/VIP 订单/记忆/OAuth）→ 冲 **F 60%**
-- [x] **FS-3b** User 关注五接口 → `biz/user/follow` + `usergw`
+- [ ] **FS-3b** User 扩展余量（VIP 订单/记忆/OAuth）→ User 域 100%
+- [x] **FS-3b** User 关注 → `biz/user/follow` + `usergw`
+- [x] **FS-3b** User 好友 7 接口 → `biz/user/friend` + `usergw`
 - [ ] **FS-1** 余量（conf 扩展、compose 默认单容器）
 
 ---
@@ -79,7 +80,7 @@
 |----|--------|------------|------|
 | Moe | 100% | `moeadmingw` | ✅ |
 | VIP 套餐 | 100% | `vipadmingw` | ✅ FS-2 |
-| User | ~85% | `usergw`（核心+关注） | FS-3a ✅ / FS-3b 部分 ✅ |
+| User | ~95% | `usergw`（核心+关注+好友） | FS-3a ✅ / FS-3b 大部分 ✅ |
 | Admin（非 Moe） | 0% | — | FS-4 |
 | 其它（小域） | 100% | `biz/landing` 等 | ✅ FS-3c |
 | 社交 / AI / 实时 | 0% | — | FS-5～7 |
@@ -91,7 +92,7 @@
 ```bash
 cd backend
 make moe-social               # 开发 / 生产 HTTP :8888
-make verify-full-site-50      # F≈57% 组合验收
+make verify-full-site-50      # F≈60% 组合验收
 make verify-moe-complete      # A
 make verify-domain-vip        # FS-2
 make verify-domain-user       # FS-3a

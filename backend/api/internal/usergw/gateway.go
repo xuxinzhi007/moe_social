@@ -111,6 +111,55 @@ func (g *Gateway) GetFollowings(ctx context.Context, in *super.GetFollowingsReq,
 	return g.super.GetFollowings(ctx, in, opts...)
 }
 
+func (g *Gateway) SendFriendRequest(ctx context.Context, in *super.SendFriendRequestReq, opts ...grpc.CallOption) (*super.SendFriendRequestResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.SendFriendRequest(ctx, in)
+	}
+	return g.super.SendFriendRequest(ctx, in, opts...)
+}
+
+func (g *Gateway) ListIncomingFriendRequests(ctx context.Context, in *super.ListIncomingFriendRequestsReq, opts ...grpc.CallOption) (*super.ListIncomingFriendRequestsResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.ListIncomingFriendRequests(ctx, in)
+	}
+	return g.super.ListIncomingFriendRequests(ctx, in, opts...)
+}
+
+func (g *Gateway) ListOutgoingFriendRequests(ctx context.Context, in *super.ListOutgoingFriendRequestsReq, opts ...grpc.CallOption) (*super.ListOutgoingFriendRequestsResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.ListOutgoingFriendRequests(ctx, in)
+	}
+	return g.super.ListOutgoingFriendRequests(ctx, in, opts...)
+}
+
+func (g *Gateway) AcceptFriendRequest(ctx context.Context, in *super.AcceptFriendRequestReq, opts ...grpc.CallOption) (*super.AcceptFriendRequestResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.AcceptFriendRequest(ctx, in)
+	}
+	return g.super.AcceptFriendRequest(ctx, in, opts...)
+}
+
+func (g *Gateway) RejectFriendRequest(ctx context.Context, in *super.RejectFriendRequestReq, opts ...grpc.CallOption) (*super.RejectFriendRequestResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.RejectFriendRequest(ctx, in)
+	}
+	return g.super.RejectFriendRequest(ctx, in, opts...)
+}
+
+func (g *Gateway) ListFriends(ctx context.Context, in *super.ListFriendsReq, opts ...grpc.CallOption) (*super.ListFriendsResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.ListFriends(ctx, in)
+	}
+	return g.super.ListFriends(ctx, in, opts...)
+}
+
+func (g *Gateway) GetFriendRelation(ctx context.Context, in *super.GetFriendRelationReq, opts ...grpc.CallOption) (*super.GetFriendRelationResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.GetFriendRelation(ctx, in)
+	}
+	return g.super.GetFriendRelation(ctx, in, opts...)
+}
+
 // Super 未迁移方法仍走 RPC。
 func (g *Gateway) Super() super.SuperClient {
 	if g == nil {

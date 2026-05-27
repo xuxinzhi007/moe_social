@@ -113,13 +113,13 @@ func (l *FriendLogic) SendFriendRequest(r *http.Request, req *types.SendFriendRe
 		return &types.SendFriendRequestResp{BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false}}, nil
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.SendFriendRequest(l.ctx, &super.SendFriendRequestReq{
+	rpcResp, err := l.svcCtx.UserGW.SendFriendRequest(l.ctx, &super.SendFriendRequestReq{
 		ActorUserId: actorString(me),
 		ToUserId:    strings.TrimSpace(req.ToUserId),
 		ToMoeNo:     strings.TrimSpace(req.ToMoeNo),
 	})
 	if err != nil {
-		return &types.SendFriendRequestResp{BaseResp: common.HandleRPCError(err, "")}, nil
+		return &types.SendFriendRequestResp{BaseResp: common.HandleUserGWError(err, "")}, nil
 	}
 
 	msg := "好友申请已发送"
@@ -139,11 +139,11 @@ func (l *FriendLogic) ListIncoming(r *http.Request, userIDPath string) (*types.L
 		return &types.ListFriendRequestsResp{BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false}}, nil
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.ListIncomingFriendRequests(l.ctx, &super.ListIncomingFriendRequestsReq{
+	rpcResp, err := l.svcCtx.UserGW.ListIncomingFriendRequests(l.ctx, &super.ListIncomingFriendRequestsReq{
 		ActorUserId: actorString(me),
 	})
 	if err != nil {
-		return &types.ListFriendRequestsResp{BaseResp: common.HandleRPCError(err, "")}, nil
+		return &types.ListFriendRequestsResp{BaseResp: common.HandleUserGWError(err, "")}, nil
 	}
 
 	out := make([]types.FriendRequestView, 0, len(rpcResp.Data))
@@ -166,11 +166,11 @@ func (l *FriendLogic) ListOutgoing(r *http.Request, userIDPath string) (*types.L
 		return &types.ListFriendRequestsResp{BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false}}, nil
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.ListOutgoingFriendRequests(l.ctx, &super.ListOutgoingFriendRequestsReq{
+	rpcResp, err := l.svcCtx.UserGW.ListOutgoingFriendRequests(l.ctx, &super.ListOutgoingFriendRequestsReq{
 		ActorUserId: actorString(me),
 	})
 	if err != nil {
-		return &types.ListFriendRequestsResp{BaseResp: common.HandleRPCError(err, "")}, nil
+		return &types.ListFriendRequestsResp{BaseResp: common.HandleUserGWError(err, "")}, nil
 	}
 
 	out := make([]types.FriendRequestView, 0, len(rpcResp.Data))
@@ -193,12 +193,12 @@ func (l *FriendLogic) AcceptFriendRequest(r *http.Request, req *types.FriendRequ
 		return &types.FriendRequestActionResp{BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false}}, nil
 	}
 
-	_, err = l.svcCtx.SuperRpcClient.AcceptFriendRequest(l.ctx, &super.AcceptFriendRequestReq{
+	_, err = l.svcCtx.UserGW.AcceptFriendRequest(l.ctx, &super.AcceptFriendRequestReq{
 		ActorUserId: actorString(me),
 		RequestId:   req.RequestId,
 	})
 	if err != nil {
-		return &types.FriendRequestActionResp{BaseResp: common.HandleRPCError(err, "")}, nil
+		return &types.FriendRequestActionResp{BaseResp: common.HandleUserGWError(err, "")}, nil
 	}
 
 	return &types.FriendRequestActionResp{
@@ -217,12 +217,12 @@ func (l *FriendLogic) RejectFriendRequest(r *http.Request, req *types.FriendRequ
 		return &types.FriendRequestActionResp{BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false}}, nil
 	}
 
-	_, err = l.svcCtx.SuperRpcClient.RejectFriendRequest(l.ctx, &super.RejectFriendRequestReq{
+	_, err = l.svcCtx.UserGW.RejectFriendRequest(l.ctx, &super.RejectFriendRequestReq{
 		ActorUserId: actorString(me),
 		RequestId:   req.RequestId,
 	})
 	if err != nil {
-		return &types.FriendRequestActionResp{BaseResp: common.HandleRPCError(err, "")}, nil
+		return &types.FriendRequestActionResp{BaseResp: common.HandleUserGWError(err, "")}, nil
 	}
 
 	return &types.FriendRequestActionResp{
@@ -241,11 +241,11 @@ func (l *FriendLogic) ListFriends(r *http.Request, userIDPath string) (*types.Li
 		return &types.ListFriendsResp{BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false}}, nil
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.ListFriends(l.ctx, &super.ListFriendsReq{
+	rpcResp, err := l.svcCtx.UserGW.ListFriends(l.ctx, &super.ListFriendsReq{
 		ActorUserId: actorString(me),
 	})
 	if err != nil {
-		return &types.ListFriendsResp{BaseResp: common.HandleRPCError(err, "")}, nil
+		return &types.ListFriendsResp{BaseResp: common.HandleUserGWError(err, "")}, nil
 	}
 
 	out := make([]types.User, 0, len(rpcResp.Users))
@@ -268,12 +268,12 @@ func (l *FriendLogic) FriendStatus(r *http.Request, userIDPath, otherIDPath stri
 		return &types.FriendStatusResp{BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false}}, nil
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetFriendRelation(l.ctx, &super.GetFriendRelationReq{
+	rpcResp, err := l.svcCtx.UserGW.GetFriendRelation(l.ctx, &super.GetFriendRelationReq{
 		ActorUserId: actorString(me),
 		OtherUserId: strings.TrimSpace(otherIDPath),
 	})
 	if err != nil {
-		return &types.FriendStatusResp{BaseResp: common.HandleRPCError(err, "")}, nil
+		return &types.FriendStatusResp{BaseResp: common.HandleUserGWError(err, "")}, nil
 	}
 
 	return &types.FriendStatusResp{
