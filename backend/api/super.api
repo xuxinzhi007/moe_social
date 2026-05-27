@@ -1791,6 +1791,33 @@ type AdminDashboardResp {
 	Data AdminDashboardData `json:"data"`
 }
 
+// —— 本机运行时 / 进程内存（开发运维） ——
+type AdminRuntimeProcessInfo {
+	Role        string  `json:"role"`
+	Pid         int     `json:"pid"`
+	GoAllocMb   float64 `json:"go_alloc_mb"`
+	GoSysMb     float64 `json:"go_sys_mb"`
+	RssMb       float64 `json:"rss_mb"`
+	Goroutines  int     `json:"goroutines"`
+	NumCpu      int     `json:"num_cpu"`
+	Reachable   bool    `json:"reachable"`
+	SameProcess bool    `json:"same_process,optional"`
+}
+
+type AdminRuntimeOverviewData {
+	ApiProcess       AdminRuntimeProcessInfo `json:"api_process"`
+	RpcProcess       AdminRuntimeProcessInfo `json:"rpc_process"`
+	RpcMonitorOnline bool                    `json:"rpc_monitor_online"`
+	Layout           string                  `json:"layout"`
+	ProcessesNote    string                  `json:"processes_note"`
+	EstimatedRssMb   float64                 `json:"estimated_rss_mb"`
+}
+
+type AdminRuntimeOverviewResp {
+	BaseResp
+	Data AdminRuntimeOverviewData `json:"data"`
+}
+
 type AdminListUsersReq {
 	Page     int    `form:"page,optional,default=1"`
 	PageSize int    `form:"page_size,optional,default=20"`
@@ -3323,6 +3350,9 @@ service Super {
 
 	@handler adminAnalyticsOverview
 	get /api/admin/analytics/overview (EmptyReq) returns (AdminAnalyticsOverviewResp)
+
+	@handler adminRuntimeOverview
+	get /api/admin/runtime/overview (EmptyReq) returns (AdminRuntimeOverviewResp)
 
 	@handler adminListTopicTags
 	get /api/admin/topic-tags (AdminListTopicTagsReq) returns (AdminListTopicTagsResp)

@@ -1264,6 +1264,32 @@ type AdminRuntimeConfigResp struct {
 	Data AdminRuntimeConfigData `json:"data"`
 }
 
+type AdminRuntimeOverviewData struct {
+	ApiProcess       AdminRuntimeProcessInfo `json:"api_process"`
+	RpcProcess       AdminRuntimeProcessInfo `json:"rpc_process"`
+	RpcMonitorOnline bool                    `json:"rpc_monitor_online"`
+	Layout           string                  `json:"layout"`
+	ProcessesNote    string                  `json:"processes_note"`
+	EstimatedRssMb   float64                 `json:"estimated_rss_mb"`
+}
+
+type AdminRuntimeOverviewResp struct {
+	BaseResp
+	Data AdminRuntimeOverviewData `json:"data"`
+}
+
+type AdminRuntimeProcessInfo struct {
+	Role        string  `json:"role"`
+	Pid         int     `json:"pid"`
+	GoAllocMb   float64 `json:"go_alloc_mb"`
+	GoSysMb     float64 `json:"go_sys_mb"`
+	RssMb       float64 `json:"rss_mb"`
+	Goroutines  int     `json:"goroutines"`
+	NumCpu      int     `json:"num_cpu"`
+	Reachable   bool    `json:"reachable"`
+	SameProcess bool    `json:"same_process,optional"`
+}
+
 type AdminSchemaCatalogData struct {
 	Summary AdminSchemaCatalogSummary `json:"summary"`
 	Items   []AdminSchemaTableItem    `json:"items"`

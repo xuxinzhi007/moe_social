@@ -6,12 +6,12 @@ Moe Social 专属管理台：浅色 Element 风格布局 + 现有 go-zero Admin 
 
 | 终端 | 命令 |
 |------|------|
-| backend | RPC + API（你现有流程） |
-| backend | `make deploy-agent`（**仅运维菜单需要**；登录/用户/反馈不必） |
+| backend | `make moe-social` 或 `make dev`（**默认含** deploy-agent `:19010`） |
 | **本目录** | `npm install` → **`npm run dev`** |
 
-**仅 RPC + API 时**：`npm run dev` 会通过 Vite 把 `/api/admin` 代理到 `:8888`，可直接登录。  
-控制台里 Agent 相关报错可忽略，直到你要用构建/发布/RPC 监控再开 Agent。
+`make moe-social` / `make dev` 会顺带拉起 deploy-agent（首次运行会从 `deploy/config.example.yaml` 生成 `deploy/config.yaml`）。  
+仅需 API 时不要 Agent：`go run ./cmd/moe-social-stack -agent=false` 或 `go run ./cmd/dev -agent=false`。  
+单独补 Agent：`make deploy-agent`。
 
 浏览器：**http://127.0.0.1:5173/ops/**（登录 `/ops/login`）
 

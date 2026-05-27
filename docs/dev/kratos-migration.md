@@ -1,7 +1,7 @@
 # Kratos 混合架构说明（SSOT）
 
 > **更新：2026-05-27**  
-> **当前阶段：FS-3b**（User 扩展）· **全站迁移 F：~48%** · **对外 HTTP：:8888**（`make moe-social`）  
+> **当前阶段：FS-3b**（User 扩展）· **全站迁移 F：~57%** · **对外 HTTP：:8888**（`make moe-social`）  
 > 全站方案：[kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md) · 勾选：[kratos-migration-status.md](./kratos-migration-status.md) · 试点：[kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md)
 
 ---
@@ -15,9 +15,10 @@
 | **B · 纯 Kratos 试点** | ✅ 100% — `make moe-kratos`（:1903x，非对外） |
 | **FS-2 VIP 套餐** | ✅ 100% — `vipadmingw` + `biz/vip` |
 | **FS-3a User 核心** | ✅ — login/register/资料/VIP 状态 `usergw` in_process |
-| **FS-3b User 扩展** | 🔄 进行中 — 关注/好友/订单/记忆/OAuth |
-| **F · 全站迁移** | **~48%** — `make verify-full-site-50` |
-| **下一里程碑** | F **50%+**（完成 FS-3b 或 User 域 ≥80%） |
+| **FS-3c 小域快迁** | ✅ landing / behavior / appcfg → `biz/*` |
+| **FS-3b User 扩展** | 🔄 关注 ✅ · 好友/订单/记忆/OAuth 待办 |
+| **F · 全站迁移** | **~57%** — `make verify-full-site-50` |
+| **下一里程碑** | F **60%**（好友或 User 100%）；**70%** 见 §1.6 |
 
 **`make moe-social` 启动成功标志**（节选）：
 
@@ -41,9 +42,9 @@ moe-social: 单进程已就绪 — gRPC …:8080 + HTTP …:8888
 | **不是纯 Kratos** | 生产未使用 `kratos.App` 替代双传输；未退役 `super.*` |
 | **Moe 域（A）** | `biz/moe` + `MoeGW` + `moe.proto` → **100%** |
 | **VIP 套餐域** | `biz/vip` + `VipGW` → **100%**（用户 VIP **订单**仍属 User 域） |
-| **User 核心（FS-3a）** | `biz/user` + `UserGW` → **~70%**（域内）；认证/资料/VIP 状态已 in_process |
+| **User（FS-3a/3b）** | `biz/user` + `UserGW` → **~85%**（域内）；含关注五接口 in_process |
 | **纯 Kratos 试点（B）** | Phase 0～6 → **100%**；`:19031/:19032` **非对外** |
-| **全站迁移（F）** | 各域下沉 `biz` + 退役 `super.*` → **~48%** |
+| **全站迁移（F）** | 各域下沉 `biz` + 退役 `super.*` → **~57%** |
 | **工程就绪度（G）** | **~55%** — 可稳定开发与上线 Hybrid |
 
 进度口径：[kratos-full-site-migration-plan.md §1](./kratos-full-site-migration-plan.md#1-进度口径必读避免歧义)。

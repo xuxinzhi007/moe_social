@@ -29,16 +29,16 @@ func (l *GetFollowingsLogic) GetFollowings(req *types.GetFollowingsReq) (resp *t
 	l.Debug("获取关注列表请求:", req)
 	
 	// 调用RPC服务
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetFollowings(l.ctx, &super.GetFollowingsReq{
+	rpcResp, err := l.svcCtx.UserGW.GetFollowings(l.ctx, &super.GetFollowingsReq{
 		UserId:   req.UserId,
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
 	})
-	
+
 	if err != nil {
-		l.Error("调用获取关注列表RPC服务失败:", err)
+		l.Error("获取关注列表失败:", err)
 		return &types.GetFollowingsResp{
-			BaseResp: common.HandleError(err),
+			BaseResp: common.HandleUserGWError(err, ""),
 			Data:     nil,
 			Total:    0,
 		}, nil

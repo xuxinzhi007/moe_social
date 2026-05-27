@@ -29,15 +29,15 @@ func (l *UnfollowUserLogic) UnfollowUser(req *types.UnfollowUserReq) (resp *type
 	l.Debug("取消关注请求:", req)
 
 	// 调用RPC服务
-	rpcResp, err := l.svcCtx.SuperRpcClient.UnfollowUser(l.ctx, &super.UnfollowUserReq{
+	rpcResp, err := l.svcCtx.UserGW.UnfollowUser(l.ctx, &super.UnfollowUserReq{
 		UserId:      req.UserId,
 		FollowingId: req.FollowingId,
 	})
 
 	if err != nil {
-		l.Error("调用取消关注用户RPC服务失败:", err)
+		l.Error("取消关注失败:", err)
 		return &types.FollowUserResp{
-			BaseResp: common.HandleError(err),
+			BaseResp: common.HandleUserGWError(err, ""),
 			Data:     false,
 		}, nil
 	}

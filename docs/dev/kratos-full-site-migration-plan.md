@@ -1,6 +1,6 @@
 # 全站 Kratos 迁移方案（Phase 4+）
 
-> **状态**：FS-3a User 核心 **in_process**（2026-05-27）· **F ~48%**（冲刺 50%）  
+> **状态**：**FS-3b（关注）** · **F ~57%**（+3 点目标已达成）· 70% 见 §1.6  
 > **前置已完成**：Hybrid Moe **100%** · 纯 Kratos 试点方案 **100%** · 生产对外仍 **:8888**（`moe-social`）  
 > **SSOT 总览**：[kratos-migration.md](./kratos-migration.md) · **勾选**：[kratos-migration-status.md](./kratos-migration-status.md)
 
@@ -14,7 +14,7 @@
 |------|------|------|------|
 | Moe 域 Hybrid | **A** | **100%** | `biz/service/data` + `MoeGW` + `moe.proto`；`make verify-moe-complete` |
 | 纯 Kratos 试点方案 | **B** | **100%** | Phase 0～6（`moe-kratos`、Wire、VIP 只读试点）；`make verify-kratos-100` |
-| **全站迁移总进度** | **F** | **~48%** | 各业务域下沉 `biz` + 契约拆分 + 最终退役 `super.*` |
+| **全站迁移总进度** | **F** | **~57%** | 各业务域下沉 `biz` + 契约拆分 + 最终退役 `super.*` |
 | 工程现代化就绪度 | **G** | **~55%** | A+B+F 折算 + 单二进制；**不等于** F |
 
 **「100%」仅指 A 或 B**；**不等于全站已是纯 Kratos**。
@@ -40,14 +40,14 @@ F = Σ (域权重 × 域内进度)
 |----|------|----------|------|----------------|
 | **Moe** | 12% | 100% | 12.0% | `internal/biz/moe`（7 文件）、`moeadmingw`、16 条 HTTP 走 GW |
 | **VIP** | 8% | **100%** | **8.0%** | `biz/vip` CRUD + `vipadmingw` + RPC/API 薄层；`make verify-domain-vip` |
-| **User** | 20% | **~70%** | **~14%** | FS-3a：auth/profile/VIP 状态 `usergw` in_process；记忆/OAuth/社交仍 legacy |
+| **User** | 20% | **~85%** | **~17%** | FS-3a 核心 + FS-3b 关注五接口 `usergw` in_process；好友/订单/记忆/OAuth 仍 legacy |
 | **Admin（非 Moe）** | 14% | 0% | 0% | `logic/admin` 约 **66** 文件（81−15 Moe 薄壳） |
 | **社交** | 18% | 0% | 0% | post/community/chat/comment/privatemsg 等 |
 | **AI / LLM** | 14% | 0% | 0% | `ai` 19 + `llm` 15 文件 |
 | **实时 / 通知** | 8% | 0% | 0% | voice/chat/notification |
-| **其它** | 6% | 0% | 0% | gift/checkin/achievement/ops/landing… |
+| **其它** | 6% | **100%** | **6.0%** | FS-3c：`biz/landing`、`biz/behavior`、`biz/appcfg`；checkin/achievement 仍 legacy |
 | **平台基建** | 10% | **100%** | **10.0%** | `make verify-platform` / `bin/moe-social` |
-| **合计 F** | 100% | — | **~48%** | 验收：`make verify-full-site-50` |
+| **合计 F** | 100% | — | **~57%** | 验收：`make verify-full-site-50` |
 
 ### 1.5 能否提升到 50%？（结论）
 
@@ -62,9 +62,24 @@ F = Σ (域权重 × 域内进度)
 因此：
 
 - **VIP 全量**：F → **~28%**。
-- **FS-3a User 核心 + 平台 100%（本次）**：F → **~48%**（`make verify-full-site-50`）。
-- **到 50%**：User 扩展（关注/好友/记忆/OAuth）再 **+2～4%**，或 User 域整体到 **80%+**。
-- **不建议** 为凑 50% 修改域权重；若需「冲刺里程碑」，可另设 **F-50 冲刺清单**（见 §3 FS-3b），与 SSOT 公式并行汇报。
+- **FS-3a User 核心 + 平台 100%**：F → **~48%**。
+- **FS-3c 小域快迁**（landing/behavior/appcfg）：**其它** 6% → F **~54%**。
+- **FS-3b 关注子集**（follow/unfollow/check/列表）：User **70%→85%** → F **+3%** → **~57%**。
+- **到 60%**：好友关系或 User 域 **100%**（+3%）。
+- **不建议** 为凑数修改域权重；里程碑用 **F-50 / F-70 清单**（§1.6）与 SSOT 公式并行汇报。
+
+### 1.6 能否提升到 70%？（诚实路径）
+
+在 **F 公式不变** 前提下，从 **~54%** 到 **~70%** 还需约 **+16%** 贡献，推荐顺序：
+
+| 阶段 | 动作 | 增量（约） | 累计 F |
+|------|------|------------|--------|
+| 已完成 | Moe+VIP+平台+User核心+FS-3c+关注 | — | **~57%** |
+| FS-3b 余量 | 好友/订单/记忆/OAuth → User **100%** | +3% | **~60%** |
+| FS-4a | Admin 只读/配置类 **30%** | +4.2% | **~64%** |
+| FS-4b | 社交 comment/content **40%** | +7.2% | **~71%** |
+
+**小域优先策略**：先迁 **logic 文件少、无跨域事务** 的域（landing、behavior、appcfg ✅）；**暂缓** checkin/achievement（依赖 `rpc/internal/achievement` 引擎，需先 `internal/achievement` 抽包再 biz 化）。
 
 **用户侧 VIP 订单/状态**（`/api/user/.../vip/*`）仍算 **User 域**，不计入 VIP 套餐域 100%。
 
@@ -78,7 +93,7 @@ F = Σ (域权重 × 域内进度)
 | `super.proto` rpc 方法 | **~194** | 全站 gRPC |
 | `api/internal/logic/*.go` | **272** | go-zero HTTP 实现 |
 | `rpc/internal/logic/*.go` | **207** | go-zero gRPC 实现 |
-| `internal/biz/*.go`（非 test） | **15** | moe(7) + vip(4) + user(4) |
+| `internal/biz/*.go`（非 test） | **22** | moe(7) + vip(4) + user(5) + landing(3) + behavior(2) + appcfg(1) |
 | `internal/service` | moe / vip / user | 域应用服务 |
 | `internal/data` | moedata | Moe 仓储 |
 | 进程内网关 | 3 | `moeadmingw` / `vipadmingw` / `usergw` |
@@ -173,11 +188,21 @@ G ≈ 30% (A) + 15% (B) + 10% (F 折算) ≈ 55%
 | 实现 | `biz/user` + `usergw` + `moe.user_api_in_process` |
 | 验收 | **`make verify-domain-user`** |
 
-### FS-3b User 扩展（进行中，冲 50%+）
+### FS-3c 小域快迁 — ✅（landing / behavior / appcfg）
 
 | 项 | 说明 |
 |----|------|
-| 范围 | 关注/好友、VIP 订单、记忆、OAuth |
+| 范围 | 落地页反馈提交/列表、行为埋点、客户端公网 API 配置 |
+| 实现 | `internal/biz/landing`、`biz/behavior`、`biz/appcfg`；RPC/API 薄层 |
+| 验收 | **`make verify-domain-misc`** |
+| 备注 | checkin/achievement 仍 legacy；achievement 需先抽 `internal/achievement` 再 biz 化 |
+
+### FS-3b User 扩展（进行中）
+
+| 项 | 说明 |
+|----|------|
+| 已完成 | 关注五接口 → `biz/user/follow` + `usergw`（`make verify-domain-user`） |
+| 待办 | 好友、VIP 订单、记忆、OAuth |
 | 风险 | 最高流量；需灰度 |
 
 ### FS-4 Admin 非 Moe（~3～4 周）

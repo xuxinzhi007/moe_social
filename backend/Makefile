@@ -2,7 +2,7 @@
 
 
 
-.PHONY: all gen gen-moe-proto gen-moe-conf gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto verify-moe-migration verify-moe-grpc verify-moe-gateway verify-moe-complete verify-domain-vip verify-domain-user verify-platform verify-full-site-50 verify-kratos-pilot verify-kratos-50 verify-kratos-60 verify-kratos-80 verify-kratos-100 moe-social moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
+.PHONY: all gen gen-moe-proto gen-moe-conf gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto verify-moe-migration verify-moe-grpc verify-moe-gateway verify-moe-complete verify-domain-vip verify-domain-user verify-domain-misc verify-platform verify-full-site-50 verify-kratos-pilot verify-kratos-50 verify-kratos-60 verify-kratos-80 verify-kratos-100 moe-social moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
 
 	deploy-agent deploy-agent-stop admin \
 
@@ -88,6 +88,10 @@ verify-domain-user:
 
 	bash scripts/verify-domain-user.sh
 
+verify-domain-misc:
+
+	bash scripts/verify-domain-misc.sh
+
 verify-platform:
 
 	bash scripts/verify-platform.sh
@@ -98,7 +102,7 @@ verify-full-site-50:
 
 moe-social:
 
-	go run ./cmd/moe-social -f-api api/etc/super.yaml -f-rpc rpc/etc/super.yaml
+	go run ./cmd/moe-social-stack -f-api api/etc/super.yaml -f-rpc rpc/etc/super.yaml
 
 moe-platform:
 
@@ -333,7 +337,7 @@ help:
 
 	@echo --- 开发工具（独立进程）---
 
-	@echo make deploy-agent      - Deploy Agent (:19010)，仅网关与运维 API
+	@echo make deploy-agent      - 仅 Deploy Agent (:19010)；make dev / moe-social 默认已带
 
 	@echo make deploy-agent-stop - 释放 Agent 端口
 
@@ -351,7 +355,7 @@ help:
 
 	@echo --- Kratos 迁移 ---
 
-	@echo make moe-social          - Hybrid 单进程 (:8888+:8080，推荐)
+	@echo make moe-social          - Hybrid 单进程 (:8888+:8080) + deploy-agent (:19010)
 
 	@echo make moe-kratos            - 纯 Kratos 试点 (:19031+:19032，并行)
 

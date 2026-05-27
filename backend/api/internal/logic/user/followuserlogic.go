@@ -29,15 +29,15 @@ func (l *FollowUserLogic) FollowUser(req *types.FollowUserReq) (resp *types.Foll
 	l.Debug("关注用户请求:", req)
 
 	// 调用RPC服务
-	rpcResp, err := l.svcCtx.SuperRpcClient.FollowUser(l.ctx, &super.FollowUserReq{
+	rpcResp, err := l.svcCtx.UserGW.FollowUser(l.ctx, &super.FollowUserReq{
 		UserId:      req.UserId,
 		FollowingId: req.FollowingId,
 	})
 
 	if err != nil {
-		l.Error("调用关注用户RPC服务失败:", err)
+		l.Error("关注用户失败:", err)
 		return &types.FollowUserResp{
-			BaseResp: common.HandleError(err),
+			BaseResp: common.HandleUserGWError(err, ""),
 			Data:     false,
 		}, nil
 	}

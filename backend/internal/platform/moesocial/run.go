@@ -9,6 +9,7 @@ import (
 	"time"
 
 	apirun "backend/api/runserver"
+	"backend/devports"
 	rpcrun "backend/rpc/runserver"
 	"backend/utils"
 
@@ -19,16 +20,18 @@ import (
 
 // Options 单进程启动参数。
 type Options struct {
-	APIConfigFile string
-	RPCConfigFile string
-	Migrate       utils.MigrateOptions
+	APIConfigFile    string
+	RPCConfigFile    string
+	Migrate          utils.MigrateOptions
+	EnableRPCMonitor bool // 本地 :19011 debug API（moe-admin RPC 监控经 Agent 转发）
 }
 
 // Run 在单个 OS 进程内启动 RPC + HTTP（Kratos 编排 API；RPC 先起），替代分离的 make rpc + make api。
 func Run(opts Options) error {
-	rpcSrv, _, err := rpcrun.Start(rpcrun.Options{
-		ConfigFile: opts.RPCConfigFile,
-		Migrate:    opts.Migrate,
+	rpcSrv, _, rpcMonitor, err := rpcrun.Start(rpcrun.Options{
+		ConfigFile:     opts.RPCConfigFile,
+		Migrate:        opts.Migrate,
+		EnableMonitor:  opts.EnableRPCMonitor,
 	})
 	if err != nil {
 		return fmt.Errorf("rpc start: %w", err)
@@ -42,8 +45,15 @@ func Run(opts Options) error {
 		return err
 	}
 
+	if rpcMonitor != nil {
+		log.Printf("moe-social: RPC debug API %s/debug/live (经 deploy-agent /debug/* 访问)", devports.RpcDebugUpstream())
+	}
+
 	apiSrv, err := apirun.Start(apirun.Options{ConfigFile: opts.APIConfigFile})
 	if err != nil {
+		if rpcMonitor != nil {
+			rpcMonitor.Stop()
+		}
 		rpcSrv.Stop()
 		return fmt.Errorf("api start: %w", err)
 	}
@@ -52,6 +62,9 @@ func Run(opts Options) error {
 		kratos.Name("moe-social"),
 		kratos.Server(wrapREST(apiSrv)),
 		kratos.AfterStop(func(context.Context) error {
+			if rpcMonitor != nil {
+				rpcMonitor.Stop()
+			}
 			rpcSrv.Stop()
 			return nil
 		}),

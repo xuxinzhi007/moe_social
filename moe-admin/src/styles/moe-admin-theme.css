@@ -1707,12 +1707,130 @@ a {
   line-height: 1.4;
 }
 
-.rpc-frame {
-  flex: 1;
+.rpc-runtime-card {
+  margin-bottom: 16px;
+  padding: 16px 18px;
+}
+
+.rpc-runtime-note {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.rpc-section-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.rpc-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-size: 14px;
+}
+
+.rpc-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.rpc-status-dot.ok {
+  background: #66bb6a;
+}
+
+.rpc-status-dot.err {
+  background: #e57373;
+}
+
+.rpc-status-time {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+.rpc-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.rpc-two-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.rpc-stack-sample {
+  font-size: 11px;
+  line-height: 1.45;
+  max-height: 280px;
+  overflow: auto;
+  background: #f8f9fc;
+  border-radius: 12px;
+  padding: 12px;
+  margin: 0;
+}
+
+.rpc-log-filters {
+  margin-bottom: 12px;
+}
+
+.rpc-log-filters .level-chip {
   border: none;
-  width: 100%;
-  min-height: calc(100vh - 56px);
-  background: var(--bg);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  background: #eef1f6;
+  color: var(--text);
+}
+
+.rpc-log-filters .level-chip.active {
+  background: var(--accent, #7f7fd5);
+  color: #fff;
+}
+
+.rpc-log-filters .level-chip.err-active {
+  background: #ffb347;
+  color: #fff;
+}
+
+.rpc-log-filters .level-chip.warn-active {
+  background: #ffe0b2;
+  color: #8a6d3b;
+}
+
+.rpc-log-badge {
+  margin-left: 6px;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.rpc-log-table {
+  max-height: 520px;
+  overflow: auto;
+}
+
+.cell-mono {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.pill-danger {
+  background: rgba(229, 115, 115, 0.15);
+  color: #c62828;
+}
+
+.log-time {
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .legacy-banner {

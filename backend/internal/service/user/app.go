@@ -119,3 +119,81 @@ func (s *AppService) DB() *gorm.DB {
 func (s *AppService) EnsureUser(ctx context.Context, userID uint) (model.User, error) {
 	return userbiz.GetByID(ctx, s.db, userID)
 }
+
+// Follow 关注用户。
+func (s *AppService) Follow(ctx context.Context, in *super.FollowUserReq) (*super.FollowUserResp, error) {
+	followerID, followingID, err := userbiz.ParseFollowPair(in.GetUserId(), in.GetFollowingId())
+	if err != nil {
+		return nil, err
+	}
+	if err := userbiz.Follow(ctx, s.db, followerID, followingID); err != nil {
+		return nil, err
+	}
+	return &super.FollowUserResp{Success: true}, nil
+}
+
+// Unfollow 取消关注。
+func (s *AppService) Unfollow(ctx context.Context, in *super.UnfollowUserReq) (*super.FollowUserResp, error) {
+	followerID, followingID, err := userbiz.ParseFollowPair(in.GetUserId(), in.GetFollowingId())
+	if err != nil {
+		return nil, err
+	}
+	if err := userbiz.Unfollow(ctx, s.db, followerID, followingID); err != nil {
+		return nil, err
+	}
+	return &super.FollowUserResp{Success: true}, nil
+}
+
+// CheckFollow 是否关注。
+func (s *AppService) CheckFollow(ctx context.Context, in *super.CheckFollowReq) (*super.CheckFollowResp, error) {
+	ok, err := userbiz.IsFollowingByStringID(ctx, s.db, in.GetFollowerId(), in.GetFollowingId())
+	if err != nil {
+		return nil, err
+	}
+	return &super.CheckFollowResp{IsFollowing: ok}, nil
+}
+
+// GetFollowers 粉丝列表。
+func (s *AppService) GetFollowers(ctx context.Context, in *super.GetFollowersReq) (*super.GetFollowersResp, error) {
+	uid, err := parseUserID(in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	result, err := userbiz.ListFollowers(ctx, s.db, uid, userbiz.FollowListPage{
+		Page:     in.GetPage(),
+		PageSize: in.GetPageSize(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return followListToProto(result), nil
+}
+
+// GetFollowings 关注列表。
+func (s *AppService) GetFollowings(ctx context.Context, in *super.GetFollowingsReq) (*super.GetFollowingsResp, error) {
+	uid, err := parseUserID(in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	result, err := userbiz.ListFollowings(ctx, s.db, uid, userbiz.FollowListPage{
+		Page:     in.GetPage(),
+		PageSize: in.GetPageSize(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	resp := followListToProto(result)
+	return &super.GetFollowingsResp{Users: resp.Users, Total: resp.Total}, nil
+}
+
+func followListToProto(result userbiz.FollowListResult) *super.GetFollowersResp {
+	users := make([]*super.User, 0, len(result.Users))
+	for i := range result.Users {
+		u := result.Users[i]
+		users = append(users, userbiz.ModelToProto(&u))
+	}
+	return &super.GetFollowersResp{
+		Users: users,
+		Total: int32(result.Total),
+	}
+}

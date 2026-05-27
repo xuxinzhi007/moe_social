@@ -41,3 +41,13 @@ func RpcDebugFallbackPorts() []int {
 func DocsStaticPortStr() string {
 	return strconv.Itoa(DocsStaticPort)
 }
+
+// AgentPortStr for dev launcher logs.
+func AgentPortStr() string {
+	return strconv.Itoa(AgentPort)
+}
+
+// RpcDebugPortStr for dev launcher logs.
+func RpcDebugPortStr() string {
+	return strconv.Itoa(RpcDebugPort)
+}

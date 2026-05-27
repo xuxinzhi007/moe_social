@@ -3,6 +3,7 @@ package debug
 
 import (
 	"backend/devports"
+	"backend/pkg/processmem"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -145,9 +146,19 @@ func writeJSON(w http.ResponseWriter, v any) {
 func handleLive(w http.ResponseWriter, _ *http.Request) {
 	var ms runtime.MemStats
 	runtime.ReadMemStats(&ms)
+	proc := processmem.Current()
 
 	writeJSON(w, map[string]any{
 		"timestamp":  time.Now().Format(time.RFC3339),
+		"pid":        proc.PID,
+		"process": map[string]any{
+			"pid":         proc.PID,
+			"rss_mb":      proc.RSSMB,
+			"go_alloc_mb": proc.GoAllocMB,
+			"go_sys_mb":   proc.GoSysMB,
+			"goroutines":  proc.Goroutines,
+			"num_cpu":     proc.NumCPU,
+		},
 		"goroutines": runtime.NumGoroutine(),
 		"memory": map[string]any{
 			"alloc_mb":       bytesToMB(ms.Alloc),

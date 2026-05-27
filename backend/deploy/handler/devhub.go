@@ -28,7 +28,7 @@ func MountDevHub(mux *http.ServeMux, workspaceRoot, rpcDebugUpstream string) {
 			proxy := httputil.NewSingleHostReverseProxy(target)
 			proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 				log.Printf("rpc debug proxy %s: %v", r.URL.Path, err)
-				http.Error(w, "RPC debug API 不可达。请先 make rpc-debug 或 go run ./rpc -debug", http.StatusBadGateway)
+				http.Error(w, "RPC debug API 不可达。请确认 make moe-social / make dev 已启动（-monitor），或单独 make rpc-debug", http.StatusBadGateway)
 			}
 			mux.Handle("/debug/", withStaticCORS(proxy))
 			mux.Handle("/debug", withStaticCORS(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

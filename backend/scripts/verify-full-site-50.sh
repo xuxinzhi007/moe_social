@@ -9,6 +9,7 @@ echo "== verify-full-site-50 =="
 bash scripts/verify-moe-complete.sh
 bash scripts/verify-domain-vip.sh
 bash scripts/verify-domain-user.sh
+bash scripts/verify-domain-misc.sh
 bash scripts/verify-platform.sh
 
 go build -o /dev/null ./cmd/moe-social
