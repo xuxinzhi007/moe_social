@@ -35,7 +35,7 @@ func (l *AdminListGiftPurchaseOrdersLogic) AdminListGiftPurchaseOrders(req *type
 		pageSize = 50
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListGiftPurchaseOrders(l.ctx, &super.AdminListGiftPurchaseOrdersReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListGiftPurchaseOrders(l.ctx, &super.AdminListGiftPurchaseOrdersReq{
 		Page:     int32(page),
 		PageSize: int32(pageSize),
 		UserId:   req.UserId,

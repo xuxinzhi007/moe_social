@@ -35,7 +35,7 @@ func (l *AdminListPostsLogic) AdminListPosts(req *types.AdminListPostsReq) (resp
 		pageSize = 20
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListPosts(l.ctx, &super.AdminListPostsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListPosts(l.ctx, &super.AdminListPostsReq{
 		Page:             int32(page),
 		PageSize:         int32(pageSize),
 		Keyword:          req.Keyword,

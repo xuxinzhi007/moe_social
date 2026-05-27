@@ -22,7 +22,7 @@ func NewAdminBootstrapMenusLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *AdminBootstrapMenusLogic) AdminBootstrapMenus(_ *types.EmptyReq) (*types.AdminBootstrapMenusResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminBootstrapMenus(l.ctx, &super.AdminBootstrapMenusReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminBootstrapMenus(l.ctx, &super.AdminBootstrapMenusReq{})
 	if err != nil {
 		return &types.AdminBootstrapMenusResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

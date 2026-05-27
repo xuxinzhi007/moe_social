@@ -26,7 +26,7 @@ func NewUpdateAutoRenewLogic(ctx context.Context, svcCtx *svc.ServiceContext) *U
 
 func (l *UpdateAutoRenewLogic) UpdateAutoRenew(req *types.UpdateAutoRenewReq) (resp *types.EmptyResp, err error) {
 	// 调用RPC服务更新自动续费状态
-	_, err = l.svcCtx.SuperRpcClient.UpdateAutoRenew(l.ctx, &super.UpdateAutoRenewReq{
+	_, err = l.svcCtx.UserGW.UpdateAutoRenew(l.ctx, &super.UpdateAutoRenewReq{
 		UserId:    req.UserId,
 		AutoRenew: req.AutoRenew,
 	})

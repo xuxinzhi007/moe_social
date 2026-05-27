@@ -9,20 +9,21 @@
 
 ## 1. Visual Theme & Atmosphere
 
-**名称**：Moe Ops Console V3 — *Deep Violet Ops*
+**名称**：Moe Ops Console V3 — *Soft Violet Console*
 
 **关键词**：运维控制台、开发者友好、信息密度高、品牌可识别、克制动效
 
 **气质**：
-- 深色 **Chrome**（侧栏 + 顶栏）提供沉浸感与导航锚点
-- 浅色 **Workbench**（内容区）保证表格/表单长时间阅读舒适
-- 品牌信号：青紫渐变 + 薄荷在线态，不做大面积 marketing hero
+- **浅色 Chrome**（侧栏 + 顶栏）与 **Workbench** 同系，避免深色侧栏与浅内容区割裂
+- 品牌信号：紫罗兰强调 + 薄荷在线态；侧栏滚动条细轨、低对比
+- 不做大面积 marketing hero
 
 **禁止**：
 - 系统级图标使用 emoji（用 `AdminIcon`）
 - 新页面引入 `platform-hero` / `content-hero` 大块渐变横幅
 - 单页临时发明独立色系或按钮风格
 - 在页面 TSX 内联大段样式
+- 侧栏使用系统默认粗滚动条（必须走 `chrome-v3.css` 定制）
 
 ---
 
@@ -34,11 +35,11 @@
 | `--brand-violet-deep` | `#5548a8` | 按下态、深色 hover |
 | `--brand-cyan` | `#34d3c8` | 次强调、在线/成功信号、图表系列 |
 | `--brand-gold` | `#f3b74f` | VIP、警告点缀、特殊指标 |
-| `--chrome-bg` | `#15121f` | 侧栏背景 |
-| `--chrome-surface` | `#1f1a2e` | 侧栏分组、顶栏 |
-| `--chrome-border` | `#2d2640` | Chrome 分隔线 |
-| `--chrome-text` | `#e8e4f0` | 侧栏主文字 |
-| `--chrome-muted` | `#9b93ad` | 侧栏次要文字 |
+| `--chrome-bg` | `#eef1f8` | 侧栏背景（浅，与 canvas 同系） |
+| `--chrome-surface` | `#ffffff` | 侧栏底 / 顶栏 |
+| `--chrome-border` | `#e2e6f0` | Chrome 分隔线 |
+| `--chrome-text` | `#1a1d26` | 侧栏主文字 |
+| `--chrome-muted` | `#6b7280` | 侧栏次要文字 |
 | `--canvas` | `#f4f6fb` | 内容区背景 |
 | `--surface` | `#ffffff` | 卡片、面板 |
 | `--surface-soft` | `#f8f9fc` | 表格斑马纹、输入背景 |
@@ -129,10 +130,9 @@
 
 ### 6.1 导航（Sidebar）
 
-- 背景 `--chrome-bg`，右边框 `--chrome-border`
-- 激活项：左侧 3px `--brand-violet` 条 + 背景 `--chrome-surface`
-- Hover：背景微亮，不上浮
-- 分组 `.nav-group` 保持现有折叠逻辑，只换 token
+- 背景 `--chrome-bg` → `--chrome-surface` 浅渐变，与 `--canvas` 协调
+- 激活项：左侧 3px `--brand-violet` 条 + 浅紫底 `rgba(107,95,193,.12)`
+- 滚动条：宽 5px、thumb `rgba(107,95,193,.22)`、track 透明（见 `layout/chrome-v3.css`）
 
 ### 6.2 按钮（`.btn` 系列）
 

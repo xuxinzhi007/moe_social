@@ -2,9 +2,9 @@
 
 
 
-.PHONY: all gen gen-moe-proto gen-moe-conf gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto verify-moe-migration verify-moe-grpc verify-moe-gateway verify-moe-complete verify-domain-vip verify-domain-user verify-domain-misc verify-platform verify-full-site-50 verify-kratos-pilot verify-kratos-50 verify-kratos-60 verify-kratos-80 verify-kratos-100 moe-social moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
+.PHONY: all gen gen-moe-proto gen-moe-conf gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto verify-moe-migration verify-moe-grpc verify-moe-gateway verify-moe-complete verify-domain-vip verify-domain-user verify-domain-misc verify-platform verify-full-site-50 verify-kratos-pilot verify-kratos-50 verify-kratos-60 verify-kratos-80 verify-kratos-100 moe-social moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
 
-	deploy-agent deploy-agent-stop admin \
+	deploy-agent deploy-agent-stop moe-social-stop admin \
 
 	rpc api rpc-debug db-migrate rpc-migrate rpc-monitor rpc-monitor-stop \
 
@@ -188,8 +188,36 @@ verify-sprint-f100d-community:
 
 	bash scripts/verify-sprint-f100d-community.sh
 
+verify-sprint-f101-admin:
+
+	bash scripts/verify-sprint-f101-admin.sh
+
+verify-sprint-f103-llm-inference:
+
+	bash scripts/verify-sprint-f103-llm-inference.sh
+
+verify-sprint-f102-admin-memory:
+
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f102-admin-memory.ps1
+else
+	bash scripts/verify-sprint-f102-admin-memory.sh
+endif
+
+verify-sprint-f101-f103:
+
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f101-f103.ps1
+else
+	bash scripts/verify-sprint-f101-admin.sh
+	bash scripts/verify-sprint-f103-llm-inference.sh
+endif
+
 verify-sprint-regression:
 
+	bash scripts/verify-sprint-f102-admin-memory.sh
+	bash scripts/verify-sprint-f101-admin.sh
+	bash scripts/verify-sprint-f103-llm-inference.sh
 	bash scripts/verify-sprint-f100d-community.sh
 	bash scripts/verify-sprint-f100c-admin-gifts-write.sh
 	bash scripts/verify-sprint-f100c-admin-gifts-ro.sh
@@ -209,9 +237,82 @@ verify-sprint-f100-structure:
 
 	bash scripts/verify-sprint-f100-structure.sh
 
+verify-sprint-f104-admin-insights:
+
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f104-admin-insights.ps1
+else
+	@test -f internal/biz/admin/insights_ops.go
+	@grep -q 'AdminGW.AdminListAiChatSessions' api/internal/logic/admin/admin_insights_logic.go
+	@go build ./api ./rpc
+endif
+
+verify-sprint-f107-chat-read:
+
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f107-chat-read.ps1
+else
+	@test -f internal/biz/chat/private_message_read.go
+	@grep -q 'ChatGW.ListPrivateMessages' api/internal/logic/privatemsg/listprivatemessageslogic.go
+	@grep -q 'ChatGW.ListPrivateConversations' api/internal/logic/privatemsg/listprivateconversationslogic.go
+	@grep -q 'UserGW.GetUser' api/internal/logic/voice/voicecalllogic.go
+	@go build ./api ./rpc
+endif
+
+verify-sprint-f109-user-tail:
+
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f109-user-tail.ps1
+else
+	@! grep -r 'SuperRpcClient' api/internal/logic/user/ 2>/dev/null || true
+	@test -f internal/biz/user/profile.go
+	@test -f internal/biz/llm/memory_read.go
+	@grep -q 'UserGW.GetUsers' api/internal/logic/user/getuserslogic.go
+	@go test ./internal/biz/user/... ./internal/biz/llm/... -count=1
+	@go build ./api ./rpc
+endif
+
+verify-sprint-f108-admin-tail:
+
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f108-admin-tail.ps1
+else
+	@! grep -r 'SuperRpcClient' api/internal/logic/admin/ 2>/dev/null || true
+	@test -f internal/biz/admin/moderation_lists.go
+	@grep -q 'AdminGW.AdminListFollows' api/internal/logic/admin/adminlistfollowslogic.go
+	@go build ./api ./rpc
+endif
+
+verify-sprint-f100-final:
+
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f100-final.ps1
+else
+	@test -f internal/biz/admin/insights_ops.go
+	@test -f api/internal/aigw/gateway.go
+	@test -f api/internal/chatgw/gateway.go
+	@test -f api/admin/v1/admin_insights.proto
+	@test -f api/ai/v1/ai_resources.proto
+	@test -f api/llm/v1/llm_chat.proto
+	@test -f api/chat/v1/private_message.proto
+	@grep -q 'AdminGW.AdminListAiChatSessions' api/internal/logic/admin/admin_insights_logic.go
+	@grep -q 'AIGW' api/internal/logic/ai/resource_logic.go
+	@grep -q 'DEPRECATED' api/super.api rpc/super.proto
+	@go build ./api ./rpc
+endif
+
 moe-social:
 
 	go run ./cmd/moe-social-stack -f-api api/etc/super.yaml -f-rpc rpc/etc/super.yaml
+
+# 释放 8080/8888/19010/19011/19012（Ctrl+C 未完全退出时用）
+moe-social-stop:
+
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File deploy/scripts/stop-moe-social.ps1
+else
+	@bash deploy/scripts/stop-moe-social.sh
+endif
 
 moe-platform:
 
@@ -465,6 +566,8 @@ help:
 	@echo --- Kratos 迁移 ---
 
 	@echo make moe-social          - Hybrid 单进程 (:8888+:8080) + deploy-agent (:19010)
+
+	@echo make moe-social-stop     - 释放开发端口（叠跑/Ctrl+C 残留时用）
 
 	@echo make moe-kratos            - 纯 Kratos 试点 (:19031+:19032，并行)
 

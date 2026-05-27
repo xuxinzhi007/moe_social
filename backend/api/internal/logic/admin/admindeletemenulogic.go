@@ -22,7 +22,7 @@ func NewAdminDeleteMenuLogic(ctx context.Context, svcCtx *svc.ServiceContext) *A
 }
 
 func (l *AdminDeleteMenuLogic) AdminDeleteMenu(req *types.AdminDeleteMenuReq) (*types.AdminDeleteMenuResp, error) {
-	_, err := l.svcCtx.SuperRpcClient.AdminDeleteMenu(l.ctx, &super.AdminDeleteMenuReq{
+	_, err := l.svcCtx.AdminGW.AdminDeleteMenu(l.ctx, &super.AdminDeleteMenuReq{
 		MenuKey: req.MenuKey,
 	})
 	if err != nil {

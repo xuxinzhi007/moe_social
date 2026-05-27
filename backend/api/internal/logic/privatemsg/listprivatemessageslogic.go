@@ -33,7 +33,7 @@ func (l *ListPrivateMessagesLogic) ListPrivateMessages(req *types.ListPrivateMes
 		return nil, err
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.ListPrivateMessages(l.ctx, &super.ListPrivateMessagesReq{
+	rpcResp, err := l.svcCtx.ChatGW.ListPrivateMessages(l.ctx, &super.ListPrivateMessagesReq{
 		ViewerId: viewerID,
 		PeerId:   req.PeerUserId,
 		BeforeId: req.BeforeId,

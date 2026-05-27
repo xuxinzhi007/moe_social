@@ -26,7 +26,7 @@ func NewSyncUserDeviceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Sy
 }
 
 func (l *SyncUserDeviceLogic) SyncUserDevice(req *types.SyncUserDeviceReq) (resp *types.SyncUserDeviceResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.SyncUserDevice(l.ctx, &super.SyncUserDeviceReq{
+	rpcResp, err := l.svcCtx.UserGW.SyncUserDevice(l.ctx, &super.SyncUserDeviceReq{
 		UserId:      req.UserId,
 		DeviceId:    req.DeviceId,
 		Platform:    req.Platform,

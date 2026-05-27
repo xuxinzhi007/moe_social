@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AdminTag } from '../components/AdminTag'
-import { DataEnvBar } from '../components/DataEnvBar'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { usePlatform } from '../context/PlatformContext'
 import { formatBytes } from '../lib/format'
 import type { TagTone } from '../lib/adminLabels'
 import { useDirectAdminApi } from '../lib/adminApi'
 import { DeployApiError } from '../api/deployClient'
+import { AdminTable, AdminToolbar, ListPageLayout } from '../ui'
+import type { AdminTableColumn } from '../ui'
 
 type OwnerRow = {
   owner_folder: string
@@ -172,33 +173,112 @@ export function MediaGalleryPage() {
   )
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
+  const columns = useMemo(
+    (): AdminTableColumn<ImageRow>[] => [
+      {
+        key: 'preview',
+        header: '预览',
+        render: (row) => {
+          const viewUrl = resolveMediaViewUrl(row.url, apiBase, devDirect, apiTarget)
+          return (
+            <a href={viewUrl} target="_blank" rel="noreferrer" title="新窗口查看原图">
+              <img src={viewUrl} alt="" className="media-thumb" loading="lazy" />
+            </a>
+          )
+        },
+      },
+      {
+        key: 'file',
+        header: '文件',
+        cellClassName: 'muted',
+        render: (row) => (
+          <div style={{ maxWidth: 200, wordBreak: 'break-all' }}>
+            <div>{row.file_name}</div>
+            <div className="muted" style={{ fontSize: 12, opacity: 0.75 }}>
+              {row.filename}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'kind',
+        header: '类型',
+        render: (row) => <AdminTag label={mediaKindLabel(row.media_kind)} tone={mediaKindTone(row.media_kind)} />,
+      },
+      {
+        key: 'owner',
+        header: '用户目录',
+        cellClassName: 'muted',
+        render: (row) => (
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => {
+              setOwnerFolder(row.owner_folder)
+              setPage(1)
+            }}
+          >
+            {row.owner_folder}
+          </button>
+        ),
+      },
+      {
+        key: 'size',
+        header: '大小',
+        cellClassName: 'muted',
+        render: (row) => formatBytes(row.size),
+      },
+      {
+        key: 'time',
+        header: '上传时间',
+        cellClassName: 'muted',
+        render: (row) => row.created_at,
+      },
+      {
+        key: 'actions',
+        header: '',
+        render: (row) => {
+          const viewUrl = resolveMediaViewUrl(row.url, apiBase, devDirect, apiTarget)
+          return (
+            <>
+              <a href={viewUrl} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm" style={{ marginRight: 6 }}>
+                查看
+              </a>
+              <button type="button" className="btn btn-ghost btn-sm text-danger" onClick={() => void remove(row.filename)}>
+                删除
+              </button>
+            </>
+          )
+        },
+      },
+    ],
+    [apiBase, apiTarget, devDirect],
+  )
+
+  const emptyText =
+    apiTarget === 'local'
+      ? '本机暂无匹配图片。云图库上传在 VPS 上，请切到「云端 API」后点左侧 #1 · xxz 等目录'
+      : '当前筛选下暂无图片'
+
   return (
-    <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>云图库</h2>
-          <p>
-            App 云图库、发帖图片、手绘缩略图、头像等，均通过 <code>/api/upload</code> 存到同一目录{' '}
-            <code>Image.LocalDir/{'{userId_用户名}'}/</code>，此处统一治理。
-          </p>
-        </div>
+    <ListPageLayout
+      title="云图库"
+      description="App 云图库、发帖图片、手绘缩略图、头像等，均通过 /api/upload 存到 Image.LocalDir/{userId_用户名}/，此处统一治理。"
+      envNote="本机 API 只看本机磁盘；VPS 上的 scaled_*.jpg 等云图库文件请切到「云端 API」"
+      metrics={[
+        { label: '用户目录', value: owners.length },
+        { label: '当前匹配', value: loading ? '…' : total },
+      ]}
+      headActions={
         <Link to="/system/app-config" className="btn btn-ghost">
           应用配置
         </Link>
-      </div>
-
-      <DataEnvBar note="本机 API 只看本机磁盘；VPS 上的 scaled_*.jpg 等云图库文件请切到「云端 API」" />
-
-      {message ? (
-        <div className="admin-hint admin-hint-ok" style={{ marginBottom: 12 }}>
-          {message}
-          <button type="button" className="btn btn-ghost" style={{ marginLeft: 8 }} onClick={() => setMessage('')}>
-            关闭
-          </button>
-        </div>
-      ) : null}
-
-      <div className="media-gallery-layout panel">
+      }
+      banner={message ? { message, tone: 'ok', onClose: () => setMessage('') } : undefined}
+      error={error}
+      pagination={{ page, totalPages, total, onPageChange: setPage }}
+    >
+      <div className="media-gallery-layout">
         <aside className="media-owner-sidebar">
           <div className="media-owner-head">
             <strong>用户目录</strong>
@@ -253,24 +333,17 @@ export function MediaGalleryPage() {
             ))}
           </div>
 
-          <form
-            className="inline-form"
-            style={{ marginTop: 12 }}
-            onSubmit={(e) => {
-              e.preventDefault()
-              setPage(1)
-              setSearch(keyword.trim())
+          <AdminToolbar
+            search={{
+              value: keyword,
+              onChange: setKeyword,
+              onSubmit: () => {
+                setPage(1)
+                setSearch(keyword.trim())
+              },
+              placeholder: '按文件名 / 用户目录搜索',
             }}
-          >
-            <input
-              placeholder="按文件名 / 用户目录搜索"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-            />
-            <button type="submit" className="btn btn-primary">
-              搜索
-            </button>
-          </form>
+          />
 
           {ownerFolder ? (
             <p className="muted" style={{ margin: '8px 0 0' }}>
@@ -284,98 +357,9 @@ export function MediaGalleryPage() {
             </p>
           ) : null}
 
-          {error ? <p className="text-danger">{error}</p> : null}
-
-          <div className="table-wrap" style={{ marginTop: 12 }}>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>预览</th>
-                  <th>文件</th>
-                  <th>类型</th>
-                  <th>用户目录</th>
-                  <th>大小</th>
-                  <th>上传时间</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={7} className="muted">
-                      加载中…
-                    </td>
-                  </tr>
-                ) : items.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="muted">
-                      {apiTarget === 'local'
-                        ? '本机暂无匹配图片。云图库上传在 VPS 上，请切到「云端 API」后点左侧 #1 · xxz 等目录'
-                        : '当前筛选下暂无图片'}
-                    </td>
-                  </tr>
-                ) : (
-                  items.map((row) => {
-                    const viewUrl = resolveMediaViewUrl(row.url, apiBase, devDirect, apiTarget)
-                    return (
-                      <tr key={row.filename}>
-                        <td>
-                          <a href={viewUrl} target="_blank" rel="noreferrer" title="新窗口查看原图">
-                            <img src={viewUrl} alt="" className="media-thumb" loading="lazy" />
-                          </a>
-                        </td>
-                        <td className="muted" style={{ maxWidth: 200, wordBreak: 'break-all' }}>
-                          <div>{row.file_name}</div>
-                          <div className="muted" style={{ fontSize: 12, opacity: 0.75 }}>
-                            {row.filename}
-                          </div>
-                        </td>
-                        <td>
-                          <AdminTag label={mediaKindLabel(row.media_kind)} tone={mediaKindTone(row.media_kind)} />
-                        </td>
-                        <td className="muted">
-                          <button
-                            type="button"
-                            className="btn btn-ghost btn-sm"
-                            onClick={() => {
-                              setOwnerFolder(row.owner_folder)
-                              setPage(1)
-                            }}
-                          >
-                            {row.owner_folder}
-                          </button>
-                        </td>
-                        <td className="muted">{formatBytes(row.size)}</td>
-                        <td className="muted">{row.created_at}</td>
-                        <td>
-                          <a href={viewUrl} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm" style={{ marginRight: 6 }}>
-                            查看
-                          </a>
-                          <button type="button" className="btn btn-ghost btn-sm text-danger" onClick={() => void remove(row.filename)}>
-                            删除
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="pager">
-            <button type="button" className="btn btn-ghost" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-              上一页
-            </button>
-            <span className="muted">
-              {page} / {totalPages} · 当前 {total} 张
-            </span>
-            <button type="button" className="btn btn-ghost" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-              下一页
-            </button>
-          </div>
+          <AdminTable columns={columns} rows={items} rowKey={(row) => row.filename} loading={loading} emptyText={emptyText} />
         </div>
       </div>
-    </>
+    </ListPageLayout>
   )
 }

@@ -28,7 +28,7 @@ func (l *RebuildUserMemoryEmbeddingsLogic) RebuildUserMemoryEmbeddings(userID st
 	if userID == "" {
 		return nil, errors.New("user_id 不能为空")
 	}
-	resp, err := l.svcCtx.SuperRpcClient.RebuildUserMemoryEmbeddings(l.ctx, &super.RebuildUserMemoryEmbeddingsReq{
+	resp, err := l.svcCtx.LLMGW.RebuildUserMemoryEmbeddings(l.ctx, &super.RebuildUserMemoryEmbeddingsReq{
 		UserId: userID,
 	})
 	if err != nil {

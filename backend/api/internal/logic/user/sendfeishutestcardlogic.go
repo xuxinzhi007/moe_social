@@ -33,7 +33,7 @@ func (l *SendFeishuTestCardLogic) SendFeishuTestCard(req *types.EmptyReq) (resp 
 	if err != nil {
 		return nil, err
 	}
-	_, rpcErr := l.svcCtx.SuperRpcClient.SendFeishuTestCard(l.ctx, &super.SendFeishuTestCardReq{
+	_, rpcErr := l.svcCtx.UserGW.SendFeishuTestCard(l.ctx, &super.SendFeishuTestCardReq{
 		UserId: userID,
 	})
 	if rpcErr != nil {

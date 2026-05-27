@@ -1,6 +1,7 @@
 # Phase 3+ 路线图索引
 
-> **更新：2026-05-27** · **当前阶段：FS-3b**
+> **更新：2026-05-28** · **当前阶段：F109 完成** · **F ~98%**  
+> **勾选 SSOT**：[kratos-migration-status.md](./kratos-migration-status.md)
 
 ---
 
@@ -10,24 +11,28 @@
 |--------|------|------|------|
 | Hybrid Moe | **A** | **100%** | [kratos-migration.md](./kratos-migration.md) |
 | 纯 Kratos 试点方案 | **B** | **100%** | [kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md) |
-| VIP 套餐域 | FS-2 | **100%** | [kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md) |
-| User 核心 | FS-3a | **✅** | 同上 |
-| **全站迁移** | **F** | **~48%** | 同上 §1 |
-| 工程就绪度 | **G** | **~55%** | 同上 §1.4 |
+| VIP / User / Admin HTTP | FS-2～4 | **100%** | [kratos-migration-sprint-f100.md](./kratos-migration-sprint-f100.md) |
+| **全站迁移 biz+GW** | **F** | **~98%** | [kratos-migration-status.md](./kratos-migration-status.md) |
+| 工程就绪度 | **G** | **~78%** | [kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md) §1.4 |
+| 契约拆分 / 退役 super | FS-8/9 | **~15%** | stub 已有；goctl 仍 `super.*` |
 
 ---
 
-## 当前阶段：FS-3b
+## 当前阶段：F110（计划）
 
-**目标**：User 扩展（关注/好友、用户侧 VIP 订单、记忆、OAuth）下沉 `biz/user`，将 **F 提升至 50%+**。
+**目标**：HTTP 层零 `SuperRpcClient`（~8 文件）→ 见 status 清单。
 
-**已完成（本阶段之前）**：
+**已完成（F108–F109）**：
 
-- FS-2：`biz/vip` + `vipadmingw`
-- FS-3a：`biz/user` + `usergw`（login、register、getUserInfo、getUser、getUserVipStatus、checkUserVip）
-- 平台：`make verify-platform` / `bin/moe-social`
+- Admin / User logic 目录零 SuperRpc
+- LLM 记忆全路径 in_process
 
-**下一域（之后）**：FS-4 Admin 非 Moe。
+<details>
+<summary>历史：FS-3b（2026-05-27 · 已过期）</summary>
+
+**目标**：User 扩展（关注/好友、VIP 订单、记忆、OAuth）下沉 `biz/user`，F 提升至 50%+。
+
+</details>
 
 ---
 
@@ -35,15 +40,14 @@
 
 ```text
 :8888  go-zero API
-         ├─ moeadmingw  → biz/moe     (in_process)
-         ├─ vipadmingw  → biz/vip     (in_process)
-         ├─ usergw      → biz/user    (in_process，核心子集)
-         └─ logic       → :8080 RPC   (legacy + 已转调 biz 的 RPC)
+         ├─ moeadmingw / vipadmingw / usergw / admingw
+         ├─ aigw / llmgw / chatgw / postgw / …  (in_process)
+         └─ ~8 文件仍 SuperRpc（F110）
 
-:8080  zrpc — super.Super + moe.v1.MoeAdmin
+:8080  zrpc — super.Super（薄层） + moe.v1.MoeAdmin
 ```
 
-详见 [kratos-migration.md §1.1](./kratos-migration.md#11-生产架构图2026-05-27)。
+详见 [kratos-migration.md §1.1](./kratos-migration.md#11-生产架构图2026-05-28)。
 
 ---
 
@@ -51,13 +55,12 @@
 
 ```bash
 cd backend
-make moe-social              # 日常；日志应见三网关 in_process
-make verify-full-site-50     # F≈48%
-make verify-domain-user      # FS-3a
-make verify-domain-vip       # FS-2
-make verify-moe-complete     # A
-make verify-kratos-100       # B
-make build-moe-social
+make moe-social
+make verify-sprint-f109-user-tail
+make verify-sprint-f108-admin-tail
+make verify-sprint-regression
+make verify-moe-complete
+make verify-kratos-100
 ```
 
 ---

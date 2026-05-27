@@ -26,7 +26,7 @@ func NewGetUserMemoriesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 }
 
 func (l *GetUserMemoriesLogic) GetUserMemories(req *types.GetUserMemoriesReq) (resp *types.GetUserMemoriesResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetUserMemories(l.ctx, &super.GetUserMemoriesReq{
+	rpcResp, err := l.svcCtx.LLMGW.GetUserMemories(l.ctx, &super.GetUserMemoriesReq{
 		UserId: req.UserId,
 		Limit:  int32(req.Limit),
 		Offset: int32(req.Offset),

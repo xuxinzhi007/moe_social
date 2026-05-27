@@ -1,6 +1,9 @@
 # 全站迁移冲刺：+10% F（小步快跑 + 逐步验收）
 
-> **起点**：F ≈ **60%**（`kratos-migration-status.md`）  
+> **状态：历史文档**（起点 F≈60% → 目标 F≈70%）  
+> **当前进度**：F ≈ **98%**（F109 完成）→ 见 [kratos-migration-status.md](./kratos-migration-status.md) · [kratos-migration-sprint-f100.md](./kratos-migration-sprint-f100.md)
+
+> **起点**：F ≈ **60%**（Sprint F70 完成）  
 > **目标**：F ≈ **70%**  
 > **原则**：每次只迁 **logic 少、无跨域事务** 的子域；**每步独立 `make verify-sprint-*`**
 

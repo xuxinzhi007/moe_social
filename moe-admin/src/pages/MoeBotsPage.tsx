@@ -1,16 +1,16 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AdminFormDrawer } from '../components/AdminFormDrawer'
 import { AdminTag } from '../components/AdminTag'
-import { DataEnvBar } from '../components/DataEnvBar'
 import { FormField } from '../components/FormField'
 import { IdCell } from '../components/IdCell'
-import { PageMessage } from '../components/PageMessage'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { useDeploy } from '../context/DeployContext'
 import { boolTag } from '../lib/adminLabels'
 import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
+import { AdminTable, ListPageLayout } from '../ui'
+import type { AdminTableColumn } from '../ui'
 
 export type MoeRuntimeRow = {
   agent_key: string
@@ -210,122 +210,128 @@ export function MoeBotsPage() {
     }
   }
 
+  const columns = useMemo(
+    (): AdminTableColumn<MoeRuntimeRow>[] => [
+      {
+        key: 'agent',
+        header: 'Agent',
+        render: (row) => (
+          <>
+            <strong>{row.display_name || row.agent_key}</strong>
+            <div className="muted">
+              <IdCell id={row.agent_key} />
+            </div>
+          </>
+        ),
+      },
+      {
+        key: 'bot',
+        header: 'Bot 用户',
+        render: (row) => <IdCell id={row.bot_user_id} />,
+      },
+      {
+        key: 'schedule',
+        header: '调度',
+        render: (row) => (
+          <>
+            <AdminTag spec={scheduleModeTag(row.post_schedule_mode)} />
+            {row.post_schedule_mode === 'cron' && row.schedule_cron ? (
+              <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                {row.schedule_cron}
+              </div>
+            ) : null}
+          </>
+        ),
+      },
+      {
+        key: 'next',
+        header: '下次执行',
+        cellClassName: 'muted',
+        render: (row) => formatDateTime(row.next_run_at) || '—',
+      },
+      {
+        key: 'quota',
+        header: '今日/配额',
+        render: (row) => `${row.posts_today} / ${row.post_quota_daily}`,
+      },
+      {
+        key: 'status',
+        header: '状态',
+        render: (row) => <AdminTag spec={boolTag(row.enabled)} />,
+      },
+      {
+        key: 'last',
+        header: '上次发帖',
+        cellClassName: 'muted',
+        render: (row) => (
+          <>
+            {formatDateTime(row.last_run_at) || '—'}
+            {row.last_post_id ? (
+              <div>
+                <IdCell id={row.last_post_id} />
+              </div>
+            ) : null}
+          </>
+        ),
+      },
+      {
+        key: 'actions',
+        header: '',
+        render: (row) => (
+          <div className="btn-row">
+            <Link
+              className="btn btn-ghost btn-sm"
+              to={`/app/moe-bots/${encodeURIComponent(row.agent_key)}/brain`}
+            >
+              AI 大脑
+            </Link>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => openEdit(row)}>
+              编辑
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              disabled={runningKey === row.agent_key}
+              onClick={() => void runOnce(row.agent_key)}
+            >
+              {runningKey === row.agent_key ? '执行中…' : '试跑'}
+            </button>
+          </div>
+        ),
+      },
+    ],
+    [runningKey],
+  )
+
   return (
     <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>社区 AI Bot</h2>
-          <p>
-            配置发帖 Bot：正文由本地 7B（llama-server）生成，支持定时 cron 与智能发送。调度器默认每 60 秒扫描。
-          </p>
-        </div>
-        <button type="button" className="btn btn-primary" onClick={openCreate}>
-          新建 Bot
-        </button>
-      </div>
-      <DataEnvBar />
-      <PageMessage
-        message={message}
-        tone={messageTone}
-        onClose={() => setMessage('')}
-      />
-      {error ? <p className="text-danger">{error}</p> : null}
-
-      <div className="panel">
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Agent</th>
-                <th>Bot 用户</th>
-                <th>调度</th>
-                <th>下次执行</th>
-                <th>今日/配额</th>
-                <th>状态</th>
-                <th>上次发帖</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={8} className="muted">
-                    加载中…
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="muted">
-                    暂无 Bot，点击「新建 Bot」或 Apifox 创建 moe_guide
-                  </td>
-                </tr>
-              ) : (
-                items.map((row) => (
-                  <tr key={row.agent_key}>
-                    <td>
-                      <strong>{row.display_name || row.agent_key}</strong>
-                      <div className="muted">
-                        <IdCell id={row.agent_key} />
-                      </div>
-                    </td>
-                    <td>
-                      <IdCell id={row.bot_user_id} />
-                    </td>
-                    <td>
-                      <AdminTag spec={scheduleModeTag(row.post_schedule_mode)} />
-                      {row.post_schedule_mode === 'cron' && row.schedule_cron ? (
-                        <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-                          {row.schedule_cron}
-                        </div>
-                      ) : null}
-                    </td>
-                    <td className="muted">{formatDateTime(row.next_run_at) || '—'}</td>
-                    <td>
-                      {row.posts_today} / {row.post_quota_daily}
-                    </td>
-                    <td>
-                      <AdminTag spec={boolTag(row.enabled)} />
-                    </td>
-                    <td className="muted">
-                      {formatDateTime(row.last_run_at) || '—'}
-                      {row.last_post_id ? (
-                        <div>
-                          <IdCell id={row.last_post_id} />
-                        </div>
-                      ) : null}
-                    </td>
-                    <td>
-                      <div className="btn-row">
-                        <Link
-                          className="btn btn-ghost btn-sm"
-                          to={`/app/moe-bots/${encodeURIComponent(row.agent_key)}/brain`}
-                        >
-                          AI 大脑
-                        </Link>
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => openEdit(row)}
-                        >
-                          编辑
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
-                          disabled={runningKey === row.agent_key}
-                          onClick={() => void runOnce(row.agent_key)}
-                        >
-                          {runningKey === row.agent_key ? '执行中…' : '试跑'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <ListPageLayout
+        title="社区 AI Bot"
+        description="配置发帖 Bot：正文由本地 7B（llama-server）生成，支持定时 cron 与智能发送。调度器默认每 60 秒扫描。"
+        headActions={
+          <button type="button" className="btn btn-primary" onClick={openCreate}>
+            新建 Bot
+          </button>
+        }
+        banner={
+          message
+            ? {
+                message,
+                tone: messageTone === 'err' ? 'err' : 'ok',
+                onClose: () => setMessage(''),
+              }
+            : undefined
+        }
+        error={error}
+      >
+        <AdminTable
+          columns={columns}
+          rows={items}
+          rowKey={(row) => row.agent_key}
+          loading={loading}
+          emptyText="暂无 Bot，点击「新建 Bot」或 Apifox 创建 moe_guide"
+        />
+      </ListPageLayout>
 
       <AdminFormDrawer
         open={drawerOpen}
@@ -343,10 +349,7 @@ export function MoeBotsPage() {
           />
         </FormField>
         <FormField label="显示名称">
-          <input
-            value={form.display_name}
-            onChange={(e) => setForm({ ...form, display_name: e.target.value })}
-          />
+          <input value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} />
         </FormField>
         <FormField label="bot_user_id（App 用户 ID）">
           <input
@@ -358,9 +361,7 @@ export function MoeBotsPage() {
         <FormField label="发帖调度">
           <select
             value={form.post_schedule_mode}
-            onChange={(e) =>
-              setForm({ ...form, post_schedule_mode: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, post_schedule_mode: e.target.value })}
           >
             <option value="manual">手动（仅 run-once / 后台试跑）</option>
             <option value="cron">定时（cron 表达式）</option>
@@ -372,9 +373,7 @@ export function MoeBotsPage() {
             <FormField label="cron 表达式（分 时 日 月 周）">
               <input
                 value={form.schedule_cron}
-                onChange={(e) =>
-                  setForm({ ...form, schedule_cron: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, schedule_cron: e.target.value })}
                 placeholder="0 */6 * * *"
               />
             </FormField>
@@ -385,9 +384,7 @@ export function MoeBotsPage() {
                     key={p.value}
                     type="button"
                     className="btn btn-ghost btn-sm"
-                    onClick={() =>
-                      setForm({ ...form, schedule_cron: p.value })
-                    }
+                    onClick={() => setForm({ ...form, schedule_cron: p.value })}
                   >
                     {p.label}
                   </button>
@@ -420,9 +417,7 @@ export function MoeBotsPage() {
           <textarea
             rows={3}
             value={form.system_prompt}
-            onChange={(e) =>
-              setForm({ ...form, system_prompt: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, system_prompt: e.target.value })}
             placeholder="例如：Moe 向导，爱手绘和 ACG，说话直爽、爱吐槽，偶尔晒练习进度"
           />
         </FormField>

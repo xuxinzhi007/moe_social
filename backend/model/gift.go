@@ -7,7 +7,7 @@ import (
 // Gift 礼物模型（目录由 seed / 运营维护，客户端只读展示）
 type Gift struct {
 	ID          uint      `gorm:"primarykey" json:"id"`
-	Name        string    `gorm:"size:50;not null" json:"name"`
+	Name        string    `gorm:"size:50;not null;uniqueIndex" json:"name"`
 	Price       int       `gorm:"not null" json:"price"`
 	Icon        string    `gorm:"size:255" json:"icon"`
 	Description string    `gorm:"size:255" json:"description"`

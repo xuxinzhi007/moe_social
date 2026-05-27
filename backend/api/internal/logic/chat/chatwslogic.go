@@ -198,7 +198,7 @@ func (l *ChatWsLogic) handleChatMessage(userID string, msg map[string]interface{
 	logx.WithContext(l.ctx).Debugf("chat ws send from=%s to=%s", userID, targetID)
 
 	paths := extractImagePathsFromWSMsg(msg)
-	rpcResp, rpcErr := l.svcCtx.SuperRpcClient.SendPrivateMessage(l.ctx, &super.SendPrivateMessageReq{
+	rpcResp, rpcErr := l.svcCtx.ChatGW.SendPrivateMessage(l.ctx, &super.SendPrivateMessageReq{
 		SenderId:    userID,
 		ReceiverId:  targetID,
 		Body:        content,

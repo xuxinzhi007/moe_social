@@ -35,7 +35,7 @@ func (l *AdminListGroupsLogic) AdminListGroups(req *types.AdminListGroupsReq) (r
 		pageSize = 50
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListGroups(l.ctx, &super.AdminListGroupsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListGroups(l.ctx, &super.AdminListGroupsReq{
 		Page:     int32(page),
 		PageSize: int32(pageSize),
 		Keyword:  req.Keyword,

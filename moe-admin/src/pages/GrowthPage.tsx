@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { AdminFormDrawer } from '../components/AdminFormDrawer'
 import { AdminTag } from '../components/AdminTag'
-import { DataEnvBar } from '../components/DataEnvBar'
-import { PageTabs } from '../components/PageTabs'
 import { FormField } from '../components/FormField'
 import { IdCell } from '../components/IdCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { achievementCategoryTag, boolTag, rarityTag } from '../lib/adminLabels'
 import { DeployApiError } from '../api/deployClient'
+import { AdminPanel, AdminTable, TabbedPageLayout } from '../ui'
+import type { AdminTableColumn } from '../ui'
 
 type Tab = 'stats' | 'achievements' | 'levels' | 'rewards'
 
@@ -290,243 +290,213 @@ export function GrowthPage() {
 
   const achTotalPages = Math.max(1, Math.ceil(achTotal / pageSize))
 
+  const achievementColumns = useMemo(
+    (): AdminTableColumn<AchievementRow>[] => [
+      { key: 'id', header: 'ID', render: (row) => <IdCell id={row.id} /> },
+      { key: 'name', header: '名称', render: (row) => row.name },
+      {
+        key: 'category',
+        header: '分类',
+        render: (row) => <AdminTag spec={achievementCategoryTag(row.category)} />,
+      },
+      {
+        key: 'rarity',
+        header: '稀有度',
+        render: (row) => <AdminTag spec={rarityTag(row.rarity)} />,
+      },
+      { key: 'exp', header: '经验', render: (row) => row.exp_reward ?? 0 },
+      {
+        key: 'enabled',
+        header: '启用',
+        render: (row) => <AdminTag spec={boolTag(row.enabled)} />,
+      },
+      {
+        key: 'actions',
+        header: '',
+        render: (row) => (
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => openAchEdit(row)}>
+            编辑
+          </button>
+        ),
+      },
+    ],
+    [],
+  )
+
+  const levelColumns = useMemo(
+    (): AdminTableColumn<LevelRow>[] => [
+      { key: 'level', header: '等级', render: (row) => `Lv.${row.level}` },
+      { key: 'title', header: '称号', render: (row) => row.title },
+      {
+        key: 'exp',
+        header: '经验区间',
+        cellClassName: 'muted',
+        render: (row) => `${row.min_exp} – ${row.max_exp}`,
+      },
+      {
+        key: 'badge',
+        header: '徽章 URL',
+        cellClassName: 'muted',
+        render: (row) => (
+          <span style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', display: 'inline-block' }}>
+            {row.badge_url || '—'}
+          </span>
+        ),
+      },
+      {
+        key: 'actions',
+        header: '',
+        render: (row) => (
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => openLevelEdit(row)}>
+            编辑
+          </button>
+        ),
+      },
+    ],
+    [],
+  )
+
+  const rewardColumns = useMemo(
+    (): AdminTableColumn<RewardRow>[] => [
+      { key: 'days', header: '连续天数', render: (row) => `${row.consecutive_days} 天` },
+      { key: 'exp', header: '经验奖励', render: (row) => `+${row.exp_reward} EXP` },
+      {
+        key: 'extra',
+        header: '额外奖励 JSON',
+        cellClassName: 'muted',
+        render: (row) => (
+          <span style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', display: 'inline-block' }}>
+            {row.extra_reward || '—'}
+          </span>
+        ),
+      },
+      {
+        key: 'actions',
+        header: '',
+        render: (row) => (
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => openRewardEdit(row)}>
+            编辑
+          </button>
+        ),
+      },
+    ],
+    [],
+  )
+
   return (
     <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>签到 · 等级 · 成就</h2>
-          <p>成长体系运营配置 · 支持编辑等级/签到奖励/成就开关</p>
-        </div>
-        <div className="inline-form" style={{ flexWrap: 'wrap' }}>
-          <button type="button" className="btn btn-ghost" onClick={() => void bootstrap('achievements')}>
-            导入默认成就
-          </button>
-          <button type="button" className="btn btn-ghost" onClick={() => void bootstrap('levels')}>
-            导入等级/签到奖励
-          </button>
-        </div>
-      </div>
-
-      <DataEnvBar />
-
-      <PageTabs tabs={TABS} active={tab} onChange={setTab} />
-
-      {message ? (
-        <div className="admin-hint admin-hint-ok" style={{ marginBottom: 12 }}>
-          {message}
-          <button type="button" className="btn btn-ghost" style={{ marginLeft: 8 }} onClick={() => setMessage('')}>
-            关闭
-          </button>
-        </div>
-      ) : null}
-
-      {error ? <p className="text-danger">{error}</p> : null}
-
-      {tab === 'stats' && stats ? (
-        <div className="admin-metrics" style={{ marginBottom: 16 }}>
-          <div className="metric">
-            <div className="label">成就定义</div>
-            <div className="value">{stats.achievement_definitions}</div>
+      <TabbedPageLayout
+        title="签到 · 等级 · 成就"
+        description="成长体系运营配置 · 支持编辑等级/签到奖励/成就开关"
+        headActions={
+          <div className="btn-row">
+            <button type="button" className="btn btn-ghost" onClick={() => void bootstrap('achievements')}>
+              导入默认成就
+            </button>
+            <button type="button" className="btn btn-ghost" onClick={() => void bootstrap('levels')}>
+              导入等级/签到奖励
+            </button>
           </div>
-          <div className="metric">
-            <div className="label">已解锁记录</div>
-            <div className="value">{stats.unlocked_progress_records}</div>
-          </div>
-          <div className="metric">
-            <div className="label">等级配置</div>
-            <div className="value">{stats.level_configs}</div>
-          </div>
-          <div className="metric">
-            <div className="label">签到奖励规则</div>
-            <div className="value">{stats.check_in_rewards}</div>
-          </div>
-          <div className="metric">
-            <div className="label" title="全站今日签到记录数（上海时区自然日，按人次计）">
-              今日签到人次
+        }
+        tabs={TABS}
+        activeTab={tab}
+        onTabChange={setTab}
+      >
+        {message ? (
+          <p className="form-hint ok">
+            {message}
+            <button type="button" className="btn btn-ghost btn-sm" style={{ marginLeft: 8 }} onClick={() => setMessage('')}>
+              关闭
+            </button>
+          </p>
+        ) : null}
+        {error ? <p className="text-danger">{error}</p> : null}
+
+        {tab === 'stats' && stats ? (
+          <div className="admin-metrics" style={{ marginBottom: 16 }}>
+            <div className="metric">
+              <div className="label">成就定义</div>
+              <div className="value">{stats.achievement_definitions}</div>
             </div>
-            <div className="value">{stats.check_ins_today}</div>
-          </div>
-          <div className="metric">
-            <div className="label">累计签到</div>
-            <div className="value">{stats.total_check_ins}</div>
-          </div>
-        </div>
-      ) : null}
-
-      {tab === 'achievements' ? (
-        <div className="panel">
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>名称</th>
-                  <th>分类</th>
-                  <th>稀有度</th>
-                  <th>经验</th>
-                  <th>启用</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={7} className="muted">
-                      加载中…
-                    </td>
-                  </tr>
-                ) : achievements.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="muted">
-                      暂无成就，可点击「导入默认成就」
-                    </td>
-                  </tr>
-                ) : (
-                  achievements.map((row) => (
-                    <tr key={row.id}>
-                      <td>
-                        <IdCell id={row.id} />
-                      </td>
-                      <td>{row.name}</td>
-                      <td>
-                        <AdminTag spec={achievementCategoryTag(row.category)} />
-                      </td>
-                      <td>
-                        <AdminTag spec={rarityTag(row.rarity)} />
-                      </td>
-                      <td>{row.exp_reward ?? 0}</td>
-                      <td>
-                        <AdminTag spec={boolTag(row.enabled)} />
-                      </td>
-                      <td>
-                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => openAchEdit(row)}>
-                          编辑
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          {achTotalPages > 1 ? (
-            <div className="pager">
-              <button type="button" className="btn btn-ghost" disabled={achPage <= 1} onClick={() => setAchPage((p) => p - 1)}>
-                上一页
-              </button>
-              <span className="muted">
-                {achPage}/{achTotalPages} · 共 {achTotal} 条
-              </span>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                disabled={achPage >= achTotalPages}
-                onClick={() => setAchPage((p) => p + 1)}
-              >
-                下一页
-              </button>
+            <div className="metric">
+              <div className="label">已解锁记录</div>
+              <div className="value">{stats.unlocked_progress_records}</div>
             </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      {tab === 'levels' ? (
-        <div className="panel">
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>等级</th>
-                  <th>称号</th>
-                  <th>经验区间</th>
-                  <th>徽章 URL</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={5} className="muted">
-                      加载中…
-                    </td>
-                  </tr>
-                ) : levels.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="muted">
-                      暂无等级配置，可点击「导入等级/签到奖励」
-                    </td>
-                  </tr>
-                ) : (
-                  levels.map((row) => (
-                    <tr key={row.id}>
-                      <td>Lv.{row.level}</td>
-                      <td>{row.title}</td>
-                      <td className="muted">
-                        {row.min_exp} – {row.max_exp}
-                      </td>
-                      <td className="muted" style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {row.badge_url || '—'}
-                      </td>
-                      <td>
-                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => openLevelEdit(row)}>
-                          编辑
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+            <div className="metric">
+              <div className="label">等级配置</div>
+              <div className="value">{stats.level_configs}</div>
+            </div>
+            <div className="metric">
+              <div className="label">签到奖励规则</div>
+              <div className="value">{stats.check_in_rewards}</div>
+            </div>
+            <div className="metric">
+              <div className="label" title="全站今日签到记录数（上海时区自然日，按人次计）">
+                今日签到人次
+              </div>
+              <div className="value">{stats.check_ins_today}</div>
+            </div>
+            <div className="metric">
+              <div className="label">累计签到</div>
+              <div className="value">{stats.total_check_ins}</div>
+            </div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
 
-      {tab === 'rewards' ? (
-        <div className="panel">
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>连续天数</th>
-                  <th>经验奖励</th>
-                  <th>额外奖励 JSON</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={4} className="muted">
-                      加载中…
-                    </td>
-                  </tr>
-                ) : rewards.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="muted">
-                      暂无签到奖励规则
-                    </td>
-                  </tr>
-                ) : (
-                  rewards.map((row) => (
-                    <tr key={row.id}>
-                      <td>{row.consecutive_days} 天</td>
-                      <td>+{row.exp_reward} EXP</td>
-                      <td className="muted" style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {row.extra_reward || '—'}
-                      </td>
-                      <td>
-                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => openRewardEdit(row)}>
-                          编辑
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : null}
+        {tab === 'achievements' ? (
+          <AdminPanel>
+            <AdminTable
+              columns={achievementColumns}
+              rows={achievements}
+              rowKey={(row) => row.id}
+              loading={loading}
+              emptyText="暂无成就，可点击「导入默认成就」"
+            />
+            {achTotalPages > 1 ? (
+              <div className="pager">
+                <button type="button" className="btn btn-ghost" disabled={achPage <= 1} onClick={() => setAchPage((p) => p - 1)}>
+                  上一页
+                </button>
+                <span className="muted">
+                  {achPage}/{achTotalPages} · 共 {achTotal} 条
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  disabled={achPage >= achTotalPages}
+                  onClick={() => setAchPage((p) => p + 1)}
+                >
+                  下一页
+                </button>
+              </div>
+            ) : null}
+          </AdminPanel>
+        ) : null}
+
+        {tab === 'levels' ? (
+          <AdminPanel>
+            <AdminTable
+              columns={levelColumns}
+              rows={levels}
+              rowKey={(row) => row.id}
+              loading={loading}
+              emptyText="暂无等级配置，可点击「导入等级/签到奖励」"
+            />
+          </AdminPanel>
+        ) : null}
+
+        {tab === 'rewards' ? (
+          <AdminPanel>
+            <AdminTable
+              columns={rewardColumns}
+              rows={rewards}
+              rowKey={(row) => row.id}
+              loading={loading}
+              emptyText="暂无签到奖励规则"
+            />
+          </AdminPanel>
+        ) : null}
+      </TabbedPageLayout>
 
       <AdminFormDrawer
         open={editAch !== null}

@@ -22,7 +22,7 @@ func NewAdminBootstrapLevelsLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *AdminBootstrapLevelsLogic) AdminBootstrapLevels(_ *types.EmptyReq) (*types.AdminBootstrapLevelsResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminBootstrapLevels(l.ctx, &super.AdminBootstrapLevelsReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminBootstrapLevels(l.ctx, &super.AdminBootstrapLevelsReq{})
 	if err != nil {
 		return &types.AdminBootstrapLevelsResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

@@ -26,7 +26,7 @@ func NewUpsertUserMemoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *UpsertUserMemoryLogic) UpsertUserMemory(req *types.UpsertUserMemoryReq) (resp *types.UpsertUserMemoryResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.UpsertUserMemory(l.ctx, &super.UpsertUserMemoryReq{
+	rpcResp, err := l.svcCtx.LLMGW.UpsertUserMemory(l.ctx, &super.UpsertUserMemoryReq{
 		UserId:      req.UserId,
 		Key:         req.Key,
 		Value:       req.Value,

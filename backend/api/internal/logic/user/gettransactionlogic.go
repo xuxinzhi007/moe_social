@@ -25,7 +25,7 @@ func NewGetTransactionLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 }
 
 func (l *GetTransactionLogic) GetTransaction(req *types.GetTransactionReq) (resp *types.GetTransactionResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetTransaction(l.ctx, &super.GetTransactionReq{
+	rpcResp, err := l.svcCtx.UserGW.GetTransaction(l.ctx, &super.GetTransactionReq{
 		Id: req.TransactionId,
 	})
 	if err != nil {

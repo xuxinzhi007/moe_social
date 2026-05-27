@@ -30,7 +30,7 @@ func NewAdminUpdateUserLogic(ctx context.Context, svcCtx *svc.ServiceContext) *A
 }
 
 func (l *AdminUpdateUserLogic) AdminUpdateUser(req *types.AdminUpdateUserReq) (*types.AdminUpdateUserResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminUpdateUser(l.ctx, &super.AdminUpdateUserReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminUpdateUser(l.ctx, &super.AdminUpdateUserReq{
 		UserId:          req.UserId,
 		Role:            req.Role,
 		IsVip:           req.IsVip,

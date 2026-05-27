@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { StatusTag } from '../components/StatusTag'
+import { AdminTag } from '../components/AdminTag'
+import { deployJobStatusTag } from '../lib/adminLabels'
 import { UploadProgressBar } from '../components/UploadProgressBar'
+import { PageHead } from '../ui'
 import { useDeploy } from '../context/DeployContext'
 import { stripUploadProgressLines } from '../lib/uploadProgress'
 import type { DeployJob } from '../types/deploy'
@@ -32,10 +34,7 @@ export function JobsPage() {
 
   return (
     <>
-      <div className="page-head">
-        <h2>任务审计</h2>
-        <p>Deploy Agent 内存队列（最近任务）</p>
-      </div>
+      <PageHead title="任务审计" description="Deploy Agent 内存队列（最近任务）" />
 
       <div className="split">
         <div className="panel">
@@ -70,7 +69,7 @@ export function JobsPage() {
                     >
                       <td>{j.type}</td>
                       <td>
-                        <StatusTag status={j.status} />
+                        <AdminTag spec={deployJobStatusTag(j.status)} />
                       </td>
                       <td>{j.target || '—'}</td>
                     </tr>
@@ -92,7 +91,7 @@ export function JobsPage() {
             {show ? (
               <>
                 <p style={{ fontSize: 12, margin: '0 0 8px' }}>
-                  <StatusTag status={show.status} /> {show.type} · {show.target}
+                  <AdminTag spec={deployJobStatusTag(show.status)} /> {show.type} · {show.target}
                 </p>
                 <UploadProgressBar log={liveLog} />
                 <pre className="log-pre" style={{ maxHeight: 400 }}>

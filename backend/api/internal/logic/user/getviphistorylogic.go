@@ -27,7 +27,7 @@ func NewGetVipHistoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 
 func (l *GetVipHistoryLogic) GetVipHistory(req *types.GetVipHistoryReq) (resp *types.GetVipHistoryResp, err error) {
 	// 调用RPC服务获取VIP记录列表
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetVipRecords(l.ctx, &super.GetVipRecordsReq{
+	rpcResp, err := l.svcCtx.UserGW.GetVipRecords(l.ctx, &super.GetVipRecordsReq{
 		UserId:   req.UserId,
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),

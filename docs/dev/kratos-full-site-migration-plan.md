@@ -1,8 +1,9 @@
 # 全站 Kratos 迁移方案（Phase 4+）
 
-> **状态**：**FS-3b（关注+好友）** · **F ~60%** · 70% 见 §1.6  
-> **前置已完成**：Hybrid Moe **100%** · 纯 Kratos 试点方案 **100%** · 生产对外仍 **:8888**（`moe-social`）  
-> **SSOT 总览**：[kratos-migration.md](./kratos-migration.md) · **勾选**：[kratos-migration-status.md](./kratos-migration-status.md)
+> **状态**：**F109 完成** · **F ~98%** · **G ~78%**  
+> **前置已完成**：Hybrid Moe **100%** · 纯 Kratos 试点 **100%** · Admin/User HTTP 主路径 in_process  
+> **生产对外仍** **:8888**（`moe-social`）  
+> **SSOT 总览**：[kratos-migration.md](./kratos-migration.md) · **勾选**：[kratos-migration-status.md](./kratos-migration-status.md) · **路线图**：[kratos-migration-sprint-f100.md](./kratos-migration-sprint-f100.md)
 
 ---
 
@@ -10,12 +11,12 @@
 
 全站相关进度有 **三条独立曲线**，不可混用：
 
-| 指标 | 代号 | 当前 | 含义 |
-|------|------|------|------|
+| 指标 | 代号 | 当前（2026-05-28） | 含义 |
+|------|------|-------------------|------|
 | Moe 域 Hybrid | **A** | **100%** | `biz/service/data` + `MoeGW` + `moe.proto`；`make verify-moe-complete` |
 | 纯 Kratos 试点方案 | **B** | **100%** | Phase 0～6（`moe-kratos`、Wire、VIP 只读试点）；`make verify-kratos-100` |
-| **全站迁移总进度** | **F** | **~60%** | 各业务域下沉 `biz` + 契约拆分 + 最终退役 `super.*` |
-| 工程现代化就绪度 | **G** | **~55%** | A+B+F 折算 + 单二进制；**不等于** F |
+| **全站迁移总进度** | **F** | **~98%** | 各业务域下沉 `biz` + GW；Admin/User HTTP 已 in_process |
+| 工程现代化就绪度 | **G** | **~78%** | Hybrid 可上线；FS-9 契约未退役 |
 
 **「100%」仅指 A 或 B**；**不等于全站已是纯 Kratos**。
 
@@ -34,22 +35,35 @@ F = Σ (域权重 × 域内进度)
 | 2 | 60% | 写路径进 `biz`；HTTP 仍 `super.api` 路径（经 GW 或薄 logic） |
 | 3 | 100% | 域契约 `api/<domain>/v1/*.proto`；logic 仅适配；可关 `super` 中该域 RPC |
 
-### 1.2 当前各域得分（2026-05-27 实测）
+### 1.2 当前各域得分（2026-05-28 · F109 后）
 
-| 域 | 权重 | 域内进度 | 贡献 | 依据（代码） |
-|----|------|----------|------|----------------|
-| **Moe** | 12% | 100% | 12.0% | `internal/biz/moe`（7 文件）、`moeadmingw`、16 条 HTTP 走 GW |
-| **VIP** | 8% | **100%** | **8.0%** | `biz/vip` CRUD + `vipadmingw` + RPC/API 薄层；`make verify-domain-vip` |
-| **User** | 20% | **~95%** | **~19%** | FS-3a/3b：核心+关注+好友 `usergw`；VIP 订单/记忆/OAuth 仍 legacy |
-| **Admin（非 Moe）** | 14% | 0% | 0% | `logic/admin` 约 **66** 文件（81−15 Moe 薄壳） |
-| **社交** | 18% | 0% | 0% | post/community/chat/comment/privatemsg 等 |
-| **AI / LLM** | 14% | 0% | 0% | `ai` 19 + `llm` 15 文件 |
-| **实时 / 通知** | 8% | 0% | 0% | voice/chat/notification |
-| **其它** | 6% | **100%** | **6.0%** | FS-3c：`biz/landing`、`biz/behavior`、`biz/appcfg`；checkin/achievement 仍 legacy |
-| **平台基建** | 10% | **100%** | **10.0%** | `make verify-platform` / `bin/moe-social` |
-| **合计 F** | 100% | — | **~60%** | 验收：`make verify-full-site-50` |
+> 历史快照（2026-05-27 · F≈60%）见下方折叠说明；**以本表与 [kratos-migration-status.md](./kratos-migration-status.md) 为准**。
 
-### 1.5 能否提升到 50%？（结论）
+| 域 | 权重 | 域内进度 | 贡献 | 依据 |
+|----|------|----------|------|------|
+| **Moe** | 12% | 100% | 12.0% | `biz/moe` + `moeadmingw` |
+| **VIP** | 8% | 100% | 8.0% | `biz/vip` + `vipadmingw` |
+| **User** | 20% | **100%** | **20.0%** | F109：`usergw` 含 OAuth/设备/钱包；`user/` logic 零 SuperRpc |
+| **Admin（非 Moe）** | 14% | **100%** | **14.0%** | F108：`admingw` 全 HTTP |
+| **社交** | 18% | **~95%** | **~17.1%** | post/comment/community/gift；Moe execute 仍 SuperRpc |
+| **AI / LLM** | 14% | **~97%** | **~13.6%** | aigw/llmgw；AI 用户记忆配置 HTTP 仍 SuperRpc |
+| **实时 / 通知** | 8% | **~90%** | **~7.2%** | chatgw；Voice 边界文档化 |
+| **其它** | 6% | 100% | 6.0% | landing/behavior/checkin/achievement |
+| **平台基建** | 10% | 100% | 10.0% | `moe-social` 单进程 |
+| **合计 F** | 100% | — | **~98%** | `make verify-sprint-f109-user-tail` |
+
+<details>
+<summary>历史快照 2026-05-27（F≈60%，已过期）</summary>
+
+| 域 | 域内进度 | 说明 |
+|----|----------|------|
+| User | ~95% | VIP 订单/记忆/OAuth 仍 legacy |
+| Admin | 0% | logic/admin 约 66 文件 |
+| 社交 / AI / LLM / 实时 | 0% | 尚未 F80–F100d |
+
+</details>
+
+### 1.5 能否提升到 50%？（结论 · 历史归档）
 
 **可以，但不能靠「只做完 VIP」或调权重数字达到。** 在 **F 公式不变** 前提下，诚实达到 **50%** 需要：
 
@@ -69,9 +83,21 @@ F = Σ (域权重 × 域内进度)
 - **User 域 100%**：VIP 订单/记忆/OAuth（约 +1% F）。
 - **不建议** 为凑数修改域权重；里程碑用 **F-50 / F-70 清单**（§1.6）与 SSOT 公式并行汇报。
 
-### 1.6 能否提升到 70%？（诚实路径）
+### 1.7 F109 后诚实评估（2026-05-28）
 
-在 **F 公式不变** 前提下，从 **~54%** 到 **~70%** 还需约 **+16%** 贡献，推荐顺序：
+| 维度 | 进度 | 说明 |
+|------|------|------|
+| Hybrid 生产可用 | **~95%+** | `make moe-social` 主路径 in_process |
+| F · biz+GW | **~98%** | Admin/User logic 零 SuperRpc；~8 文件残留 |
+| FS-8 域 proto | **~15%** | stub + DEPRECATED 头；goctl 仍 `super.*` |
+| FS-9 退役 super | **0%** | 未删除契约 |
+| RPC fat logic | **~30%** | 大量 RPC 仍直写 DB，仅 HTTP 薄层 |
+
+**下一里程碑 F110**：HTTP 零 SuperRpc → 见 [kratos-migration-status.md](./kratos-migration-status.md) 残留表。
+
+### 1.6 能否提升到 70%？（结论 · 已于 F80–F109 达成）
+
+> **当前 F ≈ 98%**。下表为 2026-05 初规划路径，保留作复盘参考。
 
 | 阶段 | 动作 | 增量（约） | 累计 F |
 |------|------|------------|--------|
@@ -94,39 +120,39 @@ F = Σ (域权重 × 域内进度)
 | `super.proto` rpc 方法 | **~194** | 全站 gRPC |
 | `api/internal/logic/*.go` | **272** | go-zero HTTP 实现 |
 | `rpc/internal/logic/*.go` | **207** | go-zero gRPC 实现 |
-| `internal/biz/*.go`（非 test） | **22** | moe(7) + vip(4) + user(5) + landing(3) + behavior(2) + appcfg(1) |
-| `internal/service` | moe / vip / user | 域应用服务 |
+| `internal/biz/*.go`（非 test） | **~120+** | admin/user/llm/ai/chat/post/comment/community/gift/checkin/… |
+| `internal/service` | moe / vip / user / admin / llm / ai / chat / … | 域应用服务 |
 | `internal/data` | moedata | Moe 仓储 |
-| 进程内网关 | 3 | `moeadmingw` / `vipadmingw` / `usergw` |
-| Moe 专用 HTTP | **16** | 14 admin + 2 `/api/moe/tools/*` |
+| 进程内网关 | **15+** | moeadmingw / vipadmingw / usergw / admingw / aigw / llmgw / chatgw / … |
+| HTTP SuperRpc 残留 | **~8 文件** | avatar / ai config / admin_public / moe / chat 回退（F110） |
 
-**按 HTTP 路由粗算**：直接 in_process 约 **25+** 条（Moe 16 + VIP 9 + User 核心 6）；其余仍 `logic→RPC`。
+**按 HTTP 路由粗算**：**绝大多数** REST 已 in_process；残留见 [kratos-migration-status.md](./kratos-migration-status.md)。
 
-### 1.4 指标 G（工程就绪度 ~55%）
+### 1.4 指标 G（工程就绪度 ~78%）
 
 ```text
-G ≈ 30% (A) + 15% (B) + 10% (F 折算) ≈ 55%
+G ≈ 30% (A) + 15% (B) + 33% (F 折算) ≈ 78%
 ```
 
 用于判断 **能否继续用 Hybrid 上线**；**不能**用 G 代替 F 汇报「全站迁完」。
 
 用于回答「能不能继续上线 / 开发」：**可以**（G 高）。  
-用于回答「全站迁完没有」：**没有**（F 低）。
+用于回答「全站迁完没有」：**没有**（F≈98%，FS-9 未退役 super）。
 
 ---
 
 ## 2. 当前生产架构 vs 终态
 
-### 2.0 当前（Hybrid，2026-05-27）
+### 2.0 当前（Hybrid，2026-05-28）
 
-与 [kratos-migration.md §1.1](./kratos-migration.md#11-生产架构图2026-05-27) 一致：`moe-social` 单进程，三网关 in_process，契约仍以 `super.api` / `super.proto` 为主。
+与 [kratos-migration.md §1.1](./kratos-migration.md#11-生产架构图2026-05-28) 一致：`moe-social` 单进程，**15+ 网关** in_process；契约仍以 `super.api` / `super.proto` 为主（FS-9 未退役）。
 
 | 层 | 技术 | 已迁域 |
 |----|------|--------|
-| HTTP | go-zero `rest` :8888 | Moe Admin、VIP 套餐、User 核心 |
-| 网关 | `moeadmingw` / `vipadmingw` / `usergw` | 默认 `in_process` |
-| gRPC | go-zero `zrpc` :8080 | `super` + `moe.v1` |
-| 业务 | `internal/biz/{moe,vip,user}` | 15 个源文件 |
+| HTTP | go-zero `rest` :8888 | Moe / VIP / User / Admin / AI / LLM / Chat / 社交 等 |
+| 网关 | `*gw`（见 status 清单） | 默认 `in_process`；~8 logic 仍 SuperRpc |
+| gRPC | go-zero `zrpc` :8080 | `super`（薄层） + `moe.v1` |
+| 业务 | `internal/biz/*` | ~120+ 源文件 |
 
 ### 2.1 目标终态
 
@@ -198,19 +224,18 @@ G ≈ 30% (A) + 15% (B) + 10% (F 折算) ≈ 55%
 | 验收 | **`make verify-domain-misc`** |
 | 备注 | checkin/achievement 仍 legacy；achievement 需先抽 `internal/achievement` 再 biz 化 |
 
-### FS-3b User 扩展（进行中）
+### FS-3b User 扩展 ✅（F109 完成）
 
 | 项 | 说明 |
 |----|------|
-| 已完成 | 关注 → `biz/user/follow`；好友 7 接口 → `biz/user/friend` + `usergw` |
-| 待办 | VIP 订单、记忆、OAuth |
-| 风险 | 最高流量；需灰度 |
+| 已完成 | 关注/好友、VIP 订单/钱包、记忆、OAuth、设备 → `usergw` |
+| 验收 | `make verify-sprint-f109-user-tail` |
 
-### FS-4 Admin 非 Moe（~3～4 周）
+### FS-4 Admin 非 Moe ✅（F108 完成）
 
-仪表盘、用户/内容审核、运营配置等（`logic/admin` 余量 ~66 文件）。
+仪表盘、审核、运营配置等 → `admingw` in_process。验收：`make verify-sprint-f108-admin-tail`。
 
-### FS-5 社交与内容（~4～6 周）
+### FS-5 社交与内容 ✅（F90–F100d）
 
 post、community、comment、gift、checkin、achievement。
 

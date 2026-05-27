@@ -35,7 +35,7 @@ func (l *AdminListPostReportsLogic) AdminListPostReports(req *types.AdminListPos
 		pageSize = 50
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListPostReports(l.ctx, &super.AdminListPostReportsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListPostReports(l.ctx, &super.AdminListPostReportsReq{
 		Page:     int32(page),
 		PageSize: int32(pageSize),
 	})

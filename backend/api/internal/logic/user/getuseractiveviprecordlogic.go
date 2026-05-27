@@ -27,7 +27,7 @@ func NewGetUserActiveVipRecordLogic(ctx context.Context, svcCtx *svc.ServiceCont
 
 func (l *GetUserActiveVipRecordLogic) GetUserActiveVipRecord(req *types.GetUserActiveVipRecordReq) (resp *types.GetUserActiveVipRecordResp, err error) {
 	// 调用RPC服务
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetUserActiveVipRecord(l.ctx, &super.GetUserActiveVipRecordReq{
+	rpcResp, err := l.svcCtx.UserGW.GetUserActiveVipRecord(l.ctx, &super.GetUserActiveVipRecordReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

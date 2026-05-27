@@ -8,6 +8,9 @@ package main
 import (
 	"flag"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"backend/devlauncher"
 	"backend/internal/platform/moesocial"
@@ -31,12 +34,24 @@ func main() {
 	}
 
 	var agentProc *devlauncher.ManagedProcess
+	stopAgent := func() {
+		if agentProc != nil {
+			devlauncher.StopManaged(agentProc)
+			agentProc = nil
+		}
+	}
 	if *withAgent {
 		agentProc, err = devlauncher.StartDeployAgent(root)
 		if err != nil {
 			log.Printf("deploy-agent: %v (continuing without agent)", err)
 		} else {
-			defer devlauncher.StopManaged(agentProc)
+			defer stopAgent()
+			sigCh := make(chan os.Signal, 1)
+			signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+			go func() {
+				<-sigCh
+				stopAgent()
+			}()
 		}
 	}
 

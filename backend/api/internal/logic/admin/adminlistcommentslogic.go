@@ -35,7 +35,7 @@ func (l *AdminListCommentsLogic) AdminListComments(req *types.AdminListCommentsR
 		pageSize = 50
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListComments(l.ctx, &super.AdminListCommentsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListComments(l.ctx, &super.AdminListCommentsReq{
 		Page:     int32(page),
 		PageSize: int32(pageSize),
 		Keyword:  req.Keyword,

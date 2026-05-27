@@ -34,7 +34,7 @@ func NewAdminListAiChatSessionsLogic(ctx context.Context, svcCtx *svc.ServiceCon
 }
 
 func (l *AdminListAiChatSessionsLogic) AdminListAiChatSessions(req *types.AdminListAiChatSessionsReq) (*types.AdminListAiChatSessionsResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListAiChatSessions(l.ctx, &super.AdminListAiChatSessionsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListAiChatSessions(l.ctx, &super.AdminListAiChatSessionsReq{
 		Page:      int32(req.Page),
 		PageSize:  int32(req.PageSize),
 		UserId:    req.UserId,
@@ -69,7 +69,7 @@ func NewAdminListAiChatMessagesLogic(ctx context.Context, svcCtx *svc.ServiceCon
 }
 
 func (l *AdminListAiChatMessagesLogic) AdminListAiChatMessages(req *types.AdminListAiChatMessagesReq) (*types.AdminListAiChatMessagesResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListAiChatMessages(l.ctx, &super.AdminListAiChatMessagesReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListAiChatMessages(l.ctx, &super.AdminListAiChatMessagesReq{
 		Page:      int32(req.Page),
 		PageSize:  int32(req.PageSize),
 		UserId:    req.UserId,
@@ -106,7 +106,7 @@ func NewAdminExportAiChatMessagesLogic(ctx context.Context, svcCtx *svc.ServiceC
 }
 
 func (l *AdminExportAiChatMessagesLogic) AdminExportAiChatMessages(req *types.AdminExportAiChatMessagesReq) (*types.AdminExportAiChatMessagesResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminExportAiChatMessages(l.ctx, &super.AdminExportAiChatMessagesReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminExportAiChatMessages(l.ctx, &super.AdminExportAiChatMessagesReq{
 		UserId:    req.UserId,
 		SessionId: req.SessionId,
 		Role:      req.Role,
@@ -141,7 +141,7 @@ func NewAdminAnalyticsOverviewLogic(ctx context.Context, svcCtx *svc.ServiceCont
 }
 
 func (l *AdminAnalyticsOverviewLogic) AdminAnalyticsOverview(_ *types.EmptyReq) (*types.AdminAnalyticsOverviewResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminAnalyticsOverview(l.ctx, &super.AdminGetMemoryStatsReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminAnalyticsOverview(l.ctx, &super.AdminGetMemoryStatsReq{})
 	if err != nil {
 		return &types.AdminAnalyticsOverviewResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}
@@ -164,7 +164,7 @@ func NewAdminListTopicTagsLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *AdminListTopicTagsLogic) AdminListTopicTags(req *types.AdminListTopicTagsReq) (*types.AdminListTopicTagsResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListTopicTags(l.ctx, &super.AdminListTopicTagsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListTopicTags(l.ctx, &super.AdminListTopicTagsReq{
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
 		Keyword:  req.Keyword,
@@ -196,7 +196,7 @@ func NewAdminCreateTopicTagLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *AdminCreateTopicTagLogic) AdminCreateTopicTag(req *types.AdminCreateTopicTagReq) (*types.AdminCreateTopicTagResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminCreateTopicTag(l.ctx, &super.AdminCreateTopicTagReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminCreateTopicTag(l.ctx, &super.AdminCreateTopicTagReq{
 		Name:  req.Name,
 		Color: req.Color,
 	})
@@ -228,7 +228,7 @@ func (l *AdminUpdateTopicTagLogic) AdminUpdateTopicTag(req *types.AdminUpdateTop
 	if err != nil {
 		return &types.AdminUpdateTopicTagResp{BaseResp: common.HandleRPCError(err, "标签 ID 无效")}, nil
 	}
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminUpdateTopicTag(l.ctx, &super.AdminUpdateTopicTagReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminUpdateTopicTag(l.ctx, &super.AdminUpdateTopicTagReq{
 		TagId: tagID,
 		Name:  req.Name,
 		Color: req.Color,
@@ -261,7 +261,7 @@ func (l *AdminDeleteTopicTagLogic) AdminDeleteTopicTag(req *types.AdminDeleteTop
 	if err != nil {
 		return &types.AdminDeleteTopicTagResp{BaseResp: common.HandleRPCError(err, "标签 ID 无效")}, nil
 	}
-	_, err = l.svcCtx.SuperRpcClient.AdminDeleteTopicTag(l.ctx, &super.AdminDeleteTopicTagReq{TagId: tagID})
+	_, err = l.svcCtx.AdminGW.AdminDeleteTopicTag(l.ctx, &super.AdminDeleteTopicTagReq{TagId: tagID})
 	if err != nil {
 		return &types.AdminDeleteTopicTagResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}
@@ -285,7 +285,7 @@ func NewAdminListTagDictionaryLogic(ctx context.Context, svcCtx *svc.ServiceCont
 }
 
 func (l *AdminListTagDictionaryLogic) AdminListTagDictionary(req *types.AdminListTagDictionaryReq) (*types.AdminListTagDictionaryResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListTagDictionary(l.ctx, &super.AdminListTagDictionaryReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListTagDictionary(l.ctx, &super.AdminListTagDictionaryReq{
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
 		Category: req.Category,
@@ -318,7 +318,7 @@ func NewAdminCreateTagDictionaryLogic(ctx context.Context, svcCtx *svc.ServiceCo
 }
 
 func (l *AdminCreateTagDictionaryLogic) AdminCreateTagDictionary(req *types.AdminCreateTagDictionaryReq) (*types.AdminCreateTagDictionaryResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminCreateTagDictionary(l.ctx, &super.AdminCreateTagDictionaryReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminCreateTagDictionary(l.ctx, &super.AdminCreateTagDictionaryReq{
 		Category:  req.Category,
 		Tag:       req.Tag,
 		Label:     req.Label,
@@ -364,7 +364,7 @@ func (l *AdminUpdateTagDictionaryLogic) AdminUpdateTagDictionary(req *types.Admi
 		Enabled:       req.Enabled,
 		UpdateEnabled: req.UpdateEnabled,
 	}
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminUpdateTagDictionary(l.ctx, rpcReq)
+	rpcResp, err := l.svcCtx.AdminGW.AdminUpdateTagDictionary(l.ctx, rpcReq)
 	if err != nil {
 		return &types.AdminUpdateTagDictionaryResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}
@@ -393,7 +393,7 @@ func (l *AdminDeleteTagDictionaryLogic) AdminDeleteTagDictionary(req *types.Admi
 	if err != nil {
 		return &types.AdminDeleteTagDictionaryResp{BaseResp: common.HandleRPCError(err, "条目 ID 无效")}, nil
 	}
-	_, err = l.svcCtx.SuperRpcClient.AdminDeleteTagDictionary(l.ctx, &super.AdminDeleteTagDictionaryReq{EntryId: entryID})
+	_, err = l.svcCtx.AdminGW.AdminDeleteTagDictionary(l.ctx, &super.AdminDeleteTagDictionaryReq{EntryId: entryID})
 	if err != nil {
 		return &types.AdminDeleteTagDictionaryResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

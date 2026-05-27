@@ -1,23 +1,23 @@
-import { useCallback, useEffect, useState } from 'react'
-import { DataEnvBar } from '../components/DataEnvBar'
-import { PageInsightStrip } from '../components/PageInsightStrip'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { DeployApiError } from '../api/deployClient'
+import { AdminTable, AdminToolbar, ListPageLayout } from '../ui'
+import type { AdminTableColumn } from '../ui'
+
+type GroupRow = {
+  id: string
+  name: string
+  description: string
+  creator_name: string
+  member_count: number
+  status: string
+  is_public: boolean
+  created_at: string
+}
 
 export function CommunityGroupsPage() {
   const { client } = useAdminAuth()
-  const [items, setItems] = useState<
-    Array<{
-      id: string
-      name: string
-      description: string
-      creator_name: string
-      member_count: number
-      status: string
-      is_public: boolean
-      created_at: string
-    }>
-  >([])
+  const [items, setItems] = useState<GroupRow[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [keyword, setKeyword] = useState('')
@@ -50,100 +50,58 @@ export function CommunityGroupsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
-  return (
-    <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>兴趣社区</h2>
-          <p className="muted">社区小组列表与运营下架</p>
-        </div>
-      </div>
-      <DataEnvBar />
-      <PageInsightStrip items={[{ label: '小组数量', value: loading ? '…' : total }]} />
-      <div className="panel">
-        <form
-          className="inline-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            setPage(1)
-            setSearch(keyword.trim())
-          }}
-        >
-          <input placeholder="搜索名称 / 简介" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
-          <button type="submit" className="btn btn-primary">
-            搜索
+  const columns = useMemo(
+    (): AdminTableColumn<GroupRow>[] => [
+      { key: 'id', header: 'ID', render: (row) => row.id },
+      { key: 'name', header: '名称', render: (row) => row.name },
+      { key: 'creator', header: '创建者', render: (row) => row.creator_name },
+      { key: 'members', header: '成员', render: (row) => row.member_count },
+      { key: 'public', header: '公开', render: (row) => (row.is_public ? '是' : '否') },
+      { key: 'status', header: '状态', render: (row) => row.status },
+      {
+        key: 'actions',
+        header: '',
+        render: (row) => (
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={async () => {
+              if (!confirm(`删除社区「${row.name}」？`)) return
+              const res = await client.deleteGroup(row.id)
+              if (!res.success) setError(res.message || '删除失败')
+              else await load()
+            }}
+          >
+            删除
           </button>
-        </form>
-        {error ? <p className="text-danger">{error}</p> : null}
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>名称</th>
-                <th>创建者</th>
-                <th>成员</th>
-                <th>公开</th>
-                <th>状态</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="muted">
-                    加载中…
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="muted">
-                    暂无社区
-                  </td>
-                </tr>
-              ) : (
-                items.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.id}</td>
-                    <td>{row.name}</td>
-                    <td>{row.creator_name}</td>
-                    <td>{row.member_count}</td>
-                    <td>{row.is_public ? '是' : '否'}</td>
-                    <td>{row.status}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={async () => {
-                          if (!confirm(`删除社区「${row.name}」？`)) return
-                          const res = await client.deleteGroup(row.id)
-                          if (!res.success) setError(res.message || '删除失败')
-                          else await load()
-                        }}
-                      >
-                        删除
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        {totalPages > 1 ? (
-          <div className="pager">
-            <button type="button" className="btn btn-ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              上一页
-            </button>
-            <span className="muted">
-              {page}/{totalPages}
-            </span>
-            <button type="button" className="btn btn-ghost" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-              下一页
-            </button>
-          </div>
-        ) : null}
-      </div>
-    </>
+        ),
+      },
+    ],
+    [client, load],
+  )
+
+  return (
+    <ListPageLayout
+      title="兴趣社区"
+      description="社区小组列表与运营下架"
+      metrics={[{ label: '小组数量', value: loading ? '…' : total }]}
+      toolbar={
+        <AdminToolbar
+          search={{
+            value: keyword,
+            onChange: setKeyword,
+            onSubmit: () => {
+              setPage(1)
+              setSearch(keyword.trim())
+            },
+            placeholder: '搜索名称 / 简介',
+          }}
+        />
+      }
+      error={error}
+      pagination={{ page, totalPages, total, onPageChange: setPage }}
+    >
+      <AdminTable columns={columns} rows={items} rowKey={(row) => row.id} loading={loading} emptyText="暂无社区" />
+    </ListPageLayout>
   )
 }

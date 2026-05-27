@@ -5,14 +5,16 @@ import (
 	"log"
 	"net/http"
 
-	"backend/api/internal/admingw"
 	"backend/api/internal/achievementgw"
+	"backend/api/internal/admingw"
+	"backend/api/internal/aigw"
 	"backend/api/internal/behaviorgw"
+	"backend/api/internal/chatgw"
 	"backend/api/internal/checkinwg"
 	"backend/api/internal/commentgw"
 	"backend/api/internal/communitygw"
-	"backend/api/internal/giftgw"
 	"backend/api/internal/config"
+	"backend/api/internal/giftgw"
 	"backend/api/internal/handler"
 	"backend/api/internal/landinggw"
 	"backend/api/internal/llmgw"
@@ -108,6 +110,17 @@ func Start(opts Options) (*rest.Server, error) {
 	}
 	ctx.AdminGW = admingw.New(ctx.AdminApp, ctx.SuperRpcClient)
 	log.Printf("admin gateway route: %s", ctx.AdminGW.Route())
+	if moewiring.AIAPIInProcessEnabled() {
+		aiApp, err := moewiring.NewAPIAIService()
+		if err != nil {
+			log.Printf("ai api_in_process: init failed, fallback to RPC only: %v", err)
+		} else if aiApp != nil {
+			ctx.AIApp = aiApp
+			log.Print("ai api_in_process: enabled (AI resources HTTP uses in-process biz)")
+		}
+	}
+	ctx.AIGW = aigw.New(ctx.AIApp, ctx.SuperRpcClient)
+	log.Printf("ai gateway route: %s", ctx.AIGW.Route())
 	if moewiring.BehaviorAPIInProcessEnabled() {
 		behaviorApp, err := moewiring.NewAPIBehaviorService()
 		if err != nil {
@@ -185,6 +198,28 @@ func Start(opts Options) (*rest.Server, error) {
 	}
 	ctx.LLMGW = llmgw.New(ctx.LLMApp, ctx.SuperRpcClient)
 	log.Printf("llm gateway route: %s", ctx.LLMGW.Route())
+	if moewiring.AIAPIInProcessEnabled() {
+		aiApp, err := moewiring.NewAPIAIService()
+		if err != nil {
+			log.Printf("ai api_in_process: init failed, fallback to RPC only: %v", err)
+		} else if aiApp != nil {
+			ctx.AIApp = aiApp
+			log.Print("ai api_in_process: enabled (AI providers/agents/lorebooks HTTP uses in-process biz)")
+		}
+	}
+	ctx.AIGW = aigw.New(ctx.AIApp, ctx.SuperRpcClient)
+	log.Printf("ai gateway route: %s", ctx.AIGW.Route())
+	if moewiring.ChatAPIInProcessEnabled() {
+		chatApp, err := moewiring.NewAPIChatService()
+		if err != nil {
+			log.Printf("chat api_in_process: init failed, fallback to RPC only: %v", err)
+		} else if chatApp != nil {
+			ctx.ChatApp = chatApp
+			log.Print("chat api_in_process: enabled (private message HTTP/WS uses in-process biz)")
+		}
+	}
+	ctx.ChatGW = chatgw.New(ctx.ChatApp, ctx.SuperRpcClient)
+	log.Printf("chat gateway route: %s", ctx.ChatGW.Route())
 	if moewiring.CommunityAPIInProcessEnabled() {
 		communityApp, err := moewiring.NewAPICommunityService()
 		if err != nil {

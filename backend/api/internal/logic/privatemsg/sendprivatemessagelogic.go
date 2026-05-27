@@ -34,7 +34,7 @@ func (l *SendPrivateMessageLogic) SendPrivateMessage(req *types.SendPrivateMessa
 		return nil, err
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.SendPrivateMessage(l.ctx, &super.SendPrivateMessageReq{
+	rpcResp, err := l.svcCtx.ChatGW.SendPrivateMessage(l.ctx, &super.SendPrivateMessageReq{
 		SenderId:    senderID,
 		ReceiverId:  req.ReceiverId,
 		Body:        req.Body,

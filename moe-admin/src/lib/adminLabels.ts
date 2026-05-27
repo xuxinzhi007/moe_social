@@ -1,3 +1,5 @@
+import { statusLabel } from './jobTarget'
+
 export type TagTone =
   | 'ok'
   | 'fail'
@@ -157,6 +159,17 @@ const CAP_LABELS: Record<string, string> = {
   broadcast: '广播',
   send: '推送',
   stats: '统计',
+}
+
+export function deployJobStatusTag(status?: string): TagSpec {
+  const raw = status || ''
+  const s = raw.toLowerCase()
+  const label = statusLabel(raw)
+  if (s === 'succeeded') return { label, tone: 'ok' }
+  if (s === 'failed') return { label, tone: 'fail' }
+  if (s === 'running') return { label, tone: 'run' }
+  if (s === 'cancelled') return { label, tone: 'neutral' }
+  return { label, tone: 'pending' }
 }
 
 export function capabilityTag(cap: string): TagSpec {

@@ -14,9 +14,10 @@ import (
 )
 
 var (
-	ErrEmptyGiftName  = errors.New("empty gift name")
-	ErrNegativePrice  = errors.New("negative gift price")
-	ErrEmptyCategory  = errors.New("empty gift category")
+	ErrEmptyGiftName     = errors.New("empty gift name")
+	ErrNegativePrice     = errors.New("negative gift price")
+	ErrEmptyCategory     = errors.New("empty gift category")
+	ErrDuplicateGiftName = errors.New("duplicate gift name")
 )
 
 // UpdateGiftInput Admin 礼物部分更新。
@@ -52,6 +53,12 @@ func CreateGift(ctx context.Context, db *gorm.DB, in *super.AdminCreateGiftReq) 
 	if category == "" {
 		category = "special"
 	}
+	var dup model.Gift
+	if err := db.WithContext(ctx).Where("name = ?", name).First(&dup).Error; err == nil {
+		return nil, ErrDuplicateGiftName
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
 	gift := model.Gift{
 		Name:        name,
 		Price:       int(in.GetPrice()),
@@ -86,6 +93,12 @@ func UpdateGift(ctx context.Context, db *gorm.DB, in UpdateGiftInput) (*super.Gi
 		name := strings.TrimSpace(in.Name)
 		if name == "" {
 			return nil, ErrEmptyGiftName
+		}
+		var dup model.Gift
+		if err := db.WithContext(ctx).Where("name = ? AND id <> ?", name, gift.ID).First(&dup).Error; err == nil {
+			return nil, ErrDuplicateGiftName
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
 		}
 		gift.Name = name
 	}
@@ -153,4 +166,84 @@ func BootstrapGifts(ctx context.Context, db *gorm.DB) (int32, error) {
 		return 0, err
 	}
 	return int32(count), nil
+}
+
+// DeduplicateGiftsByName 合并同名礼物：保留最小 ID，迁移引用后删除重复项。
+func DeduplicateGiftsByName(ctx context.Context, db *gorm.DB) (int32, error) {
+	if db == nil {
+		return 0, gorm.ErrInvalidDB
+	}
+	var gifts []model.Gift
+	if err := db.WithContext(ctx).Order("id ASC").Find(&gifts).Error; err != nil {
+		return 0, err
+	}
+	canonical := map[string]uint{}
+	var removed int32
+	err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		for _, gift := range gifts {
+			name := strings.TrimSpace(gift.Name)
+			if name == "" {
+				continue
+			}
+			if keepID, ok := canonical[name]; ok {
+				if err := reassignGiftReferences(ctx, tx, gift.ID, keepID); err != nil {
+					return err
+				}
+				if err := tx.Delete(&model.Gift{}, gift.ID).Error; err != nil {
+					return err
+				}
+				removed++
+				continue
+			}
+			canonical[name] = gift.ID
+		}
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	return removed, nil
+}
+
+func reassignGiftReferences(ctx context.Context, tx *gorm.DB, fromID, toID uint) error {
+	if fromID == toID {
+		return nil
+	}
+	if err := tx.WithContext(ctx).Model(&model.GiftRecord{}).
+		Where("gift_id = ?", fromID).
+		Update("gift_id", toID).Error; err != nil {
+		return err
+	}
+	if err := tx.WithContext(ctx).Model(&model.GiftPurchaseOrder{}).
+		Where("gift_id = ?", fromID).
+		Update("gift_id", toID).Error; err != nil {
+		return err
+	}
+	var stocks []model.UserGiftStock
+	if err := tx.WithContext(ctx).Where("gift_id = ?", fromID).Find(&stocks).Error; err != nil {
+		return err
+	}
+	for _, stock := range stocks {
+		var existing model.UserGiftStock
+		err := tx.WithContext(ctx).
+			Where("user_id = ? AND gift_id = ?", stock.UserID, toID).
+			First(&existing).Error
+		if err == nil {
+			if err := tx.WithContext(ctx).Model(&existing).
+				Update("quantity", existing.Quantity+stock.Quantity).Error; err != nil {
+				return err
+			}
+			if err := tx.WithContext(ctx).Delete(&stock).Error; err != nil {
+				return err
+			}
+			continue
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		if err := tx.WithContext(ctx).Model(&stock).Update("gift_id", toID).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }

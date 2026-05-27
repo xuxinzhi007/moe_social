@@ -1,8 +1,8 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AdminTag, TagRow } from '../components/AdminTag'
-import { DataEnvBar } from '../components/DataEnvBar'
 import { useAdminAuth } from '../context/AdminAuthContext'
+import { MonitorPageLayout } from '../ui'
 import { capabilityTag, schemaCoverageTag } from '../lib/adminLabels'
 import {
   RUNTIME_CONFIG_ACTION,
@@ -110,44 +110,28 @@ export function DataCatalogPage() {
   const domainHint = selectedRow ? schemaDomainHint(selectedRow.domain) : undefined
 
   return (
-    <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>数据目录</h2>
-          <p>左侧选择表 · 右侧查看能力与快捷编辑 · 支持 URL / 头像 / 配置入口</p>
-        </div>
+    <MonitorPageLayout
+      title="数据目录"
+      description="左侧选择表 · 右侧查看能力与快捷编辑 · 支持 URL / 头像 / 配置入口"
+      envNote="表结构与 db.go AutoMigrate 同步"
+      metrics={
+        summary
+          ? [
+              { label: '数据表', value: summary.total_tables },
+              { label: '完整管理', value: summary.managed_full },
+              { label: '部分/只读', value: summary.managed_partial },
+              { label: '待接入', value: summary.unmanaged },
+              { label: '累计行数', value: formatCount(summary.total_rows) },
+            ]
+          : undefined
+      }
+      headActions={
         <button type="button" className="btn btn-primary" disabled={loading} onClick={() => void load()}>
           {loading ? '刷新中…' : '刷新统计'}
         </button>
-      </div>
-
-      <DataEnvBar note="表结构与 db.go AutoMigrate 同步" />
-
-      {summary ? (
-        <div className="admin-metrics schema-summary" style={{ marginBottom: 16 }}>
-          <div className="metric metric-accent-run">
-            <div className="label">数据表</div>
-            <div className="value">{summary.total_tables}</div>
-          </div>
-          <div className="metric metric-accent-ok">
-            <div className="label">完整管理</div>
-            <div className="value">{summary.managed_full}</div>
-          </div>
-          <div className="metric metric-accent-vip">
-            <div className="label">部分/只读</div>
-            <div className="value">{summary.managed_partial}</div>
-          </div>
-          <div className="metric">
-            <div className="label">待接入</div>
-            <div className="value">{summary.unmanaged}</div>
-          </div>
-          <div className="metric metric-accent-run">
-            <div className="label">累计行数</div>
-            <div className="value">{formatCount(summary.total_rows)}</div>
-          </div>
-        </div>
-      ) : null}
-
+      }
+      error={error || undefined}
+    >
       <div className="catalog-split">
         <aside className="catalog-tree panel">
           <input
@@ -208,8 +192,6 @@ export function DataCatalogPage() {
         </aside>
 
         <section className="catalog-detail panel">
-          {error ? <p className="text-danger">{error}</p> : null}
-
           {selectedKey === '__runtime_config__' ? (
             <>
               <div className="catalog-detail-head">
@@ -301,6 +283,6 @@ export function DataCatalogPage() {
           )}
         </section>
       </div>
-    </>
+    </MonitorPageLayout>
   )
 }

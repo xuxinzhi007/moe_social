@@ -23,7 +23,7 @@ func NewAdminDeleteMemoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *AdminDeleteMemoryLogic) AdminDeleteMemory(req *types.AdminDeleteMemoryReq) (*types.AdminDeleteMemoryResp, error) {
-	_, err := l.svcCtx.SuperRpcClient.AdminDeleteMemory(l.ctx, &super.AdminDeleteMemoryReq{
+	_, err := l.svcCtx.AdminGW.AdminDeleteMemory(l.ctx, &super.AdminDeleteMemoryReq{
 		MemoryId: req.MemoryId,
 	})
 	if err != nil {

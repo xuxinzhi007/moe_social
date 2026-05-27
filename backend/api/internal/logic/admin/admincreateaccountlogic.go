@@ -22,7 +22,7 @@ func NewAdminCreateAccountLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *AdminCreateAccountLogic) AdminCreateAccount(req *types.AdminCreateAccountReq) (*types.AdminCreateAccountResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminCreateAccount(l.ctx, &super.AdminCreateAccountReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminCreateAccount(l.ctx, &super.AdminCreateAccountReq{
 		Username: req.Username,
 		Password: req.Password,
 		Role:     req.Role,

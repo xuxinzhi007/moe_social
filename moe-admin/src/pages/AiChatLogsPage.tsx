@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { DataEnvBar } from '../components/DataEnvBar'
 import { IdCell } from '../components/IdCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
+import { AdminPanel, AdminPagination, AdminTable, AdminToolbar, TabbedPageLayout } from '../ui'
+import type { AdminTableColumn } from '../ui'
 
 type Tab = 'sessions' | 'messages'
 
@@ -38,6 +39,11 @@ const emptyFilters = {
   from: '',
   to: '',
 }
+
+const TABS = [
+  { key: 'sessions' as const, label: '会话', hint: '会话列表' },
+  { key: 'messages' as const, label: '消息', hint: '消息明细' },
+]
 
 export function AiChatLogsPage() {
   const { client } = useAdminAuth()
@@ -118,6 +124,12 @@ export function AiChatLogsPage() {
     setPage(1)
   }
 
+  function resetFilters() {
+    setFilters(emptyFilters)
+    setApplied(emptyFilters)
+    setPage(1)
+  }
+
   async function exportCsv() {
     setExporting(true)
     setMessage('')
@@ -162,210 +174,168 @@ export function AiChatLogsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
+  const sessionColumns = useMemo(
+    (): AdminTableColumn<SessionRow>[] => [
+      {
+        key: 'user',
+        header: '用户',
+        render: (row) => (
+          <>
+            {row.username || '—'}
+            <br />
+            <IdCell id={row.user_id} />
+          </>
+        ),
+      },
+      {
+        key: 'session',
+        header: 'Session',
+        render: (row) => <IdCell id={row.session_id} />,
+      },
+      { key: 'model', header: '模型', render: (row) => row.model || '—' },
+      { key: 'count', header: '消息数', render: (row) => row.message_count ?? 0 },
+      {
+        key: 'last',
+        header: '最后消息',
+        render: (row) => (row.last_message_at ? formatDateTime(row.last_message_at) : '—'),
+      },
+      {
+        key: 'updated',
+        header: '更新',
+        render: (row) => formatDateTime(row.updated_at),
+      },
+      {
+        key: 'actions',
+        header: '',
+        render: (row) => (
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => openSessionMessages(row.session_id)}>
+            查看消息
+          </button>
+        ),
+      },
+    ],
+    [],
+  )
+
+  const messageColumns = useMemo(
+    (): AdminTableColumn<MessageRow>[] => [
+      { key: 'time', header: '时间', render: (row) => formatDateTime(row.created_at) },
+      {
+        key: 'user',
+        header: '用户',
+        render: (row) => (
+          <>
+            {row.username || '—'}
+            <br />
+            <IdCell id={row.user_id} />
+          </>
+        ),
+      },
+      {
+        key: 'role',
+        header: '角色',
+        render: (row) => (
+          <span className={`pill pill-${row.role === 'user' ? 'primary' : 'muted'}`}>{row.role}</span>
+        ),
+      },
+      { key: 'content', header: '内容', cellClassName: 'cell-pre', render: (row) => row.content },
+      {
+        key: 'session',
+        header: 'Session',
+        render: (row) => <IdCell id={row.session_id} />,
+      },
+    ],
+    [],
+  )
+
   return (
-    <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>AI 对话日志</h2>
-          <p>查询 ai_chat_sessions / messages，用于审计与排障（非训练数据导出）</p>
-        </div>
-        {tab === 'messages' && (
-          <button
-            type="button"
-            className="btn btn-secondary"
-            disabled={exporting}
-            onClick={() => void exportCsv()}
-          >
+    <TabbedPageLayout
+      title="AI 对话日志"
+      description="查询 ai_chat_sessions / messages，用于审计与排障（非训练数据导出）"
+      metrics={[{ label: '匹配结果', value: loading ? '…' : total }]}
+      headActions={
+        tab === 'messages' ? (
+          <button type="button" className="btn btn-secondary" disabled={exporting} onClick={() => void exportCsv()}>
             {exporting ? '导出中…' : '导出 CSV'}
           </button>
-        )}
-      </div>
+        ) : undefined
+      }
+      tabs={TABS}
+      activeTab={tab}
+      onTabChange={setTab}
+    >
+      {message ? <p className="form-hint ok">{message}</p> : null}
+      {error ? <p className="form-error">{error}</p> : null}
 
-      <DataEnvBar />
-
-      <div className="tab-bar">
-        <button
-          type="button"
-          className={`tab-btn${tab === 'sessions' ? ' tab-btn-active' : ''}`}
-          onClick={() => setTab('sessions')}
-        >
-          会话
-        </button>
-        <button
-          type="button"
-          className={`tab-btn${tab === 'messages' ? ' tab-btn-active' : ''}`}
-          onClick={() => setTab('messages')}
-        >
-          消息
-        </button>
-      </div>
-
-      <div className="filter-bar card">
-        <label>
-          用户 ID
-          <input
-            value={filters.userId}
-            onChange={(e) => setFilters((f) => ({ ...f, userId: e.target.value }))}
-            placeholder="可选"
-          />
-        </label>
-        <label>
-          Session ID
-          <input
-            value={filters.sessionId}
-            onChange={(e) => setFilters((f) => ({ ...f, sessionId: e.target.value }))}
-            placeholder="可选"
-          />
-        </label>
-        {tab === 'messages' && (
-          <>
-            <label>
-              角色
-              <select
-                value={filters.role}
-                onChange={(e) => setFilters((f) => ({ ...f, role: e.target.value }))}
-              >
-                <option value="">全部</option>
-                <option value="user">user</option>
-                <option value="assistant">assistant</option>
-                <option value="system">system</option>
-              </select>
-            </label>
-            <label>
-              关键词
-              <input
-                value={filters.keyword}
-                onChange={(e) => setFilters((f) => ({ ...f, keyword: e.target.value }))}
-                placeholder="内容包含"
-              />
-            </label>
-          </>
-        )}
-        <label>
-          起始日期
-          <input
-            type="date"
-            value={filters.from}
-            onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
-          />
-        </label>
-        <label>
-          结束日期
-          <input
-            type="date"
-            value={filters.to}
-            onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
-          />
-        </label>
-        <button type="button" className="btn btn-primary" onClick={applyFilters}>
-          筛选
-        </button>
-      </div>
-
-      {message && <p className="form-hint ok">{message}</p>}
-      {error && <p className="form-error">{error}</p>}
-
-      <div className="table-card">
-        {loading ? (
-          <p className="muted">加载中…</p>
-        ) : tab === 'sessions' ? (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>用户</th>
-                <th>Session</th>
-                <th>模型</th>
-                <th>消息数</th>
-                <th>最后消息</th>
-                <th>更新</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {sessions.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    {row.username || '—'}
-                    <br />
-                    <IdCell id={row.user_id} />
-                  </td>
-                  <td>
-                    <IdCell id={row.session_id} />
-                  </td>
-                  <td>{row.model || '—'}</td>
-                  <td>{row.message_count ?? 0}</td>
-                  <td>{row.last_message_at ? formatDateTime(row.last_message_at) : '—'}</td>
-                  <td>{formatDateTime(row.updated_at)}</td>
-                  <td>
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => openSessionMessages(row.session_id)}
-                    >
-                      查看消息
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <AdminPanel>
+        <AdminToolbar
+          filters={
+            <div className="admin-filter-grid">
+              <label className="admin-filter-field">
+                <span>用户 ID</span>
+                <input
+                  value={filters.userId}
+                  onChange={(e) => setFilters((f) => ({ ...f, userId: e.target.value }))}
+                  placeholder="可选"
+                />
+              </label>
+              <label className="admin-filter-field">
+                <span>Session ID</span>
+                <input
+                  value={filters.sessionId}
+                  onChange={(e) => setFilters((f) => ({ ...f, sessionId: e.target.value }))}
+                  placeholder="可选"
+                />
+              </label>
+              {tab === 'messages' ? (
+                <>
+                  <label className="admin-filter-field">
+                    <span>角色</span>
+                    <select value={filters.role} onChange={(e) => setFilters((f) => ({ ...f, role: e.target.value }))}>
+                      <option value="">全部</option>
+                      <option value="user">user</option>
+                      <option value="assistant">assistant</option>
+                      <option value="system">system</option>
+                    </select>
+                  </label>
+                  <label className="admin-filter-field">
+                    <span>关键词</span>
+                    <input
+                      value={filters.keyword}
+                      onChange={(e) => setFilters((f) => ({ ...f, keyword: e.target.value }))}
+                      placeholder="内容包含"
+                    />
+                  </label>
+                </>
+              ) : null}
+              <label className="admin-filter-field">
+                <span>起始日期</span>
+                <input type="date" value={filters.from} onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))} />
+              </label>
+              <label className="admin-filter-field">
+                <span>结束日期</span>
+                <input type="date" value={filters.to} onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))} />
+              </label>
+              <div className="admin-filter-actions">
+                <button type="button" className="btn btn-primary btn-sm" onClick={applyFilters}>
+                  筛选
+                </button>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={resetFilters}>
+                  重置
+                </button>
+              </div>
+            </div>
+          }
+        />
+        {tab === 'sessions' ? (
+          <AdminTable columns={sessionColumns} rows={sessions} rowKey={(row) => row.id} loading={loading} />
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>时间</th>
-                <th>用户</th>
-                <th>角色</th>
-                <th>内容</th>
-                <th>Session</th>
-              </tr>
-            </thead>
-            <tbody>
-              {messages.map((row) => (
-                <tr key={row.id}>
-                  <td>{formatDateTime(row.created_at)}</td>
-                  <td>
-                    {row.username || '—'}
-                    <br />
-                    <IdCell id={row.user_id} />
-                  </td>
-                  <td>
-                    <span className={`pill pill-${row.role === 'user' ? 'primary' : 'muted'}`}>
-                      {row.role}
-                    </span>
-                  </td>
-                  <td className="cell-pre">{row.content}</td>
-                  <td>
-                    <IdCell id={row.session_id} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <AdminTable columns={messageColumns} rows={messages} rowKey={(row) => row.id} loading={loading} />
         )}
-      </div>
-
-      <div className="pager">
-        <button
-          type="button"
-          className="btn btn-ghost"
-          disabled={page <= 1}
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-        >
-          上一页
-        </button>
-        <span>
-          第 {page} / {totalPages} 页 · 共 {total} 条
-        </span>
-        <button
-          type="button"
-          className="btn btn-ghost"
-          disabled={page >= totalPages}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          下一页
-        </button>
-      </div>
-    </>
+        {totalPages > 1 ? (
+          <AdminPagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
+        ) : null}
+      </AdminPanel>
+    </TabbedPageLayout>
   )
 }

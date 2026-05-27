@@ -36,7 +36,7 @@ func (l *AdminUpdateAccountLogic) AdminUpdateAccount(req *types.AdminUpdateAccou
 		rpcReq.Role = role
 		rpcReq.UpdateRole = true
 	}
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminUpdateAccount(l.ctx, rpcReq)
+	rpcResp, err := l.svcCtx.AdminGW.AdminUpdateAccount(l.ctx, rpcReq)
 	if err != nil {
 		return &types.AdminUpdateAccountResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

@@ -3,18 +3,15 @@
 package devlauncher
 
 import (
-	"os"
+	"os/exec"
+	"strconv"
 	"syscall"
 )
 
 func procSysAttr() *syscall.SysProcAttr {
-	return &syscall.SysProcAttr{}
+	return &syscall.SysProcAttr{CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP}
 }
 
 func stopProcessTree(pid int) {
-	proc, err := os.FindProcess(pid)
-	if err != nil {
-		return
-	}
-	_ = proc.Kill()
+	_ = exec.Command("taskkill", "/F", "/T", "/PID", strconv.Itoa(pid)).Run()
 }

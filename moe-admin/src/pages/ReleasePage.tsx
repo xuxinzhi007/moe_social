@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { PageHead } from '../ui'
 import { useDeploy } from '../context/DeployContext'
 
 export function ReleasePage() {
@@ -21,10 +22,7 @@ export function ReleasePage() {
 
   return (
     <>
-      <div className="page-head">
-        <h2>应用发布</h2>
-        <p>GitHub Actions · flutter-release.yml</p>
-      </div>
+      <PageHead title="应用发布" description="GitHub Actions · flutter-release.yml" />
 
       <div className="panel">
         <div className="panel-head">

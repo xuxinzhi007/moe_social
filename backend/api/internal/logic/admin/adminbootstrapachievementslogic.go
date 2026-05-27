@@ -26,7 +26,7 @@ func NewAdminBootstrapAchievementsLogic(ctx context.Context, svcCtx *svc.Service
 }
 
 func (l *AdminBootstrapAchievementsLogic) AdminBootstrapAchievements(_ *types.EmptyReq) (resp *types.AdminBootstrapAchievementsResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminBootstrapAchievements(l.ctx, &super.AdminBootstrapAchievementsReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminBootstrapAchievements(l.ctx, &super.AdminBootstrapAchievementsReq{})
 	if err != nil {
 		return &types.AdminBootstrapAchievementsResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

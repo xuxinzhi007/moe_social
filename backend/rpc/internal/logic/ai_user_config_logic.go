@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	aibiz "backend/internal/biz/ai"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
@@ -26,11 +27,11 @@ func NewAiUserConfigLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AiUs
 }
 
 func (l *AiUserConfigLogic) Get(in *super.GetAiUserConfigReq) (*super.GetAiUserConfigResp, error) {
-	userID, err := parseAIUserID(in.UserId)
+	userID, err := aibiz.ParseUserID(in.UserId)
 	if err != nil {
-		return nil, err
+		return nil, mapAIResourceErr(err)
 	}
-	cfg, err := loadOrCreateAIConfig(l.svcCtx.DB, userID)
+	cfg, err := aibiz.LoadOrCreateConfig(l.svcCtx.DB, userID)
 	if err != nil {
 		return nil, errorx.Internal(fmt.Sprintf("读取AI用户配置失败: %v", err))
 	}
@@ -41,11 +42,11 @@ func (l *AiUserConfigLogic) Get(in *super.GetAiUserConfigReq) (*super.GetAiUserC
 }
 
 func (l *AiUserConfigLogic) Upsert(in *super.UpsertAiUserConfigReq) (*super.UpsertAiUserConfigResp, error) {
-	userID, err := parseAIUserID(in.UserId)
+	userID, err := aibiz.ParseUserID(in.UserId)
 	if err != nil {
-		return nil, err
+		return nil, mapAIResourceErr(err)
 	}
-	cfg, err := loadOrCreateAIConfig(l.svcCtx.DB, userID)
+	cfg, err := aibiz.LoadOrCreateConfig(l.svcCtx.DB, userID)
 	if err != nil {
 		return nil, errorx.Internal(fmt.Sprintf("读取AI用户配置失败: %v", err))
 	}

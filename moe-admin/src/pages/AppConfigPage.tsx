@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AdminFormDrawer } from '../components/AdminFormDrawer'
-import { DataEnvBar } from '../components/DataEnvBar'
 import { FormField } from '../components/FormField'
+import { MonitorPageLayout } from '../ui'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { DeployApiError } from '../api/deployClient'
 
@@ -109,38 +109,35 @@ export function AppConfigPage() {
 
   return (
     <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>应用配置</h2>
-          <p>管理 App API 地址、云端图库 URL 与存储配额 · 写入 backend/config/config.yaml</p>
-        </div>
-        <button
-          type="button"
-          className="btn btn-primary"
-          disabled={loading}
-          onClick={() => {
-            setFormError('')
-            setDrawerOpen(true)
-          }}
-        >
-          编辑配置
-        </button>
-      </div>
-
-      <DataEnvBar note="修改后立即影响 GET /api/public/client-config 与图片 URL 拼接" />
-
-      {message ? (
-        <div className="admin-hint admin-hint-ok" style={{ marginBottom: 12 }}>
-          {message}
-          <button type="button" className="btn btn-ghost" style={{ marginLeft: 8 }} onClick={() => setMessage('')}>
-            关闭
+      <MonitorPageLayout
+        title="应用配置"
+        description="管理 App API 地址、云端图库 URL 与存储配额 · 写入 backend/config/config.yaml"
+        envNote="修改后立即影响 GET /api/public/client-config 与图片 URL 拼接"
+        headActions={
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={loading}
+            onClick={() => {
+              setFormError('')
+              setDrawerOpen(true)
+            }}
+          >
+            编辑配置
           </button>
-        </div>
-      ) : null}
+        }
+        error={error || undefined}
+      >
+        {message ? (
+          <div className="admin-hint admin-hint-ok" style={{ marginBottom: 12 }}>
+            {message}
+            <button type="button" className="btn btn-ghost" style={{ marginLeft: 8 }} onClick={() => setMessage('')}>
+              关闭
+            </button>
+          </div>
+        ) : null}
 
-      {error ? <p className="text-danger">{error}</p> : null}
-
-      {loading && !data ? (
+        {loading && !data ? (
         <p className="muted">加载中…</p>
       ) : data ? (
         <div className="config-cards">
@@ -205,7 +202,8 @@ export function AppConfigPage() {
             </div>
           </section>
         </div>
-      ) : null}
+        ) : null}
+      </MonitorPageLayout>
 
       <AdminFormDrawer
         open={drawerOpen}

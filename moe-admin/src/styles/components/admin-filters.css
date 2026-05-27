@@ -1,0 +1,39 @@
+.admin-filter-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 12px;
+  width: 100%;
+}
+
+.admin-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.admin-filter-field > span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.admin-filter-field input,
+.admin-filter-field select {
+  font-size: 13px;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid var(--hairline, var(--border));
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.admin-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}

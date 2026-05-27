@@ -27,7 +27,7 @@ func NewSyncUserVipStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 
 func (l *SyncUserVipStatusLogic) SyncUserVipStatus(req *types.SyncUserVipStatusReq) (resp *types.SyncUserVipStatusResp, err error) {
 	// 调用RPC服务同步用户VIP状态
-	rpcResp, err := l.svcCtx.SuperRpcClient.SyncUserVipStatus(l.ctx, &super.SyncUserVipStatusReq{
+	rpcResp, err := l.svcCtx.UserGW.SyncUserVipStatus(l.ctx, &super.SyncUserVipStatusReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

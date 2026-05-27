@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AdminFormDrawer } from '../components/AdminFormDrawer'
 import { FormField } from '../components/FormField'
-import { DataEnvBar } from '../components/DataEnvBar'
-import { PageInsightStrip } from '../components/PageInsightStrip'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { DeployApiError } from '../api/deployClient'
+import { AdminTable, AdminToolbar, ListPageLayout } from '../ui'
+import type { AdminTableColumn } from '../ui'
 
 type VipPlanRow = {
   id: string
@@ -190,157 +190,88 @@ export function VipPlansPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
+  const columns = useMemo(
+    (): AdminTableColumn<VipPlanRow>[] => [
+      { key: 'id', header: 'ID', render: (row) => row.id },
+      { key: 'name', header: '名称', render: (row) => row.name },
+      { key: 'price', header: '价格', render: (row) => `¥${row.price.toFixed(2)}` },
+      { key: 'days', header: '天数', render: (row) => row.duration_days },
+      { key: 'desc', header: '说明', render: (row) => row.description || '—' },
+      {
+        key: 'actions',
+        header: '操作',
+        render: (row) => (
+          <>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => openEdit(row)}>
+              编辑
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => void removePlan(row)}>
+              删除
+            </button>
+          </>
+        ),
+      },
+    ],
+    [load],
+  )
+
   return (
     <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>会员与套餐</h2>
-          <p className="muted">运营配置 VIP 套餐（App 只读展示）</p>
-        </div>
-        <div className="btn-row">
-          <button type="button" className="btn btn-ghost" onClick={() => void bootstrap()}>
-            导入默认套餐
-          </button>
-          <button type="button" className="btn btn-primary" onClick={openCreate}>
-            新建套餐
-          </button>
-        </div>
-      </div>
-
-      <DataEnvBar />
-      <PageInsightStrip
-        items={[
+      <ListPageLayout
+        title="会员与套餐"
+        description="运营配置 VIP 套餐（App 只读展示）"
+        metrics={[
           { label: '套餐数量', value: loading ? '…' : total },
           { label: '含已删除', value: includeDeleted ? '是' : '否' },
         ]}
-      />
-
-      {message ? (
-        <div className="admin-hint admin-hint-ok" style={{ marginBottom: 12 }}>
-          {message}
-          <button
-            type="button"
-            className="btn btn-ghost"
-            style={{ marginLeft: 8, padding: '2px 8px' }}
-            onClick={() => setMessage('')}
-          >
-            关闭
-          </button>
-        </div>
-      ) : null}
-
-      <div className="panel">
-        <form
-          className="inline-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            setPage(1)
-            setSearch(keyword.trim())
-          }}
-        >
-          <input
-            placeholder="搜索套餐名称 / 说明"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-          />
-          <label className="checkbox-row">
-            <input
-              type="checkbox"
-              checked={includeDeleted}
-              onChange={(e) => {
-                setIncludeDeleted(e.target.checked)
-                setPage(1)
-              }}
-            />
-            <span>含已删除</span>
-          </label>
-          <button type="submit" className="btn btn-primary">
-            搜索
-          </button>
-        </form>
-
-        {error ? <p className="text-danger">{error}</p> : null}
-
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>名称</th>
-                <th>价格</th>
-                <th>天数</th>
-                <th>说明</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="muted">
-                    加载中…
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="muted">
-                    暂无套餐，可点击「导入默认套餐」或「新建套餐」
-                  </td>
-                </tr>
-              ) : (
-                items.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.id}</td>
-                    <td>{row.name}</td>
-                    <td>¥{row.price.toFixed(2)}</td>
-                    <td>{row.duration_days}</td>
-                    <td>{row.description || '—'}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => openEdit(row)}
-                      >
-                        编辑
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => void removePlan(row)}
-                      >
-                        删除
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {totalPages > 1 ? (
-          <div className="pager">
-            <button
-              type="button"
-              className="btn btn-ghost"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              上一页
+        headActions={
+          <div className="btn-row">
+            <button type="button" className="btn btn-ghost" onClick={() => void bootstrap()}>
+              导入默认套餐
             </button>
-            <span>
-              {page} / {totalPages}（共 {total} 条）
-            </span>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              下一页
+            <button type="button" className="btn btn-primary" onClick={openCreate}>
+              新建套餐
             </button>
           </div>
-        ) : null}
-      </div>
+        }
+        banner={message ? { message, tone: 'ok', onClose: () => setMessage('') } : undefined}
+        toolbar={
+          <AdminToolbar
+            search={{
+              value: keyword,
+              onChange: setKeyword,
+              onSubmit: () => {
+                setPage(1)
+                setSearch(keyword.trim())
+              },
+              placeholder: '搜索套餐名称 / 说明',
+            }}
+            filters={
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={includeDeleted}
+                  onChange={(e) => {
+                    setIncludeDeleted(e.target.checked)
+                    setPage(1)
+                  }}
+                />
+                <span>含已删除</span>
+              </label>
+            }
+          />
+        }
+        error={error}
+        pagination={{ page, totalPages, total, onPageChange: setPage }}
+      >
+        <AdminTable
+          columns={columns}
+          rows={items}
+          rowKey={(row) => row.id}
+          loading={loading}
+          emptyText="暂无套餐，可点击「导入默认套餐」或「新建套餐」"
+        />
+      </ListPageLayout>
 
       {modal ? (
         <AdminFormDrawer
@@ -374,9 +305,7 @@ export function VipPlansPage() {
                 type="number"
                 min={1}
                 value={form.duration_days}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, duration_days: e.target.value }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, duration_days: e.target.value }))}
               />
             </FormField>
           </div>
@@ -385,9 +314,7 @@ export function VipPlansPage() {
               rows={3}
               value={form.description}
               placeholder="如：解锁全部 VIP 特权"
-              onChange={(e) =>
-                setForm((f) => ({ ...f, description: e.target.value }))
-              }
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             />
           </FormField>
         </AdminFormDrawer>

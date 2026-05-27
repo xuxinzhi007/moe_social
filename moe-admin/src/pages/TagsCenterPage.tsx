@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { AdminFormDrawer } from '../components/AdminFormDrawer'
-import { DataEnvBar } from '../components/DataEnvBar'
 import { FormField } from '../components/FormField'
 import { IdCell } from '../components/IdCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
+import { AdminPanel, AdminTable, AdminToolbar, TabbedPageLayout } from '../ui'
+import type { AdminTableColumn } from '../ui'
 
 type Tab = 'topic' | 'dictionary'
 
@@ -33,12 +34,18 @@ const dictEmpty = {
   enabled: true,
 }
 
+const TABS = [
+  { key: 'topic' as const, label: '话题标签', hint: '动态话题' },
+  { key: 'dictionary' as const, label: 'Bot 策略字典', hint: '禁止/偏好' },
+]
+
 export function TagsCenterPage() {
   const { client } = useAdminAuth()
   const [params, setParams] = useSearchParams()
   const tab: Tab = params.get('tab') === 'dictionary' ? 'dictionary' : 'topic'
 
   const [keyword, setKeyword] = useState('')
+  const [search, setSearch] = useState('')
   const [dictCategory, setDictCategory] = useState('')
   const [topicItems, setTopicItems] = useState<TopicRow[]>([])
   const [dictItems, setDictItems] = useState<DictRow[]>([])
@@ -55,6 +62,7 @@ export function TagsCenterPage() {
   const [dictForm, setDictForm] = useState(dictEmpty)
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [bootstrapping, setBootstrapping] = useState(false)
 
   const pageSize = 50
 
@@ -66,10 +74,12 @@ export function TagsCenterPage() {
         const res = await client.listTopicTags({
           page,
           page_size: pageSize,
-          keyword: keyword || undefined,
+          keyword: search || undefined,
         })
         if (!res.success || !res.data) {
           setError(res.message || '加载失败')
+          setTopicItems([])
+          setTotal(0)
           return
         }
         setTopicItems(res.data.items || [])
@@ -83,6 +93,8 @@ export function TagsCenterPage() {
         })
         if (!res.success || !res.data) {
           setError(res.message || '加载失败')
+          setDictItems([])
+          setTotal(0)
           return
         }
         setDictItems(res.data.items || [])
@@ -93,7 +105,7 @@ export function TagsCenterPage() {
     } finally {
       setLoading(false)
     }
-  }, [client, dictCategory, keyword, page, pageSize, tab])
+  }, [client, dictCategory, page, pageSize, search, tab])
 
   useEffect(() => {
     void load()
@@ -103,6 +115,25 @@ export function TagsCenterPage() {
     setParams({ tab: next })
     setPage(1)
     setKeyword('')
+    setSearch('')
+  }
+
+  async function bootstrapTopicTags() {
+    setBootstrapping(true)
+    setError('')
+    try {
+      const res = await client.bootstrapTopicTags()
+      if (!res.success) {
+        setError(res.message || '导入失败')
+        return
+      }
+      setMessage(res.message || `已导入 ${res.data?.created ?? 0} 个话题标签`)
+      await load()
+    } catch (e) {
+      setError(e instanceof DeployApiError ? e.message : '导入失败')
+    } finally {
+      setBootstrapping(false)
+    }
   }
 
   async function saveTopic() {
@@ -215,216 +246,225 @@ export function TagsCenterPage() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const drawerOpen = modal !== null
 
+  const topicColumns = useMemo(
+    (): AdminTableColumn<TopicRow>[] => [
+      { key: 'name', header: '名称', render: (row) => row.name },
+      {
+        key: 'color',
+        header: '颜色',
+        render: (row) => (
+          <>
+            <span className="color-swatch" style={{ background: row.color || '#7f7fd5' }} title={row.color} />
+            {row.color}
+          </>
+        ),
+      },
+      { key: 'created', header: '创建时间', render: (row) => formatDateTime(row.created_at) },
+      {
+        key: 'actions',
+        header: '',
+        render: (row) => (
+          <div className="row-actions">
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                setEditingTopic(row)
+                setTopicForm({ name: row.name, color: row.color || '#7f7fd5' })
+                setModal('edit')
+              }}
+            >
+              编辑
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm danger" onClick={() => void removeTopic(row)}>
+              删除
+            </button>
+          </div>
+        ),
+      },
+    ],
+    [load],
+  )
+
+  const dictColumns = useMemo(
+    (): AdminTableColumn<DictRow>[] => [
+      { key: 'category', header: '分类', render: (row) => row.category },
+      {
+        key: 'tag',
+        header: 'Tag',
+        render: (row) => (
+          <>
+            <code>{row.tag}</code>
+            <br />
+            <IdCell id={row.id} />
+          </>
+        ),
+      },
+      { key: 'label', header: '展示名', render: (row) => row.label || '—' },
+      { key: 'sort', header: '排序', render: (row) => row.sort_order },
+      { key: 'enabled', header: '状态', render: (row) => (row.enabled ? '启用' : '停用') },
+      { key: 'updated', header: '更新', render: (row) => formatDateTime(row.updated_at) },
+      {
+        key: 'actions',
+        header: '',
+        render: (row) => (
+          <div className="row-actions">
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                setEditingDict(row)
+                setDictForm({
+                  category: row.category,
+                  tag: row.tag,
+                  label: row.label || '',
+                  note: row.note || '',
+                  sort_order: String(row.sort_order),
+                  enabled: row.enabled,
+                })
+                setModal('edit')
+              }}
+            >
+              编辑
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm danger" onClick={() => void removeDict(row)}>
+              删除
+            </button>
+          </div>
+        ),
+      },
+    ],
+    [load],
+  )
+
   return (
     <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>统一标签中心</h2>
-          <p>话题标签（动态）与 Bot 策略标签字典（禁止/偏好）分栏管理</p>
-        </div>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => {
-            setFormError('')
-            if (tab === 'topic') {
-              setEditingTopic(null)
-              setTopicForm(topicEmpty)
-            } else {
-              setEditingDict(null)
-              setDictForm(dictEmpty)
+      <TabbedPageLayout
+        title="统一标签中心"
+        description="话题标签（动态）与 Bot 策略标签字典（禁止/偏好）分栏管理"
+        metrics={[{ label: '匹配结果', value: loading ? '…' : total }]}
+        headActions={
+          <div className="btn-row page-head-toolbar">
+            {tab === 'topic' ? (
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              disabled={bootstrapping || loading}
+              onClick={() => {
+                if (!window.confirm('仅在话题表为空时导入 6 个官方推荐话题，是否继续？')) return
+                void bootstrapTopicTags()
+              }}
+            >
+                {bootstrapping ? '导入中…' : '导入官方话题'}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => {
+                setFormError('')
+                if (tab === 'topic') {
+                  setEditingTopic(null)
+                  setTopicForm(topicEmpty)
+                } else {
+                  setEditingDict(null)
+                  setDictForm(dictEmpty)
+                }
+                setModal('create')
+              }}
+            >
+              新建
+            </button>
+          </div>
+        }
+        tabs={TABS}
+        activeTab={tab}
+        onTabChange={setTab}
+      >
+        {message ? <p className="form-hint ok">{message}</p> : null}
+        {error ? <p className="form-error">{error}</p> : null}
+
+        <AdminPanel>
+          <AdminToolbar
+            search={{
+              value: keyword,
+              onChange: setKeyword,
+              onSubmit: () => {
+                setPage(1)
+                setSearch(keyword.trim())
+              },
+              placeholder: '名称 / tag',
+            }}
+            filters={
+              tab === 'dictionary' ? (
+                <select
+                  value={dictCategory}
+                  onChange={(e) => {
+                    setDictCategory(e.target.value)
+                    setPage(1)
+                  }}
+                >
+                  <option value="">全部</option>
+                  <option value="bot_forbidden">禁止 (bot_forbidden)</option>
+                  <option value="bot_preferred">偏好 (bot_preferred)</option>
+                </select>
+              ) : null
             }
-            setModal('create')
-          }}
-        >
-          新建
-        </button>
-      </div>
-
-      <DataEnvBar />
-
-      <div className="tab-bar">
-        <button
-          type="button"
-          className={`tab-btn${tab === 'topic' ? ' tab-btn-active' : ''}`}
-          onClick={() => setTab('topic')}
-        >
-          话题标签
-        </button>
-        <button
-          type="button"
-          className={`tab-btn${tab === 'dictionary' ? ' tab-btn-active' : ''}`}
-          onClick={() => setTab('dictionary')}
-        >
-          Bot 策略字典
-        </button>
-      </div>
-
-      <div className="filter-bar card">
-        <label>
-          关键词
-          <input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="名称 / tag" />
-        </label>
-        {tab === 'dictionary' && (
-          <label>
-            分类
-            <select value={dictCategory} onChange={(e) => setDictCategory(e.target.value)}>
-              <option value="">全部</option>
-              <option value="bot_forbidden">禁止 (bot_forbidden)</option>
-              <option value="bot_preferred">偏好 (bot_preferred)</option>
-            </select>
-          </label>
-        )}
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => {
-            setPage(1)
-            void load()
-          }}
-        >
-          搜索
-        </button>
-      </div>
-
-      {message && <p className="form-hint ok">{message}</p>}
-      {error && <p className="form-error">{error}</p>}
-
-      <div className="table-card">
-        {loading ? (
-          <p className="muted">加载中…</p>
-        ) : tab === 'topic' ? (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>名称</th>
-                <th>颜色</th>
-                <th>创建时间</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {topicItems.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.name}</td>
-                  <td>
-                    <span
-                      className="color-swatch"
-                      style={{ background: row.color || '#7f7fd5' }}
-                      title={row.color}
-                    />
-                    {row.color}
-                  </td>
-                  <td>{formatDateTime(row.created_at)}</td>
-                  <td className="row-actions">
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => {
-                        setEditingTopic(row)
-                        setTopicForm({ name: row.name, color: row.color || '#7f7fd5' })
-                        setModal('edit')
-                      }}
-                    >
-                      编辑
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm danger"
-                      onClick={() => void removeTopic(row)}
-                    >
-                      删除
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>分类</th>
-                <th>Tag</th>
-                <th>展示名</th>
-                <th>排序</th>
-                <th>状态</th>
-                <th>更新</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {dictItems.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.category}</td>
-                  <td>
-                    <code>{row.tag}</code>
-                    <br />
-                    <IdCell id={row.id} />
-                  </td>
-                  <td>{row.label || '—'}</td>
-                  <td>{row.sort_order}</td>
-                  <td>{row.enabled ? '启用' : '停用'}</td>
-                  <td>{formatDateTime(row.updated_at)}</td>
-                  <td className="row-actions">
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => {
-                        setEditingDict(row)
-                        setDictForm({
-                          category: row.category,
-                          tag: row.tag,
-                          label: row.label || '',
-                          note: row.note || '',
-                          sort_order: String(row.sort_order),
-                          enabled: row.enabled,
-                        })
-                        setModal('edit')
-                      }}
-                    >
-                      编辑
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm danger"
-                      onClick={() => void removeDict(row)}
-                    >
-                      删除
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      <div className="pager">
-        <button
-          type="button"
-          className="btn btn-ghost"
-          disabled={page <= 1}
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-        >
-          上一页
-        </button>
-        <span>
-          第 {page} / {totalPages} 页 · 共 {total} 条
-        </span>
-        <button
-          type="button"
-          className="btn btn-ghost"
-          disabled={page >= totalPages}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          下一页
-        </button>
-      </div>
+          />
+          {tab === 'topic' ? (
+            <AdminTable
+              columns={topicColumns}
+              rows={topicItems}
+              rowKey={(row) => row.id}
+              loading={loading}
+              emptyText="暂无话题标签 · 后端已对接 /api/admin/topic-tags。App 发动态时会自动写入；也可点「导入官方话题」或手动新建"
+            />
+          ) : (
+            <AdminTable
+              columns={dictColumns}
+              rows={dictItems}
+              rowKey={(row) => row.id}
+              loading={loading}
+              emptyText="暂无策略标签 · 可手动新建禁止/偏好条目"
+            />
+          )}
+          {totalPages > 1 ? (
+            <div className="pager">
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                上一页
+              </button>
+              <span>
+                第 {page} / {totalPages} 页 · 共 {total} 条
+              </span>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                下一页
+              </button>
+            </div>
+          ) : null}
+        </AdminPanel>
+      </TabbedPageLayout>
 
       <AdminFormDrawer
         open={drawerOpen}
-        title={tab === 'topic' ? (modal === 'create' ? '新建话题标签' : '编辑话题标签') : modal === 'create' ? '新建策略标签' : '编辑策略标签'}
+        title={
+          tab === 'topic'
+            ? modal === 'create'
+              ? '新建话题标签'
+              : '编辑话题标签'
+            : modal === 'create'
+              ? '新建策略标签'
+              : '编辑策略标签'
+        }
         onClose={() => setModal(null)}
         onSave={() => void (tab === 'topic' ? saveTopic() : saveDict())}
         saving={saving}
@@ -434,10 +474,7 @@ export function TagsCenterPage() {
         {tab === 'topic' ? (
           <>
             <FormField label="名称" required>
-              <input
-                value={topicForm.name}
-                onChange={(e) => setTopicForm((f) => ({ ...f, name: e.target.value }))}
-              />
+              <input value={topicForm.name} onChange={(e) => setTopicForm((f) => ({ ...f, name: e.target.value }))} />
             </FormField>
             <FormField label="颜色">
               <input
@@ -459,23 +496,13 @@ export function TagsCenterPage() {
               </select>
             </FormField>
             <FormField label="Tag 标识" required>
-              <input
-                value={dictForm.tag}
-                onChange={(e) => setDictForm((f) => ({ ...f, tag: e.target.value }))}
-              />
+              <input value={dictForm.tag} onChange={(e) => setDictForm((f) => ({ ...f, tag: e.target.value }))} />
             </FormField>
             <FormField label="展示名">
-              <input
-                value={dictForm.label}
-                onChange={(e) => setDictForm((f) => ({ ...f, label: e.target.value }))}
-              />
+              <input value={dictForm.label} onChange={(e) => setDictForm((f) => ({ ...f, label: e.target.value }))} />
             </FormField>
             <FormField label="备注">
-              <textarea
-                value={dictForm.note}
-                onChange={(e) => setDictForm((f) => ({ ...f, note: e.target.value }))}
-                rows={3}
-              />
+              <textarea value={dictForm.note} onChange={(e) => setDictForm((f) => ({ ...f, note: e.target.value }))} rows={3} />
             </FormField>
             <FormField label="排序">
               <input

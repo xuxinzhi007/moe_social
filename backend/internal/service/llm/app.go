@@ -63,3 +63,20 @@ func (s *AppService) RecordLlmChatTurn(ctx context.Context, in *super.RecordLlmC
 func (s *AppService) FindLocalModel(id string) (localmodels.Meta, error) {
 	return localmodels.FindByID(s.deps.LocalModelsStorageDir, s.deps.LocalModelsCatalog, id)
 }
+
+// PostChatCompletion 调用推理服务完成对话补全（F103 biz 化）。
+func (s *AppService) PostChatCompletion(
+	ctx context.Context,
+	model string,
+	messages []llmbiz.ChatMessage,
+	opts llmbiz.ChatOptions,
+) (string, error) {
+	return llmbiz.PostChatCompletion(ctx, s.deps.Inference, model, messages, opts)
+}
+
+// UpsertUserMemory 写入用户记忆（含异步索引）。
+func (s *AppService) UpsertUserMemory(ctx context.Context, in *super.UpsertUserMemoryReq) (*super.UpsertUserMemoryResp, error) {
+	return llmbiz.UpsertUserMemory(ctx, s.db, in, llmbiz.MemoryWriteOptions{
+		InferenceBaseURL: s.deps.Inference.BaseURL,
+	})
+}

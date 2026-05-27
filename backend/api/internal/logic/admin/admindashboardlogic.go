@@ -29,7 +29,7 @@ func NewAdminDashboardLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ad
 }
 
 func (l *AdminDashboardLogic) AdminDashboard(_ *types.EmptyReq) (resp *types.AdminDashboardResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminDashboard(l.ctx, &super.AdminDashboardReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminDashboard(l.ctx, &super.AdminDashboardReq{})
 	if err != nil {
 		return &types.AdminDashboardResp{
 			BaseResp: common.HandleRPCError(err, ""),

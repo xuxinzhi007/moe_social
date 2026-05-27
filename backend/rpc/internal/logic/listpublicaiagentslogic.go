@@ -16,13 +16,17 @@ type ListPublicAiAgentsLogic struct {
 }
 
 func NewListPublicAiAgentsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ListPublicAiAgentsLogic {
-	return &ListPublicAiAgentsLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+	return &ListPublicAiAgentsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
 func (l *ListPublicAiAgentsLogic) ListPublicAiAgents(in *super.ListPublicAiAgentsReq) (*super.ListAiResourceResp, error) {
-	return NewAiResourcesLogic(l.ctx, l.svcCtx).listPublicAgents(in)
+	resp, err := aiApp(l.svcCtx).ListPublicAiAgents(l.ctx, in)
+	if err != nil {
+		if mapped := mapAIResourceErr(err); mapped != nil {
+			return nil, mapped
+		}
+		l.Errorf("list public ai agents: %v", err)
+		return nil, mapAIResourceErr(err)
+	}
+	return resp, nil
 }

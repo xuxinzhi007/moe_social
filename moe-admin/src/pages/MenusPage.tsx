@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AdminTag } from '../components/AdminTag'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { boolTag, menuKindTag, menuStatusTag } from '../lib/adminLabels'
 import { DeployApiError } from '../api/deployClient'
+import { AdminTable, ListPageLayout } from '../ui'
+import type { AdminTableColumn } from '../ui'
 
 type MenuRow = {
   id: string
@@ -84,90 +86,68 @@ export function MenusPage() {
     }
   }
 
+  const columns = useMemo(
+    (): AdminTableColumn<MenuRow>[] => [
+      { key: 'key', header: 'Key', render: (row) => row.key },
+      {
+        key: 'label',
+        header: '标签',
+        render: (row) => (
+          <>
+            {row.icon ? `${row.icon} ` : ''}
+            {row.label}
+          </>
+        ),
+      },
+      { key: 'path', header: '路径', render: (row) => row.path || '—' },
+      {
+        key: 'kind',
+        header: '类型',
+        render: (row) => <AdminTag spec={menuKindTag(row.kind)} />,
+      },
+      {
+        key: 'status',
+        header: '状态',
+        render: (row) => <AdminTag spec={menuStatusTag(row.status)} />,
+      },
+      { key: 'sort', header: '排序', render: (row) => row.sort_order },
+      {
+        key: 'enabled',
+        header: '启用',
+        render: (row) => <AdminTag spec={boolTag(row.enabled)} />,
+      },
+      {
+        key: 'actions',
+        header: '',
+        render: (row) => (
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => void toggleEnabled(row)}>
+            {row.enabled ? '禁用' : '启用'}
+          </button>
+        ),
+      },
+    ],
+    [load],
+  )
+
   return (
-    <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>侧栏菜单配置</h2>
-          <p>库表驱动菜单可见性与排序（v1 路由仍在前端注册）</p>
-        </div>
+    <ListPageLayout
+      title="侧栏菜单配置"
+      description="库表驱动菜单可见性与排序（v1 路由仍在前端注册）"
+      headActions={
         <button type="button" className="btn btn-primary" onClick={() => void bootstrap()}>
           同步默认菜单
         </button>
-      </div>
-
-      {message ? (
-        <div className="admin-hint admin-hint-ok" style={{ marginBottom: 12 }}>
-          {message}
-          <button type="button" className="btn btn-ghost" style={{ marginLeft: 8 }} onClick={() => setMessage('')}>
-            关闭
-          </button>
-        </div>
-      ) : null}
-
-      <div className="panel">
-        {error ? <p className="text-danger">{error}</p> : null}
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Key</th>
-                <th>标签</th>
-                <th>路径</th>
-                <th>类型</th>
-                <th>状态</th>
-                <th>排序</th>
-                <th>启用</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={8} className="muted">
-                    加载中…
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="muted">
-                    暂无菜单，请点击「同步默认菜单」
-                  </td>
-                </tr>
-              ) : (
-                items.map((row) => (
-                  <tr key={row.key}>
-                    <td>{row.key}</td>
-                    <td>
-                      {row.icon ? `${row.icon} ` : ''}
-                      {row.label}
-                    </td>
-                    <td>{row.path || '—'}</td>
-                    <td>
-                      <AdminTag spec={menuKindTag(row.kind)} />
-                    </td>
-                    <td>
-                      <AdminTag spec={menuStatusTag(row.status)} />
-                    </td>
-                    <td>{row.sort_order}</td>
-                    <td>
-                      <AdminTag spec={boolTag(row.enabled)} />
-                    </td>                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => void toggleEnabled(row)}
-                      >
-                        {row.enabled ? '禁用' : '启用'}
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </>
+      }
+      banner={message ? { message, tone: 'ok', onClose: () => setMessage('') } : undefined}
+      error={error}
+    >
+      <AdminTable
+        columns={columns}
+        rows={items}
+        rowKey={(row) => row.key}
+        loading={loading}
+        emptyText="暂无菜单，请点击「同步默认菜单」"
+      />
+    </ListPageLayout>
   )
 }

@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AdminTag, TagRow } from '../components/AdminTag'
 import { DataDomainMap } from '../components/DataDomainMap'
-import { DataEnvBar } from '../components/DataEnvBar'
+import { TabbedPageLayout } from '../ui'
+import { PageMessage } from '../components/PageMessage'
 import { FormField } from '../components/FormField'
 import { IdCell } from '../components/IdCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
@@ -267,43 +268,23 @@ export function PlatformPage() {
 
   return (
     <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>平台治理</h2>
-          <p className="muted">
-            App → API → 数据资产 · 连接配置、图库、数据地图与记忆治理在同一页切换
-          </p>
-        </div>
-        <button type="button" className="btn btn-ghost" disabled={loading} onClick={() => void loadCore()}>
-          刷新
-        </button>
-      </div>
-
-      <DataEnvBar note={`当前数据环境：${apiTargetLabel} · 配置写入 backend/config/config.yaml`} />
-
-      {message ? (
-        <div className="admin-hint admin-hint-ok" style={{ marginBottom: 12 }}>
-          {message}
-          <button type="button" className="btn btn-ghost" style={{ marginLeft: 8 }} onClick={() => setMessage('')}>
-            关闭
+      <TabbedPageLayout
+        title="平台治理"
+        description="App → API → 数据资产 · 连接配置、图库、数据地图与记忆治理在同一页切换"
+        envNote={`当前数据环境：${apiTargetLabel} · 配置写入 backend/config/config.yaml`}
+        headActions={
+          <button type="button" className="btn btn-ghost" disabled={loading} onClick={() => void loadCore()}>
+            刷新
           </button>
-        </div>
+        }
+        tabs={TABS}
+        activeTab={tab}
+        onTabChange={setTab}
+      >
+      {message ? (
+        <PageMessage message={message} tone="ok" onClose={() => setMessage('')} />
       ) : null}
       {error ? <p className="text-danger">{error}</p> : null}
-
-      <div className="platform-tab-rail">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            className={`platform-tab-pill${tab === t.key ? ' is-active' : ''}`}
-            onClick={() => setTab(t.key)}
-          >
-            <span className="platform-tab-label">{t.label}</span>
-            <span className="platform-tab-hint">{t.hint}</span>
-          </button>
-        ))}
-      </div>
 
       {tab === 'overview' ? (
         <div className="platform-overview">
@@ -534,6 +515,7 @@ export function PlatformPage() {
           ) : null}
         </section>
       ) : null}
+      </TabbedPageLayout>
     </>
   )
 }

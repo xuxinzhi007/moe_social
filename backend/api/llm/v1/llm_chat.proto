@@ -1,0 +1,13 @@
+// SSOT stub (documentation-only). Mirrors super.proto LLM chat RPCs.
+syntax = "proto3";
+
+package llm.v1;
+
+option go_package = "backend/api/llm/v1;llmv1";
+
+message PostChatCompletionReq {}
+message PostChatCompletionResp {}
+
+service LlmChat {
+  rpc PostChatCompletion(PostChatCompletionReq) returns (PostChatCompletionResp);
+}

@@ -29,7 +29,7 @@ func NewSubmitUserMemoryFeedbackLogic(ctx context.Context, svcCtx *svc.ServiceCo
 }
 
 func (l *SubmitUserMemoryFeedbackLogic) SubmitUserMemoryFeedback(req *types.SubmitUserMemoryFeedbackReq) (resp *types.SubmitUserMemoryFeedbackResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.SubmitUserMemoryFeedback(l.ctx, &super.SubmitUserMemoryFeedbackReq{
+	rpcResp, err := l.svcCtx.LLMGW.SubmitUserMemoryFeedback(l.ctx, &super.SubmitUserMemoryFeedbackReq{
 		UserId:         req.UserId,
 		Key:            req.Key,
 		FeedbackType:   req.FeedbackType,

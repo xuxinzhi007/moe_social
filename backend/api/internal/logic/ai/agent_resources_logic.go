@@ -31,7 +31,7 @@ func (l *ResourceLogic) DeleteAgent(userID uint, id string) (*types.AiAgentsResp
 }
 
 func (l *ResourceLogic) ListPublicAgents(limit int32) (*types.AiAgentsResp, error) {
-	resp, err := l.svcCtx.SuperRpcClient.ListPublicAiAgents(l.ctx, &super.ListPublicAiAgentsReq{
+	resp, err := l.svcCtx.AIGW.ListPublicAiAgents(l.ctx, &super.ListPublicAiAgentsReq{
 		Limit: limit,
 	})
 	if err != nil {

@@ -22,7 +22,7 @@ func NewAdminListAccountsLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *AdminListAccountsLogic) AdminListAccounts(req *types.AdminListAccountsReq) (*types.AdminListAccountsResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListAccounts(l.ctx, &super.AdminListAccountsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListAccounts(l.ctx, &super.AdminListAccountsReq{
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
 		Keyword:  req.Keyword,

@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AdminFormDrawer } from '../components/AdminFormDrawer'
 import { AdminTag } from '../components/AdminTag'
-import { DataEnvBar } from '../components/DataEnvBar'
 import { FormField } from '../components/FormField'
 import { IdCell } from '../components/IdCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { announcementTag } from '../lib/adminLabels'
 import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
+import { AdminTable, ListPageLayout } from '../ui'
+import type { AdminTableColumn } from '../ui'
+
 type Row = { id: string; title: string; content: string; status: string; published_at?: string; created_at: string }
 
 const emptyForm = { title: '', content: '' }
@@ -87,139 +89,98 @@ export function AnnouncementsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
-  return (
-    <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>公告管理</h2>
-          <p>App 内公告运营 · 草稿与发布状态分色展示</p>
-        </div>
-        <button          type="button"
-          className="btn btn-primary"
-          onClick={() => {
-            setEditing(null)
-            setForm(emptyForm)
-            setFormError('')
-            setModal('create')
-          }}
-        >
-          新建公告
-        </button>
-      </div>
-
-      <DataEnvBar />
-
-      {message ? (        <div className="admin-hint admin-hint-ok" style={{ marginBottom: 12 }}>
-          {message}
-          <button type="button" className="btn btn-ghost" style={{ marginLeft: 8 }} onClick={() => setMessage('')}>
-            关闭
-          </button>
-        </div>
-      ) : null}
-
-      <div className="panel">
-        {error ? <p className="text-danger">{error}</p> : null}
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>标题</th>
-                <th>状态</th>
-                <th>发布时间</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={5} className="muted">
-                    加载中…
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="muted">
-                    暂无公告
-                  </td>
-                </tr>
-              ) : (
-                items.map((row) => (
-                  <tr key={row.id}>
-                    <td>
-                      <IdCell id={row.id} />
-                    </td>
-                    <td>{row.title}</td>
-                    <td>
-                      <AdminTag spec={announcementTag(row.status)} />
-                    </td>
-                    <td className="muted">{formatDateTime(row.published_at)}</td>                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => {
-                          setEditing(row)
-                          setForm({ title: row.title, content: row.content })
-                          setFormError('')
-                          setModal('edit')
-                        }}
-                      >
-                        编辑
-                      </button>
-                      {row.status !== 'published' ? (
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
-                          onClick={async () => {
-                            const res = await client.publishAnnouncement(row.id)
-                            if (!res.success) setError(res.message || '发布失败')
-                            else {
-                              setMessage('已发布')
-                              await load()
-                            }
-                          }}
-                        >
-                          发布
-                        </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={async () => {
-                          if (!confirm(`删除公告「${row.title}」？`)) return
-                          const res = await client.deleteAnnouncement(row.id)
-                          if (!res.success) setError(res.message || '删除失败')
-                          else await load()
-                        }}
-                      >
-                        删除
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        {totalPages > 1 ? (
-          <div className="pager">
-            <button type="button" className="btn btn-ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              上一页
-            </button>
-            <span className="muted">
-              {page}/{totalPages} · 共 {total} 条
-            </span>
+  const columns = useMemo(
+    (): AdminTableColumn<Row>[] => [
+      { key: 'id', header: 'ID', render: (row) => <IdCell id={row.id} /> },
+      { key: 'title', header: '标题', render: (row) => row.title },
+      {
+        key: 'status',
+        header: '状态',
+        render: (row) => <AdminTag spec={announcementTag(row.status)} />,
+      },
+      {
+        key: 'published',
+        header: '发布时间',
+        cellClassName: 'muted',
+        render: (row) => formatDateTime(row.published_at),
+      },
+      {
+        key: 'actions',
+        header: '',
+        render: (row) => (
+          <>
             <button
               type="button"
-              className="btn btn-ghost"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                setEditing(row)
+                setForm({ title: row.title, content: row.content })
+                setFormError('')
+                setModal('edit')
+              }}
             >
-              下一页
+              编辑
             </button>
-          </div>
-        ) : null}
-      </div>
+            {row.status !== 'published' ? (
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={async () => {
+                  const res = await client.publishAnnouncement(row.id)
+                  if (!res.success) setError(res.message || '发布失败')
+                  else {
+                    setMessage('已发布')
+                    await load()
+                  }
+                }}
+              >
+                发布
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={async () => {
+                if (!confirm(`删除公告「${row.title}」？`)) return
+                const res = await client.deleteAnnouncement(row.id)
+                if (!res.success) setError(res.message || '删除失败')
+                else await load()
+              }}
+            >
+              删除
+            </button>
+          </>
+        ),
+      },
+    ],
+    [client, load],
+  )
+
+  return (
+    <>
+      <ListPageLayout
+        title="公告管理"
+        description="App 内公告运营 · 草稿与发布状态分色展示"
+        headActions={
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => {
+              setEditing(null)
+              setForm(emptyForm)
+              setFormError('')
+              setModal('create')
+            }}
+          >
+            新建公告
+          </button>
+        }
+        banner={message ? { message, tone: 'ok', onClose: () => setMessage('') } : undefined}
+        error={error}
+        pagination={{ page, totalPages, total, onPageChange: setPage }}
+      >
+        <AdminTable columns={columns} rows={items} rowKey={(row) => row.id} loading={loading} emptyText="暂无公告" />
+      </ListPageLayout>
 
       <AdminFormDrawer
         open={modal !== null}
@@ -234,11 +195,7 @@ export function AnnouncementsPage() {
           <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
         </FormField>
         <FormField label="内容" required>
-          <textarea
-            rows={6}
-            value={form.content}
-            onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
-          />
+          <textarea rows={6} value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} />
         </FormField>
       </AdminFormDrawer>
     </>

@@ -115,7 +115,7 @@ moe:
 
 本方案 **B=100%** 不等于全站迁完。下一执行文档：
 
-**[kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md)**（全站 **F ~48%**，当前 **FS-3b**）
+**[kratos-migration-status.md](./kratos-migration-status.md)**（全站 **F ~98%**，**F109 完成**）
 
 - FS-2：VIP 全量（建议首个业务域）
 - FS-3～FS-8：User、Admin、社交、AI、实时、退役 `super.*`

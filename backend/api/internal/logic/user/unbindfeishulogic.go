@@ -33,7 +33,7 @@ func (l *UnbindFeishuLogic) UnbindFeishu(req *types.EmptyReq) (resp *types.Unbin
 	if err != nil {
 		return nil, err
 	}
-	rpcResp, rpcErr := l.svcCtx.SuperRpcClient.UnbindFeishu(l.ctx, &super.UnbindFeishuReq{
+	rpcResp, rpcErr := l.svcCtx.UserGW.UnbindFeishu(l.ctx, &super.UnbindFeishuReq{
 		UserId: userID,
 	})
 	if rpcErr != nil {

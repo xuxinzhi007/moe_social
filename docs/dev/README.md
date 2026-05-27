@@ -46,6 +46,16 @@
 | [devtools.html](./devtools.html) | 开发者工具台 |
 | [tools/rpc-monitor.html](./tools/rpc-monitor.html) | RPC 监控（遗留 HTML；管理台请用 [admin-rpc-runtime-guide](./admin-rpc-runtime-guide.md)） |
 
+## Kratos / 全站迁移（2026-05-28）
+
+| 文档 | 用途 |
+|------|------|
+| [kratos-migration-status.md](./kratos-migration-status.md) | **当前进度勾选**（F109 · F≈98%） |
+| [kratos-migration.md](./kratos-migration.md) | Hybrid 架构 SSOT、`make moe-social` |
+| [kratos-migration-sprint-f100.md](./kratos-migration-sprint-f100.md) | F70→F109 路线图 |
+| [kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md) | 进度公式与域权重 |
+| [voice-ws-boundary.md](./voice-ws-boundary.md) | Voice WebSocket 边界 |
+
 ## 集成与专项
 
 | 文档 | 用途 |

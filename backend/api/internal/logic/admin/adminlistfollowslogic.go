@@ -22,7 +22,7 @@ func NewAdminListFollowsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *AdminListFollowsLogic) AdminListFollows(req *types.AdminListFollowsReq) (*types.AdminListFollowsResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListFollows(l.ctx, &super.AdminListFollowsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListFollows(l.ctx, &super.AdminListFollowsReq{
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
 		Keyword:  req.Keyword,

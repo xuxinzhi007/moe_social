@@ -1,9 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AdminFormDrawer } from '../components/AdminFormDrawer'
 import { AdminTag, TagRow } from '../components/AdminTag'
-import { DataEnvBar } from '../components/DataEnvBar'
-import { PageInsightStrip } from '../components/PageInsightStrip'
 import { FormField } from '../components/FormField'
 import { IdCell } from '../components/IdCell'
 import { UserCell } from '../components/UserCell'
@@ -13,6 +11,7 @@ import { botTag, roleTag, vipTag } from '../lib/adminLabels'
 import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
 import type { AdminUserBehaviorSummary } from '../api/adminClient'
+import { AdminTable, ListPageLayout, AdminToolbar } from '../ui'
 
 type UserRow = UserProfile
 
@@ -130,135 +129,98 @@ export function UsersPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
+  const columns = useMemo(
+    () => [
+      {
+        key: 'user',
+        header: '用户',
+        render: (row: UserRow) => (
+          <UserCell
+            name={row.username}
+            avatar={row.avatar}
+            sub={row.moe_no ? `Moe ${row.moe_no}` : undefined}
+            meta={row.email}
+          />
+        ),
+      },
+      {
+        key: 'id',
+        header: 'ID',
+        render: (row: UserRow) => <IdCell id={row.id} />,
+      },
+      {
+        key: 'email',
+        header: '邮箱',
+        cellClassName: 'muted',
+        render: (row: UserRow) => row.email || '—',
+      },
+      {
+        key: 'role',
+        header: '角色',
+        render: (row: UserRow) => <AdminTag spec={roleTag(row.role)} />,
+      },
+      {
+        key: 'bot',
+        header: 'AI',
+        render: (row: UserRow) => {
+          const spec = botTag(row.is_bot ?? false, row.bot_agent_key)
+          return spec ? <AdminTag spec={spec} /> : <span className="muted">—</span>
+        },
+      },
+      {
+        key: 'vip',
+        header: '会员',
+        render: (row: UserRow) => <AdminTag spec={vipTag(row.is_vip)} />,
+      },
+      {
+        key: 'created',
+        header: '注册时间',
+        cellClassName: 'muted',
+        render: (row: UserRow) => formatDateTime(row.created_at),
+      },
+      {
+        key: 'actions',
+        header: '',
+        render: (row: UserRow) => (
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => openUser(row)}>
+            编辑
+          </button>
+        ),
+      },
+    ],
+    [],
+  )
+
   return (
     <>
-      <div className="page-head page-head-row">
-        <div>
-          <h2>App 用户</h2>
-          <p className="muted">管理 App 注册用户，含头像、角色与 VIP 标记</p>
-        </div>
-      </div>
-
-      <DataEnvBar note="用户数据来自当前所选业务 API" />
-      <PageInsightStrip items={[{ label: '匹配用户', value: loading ? '…' : total }]} />
-
-      <div className="panel">
-        <form
-          className="inline-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            setPage(1)
-            setSearch(keyword.trim())
-          }}
-        >
-          <input
-            placeholder="搜索用户名 / 邮箱 / Moe 号"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
+      <ListPageLayout
+        title="App 用户"
+        description="管理 App 注册用户，含头像、角色与 VIP 标记"
+        envNote="用户数据来自当前所选业务 API"
+        metrics={[{ label: '匹配用户', value: loading ? '…' : total }]}
+        toolbar={
+          <AdminToolbar
+            search={{
+              value: keyword,
+              onChange: setKeyword,
+              onSubmit: () => {
+                setPage(1)
+                setSearch(keyword.trim())
+              },
+              placeholder: '搜索用户名 / 邮箱 / Moe 号',
+            }}
           />
-          <button type="submit" className="btn btn-primary">
-            搜索
-          </button>
-        </form>
-
-        {error ? <p className="text-danger">{error}</p> : null}
-
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>用户</th>
-                <th>ID</th>
-                <th>邮箱</th>
-                <th>角色</th>
-                <th>AI</th>
-                <th>会员</th>
-                <th>注册时间</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={8} className="muted">
-                    加载中…
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="muted">
-                    暂无数据
-                  </td>
-                </tr>
-              ) : (
-                items.map((row) => (
-                  <tr key={row.id}>
-                    <td>
-                      <UserCell
-                        name={row.username}
-                        avatar={row.avatar}
-                        sub={row.moe_no ? `Moe ${row.moe_no}` : undefined}
-                        meta={row.email}
-                      />
-                    </td>
-                    <td>
-                      <IdCell id={row.id} />
-                    </td>
-                    <td className="muted" style={{ maxWidth: 180 }}>
-                      {row.email || '—'}
-                    </td>
-                    <td>
-                      <AdminTag spec={roleTag(row.role)} />
-                    </td>
-                    <td>
-                      {botTag(row.is_bot ?? false, row.bot_agent_key) ? (
-                        <AdminTag spec={botTag(row.is_bot ?? false, row.bot_agent_key)!} />
-                      ) : (
-                        <span className="muted">—</span>
-                      )}
-                    </td>
-                    <td>
-                      <AdminTag spec={vipTag(row.is_vip)} />
-                    </td>
-                    <td className="muted">{formatDateTime(row.created_at)}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => openUser(row)}
-                      >
-                        编辑
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="pager">
-          <button
-            type="button"
-            className="btn btn-ghost"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-          >
-            上一页
-          </button>
-          <span className="muted">
-            {page} / {totalPages} · 共 {total} 条
-          </span>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            下一页
-          </button>
-        </div>
-      </div>
+        }
+        error={error}
+        pagination={{
+          page,
+          totalPages,
+          total,
+          onPageChange: setPage,
+        }}
+      >
+        <AdminTable columns={columns} rows={items} rowKey={(row) => row.id} loading={loading} />
+      </ListPageLayout>
 
       <AdminFormDrawer
         open={selected !== null}
@@ -336,26 +298,28 @@ export function UsersPage() {
                     : ''}
                 </p>
                 {(profile.behavior.top_screens || []).length > 0 ? (
-                  <div className="table-wrap">
-                    <table className="data-table compact">
-                      <thead>
-                        <tr>
-                          <th>页面</th>
-                          <th>访问</th>
-                          <th>停留(ms)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {profile.behavior.top_screens!.map((row) => (
-                          <tr key={row.screen}>
-                            <td>{row.label || row.screen}</td>
-                            <td>{row.visit_count}</td>
-                            <td>{row.total_duration_ms}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <AdminTable
+                    compact
+                    columns={[
+                      {
+                        key: 'screen',
+                        header: '页面',
+                        render: (row) => row.label || row.screen,
+                      },
+                      {
+                        key: 'visits',
+                        header: '访问',
+                        render: (row) => row.visit_count,
+                      },
+                      {
+                        key: 'duration',
+                        header: '停留(ms)',
+                        render: (row) => row.total_duration_ms,
+                      },
+                    ]}
+                    rows={profile.behavior.top_screens!}
+                    rowKey={(row) => row.screen}
+                  />
                 ) : (
                   <p className="muted" style={{ fontSize: 12 }}>
                     暂无页面浏览数据

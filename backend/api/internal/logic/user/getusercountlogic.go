@@ -27,7 +27,7 @@ func NewGetUserCountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetU
 
 func (l *GetUserCountLogic) GetUserCount(req *types.EmptyReq) (resp *types.GetUserCountResp, err error) {
 	// 调用RPC服务获取用户总数
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetUserCount(l.ctx, &super.GetUserCountReq{})
+	rpcResp, err := l.svcCtx.UserGW.GetUserCount(l.ctx, &super.GetUserCountReq{})
 	if err != nil {
 		return &types.GetUserCountResp{
 			BaseResp: common.HandleRPCError(err, ""),

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { PageHead } from '../ui'
 import { useDeploy } from '../context/DeployContext'
 
 const CONFIG_FILES = [
@@ -77,10 +78,7 @@ export function DockerPage() {
 
   return (
     <>
-      <div className="page-head">
-        <h2>云服务器 · Docker</h2>
-        <p>SSH 管理 compose 与 API/RPC 容器</p>
-      </div>
+      <PageHead title="云服务器 · Docker" description="SSH 管理 compose 与 API/RPC 容器" />
 
       <div className="panel">
         <div className="panel-head">

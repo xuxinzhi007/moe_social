@@ -22,7 +22,7 @@ func NewAdminDeleteAccountLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *AdminDeleteAccountLogic) AdminDeleteAccount(req *types.AdminDeleteAccountReq) (*types.AdminDeleteAccountResp, error) {
-	_, err := l.svcCtx.SuperRpcClient.AdminDeleteAccount(l.ctx, &super.AdminDeleteAccountReq{
+	_, err := l.svcCtx.AdminGW.AdminDeleteAccount(l.ctx, &super.AdminDeleteAccountReq{
 		AccountId: req.AccountId,
 	})
 	if err != nil {

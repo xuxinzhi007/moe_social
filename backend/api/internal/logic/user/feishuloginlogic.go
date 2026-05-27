@@ -30,7 +30,7 @@ func NewFeishuLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Feish
 }
 
 func (l *FeishuLoginLogic) FeishuLogin(req *types.FeishuLoginReq) (resp *types.FeishuLoginResp, err error) {
-	rpcResp, rpcErr := l.svcCtx.SuperRpcClient.FeishuLogin(l.ctx, &super.FeishuLoginReq{
+	rpcResp, rpcErr := l.svcCtx.UserGW.FeishuLogin(l.ctx, &super.FeishuLoginReq{
 		Code: strings.TrimSpace(req.Code),
 	})
 	if rpcErr != nil {
