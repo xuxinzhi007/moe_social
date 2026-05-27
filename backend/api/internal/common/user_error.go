@@ -24,5 +24,24 @@ func HandleUserGWError(err error, okMsg string) types.BaseResp {
 	if errors.Is(err, userbiz.ErrInvalidArgument) {
 		return types.BaseResp{Success: false, Message: "参数无效"}
 	}
+	var conflict *userbiz.ConflictError
+	if errors.As(err, &conflict) {
+		return types.BaseResp{Success: false, Message: conflict.Message}
+	}
+	if errors.Is(err, userbiz.ErrMoeNoNotFound) {
+		return types.BaseResp{Success: false, Message: "未找到该 Moe 号"}
+	}
+	if errors.Is(err, userbiz.ErrFriendTargetRequired) {
+		return types.BaseResp{Success: false, Message: "请填写 to_user_id 或 to_moe_no"}
+	}
+	if errors.Is(err, userbiz.ErrFriendSelf) {
+		return types.BaseResp{Success: false, Message: "不能向自己发起申请"}
+	}
+	if errors.Is(err, userbiz.ErrFriendRequestNotFound) {
+		return types.BaseResp{Success: false, Message: "申请不存在"}
+	}
+	if errors.Is(err, userbiz.ErrFriendRequestInvalid) {
+		return types.BaseResp{Success: false, Message: "无法处理该申请"}
+	}
 	return HandleRPCError(err, "")
 }

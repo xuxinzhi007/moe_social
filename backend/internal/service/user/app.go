@@ -186,6 +186,99 @@ func (s *AppService) GetFollowings(ctx context.Context, in *super.GetFollowingsR
 	return &super.GetFollowingsResp{Users: resp.Users, Total: resp.Total}, nil
 }
 
+// SendFriendRequest 发起好友申请。
+func (s *AppService) SendFriendRequest(ctx context.Context, in *super.SendFriendRequestReq) (*super.SendFriendRequestResp, error) {
+	me, err := userbiz.ParseActorUserID(in.GetActorUserId())
+	if err != nil {
+		return nil, err
+	}
+	view, err := userbiz.SendFriendRequest(ctx, s.db, me, in.GetToUserId(), in.GetToMoeNo())
+	if err != nil {
+		return nil, err
+	}
+	return &super.SendFriendRequestResp{Data: view}, nil
+}
+
+// ListIncomingFriendRequests 收到的申请。
+func (s *AppService) ListIncomingFriendRequests(ctx context.Context, in *super.ListIncomingFriendRequestsReq) (*super.ListIncomingFriendRequestsResp, error) {
+	me, err := userbiz.ParseActorUserID(in.GetActorUserId())
+	if err != nil {
+		return nil, err
+	}
+	data, err := userbiz.ListIncomingFriendRequests(ctx, s.db, me)
+	if err != nil {
+		return nil, err
+	}
+	return &super.ListIncomingFriendRequestsResp{Data: data}, nil
+}
+
+// ListOutgoingFriendRequests 发出的申请。
+func (s *AppService) ListOutgoingFriendRequests(ctx context.Context, in *super.ListOutgoingFriendRequestsReq) (*super.ListOutgoingFriendRequestsResp, error) {
+	me, err := userbiz.ParseActorUserID(in.GetActorUserId())
+	if err != nil {
+		return nil, err
+	}
+	data, err := userbiz.ListOutgoingFriendRequests(ctx, s.db, me)
+	if err != nil {
+		return nil, err
+	}
+	return &super.ListOutgoingFriendRequestsResp{Data: data}, nil
+}
+
+// AcceptFriendRequest 同意申请。
+func (s *AppService) AcceptFriendRequest(ctx context.Context, in *super.AcceptFriendRequestReq) (*super.AcceptFriendRequestResp, error) {
+	me, err := userbiz.ParseActorUserID(in.GetActorUserId())
+	if err != nil {
+		return nil, err
+	}
+	if err := userbiz.AcceptFriendRequest(ctx, s.db, me, in.GetRequestId()); err != nil {
+		return nil, err
+	}
+	return &super.AcceptFriendRequestResp{Ok: true}, nil
+}
+
+// RejectFriendRequest 拒绝申请。
+func (s *AppService) RejectFriendRequest(ctx context.Context, in *super.RejectFriendRequestReq) (*super.RejectFriendRequestResp, error) {
+	me, err := userbiz.ParseActorUserID(in.GetActorUserId())
+	if err != nil {
+		return nil, err
+	}
+	if err := userbiz.RejectFriendRequest(ctx, s.db, me, in.GetRequestId()); err != nil {
+		return nil, err
+	}
+	return &super.RejectFriendRequestResp{Ok: true}, nil
+}
+
+// ListFriends 好友列表。
+func (s *AppService) ListFriends(ctx context.Context, in *super.ListFriendsReq) (*super.ListFriendsResp, error) {
+	me, err := userbiz.ParseActorUserID(in.GetActorUserId())
+	if err != nil {
+		return nil, err
+	}
+	users, err := userbiz.ListFriends(ctx, s.db, me)
+	if err != nil {
+		return nil, err
+	}
+	return &super.ListFriendsResp{Users: users}, nil
+}
+
+// GetFriendRelation 好友关系状态。
+func (s *AppService) GetFriendRelation(ctx context.Context, in *super.GetFriendRelationReq) (*super.GetFriendRelationResp, error) {
+	me, err := userbiz.ParseActorUserID(in.GetActorUserId())
+	if err != nil {
+		return nil, err
+	}
+	other, err := parseUserID(in.GetOtherUserId())
+	if err != nil {
+		return nil, err
+	}
+	rel, err := userbiz.GetFriendRelation(ctx, s.db, me, other)
+	if err != nil {
+		return nil, err
+	}
+	return &super.GetFriendRelationResp{Relation: rel}, nil
+}
+
 func followListToProto(result userbiz.FollowListResult) *super.GetFollowersResp {
 	users := make([]*super.User, 0, len(result.Users))
 	for i := range result.Users {
