@@ -29,16 +29,16 @@ func (l *GetFollowersLogic) GetFollowers(req *types.GetFollowersReq) (resp *type
 	l.Debug("获取粉丝列表请求:", req)
 	
 	// 调用RPC服务
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetFollowers(l.ctx, &super.GetFollowersReq{
+	rpcResp, err := l.svcCtx.UserGW.GetFollowers(l.ctx, &super.GetFollowersReq{
 		UserId:   req.UserId,
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
 	})
-	
+
 	if err != nil {
-		l.Error("调用获取粉丝列表RPC服务失败:", err)
+		l.Error("获取粉丝列表失败:", err)
 		return &types.GetFollowersResp{
-			BaseResp: common.HandleError(err),
+			BaseResp: common.HandleUserGWError(err, ""),
 			Data:     nil,
 			Total:    0,
 		}, nil

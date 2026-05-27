@@ -18,6 +18,6 @@ Deploy Agent 配置：`backend/deploy/config.yaml` → `listen` / `rpc_debug_ups
 
 1. **管理台**：`cd moe-admin && npm run dev` → http://127.0.0.1:5173/ops/（需 RPC + API）
 2. **运维能力**（构建/发布/RPC 监控）：另开 `make deploy-agent` → :19010
-3. 侧栏 **RPC 监控** 需 `make rpc-debug`
+3. 侧栏 **RPC 监控**：`make moe-social` / `make dev` 默认开启 :19011；单独起 RPC 时用 `make rpc-debug`
 4. 一键全栈：`make admin`（或 `scripts/start-admin.*`）
 5. 生产构建（按需）：`cd moe-admin && npm run build`，由你自己的静态托管或 CI 发布

@@ -29,15 +29,15 @@ func (l *CheckFollowLogic) CheckFollow(req *types.CheckFollowReq) (resp *types.C
 	l.Debug("检查关注状态请求:", req)
 
 	// 调用RPC服务
-	rpcResp, err := l.svcCtx.SuperRpcClient.CheckFollow(l.ctx, &super.CheckFollowReq{
+	rpcResp, err := l.svcCtx.UserGW.CheckFollow(l.ctx, &super.CheckFollowReq{
 		FollowerId:  req.FollowerId,
 		FollowingId: req.FollowingId,
 	})
 
 	if err != nil {
-		l.Error("调用检查关注状态RPC服务失败:", err)
+		l.Error("检查关注状态失败:", err)
 		return &types.CheckFollowResp{
-			BaseResp: common.HandleError(err),
+			BaseResp: common.HandleUserGWError(err, ""),
 			Data:     false,
 		}, nil
 	}

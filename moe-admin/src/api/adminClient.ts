@@ -1660,6 +1660,38 @@ export function createAdminClient(opts: AdminClientOptions) {
       >(`${adminApiPath('/ai/chat/messages/export')}${qs ? `?${qs}` : ''}`)
     },
 
+    getRuntimeOverview: () =>
+      api<
+        BaseResp<{
+          layout: string
+          processes_note: string
+          estimated_rss_mb: number
+          rpc_monitor_online: boolean
+          api_process: {
+            role: string
+            pid: number
+            go_alloc_mb: number
+            go_sys_mb: number
+            rss_mb: number
+            goroutines: number
+            num_cpu: number
+            reachable: boolean
+            same_process?: boolean
+          }
+          rpc_process: {
+            role: string
+            pid: number
+            go_alloc_mb: number
+            go_sys_mb: number
+            rss_mb: number
+            goroutines: number
+            num_cpu: number
+            reachable: boolean
+            same_process?: boolean
+          }
+        }>
+      >(adminApiPath('/runtime/overview')),
+
     getAnalyticsOverview: () =>
       api<
         BaseResp<{

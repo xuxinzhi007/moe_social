@@ -76,6 +76,41 @@ func (g *Gateway) CheckUserVip(ctx context.Context, in *super.CheckUserVipReq, o
 	return g.super.CheckUserVip(ctx, in, opts...)
 }
 
+func (g *Gateway) FollowUser(ctx context.Context, in *super.FollowUserReq, opts ...grpc.CallOption) (*super.FollowUserResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.Follow(ctx, in)
+	}
+	return g.super.FollowUser(ctx, in, opts...)
+}
+
+func (g *Gateway) UnfollowUser(ctx context.Context, in *super.UnfollowUserReq, opts ...grpc.CallOption) (*super.FollowUserResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.Unfollow(ctx, in)
+	}
+	return g.super.UnfollowUser(ctx, in, opts...)
+}
+
+func (g *Gateway) CheckFollow(ctx context.Context, in *super.CheckFollowReq, opts ...grpc.CallOption) (*super.CheckFollowResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.CheckFollow(ctx, in)
+	}
+	return g.super.CheckFollow(ctx, in, opts...)
+}
+
+func (g *Gateway) GetFollowers(ctx context.Context, in *super.GetFollowersReq, opts ...grpc.CallOption) (*super.GetFollowersResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.GetFollowers(ctx, in)
+	}
+	return g.super.GetFollowers(ctx, in, opts...)
+}
+
+func (g *Gateway) GetFollowings(ctx context.Context, in *super.GetFollowingsReq, opts ...grpc.CallOption) (*super.GetFollowingsResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.GetFollowings(ctx, in)
+	}
+	return g.super.GetFollowings(ctx, in, opts...)
+}
+
 // Super 未迁移方法仍走 RPC。
 func (g *Gateway) Super() super.SuperClient {
 	if g == nil {

@@ -6,6 +6,7 @@ import (
 
 	"backend/rpc/internal/bootstrap"
 	"backend/rpc/internal/config"
+	"backend/rpc/internal/debug"
 	"backend/rpc/internal/server"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
@@ -20,12 +21,13 @@ import (
 
 // Options RPC 启动选项。
 type Options struct {
-	ConfigFile string
-	Migrate    utils.MigrateOptions
+	ConfigFile    string
+	Migrate       utils.MigrateOptions
+	EnableMonitor bool // 本地 :19011 pprof / JSON stats（moe-admin RPC 监控）
 }
 
-// Start 启动 zrpc（Super + MoeAdmin gRPC），返回 server 与 ServiceContext（须 WireMoeAdmin 后使用）。
-func Start(opts Options) (*zrpc.RpcServer, *svc.ServiceContext, error) {
+// Start 启动 zrpc（Super + MoeAdmin gRPC），返回 server、ServiceContext 与可选 Monitor。
+func Start(opts Options) (*zrpc.RpcServer, *svc.ServiceContext, *debug.Monitor, error) {
 	var c config.Config
 	conf.MustLoad(opts.ConfigFile, &c)
 	ctx := svc.NewServiceContext(c, opts.Migrate)
@@ -41,6 +43,11 @@ func Start(opts Options) (*zrpc.RpcServer, *svc.ServiceContext, error) {
 	bootstrap.WireMoeAdmin(ctx)
 	bootstrap.StartMoeBotScheduler(context.Background(), ctx)
 
+	var mon *debug.Monitor
+	if opts.EnableMonitor {
+		mon = debug.StartMonitor("")
+	}
+
 	fmt.Printf("Starting rpc server at %s...\n", c.ListenOn)
-	return s, ctx, nil
+	return s, ctx, mon, nil
 }

@@ -422,6 +422,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
+				Path:    "/api/admin/runtime/overview",
+				Handler: admin.AdminRuntimeOverviewHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/admin/schema/catalog",
 				Handler: admin.AdminGetSchemaCatalogHandler(serverCtx),
 			},

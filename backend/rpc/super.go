@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"backend/rpc/internal/debug"
 	"backend/rpc/runserver"
 	"backend/utils"
 )
@@ -21,24 +20,21 @@ var enableDebug = flag.Bool("debug", false, "expose local debug HTTP API on loop
 func main() {
 	flag.Parse()
 
-	s, _, err := runserver.Start(runserver.Options{
+	s, _, mon, err := runserver.Start(runserver.Options{
 		ConfigFile: *configFile,
 		Migrate: utils.MigrateOptions{
 			Enabled: *migrate,
 			Models:  utils.ParseMigrateModelKeys(*migrateModels),
 			Force:   *migrateForce,
 		},
+		EnableMonitor: debugEnabled(),
 	})
 	if err != nil {
 		panic(err)
 	}
 	defer s.Stop()
-
-	if debugEnabled() {
-		monitor := debug.StartMonitor("")
-		if monitor != nil {
-			defer monitor.Stop()
-		}
+	if mon != nil {
+		defer mon.Stop()
 	}
 
 	s.Start()

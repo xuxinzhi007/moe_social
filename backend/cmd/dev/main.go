@@ -1,7 +1,8 @@
-// Moe 本地开发启动器：一条命令启动 RPC + API；监控/文档等工具请用 make rpc-monitor / make dev-docs。
+// Moe 本地开发启动器：一条命令启动 RPC + API + deploy-agent（可选文档站）。
 package main
 
 import (
+	"backend/devlauncher"
 	"backend/devports"
 	"bufio"
 	"errors"
@@ -19,8 +20,10 @@ import (
 )
 
 var (
-	migrate  = flag.Bool("migrate", false, "run schema migrate (make db-migrate) before starting RPC/API")
-	withDocs = flag.Bool("docs", true, "start docs static server on :19012 (python -m http.server)")
+	migrate   = flag.Bool("migrate", false, "run schema migrate (make db-migrate) before starting RPC/API")
+	withDocs  = flag.Bool("docs", true, "start docs static server on :19012 (python -m http.server)")
+	withAgent   = flag.Bool("agent", true, "start deploy-agent on :19010 (same as make deploy-agent)")
+	withMonitor = flag.Bool("monitor", true, "RPC process with -debug (:19011) for moe-admin RPC 监控")
 )
 
 type managedProc struct {
@@ -37,7 +40,7 @@ func main() {
 	}
 
 	log.Printf("backend root: %s", root)
-	log.Print("starting RPC, API" + docsHint())
+	log.Print("starting RPC, API" + monitorHint() + agentHint() + docsHint())
 
 	procs, err := startAll(root)
 	if err != nil {
@@ -63,6 +66,20 @@ func main() {
 
 	stopAll(procs)
 	log.Print("all backend services stopped")
+}
+
+func monitorHint() string {
+	if *withMonitor {
+		return ", RPC monitor (:" + devports.RpcDebugPortStr() + ")"
+	}
+	return ""
+}
+
+func agentHint() string {
+	if *withAgent {
+		return ", deploy-agent (:" + devports.AgentPortStr() + ")"
+	}
+	return ""
 }
 
 func docsHint() string {
@@ -91,6 +108,9 @@ func startAll(root string) ([]*managedProc, error) {
 	}
 
 	rpcArgs := []string{"-f", "rpc/etc/super.yaml"}
+	if *withMonitor {
+		rpcArgs = append(rpcArgs, "-debug")
+	}
 	rpc, err := startProc("rpc", root, rpcBin, rpcArgs...)
 	if err != nil {
 		stopAll(procs)
@@ -110,6 +130,15 @@ func startAll(root string) ([]*managedProc, error) {
 	}
 	procs = append(procs, api)
 
+	if *withAgent {
+		agent, err := devlauncher.StartDeployAgent(root)
+		if err != nil {
+			log.Printf("deploy-agent: %v (skip agent)", err)
+		} else {
+			procs = append(procs, &managedProc{name: agent.Name, cmd: agent.Cmd})
+		}
+	}
+
 	if *withDocs {
 		docsDir := filepath.Join(root, "..", "docs")
 		py, pyArgs, err := docsServerCommand(docsDir)
@@ -125,7 +154,16 @@ func startAll(root string) ([]*managedProc, error) {
 		}
 	}
 
-	log.Print("ready — RPC :8080, API :8888 (tools: make deploy-agent → http://127.0.0.1:19010/)")
+	ready := "ready — RPC :8080, API :8888"
+	if *withMonitor {
+		ready += ", RPC monitor http://" + devports.RpcDebugAddr + "/debug/live"
+	}
+	if *withAgent {
+		ready += ", Agent " + devports.AgentURL()
+	} else {
+		ready += " (Agent 未启: make deploy-agent 或 go run ./cmd/dev -agent=true)"
+	}
+	log.Print(ready)
 	log.Print("press Ctrl+C to stop all services")
 	return procs, nil
 }
