@@ -1,8 +1,8 @@
 # Kratos 混合架构说明（SSOT）
 
-> **Hybrid Moe：100%** · **纯 Kratos 方案：100%** · **对外 HTTP 始终 :8888**（`make verify-kratos-100`）  
-> 本文档描述 **Hybrid 生产架构**；纯 Kratos 执行方案见 [kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md)。  
-> 勾选：[kratos-migration-status.md](./kratos-migration-status.md) · 决策：[§9](#9-是否需要纯-kratos-迁移决策)
+> **Hybrid Moe：100%** · **纯 Kratos 试点方案：100%** · **全站迁移 F：~22%** · **对外 HTTP：:8888**  
+> 本文档描述 **Hybrid 生产架构**。全站迁移执行方案：[kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md)。  
+> 试点方案：[kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md) · 勾选：[kratos-migration-status.md](./kratos-migration-status.md)
 
 ---
 
@@ -12,9 +12,12 @@
 |------|------|
 | **Hybrid（混合）** | 业务按 Kratos 分层（`biz` / `service` / `data`），**启动与契约仍大量依赖 go-zero**（`super.api`、`super.proto`、`rest` + `zrpc`） |
 | **不是纯 Kratos** | 尚未用 `kratos.App` 统一替代 go-zero 的 HTTP/gRPC 传输；未全面 `conf.proto` + Wire；未退役 `super.*` |
-| **Moe 域** | 分层 + `moe.proto` + `moegrpc` + `MoeGW` + 单进程 `moe-social` → **本域 100%** |
-| **全仓** | User/VIP/社交等仍在 legacy logic → **约 45%**（含纯 Kratos **80%**） |
-| **纯 Kratos 方案** | Phase 0～6 → **100%**；试点端口 1903x **非对外**，见 [kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md) |
+| **Moe 域（A）** | 分层 + `moe.proto` + `moegrpc` + `MoeGW` + 单进程 `moe-social` → **100%** |
+| **纯 Kratos 试点方案（B）** | Phase 0～6 → **100%**；`:19031/:19032` **非对外** |
+| **全站迁移（F）** | 各域下沉 `biz` + 退役 `super.*` → **~22%**（2026-05-27） |
+| **工程就绪度（G）** | A+B+单二进制可构建+观测 → **~48%**（可上线 Hybrid，≠迁完） |
+
+进度口径与域权重见 [kratos-full-site-migration-plan.md §1](./kratos-full-site-migration-plan.md#1-进度口径必读避免歧义)。
 
 ```text
   对外（Flutter / 管理台 / 第三方）
@@ -88,10 +91,10 @@ make verify-moe-complete  # 推荐：一键
 # 或分步：verify-moe-migration / verify-moe-grpc / verify-moe-gateway
 ```
 
-**纯 Kratos 试点（并行，当前 60%）**
+**纯 Kratos 试点（并行，方案 100%）**
 
 ```bash
-make verify-kratos-100    # 纯 Kratos 100% + Hybrid 回归
+make verify-kratos-100    # 试点方案 100% + Hybrid 回归
 make build-moe-social     # 生产单二进制 :8888+:8080
 make verify-kratos-80     # Phase 0～4
 make verify-kratos-60     # Phase 0～3
@@ -219,7 +222,7 @@ API→RPC 地址：`api/etc/super.yaml` 的 `SuperRpc.Endpoints`（本机 `127.0
 ```text
 backend/
 ├── cmd/moe-social/           # 推荐：Hybrid 单进程
-├── cmd/moe-kratos/           # 纯 Kratos 试点（80%，Wire）
+├── cmd/moe-kratos/           # 纯 Kratos 试点（Wire，:1903x）
 ├── internal/conf/moe/v1/     # pilot.proto Bootstrap SSOT
 ├── internal/platform/moeconf/
 ├── internal/platform/moekratos/  # wire_gen.go
@@ -285,14 +288,20 @@ backend/
 - 团队对 go-zero 已熟悉，纯 Kratos 学习 + 迁移成本高；
 - 仅因「想 100% Kratos」而无明确痛点（性能、部署、契约混乱未恶化）。
 
-### 9.4 若做，推荐路线（与 roadmap 一致）
+### 9.4 若做全站迁移，推荐路线
+
+**已启动 FS-0（准备）**；完整分阶段见 [kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md)。
 
 ```text
-阶段 A（可选，1～2 周）  Moe Admin HTTP → proto HTTP 注解 / grpc-gateway
-阶段 B（按月）           选 1 个非 Moe 域试点（如 VIP 只读 API）
-阶段 C                   conf.proto + Wire（可与 B 并行）
-阶段 D                   单二进制部署默认化（moe-social）
-阶段 E                   下线 super.api / super.proto / 双 main
+FS-0  准备（进度 SSOT、域清单）          ← 当前
+FS-1  平台与契约基座
+FS-2  VIP 全量（建议首个业务域）
+FS-3  User 核心
+FS-4  Admin 非 Moe
+FS-5  社交与内容
+FS-6  AI / LLM
+FS-7  实时通道
+FS-8  退役 super.api / super.proto
 ```
 
 每阶段独立验收；**任何阶段失败都可停在 Hybrid**。
@@ -316,7 +325,8 @@ backend/
 | 文件 | 用途 |
 |------|------|
 | [kratos-hybrid-migration-plan.md](./kratos-hybrid-migration-plan.md) | 纪律与禁止项 |
-| [kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md) | **纯 Kratos 执行方案（80%）** |
+| [kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md) | **全站迁移方案（F ~22%）** |
+| [kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md) | 纯 Kratos 试点（B 100%） |
 | [kratos-phase3-roadmap.md](./kratos-phase3-roadmap.md) | 里程碑索引 |
 | [kratos-migration-status.md](./kratos-migration-status.md) | 勾选 |
 | [docs/guidelines/Codex启动指南-后端.md](../guidelines/Codex启动指南-后端.md) | 日常命令 |
