@@ -1,5 +1,7 @@
 # Moe Admin V2 Design System
 
+> **V3 迁移中**：视觉 token、CSS 拆分与实施节奏以 **[DESIGN.md](../DESIGN.md)**、**[css-architecture-v3.md](./css-architecture-v3.md)** 与 **[ui-skeleton-v3.md](./ui-skeleton-v3.md)** 为准。本文件保留 V2 历史描述，供对照。
+
 这份文档是 `moe-admin` 后续页面改版的统一参照。目标不是做“普通后台”，而是做一套有品牌识别、强信息层级、可持续扩展的运营控制台。
 
 ## 目标气质

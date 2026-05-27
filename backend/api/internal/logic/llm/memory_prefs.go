@@ -11,10 +11,10 @@ import (
 
 // UserMemoryAutoLearnEnabled 读取用户是否开启回合后自动提取记忆（默认 true）。
 func UserMemoryAutoLearnEnabled(ctx context.Context, svcCtx *svc.ServiceContext, userID string) bool {
-	if svcCtx == nil || svcCtx.SuperRpcClient == nil || userID == "" {
+	if svcCtx == nil || svcCtx.LLMGW == nil || userID == "" {
 		return true
 	}
-	resp, err := svcCtx.SuperRpcClient.GetAiUserConfig(ctx, &super.GetAiUserConfigReq{UserId: userID})
+	resp, err := svcCtx.LLMGW.GetAiUserConfig(ctx, &super.GetAiUserConfigReq{UserId: userID})
 	if err != nil || resp == nil {
 		return true
 	}

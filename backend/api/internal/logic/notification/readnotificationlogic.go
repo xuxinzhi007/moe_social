@@ -26,7 +26,7 @@ func NewReadNotificationLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *ReadNotificationLogic) ReadNotification(req *types.ReadNotificationReq) (resp *types.BaseResp, err error) {
-	_, err = l.svcCtx.SuperRpcClient.ReadNotification(l.ctx, &super.ReadNotificationReq{
+	_, err = l.svcCtx.UserGW.ReadNotification(l.ctx, &super.ReadNotificationReq{
 		Id:     req.Id,
 		UserId: req.UserId,
 	})

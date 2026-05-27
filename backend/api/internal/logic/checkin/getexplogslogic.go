@@ -26,7 +26,7 @@ func NewGetExpLogsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetExp
 
 func (l *GetExpLogsLogic) GetExpLogs(req *types.GetExpLogsReq) (resp *types.GetExpLogsResp, err error) {
 	// 调用RPC服务获取经验日志
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetExpLogs(l.ctx, &super.GetExpLogsReq{
+	rpcResp, err := l.svcCtx.CheckInGW.GetExpLogs(l.ctx, &super.GetExpLogsReq{
 		UserId:   req.UserId,
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),

@@ -31,6 +31,7 @@ func Start(opts Options) (*zrpc.RpcServer, *svc.ServiceContext, *debug.Monitor, 
 	var c config.Config
 	conf.MustLoad(opts.ConfigFile, &c)
 	ctx := svc.NewServiceContext(c, opts.Migrate)
+	bootstrap.RegisterSocialAchievementHooks()
 
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
 		super.RegisterSuperServer(grpcServer, server.NewSuperServer(ctx))

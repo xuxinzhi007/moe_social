@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	userbiz "backend/internal/biz/user"
+	notifybiz "backend/internal/biz/notify"
 	"backend/model"
 	"backend/rpc/pb/super"
 
@@ -108,6 +109,55 @@ func (s *AppService) CheckUserVip(ctx context.Context, in *super.CheckUserVipReq
 		return nil, err
 	}
 	return &super.CheckUserVipResp{IsVip: active}, nil
+}
+
+// GetVipOrders VIP 订单列表。
+func (s *AppService) GetVipOrders(ctx context.Context, in *super.GetVipOrdersReq) (*super.GetVipOrdersResp, error) {
+	orders, total, err := userbiz.ListVipOrders(ctx, s.db, in.GetUserId(), userbiz.VipOrdersPage{
+		Page:     in.GetPage(),
+		PageSize: in.GetPageSize(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &super.GetVipOrdersResp{Orders: orders, Total: total}, nil
+}
+
+// GetNotifications 通知列表。
+func (s *AppService) GetNotifications(ctx context.Context, in *super.GetNotificationsReq) (*super.GetNotificationsResp, error) {
+	items, total, err := notifybiz.ListInbox(ctx, s.db, in.GetUserId(), notifybiz.InboxPage{
+		Page:     in.GetPage(),
+		PageSize: in.GetPageSize(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &super.GetNotificationsResp{Notifications: items, Total: total}, nil
+}
+
+// GetUnreadCount 未读数。
+func (s *AppService) GetUnreadCount(ctx context.Context, in *super.GetUnreadCountReq) (*super.GetUnreadCountResp, error) {
+	count, err := notifybiz.UnreadCount(ctx, s.db, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	return &super.GetUnreadCountResp{Count: count}, nil
+}
+
+// ReadNotification 标记已读。
+func (s *AppService) ReadNotification(ctx context.Context, in *super.ReadNotificationReq) (*super.ReadNotificationResp, error) {
+	if err := notifybiz.MarkRead(ctx, s.db, in.GetUserId(), in.GetId()); err != nil {
+		return nil, err
+	}
+	return &super.ReadNotificationResp{}, nil
+}
+
+// ReadAllNotifications 全部已读。
+func (s *AppService) ReadAllNotifications(ctx context.Context, in *super.ReadAllNotificationsReq) (*super.ReadAllNotificationsResp, error) {
+	if err := notifybiz.MarkAllRead(ctx, s.db, in.GetUserId()); err != nil {
+		return nil, err
+	}
+	return &super.ReadAllNotificationsResp{}, nil
 }
 
 // DB 暴露给渐进迁移（仅 Hybrid 内部）。

@@ -26,7 +26,7 @@ func NewGetUnreadCountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 }
 
 func (l *GetUnreadCountLogic) GetUnreadCount(req *types.GetUnreadCountReq) (resp *types.GetUnreadCountResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetUnreadCount(l.ctx, &super.GetUnreadCountReq{
+	rpcResp, err := l.svcCtx.UserGW.GetUnreadCount(l.ctx, &super.GetUnreadCountReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

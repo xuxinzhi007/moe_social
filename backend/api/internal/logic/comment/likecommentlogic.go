@@ -26,8 +26,7 @@ func NewLikeCommentLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LikeC
 }
 
 func (l *LikeCommentLogic) LikeComment(req *types.LikeCommentReq) (resp *types.LikeCommentResp, err error) {
-	// 调用RPC服务点赞评论
-	rpcResp, err := l.svcCtx.SuperRpcClient.LikeComment(l.ctx, &super.LikeCommentReq{
+	rpcResp, err := l.svcCtx.CommentGW.LikeComment(l.ctx, &super.LikeCommentReq{
 		CommentId: req.CommentId,
 		UserId:    req.UserId,
 	})

@@ -29,7 +29,7 @@ func NewReportPostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Report
 }
 
 func (l *ReportPostLogic) ReportPost(req *types.ReportPostReq) (resp *types.ReportPostResp, err error) {
-	_, err = l.svcCtx.SuperRpcClient.ReportPost(l.ctx, &super.ReportPostReq{
+	_, err = l.svcCtx.PostGW.ReportPost(l.ctx, &super.ReportPostReq{
 		PostId:         req.PostId,
 		ReporterUserId: req.ReporterUserId,
 		Reason:         req.Reason,

@@ -26,7 +26,7 @@ func NewAdminDeleteGiftLogic(ctx context.Context, svcCtx *svc.ServiceContext) *A
 }
 
 func (l *AdminDeleteGiftLogic) AdminDeleteGift(req *types.AdminDeleteGiftReq) (resp *types.AdminDeleteGiftResp, err error) {
-	_, err = l.svcCtx.SuperRpcClient.AdminDeleteGift(l.ctx, &super.AdminDeleteGiftReq{
+	_, err = l.svcCtx.AdminGW.AdminDeleteGift(l.ctx, &super.AdminDeleteGiftReq{
 		GiftId: req.GiftId,
 	})
 	if err != nil {

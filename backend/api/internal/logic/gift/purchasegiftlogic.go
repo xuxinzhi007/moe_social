@@ -29,7 +29,7 @@ func (l *PurchaseGiftLogic) PurchaseGift(req *types.PurchaseGiftReq) (resp *type
 	if qty <= 0 {
 		qty = 1
 	}
-	rpcResp, err := l.svcCtx.SuperRpcClient.PurchaseGift(l.ctx, &super.PurchaseGiftReq{
+	rpcResp, err := l.svcCtx.GiftGW.PurchaseGift(l.ctx, &super.PurchaseGiftReq{
 		UserId:   req.UserId,
 		GiftId:   req.GiftId,
 		Quantity: qty,

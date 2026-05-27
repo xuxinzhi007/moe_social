@@ -25,7 +25,7 @@ func NewGetUserAchievementSummaryLogic(ctx context.Context, svcCtx *svc.ServiceC
 }
 
 func (l *GetUserAchievementSummaryLogic) GetUserAchievementSummary(req *types.GetUserAchievementSummaryReq) (*types.GetUserAchievementSummaryResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetUserAchievementSummary(l.ctx, &super.GetUserAchievementSummaryReq{
+	rpcResp, err := l.svcCtx.AchievementGW.GetUserAchievementSummary(l.ctx, &super.GetUserAchievementSummaryReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

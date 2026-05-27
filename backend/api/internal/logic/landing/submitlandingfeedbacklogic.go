@@ -38,7 +38,7 @@ func (l *SubmitLandingFeedbackLogic) SubmitLandingFeedback(
 		source = "official-site"
 	}
 
-	_, err = l.svcCtx.SuperRpcClient.SubmitLandingFeedback(l.ctx, &super.SubmitLandingFeedbackReq{
+	_, err = l.svcCtx.LandingGW.SubmitLandingFeedback(l.ctx, &super.SubmitLandingFeedbackReq{
 		Email:     strings.TrimSpace(req.Email),
 		Category:  strings.TrimSpace(req.Category),
 		Content:   req.Content,
@@ -48,11 +48,11 @@ func (l *SubmitLandingFeedbackLogic) SubmitLandingFeedback(
 	})
 	if err != nil {
 		return &types.SubmitLandingFeedbackResp{
-			BaseResp: common.HandleRPCError(err, ""),
+			BaseResp: common.HandleLandingGWError(err, ""),
 		}, nil
 	}
 
 	return &types.SubmitLandingFeedbackResp{
-		BaseResp: common.HandleRPCError(nil, "感谢你的反馈，我们已收到"),
+		BaseResp: common.HandleLandingGWError(nil, "感谢你的反馈，我们已收到"),
 	}, nil
 }

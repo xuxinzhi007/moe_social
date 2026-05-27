@@ -25,7 +25,7 @@ func NewGetUserUnlockedAchievementsLogic(ctx context.Context, svcCtx *svc.Servic
 }
 
 func (l *GetUserUnlockedAchievementsLogic) GetUserUnlockedAchievements(req *types.GetUserUnlockedAchievementsReq) (*types.GetUserUnlockedAchievementsResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetUserUnlockedAchievements(l.ctx, &super.GetUserUnlockedAchievementsReq{
+	rpcResp, err := l.svcCtx.AchievementGW.GetUserUnlockedAchievements(l.ctx, &super.GetUserUnlockedAchievementsReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

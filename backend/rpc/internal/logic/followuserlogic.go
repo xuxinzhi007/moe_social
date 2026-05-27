@@ -4,7 +4,7 @@ import (
 	"context"
 
 	userbiz "backend/internal/biz/user"
-	"backend/rpc/internal/achievement"
+	"backend/pkg/achievement"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 

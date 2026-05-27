@@ -15,8 +15,10 @@ alwaysApply: false
 - 涉及新接口时，先改 `backend/api/super.api` 并 `cd backend && make gen`，再对接前端类型。
 
 ## 样式
-- 主题变量与类名以 `moe-admin/src/styles/moe-admin-theme.css` 为准，保持与现有管理页一致的紫蓝渐变与卡片圆角。
-- 列表页尽量全宽网格，避免内容挤在左侧（使用 `platform-tab-rail`、`admin-quick-grid` 等已有类）。
+- Token 与 class 以 `moe-admin/src/styles/tokens/` + 拆分后的 CSS 模块为准（见 `DESIGN.md`、`docs/css-architecture-v3.md`）。
+- 页面 **必须** 使用 `src/ui/` 骨架组件（`ListPageLayout` 等），见 `docs/ui-skeleton-v3.md`；禁止复制整页 layout JSX。
+- 复用 `src/components/` 业务组件（`PageTabs`、`DataEnvBar`、`AdminIcon`、`AdminTag`）。
+- 布局：`admin-page` 容器、`PageHead` / `page-head-row`；**不要**再引入 `platform-hero` / `content-hero`。
 
 ## 提交前检查
 - `cd moe-admin && npm run build`

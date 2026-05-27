@@ -39,7 +39,7 @@ func (l *CreatePostLogic) CreatePost(req *types.CreatePostReq) (resp *types.Crea
 	}
 
 	// 调用RPC服务创建帖子
-	rpcResp, err := l.svcCtx.SuperRpcClient.CreatePost(l.ctx, &super.CreatePostReq{
+	rpcResp, err := l.svcCtx.PostGW.CreatePost(l.ctx, &super.CreatePostReq{
 		UserId:           req.UserId,
 		Content:          req.Content,
 		Images:           req.Images,

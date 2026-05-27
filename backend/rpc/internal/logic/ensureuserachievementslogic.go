@@ -2,10 +2,11 @@ package logic
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"strconv"
 
-	"backend/rpc/internal/achievement"
+	achievementapp "backend/internal/service/achievement"
+	achievementbiz "backend/internal/biz/achievement"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -19,31 +20,17 @@ type EnsureUserAchievementsLogic struct {
 }
 
 func NewEnsureUserAchievementsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *EnsureUserAchievementsLogic {
-	return &EnsureUserAchievementsLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+	return &EnsureUserAchievementsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
 func (l *EnsureUserAchievementsLogic) EnsureUserAchievements(in *super.EnsureUserAchievementsReq) (*super.EnsureUserAchievementsResp, error) {
-	userID, err := strconv.ParseUint(in.UserId, 10, 32)
+	app := achievementapp.New(l.svcCtx.DB)
+	resp, err := app.EnsureUserAchievements(l.ctx, in)
 	if err != nil {
-		return nil, fmt.Errorf("无效的用户ID: %v", err)
-	}
-
-	tx := l.svcCtx.DB.Begin()
-	engine := achievement.NewEngine(l.svcCtx.DB)
-	unlocks, err := engine.EnsureUserInitialized(tx, uint(userID))
-	if err != nil {
-		tx.Rollback()
+		if errors.Is(err, achievementbiz.ErrInvalidUserID) {
+			return nil, fmt.Errorf("无效的用户ID: %v", err)
+		}
 		return nil, err
 	}
-	if err := tx.Commit().Error; err != nil {
-		return nil, err
-	}
-
-	return &super.EnsureUserAchievementsResp{
-		NewAchievements: achievement.UnlocksToProto(unlocks),
-	}, nil
+	return resp, nil
 }

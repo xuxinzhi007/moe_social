@@ -22,7 +22,7 @@ func NewAdminDeleteAnnouncementLogic(ctx context.Context, svcCtx *svc.ServiceCon
 }
 
 func (l *AdminDeleteAnnouncementLogic) AdminDeleteAnnouncement(req *types.AdminDeleteAnnouncementReq) (*types.AdminDeleteAnnouncementResp, error) {
-	_, err := l.svcCtx.SuperRpcClient.AdminDeleteAnnouncement(l.ctx, &super.AdminDeleteAnnouncementReq{
+	_, err := l.svcCtx.AdminGW.AdminDeleteAnnouncement(l.ctx, &super.AdminDeleteAnnouncementReq{
 		AnnouncementId: req.AnnouncementId,
 	})
 	if err != nil {

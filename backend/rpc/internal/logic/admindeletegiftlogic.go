@@ -2,8 +2,11 @@ package logic
 
 import (
 	"context"
+	"errors"
 
-	"backend/model"
+	adminbiz "backend/internal/biz/admin"
+	giftbiz "backend/internal/biz/gift"
+	adminapp "backend/internal/service/admin"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
@@ -18,27 +21,20 @@ type AdminDeleteGiftLogic struct {
 }
 
 func NewAdminDeleteGiftLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AdminDeleteGiftLogic {
-	return &AdminDeleteGiftLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+	return &AdminDeleteGiftLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
 func (l *AdminDeleteGiftLogic) AdminDeleteGift(in *super.AdminDeleteGiftReq) (*super.AdminDeleteGiftResp, error) {
-	giftID, err := parseGiftID(in.GetGiftId())
+	_, err := adminapp.New(l.svcCtx.DB).AdminDeleteGift(l.ctx, in)
 	if err != nil {
-		return nil, err
-	}
-
-	res := l.svcCtx.DB.Delete(&model.Gift{}, giftID)
-	if res.Error != nil {
-		l.Errorf("[admin] delete gift: %v", res.Error)
+		if errors.Is(err, adminbiz.ErrGiftNotFound) {
+			return nil, errorx.NotFound("礼物不存在")
+		}
+		if errors.Is(err, giftbiz.ErrInvalidGiftID) || errors.Is(err, giftbiz.ErrEmptyGiftID) {
+			return nil, errorx.InvalidArgument("无效礼物 ID")
+		}
+		l.Errorf("[admin] delete gift: %v", err)
 		return nil, errorx.Internal("删除礼物失败")
 	}
-	if res.RowsAffected == 0 {
-		return nil, errorx.NotFound("礼物不存在")
-	}
-
 	return &super.AdminDeleteGiftResp{}, nil
 }

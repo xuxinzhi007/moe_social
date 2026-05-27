@@ -26,7 +26,7 @@ func NewGetGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetGroup
 }
 
 func (l *GetGroupLogic) GetGroup(req *types.GetGroupReq) (resp *types.GetGroupResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetGroup(l.ctx, &super.GetGroupReq{
+	rpcResp, err := l.svcCtx.CommunityGW.GetGroup(l.ctx, &super.GetGroupReq{
 		GroupId: req.GroupId,
 		UserId:  req.UserId,
 	})

@@ -26,8 +26,7 @@ func NewLikePostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LikePost
 }
 
 func (l *LikePostLogic) LikePost(req *types.LikePostReq) (resp *types.LikePostResp, err error) {
-	// 调用RPC服务点赞帖子
-	rpcResp, err := l.svcCtx.SuperRpcClient.LikePost(l.ctx, &super.LikePostReq{
+	rpcResp, err := l.svcCtx.PostGW.LikePost(l.ctx, &super.LikePostReq{
 		PostId: req.PostId,
 		UserId: req.UserId,
 	})

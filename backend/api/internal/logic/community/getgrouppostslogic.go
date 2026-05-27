@@ -25,7 +25,7 @@ func NewGetGroupPostsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 }
 
 func (l *GetGroupPostsLogic) GetGroupPosts(req *types.GetGroupPostsReq) (resp *types.GetGroupPostsResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetGroupPosts(l.ctx, &super.GetGroupPostsReq{
+	rpcResp, err := l.svcCtx.CommunityGW.GetGroupPosts(l.ctx, &super.GetGroupPostsReq{
 		GroupId:  req.GroupId,
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),

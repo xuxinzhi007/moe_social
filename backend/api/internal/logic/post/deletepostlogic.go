@@ -26,7 +26,7 @@ func NewDeletePostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Delete
 }
 
 func (l *DeletePostLogic) DeletePost(req *types.DeletePostReq) (resp *types.DeletePostResp, err error) {
-	_, err = l.svcCtx.SuperRpcClient.DeletePost(l.ctx, &super.DeletePostReq{
+	_, err = l.svcCtx.PostGW.DeletePost(l.ctx, &super.DeletePostReq{
 		PostId: req.PostId,
 		UserId: req.UserId,
 	})

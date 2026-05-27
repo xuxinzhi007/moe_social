@@ -23,7 +23,7 @@ func NewAdminSendNotificationLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *AdminSendNotificationLogic) AdminSendNotification(req *types.AdminSendNotificationReq) (*types.AdminSendNotificationResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminSendNotification(l.ctx, &super.AdminSendNotificationReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminSendNotification(l.ctx, &super.AdminSendNotificationReq{
 		UserId:  req.UserId,
 		Title:   req.Title,
 		Content: req.Content,

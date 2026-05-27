@@ -26,7 +26,7 @@ func NewGetNotificationsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *GetNotificationsLogic) GetNotifications(req *types.GetNotificationsReq) (resp *types.GetNotificationsResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetNotifications(l.ctx, &super.GetNotificationsReq{
+	rpcResp, err := l.svcCtx.UserGW.GetNotifications(l.ctx, &super.GetNotificationsReq{
 		UserId:   req.UserId,
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),

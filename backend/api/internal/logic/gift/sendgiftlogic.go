@@ -52,7 +52,7 @@ func rpcGiftRecordToAPI(r *super.GiftRecord) types.GiftRecord {
 }
 
 func (l *SendGiftLogic) SendGift(req *types.SendGiftReq) (resp *types.SendGiftResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.SendGift(l.ctx, &super.SendGiftReq{
+	rpcResp, err := l.svcCtx.GiftGW.SendGift(l.ctx, &super.SendGiftReq{
 		FromUserId: req.UserId,
 		ToUserId:   req.ToUserId,
 		GiftId:     req.GiftId,

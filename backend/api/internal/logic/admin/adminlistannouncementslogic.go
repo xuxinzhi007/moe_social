@@ -22,7 +22,7 @@ func NewAdminListAnnouncementsLogic(ctx context.Context, svcCtx *svc.ServiceCont
 }
 
 func (l *AdminListAnnouncementsLogic) AdminListAnnouncements(req *types.AdminListAnnouncementsReq) (*types.AdminListAnnouncementsResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListAnnouncements(l.ctx, &super.AdminListAnnouncementsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListAnnouncements(l.ctx, &super.AdminListAnnouncementsReq{
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
 		Keyword:  req.Keyword,

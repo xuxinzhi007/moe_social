@@ -36,7 +36,7 @@ func persistChatTurnsAfterReply(
 }
 
 func recordChatTurnAsync(svcCtx *svc.ServiceContext, userID, sessionID, sourceMsgID, model, role, content string) {
-	if svcCtx == nil || svcCtx.SuperRpcClient == nil {
+	if svcCtx == nil || svcCtx.LLMGW == nil {
 		return
 	}
 	uid, err := strconv.ParseUint(strings.TrimSpace(userID), 10, 64)
@@ -45,7 +45,7 @@ func recordChatTurnAsync(svcCtx *svc.ServiceContext, userID, sessionID, sourceMs
 	}
 	go func() {
 		ctx := context.Background()
-		_, _ = svcCtx.SuperRpcClient.RecordLlmChatTurn(ctx, &super.RecordLlmChatTurnReq{
+		_, _ = svcCtx.LLMGW.RecordLlmChatTurn(ctx, &super.RecordLlmChatTurnReq{
 			UserId:      uid,
 			SessionId:   sessionID,
 			SourceMsgId: sourceMsgID,
