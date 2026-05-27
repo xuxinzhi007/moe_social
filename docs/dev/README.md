@@ -39,11 +39,12 @@
 |------|------|
 | [../../moe-admin/README.md](../../moe-admin/README.md) | Moe Admin 启动 |
 | [moe-admin.md](./moe-admin.md) | 管理台与 API/Agent 分工 |
+| [admin-rpc-runtime-guide.md](./admin-rpc-runtime-guide.md) | **开发启动、RPC 监控（React）、进程内存** |
 | [moe-admin-menu-map.md](./moe-admin-menu-map.md) | 菜单与路由 |
 | [../../moe-admin/docs/admin-design-system.md](../../moe-admin/docs/admin-design-system.md) | 管理台设计参考 |
 | [deploy-platform.md](./deploy-platform.md) | 部署分工 SSOT |
 | [devtools.html](./devtools.html) | 开发者工具台 |
-| [tools/rpc-monitor.html](./tools/rpc-monitor.html) | RPC 监控 |
+| [tools/rpc-monitor.html](./tools/rpc-monitor.html) | RPC 监控（遗留 HTML；管理台请用 [admin-rpc-runtime-guide](./admin-rpc-runtime-guide.md)） |
 
 ## 集成与专项
 

@@ -26,4 +26,7 @@ Moe Social 专属管理台：浅色 Element 风格布局 + 现有 go-zero Admin 
 - **业务**：工作台、App 用户、官网反馈（`X-Admin-Token`）
 - **运维**：构建 / Docker / 发布 / 任务 / RPC（Deploy Token）
 
-文档：[docs/dev/moe-admin.md](../docs/dev/moe-admin.md)
+文档：
+
+- [docs/dev/moe-admin.md](../docs/dev/moe-admin.md) — 选型与分工  
+- [docs/dev/admin-rpc-runtime-guide.md](../docs/dev/admin-rpc-runtime-guide.md) — **启动、RPC 监控、进程内存（标注 SSOT）**
