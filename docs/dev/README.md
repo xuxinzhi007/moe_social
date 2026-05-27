@@ -6,34 +6,44 @@
 
 | 文档 | 用途 |
 |------|------|
-| [../product/moe-app-product-assessment.md](../product/moe-app-product-assessment.md) | **产品成熟度**（官网 vs App、稳定性、Admin 运营商品） |
-| [环境配置说明.md](./环境配置说明.md) | 本地 / 线上环境 |
+| [llm-inference-and-memory-vision.md](./llm-inference-and-memory-vision.md) | **推理服务 + 记忆分层**（llama-server、配置键、产品对齐） |
+| [../product/moe-app-product-assessment.md](../product/moe-app-product-assessment.md) | 产品成熟度（官网 vs App、Admin） |
+| [环境配置说明.md](./环境配置说明.md) | 本地 / 线上 API 基址 |
 | [快速调试步骤.md](./快速调试步骤.md) | Flutter 模拟器与运行 |
+| [ports.md](./ports.md) | 本地端口（API 8888、Admin 5173、Agent 19010） |
 | [API调试指南.md](./API调试指南.md) | 接口调试 |
 | [应用配置与全局常量分层约定.md](./应用配置与全局常量分层约定.md) | 配置分层 |
 | [打包流程.md](./打包流程.md) | 构建发布 |
 | [android-release-signing.md](./android-release-signing.md) | Android 签名 |
 
-## 记忆系统（SSOT）
+## 记忆与智能栈
 
 | 文档 | 用途 |
 |------|------|
-| [用户记忆系统-OpenClaw式演进设计.md](./用户记忆系统-OpenClaw式演进设计.md) | **架构唯一事实源** |
-| [Moe-Intelligence-Stack-v1.md](./Moe-Intelligence-Stack-v1.md) | **Moe Core v1**（工具 / Post Pulse / Bot Runtime） |
+| [llm-inference-and-memory-vision.md](./llm-inference-and-memory-vision.md) | 推理配置与记忆「学习」路径 |
+| [用户记忆系统-OpenClaw式演进设计.md](./用户记忆系统-OpenClaw式演进设计.md) | **记忆架构 SSOT** |
+| [Moe-Intelligence-Stack-v1.md](./Moe-Intelligence-Stack-v1.md) | Moe Core v1（工具 / Post Pulse / Bot Runtime） |
 | [记忆系统-2026-05-20-变更整理.md](./记忆系统-2026-05-20-变更整理.md) | 近期变更与验收 |
 | [记忆系统-开源对标调研.md](./记忆系统-开源对标调研.md) | OpenClaw / 酒馆对标 |
 | [用户级记忆统一改造验收脚本.md](./用户级记忆统一改造验收脚本.md) | E2E 验收 |
-| [ports.md](./ports.md) | **本地开发端口表**（Moe 专属 19010–19019） |
-| [devtools.html](./devtools.html) | **开发者 / 运维工具台**（飞书 / RPC / 记忆 / 部署） |
-| [deploy-platform.md](./deploy-platform.md) | **部署分工 SSOT**（本机编包 / 云 backend / GitHub APK） |
-| [tools/deploy-ops.html](./tools/deploy-ops.html) | 运维部署中心（Moe Ops · HTML） |
-| [../../moe-admin/README.md](../../moe-admin/README.md) | **Moe Admin · React**（`cd moe-admin && npm run dev`） |
 | [memory-system-dashboard.html](./memory-system-dashboard.html) | 记忆监控台 |
-| [tools/feishu-export.html](./tools/feishu-export.html) | 飞书导出命令生成 |
-| [tools/rpc-monitor.html](./tools/rpc-monitor.html) | RPC 性能监控 |
 | [memory/README.md](./memory/README.md) | 代码模块地图 |
+| [local-llm-tools.md](./local-llm-tools.md) | App 内本机 GGUF + 工具调用 |
+| [local-model-download.md](./local-model-download.md) | 离线模型下载 |
 
-历史 Ollama 记忆文档已迁入 [../archive/memory/](../archive/memory/)。
+历史 Ollama 记忆文档：`ollama用户级记忆*.md` 为跳转 stub，全文在 [../archive/memory/](../archive/memory/)。
+
+## 管理台与运维
+
+| 文档 | 用途 |
+|------|------|
+| [../../moe-admin/README.md](../../moe-admin/README.md) | Moe Admin 启动 |
+| [moe-admin.md](./moe-admin.md) | 管理台与 API/Agent 分工 |
+| [moe-admin-menu-map.md](./moe-admin-menu-map.md) | 菜单与路由 |
+| [../../moe-admin/docs/admin-design-system.md](../../moe-admin/docs/admin-design-system.md) | 管理台设计参考 |
+| [deploy-platform.md](./deploy-platform.md) | 部署分工 SSOT |
+| [devtools.html](./devtools.html) | 开发者工具台 |
+| [tools/rpc-monitor.html](./tools/rpc-monitor.html) | RPC 监控 |
 
 ## 集成与专项
 

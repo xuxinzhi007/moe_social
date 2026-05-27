@@ -1,6 +1,17 @@
 # Codex Startup Guide（前端）
 
-本项目前端位于 `lib/`，基于 **Flutter + Provider**。默认沿用现有页面分域与组件复用方式，不引入与当前工程冲突的新架构。
+## 两套前端（改代码前先确认目录）
+
+| 目录 | 技术栈 | 规范 |
+|------|--------|------|
+| `lib/` | Flutter + Provider | 本文件下文 + `.cursorrules` 萌系 UI |
+| `moe-admin/` | React + Vite + TypeScript | `moe-admin/src/styles/moe-admin-theme.css`、`moe-admin/docs/admin-design-system.md`（设计参考） |
+
+管理台 **不** 使用 Flutter 组件；改动 `moe-admin/` 时不要套用 `lib/widgets` 约定。交付前在 `moe-admin/` 执行 `npm run build`。
+
+---
+
+本项目 App 前端位于 `lib/`，基于 **Flutter + Provider**。默认沿用现有页面分域与组件复用方式，不引入与当前工程冲突的新架构。
 
 ## 项目结构（前端）
 

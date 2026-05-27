@@ -7,10 +7,10 @@ import (
 )
 
 func inferenceConfigFromSvc(svcCtx *svc.ServiceContext) (common.InferenceConfig, error) {
-	return common.InferenceFromOllamaConf(svcCtx.Config.Ollama)
+	return common.InferenceFromLLMConf(svcCtx.Config.LLMInference)
 }
 
-func toCommonMessages(messages []ollamaMessage) []common.ChatMessage {
+func toCommonMessages(messages []llmChatMessage) []common.ChatMessage {
 	out := make([]common.ChatMessage, len(messages))
 	for i, m := range messages {
 		out[i] = common.ChatMessage{Role: m.Role, Content: m.Content}
@@ -21,7 +21,7 @@ func toCommonMessages(messages []ollamaMessage) []common.ChatMessage {
 func (l *ChatLogic) postInferenceChat(
 	cfg common.InferenceConfig,
 	model string,
-	messages []ollamaMessage,
+	messages []llmChatMessage,
 	opts common.ChatOptions,
 ) (string, error) {
 	client := utils.NewHTTPClient(cfg.TimeoutSeconds)

@@ -68,7 +68,7 @@ func HybridSearchUserFacingMemories(
 
 	var queryVec []float32
 	if q := strings.TrimSpace(query); q != "" {
-		chain := embed.NewChain(embed.LoadProviders(svcCtx.Config.Ollama.BaseUrl))
+		chain := embed.NewChain(embed.LoadProviders(svcCtx.Config.LLMInference.BaseUrl))
 		vecs, prov, model, err := chain.Embed(ctx, []string{q})
 		if err != nil {
 			logger.Errorf("query embed failed user_id=%s: %v", userID, err)

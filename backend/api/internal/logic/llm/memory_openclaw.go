@@ -61,7 +61,7 @@ func lastUserMessageContent(messages []types.LlmMessage) string {
 // memoryFlushBeforeCompact 在对话压缩/摘要前落盘事实（OpenClaw memory flush）。
 func (l *ChatLogic) memoryFlushBeforeCompact(
 	userID, sessionID, sourceMsgID string,
-	segment []ollamaMessage,
+	segment []llmChatMessage,
 ) {
 	if strings.TrimSpace(userID) == "" || len(segment) == 0 {
 		return
@@ -95,14 +95,14 @@ func (l *ChatLogic) memoryFlushBeforeCompact(
 
 	model := l.memoryExtractModel()
 	baseURL := l.inferenceBaseURL()
-	go func(uid, sid, msgID, mdl, base string, msgs []ollamaMessage) {
+	go func(uid, sid, msgID, mdl, base string, msgs []llmChatMessage) {
 		bgCtx, cancel := backgroundMemoryExtractContext(60)
 		defer cancel()
 		l.extractAndSaveMemoriesWithSource(bgCtx, uid, mdl, base, 60, sid, msgID, msgs, sourcePreCompactFlush)
 	}(userID, sessionID, sourceMsgID, model, baseURL, segment)
 }
 
-func (l *ChatLogic) appendDailyObservation(userID, sessionID, sourceMsgID string, segment []ollamaMessage) {
+func (l *ChatLogic) appendDailyObservation(userID, sessionID, sourceMsgID string, segment []llmChatMessage) {
 	var userSnippet, assistantSnippet string
 	for i := len(segment) - 1; i >= 0; i-- {
 		if assistantSnippet == "" && segment[i].Role == "assistant" {
@@ -161,12 +161,12 @@ func truncateRunes(s string, max int) string {
 }
 
 func (l *ChatLogic) memoryExtractModel() string {
-	m := strings.TrimSpace(l.svcCtx.Config.Ollama.MemoryModel)
+	m := strings.TrimSpace(l.svcCtx.Config.LLMInference.MemoryModel)
 	return m
 }
 
 func (l *ChatLogic) inferenceBaseURL() string {
-	cfg, err := common.InferenceFromOllamaConf(l.svcCtx.Config.Ollama)
+	cfg, err := common.InferenceFromLLMConf(l.svcCtx.Config.LLMInference)
 	if err != nil {
 		return ""
 	}

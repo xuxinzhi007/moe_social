@@ -1,0 +1,23 @@
+---
+description: Admin console (moe-admin) React/TS UI spec
+globs: moe-admin/**/*
+alwaysApply: false
+---
+
+# 管理台 AI 生成规范（moe-admin）
+
+在修改 `moe-admin/` 下代码时，必须先阅读本规范与 `docs/guidelines/Codex启动指南-前端.md` 中的「两套前端」章节。
+
+## 修改前确认
+- 复用 `moe-admin/src/components/` 已有组件（如 `PageTabs`、`DataEnvBar`、`AdminIcon`）。
+- 页面布局优先：`admin-page` 容器、`page-head-row` 标题行；**不要**再引入已废弃的大块 `platform-hero` / `content-hero` 横幅（除非产品明确要求）。
+- API 调用走 `moe-admin/src/api/adminClient.ts`，不在页面内散落 `fetch` URL。
+- 涉及新接口时，先改 `backend/api/super.api` 并 `cd backend && make gen`，再对接前端类型。
+
+## 样式
+- 主题变量与类名以 `moe-admin/src/styles/moe-admin-theme.css` 为准，保持与现有管理页一致的紫蓝渐变与卡片圆角。
+- 列表页尽量全宽网格，避免内容挤在左侧（使用 `platform-tab-rail`、`admin-quick-grid` 等已有类）。
+
+## 提交前检查
+- `cd moe-admin && npm run build`
+- 仅改 `moe-admin/` 与必要后端契约，不混入 `lib/` Flutter 文件

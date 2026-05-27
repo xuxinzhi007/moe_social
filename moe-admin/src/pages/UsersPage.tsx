@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { AdminFormDrawer } from '../components/AdminFormDrawer'
 import { AdminTag, TagRow } from '../components/AdminTag'
 import { DataEnvBar } from '../components/DataEnvBar'
+import { PageInsightStrip } from '../components/PageInsightStrip'
 import { FormField } from '../components/FormField'
 import { IdCell } from '../components/IdCell'
 import { UserCell } from '../components/UserCell'
@@ -134,11 +135,12 @@ export function UsersPage() {
       <div className="page-head page-head-row">
         <div>
           <h2>App 用户</h2>
-          <p>管理 App 注册用户，含头像、角色与 VIP 标记</p>
+          <p className="muted">管理 App 注册用户，含头像、角色与 VIP 标记</p>
         </div>
       </div>
 
       <DataEnvBar note="用户数据来自当前所选业务 API" />
+      <PageInsightStrip items={[{ label: '匹配用户', value: loading ? '…' : total }]} />
 
       <div className="panel">
         <form

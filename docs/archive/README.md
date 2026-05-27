@@ -51,6 +51,14 @@
 | 项目现状盘点与差距分析-2026-05-18.md | 产品快照 |
 | 需求可行性分析报告.md | 早期可行性分析 |
 
+### root/ — 原仓库根目录一次性文档
+
+见 [root/README.md](./root/README.md)（扫雷、扫码、成就、错误处理分析等）。
+
+### backend/ — 原 `backend/` 历史状态文档
+
+见 [backend/README.md](./backend/README.md)（实现状态清单、API 层调整完成记录等）。
+
 ---
 
 返回 [文档首页](../README.md)

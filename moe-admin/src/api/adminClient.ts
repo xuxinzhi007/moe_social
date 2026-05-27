@@ -77,6 +77,61 @@ export type AdminUserBehaviorSummary = {
   top_screens?: AdminUserBehaviorScreenStat[]
 }
 
+export type MoeBrainGenerationMeta = {
+  post_uses_tool_memory: boolean
+  memories_synced: number
+  episodes_in_prompt: number
+  prompt_memory_lines: number
+  prompt_preview: string
+  note: string
+  prompt_est_tokens?: number
+  context_limit?: number
+  context_used_pct?: number
+}
+
+export type MoeInferenceStatusData = {
+  online: boolean
+  base_url: string
+  models: string[]
+  default_post_model: string
+  runtime_model?: string
+  effective_model?: string
+  model_loaded: boolean
+  context_limit?: number
+  context_source?: string
+  message?: string
+}
+
+export type MoePipelineStepItem = {
+  key: string
+  label: string
+  status: string
+  detail?: string
+  duration_ms?: number
+}
+
+export type MoeHostMetrics = {
+  proc_alloc_mb?: number
+  proc_sys_mb?: number
+  num_cpu?: number
+  num_goroutine?: number
+  inference_online?: boolean
+  inference_base_url?: string
+  inference_models?: number
+  gpu_note?: string
+}
+
+export type MoeBrainPipelineData = {
+  agent_key: string
+  run_at?: string
+  ok: boolean
+  detail?: string
+  post_id?: string
+  total_duration_ms?: number
+  host_metrics?: MoeHostMetrics
+  steps: MoePipelineStepItem[]
+}
+
 export type AdminUserProfileData = {
   user: {
     id: string
@@ -931,6 +986,21 @@ export function createAdminClient(opts: AdminClientOptions) {
         body: JSON.stringify(body),
       }),
 
+    updateAiAgent: (body: {
+      user_id: string
+      agent_id: string
+      payload_json: string
+    }) =>
+      api<BaseResp<unknown>>(adminApiPath('/ai/agents'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: body.user_id,
+          agent_id: body.agent_id,
+          payload_json: body.payload_json,
+        }),
+      }),
+
     listFollows: (params: {
       page?: number
       page_size?: number
@@ -1364,6 +1434,18 @@ export function createAdminClient(opts: AdminClientOptions) {
         body: JSON.stringify({}),
       }),
 
+    getMoeInferenceStatus: (agentKey?: string) => {
+      const q = agentKey ? `?agent_key=${encodeURIComponent(agentKey)}` : ''
+      return api<BaseResp<MoeInferenceStatusData>>(
+        `${adminApiPath('/moe/inference/status')}${q}`,
+      )
+    },
+
+    getMoeBrainPipeline: (agentKey: string) =>
+      api<BaseResp<MoeBrainPipelineData>>(
+        `${adminApiPath('/moe/brain/pipeline')}?agent_key=${encodeURIComponent(agentKey)}`,
+      ),
+
     getMoeBrain: (agentKey: string) =>
       api<
         BaseResp<{
@@ -1393,6 +1475,7 @@ export function createAdminClient(opts: AdminClientOptions) {
             memory_type: string
             updated_at: string
           }>
+          generation_meta?: MoeBrainGenerationMeta
         }>
       >(adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/brain`)),
 

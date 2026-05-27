@@ -27,7 +27,7 @@
 ### AI 与自动化
 - AI 智能体列表 / 编辑、多模型聊天、内容生成
 - Provider Profile、Lorebook / 世界书、角色卡广场
-- 用户记忆管理（架构 SSOT：[docs/dev/用户记忆系统-OpenClaw式演进设计.md](docs/dev/用户记忆系统-OpenClaw式演进设计.md)）
+- 用户记忆管理（[记忆架构](docs/dev/用户记忆系统-OpenClaw式演进设计.md) · [推理与记忆](docs/dev/llm-inference-and-memory-vision.md)）
 - **AutoGLM** 子系统（配置、任务执行，见 [docs/autoglm/AutoGLM_README.md](docs/autoglm/AutoGLM_README.md)）
 
 ### 其他

@@ -2041,6 +2041,66 @@ message MoeBrainMemoryItem {
   string updated_at = 4;
 }
 
+message MoeBrainGenerationMeta {
+  bool post_uses_tool_memory = 1;
+  int32 memories_synced = 2;
+  int32 episodes_in_prompt = 3;
+  int32 prompt_memory_lines = 4;
+  string prompt_preview = 5;
+  string note = 6;
+  int32 prompt_est_tokens = 7;
+  int32 context_limit = 8;
+  double context_used_pct = 9;
+}
+
+message MoePipelineStepItem {
+  string key = 1;
+  string label = 2;
+  string status = 3;
+  string detail = 4;
+  string at = 5;
+  int64 duration_ms = 6;
+}
+
+message MoeHostMetrics {
+  int64 proc_alloc_mb = 1;
+  int64 proc_sys_mb = 2;
+  int32 num_cpu = 3;
+  int32 num_goroutine = 4;
+  bool inference_online = 5;
+  string inference_base_url = 6;
+  int32 inference_models = 7;
+  string gpu_note = 8;
+}
+
+message AdminGetMoeBrainPipelineReq {
+  string agent_key = 1;
+}
+
+message AdminGetMoeBrainPipelineResp {
+  string agent_key = 1;
+  bool ok = 2;
+  string detail = 3;
+  string run_at = 4;
+  repeated MoePipelineStepItem steps = 5;
+  int64 total_duration_ms = 6;
+  MoeHostMetrics host_metrics = 7;
+  string post_id = 8;
+}
+
+message RecordLlmChatTurnReq {
+  uint64 user_id = 1;
+  string session_id = 2;
+  string source_msg_id = 3;
+  string model = 4;
+  string role = 5;
+  string content = 6;
+}
+
+message RecordLlmChatTurnResp {
+  bool ok = 1;
+}
+
 message AdminGetMoeBrainReq {
   string agent_key = 1;
 }
@@ -2054,6 +2114,7 @@ message AdminGetMoeBrainResp {
   repeated MoeBrainTagStat tag_stats = 6;
   repeated MoeBrainEpisodeItem episodes = 7;
   repeated MoeBrainMemoryItem memories = 8;
+  MoeBrainGenerationMeta generation_meta = 9;
 }
 
 message AdminUpdateMoeBrainPolicyReq {
@@ -2298,6 +2359,8 @@ service Super {
   rpc AdminDeleteMoeBrainEpisode(AdminDeleteMoeBrainEpisodeReq) returns (AdminDeleteMoeBrainEpisodeResp);
   rpc AdminRefineMoeBrainEpisode(AdminRefineMoeBrainEpisodeReq) returns (AdminRefineMoeBrainEpisodeResp);
   rpc AdminCurateMoeBrain(AdminCurateMoeBrainReq) returns (AdminCurateMoeBrainResp);
+  rpc AdminGetMoeBrainPipeline(AdminGetMoeBrainPipelineReq) returns (AdminGetMoeBrainPipelineResp);
+  rpc RecordLlmChatTurn(RecordLlmChatTurnReq) returns (RecordLlmChatTurnResp);
   rpc AdminGetMoeToolStats(AdminGetMoeToolStatsReq) returns (AdminGetMoeToolStatsResp);
   rpc AdminListMoeToolCalls(AdminListMoeToolCallsReq) returns (AdminListMoeToolCallsResp);
   rpc MoeExecuteTool(MoeExecuteToolReq) returns (MoeExecuteToolResp);

@@ -183,11 +183,18 @@ export function MoeToolsPage() {
       <div className="page-head page-head-row">
         <div>
           <h2>Moe 工具与 Bot</h2>
-          <p>工具目录 · 调用统计 · 审计明细 — 对齐 Moe Intelligence Stack v1</p>
+          <p className="muted">
+            Chat → tool_calls → Executor → 审计埋点 · 概览指标与工具目录、调用明细在同一页切换
+          </p>
         </div>
-        <button type="button" className="btn btn-ghost" disabled={loading} onClick={() => void loadCore()}>
-          刷新
-        </button>
+        <div className="btn-row">
+          <Link className="btn btn-ghost btn-sm" to="/app/moe-bots">
+            社区 Bot
+          </Link>
+          <button type="button" className="btn btn-ghost" disabled={loading} onClick={() => void loadCore()}>
+            刷新
+          </button>
+        </div>
       </div>
 
       <DataEnvBar note={`当前数据环境：${apiTargetLabel} · 工具执行经 /api/moe/tools/execute 埋点`} />
@@ -210,32 +217,6 @@ export function MoeToolsPage() {
 
       {tab === 'overview' ? (
         <div className="platform-overview">
-          <section className="platform-hero moe-intel-hero">
-            <div className="platform-hero-copy">
-              <p className="platform-hero-kicker">Moe Intelligence</p>
-              <h3>7B 工具链 · 记忆与社区动态</h3>
-              <p className="muted">Chat 触发 tool_calls → Executor 执行 → 写入调用审计</p>
-              <div className="btn-row platform-hero-actions">
-                <button type="button" className="btn btn-primary btn-sm" onClick={() => setTab('tools')}>
-                  工具目录
-                </button>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setTab('calls')}>
-                  调用明细
-                </button>
-                <Link className="btn btn-ghost btn-sm" to="/app/moe-bots">
-                  社区 AI Bot →
-                </Link>
-              </div>
-            </div>
-            <div className="platform-hero-flow" aria-hidden>
-              <span className="platform-flow-node">Chat</span>
-              <span className="platform-flow-line" />
-              <span className="platform-flow-node is-accent">Tools</span>
-              <span className="platform-flow-line" />
-              <span className="platform-flow-node">Post</span>
-            </div>
-          </section>
-
           <div className="platform-health-grid">
             <div className={`platform-health-card${(stats?.total_calls ?? 0) > 0 ? ' is-ok' : ''}`}>
               <div className="label">总调用</div>

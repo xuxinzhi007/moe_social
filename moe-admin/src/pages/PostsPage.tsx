@@ -63,11 +63,19 @@ export function PostsPage() {
 
   return (
     <>
-      <div className="page-head">
-        <h2>动态审核</h2>
-        <p>查看与下架用户动态，支持审核状态筛选</p>
+      <div className="page-head page-head-row">
+        <div>
+          <h2>动态审核</h2>
+          <p className="muted">查看与下架用户动态，支持按审核状态筛选</p>
+        </div>
       </div>
       <DataEnvBar />
+      <div className="admin-metrics page-insight-strip">
+        <div className="metric">
+          <div className="label">匹配结果</div>
+          <div className="value">{loading ? '…' : total}</div>
+        </div>
+      </div>
       <div className="panel">
         <form
           className="inline-form"

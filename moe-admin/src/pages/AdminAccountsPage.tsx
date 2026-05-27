@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { PageInsightStrip } from '../components/PageInsightStrip'
 import { AdminFormDrawer } from '../components/AdminFormDrawer'
 import { AdminTag } from '../components/AdminTag'
 import { FormField } from '../components/FormField'
@@ -105,7 +106,7 @@ export function AdminAccountsPage() {
       <div className="page-head page-head-row">
         <div>
           <h2>管理员账号</h2>
-          <p>Moe Admin 后台账号（与 App 用户分离）</p>
+          <p className="muted">Moe Admin 后台账号（与 App 用户分离）</p>
         </div>
         <button
           type="button"
@@ -120,6 +121,8 @@ export function AdminAccountsPage() {
           新建管理员
         </button>
       </div>
+
+      <PageInsightStrip items={[{ label: '管理员', value: loading ? '…' : total }]} />
 
       {message ? (
         <div className="admin-hint admin-hint-ok" style={{ marginBottom: 12 }}>

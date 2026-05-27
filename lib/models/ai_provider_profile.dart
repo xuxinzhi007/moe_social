@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 enum AiProviderType {
-  backendOllama('backend_ollama', '后端推理（已废弃）'),
+  backendOllama('backend_ollama', '本机推理（llama-server）'),
   llamaCppServer('llama_cpp_server', '本机 llama.cpp'),
   openAiCompatible('openai_compatible', 'OpenAI 兼容'),
   ;
@@ -65,6 +65,9 @@ class AiProviderProfile {
   bool get isLegacyLocalGguf => id == legacyLocalGgufId;
   bool get isBuiltin => isBuiltinBackend || isBuiltinLlamaCpp;
   bool get isBackendOllama => providerType == AiProviderType.backendOllama;
+
+  /// 本机 llama-server / 后端统一推理（历史字段名 backend_ollama）。
+  bool get isBackendInference => isBackendOllama || isBuiltinBackend;
   bool get isLlamaCppServer => providerType == AiProviderType.llamaCppServer;
   bool get isOpenAiCompatible =>
       providerType == AiProviderType.openAiCompatible;

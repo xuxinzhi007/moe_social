@@ -88,12 +88,8 @@ llm_inference:
   api_style: openai
   timeout_seconds: 300
   memory_model: "qwen2"
-
-# 遗留 Ollama（已废弃，仅当仍运行 :11434 时取消注释并设 api_style: ollama）
-#ollama:
-#  base_url: "http://127.0.0.1:11434"
-#  api_style: ollama
-#  timeout_seconds: 300
+  # 当 llama-server 未开启 /props 时的上下文 token 兜底（可与 --ctx-size 一致）
+  context_tokens: 8192
 
 # 手机 App 可下载的离线 GGUF（文件放 storage_dir，勿提交大文件进 Git）
 local_models:

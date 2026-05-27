@@ -716,15 +716,102 @@ type MoeBrainMemoryItem {
 	UpdatedAt  string `json:"updated_at"`
 }
 
+type MoeBrainGenerationMeta {
+	PostUsesToolMemory bool    `json:"post_uses_tool_memory"`
+	MemoriesSynced     int     `json:"memories_synced"`
+	EpisodesInPrompt   int     `json:"episodes_in_prompt"`
+	PromptMemoryLines  int     `json:"prompt_memory_lines"`
+	PromptPreview      string  `json:"prompt_preview"`
+	Note               string  `json:"note"`
+	PromptEstTokens    int     `json:"prompt_est_tokens,optional"`
+	ContextLimit       int     `json:"context_limit,optional"`
+	ContextUsedPct     float64 `json:"context_used_pct,optional"`
+}
+
 type AdminGetMoeBrainData {
-	AgentKey      string               `json:"agent_key"`
-	DisplayName   string               `json:"display_name"`
-	BotUserId     string               `json:"bot_user_id"`
-	ForbiddenTags []string             `json:"forbidden_tags"`
-	PreferredTags []string             `json:"preferred_tags"`
-	TagStats      []MoeBrainTagStat    `json:"tag_stats"`
-	Episodes      []MoeBrainEpisodeItem `json:"episodes"`
-	Memories      []MoeBrainMemoryItem `json:"memories"`
+	AgentKey       string                 `json:"agent_key"`
+	DisplayName    string                 `json:"display_name"`
+	BotUserId      string                 `json:"bot_user_id"`
+	ForbiddenTags  []string               `json:"forbidden_tags"`
+	PreferredTags  []string               `json:"preferred_tags"`
+	TagStats       []MoeBrainTagStat      `json:"tag_stats"`
+	Episodes       []MoeBrainEpisodeItem  `json:"episodes"`
+	Memories       []MoeBrainMemoryItem   `json:"memories"`
+	GenerationMeta MoeBrainGenerationMeta `json:"generation_meta"`
+}
+
+type AdminGetMoeInferenceStatusReq {
+	AgentKey string `form:"agent_key,optional"`
+}
+
+type AdminGetMoeInferenceStatusData {
+	Online           bool     `json:"online"`
+	BaseUrl          string   `json:"base_url"`
+	Models           []string `json:"models"`
+	DefaultPostModel string   `json:"default_post_model"`
+	RuntimeModel     string   `json:"runtime_model,optional"`
+	EffectiveModel   string   `json:"effective_model,optional"`
+	ModelLoaded      bool     `json:"model_loaded"`
+	ContextLimit     int      `json:"context_limit,optional"`
+	ContextSource    string   `json:"context_source,optional"`
+	Message          string   `json:"message,optional"`
+}
+
+type MoePipelineStepItem {
+	Key        string `json:"key"`
+	Label      string `json:"label"`
+	Status     string `json:"status"`
+	Detail     string `json:"detail,optional"`
+	DurationMs int64  `json:"duration_ms,optional"`
+}
+
+type MoeHostMetrics {
+	ProcAllocMB      int64  `json:"proc_alloc_mb,optional"`
+	ProcSysMB        int64  `json:"proc_sys_mb,optional"`
+	NumCPU           int    `json:"num_cpu,optional"`
+	NumGoroutine     int    `json:"num_goroutine,optional"`
+	InferenceOnline  bool   `json:"inference_online,optional"`
+	InferenceBaseURL string `json:"inference_base_url,optional"`
+	InferenceModels  int    `json:"inference_models,optional"`
+	GpuNote          string `json:"gpu_note,optional"`
+}
+
+type AdminGetMoeBrainPipelineReq {
+	AgentKey string `form:"agent_key"`
+}
+
+type AdminGetMoeBrainPipelineData {
+	AgentKey        string                `json:"agent_key"`
+	RunAt           string                `json:"run_at,optional"`
+	Ok              bool                  `json:"ok"`
+	Detail          string                `json:"detail,optional"`
+	PostId          string                `json:"post_id,optional"`
+	TotalDurationMs int64                 `json:"total_duration_ms,optional"`
+	HostMetrics     MoeHostMetrics        `json:"host_metrics,optional"`
+	Steps           []MoePipelineStepItem `json:"steps"`
+}
+
+type AdminGetMoeBrainPipelineResp {
+	BaseResp
+	Data AdminGetMoeBrainPipelineData `json:"data"`
+}
+
+type AiMemorySettingsData {
+	AutoLearn bool `json:"auto_learn"`
+}
+
+type AiMemorySettingsResp {
+	BaseResp
+	Data AiMemorySettingsData `json:"data"`
+}
+
+type AiMemorySettingsReq {
+	AutoLearn bool `json:"auto_learn"`
+}
+
+type AdminGetMoeInferenceStatusResp {
+	BaseResp
+	Data AdminGetMoeInferenceStatusData `json:"data"`
 }
 
 type AdminGetMoeBrainResp {
@@ -772,9 +859,9 @@ type AdminCurateMoeBrainReq {
 }
 
 type AdminCurateMoeBrainData {
-	AgentKey string                          `json:"agent_key"`
-	Total    int                             `json:"total"`
-	Approved int                             `json:"approved"`
+	AgentKey string                           `json:"agent_key"`
+	Total    int                              `json:"total"`
+	Approved int                              `json:"approved"`
 	Results  []AdminRefineMoeBrainEpisodeData `json:"results"`
 }
 
@@ -2481,6 +2568,16 @@ type AdminDeleteAiAgentResp {
 	BaseResp
 }
 
+type AdminUpdateAiAgentReq {
+	UserId      string `json:"user_id"`
+	AgentId     string `json:"agent_id"`
+	PayloadJson string `json:"payload_json"`
+}
+
+type AdminUpdateAiAgentResp {
+	BaseResp
+}
+
 // Admin 社交
 type AdminFollowItem {
 	Id            string `json:"id"`
@@ -2915,6 +3012,9 @@ service Super {
 	@handler adminDeleteAiAgent
 	delete /api/admin/ai/agents (AdminDeleteAiAgentReq) returns (AdminDeleteAiAgentResp)
 
+	@handler adminUpdateAiAgent
+	put /api/admin/ai/agents (AdminUpdateAiAgentReq) returns (AdminUpdateAiAgentResp)
+
 	@handler adminListFollows
 	get /api/admin/social/follows (AdminListFollowsReq) returns (AdminListFollowsResp)
 
@@ -2975,6 +3075,12 @@ service Super {
 	@handler adminDeleteMemory
 	delete /api/admin/memories/:memory_id (AdminDeleteMemoryReq) returns (AdminDeleteMemoryResp)
 
+	@handler adminGetMoeInferenceStatus
+	get /api/admin/moe/inference/status (AdminGetMoeInferenceStatusReq) returns (AdminGetMoeInferenceStatusResp)
+
+	@handler adminGetMoeBrainPipeline
+	get /api/admin/moe/brain/pipeline (AdminGetMoeBrainPipelineReq) returns (AdminGetMoeBrainPipelineResp)
+
 	@handler adminListMoeRuntimes
 	get /api/admin/moe/runtimes returns (AdminListMoeRuntimesResp)
 
@@ -2984,10 +3090,13 @@ service Super {
 	@handler adminRunMoeAgentOnce
 	post /api/admin/moe/runtimes/:agent_key/run-once (AdminRunMoeAgentReq) returns (AdminRunMoeAgentResp)
 
-	get /api/admin/moe/runtimes/:agent_key/brain returns (AdminGetMoeBrainResp)
+	@handler adminGetMoeBrain
+	get /api/admin/moe/runtimes/:agent_key/brain (AdminGetMoeBrainReq) returns (AdminGetMoeBrainResp)
 
+	@handler adminUpdateMoeBrainPolicy
 	put /api/admin/moe/runtimes/:agent_key/brain/policy (AdminUpdateMoeBrainPolicyReq) returns (AdminGetMoeBrainResp)
 
+	@handler adminDeleteMoeBrainEpisode
 	delete /api/admin/moe/brain/episodes/:id (AdminDeleteMoeBrainEpisodeReq) returns (BaseResp)
 
 	@handler AdminRefineMoeBrainEpisode
@@ -3468,6 +3577,12 @@ service Super {
 
 	@handler upsertUserConfig
 	put /api/ai/config (AiUserConfigReq) returns (AiUserConfigResp)
+
+	@handler getAiMemorySettings
+	get /api/ai/memory/settings (EmptyReq) returns (AiMemorySettingsResp)
+
+	@handler putAiMemorySettings
+	put /api/ai/memory/settings (AiMemorySettingsReq) returns (AiMemorySettingsResp)
 
 	@handler listProviders
 	get /api/ai/providers (EmptyReq) returns (AiProviderProfilesResp)

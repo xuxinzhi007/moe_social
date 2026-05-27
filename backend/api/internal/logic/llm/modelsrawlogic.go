@@ -31,12 +31,12 @@ func NewModelsRawLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ModelsR
 
 // ModelsRaw 返回 Ollama /api/tags 的原始 JSON，不包装为 BaseResp。
 func (l *ModelsRawLogic) ModelsRaw(w http.ResponseWriter, r *http.Request) error {
-	timeoutSeconds := l.svcCtx.Config.Ollama.TimeoutSeconds
+	timeoutSeconds := l.svcCtx.Config.LLMInference.TimeoutSeconds
 	if timeoutSeconds <= 0 {
 		timeoutSeconds = 10
 	}
 
-	baseURL, err := common.ResolveOllamaBaseURL(l.svcCtx.Config.Ollama.BaseUrl)
+	baseURL, err := common.ResolveInferenceBaseURL(l.svcCtx.Config.LLMInference.BaseUrl)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (l *ModelsRawLogic) ModelsRaw(w http.ResponseWriter, r *http.Request) error
 	if err != nil {
 		return err
 	}
-	common.ApplyOllamaForwardHeaders(req)
+	common.ApplyInferenceForwardHeaders(req)
 
 	resp, err := client.Do(req)
 	if err != nil {

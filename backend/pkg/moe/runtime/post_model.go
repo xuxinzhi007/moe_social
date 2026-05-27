@@ -13,6 +13,11 @@ const communityPostGuardrails = `【场景】Moe 社区「动态墙」短帖。�
 【语感】像好友随手发朋友圈：有画面感的一个细节 + 自然口语，可幽默/好奇/吐槽，避免排比抒情与模板腔。
 【禁止】剧本旁白、小说体、*动作*、「灵魂/星辰/灯火/共鸣」等空泛堆砌、「大家好」「今日也在」类开场。`
 
+// ResolvePostModel 发帖专用模型（管理端展示与生成共用）。
+func ResolvePostModel(deps Deps, rt model.MoeAgentRuntime) string {
+	return resolvePostModel(deps, rt)
+}
+
 // resolvePostModel 发帖专用模型：固定基座 GGUF，不使用酒馆派生模型名。
 func resolvePostModel(deps Deps, rt model.MoeAgentRuntime) string {
 	if m := strings.TrimSpace(loadBotPostModelFromViper()); m != "" {

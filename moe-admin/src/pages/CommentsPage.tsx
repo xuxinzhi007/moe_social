@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
+import { DataEnvBar } from '../components/DataEnvBar'
+import { PageInsightStrip } from '../components/PageInsightStrip'
 import { IdCell } from '../components/IdCell'
 import { UserCell } from '../components/UserCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
@@ -51,10 +53,14 @@ export function CommentsPage() {
 
   return (
     <>
-      <div className="page-head">
-        <h2>评论管理</h2>
-        <p>按动态或关键词检索评论并下架</p>
+      <div className="page-head page-head-row">
+        <div>
+          <h2>评论管理</h2>
+          <p className="muted">按动态或关键词检索评论并下架</p>
+        </div>
       </div>
+      <DataEnvBar />
+      <PageInsightStrip items={[{ label: '匹配结果', value: loading ? '…' : total }]} />
       <div className="panel">
         <form
           className="inline-form"

@@ -7,14 +7,20 @@ alwaysApply: true
 
 本规则对所有会话、所有文件修改生效。开始任何代码任务前，必须先执行以下步骤，不得跳过：
 
-1. 判断本次任务属于前端、后端或前后端联动。
+1. 判断本次任务属于哪一层：
+   - **Flutter App**：`lib/`
+   - **管理台**：`moe-admin/`（React，仍走前端启动指南，但目录不是 `lib/`）
+   - **后端**：`backend/`
+   - **前后端联动**：按触及目录同时读两套规范
 2. 读取对应规范文件：
    - 后端：`.cursor/rules/backend-ai-spec.mdc`
-   - 前端：`.cursor/rules/frontend-ai-spec.mdc`
+   - Flutter App：`frontend-ai-spec.mdc`
+   - 管理台 `moe-admin/`：`moe-admin-ai-spec.mdc`
 3. 同步读取对应启动指南：
    - 后端：`docs/guidelines/Codex启动指南-后端.md`
    - 前端：`docs/guidelines/Codex启动指南-前端.md`
-4. 代码实现与提交前检查必须遵守对应规范中的流程、生成命令与格式要求。
+4. 代码实现与提交前检查必须遵守对应规范中的流程、生成命令与格式要求（后端 `make gen` 后必须 `go build ./api ./rpc`）。
+5. 阅读 [.cursor/LESSONS.md](../LESSONS.md)；收尾流程见 [agent-memory.mdc](./agent-memory.mdc)。
 
 ## 执行约束
 

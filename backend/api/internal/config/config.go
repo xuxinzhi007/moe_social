@@ -17,8 +17,8 @@ type Config struct {
 	// RPC服务配置
 	SuperRpc zrpc.RpcClientConf `json:"SuperRpc" yaml:"SuperRpc"`
 
-	// Ollama 配置名保留兼容 go-zero；实际为 llama.cpp / 旧 Ollama 推理转发（见 llm_inference.*）。
-	Ollama OllamaConf `json:"Ollama" yaml:"Ollama"`
+	// LLMInference 本机/内网推理（llama-server OpenAI 兼容）；主配置见 backend/config/config.yaml 的 llm_inference.*
+	LLMInference LLMInferenceConf `json:"LLMInference" yaml:"LLMInference"`
 
 	// LocalModels 手机可下载的 GGUF 托管目录与清单
 	LocalModels LocalModelsConf `json:"LocalModels" yaml:"LocalModels"`
@@ -51,10 +51,10 @@ type LocalModelsConf struct {
 	Catalog    []LocalModelCatalogEntry `json:"Catalog" yaml:"catalog"`
 }
 
-type OllamaConf struct {
-	// BaseUrl 例如：http://127.0.0.1:6633（llama-server）或旧 Ollama :11434
+type LLMInferenceConf struct {
+	// BaseUrl 例如：http://127.0.0.1:6633（llama-server / llama.cpp）
 	BaseUrl string `json:"BaseUrl" yaml:"BaseUrl"`
-	// ApiStyle openai（默认，llama.cpp）| ollama（遗留）
+	// ApiStyle 固定 openai（OpenAI 兼容 chat/completions）
 	ApiStyle string `json:"ApiStyle" yaml:"ApiStyle"`
 	// TimeoutSeconds 请求推理服务的超时（秒）
 	TimeoutSeconds int `json:"TimeoutSeconds" yaml:"TimeoutSeconds"`

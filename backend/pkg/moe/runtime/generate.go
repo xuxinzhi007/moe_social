@@ -10,9 +10,7 @@ import (
 
 	"backend/model"
 	"backend/pkg/llminference"
-	"backend/pkg/memory"
 	"backend/pkg/moe/brain"
-	"backend/rpc/pb/super"
 )
 
 var jsonFenceRe = regexp.MustCompile("(?s)```(?:json)?\\s*([\\s\\S]*?)```")
@@ -223,27 +221,6 @@ func callPostLLM(
 		content = string([]rune(content)[:220])
 	}
 	return GeneratedPost{Content: content, MoodTag: normalizeMoodTag(parsed.MoodTag)}, nil
-}
-
-func fetchBotMemories(ctx context.Context, deps Deps, botUserID uint) string {
-	if deps.RPC == nil || botUserID == 0 {
-		return ""
-	}
-	uid := fmt.Sprintf("%d", botUserID)
-	memResp, err := deps.RPC.GetUserMemories(ctx, &super.GetUserMemoriesReq{UserId: uid})
-	if err != nil || memResp == nil {
-		return ""
-	}
-	records := memory.RecordsFromSuper(memResp.Memories)
-	res := memory.SearchFacing(records, "", 6)
-	if len(res.Items) == 0 {
-		return ""
-	}
-	lines := make([]string, 0, len(res.Items))
-	for _, it := range res.Items {
-		lines = append(lines, fmt.Sprintf("- [%s] %s", it.Key, truncateRunes(it.Content, 80)))
-	}
-	return strings.Join(lines, "\n")
 }
 
 func parsePostGenJSON(raw string) (postGenJSON, error) {

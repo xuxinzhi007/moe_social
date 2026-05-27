@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { AdminFormDrawer } from '../components/AdminFormDrawer'
 import { AdminTag } from '../components/AdminTag'
 import { DataEnvBar } from '../components/DataEnvBar'
+import { PageTabs } from '../components/PageTabs'
 import { FormField } from '../components/FormField'
 import { IdCell } from '../components/IdCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
@@ -49,11 +50,11 @@ type RewardRow = {
   extra_reward: string
 }
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'stats', label: '统计' },
-  { key: 'achievements', label: '成就' },
-  { key: 'levels', label: '等级' },
-  { key: 'rewards', label: '签到奖励' },
+const TABS: { key: Tab; label: string; hint: string }[] = [
+  { key: 'stats', label: '统计', hint: '全站成长指标' },
+  { key: 'achievements', label: '成就', hint: '定义与开关' },
+  { key: 'levels', label: '等级', hint: '经验档位' },
+  { key: 'rewards', label: '签到奖励', hint: '连续签到规则' },
 ]
 
 export function GrowthPage() {
@@ -308,18 +309,7 @@ export function GrowthPage() {
 
       <DataEnvBar />
 
-      <div className="tab-bar" style={{ marginBottom: 16 }}>
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            className={`tab-btn${tab === t.key ? ' tab-btn-active' : ''}`}
-            onClick={() => setTab(t.key)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <PageTabs tabs={TABS} active={tab} onChange={setTab} />
 
       {message ? (
         <div className="admin-hint admin-hint-ok" style={{ marginBottom: 12 }}>

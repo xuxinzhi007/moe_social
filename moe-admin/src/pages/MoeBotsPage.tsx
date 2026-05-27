@@ -189,7 +189,7 @@ export function MoeBotsPage() {
       }
       if (res.data.ok) {
         const postPart = res.data.post_id ? `帖子 ID ${res.data.post_id}` : '发帖成功'
-        const msg = `试跑成功 · ${res.data.agent_key || agentKey} · ${postPart}`
+        const msg = `试跑成功 · ${res.data.agent_key || agentKey} · ${postPart}（AI 大脑可查看流水线）`
         setMessageTone('ok')
         setMessage(msg)
         showToast(msg)

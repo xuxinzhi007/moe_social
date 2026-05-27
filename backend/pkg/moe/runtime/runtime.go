@@ -28,6 +28,7 @@ type RunOnceResult struct {
 // RunOnce 执行一次 Bot 回合：LLM 生成正文 + post_create 发帖。
 func RunOnce(ctx context.Context, deps Deps, agentKey string) (RunOnceResult, error) {
 	agentKey = strings.TrimSpace(agentKey)
+	rec := NewStepRecorder()
 	if agentKey == "" {
 		return RunOnceResult{}, fmt.Errorf("agent_key 为空")
 	}
@@ -35,22 +36,39 @@ func RunOnce(ctx context.Context, deps Deps, agentKey string) (RunOnceResult, er
 		return RunOnceResult{}, fmt.Errorf("数据库未就绪")
 	}
 
+	saveLog := func(ok bool, detail, postID string) {
+		metrics := SampleHostMetrics(ctx, deps.Inference)
+		_ = SaveAgentRunLog(deps.DB, agentKey, ok, detail, postID, rec.Bundle(metrics))
+	}
+
+	stepStart := time.Now()
 	var rt model.MoeAgentRuntime
 	if err := deps.DB.Where("agent_key = ? AND enabled = ?", agentKey, true).First(&rt).Error; err != nil {
+		rec.Add("load_runtime", "加载 Bot 配置", "fail", err.Error(), time.Since(stepStart))
+		saveLog(false, err.Error(), "")
 		return RunOnceResult{}, fmt.Errorf("未找到启用的 runtime: %s", agentKey)
 	}
+	rec.Add("load_runtime", "加载 Bot 配置", "ok", rt.DisplayName, time.Since(stepStart))
 
 	tier := core.ParseTier(rt.CapabilityTier)
 	exec := tools.NewExecutor(tools.Deps{DB: deps.DB, RPC: deps.RPC})
 
+	stepStart = time.Now()
+	rec.Add("gather_memory", "检索记忆与社区脉搏", "ok", "组装发帖 prompt", time.Since(stepStart))
+
+	stepStart = time.Now()
 	gen, genErr := generatePostContent(ctx, deps, rt)
+	genDur := time.Since(stepStart)
 	if genErr != nil {
+		rec.Add("generate", "LLM 生成正文", "fail", genErr.Error(), genDur)
+		saveLog(false, genErr.Error(), "")
 		return RunOnceResult{
 			AgentKey: rt.AgentKey,
 			OK:       false,
 			Detail:   genErr.Error(),
 		}, nil
 	}
+	rec.Add("generate", "LLM 生成正文", "ok", fmt.Sprintf("%s · %dms", gen.Source, genDur.Milliseconds()), genDur)
 
 	argsJSON, _ := json.Marshal(map[string]string{
 		"content":  gen.Content,
@@ -64,8 +82,9 @@ func RunOnce(ctx context.Context, deps Deps, agentKey string) (RunOnceResult, er
 		AgentKey:      rt.AgentKey,
 		Tier:          tier,
 	}
-	start := time.Now()
+	stepStart = time.Now()
 	toolRes := exec.Execute(ctx, execReq)
+	postDur := time.Since(stepStart)
 	toolaudit.Record(deps.DB, toolaudit.RecordInput{
 		Tool:          execReq.Tool,
 		ArgumentsJSON: execReq.ArgumentsJSON,
@@ -74,7 +93,7 @@ func RunOnce(ctx context.Context, deps Deps, agentKey string) (RunOnceResult, er
 		AgentKey:      execReq.AgentKey,
 		Ok:            toolRes.OK,
 		ErrorMsg:      toolRes.Error,
-		LatencyMs:     int(time.Since(start).Milliseconds()),
+		LatencyMs:     int(postDur.Milliseconds()),
 		Source:        "runtime",
 	})
 
@@ -85,14 +104,18 @@ func RunOnce(ctx context.Context, deps Deps, agentKey string) (RunOnceResult, er
 	}
 	if !toolRes.OK {
 		out.Detail = toolRes.Error
+		rec.Add("post_create", "发布动态", "fail", toolRes.Error, postDur)
+		saveLog(false, out.Detail, "")
 		return out, nil
 	}
+	rec.Add("post_create", "发布动态", "ok", fmt.Sprintf("%dms", postDur.Milliseconds()), postDur)
 	out.Detail = fmt.Sprintf("ai_post(%s): %s", gen.Source, toolRes.Result)
 	var parsed map[string]any
 	if json.Unmarshal([]byte(toolRes.Result), &parsed) == nil {
 		if id, ok := parsed["post_id"].(string); ok {
 			out.PostID = id
 			score := novelStyleScore(gen.Content)
+			epStart := time.Now()
 			_ = brain.RecordEpisode(ctx, brain.Deps{DB: deps.DB, RPC: deps.RPC}, brain.RecordInput{
 				AgentKey:   rt.AgentKey,
 				BotUserID:  rt.BotUserID,
@@ -102,10 +125,12 @@ func RunOnce(ctx context.Context, deps Deps, agentKey string) (RunOnceResult, er
 				StyleScore: score,
 				Source:     gen.Source,
 			})
+			rec.Add("record_episode", "写入自传", "ok", id, time.Since(epStart))
 		}
 	}
 	now := time.Now()
 	_ = deps.DB.Model(&rt).Update("last_run_at", now).Error
+	saveLog(out.OK, out.Detail, out.PostID)
 	return out, nil
 }
 

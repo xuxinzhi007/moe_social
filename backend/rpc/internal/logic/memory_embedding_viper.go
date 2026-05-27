@@ -22,7 +22,7 @@ func ensureViperConfig() {
 	})
 }
 
-func viperOllamaBaseURL() string {
+func viperInferenceBaseURL() string {
 	ensureViperConfig()
 	if base := viper.GetString("llm_inference.base_url"); base != "" {
 		return base

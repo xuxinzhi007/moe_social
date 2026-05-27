@@ -37,12 +37,12 @@ func (l *DownloadModelLogic) DownloadModel(req *types.LlmDownloadModelReq) (resp
 		return &resp, nil
 	}
 
-	timeoutSeconds := l.svcCtx.Config.Ollama.TimeoutSeconds
+	timeoutSeconds := l.svcCtx.Config.LLMInference.TimeoutSeconds
 	if timeoutSeconds <= 0 {
 		timeoutSeconds = 300 // 下载模型需要更长时间
 	}
 
-	baseUrl, err := common.ResolveOllamaBaseURL(l.svcCtx.Config.Ollama.BaseUrl)
+	baseUrl, err := common.ResolveInferenceBaseURL(l.svcCtx.Config.LLMInference.BaseUrl)
 	if err != nil {
 		resp := common.HandleError(err)
 		return &resp, nil
@@ -66,7 +66,7 @@ func (l *DownloadModelLogic) DownloadModel(req *types.LlmDownloadModelReq) (resp
 		resp := common.HandleError(err)
 		return &resp, nil
 	}
-	common.ApplyOllamaForwardHeaders(httpReq)
+	common.ApplyInferenceForwardHeaders(httpReq)
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	var httpResp *http.Response

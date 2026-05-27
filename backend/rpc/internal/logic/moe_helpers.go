@@ -170,6 +170,18 @@ func moeBrainSnapshotProto(s *brain.Snapshot) *super.AdminGetMoeBrainResp {
 			UpdatedAt:  m.UpdatedAt,
 		})
 	}
+	gm := s.GenerationMeta
+	out.GenerationMeta = &super.MoeBrainGenerationMeta{
+		PostUsesToolMemory: gm.PostUsesToolMemory,
+		MemoriesSynced:     int32(gm.MemoriesSynced),
+		EpisodesInPrompt:   int32(gm.EpisodesInPrompt),
+		PromptMemoryLines:  int32(gm.PromptMemoryLines),
+		PromptPreview:      gm.PromptPreview,
+		PromptEstTokens:    int32(gm.PromptEstTokens),
+		ContextLimit:       int32(gm.ContextLimit),
+		ContextUsedPct:     gm.ContextUsedPct,
+		Note:               gm.Note,
+	}
 	return out
 }
 

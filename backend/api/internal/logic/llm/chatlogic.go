@@ -1,11 +1,9 @@
 package llm
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"regexp"
 	"sort"
@@ -53,28 +51,9 @@ var userMemoryCache = struct {
 	data: make(map[string]cachedMemories),
 }
 
-type ollamaMessage struct {
+type llmChatMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
-}
-
-type ollamaRequest struct {
-	Model         string          `json:"model"`
-	Messages      []ollamaMessage `json:"messages"`
-	Stream        bool            `json:"stream"`
-	Temperature   float64         `json:"temperature,omitempty"`
-	TopP          float64         `json:"top_p,omitempty"`
-	MaxTokens     int             `json:"max_tokens,omitempty"`
-	RepeatPenalty float64         `json:"repeat_penalty,omitempty"`
-}
-
-type ollamaResponse struct {
-	Message struct {
-		Role    string `json:"role"`
-		Content string `json:"content"`
-	} `json:"message"`
-	PromptEvalCount int `json:"prompt_eval_count"`
-	EvalCount       int `json:"eval_count"`
 }
 
 type rankedMemory struct {
@@ -508,9 +487,9 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		systemContent = systemContent + "\n\n" + memoryBlock
 	}
 
-	messages := make([]ollamaMessage, 0, len(req.Messages)+1)
+	messages := make([]llmChatMessage, 0, len(req.Messages)+1)
 
-	messages = append(messages, ollamaMessage{
+	messages = append(messages, llmChatMessage{
 		Role:    "system",
 		Content: systemContent,
 	})
@@ -519,7 +498,7 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		if i == clientSystemIndex {
 			continue
 		}
-		messages = append(messages, ollamaMessage{
+		messages = append(messages, llmChatMessage{
 			Role:    m.Role,
 			Content: m.Content,
 		})
@@ -545,7 +524,7 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 
 	client := utils.NewHTTPClient(timeoutSeconds)
 
-	memoryModel := strings.TrimSpace(l.svcCtx.Config.Ollama.MemoryModel)
+	memoryModel := strings.TrimSpace(l.svcCtx.Config.LLMInference.MemoryModel)
 	if memoryModel == "" {
 		memoryModel = req.Model
 	}
@@ -589,14 +568,14 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		summary, sumErr := l.summarizeMessages(memoryModel, baseUrl, timeoutSeconds, client, history)
 		if sumErr == nil && strings.TrimSpace(summary) != "" {
 			if userIDForLog != "" {
-				fullMessages := make([]ollamaMessage, len(messages)+1)
+				fullMessages := make([]llmChatMessage, len(messages)+1)
 				copy(fullMessages, messages)
-				fullMessages[len(messages)] = ollamaMessage{
+				fullMessages[len(messages)] = llmChatMessage{
 					Role:    "assistant",
 					Content: summary,
 				}
 
-				go func(uid, model, baseUrl, sid, msgID string, timeout int, msgs []ollamaMessage) {
+				go func(uid, model, baseUrl, sid, msgID string, timeout int, msgs []llmChatMessage) {
 					bgCtx, cancel := backgroundMemoryExtractContext(timeout)
 					defer cancel()
 					l.extractAndSaveMemories(bgCtx, uid, model, baseUrl, timeout, sid, msgID, msgs)
@@ -645,7 +624,7 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		if oldEnd <= 1 {
 			oldEnd = 1
 		}
-		oldMessages := make([]ollamaMessage, oldEnd-1)
+		oldMessages := make([]llmChatMessage, oldEnd-1)
 		copy(oldMessages, messages[1:oldEnd])
 
 		if userIDForLog != "" {
@@ -657,8 +636,8 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 			l.Errorf("summarizeMessages failed: %v", sumErr)
 		} else if strings.TrimSpace(summary) != "" {
 			systemContent = systemContent + "\n\n之前部分对话的简要总结如下，请在理解用户当前消息时一并参考：\n" + summary
-			newMessages := make([]ollamaMessage, 0, keepRecentMessages+1)
-			newMessages = append(newMessages, ollamaMessage{
+			newMessages := make([]llmChatMessage, 0, keepRecentMessages+1)
+			newMessages = append(newMessages, llmChatMessage{
 				Role:    "system",
 				Content: systemContent,
 			})
@@ -675,135 +654,35 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		RepeatPenalty: req.RepeatPenalty,
 	}
 
-	var oResp ollamaResponse
-
-	if inferenceCfg.ApiStyle == common.InferenceAPIOpenAI || !req.Stream {
-		content, chatErr := l.postInferenceChat(inferenceCfg, req.Model, messages, chatOpts)
-		if chatErr != nil {
-			return &types.LlmChatResp{
-				BaseResp:       common.HandleError(fmt.Errorf("调用推理服务失败: %w", chatErr)),
-				Content:        "",
-				RemainingRatio: 1,
-				Summarized:     summarized,
-			}, nil
-		}
-		oResp.Message.Content = content
-	} else if req.Stream {
-		request := ollamaRequest{
-			Model:         req.Model,
-			Messages:      messages,
-			Stream:        true,
-			Temperature:   chatOpts.Temperature,
-			TopP:          chatOpts.TopP,
-			MaxTokens:     chatOpts.MaxTokens,
-			RepeatPenalty: chatOpts.RepeatPenalty,
-		}
-		body, marshalErr := json.Marshal(request)
-		if marshalErr != nil {
-			return &types.LlmChatResp{
-				BaseResp:       common.HandleError(marshalErr),
-				Content:        "",
-				RemainingRatio: 1,
-				Summarized:     summarized,
-			}, nil
-		}
-		ctx, cancel := context.WithTimeout(l.ctx, time.Duration(timeoutSeconds)*time.Second)
-		defer cancel()
-		url := baseUrl + "/api/chat"
-		httpReq, reqErr := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
-		if reqErr != nil {
-			return &types.LlmChatResp{
-				BaseResp:       common.HandleError(reqErr),
-				Content:        "",
-				RemainingRatio: 1,
-				Summarized:     summarized,
-			}, nil
-		}
-		common.ApplyInferenceForwardHeaders(httpReq)
-		httpReq.Header.Set("Content-Type", "application/json")
-		var httpResp *http.Response
-		var retryErr error
-		for i := 0; i <= utils.DefaultRetryConfig.MaxRetries; i++ {
-			httpResp, retryErr = client.Do(httpReq)
-			if retryErr == nil && httpResp.StatusCode == http.StatusOK {
-				break
-			}
-			if retryErr == nil && !utils.IsRetryableStatus(httpResp.StatusCode) {
-				break
-			}
-			if i < utils.DefaultRetryConfig.MaxRetries {
-				delay := time.Duration(float64(utils.DefaultRetryConfig.InitialDelay) * (utils.DefaultRetryConfig.BackoffFactor * float64(i)))
-				if delay > utils.DefaultRetryConfig.MaxDelay {
-					delay = utils.DefaultRetryConfig.MaxDelay
-				}
-				time.Sleep(delay)
-			}
-		}
-		if retryErr != nil {
-			return &types.LlmChatResp{
-				BaseResp:       common.HandleError(retryErr),
-				Content:        "",
-				RemainingRatio: 1,
-				Summarized:     summarized,
-			}, nil
-		}
-		defer httpResp.Body.Close()
-		if httpResp.StatusCode != http.StatusOK {
-			raw, _ := io.ReadAll(httpResp.Body)
-			return &types.LlmChatResp{
-				BaseResp:       common.HandleError(fmt.Errorf("调用推理服务失败: %d %s", httpResp.StatusCode, string(raw))),
-				Content:        "",
-				RemainingRatio: 1,
-				Summarized:     summarized,
-			}, nil
-		}
-
-	// 处理流式响应（仅遗留 Ollama）
 	if req.Stream {
-		// 这里应该返回流式响应，但由于当前接口设计，我们先收集所有内容
-		// 实际生产环境中，应该使用Server-Sent Events或WebSocket
-		reader := httpResp.Body
-		decoder := json.NewDecoder(reader)
-		var fullContent strings.Builder
-
-		for {
-			var chunk map[string]interface{}
-			if err := decoder.Decode(&chunk); err != nil {
-				if err == io.EOF {
-					break
-				}
-				l.Errorf("decode stream chunk failed: %v", err)
-				continue
-			}
-
-			if message, ok := chunk["message"].(map[string]interface{}); ok {
-				if content, ok := message["content"].(string); ok {
-					fullContent.WriteString(content)
-				}
-			}
-
-			// 检查是否结束
-			if done, ok := chunk["done"].(bool); ok && done {
-				break
-			}
-		}
-
-		oResp.Message.Content = fullContent.String()
+		l.Infof("llm chat stream requested but only non-stream openai path is supported; falling back")
 	}
+	content, chatErr := l.postInferenceChat(inferenceCfg, req.Model, messages, chatOpts)
+	if chatErr != nil {
+		return &types.LlmChatResp{
+			BaseResp:       common.HandleError(fmt.Errorf("调用推理服务失败: %w", chatErr)),
+			Content:        "",
+			RemainingRatio: 1,
+			Summarized:     summarized,
+		}, nil
 	}
-	oResp.Message.Content = sanitizePersonaResponse(oResp.Message.Content)
+	assistantContent := sanitizePersonaResponse(content)
+
+	if userIDForLog != "" && sessionID != "" {
+		persistChatTurnsAfterReply(l.svcCtx, userIDForLog, sessionID, sourceMsgID, req.Model, req.Messages, assistantContent)
+	}
 
 	// Async memory extraction
 	if userIDForLog != "" {
 		// Include the assistant's latest response in the history to be analyzed
-		fullMessages := make([]ollamaMessage, len(messages)+1)
+		fullMessages := make([]llmChatMessage, len(messages)+1)
 		copy(fullMessages, messages)
-		fullMessages[len(messages)] = ollamaMessage{
+		fullMessages[len(messages)] = llmChatMessage{
 			Role:    "assistant",
-			Content: oResp.Message.Content,
+			Content: assistantContent,
 		}
 
-		go func(uid, model, baseUrl, sid, msgID string, timeout int, msgs []ollamaMessage) {
+		go func(uid, model, baseUrl, sid, msgID string, timeout int, msgs []llmChatMessage) {
 			bgCtx, cancel := backgroundMemoryExtractContext(timeout)
 			defer cancel()
 			l.extractAndSaveMemories(bgCtx, uid, model, baseUrl, timeout, sid, msgID, msgs)
@@ -811,13 +690,10 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 	}
 
 	usedTokens = 0
-	if oResp.PromptEvalCount > 0 {
-		usedTokens = oResp.PromptEvalCount
-	} else {
-		for _, m := range messages {
-			usedTokens += estimateTokens(m.Content)
-		}
+	for _, m := range messages {
+		usedTokens += estimateTokens(m.Content)
 	}
+	usedTokens += estimateTokens(assistantContent)
 
 	remainingRatio := 1.0
 	if usableTokens > 0 {
@@ -833,7 +709,7 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 
 	return &types.LlmChatResp{
 		BaseResp:       common.HandleError(nil),
-		Content:        oResp.Message.Content,
+		Content:        assistantContent,
 		RemainingRatio: remainingRatio,
 		Summarized:     summarized,
 	}, nil
@@ -869,7 +745,7 @@ func sanitizePersonaResponse(content string) string {
 	return text
 }
 
-func (l *ChatLogic) summarizeMessages(model, baseUrl string, timeoutSeconds int, client *http.Client, history []ollamaMessage) (string, error) {
+func (l *ChatLogic) summarizeMessages(model, baseUrl string, timeoutSeconds int, client *http.Client, history []llmChatMessage) (string, error) {
 	if len(history) == 0 {
 		return "", nil
 	}
@@ -886,7 +762,7 @@ func (l *ChatLogic) summarizeMessages(model, baseUrl string, timeoutSeconds int,
 		sb.WriteString("\n")
 	}
 
-	systemPrompt := strings.TrimSpace(l.svcCtx.Config.Ollama.MemorySummaryPrompt)
+	systemPrompt := strings.TrimSpace(l.svcCtx.Config.LLMInference.MemorySummaryPrompt)
 	if systemPrompt == "" {
 		systemPrompt = "你是对话总结助手，需要用简短的中文总结下面的多轮对话，提炼出对后续对话有用的关键信息和记忆点，尽量控制在三到六条以内。"
 	}
@@ -897,7 +773,7 @@ func (l *ChatLogic) summarizeMessages(model, baseUrl string, timeoutSeconds int,
 	}
 	_ = baseUrl
 	_ = client
-	return l.postInferenceChat(cfg, model, []ollamaMessage{
+	return l.postInferenceChat(cfg, model, []llmChatMessage{
 		{Role: "system", Content: systemPrompt},
 		{Role: "user", Content: sb.String()},
 	}, common.ChatOptions{})
@@ -911,13 +787,16 @@ type memoryItem struct {
 	Source     string  `json:"source,omitempty"`
 }
 
-func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, baseUrl string, timeoutSeconds int, sessionID, sourceMsgID string, history []ollamaMessage) {
+func (l *ChatLogic) extractAndSaveMemories(ctx context.Context, userID, model, baseUrl string, timeoutSeconds int, sessionID, sourceMsgID string, history []llmChatMessage) {
 	l.extractAndSaveMemoriesWithSource(ctx, userID, model, baseUrl, timeoutSeconds, sessionID, sourceMsgID, history, "llm_extract")
 }
 
-func (l *ChatLogic) extractAndSaveMemoriesWithSource(ctx context.Context, userID, model, baseUrl string, timeoutSeconds int, sessionID, sourceMsgID string, history []ollamaMessage, source string) {
+func (l *ChatLogic) extractAndSaveMemoriesWithSource(ctx context.Context, userID, model, baseUrl string, timeoutSeconds int, sessionID, sourceMsgID string, history []llmChatMessage, source string) {
 	if strings.TrimSpace(source) == "" {
 		source = "llm_extract"
+	}
+	if !UserMemoryAutoLearnEnabled(ctx, l.svcCtx, userID) {
+		return
 	}
 	// Only analyze if history is significant enough
 	// 降低门槛，只要有对话就尝试（system + user + assistant >= 3）
@@ -942,7 +821,7 @@ func (l *ChatLogic) extractAndSaveMemoriesWithSource(ctx context.Context, userID
 	}
 
 	// 针对中文小模型优化的 Prompt
-	prompt := strings.TrimSpace(l.svcCtx.Config.Ollama.MemoryExtractPrompt)
+	prompt := strings.TrimSpace(l.svcCtx.Config.LLMInference.MemoryExtractPrompt)
 	if prompt == "" {
 		prompt = `请分析上述对话，提取关于“用户”（user）的新的、永久性的个人信息（如姓名、昵称、年龄、职业、爱好、位置、重要关系等）。
 忽略：
@@ -961,14 +840,14 @@ func (l *ChatLogic) extractAndSaveMemoriesWithSource(ctx context.Context, userID
 请直接返回 JSON 字符串，不要包含 Markdown 格式（如 code block），不要包含其他解释文字。`
 	}
 
-	cfg, cfgErr := common.InferenceFromOllamaConf(l.svcCtx.Config.Ollama)
+	cfg, cfgErr := common.InferenceFromLLMConf(l.svcCtx.Config.LLMInference)
 	if cfgErr != nil {
 		logger.Errorf("inference config failed: %v", cfgErr)
 		return
 	}
 	_ = baseUrl
 	extractLogic := &ChatLogic{Logger: logger, ctx: ctx, svcCtx: l.svcCtx}
-	rawContent, chatErr := extractLogic.postInferenceChat(cfg, model, []ollamaMessage{
+	rawContent, chatErr := extractLogic.postInferenceChat(cfg, model, []llmChatMessage{
 		{Role: "user", Content: sb.String() + "\n\n" + prompt},
 	}, common.ChatOptions{})
 	if chatErr != nil {
