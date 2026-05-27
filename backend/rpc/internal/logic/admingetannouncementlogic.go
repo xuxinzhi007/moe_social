@@ -2,10 +2,9 @@ package logic
 
 import (
 	"context"
-	"strconv"
-	"strings"
+	"errors"
 
-	"backend/model"
+	adminbiz "backend/internal/biz/admin"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
@@ -24,13 +23,16 @@ func NewAdminGetAnnouncementLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *AdminGetAnnouncementLogic) AdminGetAnnouncement(in *super.AdminGetAnnouncementReq) (*super.AdminGetAnnouncementResp, error) {
-	id, err := strconv.ParseUint(strings.TrimSpace(in.GetAnnouncementId()), 10, 64)
-	if err != nil || id == 0 {
-		return nil, errorx.InvalidArgument("公告 ID 无效")
+	item, err := adminbiz.GetAnnouncement(l.ctx, l.svcCtx.DB, in.GetAnnouncementId())
+	if err != nil {
+		switch {
+		case errors.Is(err, adminbiz.ErrInvalidAnnouncementID):
+			return nil, errorx.InvalidArgument("公告 ID 无效")
+		case errors.Is(err, adminbiz.ErrAnnouncementNotFound):
+			return nil, errorx.NotFound("公告不存在")
+		default:
+			return nil, errorx.Internal("查询公告失败")
+		}
 	}
-	var row model.AdminAnnouncement
-	if err := l.svcCtx.DB.First(&row, id).Error; err != nil {
-		return nil, errorx.NotFound("公告不存在")
-	}
-	return &super.AdminGetAnnouncementResp{Announcement: announcementToProto(row)}, nil
+	return &super.AdminGetAnnouncementResp{Announcement: item}, nil
 }

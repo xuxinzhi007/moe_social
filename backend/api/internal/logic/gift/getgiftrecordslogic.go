@@ -26,7 +26,7 @@ func NewGetGiftRecordsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 }
 
 func (l *GetGiftRecordsLogic) GetGiftRecords(req *types.GetGiftRecordsReq) (resp *types.GetGiftRecordsResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetGiftRecords(l.ctx, &super.GetGiftRecordsReq{
+	rpcResp, err := l.svcCtx.GiftGW.GetGiftRecords(l.ctx, &super.GetGiftRecordsReq{
 		UserId:   req.UserId,
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),

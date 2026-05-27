@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"backend/model"
-	"backend/rpc/internal/achievement"
+	"backend/pkg/achievement"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"

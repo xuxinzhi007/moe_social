@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"backend/model"
-	"backend/rpc/internal/level"
+	"backend/pkg/level"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"

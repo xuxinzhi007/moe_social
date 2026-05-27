@@ -38,7 +38,7 @@ func (l *AdminCreateGiftLogic) AdminCreateGift(req *types.AdminCreateGiftReq) (r
 		}, nil
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminCreateGift(l.ctx, &super.AdminCreateGiftReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminCreateGift(l.ctx, &super.AdminCreateGiftReq{
 		Name:        strings.TrimSpace(req.Name),
 		Price:       int32(req.Price),
 		Icon:        req.Icon,

@@ -32,7 +32,7 @@ func (l *AdminUpdateAnnouncementLogic) AdminUpdateAnnouncement(req *types.AdminU
 		rpcReq.Content = req.Content
 		rpcReq.UpdateContent = true
 	}
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminUpdateAnnouncement(l.ctx, rpcReq)
+	rpcResp, err := l.svcCtx.AdminGW.AdminUpdateAnnouncement(l.ctx, rpcReq)
 	if err != nil {
 		return &types.AdminUpdateAnnouncementResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

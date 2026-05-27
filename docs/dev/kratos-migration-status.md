@@ -1,103 +1,228 @@
 # Kratos 迁移 — 进度清单
 
+
+
 > **更新：2026-05-27**  
-> **当前阶段：FS-3b**（User 扩展）  
-> **全站迁移 F：~60%** · **工程就绪度 G：~55%**  
-> 口径：[kratos-full-site-migration-plan.md §1](./kratos-full-site-migration-plan.md#1-进度口径必读避免歧义) · 架构 SSOT：[kratos-migration.md](./kratos-migration.md)
+
+> **当前阶段：Sprint F100d**  
+
+> **全站迁移 F：~99.5%** · **工程就绪度 G：~65%**  
+
+> 口径：[kratos-full-site-migration-plan.md §1](./kratos-full-site-migration-plan.md#1-进度口径必读避免歧义) · 路线图：[kratos-migration-sprint-f100.md](./kratos-migration-sprint-f100.md)
+
+
 
 ---
+
+
 
 ## 总览
 
+
+
 | 曲线 | 进度 | 验收 |
+
 |------|------|------|
+
 | A · Hybrid Moe | **100%** | `make verify-moe-complete` |
-| B · 纯 Kratos 试点方案 | **100%** | `make verify-kratos-100` |
-| **F · 全站迁移** | **~60%** | `make verify-full-site-50` |
-| G · 工程现代化就绪 | **~55%** | 可上线 Hybrid；≠ 全站迁完 |
+
+| B · 纯 Kratos 试点 | **100%** | `make verify-kratos-100` |
+
+| **F · 全站迁移** | **~99.5%** | `make verify-sprint-f100d-community` |
+
+| G · 工程现代化就绪 | **~62%** | Hybrid 可上线；≠ 契约拆分完成 |
+
+
+
+**F=100% 定义**：各域 biz 100% + 域 proto 拆分 + 退役 `super.*`（见 F100 FS-8～10）
+
+
 
 ---
 
-## 当前生产架构（摘要）
 
-| 组件 | 路由 | 说明 |
+
+## 当前生产架构（网关）
+
+
+
+| 网关 | 路由 | 覆盖 |
+
 |------|------|------|
-| `moeadmingw` | `in_process` | Moe Admin → `biz/moe` |
-| `vipadmingw` | `in_process` | VIP 套餐 → `biz/vip` |
-| `usergw` | `in_process` | User 核心 → `biz/user` |
-| 其余 HTTP | `logic` → `:8080` | legacy `super.Super` |
-| 对外端口 | **:8888** | Flutter / moe-admin 不变 |
 
-配置：`config.yaml` → `moe.api_in_process` / `vip_api_in_process` / `user_api_in_process`（默认 `true`）。
+| `moeadmingw` | in_process | Moe Admin |
+
+| `vipadmingw` | in_process | VIP 套餐 |
+
+| `usergw` | in_process | User + 通知 inbox |
+
+| `landinggw` | in_process | Landing |
+
+| `behaviorgw` | in_process | 行为埋点 |
+
+| `admingw` | in_process | 只读/notify/公告 CRUD/审计/礼物 CRUD |
+
+| `postgw` | in_process | search/get/list/create/like/delete/update/report |
+
+| `commentgw` | in_process | list/create/like |
+
+| `checkinwg` | in_process | 签到/等级/经验日志 |
+
+| `achievementgw` | in_process | 成就读 + ensure |
+
+| `giftgw` | in_process | 礼物读+send/purchase+记录/订单 |
+
+| `llmgw` | in_process | models/catalog/config + chat-turn 持久化 |
+
+| `communitygw` | in_process | 群组 CRUD + 成员 + 群帖 |
+
+| 其余 HTTP | super RPC | AI agents/chat raw 等 |
+
+
+
+配置：`moe.*_api_in_process`（`config/config.yaml`）
+
+
 
 ---
+
+
 
 ## 已完成 ✅
 
-### Hybrid Moe（A）
 
-- [x] `make verify-moe-complete` / `make moe-social`
-- [x] `internal/biz|service|data/moe`
-- [x] `moeadmingw` + `moe.proto` + `moegrpc`
 
-### 纯 Kratos 试点（B）
+### Sprint F70 + F80 + F90（部分）
 
-- [x] Phase 0～6（`moe-kratos`、Wire、VIP 只读 @ :19032）
-- [x] `make build-moe-social` → `bin/moe-social`
 
-### 全站迁移 Phase FS
 
-- [x] **FS-0** 进度 SSOT、域清单、方案文档
-- [x] **FS-2** VIP 套餐域 — `make verify-domain-vip`
-- [x] **FS-3a** User 核心 — `make verify-domain-user`
-- [x] **FS-3c** 小域快迁 — `make verify-domain-misc`（landing / behavior / appcfg）
-- [x] **FS-1** 部分 — `make verify-platform`（单二进制）
+- [x] F70 S1～S5 — `make verify-sprint-f70`
+
+- [x] F80-U1 User 通知 — `make verify-sprint-f80-u1`
+
+- [x] F80-A1 Admin 公告 list/get — `make verify-sprint-f80-a1`
+
+- [x] F80-P1 Post search/get/list — `make verify-sprint-f80-p1`
+
+- [x] F90 评论 list + Admin audit list — `make verify-sprint-f90`
+
+- [x] F92 Post/Comment create 写路径 — `make verify-sprint-f92-social-write`（成就经 `socialhook` 注册）
+
+- [x] F94 Post/Comment like — `make verify-sprint-f94-social-like`
+
+- [x] F96 Post delete/update/report — `make verify-sprint-f96-social-mutate`
+
+- [x] F97 Admin 公告写路径 — `make verify-sprint-f97-admin-announcements-write`
+
+- [x] F98 `pkg/achievement` + `pkg/level` 抽包 — `make verify-sprint-f98-achievement-pkg`
+
+- [x] F99 Checkin + Achievement HTTP — `make verify-sprint-f99-community-checkin`
+
+- [x] F100a Gift 读+写全路径 — `make verify-sprint-f100a-gift`
+
+- [x] F100b LLM models/catalog + chat-turn — `make verify-sprint-f100b-llm`
+
+- [x] F100c-a Admin 礼物 list/get — `make verify-sprint-f100c-admin-gifts-ro`
+
+- [x] F100c-b Admin 礼物写 CRUD — `make verify-sprint-f100c-admin-gifts-write`
+
+- [x] F100d Community 全路径 — `make verify-sprint-f100d-community`
+
+
+
+### 历史
+
+
+
+- [x] FS-2 VIP · FS-3 User · FS-3c 小域 · A/B 100%
+
+
 
 ---
 
-## 进行中 🔄
 
-- [ ] **FS-3b** User 扩展余量（VIP 订单/记忆/OAuth）→ User 域 100%
-- [x] **FS-3b** User 关注 → `biz/user/follow` + `usergw`
-- [x] **FS-3b** User 好友 7 接口 → `biz/user/friend` + `usergw`
-- [ ] **FS-1** 余量（conf 扩展、compose 默认单容器）
-
----
-
-## 待办 ⬜
-
-- [ ] FS-4 Admin 非 Moe
-- [ ] FS-5 社交与内容
-- [ ] FS-6 AI / LLM
-- [ ] FS-7 Chat / Voice
-- [ ] FS-8 退役 `super.api` / `super.proto`
-
----
 
 ## 各域域内进度
 
-| 域 | 域内 % | 网关 / biz | 阶段 |
-|----|--------|------------|------|
-| Moe | 100% | `moeadmingw` | ✅ |
-| VIP 套餐 | 100% | `vipadmingw` | ✅ FS-2 |
-| User | ~95% | `usergw`（核心+关注+好友） | FS-3a ✅ / FS-3b 大部分 ✅ |
-| Admin（非 Moe） | 0% | — | FS-4 |
-| 其它（小域） | 100% | `biz/landing` 等 | ✅ FS-3c |
-| 社交 / AI / 实时 | 0% | — | FS-5～7 |
+
+
+| 域 | 域内 % | biz / gw |
+
+|----|--------|----------|
+
+| Moe | 100% | `biz/moe` + `moeadmingw` |
+
+| VIP | 100% | `biz/vip` + `vipadmingw` |
+
+| User | 100% | `biz/user` + `usergw` |
+
+| 其它 | 100% | landing/behavior/appcfg |
+
+| 平台 | 100% | `moe-social` |
+
+| Admin | ~62% | 公告/审计/notify + 礼物 CRUD 全 in_process |
+
+| 通知 | ~60% | inbox + 广播 |
+
+| 社交 | ~90% | post/comment + community 群组全路径 |
+
+| 社区/签到 | ~85% | community 全路径 + checkin/achievement |
+
+| Gift | ~90% | 用户侧读+send/purchase 全 in_process |
+
+| AI / LLM | ~35% | models/catalog/config + chat-turn in_process；chat 推理仍 API logic |
+
+| Chat / Voice | 0% | legacy |
+
+
 
 ---
 
+
+
+## 待办 ⬜（F 99.5% → 100%）
+
+
+
+- [ ] AI/LLM chat 推理与 memory 写路径 biz 化
+
+- [ ] AI agents/providers 域（`logic/ai`）
+
+- [ ] Chat/Voice/WebSocket 边界
+
+- [ ] Admin 剩余 CRUD（用户/成就/菜单等）
+
+- [ ] FS-8 域 `api/<domain>/v1/*.proto`
+
+- [ ] FS-9 退役 `super.api` / `super.proto`
+
+
+
+---
+
+
+
 ## 日常命令
 
+
+
 ```bash
+
 cd backend
-make moe-social               # 开发 / 生产 HTTP :8888
-make verify-full-site-50      # F≈60% 组合验收
-make verify-moe-complete      # A
-make verify-domain-vip        # FS-2
-make verify-domain-user       # FS-3a
-make verify-domain-misc       # FS-3c
-make verify-platform
-make verify-kratos-100        # B
-make build-moe-social
+
+make verify-sprint-f80      # F80 回归
+
+make verify-sprint-f100d-community          # F100d community 全路径
+make verify-sprint-f100c-admin-gifts-write  # F100c-b admin 礼物写
+make verify-sprint-regression              # F100d→F70 全回归
+
+make verify-sprint-f90        # F90 部分
+
+make verify-sprint-f100-structure  # GW + biz 结构门
+
+make moe-social
+
+powershell -File scripts/verify-sprint-f70.ps1   # Windows
+
 ```
+

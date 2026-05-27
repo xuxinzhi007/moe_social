@@ -73,7 +73,7 @@ func (l *ChatLogic) memoryFlushBeforeCompact(
 			continue
 		}
 		for _, item := range memory.HeuristicExtractFromUserMessage(m.Content) {
-			_, err := l.svcCtx.SuperRpcClient.UpsertUserMemory(l.ctx, &super.UpsertUserMemoryReq{
+			_, err := l.svcCtx.LLMGW.UpsertUserMemory(l.ctx, &super.UpsertUserMemoryReq{
 				UserId:      userID,
 				Key:         item.Key,
 				Value:       item.Value,
@@ -128,7 +128,7 @@ func (l *ChatLogic) appendDailyObservation(userID, sessionID, sourceMsgID string
 
 	key := memory.DailyNoteKey(time.Now().UTC())
 	existing := ""
-	if resp, err := l.svcCtx.SuperRpcClient.GetUserMemories(l.ctx, &super.GetUserMemoriesReq{
+	if resp, err := l.svcCtx.LLMGW.GetUserMemories(l.ctx, &super.GetUserMemoriesReq{
 		UserId: userID,
 		Limit:  200,
 	}); err == nil {
@@ -140,7 +140,7 @@ func (l *ChatLogic) appendDailyObservation(userID, sessionID, sourceMsgID string
 		}
 	}
 	merged := memory.MergeDailyNoteContent(existing, line)
-	_, _ = l.svcCtx.SuperRpcClient.UpsertUserMemory(l.ctx, &super.UpsertUserMemoryReq{
+	_, _ = l.svcCtx.LLMGW.UpsertUserMemory(l.ctx, &super.UpsertUserMemoryReq{
 		UserId:      userID,
 		Key:         key,
 		Value:       merged,

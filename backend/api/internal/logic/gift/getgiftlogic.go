@@ -26,7 +26,7 @@ func NewGetGiftLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetGiftLo
 }
 
 func (l *GetGiftLogic) GetGift(req *types.GetGiftReq) (resp *types.GetGiftResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetGift(l.ctx, &super.GetGiftReq{
+	rpcResp, err := l.svcCtx.GiftGW.GetGift(l.ctx, &super.GetGiftReq{
 		GiftId: req.GiftId,
 	})
 	if err != nil {

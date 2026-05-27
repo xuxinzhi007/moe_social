@@ -26,7 +26,7 @@ func NewGetCheckInStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 
 func (l *GetCheckInStatusLogic) GetCheckInStatus(req *types.GetCheckInStatusReq) (resp *types.GetCheckInStatusResp, err error) {
 	// 调用RPC服务获取签到状态
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetCheckInStatus(l.ctx, &super.GetCheckInStatusReq{
+	rpcResp, err := l.svcCtx.CheckInGW.GetCheckInStatus(l.ctx, &super.GetCheckInStatusReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

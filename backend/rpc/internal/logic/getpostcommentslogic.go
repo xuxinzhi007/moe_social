@@ -2,12 +2,11 @@ package logic
 
 import (
 	"context"
-	"strconv"
+	"errors"
 
-	"backend/model"
+	commentbiz "backend/internal/biz/comment"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
-	"backend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,144 +18,20 @@ type GetPostCommentsLogic struct {
 }
 
 func NewGetPostCommentsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPostCommentsLogic {
-	return &GetPostCommentsLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+	return &GetPostCommentsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
 func (l *GetPostCommentsLogic) GetPostComments(in *super.GetPostCommentsReq) (*super.GetPostCommentsResp, error) {
-	// 解析帖子ID
-	postID, err := strconv.ParseUint(in.PostId, 10, 32)
+	items, total, err := commentbiz.ListByPost(l.ctx, l.svcCtx.DB, commentbiz.ListFilter{
+		PostID: in.GetPostId(), Page: in.GetPage(), PageSize: in.GetPageSize(),
+		ViewerUserID: in.GetViewerUserId(),
+	})
 	if err != nil {
-		l.Error("解析帖子ID失败:", err)
-		return nil, err
-	}
-
-	// 设置默认分页参数
-	page := in.Page
-	pageSize := in.PageSize
-	if page <= 0 {
-		page = 1
-	}
-	if pageSize <= 0 {
-		pageSize = 50
-	}
-	if pageSize > 500 {
-		pageSize = 500
-	}
-
-	offset := (page - 1) * pageSize
-	if offset < 0 {
-		offset = 0
-	}
-
-	// 查询评论列表
-	var comments []model.Comment
-	var total int64
-
-	// 计算总数
-	if err := l.svcCtx.DB.Model(&model.Comment{}).Where("post_id = ?", postID).Count(&total).Error; err != nil {
-		l.Error("计算评论总数失败:", err)
-		return nil, err
-	}
-
-	// 查询评论列表（含回复），按时间正序便于前端组树
-	if err := l.svcCtx.DB.Where("post_id = ?", postID).
-		Order("created_at ASC").
-		Offset(int(offset)).
-		Limit(int(pageSize)).
-		Find(&comments).Error; err != nil {
+		if errors.Is(err, commentbiz.ErrInvalidPostID) {
+			return nil, err
+		}
 		l.Error("查询评论列表失败:", err)
 		return nil, err
 	}
-
-	// 查询用户信息（批量查询）
-	userMap := make(map[uint]model.User)
-	if len(comments) > 0 {
-		userIDs := make([]uint, 0, len(comments))
-		for _, comment := range comments {
-			userIDs = append(userIDs, comment.UserID)
-		}
-		var users []model.User
-		l.svcCtx.DB.Where("id IN ?", userIDs).Find(&users)
-		for _, user := range users {
-			userMap[user.ID] = user
-		}
-	}
-
-	var viewerUID uint
-	if in.ViewerUserId != "" {
-		if v, e := strconv.ParseUint(in.ViewerUserId, 10, 32); e == nil {
-			viewerUID = uint(v)
-		}
-	}
-	commentIDs := make([]uint, 0, len(comments))
-	for _, c := range comments {
-		commentIDs = append(commentIDs, c.ID)
-	}
-	likedComments := LikedTargetIDSet(l.svcCtx.DB, viewerUID, "comment", commentIDs)
-
-	parentNameMap := make(map[uint]string)
-	parentIDs := make([]uint, 0)
-	for _, c := range comments {
-		if c.ParentID > 0 {
-			parentIDs = append(parentIDs, c.ParentID)
-		}
-	}
-	if len(parentIDs) > 0 {
-		var parents []model.Comment
-		_ = l.svcCtx.DB.Preload("User").Where("id IN ?", parentIDs).Find(&parents).Error
-		for _, p := range parents {
-			name := "用户"
-			if p.User.Username != "" {
-				name = p.User.Username
-			} else if p.User.Email != "" {
-				name = p.User.Email
-			}
-			parentNameMap[p.ID] = name
-		}
-	}
-
-	// 构建响应
-	resp := &super.GetPostCommentsResp{
-		Comments: make([]*super.Comment, 0, len(comments)),
-		Total:    int32(total),
-	}
-
-	// 转换为rpc响应格式
-	for _, comment := range comments {
-		// 获取用户信息
-		username := "未知用户"
-		avatar := "https://picsum.photos/150"
-		if user, ok := userMap[comment.UserID]; ok {
-			if user.Username != "" {
-				username = user.Username
-			} else if user.Email != "" {
-				username = user.Email
-			}
-			if user.Avatar != "" {
-				avatar = user.Avatar
-			}
-		}
-
-		rpcComment := &super.Comment{
-			Id:              strconv.FormatUint(uint64(comment.ID), 10),
-			PostId:          strconv.FormatUint(uint64(comment.PostID), 10),
-			UserId:          strconv.FormatUint(uint64(comment.UserID), 10),
-			UserName:        username,
-			UserAvatar:      avatar,
-			Content:         comment.Content,
-			Likes:           int32(comment.Likes),
-			IsLiked:         likedComments[comment.ID],
-			CreatedAt:       utils.FormatAPIDateTime(comment.CreatedAt),
-			ParentId:        strconv.FormatUint(uint64(comment.ParentID), 10),
-			ReplyToUserName: parentNameMap[comment.ParentID],
-		}
-
-		resp.Comments = append(resp.Comments, rpcComment)
-	}
-
-	return resp, nil
+	return &super.GetPostCommentsResp{Comments: items, Total: total}, nil
 }

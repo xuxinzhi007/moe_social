@@ -22,7 +22,7 @@ func NewAdminGetGrowthStatsLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *AdminGetGrowthStatsLogic) AdminGetGrowthStats(_ *types.EmptyReq) (*types.AdminGetGrowthStatsResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminGetGrowthStats(l.ctx, &super.AdminGetGrowthStatsReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminGetGrowthStats(l.ctx, &super.AdminGetGrowthStatsReq{})
 	if err != nil {
 		return &types.AdminGetGrowthStatsResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

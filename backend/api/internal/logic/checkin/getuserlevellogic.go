@@ -26,7 +26,7 @@ func NewGetUserLevelLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetU
 
 func (l *GetUserLevelLogic) GetUserLevel(req *types.GetUserLevelReq) (resp *types.GetUserLevelResp, err error) {
 	// 调用RPC服务获取用户等级
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetUserLevel(l.ctx, &super.GetUserLevelReq{
+	rpcResp, err := l.svcCtx.CheckInGW.GetUserLevel(l.ctx, &super.GetUserLevelReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

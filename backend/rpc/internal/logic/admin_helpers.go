@@ -2,16 +2,16 @@ package logic
 
 import (
 	"strconv"
-	"strings"
 	"time"
 
+	notifybiz "backend/internal/biz/notify"
 	"backend/model"
 	"backend/rpc/pb/super"
 
 	"gorm.io/gorm"
 )
 
-const adminSystemNotificationType = 4
+const adminSystemNotificationType = notifybiz.AdminSystemNotificationType
 
 func adminPageParams(page, pageSize int32) (int32, int32) {
 	if page <= 0 {
@@ -145,13 +145,5 @@ func formatOptionalTime(t *time.Time) string {
 }
 
 func systemNotificationContent(title, content string) string {
-	title = strings.TrimSpace(title)
-	content = strings.TrimSpace(content)
-	if title != "" && content != "" {
-		return title + ": " + content
-	}
-	if title != "" {
-		return title
-	}
-	return content
+	return notifybiz.SystemNotificationContent(title, content)
 }

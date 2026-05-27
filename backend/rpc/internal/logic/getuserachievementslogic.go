@@ -2,10 +2,11 @@ package logic
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"strconv"
 
-	"backend/rpc/internal/achievement"
+	achievementapp "backend/internal/service/achievement"
+	achievementbiz "backend/internal/biz/achievement"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -19,26 +20,17 @@ type GetUserAchievementsLogic struct {
 }
 
 func NewGetUserAchievementsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetUserAchievementsLogic {
-	return &GetUserAchievementsLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+	return &GetUserAchievementsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
 func (l *GetUserAchievementsLogic) GetUserAchievements(in *super.GetUserAchievementsReq) (*super.GetUserAchievementsResp, error) {
-	userID, err := strconv.ParseUint(in.UserId, 10, 32)
+	app := achievementapp.New(l.svcCtx.DB)
+	resp, err := app.GetUserAchievements(l.ctx, in)
 	if err != nil {
-		return nil, fmt.Errorf("无效的用户ID: %v", err)
-	}
-
-	engine := achievement.NewEngine(l.svcCtx.DB)
-	badges, err := engine.ListUserAchievements(l.svcCtx.DB, uint(userID), true)
-	if err != nil {
+		if errors.Is(err, achievementbiz.ErrInvalidUserID) {
+			return nil, fmt.Errorf("无效的用户ID: %v", err)
+		}
 		return nil, err
 	}
-
-	return &super.GetUserAchievementsResp{
-		Badges: achievement.BadgesToProto(badges),
-	}, nil
+	return resp, nil
 }

@@ -22,7 +22,7 @@ func NewAdminPublishAnnouncementLogic(ctx context.Context, svcCtx *svc.ServiceCo
 }
 
 func (l *AdminPublishAnnouncementLogic) AdminPublishAnnouncement(req *types.AdminPublishAnnouncementReq) (*types.AdminPublishAnnouncementResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminPublishAnnouncement(l.ctx, &super.AdminPublishAnnouncementReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminPublishAnnouncement(l.ctx, &super.AdminPublishAnnouncementReq{
 		AnnouncementId: req.AnnouncementId,
 	})
 	if err != nil {

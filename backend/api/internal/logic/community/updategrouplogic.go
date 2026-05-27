@@ -25,7 +25,7 @@ func NewUpdateGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Updat
 }
 
 func (l *UpdateGroupLogic) UpdateGroup(req *types.UpdateGroupReq) (resp *types.UpdateGroupResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.UpdateGroup(l.ctx, &super.UpdateGroupReq{
+	rpcResp, err := l.svcCtx.CommunityGW.UpdateGroup(l.ctx, &super.UpdateGroupReq{
 		GroupId:    req.GroupId,
 		Name:       req.Name,
 		Description: req.Description,

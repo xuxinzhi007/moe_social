@@ -27,7 +27,7 @@ func NewCheckInLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CheckInLo
 
 func (l *CheckInLogic) CheckIn(req *types.CheckInReq) (resp *types.CheckInResp, err error) {
 	// 调用RPC服务进行签到
-	rpcResp, err := l.svcCtx.SuperRpcClient.CheckIn(l.ctx, &super.CheckInReq{
+	rpcResp, err := l.svcCtx.CheckInGW.CheckIn(l.ctx, &super.CheckInReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

@@ -25,7 +25,7 @@ func NewDeleteGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Delet
 }
 
 func (l *DeleteGroupLogic) DeleteGroup(req *types.DeleteGroupReq) (resp *types.BaseResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.DeleteGroup(l.ctx, &super.DeleteGroupReq{
+	rpcResp, err := l.svcCtx.CommunityGW.DeleteGroup(l.ctx, &super.DeleteGroupReq{
 		GroupId: req.GroupId,
 		UserId:  req.UserId,
 	})

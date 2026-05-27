@@ -22,7 +22,7 @@ func NewAdminListAuditLogsLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *AdminListAuditLogsLogic) AdminListAuditLogs(req *types.AdminListAuditLogsReq) (*types.AdminListAuditLogsResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListAuditLogs(l.ctx, &super.AdminListAuditLogsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListAuditLogs(l.ctx, &super.AdminListAuditLogsReq{
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
 		Action:   req.Action,

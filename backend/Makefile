@@ -100,6 +100,115 @@ verify-full-site-50:
 
 	bash scripts/verify-full-site-50.sh
 
+verify-sprint-s1-landing:
+
+	bash scripts/verify-sprint-s1-landing.sh
+
+verify-sprint-s2-user-vip:
+
+	bash scripts/verify-sprint-s2-user-vip.sh
+
+verify-sprint-s3-admin-ro:
+
+	bash scripts/verify-sprint-s3-admin-ro.sh
+
+verify-sprint-s4-misc:
+
+	bash scripts/verify-sprint-s4-misc.sh
+
+verify-sprint-s5-notify:
+
+	bash scripts/verify-sprint-s5-notify.sh
+
+verify-sprint-f70:
+
+	bash scripts/verify-sprint-f70.sh
+
+verify-sprint-f80-u1:
+
+	bash scripts/verify-sprint-f80-u1.sh
+
+verify-sprint-f80-a1:
+
+	bash scripts/verify-sprint-f80-a1.sh
+
+verify-sprint-f80-p1:
+
+	bash scripts/verify-sprint-f80-p1.sh
+
+verify-sprint-f80:
+
+	bash scripts/verify-sprint-f80.sh
+
+verify-sprint-f90:
+
+	bash scripts/verify-sprint-f90.sh
+
+verify-sprint-f92-social-write:
+
+	bash scripts/verify-sprint-f92-social-write.sh
+
+verify-sprint-f94-social-like:
+
+	bash scripts/verify-sprint-f94-social-like.sh
+
+verify-sprint-f96-social-mutate:
+
+	bash scripts/verify-sprint-f96-social-mutate.sh
+
+verify-sprint-f97-admin-announcements-write:
+
+	bash scripts/verify-sprint-f97-admin-announcements-write.sh
+
+verify-sprint-f98-achievement-pkg:
+
+	bash scripts/verify-sprint-f98-achievement-pkg.sh
+
+verify-sprint-f99-community-checkin:
+
+	bash scripts/verify-sprint-f99-community-checkin.sh
+
+verify-sprint-f100a-gift:
+
+	bash scripts/verify-sprint-f100a-gift.sh
+
+verify-sprint-f100b-llm:
+
+	bash scripts/verify-sprint-f100b-llm.sh
+
+verify-sprint-f100c-admin-gifts-ro:
+
+	bash scripts/verify-sprint-f100c-admin-gifts-ro.sh
+
+verify-sprint-f100c-admin-gifts-write:
+
+	bash scripts/verify-sprint-f100c-admin-gifts-write.sh
+
+verify-sprint-f100d-community:
+
+	bash scripts/verify-sprint-f100d-community.sh
+
+verify-sprint-regression:
+
+	bash scripts/verify-sprint-f100d-community.sh
+	bash scripts/verify-sprint-f100c-admin-gifts-write.sh
+	bash scripts/verify-sprint-f100c-admin-gifts-ro.sh
+	bash scripts/verify-sprint-f100b-llm.sh
+	bash scripts/verify-sprint-f100a-gift.sh
+	bash scripts/verify-sprint-f99-community-checkin.sh
+	bash scripts/verify-sprint-f98-achievement-pkg.sh
+	bash scripts/verify-sprint-f97-admin-announcements-write.sh
+	bash scripts/verify-sprint-f96-social-mutate.sh
+	bash scripts/verify-sprint-f94-social-like.sh
+	bash scripts/verify-sprint-f92-social-write.sh
+	bash scripts/verify-sprint-f90.sh
+	bash scripts/verify-sprint-f80.sh
+	bash scripts/verify-sprint-f70.sh
+
+verify-sprint-f100-structure:
+
+	bash scripts/verify-sprint-f100-structure.sh
+
 moe-social:
 
 	go run ./cmd/moe-social-stack -f-api api/etc/super.yaml -f-rpc rpc/etc/super.yaml

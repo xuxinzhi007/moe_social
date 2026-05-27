@@ -35,7 +35,7 @@ func (l *AdminListGiftsLogic) AdminListGifts(req *types.AdminListGiftsReq) (resp
 		pageSize = 50
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListGifts(l.ctx, &super.AdminListGiftsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListGifts(l.ctx, &super.AdminListGiftsReq{
 		Page:     int32(page),
 		PageSize: int32(pageSize),
 		Keyword:  req.Keyword,

@@ -138,3 +138,6 @@ backend/api/super.exe
 release.jks.b64
 android/app/release.jks.bak
 backend/.dev/
+backend/api/.../moe-social-api
+backend/api/.../super.api
+backend/api/.../super.go

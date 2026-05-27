@@ -26,7 +26,7 @@ func NewAdminUpdateGiftLogic(ctx context.Context, svcCtx *svc.ServiceContext) *A
 }
 
 func (l *AdminUpdateGiftLogic) AdminUpdateGift(req *types.AdminUpdateGiftReq) (resp *types.AdminUpdateGiftResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminUpdateGift(l.ctx, &super.AdminUpdateGiftReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminUpdateGift(l.ctx, &super.AdminUpdateGiftReq{
 		GiftId:            req.GiftId,
 		Name:              req.Name,
 		Price:             int32(req.Price),

@@ -23,7 +23,7 @@ func NewAdminBroadcastNotificationLogic(ctx context.Context, svcCtx *svc.Service
 }
 
 func (l *AdminBroadcastNotificationLogic) AdminBroadcastNotification(req *types.AdminBroadcastNotificationReq) (*types.AdminBroadcastNotificationResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminBroadcastNotification(l.ctx, &super.AdminBroadcastNotificationReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminBroadcastNotification(l.ctx, &super.AdminBroadcastNotificationReq{
 		Title:   req.Title,
 		Content: req.Content,
 	})

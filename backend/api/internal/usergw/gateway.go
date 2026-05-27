@@ -69,6 +69,13 @@ func (g *Gateway) GetUserVipStatus(ctx context.Context, in *super.GetUserVipStat
 	return g.super.GetUserVipStatus(ctx, in, opts...)
 }
 
+func (g *Gateway) GetVipOrders(ctx context.Context, in *super.GetVipOrdersReq, opts ...grpc.CallOption) (*super.GetVipOrdersResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.GetVipOrders(ctx, in)
+	}
+	return g.super.GetVipOrders(ctx, in, opts...)
+}
+
 func (g *Gateway) CheckUserVip(ctx context.Context, in *super.CheckUserVipReq, opts ...grpc.CallOption) (*super.CheckUserVipResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.CheckUserVip(ctx, in)
@@ -158,6 +165,34 @@ func (g *Gateway) GetFriendRelation(ctx context.Context, in *super.GetFriendRela
 		return g.local.GetFriendRelation(ctx, in)
 	}
 	return g.super.GetFriendRelation(ctx, in, opts...)
+}
+
+func (g *Gateway) GetNotifications(ctx context.Context, in *super.GetNotificationsReq, opts ...grpc.CallOption) (*super.GetNotificationsResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.GetNotifications(ctx, in)
+	}
+	return g.super.GetNotifications(ctx, in, opts...)
+}
+
+func (g *Gateway) GetUnreadCount(ctx context.Context, in *super.GetUnreadCountReq, opts ...grpc.CallOption) (*super.GetUnreadCountResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.GetUnreadCount(ctx, in)
+	}
+	return g.super.GetUnreadCount(ctx, in, opts...)
+}
+
+func (g *Gateway) ReadNotification(ctx context.Context, in *super.ReadNotificationReq, opts ...grpc.CallOption) (*super.ReadNotificationResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.ReadNotification(ctx, in)
+	}
+	return g.super.ReadNotification(ctx, in, opts...)
+}
+
+func (g *Gateway) ReadAllNotifications(ctx context.Context, in *super.ReadAllNotificationsReq, opts ...grpc.CallOption) (*super.ReadAllNotificationsResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.ReadAllNotifications(ctx, in)
+	}
+	return g.super.ReadAllNotifications(ctx, in, opts...)
 }
 
 // Super 未迁移方法仍走 RPC。

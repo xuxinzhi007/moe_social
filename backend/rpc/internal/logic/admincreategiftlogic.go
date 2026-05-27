@@ -2,9 +2,10 @@ package logic
 
 import (
 	"context"
-	"strings"
+	"errors"
 
-	"backend/model"
+	adminbiz "backend/internal/biz/admin"
+	adminapp "backend/internal/service/admin"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
@@ -19,40 +20,20 @@ type AdminCreateGiftLogic struct {
 }
 
 func NewAdminCreateGiftLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AdminCreateGiftLogic {
-	return &AdminCreateGiftLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+	return &AdminCreateGiftLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
 func (l *AdminCreateGiftLogic) AdminCreateGift(in *super.AdminCreateGiftReq) (*super.AdminCreateGiftResp, error) {
-	name := strings.TrimSpace(in.GetName())
-	if name == "" {
-		return nil, errorx.InvalidArgument("礼物名称不能为空")
-	}
-	if in.GetPrice() < 0 {
-		return nil, errorx.InvalidArgument("价格不能为负数")
-	}
-	category := strings.TrimSpace(in.GetCategory())
-	if category == "" {
-		category = "special"
-	}
-
-	gift := model.Gift{
-		Name:        name,
-		Price:       int(in.GetPrice()),
-		Icon:        strings.TrimSpace(in.GetIcon()),
-		Description: strings.TrimSpace(in.GetDescription()),
-		Category:    category,
-		SortOrder:   int(in.GetSortOrder()),
-	}
-	if err := l.svcCtx.DB.Create(&gift).Error; err != nil {
+	resp, err := adminapp.New(l.svcCtx.DB).AdminCreateGift(l.ctx, in)
+	if err != nil {
+		if errors.Is(err, adminbiz.ErrEmptyGiftName) {
+			return nil, errorx.InvalidArgument("礼物名称不能为空")
+		}
+		if errors.Is(err, adminbiz.ErrNegativePrice) {
+			return nil, errorx.InvalidArgument("价格不能为负数")
+		}
 		l.Errorf("[admin] create gift: %v", err)
 		return nil, errorx.Internal("创建礼物失败")
 	}
-
-	return &super.AdminCreateGiftResp{
-		Gift: giftModelToProto(gift),
-	}, nil
+	return resp, nil
 }

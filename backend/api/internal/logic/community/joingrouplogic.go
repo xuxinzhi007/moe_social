@@ -25,7 +25,7 @@ func NewJoinGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *JoinGro
 }
 
 func (l *JoinGroupLogic) JoinGroup(req *types.JoinGroupReq) (resp *types.BaseResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.JoinGroup(l.ctx, &super.JoinGroupReq{
+	rpcResp, err := l.svcCtx.CommunityGW.JoinGroup(l.ctx, &super.JoinGroupReq{
 		GroupId: req.GroupId,
 		UserId:  req.UserId,
 	})

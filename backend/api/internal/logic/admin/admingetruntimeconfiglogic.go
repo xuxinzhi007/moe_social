@@ -26,7 +26,7 @@ func NewAdminGetRuntimeConfigLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *AdminGetRuntimeConfigLogic) AdminGetRuntimeConfig(_ *types.EmptyReq) (*types.AdminRuntimeConfigResp, error) {
-	view, err := utils.ReadRuntimeConfig()
+	view, err := l.svcCtx.AdminGW.ReadRuntimeConfig()
 	if err != nil {
 		l.Errorf("[admin] read runtime config: %v", err)
 		return &types.AdminRuntimeConfigResp{

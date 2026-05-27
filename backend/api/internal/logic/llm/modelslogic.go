@@ -34,19 +34,22 @@ func (l *ModelsLogic) Models(req *types.EmptyReq) (resp *types.LlmModelsResp, er
 		}, nil
 	}
 
-	cfg, err := inferenceConfigFromSvc(l.svcCtx)
-	if err != nil {
-		return &types.LlmModelsResp{
-			BaseResp: common.HandleError(err),
-			Models:   nil,
-		}, nil
+	var names []string
+	if l.svcCtx.LLMApp != nil {
+		names, err = l.svcCtx.LLMApp.ListModels(l.ctx)
+	} else {
+		cfg, cfgErr := inferenceConfigFromSvc(l.svcCtx)
+		if cfgErr != nil {
+			return &types.LlmModelsResp{
+				BaseResp: common.HandleError(cfgErr),
+				Models:   nil,
+			}, nil
+		}
+		ctx, cancel := context.WithTimeout(l.ctx, time.Duration(cfg.TimeoutSeconds)*time.Second)
+		defer cancel()
+		client := utils.NewHTTPClient(cfg.TimeoutSeconds)
+		names, err = common.ListModelNames(ctx, client, cfg)
 	}
-
-	ctx, cancel := context.WithTimeout(l.ctx, time.Duration(cfg.TimeoutSeconds)*time.Second)
-	defer cancel()
-
-	client := utils.NewHTTPClient(cfg.TimeoutSeconds)
-	names, err := common.ListModelNames(ctx, client, cfg)
 	if err != nil {
 		return &types.LlmModelsResp{
 			BaseResp: common.HandleError(err),

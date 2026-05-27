@@ -7,6 +7,7 @@ import (
 	"time"
 
 	moebiz "backend/internal/biz/moe"
+	postbiz "backend/internal/biz/post"
 	moeadmin "backend/internal/service/moe"
 	"backend/pkg/moe/brain"
 	"backend/rpc/internal/errorx"
@@ -328,31 +329,12 @@ func NewMoeSearchPostsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Mo
 }
 
 func (l *MoeSearchPostsLogic) MoeSearchPosts(in *super.MoeSearchPostsReq) (*super.MoeSearchPostsResp, error) {
-	hits, err := l.svcCtx.MoeAdmin.SearchPosts(l.ctx, moebiz.SearchPostsInput{
-		Query:        in.Query,
-		ViewerUserID: uint(in.ViewerUserId),
-		MoodTag:      in.MoodTag,
-		TopicTagID:   uint(in.TopicTagId),
-		Limit:        int(in.Limit),
+	out, err := postbiz.Search(l.ctx, l.svcCtx.DB, postbiz.SearchInput{
+		Query: in.GetQuery(), Limit: in.GetLimit(), ViewerUserID: in.GetViewerUserId(),
+		MoodTag: in.GetMoodTag(), TopicTagID: in.GetTopicTagId(),
 	})
 	if err != nil {
 		return nil, errorx.Internal("检索失败")
-	}
-	out := &super.MoeSearchPostsResp{Total: int32(len(hits))}
-	for _, h := range hits {
-		out.Items = append(out.Items, &super.MoeSearchPostHit{
-			PostId:      h.PostID,
-			UserId:      h.UserID,
-			UserName:    h.UserName,
-			Content:     h.Content,
-			Snippet:     h.Snippet,
-			MoodTag:     h.MoodTag,
-			Likes:       int32(h.Likes),
-			Comments:    int32(h.Comments),
-			CreatedAt:   h.CreatedAt,
-			Score:       h.Score,
-			ScoreReason: h.ScoreReason,
-		})
 	}
 	return out, nil
 }

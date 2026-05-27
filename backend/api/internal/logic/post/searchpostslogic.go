@@ -47,7 +47,7 @@ func (l *SearchPostsLogic) SearchPosts(req *types.SearchPostsReq) (*types.Search
 			topicID = v
 		}
 	}
-	rpcResp, err := l.svcCtx.SuperRpcClient.MoeSearchPosts(l.ctx, &super.MoeSearchPostsReq{
+	rpcResp, err := l.svcCtx.PostGW.MoeSearchPosts(l.ctx, &super.MoeSearchPostsReq{
 		Query:        req.Q,
 		Limit:        int32(limit),
 		ViewerUserId: viewerUID,

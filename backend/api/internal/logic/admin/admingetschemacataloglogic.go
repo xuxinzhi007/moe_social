@@ -22,7 +22,7 @@ func NewAdminGetSchemaCatalogLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *AdminGetSchemaCatalogLogic) AdminGetSchemaCatalog(_ *types.EmptyReq) (*types.AdminSchemaCatalogResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminGetSchemaCatalog(l.ctx, &super.AdminGetSchemaCatalogReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminGetSchemaCatalog(l.ctx, &super.AdminGetSchemaCatalogReq{})
 	if err != nil {
 		return &types.AdminSchemaCatalogResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

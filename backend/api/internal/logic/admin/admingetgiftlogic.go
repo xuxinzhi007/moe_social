@@ -26,7 +26,7 @@ func NewAdminGetGiftLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Admi
 }
 
 func (l *AdminGetGiftLogic) AdminGetGift(req *types.AdminGetGiftReq) (resp *types.AdminGetGiftResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminGetGift(l.ctx, &super.AdminGetGiftReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminGetGift(l.ctx, &super.AdminGetGiftReq{
 		GiftId: req.GiftId,
 	})
 	if err != nil {

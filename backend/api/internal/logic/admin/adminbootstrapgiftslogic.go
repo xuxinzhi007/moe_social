@@ -26,7 +26,7 @@ func NewAdminBootstrapGiftsLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *AdminBootstrapGiftsLogic) AdminBootstrapGifts(_ *types.EmptyReq) (resp *types.AdminBootstrapGiftsResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminBootstrapGifts(l.ctx, &super.AdminBootstrapGiftsReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminBootstrapGifts(l.ctx, &super.AdminBootstrapGiftsReq{})
 	if err != nil {
 		return &types.AdminBootstrapGiftsResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

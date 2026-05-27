@@ -2,10 +2,10 @@ package logic
 
 import (
 	"context"
-	"strconv"
-	"strings"
+	"errors"
 
-	"backend/model"
+	adminapp "backend/internal/service/admin"
+	adminbiz "backend/internal/biz/admin"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
@@ -24,13 +24,16 @@ func NewAdminDeleteAnnouncementLogic(ctx context.Context, svcCtx *svc.ServiceCon
 }
 
 func (l *AdminDeleteAnnouncementLogic) AdminDeleteAnnouncement(in *super.AdminDeleteAnnouncementReq) (*super.AdminDeleteAnnouncementResp, error) {
-	id, err := strconv.ParseUint(strings.TrimSpace(in.GetAnnouncementId()), 10, 64)
-	if err != nil || id == 0 {
-		return nil, errorx.InvalidArgument("公告 ID 无效")
+	app := adminapp.New(l.svcCtx.DB)
+	resp, err := app.DeleteAnnouncement(l.ctx, in)
+	if err != nil {
+		switch {
+		case errors.Is(err, adminbiz.ErrInvalidAnnouncementID):
+			return nil, errorx.InvalidArgument("公告 ID 无效")
+		default:
+			l.Errorf("[admin] delete announcement: %v", err)
+			return nil, errorx.Internal("删除公告失败")
+		}
 	}
-	if err := l.svcCtx.DB.Delete(&model.AdminAnnouncement{}, id).Error; err != nil {
-		l.Errorf("[admin] delete announcement: %v", err)
-		return nil, errorx.Internal("删除公告失败")
-	}
-	return &super.AdminDeleteAnnouncementResp{}, nil
+	return resp, nil
 }

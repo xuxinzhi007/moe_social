@@ -28,7 +28,7 @@ func NewCreateCommentLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cre
 
 func (l *CreateCommentLogic) CreateComment(req *types.CreateCommentReq) (resp *types.CreateCommentResp, err error) {
 	// 调用RPC服务创建评论
-	rpcResp, err := l.svcCtx.SuperRpcClient.CreateComment(l.ctx, &super.CreateCommentReq{
+	rpcResp, err := l.svcCtx.CommentGW.CreateComment(l.ctx, &super.CreateCommentReq{
 		PostId:   req.PostId,
 		UserId:   req.UserId,
 		Content:  req.Content,

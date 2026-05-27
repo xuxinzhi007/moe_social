@@ -52,7 +52,7 @@ func (l *TrackUserBehaviorEventsLogic) TrackUserBehaviorEvents(req *types.TrackU
 		})
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.TrackUserBehaviorEvents(l.ctx, &super.TrackUserBehaviorEventsReq{
+	rpcResp, err := l.svcCtx.BehaviorGW.TrackUserBehaviorEvents(l.ctx, &super.TrackUserBehaviorEventsReq{
 		UserId: userID,
 		Events: events,
 	})

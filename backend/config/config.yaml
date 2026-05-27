@@ -173,6 +173,16 @@ moe:
   # FS-2：VIP 套餐 HTTP 走 API 进程内 biz（与 api_in_process 默认同开）
   vip_api_in_process: true
   user_api_in_process: true
+  landing_api_in_process: true
+  behavior_api_in_process: true
+  post_api_in_process: true
+  comment_api_in_process: true
+  checkin_api_in_process: true
+  achievement_api_in_process: true
+  gift_api_in_process: true
+  llm_api_in_process: true
+  community_api_in_process: true
+  admin_readonly_api_in_process: true
   # 在 RPC :8080 同时注册 moe.v1.MoeAdmin gRPC（与 super.Super 并存）
   register_moe_grpc: true
   # API Admin Moe 在无 api_in_process 时优先走 moe gRPC（否则 super Admin*）

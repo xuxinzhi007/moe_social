@@ -36,7 +36,7 @@ func (l *UpdatePostLogic) UpdatePost(req *types.UpdatePostReq) (resp *types.Upda
 		})
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.UpdatePost(l.ctx, &super.UpdatePostReq{
+	rpcResp, err := l.svcCtx.PostGW.UpdatePost(l.ctx, &super.UpdatePostReq{
 		PostId:          req.PostId,
 		UserId:          req.UserId,
 		Content:         req.Content,

@@ -2,8 +2,9 @@ package logic
 
 import (
 	"context"
+	"errors"
 
-	"backend/model"
+	notifybiz "backend/internal/biz/notify"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
@@ -22,31 +23,15 @@ func NewAdminBroadcastNotificationLogic(ctx context.Context, svcCtx *svc.Service
 }
 
 func (l *AdminBroadcastNotificationLogic) AdminBroadcastNotification(in *super.AdminBroadcastNotificationReq) (*super.AdminBroadcastNotificationResp, error) {
-	content := systemNotificationContent(in.GetTitle(), in.GetContent())
-	if content == "" {
-		return nil, errorx.InvalidArgument("通知内容不能为空")
-	}
-
-	var userIDs []uint
-	if err := l.svcCtx.DB.Model(&model.User{}).Pluck("id", &userIDs).Error; err != nil {
-		l.Errorf("[admin] broadcast list users: %v", err)
-		return nil, errorx.Internal("广播通知失败")
-	}
-
-	created := int32(0)
-	for _, uid := range userIDs {
-		n := model.Notification{
-			UserID:   uid,
-			SenderID: 0,
-			Type:     adminSystemNotificationType,
-			Content:  content,
-			IsRead:   false,
+	created, err := notifybiz.Broadcast(l.ctx, l.svcCtx.DB, in.GetTitle(), in.GetContent())
+	if err != nil {
+		switch {
+		case errors.Is(err, notifybiz.ErrEmptyContent):
+			return nil, errorx.InvalidArgument("通知内容不能为空")
+		default:
+			l.Errorf("[admin] broadcast notification: %v", err)
+			return nil, errorx.Internal("广播通知失败")
 		}
-		if err := l.svcCtx.DB.Omit("PostID").Create(&n).Error; err != nil {
-			l.Errorf("[admin] broadcast create notification user=%d: %v", uid, err)
-			continue
-		}
-		created++
 	}
 	return &super.AdminBroadcastNotificationResp{NotificationsCreated: created}, nil
 }

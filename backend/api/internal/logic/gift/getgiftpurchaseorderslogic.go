@@ -26,7 +26,7 @@ func NewGetGiftPurchaseOrdersLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *GetGiftPurchaseOrdersLogic) GetGiftPurchaseOrders(req *types.GetGiftPurchaseOrdersReq) (resp *types.GetGiftPurchaseOrdersResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetGiftPurchaseOrders(l.ctx, &super.GetGiftPurchaseOrdersReq{
+	rpcResp, err := l.svcCtx.GiftGW.GetGiftPurchaseOrders(l.ctx, &super.GetGiftPurchaseOrdersReq{
 		UserId:   req.UserId,
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),

@@ -2,9 +2,8 @@ package logic
 
 import (
 	"context"
-	"strconv"
 
-	"backend/model"
+	userbiz "backend/internal/biz/user"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
@@ -25,58 +24,18 @@ func NewGetVipOrdersLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetV
 		Logger: logx.WithContext(ctx),
 	}
 }
-// 用户相关服务
+
 func (l *GetVipOrdersLogic) GetVipOrders(in *super.GetVipOrdersReq) (*super.GetVipOrdersResp, error) {
-	// 确保page和page_size有默认值
-	page := in.Page
-	if page <= 0 {
-		page = 1
-	}
-	pageSize := in.PageSize
-	if pageSize <= 0 {
-		pageSize = 10
-	}
-
-	// 计算偏移量
-	offset := (page - 1) * pageSize
-
-	// 查询订单列表
-	var orders []model.VipOrder
-	var total int64
-
-	// 获取总数
-	l.svcCtx.DB.Model(&model.VipOrder{}).Where("user_id = ?", in.UserId).Count(&total)
-
-	// 分页查询，预加载套餐信息
-	result := l.svcCtx.DB.Preload("Plan").Where("user_id = ?", in.UserId).Offset(int(offset)).Limit(int(pageSize)).Find(&orders)
-	if result.Error != nil {
-		l.Error("获取订单列表失败: ", result.Error)
-		return nil, errorx.Internal("获取订单列表失败: " + result.Error.Error())
-	}
-
-	// 构建响应
-	respOrders := make([]*super.VipOrder, len(orders))
-	for i, order := range orders {
-		paidAt := ""
-		if order.Status == "paid" {
-			paidAt = order.UpdatedAt.Format("2006-01-02 15:04:05")
+	orders, total, err := userbiz.ListVipOrders(l.ctx, l.svcCtx.DB, in.GetUserId(), userbiz.VipOrdersPage{
+		Page:     in.GetPage(),
+		PageSize: in.GetPageSize(),
+	})
+	if err != nil {
+		l.Error("获取订单列表失败: ", err)
+		if err == userbiz.ErrInvalidArgument {
+			return nil, errorx.InvalidArgument("无效的用户 ID")
 		}
-
-		respOrders[i] = &super.VipOrder{
-			Id:        strconv.FormatUint(uint64(order.ID), 10),
-			UserId:    in.UserId,
-			PlanId:    strconv.FormatUint(uint64(order.PlanID), 10),
-			PlanName:  order.Plan.Name,
-			Amount:    float32(order.Amount),
-			Status:    order.Status,
-			CreatedAt: order.CreatedAt.Format("2006-01-02 15:04:05"),
-			PaidAt:    paidAt,
-			OrderNo:   order.OrderNo,
-		}
+		return nil, errorx.Internal("获取订单列表失败: " + err.Error())
 	}
-
-	return &super.GetVipOrdersResp{
-		Orders: respOrders,
-		Total:  int32(total),
-	}, nil
+	return &super.GetVipOrdersResp{Orders: orders, Total: total}, nil
 }

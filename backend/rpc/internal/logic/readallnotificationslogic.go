@@ -2,9 +2,10 @@ package logic
 
 import (
 	"context"
-	"strconv"
+	"errors"
 
-	"backend/model"
+	notifybiz "backend/internal/biz/notify"
+	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -18,25 +19,16 @@ type ReadAllNotificationsLogic struct {
 }
 
 func NewReadAllNotificationsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ReadAllNotificationsLogic {
-	return &ReadAllNotificationsLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+	return &ReadAllNotificationsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
 func (l *ReadAllNotificationsLogic) ReadAllNotifications(in *super.ReadAllNotificationsReq) (*super.ReadAllNotificationsResp, error) {
-	userID, err := strconv.ParseUint(in.UserId, 10, 32)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := l.svcCtx.DB.Model(&model.Notification{}).
-		Where("user_id = ? AND is_read = ?", userID, false).
-		Update("is_read", true).Error; err != nil {
+	if err := notifybiz.MarkAllRead(l.ctx, l.svcCtx.DB, in.GetUserId()); err != nil {
+		if errors.Is(err, notifybiz.ErrInvalidUserID) {
+			return nil, errorx.InvalidArgument("用户 ID 无效")
+		}
 		l.Error("标记所有通知已读失败:", err)
-		return nil, err
+		return nil, errorx.Internal("标记所有通知已读失败")
 	}
-
 	return &super.ReadAllNotificationsResp{}, nil
 }

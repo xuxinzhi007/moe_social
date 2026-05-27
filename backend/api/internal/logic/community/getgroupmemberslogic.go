@@ -26,7 +26,7 @@ func NewGetGroupMembersLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 }
 
 func (l *GetGroupMembersLogic) GetGroupMembers(req *types.GetGroupMembersReq) (resp *types.GetGroupMembersResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetGroupMembers(l.ctx, &super.GetGroupMembersReq{
+	rpcResp, err := l.svcCtx.CommunityGW.GetGroupMembers(l.ctx, &super.GetGroupMembersReq{
 		GroupId:  req.GroupId,
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),

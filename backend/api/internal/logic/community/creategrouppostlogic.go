@@ -25,7 +25,7 @@ func NewCreateGroupPostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *C
 }
 
 func (l *CreateGroupPostLogic) CreateGroupPost(req *types.CreateGroupPostReq) (resp *types.CreateGroupPostResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.CreateGroupPost(l.ctx, &super.CreateGroupPostReq{
+	rpcResp, err := l.svcCtx.CommunityGW.CreateGroupPost(l.ctx, &super.CreateGroupPostReq{
 		GroupId: req.GroupId,
 		PostId:  req.PostId,
 		UserId:  req.UserId,

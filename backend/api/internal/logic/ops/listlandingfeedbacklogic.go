@@ -39,14 +39,14 @@ func (l *ListLandingFeedbackLogic) ListLandingFeedback(req *types.ListLandingFee
 		pageSize = 20
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.ListLandingFeedback(l.ctx, &super.ListLandingFeedbackReq{
+	rpcResp, err := l.svcCtx.LandingGW.ListLandingFeedback(l.ctx, &super.ListLandingFeedbackReq{
 		Page:     int32(page),
 		PageSize: int32(pageSize),
 		Category: strings.TrimSpace(req.Category),
 	})
 	if err != nil {
 		return &types.ListLandingFeedbackResp{
-			BaseResp: common.HandleRPCError(err, ""),
+			BaseResp: common.HandleLandingGWError(err, ""),
 		}, nil
 	}
 
@@ -68,7 +68,7 @@ func (l *ListLandingFeedbackLogic) ListLandingFeedback(req *types.ListLandingFee
 	}
 
 	return &types.ListLandingFeedbackResp{
-		BaseResp: common.HandleRPCError(nil, "ok"),
+		BaseResp: common.HandleLandingGWError(nil, "ok"),
 		Data: types.ListLandingFeedbackData{
 			Items: items,
 			Total: int(rpcResp.Total),

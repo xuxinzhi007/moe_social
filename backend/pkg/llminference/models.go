@@ -12,8 +12,8 @@ import (
 
 // PickResult 从推理服务返回的模型列表中解析实际使用的模型 ID。
 type PickResult struct {
-	ModelID       string
-	Preferred     string
+	ModelID        string
+	Preferred      string
 	AutoDiscovered bool
 }
 
@@ -53,7 +53,6 @@ func modelIDMatches(modelID, lowerPreferred string) bool {
 	if base != lowerID && (strings.Contains(base, lowerPreferred) || strings.Contains(lowerPreferred, base)) {
 		return true
 	}
-	// qwen2 vs qwen2.5-0.5b-instruct：按主版本前缀
 	if strings.HasPrefix(lowerID, lowerPreferred) || strings.HasPrefix(base, lowerPreferred) {
 		return true
 	}
@@ -81,10 +80,15 @@ func dedupeNonEmpty(in []string) []string {
 // ListModelIDs 拉取 OpenAI 兼容 /v1/models 的模型 ID 列表。
 func ListModelIDs(ctx context.Context, cfg Config) ([]string, error) {
 	if !cfg.Ready() {
-		return nil, nil
+		return nil, fmt.Errorf("llm inference base url is empty")
 	}
 	client := &http.Client{Timeout: cfg.Timeout}
 	return listOpenAIModelIDs(ctx, client, cfg.BaseURL)
+}
+
+// ListModelNames 与 ListModelIDs 同义，供 HTTP biz 层调用。
+func ListModelNames(ctx context.Context, cfg Config) ([]string, error) {
+	return ListModelIDs(ctx, cfg)
 }
 
 func listOpenAIModelIDs(ctx context.Context, client *http.Client, baseURL string) ([]string, error) {

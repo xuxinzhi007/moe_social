@@ -25,7 +25,7 @@ func NewGetUserAchievementsLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *GetUserAchievementsLogic) GetUserAchievements(req *types.GetUserAchievementsReq) (*types.GetUserAchievementsResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetUserAchievements(l.ctx, &super.GetUserAchievementsReq{
+	rpcResp, err := l.svcCtx.AchievementGW.GetUserAchievements(l.ctx, &super.GetUserAchievementsReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

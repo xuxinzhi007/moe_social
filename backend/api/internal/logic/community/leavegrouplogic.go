@@ -25,7 +25,7 @@ func NewLeaveGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LeaveG
 }
 
 func (l *LeaveGroupLogic) LeaveGroup(req *types.LeaveGroupReq) (resp *types.BaseResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.LeaveGroup(l.ctx, &super.LeaveGroupReq{
+	rpcResp, err := l.svcCtx.CommunityGW.LeaveGroup(l.ctx, &super.LeaveGroupReq{
 		GroupId: req.GroupId,
 		UserId:  req.UserId,
 	})

@@ -435,7 +435,7 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 					memories = cached
 					l.Infof("memory cache hit user_id=%s total=%d", userID, len(cached))
 				} else {
-					rpcResp, err := l.svcCtx.SuperRpcClient.GetUserMemories(l.ctx, &super.GetUserMemoriesReq{
+					rpcResp, err := l.svcCtx.LLMGW.GetUserMemories(l.ctx, &super.GetUserMemoriesReq{
 						UserId: userID,
 					})
 					if err != nil {
@@ -447,7 +447,7 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 					}
 				}
 				var profiles []*super.UserMemoryProfile
-				if profResp, err := l.svcCtx.SuperRpcClient.GetUserMemoryProfiles(l.ctx, &super.GetUserMemoryProfilesReq{
+				if profResp, err := l.svcCtx.LLMGW.GetUserMemoryProfiles(l.ctx, &super.GetUserMemoryProfilesReq{
 					UserId: userID,
 					Limit:  8,
 				}); err != nil {
@@ -881,7 +881,7 @@ func (l *ChatLogic) extractAndSaveMemoriesWithSource(ctx context.Context, userID
 			if item.Key == "" || item.Value == "" {
 				continue
 			}
-			_, err := l.svcCtx.SuperRpcClient.UpsertUserMemory(ctx, &super.UpsertUserMemoryReq{
+			_, err := l.svcCtx.LLMGW.UpsertUserMemory(ctx, &super.UpsertUserMemoryReq{
 				UserId:      userID,
 				Key:         item.Key,
 				Value:       item.Value,
