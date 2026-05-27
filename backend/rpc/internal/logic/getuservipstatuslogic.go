@@ -2,9 +2,9 @@ package logic
 
 import (
 	"context"
+	"strconv"
 
-	"backend/model"
-	"backend/rpc/internal/errorx"
+	userbiz "backend/internal/biz/user"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -25,23 +25,18 @@ func NewGetUserVipStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	}
 }
 
-// 用户相关服务
 func (l *GetUserVipStatusLogic) GetUserVipStatus(in *super.GetUserVipStatusReq) (*super.GetUserVipStatusResp, error) {
-	var user model.User
-	result := l.svcCtx.DB.First(&user, in.UserId)
-	if result.Error != nil {
-		l.Error("查找用户失败: ", result.Error)
-		return nil, errorx.NotFound("用户不存在")
+	uid, err := strconv.ParseUint(in.GetUserId(), 10, 64)
+	if err != nil || uid == 0 {
+		return nil, mapUserBizErr(userbiz.ErrInvalidArgument)
 	}
-
-	vipEndAt := ""
-	if user.VipEndAt != nil {
-		vipEndAt = user.VipEndAt.Format("2006-01-02 15:04:05")
+	st, err := userbiz.GetVipStatus(l.ctx, l.svcCtx.DB, uint(uid))
+	if err != nil {
+		return nil, mapUserBizErr(err)
 	}
-
 	return &super.GetUserVipStatusResp{
-		IsVip:     user.IsVip,
-		ExpiresAt: vipEndAt,
-		AutoRenew: false, // 模型中暂时没有auto_renew字段
+		IsVip:     st.IsVip,
+		ExpiresAt: st.ExpiresAt,
+		AutoRenew: st.AutoRenew,
 	}, nil
 }

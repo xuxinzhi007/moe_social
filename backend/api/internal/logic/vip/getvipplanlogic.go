@@ -6,7 +6,6 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,28 +25,15 @@ func NewGetVipPlanLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetVip
 }
 
 func (l *GetVipPlanLogic) GetVipPlan(req *types.GetVipPlanReq) (resp *types.GetVipPlanResp, err error) {
-	// 调用RPC服务
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetVipPlan(l.ctx, &super.GetVipPlanReq{
-		PlanId: req.PlanId,
-	})
+	plan, err := l.svcCtx.VipGW.GetPlan(l.ctx, req.PlanId)
 	if err != nil {
-		l.Errorf("调用RPC服务失败: %v", err)
 		return &types.GetVipPlanResp{
-			BaseResp: common.HandleRPCError(err, ""),
+			BaseResp: common.HandleVipGWError(err, ""),
 		}, nil
 	}
 
-	// 转换为API响应
 	return &types.GetVipPlanResp{
 		BaseResp: common.HandleRPCError(nil, "获取VIP套餐成功"),
-		Data: types.VipPlan{
-			Id:           rpcResp.Plan.Id,
-			Name:         rpcResp.Plan.Name,
-			Description:  rpcResp.Plan.Description,
-			Price:        float64(rpcResp.Plan.Price),
-			DurationDays: int(rpcResp.Plan.DurationDays),
-			CreatedAt:    rpcResp.Plan.CreatedAt,
-			UpdatedAt:    rpcResp.Plan.UpdatedAt,
-		},
+		Data:     common.VipPlanModelToTypes(plan),
 	}, nil
 }

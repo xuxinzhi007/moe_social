@@ -8,7 +8,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	vipbiz "backend/internal/biz/vip"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -37,28 +37,28 @@ func (l *AdminListVipPlansLogic) AdminListVipPlans(req *types.AdminListVipPlansR
 		pageSize = 50
 	}
 
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListVipPlans(l.ctx, &super.AdminListVipPlansReq{
-		Page:           int32(page),
-		PageSize:       int32(pageSize),
+	rows, total, err := l.svcCtx.VipGW.ListPlans(l.ctx, vipbiz.ListPlansFilter{
+		Page:           page,
+		PageSize:       pageSize,
 		Keyword:        req.Keyword,
 		IncludeDeleted: req.IncludeDeleted,
 	})
 	if err != nil {
 		return &types.AdminListVipPlansResp{
-			BaseResp: common.HandleRPCError(err, ""),
+			BaseResp: common.HandleVipGWError(err, ""),
 		}, nil
 	}
 
-	items := make([]types.VipPlan, 0, len(rpcResp.GetPlans()))
-	for _, p := range rpcResp.GetPlans() {
-		items = append(items, common.RpcVipPlanToTypes(p))
+	items := make([]types.VipPlan, 0, len(rows))
+	for _, p := range rows {
+		items = append(items, common.VipPlanModelToTypes(p))
 	}
 
 	return &types.AdminListVipPlansResp{
 		BaseResp: common.HandleRPCError(nil, "ok"),
 		Data: types.AdminListVipPlansData{
 			Items: items,
-			Total: int(rpcResp.GetTotal()),
+			Total: int(total),
 		},
 	}, nil
 }

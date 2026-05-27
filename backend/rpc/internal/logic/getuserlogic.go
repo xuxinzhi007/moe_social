@@ -2,12 +2,11 @@ package logic
 
 import (
 	"context"
+	"strconv"
 
-	"backend/model"
-	"backend/rpc/internal/errorx"
+	userbiz "backend/internal/biz/user"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
-	"backend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,18 +26,13 @@ func NewGetUserLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetUserLo
 }
 
 func (l *GetUserLogic) GetUser(in *super.GetUserReq) (*super.GetUserResp, error) {
-	// 1. 查找用户
-	var user model.User
-	result := l.svcCtx.DB.First(&user, in.UserId)
-	if result.Error != nil {
-		l.Error("查找用户失败: ", result.Error)
-		return nil, errorx.NotFound("用户不存在")
+	uid, err := strconv.ParseUint(in.GetUserId(), 10, 64)
+	if err != nil || uid == 0 {
+		return nil, mapUserBizErr(userbiz.ErrInvalidArgument)
 	}
-
-	_, _ = utils.EnsureUserMoeNo(l.svcCtx.DB, user.ID)
-	_ = l.svcCtx.DB.First(&user, user.ID).Error
-
-	return &super.GetUserResp{
-		User: modelUserToProto(&user),
-	}, nil
+	user, err := userbiz.GetByID(l.ctx, l.svcCtx.DB, uint(uid))
+	if err != nil {
+		return nil, mapUserBizErr(err)
+	}
+	return &super.GetUserResp{User: modelUserToProto(&user)}, nil
 }

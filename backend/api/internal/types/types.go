@@ -62,6 +62,51 @@ type AdminAiAgentItem struct {
 	PayloadJson string `json:"payload_json"`
 }
 
+type AdminAiChatMessageItem struct {
+	Id          string `json:"id"`
+	UserId      string `json:"user_id"`
+	Username    string `json:"username,optional"`
+	SessionId   string `json:"session_id"`
+	SourceMsgId string `json:"source_msg_id,optional"`
+	Role        string `json:"role"`
+	Content     string `json:"content"`
+	Model       string `json:"model,optional"`
+	CreatedAt   string `json:"created_at"`
+}
+
+type AdminAiChatSessionItem struct {
+	Id            string `json:"id"`
+	UserId        string `json:"user_id"`
+	Username      string `json:"username,optional"`
+	SessionId     string `json:"session_id"`
+	Model         string `json:"model,optional"`
+	MessageCount  int    `json:"message_count,optional"`
+	LastMessageAt string `json:"last_message_at,optional"`
+	CreatedAt     string `json:"created_at"`
+	UpdatedAt     string `json:"updated_at"`
+}
+
+type AdminAnalyticsOverviewData struct {
+	UserTotal          int                   `json:"user_total"`
+	UsersNew7d         int                   `json:"users_new_7d"`
+	UsersByDay         []AdminDayStat        `json:"users_by_day"`
+	MemoryTotal        int                   `json:"memory_total"`
+	MemoryUsers        int                   `json:"memory_users"`
+	MemoriesByDay      []AdminDayStat        `json:"memories_by_day"`
+	MemoryByType       []AdminMemoryTypeStat `json:"memory_by_type"`
+	MoeToolCalls7d     int                   `json:"moe_tool_calls_7d"`
+	MoeToolSuccessRate float64               `json:"moe_tool_success_rate"`
+	MoeToolsByDay      []AdminDayStat        `json:"moe_tools_by_day"`
+	ChatSessionsTotal  int                   `json:"chat_sessions_total"`
+	ChatMessages7d     int                   `json:"chat_messages_7d"`
+	ChatMessagesByDay  []AdminDayStat        `json:"chat_messages_by_day"`
+}
+
+type AdminAnalyticsOverviewResp struct {
+	BaseResp
+	Data AdminAnalyticsOverviewData `json:"data"`
+}
+
 type AdminAnnouncementItem struct {
 	Id          string `json:"id"`
 	Title       string `json:"title"`
@@ -197,6 +242,30 @@ type AdminCreateGiftResp struct {
 	Data Gift `json:"data"`
 }
 
+type AdminCreateTagDictionaryReq struct {
+	Category  string `json:"category"`
+	Tag       string `json:"tag"`
+	Label     string `json:"label,optional"`
+	Note      string `json:"note,optional"`
+	SortOrder int    `json:"sort_order,optional"`
+	Enabled   bool   `json:"enabled,optional"`
+}
+
+type AdminCreateTagDictionaryResp struct {
+	BaseResp
+	Data AdminTagDictionaryItem `json:"data"`
+}
+
+type AdminCreateTopicTagReq struct {
+	Name  string `json:"name"`
+	Color string `json:"color,optional"`
+}
+
+type AdminCreateTopicTagResp struct {
+	BaseResp
+	Data TopicTag `json:"data"`
+}
+
 type AdminCreateVipPlanReq struct {
 	Name         string  `json:"name"`
 	Description  string  `json:"description"`
@@ -239,6 +308,11 @@ type AdminDashboardData struct {
 type AdminDashboardResp struct {
 	BaseResp
 	Data AdminDashboardData `json:"data"`
+}
+
+type AdminDayStat struct {
+	Date  string `json:"date"`
+	Count int    `json:"count"`
 }
 
 type AdminDeleteAccountReq struct {
@@ -334,12 +408,49 @@ type AdminDeletePostResp struct {
 	BaseResp
 }
 
+type AdminDeleteTagDictionaryReq struct {
+	EntryId string `path:"entry_id"`
+}
+
+type AdminDeleteTagDictionaryResp struct {
+	BaseResp
+}
+
+type AdminDeleteTopicTagReq struct {
+	TagId string `path:"tag_id"`
+}
+
+type AdminDeleteTopicTagResp struct {
+	BaseResp
+}
+
 type AdminDeleteVipPlanReq struct {
 	PlanId string `path:"plan_id"`
 }
 
 type AdminDeleteVipPlanResp struct {
 	BaseResp
+}
+
+type AdminExportAiChatMessagesData struct {
+	Csv       string `json:"csv"`
+	RowCount  int    `json:"row_count"`
+	Truncated bool   `json:"truncated"`
+}
+
+type AdminExportAiChatMessagesReq struct {
+	UserId    string `form:"user_id,optional"`
+	SessionId string `form:"session_id,optional"`
+	Role      string `form:"role,optional"`
+	Keyword   string `form:"keyword,optional"`
+	From      string `form:"from,optional"`
+	To        string `form:"to,optional"`
+	Limit     int    `form:"limit,optional,default=5000"`
+}
+
+type AdminExportAiChatMessagesResp struct {
+	BaseResp
+	Data AdminExportAiChatMessagesData `json:"data"`
 }
 
 type AdminFollowItem struct {
@@ -566,6 +677,46 @@ type AdminListAiAgentsReq struct {
 type AdminListAiAgentsResp struct {
 	BaseResp
 	Data AdminListAiAgentsData `json:"data"`
+}
+
+type AdminListAiChatMessagesData struct {
+	Items []AdminAiChatMessageItem `json:"items"`
+	Total int                      `json:"total"`
+}
+
+type AdminListAiChatMessagesReq struct {
+	Page      int    `form:"page,optional,default=1"`
+	PageSize  int    `form:"page_size,optional,default=30"`
+	UserId    string `form:"user_id,optional"`
+	SessionId string `form:"session_id,optional"`
+	Role      string `form:"role,optional"`
+	Keyword   string `form:"keyword,optional"`
+	From      string `form:"from,optional"`
+	To        string `form:"to,optional"`
+}
+
+type AdminListAiChatMessagesResp struct {
+	BaseResp
+	Data AdminListAiChatMessagesData `json:"data"`
+}
+
+type AdminListAiChatSessionsData struct {
+	Items []AdminAiChatSessionItem `json:"items"`
+	Total int                      `json:"total"`
+}
+
+type AdminListAiChatSessionsReq struct {
+	Page      int    `form:"page,optional,default=1"`
+	PageSize  int    `form:"page_size,optional,default=20"`
+	UserId    string `form:"user_id,optional"`
+	SessionId string `form:"session_id,optional"`
+	From      string `form:"from,optional"`
+	To        string `form:"to,optional"`
+}
+
+type AdminListAiChatSessionsResp struct {
+	BaseResp
+	Data AdminListAiChatSessionsData `json:"data"`
 }
 
 type AdminListAnnouncementsData struct {
@@ -820,6 +971,39 @@ type AdminListPostsReq struct {
 type AdminListPostsResp struct {
 	BaseResp
 	Data AdminListPostsData `json:"data"`
+}
+
+type AdminListTagDictionaryData struct {
+	Items []AdminTagDictionaryItem `json:"items"`
+	Total int                      `json:"total"`
+}
+
+type AdminListTagDictionaryReq struct {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Category string `form:"category,optional"`
+	Keyword  string `form:"keyword,optional"`
+}
+
+type AdminListTagDictionaryResp struct {
+	BaseResp
+	Data AdminListTagDictionaryData `json:"data"`
+}
+
+type AdminListTopicTagsData struct {
+	Items []TopicTag `json:"items"`
+	Total int        `json:"total"`
+}
+
+type AdminListTopicTagsReq struct {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Keyword  string `form:"keyword,optional"`
+}
+
+type AdminListTopicTagsResp struct {
+	BaseResp
+	Data AdminListTopicTagsData `json:"data"`
 }
 
 type AdminListUsersData struct {
@@ -1127,6 +1311,18 @@ type AdminSendNotificationResp struct {
 	Data AdminSendNotificationData `json:"data"`
 }
 
+type AdminTagDictionaryItem struct {
+	Id        string `json:"id"`
+	Category  string `json:"category"`
+	Tag       string `json:"tag"`
+	Label     string `json:"label,optional"`
+	Note      string `json:"note,optional"`
+	SortOrder int    `json:"sort_order"`
+	Enabled   bool   `json:"enabled"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
 type AdminUpdateAccountReq struct {
 	AccountId string `path:"account_id"`
 	Username  string `json:"username,optional"`
@@ -1256,6 +1452,33 @@ type AdminUpdateRuntimeConfigReq struct {
 type AdminUpdateRuntimeConfigResp struct {
 	BaseResp
 	Data AdminRuntimeConfigData `json:"data"`
+}
+
+type AdminUpdateTagDictionaryReq struct {
+	EntryId       string `path:"entry_id"`
+	Category      string `json:"category,optional"`
+	Tag           string `json:"tag,optional"`
+	Label         string `json:"label,optional"`
+	Note          string `json:"note,optional"`
+	SortOrder     int    `json:"sort_order,optional"`
+	Enabled       bool   `json:"enabled,optional"`
+	UpdateEnabled bool   `json:"update_enabled,optional"`
+}
+
+type AdminUpdateTagDictionaryResp struct {
+	BaseResp
+	Data AdminTagDictionaryItem `json:"data"`
+}
+
+type AdminUpdateTopicTagReq struct {
+	TagId string `path:"tag_id"`
+	Name  string `json:"name,optional"`
+	Color string `json:"color,optional"`
+}
+
+type AdminUpdateTopicTagResp struct {
+	BaseResp
+	Data TopicTag `json:"data"`
 }
 
 type AdminUpdateUserReq struct {

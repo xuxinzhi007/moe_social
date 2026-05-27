@@ -1560,6 +1560,259 @@ export function createAdminClient(opts: AdminClientOptions) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body ?? {}),
       }),
+
+    listAiChatSessions: (params: {
+      page?: number
+      page_size?: number
+      user_id?: string
+      session_id?: string
+      from?: string
+      to?: string
+    } = {}) => {
+      const q = new URLSearchParams()
+      if (params.page) q.set('page', String(params.page))
+      if (params.page_size) q.set('page_size', String(params.page_size))
+      if (params.user_id) q.set('user_id', params.user_id)
+      if (params.session_id) q.set('session_id', params.session_id)
+      if (params.from) q.set('from', params.from)
+      if (params.to) q.set('to', params.to)
+      const qs = q.toString()
+      return api<
+        BaseResp<{
+          items: Array<{
+            id: string
+            user_id: string
+            username?: string
+            session_id: string
+            model?: string
+            message_count?: number
+            last_message_at?: string
+            created_at: string
+            updated_at: string
+          }>
+          total: number
+        }>
+      >(`${adminApiPath('/ai/chat/sessions')}${qs ? `?${qs}` : ''}`)
+    },
+
+    listAiChatMessages: (params: {
+      page?: number
+      page_size?: number
+      user_id?: string
+      session_id?: string
+      role?: string
+      keyword?: string
+      from?: string
+      to?: string
+    } = {}) => {
+      const q = new URLSearchParams()
+      if (params.page) q.set('page', String(params.page))
+      if (params.page_size) q.set('page_size', String(params.page_size))
+      if (params.user_id) q.set('user_id', params.user_id)
+      if (params.session_id) q.set('session_id', params.session_id)
+      if (params.role) q.set('role', params.role)
+      if (params.keyword) q.set('keyword', params.keyword)
+      if (params.from) q.set('from', params.from)
+      if (params.to) q.set('to', params.to)
+      const qs = q.toString()
+      return api<
+        BaseResp<{
+          items: Array<{
+            id: string
+            user_id: string
+            username?: string
+            session_id: string
+            source_msg_id?: string
+            role: string
+            content: string
+            model?: string
+            created_at: string
+          }>
+          total: number
+        }>
+      >(`${adminApiPath('/ai/chat/messages')}${qs ? `?${qs}` : ''}`)
+    },
+
+    exportAiChatMessages: (params: {
+      user_id?: string
+      session_id?: string
+      role?: string
+      keyword?: string
+      from?: string
+      to?: string
+      limit?: number
+    } = {}) => {
+      const q = new URLSearchParams()
+      if (params.user_id) q.set('user_id', params.user_id)
+      if (params.session_id) q.set('session_id', params.session_id)
+      if (params.role) q.set('role', params.role)
+      if (params.keyword) q.set('keyword', params.keyword)
+      if (params.from) q.set('from', params.from)
+      if (params.to) q.set('to', params.to)
+      if (params.limit) q.set('limit', String(params.limit))
+      const qs = q.toString()
+      return api<
+        BaseResp<{
+          csv: string
+          row_count: number
+          truncated: boolean
+        }>
+      >(`${adminApiPath('/ai/chat/messages/export')}${qs ? `?${qs}` : ''}`)
+    },
+
+    getAnalyticsOverview: () =>
+      api<
+        BaseResp<{
+          user_total: number
+          users_new_7d: number
+          users_by_day: Array<{ date: string; count: number }>
+          memory_total: number
+          memory_users: number
+          memories_by_day: Array<{ date: string; count: number }>
+          memory_by_type: Array<{ memory_type: string; count: number }>
+          moe_tool_calls_7d: number
+          moe_tool_success_rate: number
+          moe_tools_by_day: Array<{ date: string; count: number }>
+          chat_sessions_total: number
+          chat_messages_7d: number
+          chat_messages_by_day: Array<{ date: string; count: number }>
+        }>
+      >(adminApiPath('/analytics/overview')),
+
+    listTopicTags: (params: {
+      page?: number
+      page_size?: number
+      keyword?: string
+    } = {}) => {
+      const q = new URLSearchParams()
+      if (params.page) q.set('page', String(params.page))
+      if (params.page_size) q.set('page_size', String(params.page_size))
+      if (params.keyword) q.set('keyword', params.keyword)
+      const qs = q.toString()
+      return api<
+        BaseResp<{
+          items: Array<{ id: string; name: string; color: string; created_at: string }>
+          total: number
+        }>
+      >(`${adminApiPath('/topic-tags')}${qs ? `?${qs}` : ''}`)
+    },
+
+    createTopicTag: (body: { name: string; color?: string }) =>
+      api<BaseResp<{ id: string; name: string; color: string; created_at: string }>>(
+        adminApiPath('/topic-tags'),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+      ),
+
+    updateTopicTag: (tagId: string, body: { name?: string; color?: string }) =>
+      api<BaseResp<{ id: string; name: string; color: string; created_at: string }>>(
+        adminApiPath(`/topic-tags/${encodeURIComponent(tagId)}`),
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+      ),
+
+    deleteTopicTag: (tagId: string) =>
+      api<BaseResp<unknown>>(adminApiPath(`/topic-tags/${encodeURIComponent(tagId)}`), {
+        method: 'DELETE',
+      }),
+
+    listTagDictionary: (params: {
+      page?: number
+      page_size?: number
+      category?: string
+      keyword?: string
+    } = {}) => {
+      const q = new URLSearchParams()
+      if (params.page) q.set('page', String(params.page))
+      if (params.page_size) q.set('page_size', String(params.page_size))
+      if (params.category) q.set('category', params.category)
+      if (params.keyword) q.set('keyword', params.keyword)
+      const qs = q.toString()
+      return api<
+        BaseResp<{
+          items: Array<{
+            id: string
+            category: string
+            tag: string
+            label?: string
+            note?: string
+            sort_order: number
+            enabled: boolean
+            created_at: string
+            updated_at: string
+          }>
+          total: number
+        }>
+      >(`${adminApiPath('/tag-dictionary')}${qs ? `?${qs}` : ''}`)
+    },
+
+    createTagDictionary: (body: {
+      category: string
+      tag: string
+      label?: string
+      note?: string
+      sort_order?: number
+      enabled?: boolean
+    }) =>
+      api<
+        BaseResp<{
+          id: string
+          category: string
+          tag: string
+          label?: string
+          note?: string
+          sort_order: number
+          enabled: boolean
+          created_at: string
+          updated_at: string
+        }>
+      >(adminApiPath('/tag-dictionary'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+
+    updateTagDictionary: (
+      entryId: string,
+      body: {
+        category?: string
+        tag?: string
+        label?: string
+        note?: string
+        sort_order?: number
+        enabled?: boolean
+        update_enabled?: boolean
+      },
+    ) =>
+      api<
+        BaseResp<{
+          id: string
+          category: string
+          tag: string
+          label?: string
+          note?: string
+          sort_order: number
+          enabled: boolean
+          created_at: string
+          updated_at: string
+        }>
+      >(adminApiPath(`/tag-dictionary/${encodeURIComponent(entryId)}`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+
+    deleteTagDictionary: (entryId: string) =>
+      api<BaseResp<unknown>>(
+        adminApiPath(`/tag-dictionary/${encodeURIComponent(entryId)}`),
+        { method: 'DELETE' },
+      ),
   }
 }
 

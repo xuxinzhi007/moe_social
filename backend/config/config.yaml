@@ -170,6 +170,9 @@ moe:
   bot_post_model: "qwen2"
   # Phase 3 Sprint 1：管理台 Moe HTTP 优先走 API 进程内 MoeAdmin（仍需 RPC 处理发帖/记忆端口）
   api_in_process: true
+  # FS-2：VIP 套餐 HTTP 走 API 进程内 biz（与 api_in_process 默认同开）
+  vip_api_in_process: true
+  user_api_in_process: true
   # 在 RPC :8080 同时注册 moe.v1.MoeAdmin gRPC（与 super.Super 并存）
   register_moe_grpc: true
   # API Admin Moe 在无 api_in_process 时优先走 moe gRPC（否则 super Admin*）

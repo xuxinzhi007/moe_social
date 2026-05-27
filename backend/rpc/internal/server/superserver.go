@@ -434,6 +434,66 @@ func (s *SuperServer) AdminDeleteMemory(ctx context.Context, in *super.AdminDele
 	return l.AdminDeleteMemory(in)
 }
 
+func (s *SuperServer) AdminListAiChatSessions(ctx context.Context, in *super.AdminListAiChatSessionsReq) (*super.AdminListAiChatSessionsResp, error) {
+	l := logic.NewAdminListAiChatSessionsLogic(ctx, s.svcCtx)
+	return l.AdminListAiChatSessions(in)
+}
+
+func (s *SuperServer) AdminListAiChatMessages(ctx context.Context, in *super.AdminListAiChatMessagesReq) (*super.AdminListAiChatMessagesResp, error) {
+	l := logic.NewAdminListAiChatMessagesLogic(ctx, s.svcCtx)
+	return l.AdminListAiChatMessages(in)
+}
+
+func (s *SuperServer) AdminExportAiChatMessages(ctx context.Context, in *super.AdminExportAiChatMessagesReq) (*super.AdminExportAiChatMessagesResp, error) {
+	l := logic.NewAdminExportAiChatMessagesLogic(ctx, s.svcCtx)
+	return l.AdminExportAiChatMessages(in)
+}
+
+func (s *SuperServer) AdminAnalyticsOverview(ctx context.Context, in *super.AdminGetMemoryStatsReq) (*super.AdminAnalyticsOverviewResp, error) {
+	l := logic.NewAdminAnalyticsOverviewLogic(ctx, s.svcCtx)
+	return l.AdminAnalyticsOverview(in)
+}
+
+func (s *SuperServer) AdminListTopicTags(ctx context.Context, in *super.AdminListTopicTagsReq) (*super.AdminListTopicTagsResp, error) {
+	l := logic.NewAdminListTopicTagsLogic(ctx, s.svcCtx)
+	return l.AdminListTopicTags(in)
+}
+
+func (s *SuperServer) AdminCreateTopicTag(ctx context.Context, in *super.AdminCreateTopicTagReq) (*super.AdminCreateTopicTagResp, error) {
+	l := logic.NewAdminCreateTopicTagLogic(ctx, s.svcCtx)
+	return l.AdminCreateTopicTag(in)
+}
+
+func (s *SuperServer) AdminUpdateTopicTag(ctx context.Context, in *super.AdminUpdateTopicTagReq) (*super.AdminUpdateTopicTagResp, error) {
+	l := logic.NewAdminUpdateTopicTagLogic(ctx, s.svcCtx)
+	return l.AdminUpdateTopicTag(in)
+}
+
+func (s *SuperServer) AdminDeleteTopicTag(ctx context.Context, in *super.AdminDeleteTopicTagReq) (*super.AdminDeleteTopicTagResp, error) {
+	l := logic.NewAdminDeleteTopicTagLogic(ctx, s.svcCtx)
+	return l.AdminDeleteTopicTag(in)
+}
+
+func (s *SuperServer) AdminListTagDictionary(ctx context.Context, in *super.AdminListTagDictionaryReq) (*super.AdminListTagDictionaryResp, error) {
+	l := logic.NewAdminListTagDictionaryLogic(ctx, s.svcCtx)
+	return l.AdminListTagDictionary(in)
+}
+
+func (s *SuperServer) AdminCreateTagDictionary(ctx context.Context, in *super.AdminCreateTagDictionaryReq) (*super.AdminCreateTagDictionaryResp, error) {
+	l := logic.NewAdminCreateTagDictionaryLogic(ctx, s.svcCtx)
+	return l.AdminCreateTagDictionary(in)
+}
+
+func (s *SuperServer) AdminUpdateTagDictionary(ctx context.Context, in *super.AdminUpdateTagDictionaryReq) (*super.AdminUpdateTagDictionaryResp, error) {
+	l := logic.NewAdminUpdateTagDictionaryLogic(ctx, s.svcCtx)
+	return l.AdminUpdateTagDictionary(in)
+}
+
+func (s *SuperServer) AdminDeleteTagDictionary(ctx context.Context, in *super.AdminDeleteTagDictionaryReq) (*super.AdminDeleteTagDictionaryResp, error) {
+	l := logic.NewAdminDeleteTagDictionaryLogic(ctx, s.svcCtx)
+	return l.AdminDeleteTagDictionary(in)
+}
+
 func (s *SuperServer) AdminGetSchemaCatalog(ctx context.Context, in *super.AdminGetSchemaCatalogReq) (*super.AdminGetSchemaCatalogResp, error) {
 	l := logic.NewAdminGetSchemaCatalogLogic(ctx, s.svcCtx)
 	return l.AdminGetSchemaCatalog(in)

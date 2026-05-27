@@ -1,8 +1,11 @@
 # Kratos 迁移 — 进度清单
 
-> 更新：**2026-05-27**  
-> **全站迁移总进度 F：~22%** · **工程就绪度 G：~48%**  
-> 口径说明：[kratos-full-site-migration-plan.md §1](./kratos-full-site-migration-plan.md#1-进度口径必读避免歧义)
+> **更新：2026-05-27**  
+> **当前阶段：FS-3b**（User 扩展）  
+> **全站迁移 F：~48%** · **工程就绪度 G：~55%**  
+> 口径：[kratos-full-site-migration-plan.md §1](./kratos-full-site-migration-plan.md#1-进度口径必读避免歧义) · 架构 SSOT：[kratos-migration.md](./kratos-migration.md)
+
+---
 
 ## 总览
 
@@ -10,48 +13,86 @@
 |------|------|------|
 | A · Hybrid Moe | **100%** | `make verify-moe-complete` |
 | B · 纯 Kratos 试点方案 | **100%** | `make verify-kratos-100` |
-| **F · 全站迁移** | **~22%** | 见 [全站方案](./kratos-full-site-migration-plan.md) |
-| G · 工程现代化就绪 | **~48%** | 可正常开发与上线 Hybrid |
+| **F · 全站迁移** | **~48%** | `make verify-full-site-50` |
+| G · 工程现代化就绪 | **~55%** | 可上线 Hybrid；≠ 全站迁完 |
 
-## Hybrid Moe ✅
+---
 
-- [x] `make verify-moe-complete` / `make moe-social` → **:8888**
+## 当前生产架构（摘要）
+
+| 组件 | 路由 | 说明 |
+|------|------|------|
+| `moeadmingw` | `in_process` | Moe Admin → `biz/moe` |
+| `vipadmingw` | `in_process` | VIP 套餐 → `biz/vip` |
+| `usergw` | `in_process` | User 核心 → `biz/user` |
+| 其余 HTTP | `logic` → `:8080` | legacy `super.Super` |
+| 对外端口 | **:8888** | Flutter / moe-admin 不变 |
+
+配置：`config.yaml` → `moe.api_in_process` / `vip_api_in_process` / `user_api_in_process`（默认 `true`）。
+
+---
+
+## 已完成 ✅
+
+### Hybrid Moe（A）
+
+- [x] `make verify-moe-complete` / `make moe-social`
 - [x] `internal/biz|service|data/moe`
 - [x] `moeadmingw` + `moe.proto` + `moegrpc`
 
-## 纯 Kratos 试点方案 ✅
+### 纯 Kratos 试点（B）
 
-- [x] Phase 0～6（`moe-kratos`、Wire、`vip` 只读 @ :19032）
+- [x] Phase 0～6（`moe-kratos`、Wire、VIP 只读 @ :19032）
 - [x] `make build-moe-social` → `bin/moe-social`
 
-## 全站迁移 Phase FS（准备中）
+### 全站迁移 Phase FS
 
-- [x] FS-0：进度 SSOT、域清单、方案文档
-- [ ] FS-1：conf/域模板/verify 脚本骨架
-- [ ] FS-2：**VIP 全量**（下一业务域，建议）
-- [ ] FS-3：User 核心
-- [ ] FS-4：Admin 非 Moe
-- [ ] FS-5：社交与内容
-- [ ] FS-6：AI / LLM
-- [ ] FS-7：Chat / Voice
-- [ ] FS-8：退役 `super.api` / `super.proto`
+- [x] **FS-0** 进度 SSOT、域清单、方案文档
+- [x] **FS-2** VIP 套餐域 — `make verify-domain-vip`
+- [x] **FS-3a** User 核心 — `make verify-domain-user`
+- [x] **FS-1** 部分 — `make verify-platform`（单二进制）
 
-### 各域域内进度
+---
 
-| 域 | 域内 % | 阶段 |
-|----|--------|------|
-| Moe | 100% | ✅ |
-| VIP | 20% | 试点只读 |
-| User | 0% | FS-3 |
-| Admin（非 Moe） | 0% | FS-4 |
-| 社交 / AI / 实时 / 其它 | 0% | FS-5～7 |
+## 进行中 🔄
 
-## 日常验收
+- [ ] **FS-3b** User 扩展（关注/好友/VIP 订单/记忆/OAuth）→ 冲 **F 50%+**
+- [ ] **FS-1** 余量（conf 扩展、compose 默认单容器）
+
+---
+
+## 待办 ⬜
+
+- [ ] FS-4 Admin 非 Moe
+- [ ] FS-5 社交与内容
+- [ ] FS-6 AI / LLM
+- [ ] FS-7 Chat / Voice
+- [ ] FS-8 退役 `super.api` / `super.proto`
+
+---
+
+## 各域域内进度
+
+| 域 | 域内 % | 网关 / biz | 阶段 |
+|----|--------|------------|------|
+| Moe | 100% | `moeadmingw` | ✅ |
+| VIP 套餐 | 100% | `vipadmingw` | ✅ FS-2 |
+| User | ~70% | `usergw`（核心） | FS-3a ✅ / FS-3b 🔄 |
+| Admin（非 Moe） | 0% | — | FS-4 |
+| 社交 / AI / 实时 / 其它 | 0% | — | FS-5～7 |
+
+---
+
+## 日常命令
 
 ```bash
 cd backend
-make verify-moe-complete    # A
-make verify-kratos-100      # B + Hybrid 回归
-make build-moe-social       # 生产单二进制
-make moe-social             # :8888 开发
+make moe-social               # 开发 / 生产 HTTP :8888
+make verify-full-site-50      # F≈48% 组合验收
+make verify-moe-complete      # A
+make verify-domain-vip        # FS-2
+make verify-domain-user       # FS-3a
+make verify-platform
+make verify-kratos-100        # B
+make build-moe-social
 ```

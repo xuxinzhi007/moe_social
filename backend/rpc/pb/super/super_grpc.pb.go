@@ -101,6 +101,18 @@ const (
 	Super_AdminListMemories_FullMethodName           = "/super.Super/AdminListMemories"
 	Super_AdminGetMemoryStats_FullMethodName         = "/super.Super/AdminGetMemoryStats"
 	Super_AdminDeleteMemory_FullMethodName           = "/super.Super/AdminDeleteMemory"
+	Super_AdminListAiChatSessions_FullMethodName     = "/super.Super/AdminListAiChatSessions"
+	Super_AdminListAiChatMessages_FullMethodName     = "/super.Super/AdminListAiChatMessages"
+	Super_AdminExportAiChatMessages_FullMethodName   = "/super.Super/AdminExportAiChatMessages"
+	Super_AdminAnalyticsOverview_FullMethodName      = "/super.Super/AdminAnalyticsOverview"
+	Super_AdminListTopicTags_FullMethodName          = "/super.Super/AdminListTopicTags"
+	Super_AdminCreateTopicTag_FullMethodName         = "/super.Super/AdminCreateTopicTag"
+	Super_AdminUpdateTopicTag_FullMethodName         = "/super.Super/AdminUpdateTopicTag"
+	Super_AdminDeleteTopicTag_FullMethodName         = "/super.Super/AdminDeleteTopicTag"
+	Super_AdminListTagDictionary_FullMethodName      = "/super.Super/AdminListTagDictionary"
+	Super_AdminCreateTagDictionary_FullMethodName    = "/super.Super/AdminCreateTagDictionary"
+	Super_AdminUpdateTagDictionary_FullMethodName    = "/super.Super/AdminUpdateTagDictionary"
+	Super_AdminDeleteTagDictionary_FullMethodName    = "/super.Super/AdminDeleteTagDictionary"
 	Super_AdminGetSchemaCatalog_FullMethodName       = "/super.Super/AdminGetSchemaCatalog"
 	Super_AdminListAuditLogs_FullMethodName          = "/super.Super/AdminListAuditLogs"
 	Super_RecordAdminAuditLog_FullMethodName         = "/super.Super/RecordAdminAuditLog"
@@ -304,6 +316,18 @@ type SuperClient interface {
 	AdminListMemories(ctx context.Context, in *AdminListMemoriesReq, opts ...grpc.CallOption) (*AdminListMemoriesResp, error)
 	AdminGetMemoryStats(ctx context.Context, in *AdminGetMemoryStatsReq, opts ...grpc.CallOption) (*AdminGetMemoryStatsResp, error)
 	AdminDeleteMemory(ctx context.Context, in *AdminDeleteMemoryReq, opts ...grpc.CallOption) (*AdminDeleteMemoryResp, error)
+	AdminListAiChatSessions(ctx context.Context, in *AdminListAiChatSessionsReq, opts ...grpc.CallOption) (*AdminListAiChatSessionsResp, error)
+	AdminListAiChatMessages(ctx context.Context, in *AdminListAiChatMessagesReq, opts ...grpc.CallOption) (*AdminListAiChatMessagesResp, error)
+	AdminExportAiChatMessages(ctx context.Context, in *AdminExportAiChatMessagesReq, opts ...grpc.CallOption) (*AdminExportAiChatMessagesResp, error)
+	AdminAnalyticsOverview(ctx context.Context, in *AdminGetMemoryStatsReq, opts ...grpc.CallOption) (*AdminAnalyticsOverviewResp, error)
+	AdminListTopicTags(ctx context.Context, in *AdminListTopicTagsReq, opts ...grpc.CallOption) (*AdminListTopicTagsResp, error)
+	AdminCreateTopicTag(ctx context.Context, in *AdminCreateTopicTagReq, opts ...grpc.CallOption) (*AdminCreateTopicTagResp, error)
+	AdminUpdateTopicTag(ctx context.Context, in *AdminUpdateTopicTagReq, opts ...grpc.CallOption) (*AdminUpdateTopicTagResp, error)
+	AdminDeleteTopicTag(ctx context.Context, in *AdminDeleteTopicTagReq, opts ...grpc.CallOption) (*AdminDeleteTopicTagResp, error)
+	AdminListTagDictionary(ctx context.Context, in *AdminListTagDictionaryReq, opts ...grpc.CallOption) (*AdminListTagDictionaryResp, error)
+	AdminCreateTagDictionary(ctx context.Context, in *AdminCreateTagDictionaryReq, opts ...grpc.CallOption) (*AdminCreateTagDictionaryResp, error)
+	AdminUpdateTagDictionary(ctx context.Context, in *AdminUpdateTagDictionaryReq, opts ...grpc.CallOption) (*AdminUpdateTagDictionaryResp, error)
+	AdminDeleteTagDictionary(ctx context.Context, in *AdminDeleteTagDictionaryReq, opts ...grpc.CallOption) (*AdminDeleteTagDictionaryResp, error)
 	AdminGetSchemaCatalog(ctx context.Context, in *AdminGetSchemaCatalogReq, opts ...grpc.CallOption) (*AdminGetSchemaCatalogResp, error)
 	AdminListAuditLogs(ctx context.Context, in *AdminListAuditLogsReq, opts ...grpc.CallOption) (*AdminListAuditLogsResp, error)
 	RecordAdminAuditLog(ctx context.Context, in *RecordAdminAuditLogReq, opts ...grpc.CallOption) (*RecordAdminAuditLogResp, error)
@@ -1258,6 +1282,126 @@ func (c *superClient) AdminDeleteMemory(ctx context.Context, in *AdminDeleteMemo
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AdminDeleteMemoryResp)
 	err := c.cc.Invoke(ctx, Super_AdminDeleteMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminListAiChatSessions(ctx context.Context, in *AdminListAiChatSessionsReq, opts ...grpc.CallOption) (*AdminListAiChatSessionsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminListAiChatSessionsResp)
+	err := c.cc.Invoke(ctx, Super_AdminListAiChatSessions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminListAiChatMessages(ctx context.Context, in *AdminListAiChatMessagesReq, opts ...grpc.CallOption) (*AdminListAiChatMessagesResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminListAiChatMessagesResp)
+	err := c.cc.Invoke(ctx, Super_AdminListAiChatMessages_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminExportAiChatMessages(ctx context.Context, in *AdminExportAiChatMessagesReq, opts ...grpc.CallOption) (*AdminExportAiChatMessagesResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminExportAiChatMessagesResp)
+	err := c.cc.Invoke(ctx, Super_AdminExportAiChatMessages_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminAnalyticsOverview(ctx context.Context, in *AdminGetMemoryStatsReq, opts ...grpc.CallOption) (*AdminAnalyticsOverviewResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminAnalyticsOverviewResp)
+	err := c.cc.Invoke(ctx, Super_AdminAnalyticsOverview_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminListTopicTags(ctx context.Context, in *AdminListTopicTagsReq, opts ...grpc.CallOption) (*AdminListTopicTagsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminListTopicTagsResp)
+	err := c.cc.Invoke(ctx, Super_AdminListTopicTags_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminCreateTopicTag(ctx context.Context, in *AdminCreateTopicTagReq, opts ...grpc.CallOption) (*AdminCreateTopicTagResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminCreateTopicTagResp)
+	err := c.cc.Invoke(ctx, Super_AdminCreateTopicTag_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminUpdateTopicTag(ctx context.Context, in *AdminUpdateTopicTagReq, opts ...grpc.CallOption) (*AdminUpdateTopicTagResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminUpdateTopicTagResp)
+	err := c.cc.Invoke(ctx, Super_AdminUpdateTopicTag_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminDeleteTopicTag(ctx context.Context, in *AdminDeleteTopicTagReq, opts ...grpc.CallOption) (*AdminDeleteTopicTagResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminDeleteTopicTagResp)
+	err := c.cc.Invoke(ctx, Super_AdminDeleteTopicTag_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminListTagDictionary(ctx context.Context, in *AdminListTagDictionaryReq, opts ...grpc.CallOption) (*AdminListTagDictionaryResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminListTagDictionaryResp)
+	err := c.cc.Invoke(ctx, Super_AdminListTagDictionary_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminCreateTagDictionary(ctx context.Context, in *AdminCreateTagDictionaryReq, opts ...grpc.CallOption) (*AdminCreateTagDictionaryResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminCreateTagDictionaryResp)
+	err := c.cc.Invoke(ctx, Super_AdminCreateTagDictionary_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminUpdateTagDictionary(ctx context.Context, in *AdminUpdateTagDictionaryReq, opts ...grpc.CallOption) (*AdminUpdateTagDictionaryResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminUpdateTagDictionaryResp)
+	err := c.cc.Invoke(ctx, Super_AdminUpdateTagDictionary_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *superClient) AdminDeleteTagDictionary(ctx context.Context, in *AdminDeleteTagDictionaryReq, opts ...grpc.CallOption) (*AdminDeleteTagDictionaryResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminDeleteTagDictionaryResp)
+	err := c.cc.Invoke(ctx, Super_AdminDeleteTagDictionary_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2473,6 +2617,18 @@ type SuperServer interface {
 	AdminListMemories(context.Context, *AdminListMemoriesReq) (*AdminListMemoriesResp, error)
 	AdminGetMemoryStats(context.Context, *AdminGetMemoryStatsReq) (*AdminGetMemoryStatsResp, error)
 	AdminDeleteMemory(context.Context, *AdminDeleteMemoryReq) (*AdminDeleteMemoryResp, error)
+	AdminListAiChatSessions(context.Context, *AdminListAiChatSessionsReq) (*AdminListAiChatSessionsResp, error)
+	AdminListAiChatMessages(context.Context, *AdminListAiChatMessagesReq) (*AdminListAiChatMessagesResp, error)
+	AdminExportAiChatMessages(context.Context, *AdminExportAiChatMessagesReq) (*AdminExportAiChatMessagesResp, error)
+	AdminAnalyticsOverview(context.Context, *AdminGetMemoryStatsReq) (*AdminAnalyticsOverviewResp, error)
+	AdminListTopicTags(context.Context, *AdminListTopicTagsReq) (*AdminListTopicTagsResp, error)
+	AdminCreateTopicTag(context.Context, *AdminCreateTopicTagReq) (*AdminCreateTopicTagResp, error)
+	AdminUpdateTopicTag(context.Context, *AdminUpdateTopicTagReq) (*AdminUpdateTopicTagResp, error)
+	AdminDeleteTopicTag(context.Context, *AdminDeleteTopicTagReq) (*AdminDeleteTopicTagResp, error)
+	AdminListTagDictionary(context.Context, *AdminListTagDictionaryReq) (*AdminListTagDictionaryResp, error)
+	AdminCreateTagDictionary(context.Context, *AdminCreateTagDictionaryReq) (*AdminCreateTagDictionaryResp, error)
+	AdminUpdateTagDictionary(context.Context, *AdminUpdateTagDictionaryReq) (*AdminUpdateTagDictionaryResp, error)
+	AdminDeleteTagDictionary(context.Context, *AdminDeleteTagDictionaryReq) (*AdminDeleteTagDictionaryResp, error)
 	AdminGetSchemaCatalog(context.Context, *AdminGetSchemaCatalogReq) (*AdminGetSchemaCatalogResp, error)
 	AdminListAuditLogs(context.Context, *AdminListAuditLogsReq) (*AdminListAuditLogsResp, error)
 	RecordAdminAuditLog(context.Context, *RecordAdminAuditLogReq) (*RecordAdminAuditLogResp, error)
@@ -2858,6 +3014,42 @@ func (UnimplementedSuperServer) AdminGetMemoryStats(context.Context, *AdminGetMe
 }
 func (UnimplementedSuperServer) AdminDeleteMemory(context.Context, *AdminDeleteMemoryReq) (*AdminDeleteMemoryResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method AdminDeleteMemory not implemented")
+}
+func (UnimplementedSuperServer) AdminListAiChatSessions(context.Context, *AdminListAiChatSessionsReq) (*AdminListAiChatSessionsResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdminListAiChatSessions not implemented")
+}
+func (UnimplementedSuperServer) AdminListAiChatMessages(context.Context, *AdminListAiChatMessagesReq) (*AdminListAiChatMessagesResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdminListAiChatMessages not implemented")
+}
+func (UnimplementedSuperServer) AdminExportAiChatMessages(context.Context, *AdminExportAiChatMessagesReq) (*AdminExportAiChatMessagesResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdminExportAiChatMessages not implemented")
+}
+func (UnimplementedSuperServer) AdminAnalyticsOverview(context.Context, *AdminGetMemoryStatsReq) (*AdminAnalyticsOverviewResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdminAnalyticsOverview not implemented")
+}
+func (UnimplementedSuperServer) AdminListTopicTags(context.Context, *AdminListTopicTagsReq) (*AdminListTopicTagsResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdminListTopicTags not implemented")
+}
+func (UnimplementedSuperServer) AdminCreateTopicTag(context.Context, *AdminCreateTopicTagReq) (*AdminCreateTopicTagResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdminCreateTopicTag not implemented")
+}
+func (UnimplementedSuperServer) AdminUpdateTopicTag(context.Context, *AdminUpdateTopicTagReq) (*AdminUpdateTopicTagResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdminUpdateTopicTag not implemented")
+}
+func (UnimplementedSuperServer) AdminDeleteTopicTag(context.Context, *AdminDeleteTopicTagReq) (*AdminDeleteTopicTagResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdminDeleteTopicTag not implemented")
+}
+func (UnimplementedSuperServer) AdminListTagDictionary(context.Context, *AdminListTagDictionaryReq) (*AdminListTagDictionaryResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdminListTagDictionary not implemented")
+}
+func (UnimplementedSuperServer) AdminCreateTagDictionary(context.Context, *AdminCreateTagDictionaryReq) (*AdminCreateTagDictionaryResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdminCreateTagDictionary not implemented")
+}
+func (UnimplementedSuperServer) AdminUpdateTagDictionary(context.Context, *AdminUpdateTagDictionaryReq) (*AdminUpdateTagDictionaryResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdminUpdateTagDictionary not implemented")
+}
+func (UnimplementedSuperServer) AdminDeleteTagDictionary(context.Context, *AdminDeleteTagDictionaryReq) (*AdminDeleteTagDictionaryResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdminDeleteTagDictionary not implemented")
 }
 func (UnimplementedSuperServer) AdminGetSchemaCatalog(context.Context, *AdminGetSchemaCatalogReq) (*AdminGetSchemaCatalogResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method AdminGetSchemaCatalog not implemented")
@@ -4688,6 +4880,222 @@ func _Super_AdminDeleteMemory_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SuperServer).AdminDeleteMemory(ctx, req.(*AdminDeleteMemoryReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminListAiChatSessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminListAiChatSessionsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminListAiChatSessions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminListAiChatSessions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminListAiChatSessions(ctx, req.(*AdminListAiChatSessionsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminListAiChatMessages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminListAiChatMessagesReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminListAiChatMessages(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminListAiChatMessages_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminListAiChatMessages(ctx, req.(*AdminListAiChatMessagesReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminExportAiChatMessages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminExportAiChatMessagesReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminExportAiChatMessages(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminExportAiChatMessages_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminExportAiChatMessages(ctx, req.(*AdminExportAiChatMessagesReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminAnalyticsOverview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminGetMemoryStatsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminAnalyticsOverview(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminAnalyticsOverview_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminAnalyticsOverview(ctx, req.(*AdminGetMemoryStatsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminListTopicTags_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminListTopicTagsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminListTopicTags(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminListTopicTags_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminListTopicTags(ctx, req.(*AdminListTopicTagsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminCreateTopicTag_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminCreateTopicTagReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminCreateTopicTag(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminCreateTopicTag_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminCreateTopicTag(ctx, req.(*AdminCreateTopicTagReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminUpdateTopicTag_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminUpdateTopicTagReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminUpdateTopicTag(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminUpdateTopicTag_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminUpdateTopicTag(ctx, req.(*AdminUpdateTopicTagReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminDeleteTopicTag_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminDeleteTopicTagReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminDeleteTopicTag(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminDeleteTopicTag_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminDeleteTopicTag(ctx, req.(*AdminDeleteTopicTagReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminListTagDictionary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminListTagDictionaryReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminListTagDictionary(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminListTagDictionary_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminListTagDictionary(ctx, req.(*AdminListTagDictionaryReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminCreateTagDictionary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminCreateTagDictionaryReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminCreateTagDictionary(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminCreateTagDictionary_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminCreateTagDictionary(ctx, req.(*AdminCreateTagDictionaryReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminUpdateTagDictionary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminUpdateTagDictionaryReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminUpdateTagDictionary(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminUpdateTagDictionary_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminUpdateTagDictionary(ctx, req.(*AdminUpdateTagDictionaryReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Super_AdminDeleteTagDictionary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminDeleteTagDictionaryReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperServer).AdminDeleteTagDictionary(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Super_AdminDeleteTagDictionary_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperServer).AdminDeleteTagDictionary(ctx, req.(*AdminDeleteTagDictionaryReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -7042,6 +7450,54 @@ var Super_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AdminDeleteMemory",
 			Handler:    _Super_AdminDeleteMemory_Handler,
+		},
+		{
+			MethodName: "AdminListAiChatSessions",
+			Handler:    _Super_AdminListAiChatSessions_Handler,
+		},
+		{
+			MethodName: "AdminListAiChatMessages",
+			Handler:    _Super_AdminListAiChatMessages_Handler,
+		},
+		{
+			MethodName: "AdminExportAiChatMessages",
+			Handler:    _Super_AdminExportAiChatMessages_Handler,
+		},
+		{
+			MethodName: "AdminAnalyticsOverview",
+			Handler:    _Super_AdminAnalyticsOverview_Handler,
+		},
+		{
+			MethodName: "AdminListTopicTags",
+			Handler:    _Super_AdminListTopicTags_Handler,
+		},
+		{
+			MethodName: "AdminCreateTopicTag",
+			Handler:    _Super_AdminCreateTopicTag_Handler,
+		},
+		{
+			MethodName: "AdminUpdateTopicTag",
+			Handler:    _Super_AdminUpdateTopicTag_Handler,
+		},
+		{
+			MethodName: "AdminDeleteTopicTag",
+			Handler:    _Super_AdminDeleteTopicTag_Handler,
+		},
+		{
+			MethodName: "AdminListTagDictionary",
+			Handler:    _Super_AdminListTagDictionary_Handler,
+		},
+		{
+			MethodName: "AdminCreateTagDictionary",
+			Handler:    _Super_AdminCreateTagDictionary_Handler,
+		},
+		{
+			MethodName: "AdminUpdateTagDictionary",
+			Handler:    _Super_AdminUpdateTagDictionary_Handler,
+		},
+		{
+			MethodName: "AdminDeleteTagDictionary",
+			Handler:    _Super_AdminDeleteTagDictionary_Handler,
 		},
 		{
 			MethodName: "AdminGetSchemaCatalog",

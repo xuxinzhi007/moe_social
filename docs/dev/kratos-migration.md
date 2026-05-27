@@ -1,8 +1,35 @@
 # Kratos 混合架构说明（SSOT）
 
-> **Hybrid Moe：100%** · **纯 Kratos 试点方案：100%** · **全站迁移 F：~22%** · **对外 HTTP：:8888**  
-> 本文档描述 **Hybrid 生产架构**。全站迁移执行方案：[kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md)。  
-> 试点方案：[kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md) · 勾选：[kratos-migration-status.md](./kratos-migration-status.md)
+> **更新：2026-05-27**  
+> **当前阶段：FS-3b**（User 扩展）· **全站迁移 F：~48%** · **对外 HTTP：:8888**（`make moe-social`）  
+> 全站方案：[kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md) · 勾选：[kratos-migration-status.md](./kratos-migration-status.md) · 试点：[kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md)
+
+---
+
+## 0. 当前阶段一览
+
+| 项目 | 状态 |
+|------|------|
+| **生产入口** | `make moe-social` / `bin/moe-social` → **HTTP :8888** + 内网 **gRPC :8080** |
+| **A · Moe Hybrid** | ✅ 100% — `moeadmingw` + `biz/moe` |
+| **B · 纯 Kratos 试点** | ✅ 100% — `make moe-kratos`（:1903x，非对外） |
+| **FS-2 VIP 套餐** | ✅ 100% — `vipadmingw` + `biz/vip` |
+| **FS-3a User 核心** | ✅ — login/register/资料/VIP 状态 `usergw` in_process |
+| **FS-3b User 扩展** | 🔄 进行中 — 关注/好友/订单/记忆/OAuth |
+| **F · 全站迁移** | **~48%** — `make verify-full-site-50` |
+| **下一里程碑** | F **50%+**（完成 FS-3b 或 User 域 ≥80%） |
+
+**`make moe-social` 启动成功标志**（节选）：
+
+```text
+moe api_in_process: enabled
+moe admin gateway route: in_process
+vip api_in_process: enabled
+vip gateway route: in_process
+user api_in_process: enabled
+user gateway route: in_process
+moe-social: 单进程已就绪 — gRPC …:8080 + HTTP …:8888
+```
 
 ---
 
@@ -10,36 +37,54 @@
 
 | 名称 | 含义 |
 |------|------|
-| **Hybrid（混合）** | 业务按 Kratos 分层（`biz` / `service` / `data`），**启动与契约仍大量依赖 go-zero**（`super.api`、`super.proto`、`rest` + `zrpc`） |
-| **不是纯 Kratos** | 尚未用 `kratos.App` 统一替代 go-zero 的 HTTP/gRPC 传输；未全面 `conf.proto` + Wire；未退役 `super.*` |
-| **Moe 域（A）** | 分层 + `moe.proto` + `moegrpc` + `MoeGW` + 单进程 `moe-social` → **100%** |
-| **纯 Kratos 试点方案（B）** | Phase 0～6 → **100%**；`:19031/:19032` **非对外** |
-| **全站迁移（F）** | 各域下沉 `biz` + 退役 `super.*` → **~22%**（2026-05-27） |
-| **工程就绪度（G）** | A+B+单二进制可构建+观测 → **~48%**（可上线 Hybrid，≠迁完） |
+| **Hybrid（混合）** | 业务按 Kratos 分层（`biz` / `service` / `data`），**运行时仍为 go-zero**（`rest` + `zrpc`）+ `super.api` / `super.proto` |
+| **不是纯 Kratos** | 生产未使用 `kratos.App` 替代双传输；未退役 `super.*` |
+| **Moe 域（A）** | `biz/moe` + `MoeGW` + `moe.proto` → **100%** |
+| **VIP 套餐域** | `biz/vip` + `VipGW` → **100%**（用户 VIP **订单**仍属 User 域） |
+| **User 核心（FS-3a）** | `biz/user` + `UserGW` → **~70%**（域内）；认证/资料/VIP 状态已 in_process |
+| **纯 Kratos 试点（B）** | Phase 0～6 → **100%**；`:19031/:19032` **非对外** |
+| **全站迁移（F）** | 各域下沉 `biz` + 退役 `super.*` → **~48%** |
+| **工程就绪度（G）** | **~55%** — 可稳定开发与上线 Hybrid |
 
-进度口径与域权重见 [kratos-full-site-migration-plan.md §1](./kratos-full-site-migration-plan.md#1-进度口径必读避免歧义)。
+进度口径：[kratos-full-site-migration-plan.md §1](./kratos-full-site-migration-plan.md#1-进度口径必读避免歧义)。
+
+### 1.1 生产架构图（2026-05-27）
 
 ```text
-  对外（Flutter / 管理台 / 第三方）
-           │  HTTP :8888  （super.api，REST JSON）
+  Flutter / moe-admin / 第三方
+           │  HTTP :8888  （super.api 路径不变）
            ▼
-  ┌────────────────────────────────────────────┐
-  │  API（go-zero rest）                        │
-  │  · 非 Moe：logic → SuperRpcClient            │
-  │  · Moe Admin：moeadmingw（默认 in_process；可灰度 kratos_http）│
-  └──────────────────┬─────────────────────────┘
-                     │  gRPC 127.0.0.1:8080（本机或容器内网）
-                     ▼
-  ┌────────────────────────────────────────────┐
-  │  RPC（zrpc）                                │
-  │  · super.Super（legacy 全站）               │
-  │  · moe.v1.MoeAdmin（moegrpc，新契约）       │
-  └──────────────────┬─────────────────────────┘
-                     ▼
-           internal/service → biz → data → MySQL
+  ┌──────────────────────────────────────────────────────────┐
+  │  API 进程（go-zero rest）— api/runserver                  │
+  │                                                          │
+  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐      │
+  │  │  moeadmingw │  │  vipadmingw │  │   usergw    │      │
+  │  │ in_process  │  │ in_process  │  │ in_process  │      │
+  │  │ (Moe Admin) │  │ (VIP 套餐)  │  │ (User 核心) │      │
+  │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘      │
+  │         │                │                │              │
+  │         └────────────────┼────────────────┘              │
+  │                          ▼                               │
+  │              internal/biz → service → MySQL              │
+  │                                                          │
+  │  其余路由：api/internal/logic → SuperRpcClient ───────────┼──┐
+  └──────────────────────────────────────────────────────────┘  │
+                                                                  │ gRPC :8080
+                                                                  ▼
+  ┌──────────────────────────────────────────────────────────┐
+  │  RPC 进程（zrpc）— rpc/runserver                          │
+  │  · super.Super（多数接口；VIP/User 核心已转调 biz）       │
+  │  · moe.v1.MoeAdmin（moegrpc）                            │
+  └──────────────────────────────────────────────────────────┘
+
+  并行（开发/验证，不对公网）:
+  · make moe-kratos  → :19031 gRPC + :19032 HTTP
+  · make moe-platform → :19020/migration
 ```
 
-**纯 Kratos 终态**（未做）：单 `kratos.App`、契约以 `api/*/v1/*.proto` 为主、逐步去掉 goctl 双入口。见 [kratos-phase3-roadmap.md](./kratos-phase3-roadmap.md)。
+**in_process 含义**：API 进程内直接调 `internal/biz`，不经 `127.0.0.1:8080` 回环；仍共用同一 MySQL。
+
+**纯 Kratos 终态**（FS-8）：单入口、分域 `api/*/v1/*.proto`、退役 `super.*`。见 [kratos-phase3-roadmap.md](./kratos-phase3-roadmap.md)。
 
 ---
 
@@ -84,22 +129,23 @@ make gen-moe-admin        # gen 后清理 Moe 空壳 logic 并编译
 
 ### 2.4 验收
 
-**Hybrid（生产路径）**
+**日常（生产 Hybrid）**
 
 ```bash
-make verify-moe-complete  # 推荐：一键
-# 或分步：verify-moe-migration / verify-moe-grpc / verify-moe-gateway
+make verify-moe-complete    # A：Moe 域 100%
+make verify-full-site-50    # F≈48%：Moe + VIP + User 核心 + 平台
+make verify-domain-vip      # FS-2
+make verify-domain-user     # FS-3a
+make verify-platform        # bin/moe-social
+make build-moe-social
+make moe-social             # 对外 :8888
 ```
 
-**纯 Kratos 试点（并行，方案 100%）**
+**纯 Kratos 试点（B，并行非生产）**
 
 ```bash
-make verify-kratos-100    # 试点方案 100% + Hybrid 回归
-make build-moe-social     # 生产单二进制 :8888+:8080
-make verify-kratos-80     # Phase 0～4
-make verify-kratos-60     # Phase 0～3
-make verify-kratos-50     # Phase 0～2
-make moe-kratos           # 试点进程 :19031 gRPC + :19032 HTTP
+make verify-kratos-100      # 试点 100% + Hybrid 回归
+make moe-kratos             # :19031 gRPC + :19032 HTTP
 ```
 
 详见 [kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md)。
@@ -149,8 +195,10 @@ curl -s http://127.0.0.1:19032/migration    # 纯 Kratos 试点进度（需 make
 
 | 域 | 契约 | 实现 |
 |----|------|------|
-| **Moe** | 改 `api/moe/v1/moe.proto`（gRPC）；HTTP 管理台仍 `super.api` | `internal/biz/moe` → `service/moe`；Admin HTTP 经 `moeadmingw` |
-| **User/VIP/…** | 仍 `super.api` / `super.proto` | 仍 `api|rpc/internal/logic`（legacy） |
+| **Moe** | `api/moe/v1/moe.proto`；HTTP 仍 `super.api` 路径 | `biz/moe` → `moeadmingw` |
+| **VIP 套餐** | `api/vip/v1/` + `super.api` 路径 | `biz/vip` → `vipadmingw` |
+| **User 核心** | 暂 `super.api` | `biz/user` → `usergw`（login/register/资料/VIP 状态） |
+| **User 扩展 / 其它** | `super.api` / `super.proto` | legacy `logic`（FS-3b 起逐步下沉） |
 
 ### 3.3 `make gen` 后必查
 
@@ -167,7 +215,9 @@ curl -s http://127.0.0.1:19032/migration    # 纯 Kratos 试点进度（需 make
 | `register_moe_grpc` | `true` | RPC 端口注册 `moe.v1.MoeAdmin` |
 | `use_moe_grpc` | `true` | 无 in_process 时 API 走 moe gRPC |
 | `single_process` | `false` | 使用 `make moe-social` 时可设 `true`（标记） |
-| `kratos_admin_http_enabled` | `false` | Phase 3：Admin 两接口 HTTP 转发到 `moe-kratos` |
+| `vip_api_in_process` | `true` | VIP 套餐 HTTP 走 `vipadmingw` → `biz/vip` |
+| `user_api_in_process` | `true` | User 核心 HTTP 走 `usergw` → `biz/user` |
+| `kratos_admin_http_enabled` | `false` | Admin 两接口 HTTP 灰度到 `moe-kratos` |
 | `kratos_admin_base_url` | `http://127.0.0.1:19032` | 灰度目标（需 `make moe-kratos`） |
 
 API→RPC 地址：`api/etc/super.yaml` 的 `SuperRpc.Endpoints`（本机 `127.0.0.1:8080`）；Docker 用 `MOE_SUPER_RPC_ENDPOINT=rpc:8080`。
@@ -221,27 +271,35 @@ API→RPC 地址：`api/etc/super.yaml` 的 `SuperRpc.Endpoints`（本机 `127.0
 
 ```text
 backend/
-├── cmd/moe-social/           # 推荐：Hybrid 单进程
-├── cmd/moe-kratos/           # 纯 Kratos 试点（Wire，:1903x）
-├── internal/conf/moe/v1/     # pilot.proto Bootstrap SSOT
-├── internal/platform/moeconf/
-├── internal/platform/moekratos/  # wire_gen.go
-├── cmd/moe-platform/         # 观测 :19020
+├── cmd/moe-social/              # 生产推荐：单进程 :8888 + :8080
+├── cmd/moe-kratos/              # 纯 Kratos 试点 :19031/:19032
+├── cmd/moe-platform/            # 观测 :19020/migration
+├── config/config.yaml           # moe.* 开关（api/vip/user_in_process）
 ├── api/
-│   ├── super.api             # HTTP SSOT（全站）
-│   ├── moekratospilot/       # 试点 Admin HTTP（:19032）
-│   ├── runserver/            # API 启动
-│   ├── moe/v1/moe.proto      # Moe gRPC SSOT
-│   └── internal/moeadmingw/  # Admin 网关（in_process / kratos_http / …）
+│   ├── super.api                # HTTP 契约 SSOT（legacy，逐步按域拆）
+│   ├── runserver/               # 装配 MoeGW / VipGW / UserGW
+│   ├── moe/v1/moe.proto
+│   ├── vip/v1/vip_read.proto
+│   ├── moekratospilot/          # 试点 HTTP（:19032）
+│   └── internal/
+│       ├── moeadmingw/          # Moe Admin 网关
+│       ├── vipadmingw/          # VIP 套餐网关
+│       └── usergw/              # User 核心网关
 ├── rpc/
-│   ├── super.proto           # gRPC SSOT（全站）
-│   └── runserver/            # RPC 启动
+│   ├── super.proto              # gRPC SSOT（legacy）
+│   └── runserver/
 ├── internal/
-│   ├── biz/moe/              # 业务
-│   ├── service/moe/
-│   ├── server/moegrpc/       # moe.v1 服务实现
-│   └── platform/moewiring|moesocial/
-└── scripts/verify-moe-*.sh
+│   ├── biz/moe|vip|user/        # 已下沉业务（15 个 .go，2026-05-27）
+│   ├── service/moe|vip|user/
+│   ├── data/moedata/
+│   ├── server/moegrpc/
+│   └── platform/moewiring|moesocial|moekratos|moeconf/
+└── scripts/
+    ├── verify-moe-complete.sh
+    ├── verify-domain-vip.sh
+    ├── verify-domain-user.sh
+    ├── verify-platform.sh
+    └── verify-full-site-50.sh
 ```
 
 ---
@@ -255,8 +313,8 @@ backend/
 | gRPC | go-zero `zrpc` + `super.proto` | Kratos gRPC + 分域 `api/*/v1` |
 | 配置 | yaml + viper | `conf.proto` + Wire（可选） |
 | 生成 | goctl + protoc | 以 protoc 为主 |
-| Moe 业务层 | ✅ 已有 | ✅ 复用 |
-| 全站业务层 | ❌ 多在 logic | 需按域下沉 biz |
+| Moe / VIP / User 核心 | ✅ `biz/*` + 三网关 | ✅ 复用并扩展 |
+| 全站其余域 | ❌ 多在 logic | FS-3b～FS-8 |
 
 ---
 
@@ -290,13 +348,14 @@ backend/
 
 ### 9.4 若做全站迁移，推荐路线
 
-**已启动 FS-0（准备）**；完整分阶段见 [kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md)。
+完整分阶段见 [kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md)。
 
 ```text
-FS-0  准备（进度 SSOT、域清单）          ← 当前
-FS-1  平台与契约基座
-FS-2  VIP 全量（建议首个业务域）
-FS-3  User 核心
+FS-0  准备                         ✅
+FS-1  平台与契约基座                 🔄 部分（verify-platform 等）
+FS-2  VIP 套餐域                     ✅
+FS-3a User 核心（auth/资料/VIP状态）  ✅
+FS-3b User 扩展                      ← 当前
 FS-4  Admin 非 Moe
 FS-5  社交与内容
 FS-6  AI / LLM
@@ -325,7 +384,7 @@ FS-8  退役 super.api / super.proto
 | 文件 | 用途 |
 |------|------|
 | [kratos-hybrid-migration-plan.md](./kratos-hybrid-migration-plan.md) | 纪律与禁止项 |
-| [kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md) | **全站迁移方案（F ~22%）** |
+| [kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md) | **全站迁移方案（F ~48%，FS-3b）** |
 | [kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md) | 纯 Kratos 试点（B 100%） |
 | [kratos-phase3-roadmap.md](./kratos-phase3-roadmap.md) | 里程碑索引 |
 | [kratos-migration-status.md](./kratos-migration-status.md) | 勾选 |

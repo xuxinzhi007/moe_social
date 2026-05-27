@@ -2437,6 +2437,233 @@ type AdminDeleteMemoryResp {
 	BaseResp
 }
 
+// —— AI 对话日志（审计，非训练集导出） ——
+type AdminAiChatSessionItem {
+	Id            string `json:"id"`
+	UserId        string `json:"user_id"`
+	Username      string `json:"username,optional"`
+	SessionId     string `json:"session_id"`
+	Model         string `json:"model,optional"`
+	MessageCount  int    `json:"message_count,optional"`
+	LastMessageAt string `json:"last_message_at,optional"`
+	CreatedAt     string `json:"created_at"`
+	UpdatedAt     string `json:"updated_at"`
+}
+
+type AdminListAiChatSessionsReq {
+	Page      int    `form:"page,optional,default=1"`
+	PageSize  int    `form:"page_size,optional,default=20"`
+	UserId    string `form:"user_id,optional"`
+	SessionId string `form:"session_id,optional"`
+	From      string `form:"from,optional"`
+	To        string `form:"to,optional"`
+}
+
+type AdminListAiChatSessionsData {
+	Items []AdminAiChatSessionItem `json:"items"`
+	Total int                      `json:"total"`
+}
+
+type AdminListAiChatSessionsResp {
+	BaseResp
+	Data AdminListAiChatSessionsData `json:"data"`
+}
+
+type AdminAiChatMessageItem {
+	Id          string `json:"id"`
+	UserId      string `json:"user_id"`
+	Username    string `json:"username,optional"`
+	SessionId   string `json:"session_id"`
+	SourceMsgId string `json:"source_msg_id,optional"`
+	Role        string `json:"role"`
+	Content     string `json:"content"`
+	Model       string `json:"model,optional"`
+	CreatedAt   string `json:"created_at"`
+}
+
+type AdminListAiChatMessagesReq {
+	Page      int    `form:"page,optional,default=1"`
+	PageSize  int    `form:"page_size,optional,default=30"`
+	UserId    string `form:"user_id,optional"`
+	SessionId string `form:"session_id,optional"`
+	Role      string `form:"role,optional"`
+	Keyword   string `form:"keyword,optional"`
+	From      string `form:"from,optional"`
+	To        string `form:"to,optional"`
+}
+
+type AdminListAiChatMessagesData {
+	Items []AdminAiChatMessageItem `json:"items"`
+	Total int                      `json:"total"`
+}
+
+type AdminListAiChatMessagesResp {
+	BaseResp
+	Data AdminListAiChatMessagesData `json:"data"`
+}
+
+type AdminExportAiChatMessagesReq {
+	UserId    string `form:"user_id,optional"`
+	SessionId string `form:"session_id,optional"`
+	Role      string `form:"role,optional"`
+	Keyword   string `form:"keyword,optional"`
+	From      string `form:"from,optional"`
+	To        string `form:"to,optional"`
+	Limit     int    `form:"limit,optional,default=5000"`
+}
+
+type AdminExportAiChatMessagesData {
+	Csv       string `json:"csv"`
+	RowCount  int    `json:"row_count"`
+	Truncated bool   `json:"truncated"`
+}
+
+type AdminExportAiChatMessagesResp {
+	BaseResp
+	Data AdminExportAiChatMessagesData `json:"data"`
+}
+
+// —— 数据分析看板 ——
+type AdminDayStat {
+	Date  string `json:"date"`
+	Count int    `json:"count"`
+}
+
+type AdminAnalyticsOverviewData {
+	UserTotal          int                   `json:"user_total"`
+	UsersNew7d         int                   `json:"users_new_7d"`
+	UsersByDay         []AdminDayStat        `json:"users_by_day"`
+	MemoryTotal        int                   `json:"memory_total"`
+	MemoryUsers        int                   `json:"memory_users"`
+	MemoriesByDay      []AdminDayStat        `json:"memories_by_day"`
+	MemoryByType       []AdminMemoryTypeStat `json:"memory_by_type"`
+	MoeToolCalls7d     int                   `json:"moe_tool_calls_7d"`
+	MoeToolSuccessRate float64               `json:"moe_tool_success_rate"`
+	MoeToolsByDay      []AdminDayStat        `json:"moe_tools_by_day"`
+	ChatSessionsTotal  int                   `json:"chat_sessions_total"`
+	ChatMessages7d     int                   `json:"chat_messages_7d"`
+	ChatMessagesByDay  []AdminDayStat        `json:"chat_messages_by_day"`
+}
+
+type AdminAnalyticsOverviewResp {
+	BaseResp
+	Data AdminAnalyticsOverviewData `json:"data"`
+}
+
+// —— 话题标签 CRUD ——
+type AdminListTopicTagsReq {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Keyword  string `form:"keyword,optional"`
+}
+
+type AdminListTopicTagsData {
+	Items []TopicTag `json:"items"`
+	Total int        `json:"total"`
+}
+
+type AdminListTopicTagsResp {
+	BaseResp
+	Data AdminListTopicTagsData `json:"data"`
+}
+
+type AdminCreateTopicTagReq {
+	Name  string `json:"name"`
+	Color string `json:"color,optional"`
+}
+
+type AdminCreateTopicTagResp {
+	BaseResp
+	Data TopicTag `json:"data"`
+}
+
+type AdminUpdateTopicTagReq {
+	TagId string `path:"tag_id"`
+	Name  string `json:"name,optional"`
+	Color string `json:"color,optional"`
+}
+
+type AdminUpdateTopicTagResp {
+	BaseResp
+	Data TopicTag `json:"data"`
+}
+
+type AdminDeleteTopicTagReq {
+	TagId string `path:"tag_id"`
+}
+
+type AdminDeleteTopicTagResp {
+	BaseResp
+}
+
+// —— Bot 策略标签字典 ——
+type AdminTagDictionaryItem {
+	Id        string `json:"id"`
+	Category  string `json:"category"`
+	Tag       string `json:"tag"`
+	Label     string `json:"label,optional"`
+	Note      string `json:"note,optional"`
+	SortOrder int    `json:"sort_order"`
+	Enabled   bool   `json:"enabled"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+type AdminListTagDictionaryReq {
+	Page     int    `form:"page,optional,default=1"`
+	PageSize int    `form:"page_size,optional,default=50"`
+	Category string `form:"category,optional"`
+	Keyword  string `form:"keyword,optional"`
+}
+
+type AdminListTagDictionaryData {
+	Items []AdminTagDictionaryItem `json:"items"`
+	Total int                      `json:"total"`
+}
+
+type AdminListTagDictionaryResp {
+	BaseResp
+	Data AdminListTagDictionaryData `json:"data"`
+}
+
+type AdminCreateTagDictionaryReq {
+	Category  string `json:"category"`
+	Tag       string `json:"tag"`
+	Label     string `json:"label,optional"`
+	Note      string `json:"note,optional"`
+	SortOrder int    `json:"sort_order,optional"`
+	Enabled   bool   `json:"enabled,optional"`
+}
+
+type AdminCreateTagDictionaryResp {
+	BaseResp
+	Data AdminTagDictionaryItem `json:"data"`
+}
+
+type AdminUpdateTagDictionaryReq {
+	EntryId       string `path:"entry_id"`
+	Category      string `json:"category,optional"`
+	Tag           string `json:"tag,optional"`
+	Label         string `json:"label,optional"`
+	Note          string `json:"note,optional"`
+	SortOrder     int    `json:"sort_order,optional"`
+	Enabled       bool   `json:"enabled,optional"`
+	UpdateEnabled bool   `json:"update_enabled,optional"`
+}
+
+type AdminUpdateTagDictionaryResp {
+	BaseResp
+	Data AdminTagDictionaryItem `json:"data"`
+}
+
+type AdminDeleteTagDictionaryReq {
+	EntryId string `path:"entry_id"`
+}
+
+type AdminDeleteTagDictionaryResp {
+	BaseResp
+}
+
 // Admin 公告
 type AdminAnnouncementItem {
 	Id          string `json:"id"`
@@ -3084,6 +3311,42 @@ service Super {
 
 	@handler adminDeleteMemory
 	delete /api/admin/memories/:memory_id (AdminDeleteMemoryReq) returns (AdminDeleteMemoryResp)
+
+	@handler adminListAiChatSessions
+	get /api/admin/ai/chat/sessions (AdminListAiChatSessionsReq) returns (AdminListAiChatSessionsResp)
+
+	@handler adminListAiChatMessages
+	get /api/admin/ai/chat/messages (AdminListAiChatMessagesReq) returns (AdminListAiChatMessagesResp)
+
+	@handler adminExportAiChatMessages
+	get /api/admin/ai/chat/messages/export (AdminExportAiChatMessagesReq) returns (AdminExportAiChatMessagesResp)
+
+	@handler adminAnalyticsOverview
+	get /api/admin/analytics/overview (EmptyReq) returns (AdminAnalyticsOverviewResp)
+
+	@handler adminListTopicTags
+	get /api/admin/topic-tags (AdminListTopicTagsReq) returns (AdminListTopicTagsResp)
+
+	@handler adminCreateTopicTag
+	post /api/admin/topic-tags (AdminCreateTopicTagReq) returns (AdminCreateTopicTagResp)
+
+	@handler adminUpdateTopicTag
+	put /api/admin/topic-tags/:tag_id (AdminUpdateTopicTagReq) returns (AdminUpdateTopicTagResp)
+
+	@handler adminDeleteTopicTag
+	delete /api/admin/topic-tags/:tag_id (AdminDeleteTopicTagReq) returns (AdminDeleteTopicTagResp)
+
+	@handler adminListTagDictionary
+	get /api/admin/tag-dictionary (AdminListTagDictionaryReq) returns (AdminListTagDictionaryResp)
+
+	@handler adminCreateTagDictionary
+	post /api/admin/tag-dictionary (AdminCreateTagDictionaryReq) returns (AdminCreateTagDictionaryResp)
+
+	@handler adminUpdateTagDictionary
+	put /api/admin/tag-dictionary/:entry_id (AdminUpdateTagDictionaryReq) returns (AdminUpdateTagDictionaryResp)
+
+	@handler adminDeleteTagDictionary
+	delete /api/admin/tag-dictionary/:entry_id (AdminDeleteTagDictionaryReq) returns (AdminDeleteTagDictionaryResp)
 
 	@handler adminGetMoeInferenceStatus
 	get /api/admin/moe/inference/status (AdminGetMoeInferenceStatusReq) returns (AdminGetMoeInferenceStatusResp)

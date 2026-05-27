@@ -27,12 +27,12 @@ func NewCheckUserVipLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Chec
 
 func (l *CheckUserVipLogic) CheckUserVip(req *types.CheckUserVipReq) (resp *types.CheckUserVipResp, err error) {
 	// 调用RPC服务检查用户VIP状态
-	rpcResp, err := l.svcCtx.SuperRpcClient.CheckUserVip(l.ctx, &super.CheckUserVipReq{
+	rpcResp, err := l.svcCtx.UserGW.CheckUserVip(l.ctx, &super.CheckUserVipReq{
 		UserId: req.UserId,
 	})
 	if err != nil {
 		return &types.CheckUserVipResp{
-			BaseResp: common.HandleRPCError(err, ""),
+			BaseResp: common.HandleUserGWError(err, ""),
 			Data:     false,
 		}, nil
 	}

@@ -9,6 +9,8 @@ import (
 	"backend/api/internal/handler"
 	"backend/api/internal/moeadmingw"
 	"backend/api/internal/svc"
+	"backend/api/internal/usergw"
+	"backend/api/internal/vipadmingw"
 	"backend/internal/platform/moewiring"
 	"backend/utils"
 
@@ -54,6 +56,28 @@ func Start(opts Options) (*rest.Server, error) {
 	}
 	ctx.MoeGW = moeadmingw.NewConfigured(ctx.MoeAdmin, ctx.MoeGRPC, ctx.SuperRpcClient)
 	log.Printf("moe admin gateway route: %s", ctx.MoeGW.Route())
+	if moewiring.VIPAPIInProcessEnabled() {
+		vipAdm, err := moewiring.NewAPIVipAdminService()
+		if err != nil {
+			log.Printf("vip api_in_process: init failed, fallback to RPC only: %v", err)
+		} else if vipAdm != nil {
+			ctx.VipAdmin = vipAdm
+			log.Print("vip api_in_process: enabled (VIP plan HTTP uses in-process biz)")
+		}
+	}
+	if moewiring.UserAPIInProcessEnabled() {
+		userApp, err := moewiring.NewAPIUserService()
+		if err != nil {
+			log.Printf("user api_in_process: init failed, fallback to RPC only: %v", err)
+		} else if userApp != nil {
+			ctx.UserApp = userApp
+			log.Print("user api_in_process: enabled (User auth/profile/vip HTTP uses in-process biz)")
+		}
+	}
+	ctx.UserGW = usergw.New(ctx.UserApp, ctx.SuperRpcClient)
+	log.Printf("user gateway route: %s", ctx.UserGW.Route())
+	ctx.VipGW = vipadmingw.New(ctx.VipAdmin, ctx.SuperRpcClient)
+	log.Printf("vip gateway route: %s", ctx.VipGW.Route())
 	if moewiring.KratosAdminHTTPEnabled() {
 		log.Printf("moe kratos admin http: enabled → %s (ListRuntimes, GetBrainPipeline)", moewiring.KratosAdminBaseURL())
 	}

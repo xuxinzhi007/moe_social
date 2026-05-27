@@ -27,12 +27,12 @@ func NewGetUserVipStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 
 func (l *GetUserVipStatusLogic) GetUserVipStatus(req *types.GetUserActiveVipRecordReq) (resp *types.GetUserVipStatusResp, err error) {
 	// 调用RPC服务获取用户VIP状态
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetUserVipStatus(l.ctx, &super.GetUserVipStatusReq{
+	rpcResp, err := l.svcCtx.UserGW.GetUserVipStatus(l.ctx, &super.GetUserVipStatusReq{
 		UserId: req.UserId,
 	})
 	if err != nil {
 		return &types.GetUserVipStatusResp{
-			BaseResp: common.HandleRPCError(err, ""),
+			BaseResp: common.HandleUserGWError(err, ""),
 		}, nil
 	}
 
