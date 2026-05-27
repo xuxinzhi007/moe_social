@@ -15,10 +15,19 @@ third_party/sqlite3/sqlite3.h
 .svn/
 .swiftpm/
 migrate_working_dir/
+# Backend Go binaries（make build / build-moe-social，勿提交）
+backend/bin/
+backend/api/moe-social-api
+backend/rpc/moe-social-rpc
 backend/api/super
 backend/rpc/super
 backend/api/api.exe
 backend/rpc/rpc.exe
+backend/cmd/moe-social
+backend/cmd/moe-kratos
+backend/cmd/moe-platform
+backend/cmd/moe-platform/moe-platform
+backend/cmd/moe-kratos/moe-kratos
 *.exe
 backend/deploy/config.yaml
 backend/deploy/config.local.yaml
@@ -128,6 +137,4 @@ backend/rpc/super.exe
 backend/api/super.exe
 release.jks.b64
 android/app/release.jks.bak
-backend/api/moe-social-api
-backend/rpc/moe-social-rpc
 backend/.dev/
