@@ -1,25 +1,23 @@
 # Kratos 迁移 — 进度清单
 
-> SSOT：[kratos-migration.md](./kratos-migration.md)  
-> **Moe 域：100%** | **全仓纯 Kratos：进行中（~30% 非 Moe 域待迁）**
+> **架构说明（框架 / 用法 / 优缺点 / 是否纯 Kratos）**：[kratos-migration.md](./kratos-migration.md)
 
-## Moe 域（100%）✅
+## Moe 域 Hybrid ✅ 100%
 
-- [x] Phase 1+2 分层 + rpcsuper
-- [x] `api_in_process` + `MoeGW`
-- [x] `moe.proto` + `moegrpc` + `register_moe_grpc`
-- [x] `cmd/moe-social` 单进程
+- [x] biz / service / data
+- [x] `moe.proto` + `moegrpc` + `MoeGW`
+- [x] `cmd/moe-social` 单进程开发入口
 - [x] `make verify-moe-complete`
 
-## 全仓后续 ⬜
+## 全仓纯 Kratos ⬜ 未启动（可选）
 
-- [ ] User / VIP 等域 proto 拆分
-- [ ] 退役 `super.api` / `super.proto` 全量 HTTP/RPC
-- [ ] 纯 Kratos HTTP 注解 / grpc-gateway
+- [ ] Moe Admin HTTP → grpc-gateway 试点
+- [ ] 非 Moe 域 biz 下沉
+- [ ] 退役 `super.api` / `super.proto`
+- [ ] 部署默认单二进制
 
 ## 验收
 
 ```bash
-cd backend && make verify-moe-complete
-make moe-social
+cd backend && make verify-moe-complete && make moe-social
 ```

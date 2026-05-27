@@ -1,8 +1,14 @@
 # Moe API 契约（v1）
 
-本目录为 **Moe 域** 的协议单一事实来源（SSOT），用于 Kratos 混合迁移。
+本目录为 **Moe 域** gRPC 的协议 SSOT（Kratos 风格路径 `api/<domain>/v1/`）。
 
-- **当前阶段**：Phase 1 核心完成 — 已定义 `GetBrainPipeline` / `RunAgentOnce` / `GetBrainSnapshot`；运行时仍走 legacy `super.proto`。
-- 混合期：HTTP 仍走 `super.api`，gRPC 仍走 `super.proto`；实现位于 `internal/biz|service|data`。
-- 生成：`cd backend && make api-moe-proto`（需本机 `protoc`）
-- 方案：`docs/dev/kratos-hybrid-migration-plan.md` · 进度：`docs/dev/kratos-migration-status.md`
+| 项 | 说明 |
+|----|------|
+| 源文件 | `moe.proto` |
+| 生成 | `cd backend && make gen-moe-proto`（需 `protoc`） |
+| 产物 | 同目录 `moe.pb.go`、`moe_grpc.pb.go`（Go 包名 `moev1`） |
+| 与 legacy 关系 | **不替代** `rpc/super.proto`；HTTP 仍由 `api/super.api` 定义 |
+
+实现：`internal/server/moegrpc` → `internal/service/moe` → `internal/biz/moe`。
+
+总览：`docs/dev/kratos-migration.md` §7（端口与 Flutter）。
