@@ -1,0 +1,257 @@
+syntax = "proto3";
+
+package moe.v1;
+
+option go_package = "backend/api/moe/v1;moev1";
+
+// Moe 域契约 SSOT（Phase 3 Sprint 2：与 super.proto Admin Moe 对齐）
+
+message AgentRuntime {
+  string agent_key = 1;
+  string display_name = 2;
+  string bot_user_id = 3;
+  string capability_tier = 4;
+  string model_name = 5;
+  string provider_profile_id = 6;
+  bool tools_enabled = 7;
+  int32 post_quota_daily = 8;
+  int32 posts_today = 9;
+  bool enabled = 10;
+  string last_run_at = 11;
+  string last_post_id = 12;
+  string post_schedule_mode = 13;
+  string schedule_cron = 14;
+  string next_run_at = 15;
+  string system_prompt = 16;
+  string post_rules = 17;
+  string forbidden_tags = 18;
+  string preferred_tags = 19;
+}
+
+message ListRuntimesRequest {}
+message ListRuntimesReply {
+  repeated AgentRuntime items = 1;
+}
+
+message UpsertRuntimeRequest {
+  string agent_key = 1;
+  string display_name = 2;
+  string bot_user_id = 3;
+  string capability_tier = 4;
+  string model_name = 5;
+  string provider_profile_id = 6;
+  bool tools_enabled = 7;
+  int32 post_quota_daily = 8;
+  bool enabled = 9;
+  string system_prompt = 10;
+  string post_rules = 11;
+  string forbidden_tags = 12;
+  string preferred_tags = 13;
+  string post_schedule_mode = 14;
+  string schedule_cron = 15;
+}
+message UpsertRuntimeReply {
+  AgentRuntime item = 1;
+}
+
+message MoePipelineStep {
+  string key = 1;
+  string label = 2;
+  string status = 3;
+  string detail = 4;
+  int64 duration_ms = 5;
+}
+
+message MoeHostMetrics {
+  int64 proc_alloc_mb = 1;
+  int64 proc_sys_mb = 2;
+  int32 num_cpu = 3;
+  int32 num_goroutine = 4;
+  bool inference_online = 5;
+  string inference_base_url = 6;
+  int32 inference_models = 7;
+  string gpu_note = 8;
+}
+
+message GetBrainPipelineRequest {
+  string agent_key = 1;
+}
+message GetBrainPipelineReply {
+  string agent_key = 1;
+  bool ok = 2;
+  string detail = 3;
+  string post_id = 4;
+  string run_at = 5;
+  int64 total_duration_ms = 6;
+  repeated MoePipelineStep steps = 7;
+  MoeHostMetrics host_metrics = 8;
+}
+
+message RunAgentOnceRequest {
+  string agent_key = 1;
+}
+message RunAgentOnceReply {
+  string agent_key = 1;
+  bool ok = 2;
+  string detail = 3;
+  string post_id = 4;
+}
+
+message BrainTagStat {
+  string tag = 1;
+  int32 count = 2;
+}
+message BrainEpisode {
+  uint64 id = 1;
+  string post_id = 2;
+  string content = 3;
+  repeated string tags = 4;
+  string mood_tag = 5;
+  int32 style_score = 6;
+  int32 quality_score = 7;
+  bool approved = 8;
+  int32 revision_count = 9;
+  string memory_key = 10;
+  string source = 11;
+  string created_at = 12;
+}
+message BrainMemory {
+  string key = 1;
+  string value = 2;
+  string memory_type = 3;
+  string updated_at = 4;
+}
+message BrainGenerationMeta {
+  bool post_uses_tool_memory = 1;
+  int32 memories_synced = 2;
+  int32 episodes_in_prompt = 3;
+  int32 prompt_memory_lines = 4;
+  string prompt_preview = 5;
+  string note = 6;
+  int32 prompt_est_tokens = 7;
+  int32 context_limit = 8;
+  double context_used_pct = 9;
+}
+
+message GetBrainSnapshotRequest {
+  string agent_key = 1;
+}
+message GetBrainSnapshotReply {
+  string agent_key = 1;
+  string display_name = 2;
+  string bot_user_id = 3;
+  repeated string forbidden_tags = 4;
+  repeated string preferred_tags = 5;
+  repeated BrainTagStat tag_stats = 6;
+  repeated BrainEpisode episodes = 7;
+  repeated BrainMemory memories = 8;
+  BrainGenerationMeta generation_meta = 9;
+}
+
+message UpdateBrainPolicyRequest {
+  string agent_key = 1;
+  repeated string forbidden_tags = 2;
+  repeated string preferred_tags = 3;
+}
+
+message DeleteBrainEpisodeRequest {
+  uint64 id = 1;
+}
+message DeleteBrainEpisodeReply {}
+
+message RefineBrainEpisodeRequest {
+  uint64 id = 1;
+  int32 max_attempts = 2;
+}
+message RefineBrainEpisodeReply {
+  uint64 episode_id = 1;
+  bool ok = 2;
+  bool approved = 3;
+  int32 quality_score = 4;
+  string before_content = 5;
+  string after_content = 6;
+  int32 attempts = 7;
+  string detail = 8;
+}
+
+message CurateBrainRequest {
+  string agent_key = 1;
+  int32 max_episodes = 2;
+  int32 max_attempts = 3;
+  int32 min_quality = 4;
+  bool force = 5;
+}
+message CurateBrainReply {
+  string agent_key = 1;
+  int32 total = 2;
+  int32 approved = 3;
+  repeated RefineBrainEpisodeReply results = 4;
+}
+
+message ToolStatRow {
+  string tool = 1;
+  int64 total_calls = 2;
+  int64 success_calls = 3;
+  int64 failed_calls = 4;
+}
+message ToolDayStat {
+  string date = 1;
+  int64 total_calls = 2;
+  int64 success_calls = 3;
+}
+message QueryToolStatsRequest {
+  string from = 1;
+  string to = 2;
+  string agent_key = 3;
+  string tool = 4;
+}
+message QueryToolStatsReply {
+  int64 total_calls = 1;
+  int64 success_calls = 2;
+  int64 failed_calls = 3;
+  repeated ToolStatRow by_tool = 4;
+  repeated ToolDayStat by_day = 5;
+}
+
+message ToolCallRow {
+  string id = 1;
+  string tool = 2;
+  string actor_user_id = 3;
+  string agent_key = 4;
+  bool ok = 5;
+  string error_msg = 6;
+  int32 latency_ms = 7;
+  string source = 8;
+  string arguments_preview = 9;
+  string created_at = 10;
+}
+message ListToolCallsRequest {
+  string from = 1;
+  string to = 2;
+  string agent_key = 3;
+  string tool = 4;
+  string source = 5;
+  string actor_user_id = 6;
+  bool ok_only = 7;
+  bool failed_only = 8;
+  int32 page = 9;
+  int32 page_size = 10;
+}
+message ListToolCallsReply {
+  int64 total = 1;
+  repeated ToolCallRow items = 2;
+}
+
+service MoeAdmin {
+  rpc ListRuntimes(ListRuntimesRequest) returns (ListRuntimesReply);
+  rpc UpsertRuntime(UpsertRuntimeRequest) returns (UpsertRuntimeReply);
+  rpc GetBrainPipeline(GetBrainPipelineRequest) returns (GetBrainPipelineReply);
+  rpc RunAgentOnce(RunAgentOnceRequest) returns (RunAgentOnceReply);
+  rpc GetBrainSnapshot(GetBrainSnapshotRequest) returns (GetBrainSnapshotReply);
+  rpc UpdateBrainPolicy(UpdateBrainPolicyRequest) returns (GetBrainSnapshotReply);
+  rpc DeleteBrainEpisode(DeleteBrainEpisodeRequest) returns (DeleteBrainEpisodeReply);
+  rpc RefineBrainEpisode(RefineBrainEpisodeRequest) returns (RefineBrainEpisodeReply);
+  rpc CurateBrain(CurateBrainRequest) returns (CurateBrainReply);
+  rpc QueryToolStats(QueryToolStatsRequest) returns (QueryToolStatsReply);
+  rpc ListToolCalls(ListToolCallsRequest) returns (ListToolCallsReply);
+}

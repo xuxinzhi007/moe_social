@@ -2,12 +2,13 @@ package admin
 
 import (
 	"context"
+	"strings"
 
 	"backend/api/internal/common"
 	"backend/api/internal/moebridge"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/pkg/moe/brain"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,27 +24,25 @@ func NewAdminCurateMoeBrainLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *AdminCurateMoeBrainLogic) AdminCurateMoeBrain(req *types.AdminCurateMoeBrainReq) (*types.AdminCurateMoeBrainResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminCurateMoeBrain(l.ctx, &super.AdminCurateMoeBrainReq{
-		AgentKey:    req.AgentKey,
-		MaxEpisodes: int32(req.MaxEpisodes),
-		MaxAttempts: int32(req.MaxAttempts),
-		MinQuality:  int32(req.MinQuality),
-		Force:       req.Force,
+	agentKey := strings.TrimSpace(req.AgentKey)
+	results, err := l.svcCtx.MoeGW.CurateBrain(l.ctx, agentKey, brain.CurateOptions{
+		MaxEpisodes:           req.MaxEpisodes,
+		MaxAttemptsPerEpisode: req.MaxAttempts,
+		MinQuality:            req.MinQuality,
+		Force:                 req.Force,
 	})
 	if err != nil {
-		return &types.AdminCurateMoeBrainResp{BaseResp: common.HandleRPCError(err, "")}, nil
+		return &types.AdminCurateMoeBrainResp{BaseResp: common.HandleError(err)}, nil
 	}
-	results := make([]types.AdminRefineMoeBrainEpisodeData, 0, len(rpcResp.Results))
-	for _, r := range rpcResp.Results {
-		results = append(results, moebridge.RefineResultFromRPC(r))
+	out := types.AdminCurateMoeBrainData{AgentKey: agentKey, Total: len(results)}
+	for _, r := range results {
+		if r.Approved {
+			out.Approved++
+		}
+		out.Results = append(out.Results, moebridge.RefineDataFromBiz(r))
 	}
 	return &types.AdminCurateMoeBrainResp{
-		BaseResp: common.HandleRPCError(nil, "ok"),
-		Data: types.AdminCurateMoeBrainData{
-			AgentKey: rpcResp.AgentKey,
-			Total:    int(rpcResp.Total),
-			Approved: int(rpcResp.Approved),
-			Results:  results,
-		},
+		BaseResp: common.HandleError(nil),
+		Data:     out,
 	}, nil
 }

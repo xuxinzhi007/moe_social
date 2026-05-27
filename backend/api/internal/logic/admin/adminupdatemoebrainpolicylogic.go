@@ -2,12 +2,12 @@ package admin
 
 import (
 	"context"
+	"strings"
 
 	"backend/api/internal/common"
 	"backend/api/internal/moebridge"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,16 +23,13 @@ func NewAdminUpdateMoeBrainPolicyLogic(ctx context.Context, svcCtx *svc.ServiceC
 }
 
 func (l *AdminUpdateMoeBrainPolicyLogic) AdminUpdateMoeBrainPolicy(req *types.AdminUpdateMoeBrainPolicyReq) (*types.AdminGetMoeBrainResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminUpdateMoeBrainPolicy(l.ctx, &super.AdminUpdateMoeBrainPolicyReq{
-		AgentKey:      req.AgentKey,
-		ForbiddenTags: req.ForbiddenTags,
-		PreferredTags: req.PreferredTags,
-	})
+	agentKey := strings.TrimSpace(req.AgentKey)
+	snap, err := l.svcCtx.MoeGW.UpdateBrainPolicy(l.ctx, agentKey, req.ForbiddenTags, req.PreferredTags)
 	if err != nil {
-		return &types.AdminGetMoeBrainResp{BaseResp: common.HandleRPCError(err, "")}, nil
+		return &types.AdminGetMoeBrainResp{BaseResp: common.HandleError(err)}, nil
 	}
 	return &types.AdminGetMoeBrainResp{
-		BaseResp: common.HandleRPCError(nil, "ok"),
-		Data:     moebridge.BrainDataFromRPC(rpcResp),
+		BaseResp: common.HandleError(nil),
+		Data:     moebridge.BrainDataFromSnapshot(snap),
 	}, nil
 }

@@ -36,16 +36,20 @@ func RunOnce(ctx context.Context, deps Deps, agentKey string) (RunOnceResult, er
 		return RunOnceResult{}, fmt.Errorf("数据库未就绪")
 	}
 
-	saveLog := func(ok bool, detail, postID string) {
+	saveLog := func(ok bool, detail, postID string, genAttempts []GenAttemptRecord) {
 		metrics := SampleHostMetrics(ctx, deps.Inference)
-		_ = SaveAgentRunLog(deps.DB, agentKey, ok, detail, postID, rec.Bundle(metrics))
+		bundle := rec.Bundle(metrics)
+		if len(genAttempts) > 0 {
+			bundle.GenerateAttempts = genAttempts
+		}
+		_ = SaveAgentRunLog(deps.DB, agentKey, ok, detail, postID, bundle)
 	}
 
 	stepStart := time.Now()
 	var rt model.MoeAgentRuntime
 	if err := deps.DB.Where("agent_key = ? AND enabled = ?", agentKey, true).First(&rt).Error; err != nil {
 		rec.Add("load_runtime", "加载 Bot 配置", "fail", err.Error(), time.Since(stepStart))
-		saveLog(false, err.Error(), "")
+		saveLog(false, err.Error(), "", nil)
 		return RunOnceResult{}, fmt.Errorf("未找到启用的 runtime: %s", agentKey)
 	}
 	rec.Add("load_runtime", "加载 Bot 配置", "ok", rt.DisplayName, time.Since(stepStart))
@@ -57,18 +61,20 @@ func RunOnce(ctx context.Context, deps Deps, agentKey string) (RunOnceResult, er
 	rec.Add("gather_memory", "检索记忆与社区脉搏", "ok", "组装发帖 prompt", time.Since(stepStart))
 
 	stepStart = time.Now()
-	gen, genErr := generatePostContent(ctx, deps, rt)
+	gen, genAttempts, genErr := generatePostContent(ctx, deps, rt)
 	genDur := time.Since(stepStart)
 	if genErr != nil {
-		rec.Add("generate", "LLM 生成正文", "fail", genErr.Error(), genDur)
-		saveLog(false, genErr.Error(), "")
+		runDetail := FormatRunDetailFromGen(genAttempts, false, "", genErr)
+		rec.Add("generate", "LLM 生成正文", "fail", FormatGenStepDetail(genAttempts, false, ""), genDur)
+		saveLog(false, runDetail, "", genAttempts)
 		return RunOnceResult{
 			AgentKey: rt.AgentKey,
 			OK:       false,
-			Detail:   genErr.Error(),
+			Detail:   runDetail,
 		}, nil
 	}
-	rec.Add("generate", "LLM 生成正文", "ok", fmt.Sprintf("%s · %dms", gen.Source, genDur.Milliseconds()), genDur)
+	genStepDetail := FormatGenStepDetail(genAttempts, true, gen.Source)
+	rec.Add("generate", "LLM 生成正文", "ok", genStepDetail, genDur)
 
 	argsJSON, _ := json.Marshal(map[string]string{
 		"content":  gen.Content,
@@ -105,11 +111,16 @@ func RunOnce(ctx context.Context, deps Deps, agentKey string) (RunOnceResult, er
 	if !toolRes.OK {
 		out.Detail = toolRes.Error
 		rec.Add("post_create", "发布动态", "fail", toolRes.Error, postDur)
-		saveLog(false, out.Detail, "")
+		runDetail := FormatRunDetailFromGen(genAttempts, false, "", fmt.Errorf("%s", toolRes.Error))
+		saveLog(false, runDetail, "", genAttempts)
+		out.Detail = runDetail
 		return out, nil
 	}
 	rec.Add("post_create", "发布动态", "ok", fmt.Sprintf("%dms", postDur.Milliseconds()), postDur)
-	out.Detail = fmt.Sprintf("ai_post(%s): %s", gen.Source, toolRes.Result)
+	out.Detail = FormatRunDetailFromGen(genAttempts, true, gen.Source, nil)
+	if out.Detail == "" {
+		out.Detail = fmt.Sprintf("ai_post(%s): %s", gen.Source, toolRes.Result)
+	}
 	var parsed map[string]any
 	if json.Unmarshal([]byte(toolRes.Result), &parsed) == nil {
 		if id, ok := parsed["post_id"].(string); ok {
@@ -130,7 +141,7 @@ func RunOnce(ctx context.Context, deps Deps, agentKey string) (RunOnceResult, er
 	}
 	now := time.Now()
 	_ = deps.DB.Model(&rt).Update("last_run_at", now).Error
-	saveLog(out.OK, out.Detail, out.PostID)
+	saveLog(out.OK, out.Detail, out.PostID, genAttempts)
 	return out, nil
 }
 

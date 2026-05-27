@@ -3,6 +3,7 @@ package svc
 import (
 	"fmt"
 
+	moeadmin "backend/internal/service/moe"
 	"backend/rpc/internal/config"
 	"backend/utils"
 
@@ -11,8 +12,9 @@ import (
 )
 
 type ServiceContext struct {
-	Config config.Config
-	DB     *gorm.DB
+	Config   config.Config
+	DB       *gorm.DB
+	MoeAdmin *moeadmin.AdminService
 }
 
 func NewServiceContext(c config.Config, migrateOpts utils.MigrateOptions) *ServiceContext {
@@ -32,9 +34,11 @@ func NewServiceContext(c config.Config, migrateOpts utils.MigrateOptions) *Servi
 		panic(err)
 	}
 
+	db := utils.GetDB()
 	out := &ServiceContext{
-		Config: c,
-		DB:     utils.GetDB(),
+		Config:   c,
+		DB:       db,
+		MoeAdmin: moeadmin.NewAdmin(db),
 	}
 	utils.StartPrivateMessageCleanup(out.DB)
 	return out

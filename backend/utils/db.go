@@ -17,19 +17,12 @@ import (
 // DB 全局数据库实例
 var DB *gorm.DB
 
-var ensureDBOnce sync.Once
-var ensureDBErr error
+var dbInitOnce sync.Once
+var dbInitErr error
 
-// EnsureDB 在 API 等进程中懒加载一次数据库（与 RPC 共用全局 DB）。
+// EnsureDB 在 API 等进程中懒加载一次数据库（与 RPC 共用全局 DB；已连接则直接复用）。
 func EnsureDB() error {
-	ensureDBOnce.Do(func() {
-		if err := InitConfig(); err != nil {
-			ensureDBErr = err
-			return
-		}
-		ensureDBErr = InitDB(false)
-	})
-	return ensureDBErr
+	return InitDBWithMigrate(MigrateOptions{Enabled: false})
 }
 
 // InitConfig 初始化配置
@@ -59,7 +52,25 @@ func InitDB(runAutoMigrate bool) error {
 }
 
 // InitDBWithMigrate 初始化数据库；迁移时使用 Silent 日志并按 schema hash 跳过未变更表。
+// 进程内只连接一次（make moe-social 时 RPC 与 API 共用）；重复调用仅复用全局 DB。
 func InitDBWithMigrate(opts MigrateOptions) error {
+	if DB != nil {
+		if opts.Enabled {
+			return RunAutoMigrate(DB, opts)
+		}
+		return nil
+	}
+
+	dbInitOnce.Do(func() {
+		dbInitErr = initDBWithMigrateOnce(opts)
+	})
+	return dbInitErr
+}
+
+func initDBWithMigrateOnce(opts MigrateOptions) error {
+	if DB != nil {
+		return nil
+	}
 	logMode := logger.Info
 	if opts.Enabled {
 		logMode = logger.Silent
@@ -129,8 +140,12 @@ func EnsureAchievementSeeds(db *gorm.DB) error {
 	return SeedAchievementDefinitions(db)
 }
 
-// GetDB 获取数据库实例，并确保连接有效
+// GetDB 获取数据库实例，并确保连接有效。
 func GetDB() *gorm.DB {
+	if DB == nil {
+		_ = InitDB(false)
+		return DB
+	}
 	// 检查连接是否有效
 	sqlDB, err := DB.DB()
 	if err != nil {

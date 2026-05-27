@@ -7,7 +7,7 @@ import (
 	"backend/api/internal/moebridge"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/pkg/moe/brain"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,15 +23,12 @@ func NewAdminRefineMoeBrainEpisodeLogic(ctx context.Context, svcCtx *svc.Service
 }
 
 func (l *AdminRefineMoeBrainEpisodeLogic) AdminRefineMoeBrainEpisode(req *types.AdminRefineMoeBrainEpisodeReq) (*types.AdminRefineMoeBrainEpisodeResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminRefineMoeBrainEpisode(l.ctx, &super.AdminRefineMoeBrainEpisodeReq{
-		Id:          uint64(req.Id),
-		MaxAttempts: int32(req.MaxAttempts),
-	})
-	if err != nil {
-		return &types.AdminRefineMoeBrainEpisodeResp{BaseResp: common.HandleRPCError(err, "")}, nil
+	res, err := l.svcCtx.MoeGW.RefineBrainEpisode(l.ctx, req.Id, brain.RefineOptions{MaxAttempts: req.MaxAttempts})
+	if err != nil && !res.OK {
+		return &types.AdminRefineMoeBrainEpisodeResp{BaseResp: common.HandleError(err)}, nil
 	}
 	return &types.AdminRefineMoeBrainEpisodeResp{
-		BaseResp: common.HandleRPCError(nil, "ok"),
-		Data:     moebridge.RefineResultFromRPC(rpcResp),
+		BaseResp: common.HandleError(nil),
+		Data:     moebridge.RefineDataFromBiz(res),
 	}, nil
 }

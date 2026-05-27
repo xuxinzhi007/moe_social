@@ -2,11 +2,11 @@ package admin
 
 import (
 	"context"
+	"strings"
 
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,19 +22,18 @@ func NewAdminRunMoeAgentOnceLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *AdminRunMoeAgentOnceLogic) AdminRunMoeAgentOnce(req *types.AdminRunMoeAgentReq) (*types.AdminRunMoeAgentResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminRunMoeAgentOnce(l.ctx, &super.AdminRunMoeAgentOnceReq{
-		AgentKey: req.AgentKey,
-	})
+	agentKey := strings.TrimSpace(req.AgentKey)
+	result, err := l.svcCtx.MoeGW.RunAgentOnce(l.ctx, agentKey)
 	if err != nil {
-		return &types.AdminRunMoeAgentResp{BaseResp: common.HandleRPCError(err, "")}, nil
+		return &types.AdminRunMoeAgentResp{BaseResp: common.HandleError(err)}, nil
 	}
 	return &types.AdminRunMoeAgentResp{
-		BaseResp: common.HandleRPCError(nil, "ok"),
+		BaseResp: common.HandleError(nil),
 		Data: types.AdminRunMoeAgentData{
-			AgentKey: rpcResp.AgentKey,
-			Ok:       rpcResp.Ok,
-			Detail:   rpcResp.Detail,
-			PostId:   rpcResp.PostId,
+			AgentKey: result.AgentKey,
+			Ok:       result.OK,
+			Detail:   result.Detail,
+			PostId:   result.PostID,
 		},
 	}, nil
 }

@@ -33,7 +33,10 @@ func evaluateSmartPost(ctx context.Context, deps Deps, rt model.MoeAgentRuntime,
 	}
 
 	ctxBlock := gatherPostContext(ctx, deps, rt)
-	modelName := resolvePostModel(deps, rt)
+	modelName, _, err := ResolvePostModelForRuntime(ctx, deps, rt)
+	if err != nil {
+		return false, "", err
+	}
 
 	sys := strings.Join([]string{
 		"你是社区 Bot 调度助手，负责判断「现在是否适合发一条新动态」。",

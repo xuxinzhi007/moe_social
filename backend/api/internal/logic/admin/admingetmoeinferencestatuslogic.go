@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -9,8 +10,8 @@ import (
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 	"backend/model"
+	"backend/pkg/llminference"
 	"backend/pkg/moe/runtime"
-	"backend/rpc/pb/super"
 	"backend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -28,9 +29,13 @@ func NewAdminGetMoeInferenceStatusLogic(ctx context.Context, svcCtx *svc.Service
 
 func (l *AdminGetMoeInferenceStatusLogic) AdminGetMoeInferenceStatus(req *types.AdminGetMoeInferenceStatusReq) (*types.AdminGetMoeInferenceStatusResp, error) {
 	cfg, err := common.InferenceFromLLMConf(l.svcCtx.Config.LLMInference)
+	deps := runtime.Deps{Inference: runtime.LoadInferenceFromViper()}
+	preferred := runtime.ConfiguredPostModel(deps, model.MoeAgentRuntime{})
+
 	data := types.AdminGetMoeInferenceStatusData{
 		BaseUrl:          cfg.BaseURL,
-		DefaultPostModel: defaultPostModelFromViper(),
+		DefaultPostModel: preferred,
+		PreferredModel:   preferred,
 	}
 	if err != nil || strings.TrimSpace(cfg.BaseURL) == "" {
 		data.Message = "未配置 llm_inference.base_url"
@@ -52,28 +57,29 @@ func (l *AdminGetMoeInferenceStatusLogic) AdminGetMoeInferenceStatus(req *types.
 	}
 
 	agentKey := strings.TrimSpace(req.AgentKey)
-	if agentKey != "" && l.svcCtx.SuperRpcClient != nil {
-		if rt := findRuntimeByAgentKey(l.ctx, l.svcCtx.SuperRpcClient, agentKey); rt != nil {
+	if agentKey != "" && l.svcCtx.MoeGW != nil {
+		if rt := l.svcCtx.MoeGW.FindRuntimeByAgentKey(l.ctx, agentKey); rt != nil {
 			data.RuntimeModel = strings.TrimSpace(rt.ModelName)
-			deps := runtime.Deps{Inference: runtime.LoadInferenceFromViper()}
-			data.EffectiveModel = runtime.ResolvePostModel(deps, *rt)
+			preferred = runtime.ConfiguredPostModel(deps, *rt)
+			data.PreferredModel = preferred
+			data.DefaultPostModel = preferred
 		}
 	}
 
-	target := data.EffectiveModel
-	if target == "" {
-		target = data.DefaultPostModel
+	pick := llminference.PickModel(preferred, data.Models)
+	data.EffectiveModel = pick.ModelID
+	data.AutoDiscovered = pick.AutoDiscovered
+	data.ModelLoaded = data.Online && pick.ModelID != "" && modelInList(pick.ModelID, data.Models)
+
+	if data.Online && !data.ModelLoaded && data.Message == "" {
+		if len(data.Models) == 0 {
+			data.Message = "推理服务在线，但未返回可用模型列表"
+		} else {
+			data.Message = fmt.Sprintf("推理服务在线，但未找到模型「%s」", preferred)
+		}
 	}
-	if data.Online && target != "" {
-		for _, name := range data.Models {
-			if name == target {
-				data.ModelLoaded = true
-				break
-			}
-		}
-		if !data.ModelLoaded && data.Message == "" {
-			data.Message = "推理服务在线，但未找到模型「" + target + "」"
-		}
+	if data.AutoDiscovered && data.ModelLoaded && pick.Preferred != "" && !strings.EqualFold(pick.Preferred, pick.ModelID) {
+		data.Message = fmt.Sprintf("已自动选用「%s」（配置偏好「%s」）", pick.ModelID, pick.Preferred)
 	}
 
 	slot := common.FetchInferenceSlotInfo(ctx, client, cfg.BaseURL)
@@ -86,24 +92,12 @@ func (l *AdminGetMoeInferenceStatusLogic) AdminGetMoeInferenceStatus(req *types.
 	}, nil
 }
 
-func defaultPostModelFromViper() string {
-	deps := runtime.Deps{Inference: runtime.LoadInferenceFromViper()}
-	return runtime.ResolvePostModel(deps, model.MoeAgentRuntime{})
+func modelInList(id string, models []string) bool {
+	for _, m := range models {
+		if strings.EqualFold(strings.TrimSpace(m), strings.TrimSpace(id)) {
+			return true
+		}
+	}
+	return false
 }
 
-func findRuntimeByAgentKey(ctx context.Context, client super.SuperClient, agentKey string) *model.MoeAgentRuntime {
-	resp, err := client.AdminListMoeRuntimes(ctx, &super.AdminListMoeRuntimesReq{})
-	if err != nil || resp == nil {
-		return nil
-	}
-	for _, item := range resp.Items {
-		if item == nil || item.AgentKey != agentKey {
-			continue
-		}
-		return &model.MoeAgentRuntime{
-			AgentKey:  item.AgentKey,
-			ModelName: item.ModelName,
-		}
-	}
-	return nil
-}

@@ -6,11 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"backend/model"
+	moebiz "backend/internal/biz/moe"
+	moeadmin "backend/internal/service/moe"
 	"backend/pkg/moe/brain"
-	"backend/pkg/moe/runtime"
-	"backend/pkg/moe/toolaudit"
-	"backend/pkg/moe/tools"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
@@ -29,7 +27,7 @@ func NewAdminListMoeRuntimesLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *AdminListMoeRuntimesLogic) AdminListMoeRuntimes(_ *super.AdminListMoeRuntimesReq) (*super.AdminListMoeRuntimesResp, error) {
-	rows, err := runtime.ListRuntimes(l.svcCtx.DB)
+	rows, err := l.svcCtx.MoeAdmin.ListRuntimes(l.ctx)
 	if err != nil {
 		return nil, errorx.Internal(err.Error())
 	}
@@ -51,44 +49,30 @@ func NewAdminUpsertMoeRuntimeLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *AdminUpsertMoeRuntimeLogic) AdminUpsertMoeRuntime(in *super.AdminUpsertMoeRuntimeReq) (*super.AdminUpsertMoeRuntimeResp, error) {
-	botUID, err := strconv.ParseUint(strings.TrimSpace(in.BotUserId), 10, 32)
-	if err != nil || botUID == 0 {
-		return nil, errorx.InvalidArgument("无效的 bot_user_id")
-	}
-	tier := strings.TrimSpace(in.CapabilityTier)
-	if tier == "" {
-		tier = "s2"
-	}
-	quota := int(in.PostQuotaDaily)
-	if quota <= 0 {
-		quota = 5
-	}
-	rt := &model.MoeAgentRuntime{
-		AgentKey:          strings.TrimSpace(in.AgentKey),
-		DisplayName:       strings.TrimSpace(in.DisplayName),
-		BotUserID:         uint(botUID),
-		CapabilityTier:    tier,
-		ModelName:         strings.TrimSpace(in.ModelName),
-		ProviderProfileID: strings.TrimSpace(in.ProviderProfileId),
-		ToolsEnabled:      in.ToolsEnabled,
-		PostQuotaDaily:    quota,
-		Enabled:           in.Enabled,
-		SystemPrompt:      strings.TrimSpace(in.SystemPrompt),
-		PostRules:         strings.TrimSpace(in.PostRules),
-		ForbiddenTags:     strings.TrimSpace(in.ForbiddenTags),
-		PreferredTags:     strings.TrimSpace(in.PreferredTags),
-		PostScheduleMode:  runtime.NormalizeScheduleMode(in.PostScheduleMode),
-		ScheduleCron:      strings.TrimSpace(in.ScheduleCron),
-	}
-	if err := runtime.UpsertRuntime(l.svcCtx.DB, rt); err != nil {
+	botUID, err := moebiz.ParseBotUserID(in.BotUserId)
+	if err != nil {
 		return nil, errorx.InvalidArgument(err.Error())
 	}
-	_ = l.svcCtx.DB.Model(&model.User{}).Where("id = ?", botUID).Updates(map[string]any{
-		"is_bot":        true,
-		"bot_agent_key": rt.AgentKey,
-	}).Error
-	var saved model.MoeAgentRuntime
-	_ = l.svcCtx.DB.Where("agent_key = ?", rt.AgentKey).First(&saved).Error
+	saved, err := l.svcCtx.MoeAdmin.UpsertRuntime(l.ctx, moebiz.UpsertRuntimeParams{
+		AgentKey:          in.AgentKey,
+		DisplayName:       in.DisplayName,
+		BotUserID:         botUID,
+		CapabilityTier:    in.CapabilityTier,
+		ModelName:         in.ModelName,
+		ProviderProfileID: in.ProviderProfileId,
+		ToolsEnabled:      in.ToolsEnabled,
+		PostQuotaDaily:    int(in.PostQuotaDaily),
+		Enabled:           in.Enabled,
+		SystemPrompt:      in.SystemPrompt,
+		PostRules:         in.PostRules,
+		ForbiddenTags:     in.ForbiddenTags,
+		PreferredTags:     in.PreferredTags,
+		PostScheduleMode:  in.PostScheduleMode,
+		ScheduleCron:      in.ScheduleCron,
+	})
+	if err != nil {
+		return nil, errorx.InvalidArgument(err.Error())
+	}
 	return &super.AdminUpsertMoeRuntimeResp{Item: moeRuntimeItemProto(saved)}, nil
 }
 
@@ -103,7 +87,7 @@ func NewAdminRunMoeAgentOnceLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *AdminRunMoeAgentOnceLogic) AdminRunMoeAgentOnce(in *super.AdminRunMoeAgentOnceReq) (*super.AdminRunMoeAgentOnceResp, error) {
-	result, err := runtime.RunOnce(l.ctx, moeRuntimeDeps(l.ctx, l.svcCtx), strings.TrimSpace(in.AgentKey))
+	result, err := l.svcCtx.MoeAdmin.RunAgentOnce(l.ctx, strings.TrimSpace(in.AgentKey))
 	if err != nil {
 		return nil, errorx.Internal(err.Error())
 	}
@@ -126,7 +110,7 @@ func NewAdminGetMoeBrainLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *AdminGetMoeBrainLogic) AdminGetMoeBrain(in *super.AdminGetMoeBrainReq) (*super.AdminGetMoeBrainResp, error) {
-	snap, err := brain.LoadSnapshot(l.ctx, l.svcCtx.DB, newLocalSuperPort(l.ctx, l.svcCtx), strings.TrimSpace(in.AgentKey))
+	snap, err := l.svcCtx.MoeAdmin.GetBrainSnapshot(l.ctx, strings.TrimSpace(in.AgentKey))
 	if err != nil {
 		return nil, errorx.NotFound(err.Error())
 	}
@@ -144,14 +128,9 @@ func NewAdminUpdateMoeBrainPolicyLogic(ctx context.Context, svcCtx *svc.ServiceC
 }
 
 func (l *AdminUpdateMoeBrainPolicyLogic) AdminUpdateMoeBrainPolicy(in *super.AdminUpdateMoeBrainPolicyReq) (*super.AdminGetMoeBrainResp, error) {
-	forbidden := brain.ParseTagList(strings.Join(in.ForbiddenTags, "\n"))
-	preferred := brain.ParseTagList(strings.Join(in.PreferredTags, "\n"))
-	if err := brain.UpdatePolicy(l.svcCtx.DB, strings.TrimSpace(in.AgentKey), forbidden, preferred); err != nil {
-		return nil, errorx.Internal(err.Error())
-	}
-	snap, err := brain.LoadSnapshot(l.ctx, l.svcCtx.DB, newLocalSuperPort(l.ctx, l.svcCtx), strings.TrimSpace(in.AgentKey))
+	snap, err := l.svcCtx.MoeAdmin.UpdateBrainPolicy(l.ctx, strings.TrimSpace(in.AgentKey), in.ForbiddenTags, in.PreferredTags)
 	if err != nil {
-		return nil, errorx.NotFound(err.Error())
+		return nil, errorx.Internal(err.Error())
 	}
 	return moeBrainSnapshotProto(snap), nil
 }
@@ -167,7 +146,7 @@ func NewAdminDeleteMoeBrainEpisodeLogic(ctx context.Context, svcCtx *svc.Service
 }
 
 func (l *AdminDeleteMoeBrainEpisodeLogic) AdminDeleteMoeBrainEpisode(in *super.AdminDeleteMoeBrainEpisodeReq) (*super.AdminDeleteMoeBrainEpisodeResp, error) {
-	if err := brain.DeleteEpisode(l.ctx, moeBrainDeps(l.ctx, l.svcCtx), uint(in.Id)); err != nil {
+	if err := l.svcCtx.MoeAdmin.DeleteBrainEpisode(l.ctx, uint(in.Id)); err != nil {
 		return nil, errorx.NotFound(err.Error())
 	}
 	return &super.AdminDeleteMoeBrainEpisodeResp{}, nil
@@ -184,7 +163,7 @@ func NewAdminRefineMoeBrainEpisodeLogic(ctx context.Context, svcCtx *svc.Service
 }
 
 func (l *AdminRefineMoeBrainEpisodeLogic) AdminRefineMoeBrainEpisode(in *super.AdminRefineMoeBrainEpisodeReq) (*super.AdminRefineMoeBrainEpisodeResp, error) {
-	res, err := brain.RefineEpisode(l.ctx, moeBrainRefineDeps(l.ctx, l.svcCtx), uint(in.Id), brain.RefineOptions{
+	res, err := l.svcCtx.MoeAdmin.RefineBrainEpisode(l.ctx, uint(in.Id), brain.RefineOptions{
 		MaxAttempts: int(in.MaxAttempts),
 	})
 	if err != nil && !res.OK {
@@ -204,7 +183,7 @@ func NewAdminCurateMoeBrainLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *AdminCurateMoeBrainLogic) AdminCurateMoeBrain(in *super.AdminCurateMoeBrainReq) (*super.AdminCurateMoeBrainResp, error) {
-	results, err := brain.CurateLowQuality(l.ctx, moeBrainRefineDeps(l.ctx, l.svcCtx), strings.TrimSpace(in.AgentKey), brain.CurateOptions{
+	results, err := l.svcCtx.MoeAdmin.CurateBrain(l.ctx, strings.TrimSpace(in.AgentKey), brain.CurateOptions{
 		MaxEpisodes:           int(in.MaxEpisodes),
 		MaxAttemptsPerEpisode: int(in.MaxAttempts),
 		MinQuality:            int(in.MinQuality),
@@ -237,11 +216,11 @@ func NewAdminGetMoeToolStatsLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *AdminGetMoeToolStatsLogic) AdminGetMoeToolStats(in *super.AdminGetMoeToolStatsReq) (*super.AdminGetMoeToolStatsResp, error) {
-	stats, err := toolaudit.QueryStats(l.svcCtx.DB, toolaudit.StatsFilter{
-		From:     toolaudit.ParseTimeFilter(in.From, false),
-		To:       toolaudit.ParseTimeFilter(in.To, true),
-		AgentKey: strings.TrimSpace(in.AgentKey),
-		Tool:     strings.TrimSpace(in.Tool),
+	stats, err := l.svcCtx.MoeAdmin.QueryToolStats(l.ctx, moebiz.ToolStatsFilter{
+		From:     moeadmin.ParseTimeFilter(in.From, false),
+		To:       moeadmin.ParseTimeFilter(in.To, true),
+		AgentKey: in.AgentKey,
+		Tool:     in.Tool,
 	})
 	if err != nil {
 		return nil, errorx.Internal(err.Error())
@@ -280,19 +259,13 @@ func NewAdminListMoeToolCallsLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *AdminListMoeToolCallsLogic) AdminListMoeToolCalls(in *super.AdminListMoeToolCallsReq) (*super.AdminListMoeToolCallsResp, error) {
-	var actorUID uint
-	if raw := strings.TrimSpace(in.ActorUserId); raw != "" {
-		if v, err := strconv.ParseUint(raw, 10, 32); err == nil {
-			actorUID = uint(v)
-		}
-	}
-	rows, total, err := toolaudit.ListCalls(l.svcCtx.DB, toolaudit.ListFilter{
-		From:        toolaudit.ParseTimeFilter(in.From, false),
-		To:          toolaudit.ParseTimeFilter(in.To, true),
-		AgentKey:    strings.TrimSpace(in.AgentKey),
-		Tool:        strings.TrimSpace(in.Tool),
-		Source:      strings.TrimSpace(in.Source),
-		ActorUserID: actorUID,
+	rows, total, err := l.svcCtx.MoeAdmin.ListToolCalls(l.ctx, moebiz.ToolCallsFilter{
+		From:        moeadmin.ParseTimeFilter(in.From, false),
+		To:          moeadmin.ParseTimeFilter(in.To, true),
+		AgentKey:    in.AgentKey,
+		Tool:        in.Tool,
+		Source:      in.Source,
+		ActorUserID: moebiz.ParseActorUserID(in.ActorUserId),
 		OkOnly:      in.OkOnly,
 		FailedOnly:  in.FailedOnly,
 		Page:        int(in.Page),
@@ -330,36 +303,17 @@ func NewMoeExecuteToolLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Mo
 }
 
 func (l *MoeExecuteToolLogic) MoeExecuteTool(in *super.MoeExecuteToolReq) (*super.MoeExecuteToolResp, error) {
-	deps := moeToolsDeps(l.ctx, l.svcCtx)
-	tier := coreDefaultTier()
-	botUID := uint(0)
-	if in.AgentKey != "" {
-		var rt model.MoeAgentRuntime
-		if err := l.svcCtx.DB.Where("agent_key = ?", in.AgentKey).First(&rt).Error; err == nil {
-			tier = parseCapabilityTier(rt.CapabilityTier)
-			botUID = rt.BotUserID
-		}
-	}
-	source := strings.TrimSpace(in.Source)
-	if source == "" {
-		source = "api"
-	}
-	start := time.Now()
-	exec := tools.NewExecutor(deps)
-	res := exec.Execute(l.ctx, coreExecuteRequest(in, tier, botUID))
-	latency := int(time.Since(start).Milliseconds())
-	toolaudit.Record(l.svcCtx.DB, toolaudit.RecordInput{
+	res, err := l.svcCtx.MoeAdmin.ExecuteTool(l.ctx, moebiz.ExecuteToolInput{
 		Tool:           in.Tool,
 		ArgumentsJSON:  in.ArgumentsJson,
 		ActorUserID:    uint(in.ActorUserId),
-		BotUserID:      botUID,
 		AgentKey:       in.AgentKey,
-		Ok:             res.OK,
-		ErrorMsg:       res.Error,
-		LatencyMs:      latency,
-		Source:         source,
+		Source:         in.Source,
 		IdempotencyKey: in.IdempotencyKey,
 	})
+	if err != nil {
+		return nil, errorx.Internal(err.Error())
+	}
 	return &super.MoeExecuteToolResp{Ok: res.OK, Result: res.Result, Error: res.Error}, nil
 }
 
@@ -374,14 +328,13 @@ func NewMoeSearchPostsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Mo
 }
 
 func (l *MoeSearchPostsLogic) MoeSearchPosts(in *super.MoeSearchPostsReq) (*super.MoeSearchPostsResp, error) {
-	limit := int(in.Limit)
-	if limit <= 0 {
-		limit = 10
-	}
-	if limit > 30 {
-		limit = 30
-	}
-	hits, err := postpulseKeywordSearch(l.ctx, l.svcCtx.DB, in, limit)
+	hits, err := l.svcCtx.MoeAdmin.SearchPosts(l.ctx, moebiz.SearchPostsInput{
+		Query:        in.Query,
+		ViewerUserID: uint(in.ViewerUserId),
+		MoodTag:      in.MoodTag,
+		TopicTagID:   uint(in.TopicTagId),
+		Limit:        int(in.Limit),
+	})
 	if err != nil {
 		return nil, errorx.Internal("检索失败")
 	}

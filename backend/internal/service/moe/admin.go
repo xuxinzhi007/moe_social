@@ -1,0 +1,207 @@
+package moeadmin
+
+import (
+	"context"
+	"errors"
+	"time"
+
+	moebiz "backend/internal/biz/moe"
+	"backend/model"
+	"backend/pkg/moe/brain"
+	"backend/pkg/moe/port"
+	"backend/pkg/moe/postpulse"
+	"backend/pkg/moe/runtime"
+	"backend/pkg/moe/toolaudit"
+	"backend/pkg/moe/tools"
+
+	"gorm.io/gorm"
+)
+
+// AdminService Moe 管理端应用服务（Kratos service 层，混合期由 go-zero RPC 调用）。
+type AdminService struct {
+	db              *gorm.DB
+	runtimeDeps     RuntimeDepsFactory
+	superPort       SuperPortFactory
+	brainDeps       BrainDepsFactory
+	brainRefineDeps BrainRefineDepsFactory
+	toolsDeps       ToolsDepsFactory
+}
+
+// NewAdmin 构造 AdminService。
+func NewAdmin(db *gorm.DB) *AdminService {
+	return &AdminService{db: db}
+}
+
+// AttachRuntimeDeps 注入试跑/调度所需的 runtime 依赖（RPC 启动时调用一次）。
+func (s *AdminService) AttachRuntimeDeps(fn RuntimeDepsFactory) {
+	s.runtimeDeps = fn
+}
+
+// AttachSuperPort 注入 Super RPC 端口（RPC 启动时调用一次）。
+func (s *AdminService) AttachSuperPort(fn SuperPortFactory) {
+	s.superPort = fn
+}
+
+// AttachBrainDeps 注入 brain.Deps。
+func (s *AdminService) AttachBrainDeps(fn BrainDepsFactory) {
+	s.brainDeps = fn
+}
+
+// AttachBrainRefineDeps 注入 brain.RefineDeps。
+func (s *AdminService) AttachBrainRefineDeps(fn BrainRefineDepsFactory) {
+	s.brainRefineDeps = fn
+}
+
+// AttachToolsDeps 注入 tools.Deps。
+func (s *AdminService) AttachToolsDeps(fn ToolsDepsFactory) {
+	s.toolsDeps = fn
+}
+
+func (s *AdminService) requireRuntimeDeps(ctx context.Context) (runtime.Deps, error) {
+	if s.runtimeDeps == nil {
+		return runtime.Deps{}, errors.New("moe admin: runtime deps 未注入")
+	}
+	deps := s.runtimeDeps(ctx)
+	if deps.DB == nil {
+		deps.DB = s.db
+	}
+	return deps, nil
+}
+
+func (s *AdminService) requireSuperPort(ctx context.Context) (port.SuperPort, error) {
+	if s.superPort == nil {
+		return nil, errors.New("moe admin: super port 未注入")
+	}
+	return s.superPort(ctx), nil
+}
+
+func (s *AdminService) requireBrainDeps(ctx context.Context) (brain.Deps, error) {
+	if s.brainDeps == nil {
+		return brain.Deps{}, errors.New("moe admin: brain deps 未注入")
+	}
+	deps := s.brainDeps(ctx)
+	if deps.DB == nil {
+		deps.DB = s.db
+	}
+	return deps, nil
+}
+
+func (s *AdminService) requireBrainRefineDeps(ctx context.Context) (brain.RefineDeps, error) {
+	if s.brainRefineDeps == nil {
+		return brain.RefineDeps{}, errors.New("moe admin: brain refine deps 未注入")
+	}
+	deps := s.brainRefineDeps(ctx)
+	if deps.DB == nil {
+		deps.DB = s.db
+	}
+	return deps, nil
+}
+
+func (s *AdminService) requireToolsDeps(ctx context.Context) (tools.Deps, error) {
+	if s.toolsDeps == nil {
+		return tools.Deps{}, errors.New("moe admin: tools deps 未注入")
+	}
+	deps := s.toolsDeps(ctx)
+	if deps.DB == nil {
+		deps.DB = s.db
+	}
+	return deps, nil
+}
+
+// GetBrainPipeline 查询试跑流水线快照。
+func (s *AdminService) GetBrainPipeline(ctx context.Context, agentKey string) (moebiz.PipelineSnapshot, error) {
+	return moebiz.GetBrainPipeline(ctx, s.db, agentKey)
+}
+
+// RunAgentOnce 执行一次 Bot 试跑。
+func (s *AdminService) RunAgentOnce(ctx context.Context, agentKey string) (runtime.RunOnceResult, error) {
+	deps, err := s.requireRuntimeDeps(ctx)
+	if err != nil {
+		return runtime.RunOnceResult{}, err
+	}
+	return moebiz.RunAgentOnce(ctx, deps, agentKey)
+}
+
+// GetBrainSnapshot 加载大脑观测快照。
+func (s *AdminService) GetBrainSnapshot(ctx context.Context, agentKey string) (*brain.Snapshot, error) {
+	rpc, err := s.requireSuperPort(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return moebiz.GetBrainSnapshot(ctx, s.db, rpc, agentKey)
+}
+
+// UpdateBrainPolicy 更新标签策略并返回最新快照。
+func (s *AdminService) UpdateBrainPolicy(ctx context.Context, agentKey string, forbiddenTags, preferredTags []string) (*brain.Snapshot, error) {
+	rpc, err := s.requireSuperPort(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return moebiz.UpdateBrainPolicy(ctx, s.db, rpc, agentKey, forbiddenTags, preferredTags)
+}
+
+// ListRuntimes 列出 Bot 运行时。
+func (s *AdminService) ListRuntimes(ctx context.Context) ([]model.MoeAgentRuntime, error) {
+	return moebiz.ListRuntimes(ctx, s.db)
+}
+
+// UpsertRuntime 创建或更新 Bot 运行时。
+func (s *AdminService) UpsertRuntime(ctx context.Context, p moebiz.UpsertRuntimeParams) (model.MoeAgentRuntime, error) {
+	return moebiz.UpsertRuntime(ctx, s.db, p)
+}
+
+// DeleteBrainEpisode 删除自传 episode。
+func (s *AdminService) DeleteBrainEpisode(ctx context.Context, episodeID uint) error {
+	deps, err := s.requireBrainDeps(ctx)
+	if err != nil {
+		return err
+	}
+	return moebiz.DeleteBrainEpisode(ctx, deps, episodeID)
+}
+
+// RefineBrainEpisode 润色单条 episode。
+func (s *AdminService) RefineBrainEpisode(ctx context.Context, episodeID uint, opts brain.RefineOptions) (brain.RefineResult, error) {
+	deps, err := s.requireBrainRefineDeps(ctx)
+	if err != nil {
+		return brain.RefineResult{}, err
+	}
+	return moebiz.RefineBrainEpisode(ctx, deps, episodeID, opts)
+}
+
+// CurateBrain 批量润色低质量 episode。
+func (s *AdminService) CurateBrain(ctx context.Context, agentKey string, opts brain.CurateOptions) ([]brain.RefineResult, error) {
+	deps, err := s.requireBrainRefineDeps(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return moebiz.CurateBrain(ctx, deps, agentKey, opts)
+}
+
+// QueryToolStats 工具调用统计。
+func (s *AdminService) QueryToolStats(ctx context.Context, f moebiz.ToolStatsFilter) (moebiz.ToolStatsResult, error) {
+	return moebiz.QueryToolStats(ctx, s.db, f)
+}
+
+// ListToolCalls 工具调用列表。
+func (s *AdminService) ListToolCalls(ctx context.Context, f moebiz.ToolCallsFilter) ([]moebiz.ToolCallRow, int64, error) {
+	return moebiz.ListToolCalls(ctx, s.db, f)
+}
+
+// ExecuteTool 执行 Moe 工具。
+func (s *AdminService) ExecuteTool(ctx context.Context, in moebiz.ExecuteToolInput) (moebiz.ExecuteToolResult, error) {
+	deps, err := s.requireToolsDeps(ctx)
+	if err != nil {
+		return moebiz.ExecuteToolResult{}, err
+	}
+	return moebiz.ExecuteTool(ctx, s.db, deps, in), nil
+}
+
+// SearchPosts 检索社区帖子。
+func (s *AdminService) SearchPosts(ctx context.Context, in moebiz.SearchPostsInput) ([]postpulse.SearchHit, error) {
+	return moebiz.SearchPosts(ctx, s.db, in)
+}
+
+// ParseTimeFilter 解析管理端时间筛选（透传 toolaudit）。
+func ParseTimeFilter(raw string, endOfDay bool) *time.Time {
+	return toolaudit.ParseTimeFilter(raw, endOfDay)
+}

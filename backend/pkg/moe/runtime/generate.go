@@ -33,10 +33,10 @@ type postGenCandidate struct {
 	attempt int
 }
 
-// generatePostContent 调用本地 7B 生成不重复的社区短帖。
-func generatePostContent(ctx context.Context, deps Deps, rt model.MoeAgentRuntime) (GeneratedPost, error) {
+// generatePostContent 调用本地模型生成不重复的社区短帖；attempts 仅含本次试跑内的生成次数。
+func generatePostContent(ctx context.Context, deps Deps, rt model.MoeAgentRuntime) (GeneratedPost, []GenAttemptRecord, error) {
 	if !deps.Inference.Ready() {
-		return GeneratedPost{}, fmt.Errorf("未配置 llm_inference.base_url，无法 AI 生成发帖")
+		return GeneratedPost{}, nil, fmt.Errorf("未配置 llm_inference.base_url，无法 AI 生成发帖")
 	}
 
 	var recent []model.Post
@@ -49,7 +49,11 @@ func generatePostContent(ctx context.Context, deps Deps, rt model.MoeAgentRuntim
 	}
 
 	ctxBlock := gatherPostContext(ctx, deps, rt)
-	modelName := resolvePostModel(deps, rt)
+	modelName, pick, pickErr := ResolvePostModelForRuntime(ctx, deps, rt)
+	if pickErr != nil {
+		return GeneratedPost{}, nil, pickErr
+	}
+	_ = pick
 	persona := sanitizePersona(rt.SystemPrompt, rt)
 	rulesBlock := formatPostRulesBlock(rt)
 	brainBlock := ""
@@ -62,55 +66,94 @@ func generatePostContent(ctx context.Context, deps Deps, rt model.MoeAgentRuntim
 		lastErr     error
 		fallback    []postGenCandidate
 		rejectNovel string
+		attempts    []GenAttemptRecord
 	)
 	for attempt := 1; attempt <= maxGenerateAttempts; attempt++ {
 		gen, err := callPostLLM(ctx, deps, modelName, persona, rulesBlock, brainBlock, ctxBlock, recent, attempt, rejectNovel)
 		if err != nil {
 			lastErr = err
 			rejectNovel = ""
+			attempts = append(attempts, GenAttemptRecord{
+				Attempt: attempt,
+				Outcome: GenOutcomeLLMError,
+				Note:    genAttemptNote(err),
+			})
 			continue
 		}
 		if contentTooSimilar(gen.Content, recent) {
-			lastErr = fmt.Errorf("生成内容与近期帖重复，第 %d 次重试", attempt)
+			lastErr = fmt.Errorf("与近期帖重复")
 			ctxBlock.topicHint = "必须换全新角度，禁止复述【本 Bot 近期已发】里的任何句子"
 			rejectNovel = "duplicate"
+			attempts = append(attempts, GenAttemptRecord{
+				Attempt: attempt,
+				Outcome: GenOutcomeDuplicate,
+				Snippet: genSnippet(gen.Content),
+			})
 			continue
 		}
 		if meaningTooSimilar(gen.Content, recent, episodes) {
-			lastErr = fmt.Errorf("与近期动态意思太像（同开头/同主题），第 %d 次重试", attempt)
+			lastErr = fmt.Errorf("与近期动态意思太像")
 			ctxBlock.topicHint = "换场景：别写深夜星光抒情，改具体小事/吐槽/进度数字"
 			rejectNovel = "theme"
 			fallback = append(fallback, postGenCandidate{gen: gen, score: 10, attempt: attempt})
+			attempts = append(attempts, GenAttemptRecord{
+				Attempt: attempt,
+				Outcome: GenOutcomeTheme,
+				Snippet: genSnippet(gen.Content),
+			})
 			continue
 		}
 		score := novelStyleScore(gen.Content)
 		if score < novelStyleRejectThreshold {
 			forbidden := brain.ParseTagList(rt.ForbiddenTags)
 			if hits := brain.EpisodeTagsViolate(gen.Content, gen.MoodTag, score, forbidden); len(hits) > 0 {
-				lastErr = fmt.Errorf("命中禁止标签 %v，第 %d 次重试", hits, attempt)
+				lastErr = fmt.Errorf("命中禁止标签 %v", hits)
 				rejectNovel = "novel"
 				ctxBlock.topicHint = "禁止使用标签：" + strings.Join(hits, "、")
 				fallback = append(fallback, postGenCandidate{gen: gen, score: score + 5, attempt: attempt})
+				attempts = append(attempts, GenAttemptRecord{
+					Attempt: attempt,
+					Outcome: GenOutcomeForbidden,
+					Snippet: genSnippet(gen.Content),
+					Note:    strings.Join(hits, "、"),
+				})
 				continue
 			}
 			gen.Source = fmt.Sprintf("llm#%d", attempt)
-			return gen, nil
+			attempts = append(attempts, GenAttemptRecord{
+				Attempt: attempt,
+				Outcome: GenOutcomeOK,
+				Snippet: genSnippet(gen.Content),
+			})
+			return gen, attempts, nil
 		}
 		fallback = append(fallback, postGenCandidate{gen: gen, score: score, attempt: attempt})
-		lastErr = fmt.Errorf("生成内容偏剧本/诗意腔（得分 %d），第 %d 次重试", score, attempt)
+		lastErr = fmt.Errorf("偏剧本/诗意腔（得分 %d）", score)
 		rejectNovel = "novel"
 		ctxBlock.topicHint = "必须用口语：我在做什么+一个小细节，禁止抒情散文、禁止「灵魂/星辰/灯火/共鸣」"
+		attempts = append(attempts, GenAttemptRecord{
+			Attempt: attempt,
+			Outcome: GenOutcomeNovel,
+			Snippet: genSnippet(gen.Content),
+			Note:    fmt.Sprintf("得分 %d", score),
+		})
 	}
 
 	// 多次仍偏文艺：选得分最低且不与历史重复的一条发出，避免试跑永远失败
 	if best := pickBestNovelFallback(fallback, recent, episodes); best != nil {
 		best.gen.Source = fmt.Sprintf("llm#%d-relaxed", best.attempt)
-		return best.gen, nil
+		attempts = append(attempts, GenAttemptRecord{
+			Attempt: best.attempt,
+			Outcome: GenOutcomeOK,
+			Snippet: genSnippet(best.gen.Content),
+			Note:    "放宽质检后采用",
+		})
+		return best.gen, attempts, nil
 	}
 	if lastErr != nil {
-		return GeneratedPost{}, lastErr
+		return GeneratedPost{}, attempts, lastErr
 	}
-	return GeneratedPost{}, fmt.Errorf("多次生成仍不符合要求，请调整发帖规则或检查 llama-server")
+	return GeneratedPost{}, attempts, fmt.Errorf("多次生成仍不符合要求，请调整发帖规则或检查 llama-server")
 }
 
 func pickBestNovelFallback(cands []postGenCandidate, recent []model.Post, episodes []model.MoeBotEpisode) *postGenCandidate {

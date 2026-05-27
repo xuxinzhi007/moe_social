@@ -2,12 +2,12 @@ package admin
 
 import (
 	"context"
+	"strings"
 
 	"backend/api/internal/common"
 	"backend/api/internal/moebridge"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,14 +23,13 @@ func NewAdminGetMoeBrainLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *AdminGetMoeBrainLogic) AdminGetMoeBrain(req *types.AdminGetMoeBrainReq) (*types.AdminGetMoeBrainResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminGetMoeBrain(l.ctx, &super.AdminGetMoeBrainReq{
-		AgentKey: req.AgentKey,
-	})
+	agentKey := strings.TrimSpace(req.AgentKey)
+	snap, err := l.svcCtx.MoeGW.GetBrainSnapshot(l.ctx, agentKey)
 	if err != nil {
-		return &types.AdminGetMoeBrainResp{BaseResp: common.HandleRPCError(err, "")}, nil
+		return &types.AdminGetMoeBrainResp{BaseResp: common.HandleError(err)}, nil
 	}
 	return &types.AdminGetMoeBrainResp{
-		BaseResp: common.HandleRPCError(nil, "ok"),
-		Data:     moebridge.BrainDataFromRPC(rpcResp),
+		BaseResp: common.HandleError(nil),
+		Data:     moebridge.BrainDataFromSnapshot(snap),
 	}, nil
 }

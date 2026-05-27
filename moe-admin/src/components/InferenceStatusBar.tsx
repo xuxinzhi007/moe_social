@@ -8,8 +8,10 @@ export type InferenceStatus = {
   base_url: string
   models: string[]
   default_post_model: string
+  preferred_model?: string
   runtime_model?: string
   effective_model?: string
+  auto_discovered?: boolean
   model_loaded: boolean
   context_limit?: number
   context_source?: string
@@ -57,7 +59,9 @@ export function InferenceStatusBar({ agentKey, refreshKey = 0 }: Props) {
   if (!status && !loading) return null
 
   const effective = status?.effective_model || status?.default_post_model || '—'
+  const preferred = status?.preferred_model?.trim() || status?.default_post_model?.trim()
   const runtime = status?.runtime_model?.trim()
+  const modelCount = status?.models?.length ?? 0
 
   return (
     <div className="inference-status-bar">
@@ -75,10 +79,22 @@ export function InferenceStatusBar({ agentKey, refreshKey = 0 }: Props) {
       </div>
       <span className="muted inference-status-detail">
         发帖模型 <strong>{effective}</strong>
-        {runtime && runtime !== effective ? (
+        {status?.auto_discovered && preferred && preferred !== effective ? (
           <>
             {' '}
-            · 配置 <code>{runtime}</code>
+            <span className="muted">（自动匹配，偏好 {preferred}）</span>
+          </>
+        ) : null}
+        {runtime && runtime !== effective && runtime !== preferred ? (
+          <>
+            {' '}
+            · Bot 配置 <code>{runtime}</code>
+          </>
+        ) : null}
+        {status?.online && modelCount > 0 ? (
+          <>
+            {' '}
+            · 服务模型 <span className="muted">{modelCount} 个</span>
           </>
         ) : null}
         {status?.online ? (

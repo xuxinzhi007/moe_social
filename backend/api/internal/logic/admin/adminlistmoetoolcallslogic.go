@@ -3,11 +3,12 @@ package admin
 import (
 	"context"
 
+	moebiz "backend/internal/biz/moe"
+	moeadmin "backend/internal/service/moe"
 	"backend/api/internal/common"
 	"backend/api/internal/moebridge"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,23 +24,23 @@ func NewAdminListMoeToolCallsLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *AdminListMoeToolCallsLogic) AdminListMoeToolCalls(req *types.AdminListMoeToolCallsReq) (*types.AdminListMoeToolCallsResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListMoeToolCalls(l.ctx, &super.AdminListMoeToolCallsReq{
-		Page:        int32(req.Page),
-		PageSize:    int32(req.PageSize),
-		Tool:        req.Tool,
+	rows, total, err := l.svcCtx.MoeGW.ListToolCalls(l.ctx, moebiz.ToolCallsFilter{
+		From:        moeadmin.ParseTimeFilter(req.From, false),
+		To:          moeadmin.ParseTimeFilter(req.To, true),
 		AgentKey:    req.AgentKey,
-		ActorUserId: req.ActorUserId,
+		Tool:        req.Tool,
 		Source:      req.Source,
+		ActorUserID: moebiz.ParseActorUserID(req.ActorUserId),
 		OkOnly:      req.OkOnly,
 		FailedOnly:  req.FailedOnly,
-		From:        req.From,
-		To:          req.To,
+		Page:        req.Page,
+		PageSize:    req.PageSize,
 	})
 	if err != nil {
-		return &types.AdminListMoeToolCallsResp{BaseResp: common.HandleRPCError(err, "")}, nil
+		return &types.AdminListMoeToolCallsResp{BaseResp: common.HandleError(err)}, nil
 	}
 	return &types.AdminListMoeToolCallsResp{
-		BaseResp: common.HandleRPCError(nil, "ok"),
-		Data:     moebridge.ToolCallsFromRPC(rpcResp),
+		BaseResp: common.HandleError(nil),
+		Data:     moebridge.ToolCallsDataFromBiz(rows, total),
 	}, nil
 }

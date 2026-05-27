@@ -70,6 +70,7 @@ export function MoeBrainPage() {
   const [refiningId, setRefiningId] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [messageTone, setMessageTone] = useState<'ok' | 'warn' | 'err'>('ok')
   const [opsRefresh, setOpsRefresh] = useState(0)
   const [runningOnce, setRunningOnce] = useState(false)
 
@@ -209,9 +210,11 @@ export function MoeBrainPage() {
         showToast(res.message || '试跑失败')
         return
       }
-      const detail = res.data?.detail?.trim() || (res.data?.ok ? '试跑完成' : '试跑未成功')
+      const ok = Boolean(res.data?.ok)
+      const detail = res.data?.detail?.trim() || (ok ? '试跑完成' : '试跑未成功')
       showToast(detail)
       setMessage(detail)
+      setMessageTone(ok ? 'ok' : 'warn')
       bumpOpsRefresh()
       await loadBrain()
     } catch (e) {
@@ -315,7 +318,7 @@ export function MoeBrainPage() {
         onRunOnce={() => void runOncePost()}
       />
       <MemoryInfluencePanel meta={brain?.generation_meta} />
-      <PageMessage message={message} tone="ok" onClose={() => setMessage('')} />
+      <PageMessage message={message} tone={messageTone} onClose={() => setMessage('')} />
       {error ? <p className="text-danger">{error}</p> : null}
 
       <section className="panel content-panel-table brain-object-panel">

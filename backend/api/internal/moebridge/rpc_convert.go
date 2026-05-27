@@ -151,6 +151,46 @@ func ToolCallsFromRPC(d *super.AdminListMoeToolCallsResp) types.AdminListMoeTool
 	return out
 }
 
+func PipelineDataFromSuper(d *super.AdminGetMoeBrainPipelineResp) types.AdminGetMoeBrainPipelineData {
+	if d == nil {
+		return types.AdminGetMoeBrainPipelineData{Steps: DefaultPipelineStepTypes()}
+	}
+	data := types.AdminGetMoeBrainPipelineData{
+		AgentKey:        d.GetAgentKey(),
+		Ok:              d.GetOk(),
+		Detail:          d.GetDetail(),
+		PostId:          d.GetPostId(),
+		RunAt:           d.GetRunAt(),
+		TotalDurationMs: d.GetTotalDurationMs(),
+		Steps:           make([]types.MoePipelineStepItem, 0, len(d.GetSteps())),
+	}
+	if hm := d.GetHostMetrics(); hm != nil {
+		data.HostMetrics = types.MoeHostMetrics{
+			ProcAllocMB:      hm.GetProcAllocMb(),
+			ProcSysMB:        hm.GetProcSysMb(),
+			NumCPU:           int(hm.GetNumCpu()),
+			NumGoroutine:     int(hm.GetNumGoroutine()),
+			InferenceOnline:  hm.GetInferenceOnline(),
+			InferenceBaseURL: hm.GetInferenceBaseUrl(),
+			InferenceModels:  int(hm.GetInferenceModels()),
+			GpuNote:          hm.GetGpuNote(),
+		}
+	}
+	for _, s := range d.GetSteps() {
+		if s == nil {
+			continue
+		}
+		data.Steps = append(data.Steps, types.MoePipelineStepItem{
+			Key: s.GetKey(), Label: s.GetLabel(), Status: s.GetStatus(),
+			Detail: s.GetDetail(), DurationMs: s.GetDurationMs(),
+		})
+	}
+	if len(data.Steps) == 0 {
+		data.Steps = DefaultPipelineStepTypes()
+	}
+	return data
+}
+
 func SearchPostsFromRPC(d *super.MoeSearchPostsResp) types.SearchPostsData {
 	if d == nil {
 		return types.SearchPostsData{}

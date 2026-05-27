@@ -57,6 +57,18 @@
 - 错误处理优先返回可读业务错误，避免把底层细节直接透出到接口层。
 - 复用现有命名风格与目录组织，不引入 `common/helper/util` 式兜底目录。
 
+## 新机器 / 换库后必做
+
+管理台试跑若报 `Table 'xxx.moe_agent_run_logs' doesn't exist`，说明库表未迁移：
+
+```bash
+cd backend
+make migrate-moe    # 仅 Moe / AI 聊天相关表
+# 或全量：make db-migrate
+```
+
+迁移完成后重启 `make rpc` / `make dev`，再在管理台「试跑并刷新」。
+
 ## 修改前优先检查
 
 - `backend/Makefile`
@@ -84,6 +96,10 @@
 3. RPC 侧 Moe Brain 系列优先只维护 `moe_admin_logic.go`，删除重复的 `admin*moebrain*logic.go` 单文件。
 4. `super.api` 中每个路由必须带 `@handler`，且与现有 handler 命名一致，避免半生成状态。
 5. **推荐**：改 Moe/Admin 相关接口后执行 `cd backend && make gen-moe-admin`（`scripts/gen-moe-admin.sh` 会跑 gen 并自动删已知空壳再编译）。
+6. **Kratos / Moe 迁移（Moe 域 100%）**：总览 `docs/dev/kratos-migration.md`。**推荐启动**：`make moe-social`（单进程 RPC+API）；经典：`make dev`。新 Moe 写在 `internal/biz|service|data`；Admin HTTP 走 `moeadmingw.MoeGW`。
+7. **生成**：`make gen` = `gen-moe-proto` + `gen-rpc` + `gen-api`。**验收**：`make verify-moe-complete`（或分步 `verify-moe-migration` / `verify-moe-grpc` / `verify-moe-gateway`）。
+8. **配置**（`config.yaml` → `moe`）：`api_in_process`、`register_moe_grpc`、`use_moe_grpc`、`single_process`。
+9. **推理模型**：发帖从 `/v1/models` 自动匹配；管理台显示 `effective_model` / `auto_discovered`。
 
 **是否拆分 `super.api` / `super.proto`？**
 
