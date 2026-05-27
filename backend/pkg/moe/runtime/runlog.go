@@ -21,9 +21,10 @@ type RunStep struct {
 
 // RunLogBundle 持久化到 StepsJSON（兼容旧版纯数组格式）。
 type RunLogBundle struct {
-	Steps   []RunStep   `json:"steps"`
-	TotalMs int64       `json:"total_ms"`
-	Metrics HostMetrics `json:"metrics,omitempty"`
+	Steps            []RunStep          `json:"steps"`
+	TotalMs          int64              `json:"total_ms"`
+	Metrics          HostMetrics        `json:"metrics,omitempty"`
+	GenerateAttempts []GenAttemptRecord `json:"generate_attempts,omitempty"`
 }
 
 // StepRecorder 记录 Bot 发帖流水线步骤与耗时。

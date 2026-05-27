@@ -2,9 +2,8 @@ package logic
 
 import (
 	"context"
-	"strings"
 
-	"backend/pkg/moe/runtime"
+	moebiz "backend/internal/biz/moe"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -25,53 +24,49 @@ func NewAdminGetMoeBrainPipelineLogic(ctx context.Context, svcCtx *svc.ServiceCo
 	}
 }
 
-func defaultPipelineSteps() []*super.MoePipelineStepItem {
-	return []*super.MoePipelineStepItem{
-		{Key: "load_runtime", Label: "加载 Bot 配置", Status: "skip", Detail: "尚无试跑记录"},
-		{Key: "gather_memory", Label: "检索记忆与社区脉搏", Status: "skip"},
-		{Key: "generate", Label: "LLM 生成正文", Status: "skip"},
-		{Key: "post_create", Label: "发布动态", Status: "skip"},
-		{Key: "record_episode", Label: "写入自传", Status: "skip"},
+func (l *AdminGetMoeBrainPipelineLogic) AdminGetMoeBrainPipeline(in *super.AdminGetMoeBrainPipelineReq) (*super.AdminGetMoeBrainPipelineResp, error) {
+	snap, err := l.svcCtx.MoeAdmin.GetBrainPipeline(l.ctx, in.GetAgentKey())
+	if err != nil {
+		return nil, err
 	}
+	return pipelineSnapshotToProto(snap), nil
 }
 
-func (l *AdminGetMoeBrainPipelineLogic) AdminGetMoeBrainPipeline(in *super.AdminGetMoeBrainPipelineReq) (*super.AdminGetMoeBrainPipelineResp, error) {
-	agentKey := strings.TrimSpace(in.GetAgentKey())
+func pipelineSnapshotToProto(snap moebiz.PipelineSnapshot) *super.AdminGetMoeBrainPipelineResp {
 	out := &super.AdminGetMoeBrainPipelineResp{
-		AgentKey: agentKey,
-		Steps:    defaultPipelineSteps(),
+		AgentKey: snap.AgentKey,
+		Ok:       snap.OK,
+		Detail:   snap.Detail,
+		PostId:   snap.PostID,
 	}
-	if agentKey == "" || l.svcCtx.DB == nil {
-		return out, nil
+	if snap.HasRun {
+		out.RunAt = snap.RunAt.Format("2006-01-02 15:04:05")
+		out.TotalDurationMs = snap.TotalDurationMS
+		out.HostMetrics = hostMetricsProtoFromBiz(snap.Metrics)
 	}
-	row, err := runtime.LatestAgentRunLog(l.svcCtx.DB, agentKey)
-	if err != nil || row == nil {
-		return out, nil
+	out.GenerateAttempts = make([]*super.MoeGenAttemptItem, 0, len(snap.GenerateAttempts))
+	for _, a := range snap.GenerateAttempts {
+		out.GenerateAttempts = append(out.GenerateAttempts, &super.MoeGenAttemptItem{
+			Attempt: int32(a.Attempt),
+			Outcome: a.Outcome,
+			Snippet: a.Snippet,
+			Note:    a.Note,
+		})
 	}
-	bundle := runtime.ParseRunLog(row.StepsJSON)
-	out.Ok = row.OK
-	out.Detail = row.Detail
-	out.PostId = row.PostID
-	out.RunAt = row.CreatedAt.Format("2006-01-02 15:04:05")
-	out.TotalDurationMs = bundle.TotalMs
-	out.HostMetrics = hostMetricsProto(bundle.Metrics)
-	if len(bundle.Steps) == 0 {
-		return out, nil
-	}
-	out.Steps = make([]*super.MoePipelineStepItem, 0, len(bundle.Steps))
-	for _, s := range bundle.Steps {
+	out.Steps = make([]*super.MoePipelineStepItem, 0, len(snap.Steps))
+	for _, s := range snap.Steps {
 		out.Steps = append(out.Steps, &super.MoePipelineStepItem{
 			Key:        s.Key,
 			Label:      s.Label,
 			Status:     s.Status,
 			Detail:     s.Detail,
-			DurationMs: s.MS,
+			DurationMs: s.DurationMS,
 		})
 	}
-	return out, nil
+	return out
 }
 
-func hostMetricsProto(m runtime.HostMetrics) *super.MoeHostMetrics {
+func hostMetricsProtoFromBiz(m moebiz.HostMetrics) *super.MoeHostMetrics {
 	if m.NumCPU == 0 && m.ProcAllocMB == 0 && !m.InferenceOnline && m.GpuNote == "" {
 		return nil
 	}

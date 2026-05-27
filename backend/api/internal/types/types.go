@@ -402,14 +402,15 @@ type AdminGetMoeBrainData struct {
 }
 
 type AdminGetMoeBrainPipelineData struct {
-	AgentKey        string                `json:"agent_key"`
-	RunAt           string                `json:"run_at,optional"`
-	Ok              bool                  `json:"ok"`
-	Detail          string                `json:"detail,optional"`
-	PostId          string                `json:"post_id,optional"`
-	TotalDurationMs int64                 `json:"total_duration_ms,optional"`
-	HostMetrics     MoeHostMetrics        `json:"host_metrics,optional"`
-	Steps           []MoePipelineStepItem `json:"steps"`
+	AgentKey         string                `json:"agent_key"`
+	RunAt            string                `json:"run_at,optional"`
+	Ok               bool                  `json:"ok"`
+	Detail           string                `json:"detail,optional"`
+	PostId           string                `json:"post_id,optional"`
+	TotalDurationMs  int64                 `json:"total_duration_ms,optional"`
+	HostMetrics      MoeHostMetrics        `json:"host_metrics,optional"`
+	GenerateAttempts []MoeGenAttemptItem   `json:"generate_attempts,optional"`
+	Steps            []MoePipelineStepItem `json:"steps"`
 }
 
 type AdminGetMoeBrainPipelineReq struct {
@@ -435,8 +436,10 @@ type AdminGetMoeInferenceStatusData struct {
 	BaseUrl          string   `json:"base_url"`
 	Models           []string `json:"models"`
 	DefaultPostModel string   `json:"default_post_model"`
+	PreferredModel   string   `json:"preferred_model,optional"`
 	RuntimeModel     string   `json:"runtime_model,optional"`
 	EffectiveModel   string   `json:"effective_model,optional"`
+	AutoDiscovered   bool     `json:"auto_discovered,optional"`
 	ModelLoaded      bool     `json:"model_loaded"`
 	ContextLimit     int      `json:"context_limit,optional"`
 	ContextSource    string   `json:"context_source,optional"`
@@ -2696,6 +2699,13 @@ type MoeBrainMemoryItem struct {
 type MoeBrainTagStat struct {
 	Tag   string `json:"tag"`
 	Count int    `json:"count"`
+}
+
+type MoeGenAttemptItem struct {
+	Attempt int    `json:"attempt"`
+	Outcome string `json:"outcome"`
+	Snippet string `json:"snippet,optional"`
+	Note    string `json:"note,optional"`
 }
 
 type MoeHostMetrics struct {

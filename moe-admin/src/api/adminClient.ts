@@ -94,8 +94,10 @@ export type MoeInferenceStatusData = {
   base_url: string
   models: string[]
   default_post_model: string
+  preferred_model?: string
   runtime_model?: string
   effective_model?: string
+  auto_discovered?: boolean
   model_loaded: boolean
   context_limit?: number
   context_source?: string
@@ -108,6 +110,13 @@ export type MoePipelineStepItem = {
   status: string
   detail?: string
   duration_ms?: number
+}
+
+export type MoeGenAttemptItem = {
+  attempt: number
+  outcome: string
+  snippet?: string
+  note?: string
 }
 
 export type MoeHostMetrics = {
@@ -129,6 +138,7 @@ export type MoeBrainPipelineData = {
   post_id?: string
   total_duration_ms?: number
   host_metrics?: MoeHostMetrics
+  generate_attempts?: MoeGenAttemptItem[]
   steps: MoePipelineStepItem[]
 }
 

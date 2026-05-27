@@ -2073,6 +2073,13 @@ message MoeHostMetrics {
   string gpu_note = 8;
 }
 
+message MoeGenAttemptItem {
+  int32 attempt = 1;
+  string outcome = 2;
+  string snippet = 3;
+  string note = 4;
+}
+
 message AdminGetMoeBrainPipelineReq {
   string agent_key = 1;
 }
@@ -2086,6 +2093,7 @@ message AdminGetMoeBrainPipelineResp {
   int64 total_duration_ms = 6;
   MoeHostMetrics host_metrics = 7;
   string post_id = 8;
+  repeated MoeGenAttemptItem generate_attempts = 9;
 }
 
 message RecordLlmChatTurnReq {

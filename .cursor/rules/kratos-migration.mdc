@@ -1,0 +1,40 @@
+---
+description: Kratos hybrid migration rules for backend Moe domain
+globs: backend/**/*
+alwaysApply: false
+---
+
+# Kratos 混合迁移纪律（Moe 域）
+
+**总览（混合类型、目录树、框架、进度）**：`docs/dev/kratos-migration.md`  
+**方案**：`docs/dev/kratos-hybrid-migration-plan.md`
+
+## 新功能（Moe / Bot 运行时 / 大脑 / 流水线 / 推理观测）
+
+1. 契约写在 `backend/api/moe/v1/moe.proto`，禁止在 `super.proto` 扩张 Moe 消息（修 bug 除外）。
+2. 业务写在 `internal/biz/moe`、`internal/data/moedata`、`internal/service/moe`。
+3. Admin HTTP 经 `api/internal/moeadmingw`（勿在 logic 内三分支重复）。
+4. gRPC 实现放在 `internal/server/moegrpc`（勿新建 `moev1` 包名目录）。
+5. `rpc/internal/logic` 只做 legacy super 协议转换。
+6. **禁止** goctl 为新 Moe 接口生成独立空壳 logic；`make gen-moe-admin` 或 `make verify-moe-migration`。
+
+## Legacy（User / VIP / 社交等）
+
+- 仍走 `super.api` / `super.proto` + goctl。
+- 不在 legacy 模块引入对 `internal/biz/moe` 的循环依赖。
+
+## 依赖方向
+
+`data` → `biz` → `service` → `moegrpc` / `rpc/logic` / `moeadmingw`  
+`biz` **不得** import `rpc/internal/logic`。
+
+## 运行
+
+- 推荐单进程：`make moe-social`
+- 经典双进程：`make dev`
+
+## 验收
+
+```bash
+cd backend && make verify-moe-complete
+```

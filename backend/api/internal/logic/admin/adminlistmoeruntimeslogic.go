@@ -7,7 +7,6 @@ import (
 	"backend/api/internal/moebridge"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,16 +22,16 @@ func NewAdminListMoeRuntimesLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *AdminListMoeRuntimesLogic) AdminListMoeRuntimes() (*types.AdminListMoeRuntimesResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminListMoeRuntimes(l.ctx, &super.AdminListMoeRuntimesReq{})
+	rows, err := l.svcCtx.MoeGW.ListRuntimes(l.ctx)
 	if err != nil {
-		return &types.AdminListMoeRuntimesResp{BaseResp: common.HandleRPCError(err, "")}, nil
+		return &types.AdminListMoeRuntimesResp{BaseResp: common.HandleError(err)}, nil
 	}
-	items := make([]types.MoeAgentRuntimeItem, 0, len(rpcResp.Items))
-	for _, item := range rpcResp.Items {
-		items = append(items, moebridge.RuntimeItemFromRPC(item))
+	items := make([]types.MoeAgentRuntimeItem, 0, len(rows))
+	for _, rt := range rows {
+		items = append(items, moebridge.RuntimeItemFromModel(rt))
 	}
 	return &types.AdminListMoeRuntimesResp{
-		BaseResp: common.HandleRPCError(nil, "ok"),
+		BaseResp: common.HandleError(nil),
 		Data:     types.AdminListMoeRuntimesData{Items: items},
 	}, nil
 }

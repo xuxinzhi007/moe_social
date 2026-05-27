@@ -3,11 +3,12 @@ package admin
 import (
 	"context"
 
+	moebiz "backend/internal/biz/moe"
+	moeadmin "backend/internal/service/moe"
 	"backend/api/internal/common"
 	"backend/api/internal/moebridge"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,17 +24,17 @@ func NewAdminGetMoeToolStatsLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *AdminGetMoeToolStatsLogic) AdminGetMoeToolStats(req *types.AdminGetMoeToolStatsReq) (*types.AdminGetMoeToolStatsResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminGetMoeToolStats(l.ctx, &super.AdminGetMoeToolStatsReq{
-		From:     req.From,
-		To:       req.To,
+	stats, err := l.svcCtx.MoeGW.QueryToolStats(l.ctx, moebiz.ToolStatsFilter{
+		From:     moeadmin.ParseTimeFilter(req.From, false),
+		To:       moeadmin.ParseTimeFilter(req.To, true),
 		AgentKey: req.AgentKey,
 		Tool:     req.Tool,
 	})
 	if err != nil {
-		return &types.AdminGetMoeToolStatsResp{BaseResp: common.HandleRPCError(err, "")}, nil
+		return &types.AdminGetMoeToolStatsResp{BaseResp: common.HandleError(err)}, nil
 	}
 	return &types.AdminGetMoeToolStatsResp{
-		BaseResp: common.HandleRPCError(nil, "ok"),
-		Data:     moebridge.ToolStatsFromRPC(rpcResp),
+		BaseResp: common.HandleError(nil),
+		Data:     moebridge.ToolStatsDataFromBiz(stats),
 	}, nil
 }

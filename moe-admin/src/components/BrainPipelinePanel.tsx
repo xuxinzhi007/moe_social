@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AdminTag } from './AdminTag'
-import type { MoeBrainPipelineData, MoePipelineStepItem } from '../api/adminClient'
+import type { MoeBrainPipelineData, MoeGenAttemptItem, MoePipelineStepItem } from '../api/adminClient'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { DeployApiError } from '../api/deployClient'
 import type { TagTone } from '../lib/adminLabels'
@@ -27,6 +27,25 @@ function stepStatusLabel(status: string): string {
   if (s === 'running') return '进行中'
   if (s === 'skip') return '待执行'
   return status || '—'
+}
+
+function genOutcomeLabel(outcome: string): string {
+  switch (outcome) {
+    case 'ok':
+      return '通过'
+    case 'duplicate':
+      return '与近期帖重复'
+    case 'theme':
+      return '主题/开头过像'
+    case 'forbidden':
+      return '命中禁止标签'
+    case 'novel':
+      return '偏剧本/诗意腔'
+    case 'llm_error':
+      return 'LLM 调用失败'
+    default:
+      return outcome || '—'
+  }
 }
 
 function formatMs(ms?: number): string {
@@ -78,7 +97,14 @@ function PipelineStepRow({
             <div className="brain-pipeline-bar-fill" style={{ width: `${widthPct}%` }} />
           </div>
         ) : null}
-        {step.detail ? <p className="muted brain-pipeline-step-detail">{step.detail}</p> : null}
+        {step.detail ? (
+          <p
+            className="muted brain-pipeline-step-detail"
+            style={step.detail.includes('\n') ? { whiteSpace: 'pre-wrap' } : undefined}
+          >
+            {step.detail}
+          </p>
+        ) : null}
       </div>
     </div>
   )
@@ -125,6 +151,7 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, onRunOnce, runnin
   const hm = data?.host_metrics
 
   const empty = !hasRun && steps.every((s) => s.status === 'skip')
+  const genAttempts = data?.generate_attempts ?? []
 
   return (
     <section className="panel brain-pipeline-panel">
@@ -202,6 +229,25 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, onRunOnce, runnin
                 </span>
               ) : null}
             </div>
+          ) : null}
+
+          {genAttempts.length > 0 ? (
+            <details className="brain-pipeline-gen-attempts" open={!data.ok}>
+              <summary>
+                本次试跑生成明细（共 {genAttempts.length} 次，仅本请求）
+              </summary>
+              <ol className="brain-gen-attempt-list">
+                {genAttempts.map((item: MoeGenAttemptItem) => (
+                  <li key={`${item.attempt}-${item.outcome}-${item.snippet ?? ''}`}>
+                    <strong>第 {item.attempt} 次</strong> · {genOutcomeLabel(item.outcome)}
+                    {item.snippet ? (
+                      <span className="muted"> — 「{item.snippet}」</span>
+                    ) : null}
+                    {item.note ? <span className="muted">（{item.note}）</span> : null}
+                  </li>
+                ))}
+              </ol>
+            </details>
           ) : null}
 
           {empty ? (

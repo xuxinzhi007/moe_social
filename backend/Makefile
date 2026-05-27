@@ -2,7 +2,7 @@
 
 
 
-.PHONY: all gen gen-rpc gen-api gen-swagger gen-moe-admin build build-linux env-status \
+.PHONY: all gen gen-moe-proto gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto verify-moe-migration verify-moe-grpc verify-moe-gateway verify-moe-complete moe-social moe-platform migrate-moe build build-linux env-status \
 
 	deploy-agent deploy-agent-stop admin \
 
@@ -20,7 +20,11 @@ all: gen
 
 
 
-gen: gen-rpc gen-api gen-swagger
+# 生成：api/**/v1 proto（Kratos 风格目录）+ legacy goctl（super.api / super.proto）
+gen: gen-moe-proto gen-rpc gen-api gen-swagger
+
+gen-moe-proto:
+	bash scripts/gen-moe-proto.sh
 
 
 
@@ -50,6 +54,36 @@ gen-swagger:
 gen-moe-admin:
 
 	bash scripts/gen-moe-admin.sh
+
+# Moe 域 proto（Kratos 混合迁移 SSOT；可选生成，逻辑层不强制依赖 pb）
+api-moe-proto:
+
+	bash scripts/gen-moe-proto.sh
+
+# Kratos 混合迁移验收（编译 + 单测 + RPC 注册检查）
+verify-moe-migration:
+
+	bash scripts/verify-moe-migration.sh
+
+verify-moe-grpc:
+
+	bash scripts/verify-moe-grpc.sh
+
+verify-moe-gateway:
+
+	bash scripts/verify-moe-gateway.sh
+
+verify-moe-complete:
+
+	bash scripts/verify-moe-complete.sh
+
+moe-social:
+
+	go run ./cmd/moe-social -f-api api/etc/super.yaml -f-rpc rpc/etc/super.yaml
+
+moe-platform:
+
+	go run ./cmd/moe-platform
 
 
 
@@ -104,6 +138,11 @@ api:
 db-migrate:
 
 	go run ./cmd/migrate
+
+# 新机器 / Moe 功能：仅迁移 Bot、试跑日志、AI 聊天等表
+migrate-moe:
+
+	go run ./cmd/migrate -models moe_agent_runtimes,moe_bot_episodes,moe_tool_calls,moe_agent_run_logs,ai_chat_sessions,ai_chat_messages
 
 
 

@@ -2,14 +2,13 @@ package admin
 
 import (
 	"context"
-	"strconv"
 	"strings"
 
+	moebiz "backend/internal/biz/moe"
 	"backend/api/internal/common"
 	"backend/api/internal/moebridge"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,25 +24,25 @@ func NewAdminUpsertMoeRuntimeLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *AdminUpsertMoeRuntimeLogic) AdminUpsertMoeRuntime(req *types.AdminUpsertMoeRuntimeReq) (*types.AdminUpsertMoeRuntimeResp, error) {
-	botUID, err := strconv.ParseUint(strings.TrimSpace(req.BotUserId), 10, 32)
-	if err != nil || botUID == 0 {
+	botUID, err := moebiz.ParseBotUserID(req.BotUserId)
+	if err != nil {
 		return &types.AdminUpsertMoeRuntimeResp{
-			BaseResp: types.BaseResp{Code: 400, Message: "无效的 bot_user_id", Success: false},
+			BaseResp: types.BaseResp{Code: 400, Message: err.Error(), Success: false},
 		}, nil
 	}
-	quota := int32(req.PostQuotaDaily)
+	quota := req.PostQuotaDaily
 	if quota <= 0 {
 		quota = 5
 	}
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminUpsertMoeRuntime(l.ctx, &super.AdminUpsertMoeRuntimeReq{
-		AgentKey:          strings.TrimSpace(req.AgentKey),
-		DisplayName:       strings.TrimSpace(req.DisplayName),
-		BotUserId:         strings.TrimSpace(req.BotUserId),
-		CapabilityTier:    strings.TrimSpace(req.CapabilityTier),
-		ModelName:         strings.TrimSpace(req.ModelName),
-		ProviderProfileId: strings.TrimSpace(req.ProviderProfileId),
+	saved, err := l.svcCtx.MoeGW.UpsertRuntime(l.ctx, moebiz.UpsertRuntimeParams{
+		AgentKey:          req.AgentKey,
+		DisplayName:       req.DisplayName,
+		BotUserID:         botUID,
+		CapabilityTier:    req.CapabilityTier,
+		ModelName:         req.ModelName,
+		ProviderProfileID: req.ProviderProfileId,
 		ToolsEnabled:      req.ToolsEnabled,
-		PostQuotaDaily:    quota,
+		PostQuotaDaily:    int(quota),
 		Enabled:           req.Enabled,
 		SystemPrompt:      strings.TrimSpace(req.SystemPrompt),
 		PostRules:         strings.TrimSpace(req.PostRules),
@@ -53,10 +52,10 @@ func (l *AdminUpsertMoeRuntimeLogic) AdminUpsertMoeRuntime(req *types.AdminUpser
 		ScheduleCron:      strings.TrimSpace(req.ScheduleCron),
 	})
 	if err != nil {
-		return &types.AdminUpsertMoeRuntimeResp{BaseResp: common.HandleRPCError(err, "")}, nil
+		return &types.AdminUpsertMoeRuntimeResp{BaseResp: common.HandleError(err)}, nil
 	}
 	return &types.AdminUpsertMoeRuntimeResp{
-		BaseResp: common.HandleRPCError(nil, "ok"),
-		Data:     moebridge.RuntimeItemFromRPC(rpcResp.Item),
+		BaseResp: common.HandleError(nil),
+		Data:     moebridge.RuntimeItemFromModel(saved),
 	}, nil
 }
