@@ -24,13 +24,29 @@ const (
 func RunAgent(ctx context.Context, deps Deps, agentKey string, trigger RunTrigger, plan flowexec.Plan) (RunOnceResult, error) {
 	agentKey = strings.TrimSpace(agentKey)
 	_ = trigger
-	rec := NewStepRecorder()
 	if agentKey == "" {
 		return RunOnceResult{}, fmt.Errorf("agent_key 为空")
 	}
 	if deps.DB == nil {
 		return RunOnceResult{}, fmt.Errorf("数据库未就绪")
 	}
+
+	liveSess := LiveRuns.Get(agentKey)
+	ownLive := false
+	if liveSess == nil {
+		var ok bool
+		liveSess, ok = LiveRuns.TryBegin(agentKey)
+		if !ok {
+			return RunOnceResult{}, fmt.Errorf("试跑进行中，请稍后再试")
+		}
+		ownLive = true
+	}
+	if ownLive {
+		defer LiveRuns.End(agentKey)
+	}
+
+	rec := NewStepRecorder()
+	rec.BindLive(liveSess)
 	if len(plan.Nodes) == 0 {
 		plan = resolvePostingPlan(ctx, deps, agentKey)
 	}

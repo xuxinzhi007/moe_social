@@ -8,6 +8,7 @@ import (
 	moeconfv1 "backend/internal/conf/moe/v1"
 	moegrpcserver "backend/internal/server/moegrpc"
 	"backend/internal/server/moekratoshttp"
+	adminapp "backend/internal/service/admin"
 	moeadmin "backend/internal/service/moe"
 
 	"github.com/go-kratos/kratos/v2"
@@ -19,7 +20,8 @@ import (
 // App 纯 Kratos 试点装配结果（Wire 输出）。
 type App struct {
 	Bootstrap *moeconfv1.Bootstrap
-	Admin     *moeadmin.AdminService
+	MoeAdmin  *moeadmin.AdminService
+	AdminApp  *adminapp.AppService
 	GRPC      *grpc.Server
 	HTTP      *khttp.Server
 	Kratos    *kratos.App
@@ -31,20 +33,22 @@ type App struct {
 // newApp 组装 Kratos App（由 Wire 或 fallback 调用）。
 func newApp(
 	bootstrap *moeconfv1.Bootstrap,
-	admin *moeadmin.AdminService,
+	moeAdmin *moeadmin.AdminService,
+	adminApp *adminapp.AppService,
 	grpcAddr, httpAddr, superRPC string,
 	db *gorm.DB,
 ) *App {
-	moeGRPC := moegrpcserver.New(admin)
+	moeGRPC := moegrpcserver.New(moeAdmin)
 	grpcSrv := grpc.NewServer(grpc.Address(grpcAddr))
 	moepb.RegisterMoeAdminServer(grpcSrv, moeGRPC)
 
 	httpSrv := khttp.NewServer(khttp.Address(httpAddr))
-	moekratoshttp.Register(httpSrv, admin)
-	moekratospilot.RegisterAdminCompat(httpSrv, admin)
-	if bootstrap != nil && bootstrap.GetVip() != nil && bootstrap.GetVip().GetAdminReadEnabled() {
-		moekratospilot.RegisterVipCompat(httpSrv, db)
-	}
+	moekratoshttp.Register(httpSrv, moeAdmin)
+	moekratospilot.RegisterAll(httpSrv, moekratospilot.PilotDeps{
+		MoeAdmin: moeAdmin,
+		AdminApp: adminApp,
+		DB:       db,
+	})
 
 	kratosApp := kratos.New(
 		kratos.Name("moe-kratos"),
@@ -53,7 +57,8 @@ func newApp(
 
 	return &App{
 		Bootstrap: bootstrap,
-		Admin:     admin,
+		MoeAdmin:  moeAdmin,
+		AdminApp:  adminApp,
 		GRPC:      grpcSrv,
 		HTTP:      httpSrv,
 		Kratos:    kratosApp,

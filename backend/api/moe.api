@@ -1,4 +1,6 @@
-// FS-9: goctl HTTP 入口（仅 import）；契约 SSOT 在 api/defs/*.api
+// FS-9 / PK-8: goctl HTTP 入口（仅 import）；契约 SSOT 在 api/defs/*.api
+// PK-8 退役：默认勿 make gen-api；路由注册走 make gen-moekratospilot-get → moekratospilot
+// 紧急再生成：MOE_ALLOW_GOCTL_API=1 make gen-api
 syntax = "v1"
 
 info (

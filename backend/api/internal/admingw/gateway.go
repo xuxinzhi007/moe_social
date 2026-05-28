@@ -10,21 +10,29 @@ import (
 	"google.golang.org/grpc"
 )
 
-// Gateway Admin 只读 HTTP → biz 或 super RPC 回退。
+// Gateway Admin 只读 HTTP → kratos 试点 HTTP（灰度）→ biz → super RPC。
 type Gateway struct {
-	local *adminapp.AppService
-	super super.SuperClient
+	kratos *KratosHTTPClient
+	local  *adminapp.AppService
+	super  super.SuperClient
 }
 
-// New 构造网关。
-func New(local *adminapp.AppService, legacy super.SuperClient) *Gateway {
-	return &Gateway{local: local, super: legacy}
+// New 构造网关；kratos 启用时 Insights 读路径走 :19032。
+func New(local *adminapp.AppService, legacy super.SuperClient, kratos *KratosHTTPClient) *Gateway {
+	return &Gateway{local: local, super: legacy, kratos: kratos}
+}
+
+func (g *Gateway) kratosHTTPReady() bool {
+	return g != nil && g.kratos != nil && g.kratos.enabled()
 }
 
 // Route 当前路由模式。
 func (g *Gateway) Route() string {
 	if g == nil {
 		return "none"
+	}
+	if g.kratosHTTPReady() {
+		return "kratos_http"
 	}
 	if g.local != nil {
 		return "in_process"
@@ -240,6 +248,9 @@ func (g *Gateway) AdminBootstrapMenus(ctx context.Context, in *super.AdminBootst
 }
 
 func (g *Gateway) AdminListAiChatSessions(ctx context.Context, in *super.AdminListAiChatSessionsReq, opts ...grpc.CallOption) (*super.AdminListAiChatSessionsResp, error) {
+	if g != nil && g.kratosHTTPReady() {
+		return g.kratos.AdminListAiChatSessions(ctx, in)
+	}
 	if g != nil && g.local != nil {
 		return g.local.ListAiChatSessions(ctx, in)
 	}
@@ -247,6 +258,9 @@ func (g *Gateway) AdminListAiChatSessions(ctx context.Context, in *super.AdminLi
 }
 
 func (g *Gateway) AdminListAiChatMessages(ctx context.Context, in *super.AdminListAiChatMessagesReq, opts ...grpc.CallOption) (*super.AdminListAiChatMessagesResp, error) {
+	if g != nil && g.kratosHTTPReady() {
+		return g.kratos.AdminListAiChatMessages(ctx, in)
+	}
 	if g != nil && g.local != nil {
 		return g.local.ListAiChatMessages(ctx, in)
 	}
@@ -254,6 +268,9 @@ func (g *Gateway) AdminListAiChatMessages(ctx context.Context, in *super.AdminLi
 }
 
 func (g *Gateway) AdminExportAiChatMessages(ctx context.Context, in *super.AdminExportAiChatMessagesReq, opts ...grpc.CallOption) (*super.AdminExportAiChatMessagesResp, error) {
+	if g != nil && g.kratosHTTPReady() {
+		return g.kratos.AdminExportAiChatMessages(ctx, in)
+	}
 	if g != nil && g.local != nil {
 		return g.local.ExportAiChatMessages(ctx, in)
 	}
@@ -261,6 +278,9 @@ func (g *Gateway) AdminExportAiChatMessages(ctx context.Context, in *super.Admin
 }
 
 func (g *Gateway) AdminAnalyticsOverview(ctx context.Context, in *super.AdminGetMemoryStatsReq, opts ...grpc.CallOption) (*super.AdminAnalyticsOverviewResp, error) {
+	if g != nil && g.kratosHTTPReady() {
+		return g.kratos.AdminAnalyticsOverview(ctx, in)
+	}
 	if g != nil && g.local != nil {
 		return g.local.AnalyticsOverview(ctx, in)
 	}
@@ -268,6 +288,9 @@ func (g *Gateway) AdminAnalyticsOverview(ctx context.Context, in *super.AdminGet
 }
 
 func (g *Gateway) AdminListTopicTags(ctx context.Context, in *super.AdminListTopicTagsReq, opts ...grpc.CallOption) (*super.AdminListTopicTagsResp, error) {
+	if g != nil && g.kratosHTTPReady() {
+		return g.kratos.AdminListTopicTags(ctx, in)
+	}
 	if g != nil && g.local != nil {
 		return g.local.ListTopicTags(ctx, in)
 	}

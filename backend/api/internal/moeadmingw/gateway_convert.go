@@ -122,6 +122,14 @@ func pipelineFromSuper(d *super.AdminGetMoeBrainPipelineResp) moebiz.PipelineSna
 		Detail:          data.Detail,
 		PostID:          data.PostId,
 		TotalDurationMS: data.TotalDurationMs,
+		Running:         data.Running,
+		CurrentPhase:    data.CurrentPhase,
+		ActiveStepKey:   data.ActiveStepKey,
+	}
+	if data.RunStartedAt != "" {
+		if t, err := time.ParseInLocation("2006-01-02 15:04:05", data.RunStartedAt, time.Local); err == nil {
+			snap.RunStartedAt = t
+		}
 	}
 	if data.RunAt != "" {
 		if t, err := time.ParseInLocation("2006-01-02 15:04:05", data.RunAt, time.Local); err == nil {

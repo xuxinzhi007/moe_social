@@ -32,29 +32,51 @@ import (
 
 // Options API 启动选项。
 type Options struct {
-	ConfigFile string
+	ConfigFile       string
+	InternalHTTPHost string // PK-4：go-zero 内网监听 host（默认 127.0.0.1）
+	InternalHTTPPort int    // PK-4：>0 时 go-zero 改绑内网端口，对外由 Kratos 前置 :8888
+	WireOnly         bool   // PK-9：仅装配 ServiceContext，不创建 go-zero rest（纯 Kratos HTTP）
 }
 
 // Start 装配 ServiceContext、MoeGW 并注册 HTTP 路由。
 func Start(opts Options) (*rest.Server, error) {
+	res, err := StartWithResult(opts)
+	if err != nil {
+		return nil, err
+	}
+	return res.Server, nil
+}
+
+// StartWithResult 返回 ServiceContext 供 Kratos HTTP 前置注册试点路由（PK-4）。
+func StartWithResult(opts Options) (*StartResult, error) {
 	var c config.Config
 	conf.MustLoad(opts.ConfigFile, &c)
+	if opts.InternalHTTPPort > 0 {
+		c.Host = opts.InternalHTTPHost
+		if c.Host == "" {
+			c.Host = "127.0.0.1"
+		}
+		c.Port = opts.InternalHTTPPort
+	}
 	ApplyUnifiedConfigOverrides(&c)
 	if err := utils.ConfigureJWT(c.Auth.AccessSecret, c.Auth.AccessExpire); err != nil {
 		return nil, fmt.Errorf("JWT 配置无效: %w（请在 backend/config/config.yaml 设置 auth.access_secret）", err)
 	}
 
-	server := rest.MustNewServer(c.RestConf, rest.WithCustomCors(
-		func(header http.Header) {
-			header.Set("Access-Control-Allow-Origin", "*")
-			header.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
-			header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Admin-Token, X-Requested-With, Accept, Range")
-			header.Set("Access-Control-Expose-Headers", "Content-Length, Content-Range, Accept-Ranges, X-Model-Sha256")
-			header.Set("Access-Control-Max-Age", "3600")
-		},
-		nil,
-		"*",
-	))
+	var server *rest.Server
+	if !opts.WireOnly {
+		server = rest.MustNewServer(c.RestConf, rest.WithCustomCors(
+			func(header http.Header) {
+				header.Set("Access-Control-Allow-Origin", "*")
+				header.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+				header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Admin-Token, X-Requested-With, Accept, Range")
+				header.Set("Access-Control-Expose-Headers", "Content-Length, Content-Range, Accept-Ranges, X-Model-Sha256")
+				header.Set("Access-Control-Max-Age", "3600")
+			},
+			nil,
+			"*",
+		))
+	}
 
 	ctx := svc.NewServiceContext(c)
 	if moewiring.APIInProcessEnabled() {
@@ -108,8 +130,11 @@ func Start(opts Options) (*rest.Server, error) {
 			log.Print("admin api_in_process: enabled (growth/schema/runtime/notify HTTP uses in-process biz)")
 		}
 	}
-	ctx.AdminGW = admingw.New(ctx.AdminApp, ctx.SuperRpcClient)
+	ctx.AdminGW = admingw.NewConfigured(ctx.AdminApp, ctx.SuperRpcClient)
 	log.Printf("admin gateway route: %s", ctx.AdminGW.Route())
+	if moewiring.KratosAdminInsightsHTTPEnabled() {
+		log.Printf("admin kratos insights http: enabled → %s", moewiring.KratosPilotBaseURL())
+	}
 	if moewiring.AIAPIInProcessEnabled() {
 		aiApp, err := moewiring.NewAPIAIService()
 		if err != nil {
@@ -239,9 +264,15 @@ func Start(opts Options) (*rest.Server, error) {
 	if moewiring.KratosVipHTTPEnabled() {
 		log.Printf("vip kratos http: enabled → %s (ListPlans)", moewiring.KratosPilotBaseURL())
 	}
-	handler.RegisterHandlers(server, ctx)
+	if server != nil {
+		handler.RegisterHandlers(server, ctx)
+	}
 
 	LogEffectiveConfig(&c)
+	if opts.WireOnly {
+		log.Print("moe api: wire-only (pure Kratos HTTP, no go-zero rest)")
+		return &StartResult{Server: nil, Svc: ctx, Host: c.Host, Port: c.Port}, nil
+	}
 	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
-	return server, nil
+	return &StartResult{Server: server, Svc: ctx, Host: c.Host, Port: c.Port}, nil
 }

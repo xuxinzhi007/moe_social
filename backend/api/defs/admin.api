@@ -272,6 +272,9 @@ service Super {
 	@handler adminGetMoeBrainPipeline
 	get /api/admin/moe/brain/pipeline (AdminGetMoeBrainPipelineReq) returns (AdminGetMoeBrainPipelineResp)
 
+	@handler adminStreamMoeBrainPipeline
+	get /api/admin/moe/brain/pipeline/stream (AdminGetMoeBrainPipelineReq)
+
 	@handler adminListMoeRuntimes
 	get /api/admin/moe/runtimes returns (AdminListMoeRuntimesResp)
 

@@ -32,10 +32,84 @@
 }
 
 .bot-flow-handle {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   background: #7f7fd5;
   border: 2px solid #fff;
+  z-index: 2;
+}
+
+.bot-flow-handle--core {
+  background: #91eae4;
+}
+
+.bot-flow-handle--tool {
+  background: #86a8e7;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: rgba(255, 107, 107, 0.95) !important;
+  stroke-width: 3px !important;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke-width: 3px;
+  cursor: pointer;
+}
+
+.bot-flow-tool-btn {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  line-height: 1.2;
+  max-width: 120px;
+  padding-top: 12px;
+  padding-bottom: 6px;
+}
+
+.bot-flow-tool-btn--on-canvas {
+  border: 1px solid rgba(127, 127, 213, 0.35);
+  background: rgba(127, 127, 213, 0.08);
+  cursor: default;
+  opacity: 0.92;
+}
+
+.bot-flow-tool-btn--on-canvas.bot-flow-tool-btn--linked {
+  border-color: rgba(145, 234, 228, 0.75);
+  background: rgba(145, 234, 228, 0.12);
+}
+
+.bot-flow-tool-btn-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 9px;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 6px;
+  background: rgba(127, 127, 213, 0.15);
+  color: #5c5c8a;
+  font-weight: 600;
+}
+
+.bot-flow-tool-btn--linked .bot-flow-tool-btn-badge {
+  background: rgba(52, 195, 143, 0.2);
+  color: #1f7a5c;
+}
+
+.bot-flow-tool-btn:disabled {
+  pointer-events: none;
+}
+
+.bot-flow-tool-btn-zh {
+  font-size: 12px;
+}
+
+.bot-flow-node-head--core {
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .bot-flow-node--tool {
@@ -143,6 +217,13 @@
 .bot-flow-node--core strong {
   display: block;
   font-size: 15px;
+}
+
+.bot-flow-core-ports-hint {
+  display: block;
+  font-size: 10px;
+  margin-top: 6px;
+  opacity: 0.85;
 }
 
 .bot-flow-node-head {

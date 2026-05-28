@@ -12,6 +12,7 @@ import { PageMessage } from '../components/PageMessage'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { useDeploy } from '../context/DeployContext'
 import { DeployApiError } from '../api/deployClient'
+import { waitMoeBrainPipelineSse } from '../lib/moePipelineSse'
 
 type BrainData = {
   agent_key: string
@@ -208,9 +209,26 @@ export function MoeBrainPage() {
     setRunningOnce(true)
     setMessage('')
     try {
-      const res = await client.runMoeAgentOnce(key)
+      const res = await client.runMoeAgentOnce(key, { async: true })
       if (!res.success) {
         showToast(res.message || '试跑失败')
+        return
+      }
+      if (res.data?.already_running) {
+        showToast('该 Bot 正在试跑中，请稍候')
+        return
+      }
+      if (res.data?.accepted) {
+        const final = await waitMoeBrainPipelineSse(client.brainPipelineStreamUrl(key))
+        bumpOpsRefresh()
+        await loadBrain()
+        if (final) {
+          const ok = Boolean(final.ok)
+          const detail = final.detail?.trim() || (ok ? '试跑完成' : '试跑未成功')
+          showToast(detail)
+          setMessage(detail)
+          setMessageTone(ok ? 'ok' : 'warn')
+        }
         return
       }
       const ok = Boolean(res.data?.ok)
@@ -317,7 +335,7 @@ export function MoeBrainPage() {
       error={error || undefined}
     >
       <InferenceStatusBar agentKey={activeKey} refreshKey={opsRefresh} />
-      <BrainPipelinePanel agentKey={activeKey} refreshKey={opsRefresh} />
+      <BrainPipelinePanel agentKey={activeKey} refreshKey={opsRefresh} running={runningOnce} />
       <MemoryInfluencePanel meta={brain?.generation_meta} />
       <PageMessage message={message} tone={messageTone} onClose={() => setMessage('')} />
 

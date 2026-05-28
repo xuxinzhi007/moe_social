@@ -196,6 +196,24 @@ moe:
   kratos_admin_http_enabled: false
   # VIP 套餐列表读：GET /api/admin/vip/plans
   kratos_vip_http_enabled: false
+  # Admin Insights 读（ai chat / analytics / topic-tags）
+  kratos_admin_insights_http_enabled: false
+  # 一键开启上述 Moe/VIP/Insights 读灰度（团队 Kratos 联调）
+  kratos_pilot_read_enabled: false
+  # PK-9 传输铺轨（rollout_percent=100）：Kratos HTTP :8888 + gRPC 生命周期；完整纯 Kratos percent 见 /migration
+  # 回滚 Hybrid：设为 false
+  kratos_pure_enabled: true
+  # PK-8：退役 goctl handler 默认生成链（改 api/defs 后只跑 gen-moekratospilot-get）
+  kratos_pk8_goctl_retired: true
+  # 紧急回滚 go-zero rest（仅 kratos_pure_enabled=false 时生效）
+  kratos_hybrid_http_fallback: false
+  # PK-10：:1903x 试点进程已收敛到 moe-social :8888
+  pilot_process_deprecated: true
+  # PK-4（kratos_pure=false 时）：Kratos 前置 + go-zero 内网回退
+  kratos_http_front_enabled: false
+  kratos_internal_http_port: 18888
+  # PK-7（kratos_pure=true 时自动开启）
+  kratos_grpc_managed: false
   kratos_admin_base_url: "http://127.0.0.1:19032"
   # Phase 4 试点进程默认值（cmd/moe-kratos；CLI 参数可覆盖）
   # 生产对外端口不变：Flutter / moe-admin 仍 :8888（由 moe-social / go-zero API 提供）

@@ -55,6 +55,7 @@
 
 ```bash
 cd backend
+make verify-kratos-rollout-70    # ≥70% 团队口径（PK-0～3）
 make verify-kratos-rollout-pk0   # 文档 + 试点 + Hybrid 契约
 make verify-kratos-100           # 试点 B 100% + Hybrid 回归
 make verify-sprint-fs9           # moe.api / moe.proto / 无 super.yaml
@@ -108,7 +109,43 @@ moe:
 
 ---
 
-### PK-3 — 按域扩 Kratos HTTP（按月，与 co 对齐）
+### PK-3 — 按域扩 Kratos HTTP（✅ 多域试点）
+
+**已落地**（`api/moekratospilot/RegisterAll`）：
+
+| 域 | 路由示例 | 文件 |
+|----|----------|------|
+| Moe Admin | `/kratos/v1/moe/*` | `admin_compat.go` |
+| VIP 只读 | `GET /api/admin/vip/plans` | `vip_compat.go` |
+| Admin Insights | `/api/admin/insights/*` | `admin_insights_compat.go` |
+| Admin 只读 | `/api/admin/dashboard` 等 | `admin_readonly_compat.go` |
+| LLM 读 | `/api/llm/models` 等 | `llm_read_compat.go` |
+
+**验收**：`make verify-kratos-rollout-pk3` · `make moe-kratos` curl §5
+
+---
+
+### PK-6 — HTTP 全量（✅ GET+POST+PUT+DELETE）
+
+**做法**：`make gen-moekratospilot-get` 生成 `routes_handlers_gen.go`（**267 条**，与 `routes.go` 一致），Kratos 复用 go-zero `handler`。
+
+```bash
+make gen-api
+make gen-moekratospilot-get
+make verify-kratos-rollout-pk6
+```
+
+### PK-7 — zrpc 纳入 Kratos 生命周期（✅）
+
+`internal/platform/moesocial/kratos_grpc.go` · 配置 `moe.kratos_grpc_managed: true` 时 `kratos.App` 同时管理 HTTP + gRPC（:8080）。
+
+```bash
+make verify-kratos-rollout-pk7
+```
+
+---
+
+### PK-3（历史模板）— 按域扩 Kratos HTTP（按月，与 co 对齐）
 
 每域一个 PR，模板：
 
@@ -135,28 +172,62 @@ moe:
 
 ---
 
-### PK-4 — 替换 go-zero 传输（可选，大项）
+### PK-4 — Kratos HTTP 前置层（✅ 可选开关）
 
-**前置**：PK-3 至少 2 个域在 `moekratos` 全量验收。
+**目标**：对外仍 **:8888**，已迁移路由走 **Kratos `transport/http`**；其余 **反向代理** 到内网 go-zero。
 
-**目标**：`moe-social` 内 HTTP 从 `wrapREST(go-zero)` 改为 **Kratos `transport/http`**（仍监听 :8888）。
+| 组件 | 说明 |
+|------|------|
+| `internal/platform/moesocial/kratos_front.go` | `RegisterAll` + `HandlePrefix` 回退 |
+| `api/runserver.StartWithResult` | `InternalHTTPPort`（默认 **18888**） |
+| 配置 | `moe.kratos_http_front_enabled` · `moe.kratos_internal_http_port` |
 
-**步骤概要**：
+**启用**（`backend/config/config.yaml`）：
 
-1. 新建 `internal/platform/moesocial/kratos_http.go` 挂 Kratos Server  
-2. 路由表从 goctl handler 逐步迁到 proto 生成 Register  
-3. zrpc 暂保留或按域迁 `transport/grpc`  
-4. 全量 `make verify-sprint-regression`
+```yaml
+moe:
+  kratos_http_front_enabled: true
+  kratos_internal_http_port: 18888
+```
 
-**风险**：高；需专门 sprint，不与 PK-3 混 PR。
+**默认**：`false` — 仍 `wrapREST(go-zero)`，与历史 Hybrid 一致。
+
+**验收**：`make verify-kratos-rollout-pk4` · `make verify-kratos-rollout-85`
+
+**风险**：生产启用前需对灰度读接口做 smoke；zrpc 仍 :8080，未在本阶段替换。
 
 ---
 
-### PK-5 — 退役 goctl 主入口（远期）
+### PK-5～9 — 完整纯 Kratos 迁移（已立项）
 
-- `moe.api` 只保留兼容壳或删除  
-- `pb/super` 包名重命名（FS-9b，独立 sprint）  
-- 与 co 一样：`make api` 为 SSOT
+**SSOT**：[kratos-pure-complete-migration.md](./kratos-pure-complete-migration.md)
+
+| 阶段 | 目标 | 约 G |
+|------|------|------|
+| **PK-5** | 预发默认 PK-4 + 回归门禁固化 | ~93% |
+| **PK-6** | HTTP 全量按域（`defs/*.api` → 域 proto + Register） | ~96% |
+| **PK-7** | zrpc → Kratos gRPC | ~99% |
+| **PK-8** | 退役 goctl handler / `wrapREST` | — |
+| **PK-9** | 传输铺轨 rollout=100%；完整纯 Kratos percent 见 /migration | rollout ✅ |
+
+**每个 PR 必跑**：
+
+```bash
+make verify-kratos-rollout-regression        # 轻量
+make verify-kratos-rollout-regression-full   # 发版前
+```
+
+**PK-5 快速项**（原「远期」拆细）：
+
+- 预发 `kratos_http_front_enabled: true`  
+- 扩 `RegisterAll` 高流量读路由  
+- **不** 在本阶段删 `moe.api` / 改 `pb/super` 包名  
+
+---
+
+### PK-5（历史简述）— 退役 goctl
+
+并入 PK-8；`pb/super` 改名见 FS-9b 独立 sprint。
 
 ---
 
@@ -179,6 +250,7 @@ cd internal/platform/moekratos && wire   # 改 Wire 后
 
 # 验收
 make verify-kratos-rollout-pk0
+make verify-kratos-rollout-pk34   # PK-3 + PK-4（≥85%）
 make verify-kratos-100
 make verify-sprint-fs9
 ```
@@ -208,8 +280,9 @@ curl -s http://127.0.0.1:19032/api/admin/vip/plans
 - [ ] 未改 Flutter / moe-admin 基址（仍 :8888）除非明确灰度文档  
 - [ ] 新契约在 `api/<domain>/v1/`，未扩 `common.api` 巨石（PK-1+）  
 - [ ] `internal/biz` 承载业务；service 仅适配  
-- [ ] `make verify-kratos-rollout-pk0` 通过  
-- [ ] 相关 `make verify-sprint-*` / `make verify-kratos-100` 通过  
+- [ ] `make verify-kratos-rollout-regression` 通过（PK PR 必跑）  
+- [ ] 发版前 `make verify-kratos-rollout-regression-full`（含 F 全量）  
+- [ ] 相关 `make verify-sprint-*` / 域 `verify-domain-*` 通过  
 - [ ] 更新本文件或 [kratos-migration-status.md](./kratos-migration-status.md) 勾选 PK-n  
 
 ---
@@ -233,6 +306,6 @@ curl -s http://127.0.0.1:19032/api/admin/vip/plans
 | PK-0 基线 | ✅ | `verify-kratos-rollout-pk0` |
 | PK-1 契约纪律 | ✅ | `api/README.md` + 域 proto；`make verify-kratos-rollout-pk1` |
 | PK-2 灰度 | ✅ | `kratos_admin_http_enabled` + `kratos_vip_http_enabled`；`make verify-kratos-rollout-pk2` |
-| PK-3 扩域 | ⬜ | 按 §3 顺序 |
-| PK-4 换传输 | ⬜ | 未排期 |
-| PK-5 退役 goctl | ⬜ | 未排期 |
+| PK-3 扩域 | ✅ | Insights + Admin RO + LLM read · `make verify-kratos-rollout-pk3` |
+| PK-4 HTTP 前置 | ✅ 可选 | `kratos_http_front_enabled` · `make verify-kratos-rollout-pk4` |
+| PK-5～9 完整迁移 | 🔄 已立项 | [kratos-pure-complete-migration.md](./kratos-pure-complete-migration.md) |

@@ -66,6 +66,12 @@ func pipelineSnapshotToProto(snap moebiz.PipelineSnapshot) *super.AdminGetMoeBra
 	out.StabilityScore = int32(snap.StabilityScore)
 	out.StabilityDelta = int32(snap.StabilityDelta)
 	out.RunFeedback = snap.RunFeedback
+	out.Running = snap.Running
+	out.CurrentPhase = snap.CurrentPhase
+	out.ActiveStepKey = snap.ActiveStepKey
+	if snap.Running && !snap.RunStartedAt.IsZero() {
+		out.RunStartedAt = snap.RunStartedAt.Format("2006-01-02 15:04:05")
+	}
 	return out
 }
 

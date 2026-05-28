@@ -5,6 +5,12 @@ import type { MoeBotFlowData, MoeFlowEdgeItem } from '../api/adminClient'
 export const HUB_CORE_ID = 'core'
 export const HUB_CENTER = { x: 420, y: 220 }
 
+/** Bot 两侧各 4 个接入点，共 8 个工具位 */
+export const MAX_HUB_TOOLS = 8
+export const MAX_TOOLS_PER_SIDE = 4
+
+export type ToolSide = 'left' | 'right'
+
 export function hubDefaultFlow(agentKey: string): MoeBotFlowData {
   return {
     agent_key: agentKey,
@@ -16,7 +22,7 @@ export function hubDefaultFlow(agentKey: string): MoeBotFlowData {
         id: HUB_CORE_ID,
         type: 'core',
         label: 'Moe Bot',
-        subtitle: '主体 · 接入的工具可在能力范围内调用',
+        subtitle: '主体 · 左右各 4 个工具接入点',
         position_x: HUB_CENTER.x,
         position_y: HUB_CENTER.y,
       },
@@ -33,7 +39,7 @@ export function toHubView(flow: MoeBotFlowData, agentLabel: string): MoeBotFlowD
       id: HUB_CORE_ID,
       type: 'core',
       label: 'Moe Bot',
-      subtitle: `${agentLabel} · 能力中枢`,
+      subtitle: `${agentLabel} · 左右各 4 个接入点`,
       position_x: HUB_CENTER.x,
       position_y: HUB_CENTER.y,
     }
@@ -53,16 +59,6 @@ export function toHubView(flow: MoeBotFlowData, agentLabel: string): MoeBotFlowD
       }
     }
   }
-  for (const t of tools) {
-    if (seen.has(t.id)) continue
-    edges.push({
-      id: `cap-${t.id}-${core.id}`,
-      source: t.id,
-      target: core.id,
-      kind: 'capability',
-    })
-    seen.add(t.id)
-  }
   return {
     ...flow,
     nodes: [core, ...tools],
@@ -78,12 +74,26 @@ export function normalizeToolToCoreEdge(e: MoeFlowEdgeItem, coreId: string): Moe
   return { id: e.id, source: e.source, target: coreId, kind: 'capability' }
 }
 
-export function toolSlotPosition(coreX: number, coreY: number, index: number): { x: number; y: number } {
-  const radius = 200
-  const angle = (-90 + index * 42) * (Math.PI / 180)
+export function inferToolSide(toolX: number, coreX: number): ToolSide {
+  return toolX < coreX - 16 ? 'left' : 'right'
+}
+
+/** 新工具默认左右交替排布，每侧最多 4 个 */
+export function toolSlotPosition(
+  coreX: number,
+  coreY: number,
+  index: number,
+): { x: number; y: number; side: ToolSide } {
+  const clamped = Math.min(index, MAX_HUB_TOOLS - 1)
+  const side: ToolSide = clamped % 2 === 0 ? 'left' : 'right'
+  const row = Math.min(Math.floor(clamped / 2), MAX_TOOLS_PER_SIDE - 1)
+  const yStep = 78
+  const y = coreY + (row - (MAX_TOOLS_PER_SIDE - 1) / 2) * yStep
+  const xOffset = 280
   return {
-    x: coreX + radius * Math.cos(angle),
-    y: coreY + radius * Math.sin(angle),
+    x: side === 'left' ? coreX - xOffset : coreX + xOffset,
+    y,
+    side,
   }
 }
 

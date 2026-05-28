@@ -18,12 +18,16 @@ func InitializeApp(opts Options) (*App, error) {
 		return nil, err
 	}
 	superRPC := provideSuperRPC(opts, bootstrap)
-	admin, err := provideAdmin(db, superRPC)
+	moeAdmin, err := provideMoeAdmin(db, superRPC)
+	if err != nil {
+		return nil, err
+	}
+	adminApp, err := provideAdminApp(db)
 	if err != nil {
 		return nil, err
 	}
 	grpcAddr := provideGRPCAddr(opts, bootstrap)
 	httpAddr := provideHTTPAddr(opts, bootstrap)
-	app := buildApp(bootstrap, admin, grpcAddr, httpAddr, superRPC, db)
+	app := buildApp(bootstrap, moeAdmin, adminApp, grpcAddr, httpAddr, superRPC, db)
 	return app, nil
 }

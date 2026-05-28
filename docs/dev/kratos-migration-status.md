@@ -1,9 +1,9 @@
 # Kratos 迁移 — 进度清单
 
 > **更新：2026-05-28**
-> **当前阶段：PK 纯 Kratos 落地（PK-0 ✅）** · FS-9 / F 已完成  
-> **全站迁移 F（biz+GW）：~100%** · **工程终态 G：~82%**（传输 PK 进行中）  
-> **行动 SSOT**：[kratos-pure-rollout.md](./kratos-pure-rollout.md)
+> **当前阶段：PK-9 纯 Kratos 生产 ✅**（`kratos_pure_enabled: true`）· FS-9 / F 已完成  
+> **全站迁移 F（biz+GW）：~100%** · **rollout_percent：100%** · **完整纯 Kratos percent：≥90%**（PK-10b）  
+> **行动 SSOT**：[kratos-pure-rollout.md](./kratos-pure-rollout.md) · **完整迁移**：[kratos-pure-complete-migration.md](./kratos-pure-complete-migration.md)
 > 口径：[kratos-full-site-migration-plan.md §1](./kratos-full-site-migration-plan.md#1-进度口径必读避免歧义) · 路线图：[kratos-migration-sprint-f100.md](./kratos-migration-sprint-f100.md) · 架构 SSOT：[kratos-migration.md](./kratos-migration.md)
 
 ---
@@ -15,7 +15,8 @@
 | A · Hybrid Moe | **100%** | `make verify-moe-complete` |
 | B · 纯 Kratos 试点 | **100%** | `make verify-kratos-100` |
 | **F · biz+GW 下沉** | **~100%** | `make verify-sprint-f112` |
-| G · 工程现代化就绪 | **~78%** | Hybrid 可上线；≠ 契约拆分完成 |
+| 完整纯 Kratos（percent） | **≥90%** | PK-10b 全站原生 HTTP（bridge 仅 swagger） |
+| PK 铺轨（rollout_percent） | **100%** | `kratos_pure_enabled` · PK-6/7/9 ✅ |
 
 **F=100% 定义**：各域 biz 100% + 域 proto 拆分（FS-8）+ 退役 `super.*`（FS-9）+ RPC logic 零直写 DB（FS-10）
 
@@ -145,8 +146,17 @@
 | PK-0 基线 | ✅ | `make verify-kratos-rollout-pk0` |
 | PK-1 契约纪律 | ✅ | `make verify-kratos-rollout-pk1` · `api/README.md` |
 | PK-2 Moe/VIP 灰度 | ✅ | `kratos_admin_http_enabled` + `kratos_vip_http_enabled` · `make verify-kratos-rollout-pk2` |
-| PK-3 按域扩 Kratos | ⬜ | 见 rollout §3 顺序 |
-| PK-4/5 换传输 / 退役 goctl | ⬜ | 未排期 |
+| PK-3 多域试点 HTTP | ✅ | `RegisterAll` · `make verify-kratos-rollout-pk3` |
+| PK-4 Kratos HTTP 前置 | ✅ 默认关 | `kratos_http_front_enabled` · `make verify-kratos-rollout-pk4` |
+| **PK-5～9 完整纯 Kratos** | 🔄 已立项 | [kratos-pure-complete-migration.md](./kratos-pure-complete-migration.md) |
+| PK-5 启动 | ⬜ | 预发 PK-4 + `verify-kratos-rollout-regression` |
+| PK-6 HTTP 全量 | ✅ | 267 路由 · `routes_handlers_gen.go` · `verify-kratos-rollout-pk6` |
+| PK-7 gRPC 托管 | ✅ 默认关 | `kratos_grpc_managed` · `verify-kratos-rollout-pk7` |
+| PK-7 gRPC | ⬜ | zrpc → Kratos grpc |
+| PK-8 退役 goctl 默认链 | ✅ | `make verify-kratos-rollout-pk8` |
+| PK-9 传输铺轨 | ✅ | rollout_percent=100 |
+
+**每 PR 回归**：`make verify-kratos-rollout-regression` · 发版前 `…-regression-full`
 
 手册：[kratos-pure-rollout.md](./kratos-pure-rollout.md)
 
@@ -156,7 +166,7 @@
 
 | 优先级 | 项 | 说明 |
 |--------|-----|------|
-| FS-9b | `pb/super` 包名重命名 | PK-5 或独立 sprint |
+| FS-9b | `pb/moe` + `pb/super` 垫片 | **phase 1 ✅** `make verify-sprint-fs9b` |
 | 可选 | `voicegw` | 信令 biz 化，见 [voice-ws-boundary.md](./voice-ws-boundary.md) |
 
 ---
@@ -166,7 +176,14 @@
 ```bash
 cd backend
 
-# PK 纯 Kratos（PK-1 + PK-2 完成）
+# PK 每 PR / 发版回归
+make verify-kratos-rollout-regression
+make verify-kratos-rollout-regression-full   # 含 F 全量，耗时长
+
+# PK 纯 Kratos ≥70% / ≥85%
+make verify-kratos-rollout-70
+make verify-kratos-rollout-85
+make verify-kratos-rollout-pk3
 make verify-kratos-rollout-pk12
 make verify-kratos-rollout-pk0
 make verify-kratos-100

@@ -17,7 +17,7 @@ syntax = "proto3";
 
 package super;
 
-option go_package = "backend/rpc/pb/super";
+option go_package = "backend/rpc/pb/moe";
 
 import "defs/common.proto";
 

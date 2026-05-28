@@ -88,16 +88,26 @@ func NewAdminRunMoeAgentOnceLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *AdminRunMoeAgentOnceLogic) AdminRunMoeAgentOnce(in *super.AdminRunMoeAgentOnceReq) (*super.AdminRunMoeAgentOnceResp, error) {
-	result, err := l.svcCtx.MoeAdmin.RunAgentOnce(l.ctx, strings.TrimSpace(in.AgentKey))
+	out, err := l.svcCtx.MoeAdmin.RunAgentOnce(l.ctx, strings.TrimSpace(in.AgentKey), in.GetAsync())
 	if err != nil {
 		return nil, errorx.Internal(err.Error())
 	}
-	return &super.AdminRunMoeAgentOnceResp{
-		AgentKey: result.AgentKey,
-		Ok:       result.OK,
-		Detail:   result.Detail,
-		PostId:   result.PostID,
-	}, nil
+	rep := &super.AdminRunMoeAgentOnceResp{
+		AgentKey:       strings.TrimSpace(in.AgentKey),
+		Accepted:       out.Accepted,
+		AlreadyRunning: out.AlreadyRunning,
+	}
+	if out.Accepted || out.AlreadyRunning {
+		return rep, nil
+	}
+	r := out.Result
+	rep.Ok = r.OK
+	rep.Detail = r.Detail
+	rep.PostId = r.PostID
+	if rep.AgentKey == "" {
+		rep.AgentKey = r.AgentKey
+	}
+	return rep, nil
 }
 
 type AdminGetMoeBrainLogic struct {

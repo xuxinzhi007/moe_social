@@ -23,9 +23,22 @@ make gen-moe-conf     # internal/conf/moe/v1
 |----|-------|---------------------|----------|
 | Moe Admin | [moe/v1/moe.proto](./moe/v1/moe.proto) | `moekratospilot` AdminCompat | `kratos_admin_http_enabled` |
 | VIP 只读 | [vip/v1/vip_read.proto](./vip/v1/vip_read.proto) | `RegisterVipCompat` | `kratos_vip_http_enabled` |
-| Admin | [admin/v1/](./admin/v1/) | 待 PK-3 | — |
+| Admin Insights | [admin/v1/admin_insights.proto](./admin/v1/admin_insights.proto) | PK-3 ✅ | `kratos_admin_insights_http_enabled` |
 | LLM | [llm/v1/](./llm/v1/) | 待 PK-3 | — |
+
+## 完整纯 Kratos（PK-6）
+
+**HTTP 全量（已落地）**：`make gen-moekratospilot-get` → `routes_native_gen.go`（域原生）+ `routes_bridge_gen.go`（遗留 bridge）。
+
+```bash
+make gen-api                 # routes 变更后
+make gen-moekratospilot-get  # 同步 GET 到 Kratos
+make verify-kratos-rollout-pk6
+```
+
+POST/写路径与域 proto 见 [kratos-pure-complete-migration.md](../docs/dev/kratos-pure-complete-migration.md)。
 
 ## 相关文档
 
 - [docs/dev/kratos-pure-rollout.md](../docs/dev/kratos-pure-rollout.md)
+- [docs/dev/kratos-pure-complete-migration.md](../docs/dev/kratos-pure-complete-migration.md)

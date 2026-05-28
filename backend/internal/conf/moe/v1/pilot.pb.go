@@ -93,8 +93,17 @@ type PilotMoe struct {
 	KratosAdminBaseUrl     string                 `protobuf:"bytes,6,opt,name=kratos_admin_base_url,json=kratosAdminBaseUrl,proto3" json:"kratos_admin_base_url,omitempty"`
 	// PK-2: VIP ListPlans 灰度到试点 HTTP（同 kratos_admin_base_url）
 	KratosVipHttpEnabled bool `protobuf:"varint,7,opt,name=kratos_vip_http_enabled,json=kratosVipHttpEnabled,proto3" json:"kratos_vip_http_enabled,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// PK-3: Admin Insights 读灰度（ai chat / analytics / topic-tags）
+	KratosAdminInsightsHttpEnabled bool `protobuf:"varint,8,opt,name=kratos_admin_insights_http_enabled,json=kratosAdminInsightsHttpEnabled,proto3" json:"kratos_admin_insights_http_enabled,omitempty"`
+	// PK-4: moe-social 对外 Kratos HTTP（go-zero 绑内网端口回退）
+	KratosHttpFrontEnabled bool  `protobuf:"varint,9,opt,name=kratos_http_front_enabled,json=kratosHttpFrontEnabled,proto3" json:"kratos_http_front_enabled,omitempty"`
+	KratosInternalHttpPort int32 `protobuf:"varint,10,opt,name=kratos_internal_http_port,json=kratosInternalHttpPort,proto3" json:"kratos_internal_http_port,omitempty"`
+	// PK-7: moe-social 内 zrpc 由 kratos.App 管理生命周期
+	KratosGrpcManaged bool `protobuf:"varint,11,opt,name=kratos_grpc_managed,json=kratosGrpcManaged,proto3" json:"kratos_grpc_managed,omitempty"`
+	// PK-8/9: 生产纯 Kratos（:8888 Kratos HTTP + kratos 管理 gRPC，无 go-zero 对外）
+	KratosPureEnabled bool `protobuf:"varint,12,opt,name=kratos_pure_enabled,json=kratosPureEnabled,proto3" json:"kratos_pure_enabled,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *PilotMoe) Reset() {
@@ -172,6 +181,41 @@ func (x *PilotMoe) GetKratosAdminBaseUrl() string {
 func (x *PilotMoe) GetKratosVipHttpEnabled() bool {
 	if x != nil {
 		return x.KratosVipHttpEnabled
+	}
+	return false
+}
+
+func (x *PilotMoe) GetKratosAdminInsightsHttpEnabled() bool {
+	if x != nil {
+		return x.KratosAdminInsightsHttpEnabled
+	}
+	return false
+}
+
+func (x *PilotMoe) GetKratosHttpFrontEnabled() bool {
+	if x != nil {
+		return x.KratosHttpFrontEnabled
+	}
+	return false
+}
+
+func (x *PilotMoe) GetKratosInternalHttpPort() int32 {
+	if x != nil {
+		return x.KratosInternalHttpPort
+	}
+	return 0
+}
+
+func (x *PilotMoe) GetKratosGrpcManaged() bool {
+	if x != nil {
+		return x.KratosGrpcManaged
+	}
+	return false
+}
+
+func (x *PilotMoe) GetKratosPureEnabled() bool {
+	if x != nil {
+		return x.KratosPureEnabled
 	}
 	return false
 }
@@ -375,7 +419,7 @@ const file_internal_conf_moe_v1_pilot_proto_rawDesc = "" +
 	"\vPilotServer\x12\x1b\n" +
 	"\tgrpc_addr\x18\x01 \x01(\tR\bgrpcAddr\x12\x1b\n" +
 	"\thttp_addr\x18\x02 \x01(\tR\bhttpAddr\x12,\n" +
-	"\x12super_rpc_endpoint\x18\x03 \x01(\tR\x10superRpcEndpoint\"\xca\x02\n" +
+	"\x12super_rpc_endpoint\x18\x03 \x01(\tR\x10superRpcEndpoint\"\xec\x04\n" +
 	"\bPilotMoe\x12$\n" +
 	"\x0eapi_in_process\x18\x01 \x01(\bR\fapiInProcess\x12*\n" +
 	"\x11register_moe_grpc\x18\x02 \x01(\bR\x0fregisterMoeGrpc\x12 \n" +
@@ -384,7 +428,13 @@ const file_internal_conf_moe_v1_pilot_proto_rawDesc = "" +
 	"\x0esingle_process\x18\x04 \x01(\bR\rsingleProcess\x129\n" +
 	"\x19kratos_admin_http_enabled\x18\x05 \x01(\bR\x16kratosAdminHttpEnabled\x121\n" +
 	"\x15kratos_admin_base_url\x18\x06 \x01(\tR\x12kratosAdminBaseUrl\x125\n" +
-	"\x17kratos_vip_http_enabled\x18\a \x01(\bR\x14kratosVipHttpEnabled\"\xe2\x01\n" +
+	"\x17kratos_vip_http_enabled\x18\a \x01(\bR\x14kratosVipHttpEnabled\x12J\n" +
+	"\"kratos_admin_insights_http_enabled\x18\b \x01(\bR\x1ekratosAdminInsightsHttpEnabled\x129\n" +
+	"\x19kratos_http_front_enabled\x18\t \x01(\bR\x16kratosHttpFrontEnabled\x129\n" +
+	"\x19kratos_internal_http_port\x18\n" +
+	" \x01(\x05R\x16kratosInternalHttpPort\x12.\n" +
+	"\x13kratos_grpc_managed\x18\v \x01(\bR\x11kratosGrpcManaged\x12.\n" +
+	"\x13kratos_pure_enabled\x18\f \x01(\bR\x11kratosPureEnabled\"\xe2\x01\n" +
 	"\x0fProductionPorts\x12#\n" +
 	"\runified_entry\x18\x01 \x01(\tR\funifiedEntry\x12,\n" +
 	"\x12external_http_port\x18\x02 \x01(\tR\x10externalHttpPort\x12,\n" +

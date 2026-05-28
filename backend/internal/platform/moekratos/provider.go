@@ -8,6 +8,7 @@ import (
 	moeconfv1 "backend/internal/conf/moe/v1"
 	"backend/internal/platform/moeconf"
 	"backend/internal/platform/moewiring"
+	adminapp "backend/internal/service/admin"
 	moeadmin "backend/internal/service/moe"
 	"backend/rpc/pb/super"
 	"backend/utils"
@@ -66,20 +67,28 @@ func provideHTTPAddr(opts Options, bootstrap *moeconfv1.Bootstrap) string {
 	return ":19032"
 }
 
-func provideAdmin(db *gorm.DB, superRPC string) (*moeadmin.AdminService, error) {
-	return buildAdmin(superRPC, db)
+func provideMoeAdmin(db *gorm.DB, superRPC string) (*moeadmin.AdminService, error) {
+	return buildMoeAdmin(superRPC, db)
+}
+
+func provideAdminApp(db *gorm.DB) (*adminapp.AppService, error) {
+	if db == nil {
+		return nil, fmt.Errorf("admin app: db is nil")
+	}
+	return adminapp.New(db), nil
 }
 
 func buildApp(
 	bootstrap *moeconfv1.Bootstrap,
-	admin *moeadmin.AdminService,
+	moeAdmin *moeadmin.AdminService,
+	adminApp *adminapp.AppService,
 	grpcAddr, httpAddr, superRPC string,
 	db *gorm.DB,
 ) *App {
-	return newApp(bootstrap, admin, grpcAddr, httpAddr, superRPC, db)
+	return newApp(bootstrap, moeAdmin, adminApp, grpcAddr, httpAddr, superRPC, db)
 }
 
-func buildAdmin(superRPC string, db *gorm.DB) (*moeadmin.AdminService, error) {
+func buildMoeAdmin(superRPC string, db *gorm.DB) (*moeadmin.AdminService, error) {
 	if superRPC == "" {
 		return moeadmin.NewAdmin(db), nil
 	}

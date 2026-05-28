@@ -9,12 +9,12 @@ import (
 
 	"backend/rpc/internal/logic"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 type SuperServer struct {
 	svcCtx *svc.ServiceContext
-	super.UnimplementedSuperServer
+	moe.UnimplementedSuperServer
 }
 
 func NewSuperServer(svcCtx *svc.ServiceContext) *SuperServer {
@@ -24,1049 +24,1049 @@ func NewSuperServer(svcCtx *svc.ServiceContext) *SuperServer {
 }
 
 // --- domain: landing (2 rpc) ---
-func (s *SuperServer) SubmitLandingFeedback(ctx context.Context, in *super.SubmitLandingFeedbackReq) (*super.SubmitLandingFeedbackResp, error) {
+func (s *SuperServer) SubmitLandingFeedback(ctx context.Context, in *moe.SubmitLandingFeedbackReq) (*moe.SubmitLandingFeedbackResp, error) {
 	l := logic.NewSubmitLandingFeedbackLogic(ctx, s.svcCtx)
 	return l.SubmitLandingFeedback(in)
 }
 
-func (s *SuperServer) ListLandingFeedback(ctx context.Context, in *super.ListLandingFeedbackReq) (*super.ListLandingFeedbackResp, error) {
+func (s *SuperServer) ListLandingFeedback(ctx context.Context, in *moe.ListLandingFeedbackReq) (*moe.ListLandingFeedbackResp, error) {
 	l := logic.NewListLandingFeedbackLogic(ctx, s.svcCtx)
 	return l.ListLandingFeedback(in)
 }
 
 // --- domain: user (47 rpc) ---
-func (s *SuperServer) Register(ctx context.Context, in *super.RegisterReq) (*super.RegisterResp, error) {
+func (s *SuperServer) Register(ctx context.Context, in *moe.RegisterReq) (*moe.RegisterResp, error) {
 	l := logic.NewRegisterLogic(ctx, s.svcCtx)
 	return l.Register(in)
 }
 
-func (s *SuperServer) Login(ctx context.Context, in *super.LoginReq) (*super.LoginResp, error) {
+func (s *SuperServer) Login(ctx context.Context, in *moe.LoginReq) (*moe.LoginResp, error) {
 	l := logic.NewLoginLogic(ctx, s.svcCtx)
 	return l.Login(in)
 }
 
-func (s *SuperServer) GetUserInfo(ctx context.Context, in *super.GetUserInfoReq) (*super.GetUserInfoResp, error) {
+func (s *SuperServer) GetUserInfo(ctx context.Context, in *moe.GetUserInfoReq) (*moe.GetUserInfoResp, error) {
 	l := logic.NewGetUserInfoLogic(ctx, s.svcCtx)
 	return l.GetUserInfo(in)
 }
 
-func (s *SuperServer) GetUser(ctx context.Context, in *super.GetUserReq) (*super.GetUserResp, error) {
+func (s *SuperServer) GetUser(ctx context.Context, in *moe.GetUserReq) (*moe.GetUserResp, error) {
 	l := logic.NewGetUserLogic(ctx, s.svcCtx)
 	return l.GetUser(in)
 }
 
-func (s *SuperServer) GetUserByEmail(ctx context.Context, in *super.GetUserByEmailReq) (*super.GetUserByEmailResp, error) {
+func (s *SuperServer) GetUserByEmail(ctx context.Context, in *moe.GetUserByEmailReq) (*moe.GetUserByEmailResp, error) {
 	l := logic.NewGetUserByEmailLogic(ctx, s.svcCtx)
 	return l.GetUserByEmail(in)
 }
 
-func (s *SuperServer) UpdateUserInfo(ctx context.Context, in *super.UpdateUserInfoReq) (*super.UpdateUserInfoResp, error) {
+func (s *SuperServer) UpdateUserInfo(ctx context.Context, in *moe.UpdateUserInfoReq) (*moe.UpdateUserInfoResp, error) {
 	l := logic.NewUpdateUserInfoLogic(ctx, s.svcCtx)
 	return l.UpdateUserInfo(in)
 }
 
-func (s *SuperServer) UpdateUserPassword(ctx context.Context, in *super.UpdateUserPasswordReq) (*super.UpdateUserPasswordResp, error) {
+func (s *SuperServer) UpdateUserPassword(ctx context.Context, in *moe.UpdateUserPasswordReq) (*moe.UpdateUserPasswordResp, error) {
 	l := logic.NewUpdateUserPasswordLogic(ctx, s.svcCtx)
 	return l.UpdateUserPassword(in)
 }
 
-func (s *SuperServer) ResetPassword(ctx context.Context, in *super.ResetPasswordReq) (*super.ResetPasswordResp, error) {
+func (s *SuperServer) ResetPassword(ctx context.Context, in *moe.ResetPasswordReq) (*moe.ResetPasswordResp, error) {
 	l := logic.NewResetPasswordLogic(ctx, s.svcCtx)
 	return l.ResetPassword(in)
 }
 
-func (s *SuperServer) DeleteUser(ctx context.Context, in *super.DeleteUserReq) (*super.DeleteUserResp, error) {
+func (s *SuperServer) DeleteUser(ctx context.Context, in *moe.DeleteUserReq) (*moe.DeleteUserResp, error) {
 	l := logic.NewDeleteUserLogic(ctx, s.svcCtx)
 	return l.DeleteUser(in)
 }
 
-func (s *SuperServer) GetUsers(ctx context.Context, in *super.GetUsersReq) (*super.GetUsersResp, error) {
+func (s *SuperServer) GetUsers(ctx context.Context, in *moe.GetUsersReq) (*moe.GetUsersResp, error) {
 	l := logic.NewGetUsersLogic(ctx, s.svcCtx)
 	return l.GetUsers(in)
 }
 
-func (s *SuperServer) GetUserCount(ctx context.Context, in *super.GetUserCountReq) (*super.GetUserCountResp, error) {
+func (s *SuperServer) GetUserCount(ctx context.Context, in *moe.GetUserCountReq) (*moe.GetUserCountResp, error) {
 	l := logic.NewGetUserCountLogic(ctx, s.svcCtx)
 	return l.GetUserCount(in)
 }
 
-func (s *SuperServer) BindFeishu(ctx context.Context, in *super.BindFeishuReq) (*super.BindFeishuResp, error) {
+func (s *SuperServer) BindFeishu(ctx context.Context, in *moe.BindFeishuReq) (*moe.BindFeishuResp, error) {
 	l := logic.NewBindFeishuLogic(ctx, s.svcCtx)
 	return l.BindFeishu(in)
 }
 
-func (s *SuperServer) UnbindFeishu(ctx context.Context, in *super.UnbindFeishuReq) (*super.UnbindFeishuResp, error) {
+func (s *SuperServer) UnbindFeishu(ctx context.Context, in *moe.UnbindFeishuReq) (*moe.UnbindFeishuResp, error) {
 	l := logic.NewUnbindFeishuLogic(ctx, s.svcCtx)
 	return l.UnbindFeishu(in)
 }
 
-func (s *SuperServer) SendFeishuTestCard(ctx context.Context, in *super.SendFeishuTestCardReq) (*super.SendFeishuTestCardResp, error) {
+func (s *SuperServer) SendFeishuTestCard(ctx context.Context, in *moe.SendFeishuTestCardReq) (*moe.SendFeishuTestCardResp, error) {
 	l := logic.NewSendFeishuTestCardLogic(ctx, s.svcCtx)
 	return l.SendFeishuTestCard(in)
 }
 
-func (s *SuperServer) FeishuAuthorizeURL(ctx context.Context, in *super.FeishuAuthorizeURLReq) (*super.FeishuAuthorizeURLResp, error) {
+func (s *SuperServer) FeishuAuthorizeURL(ctx context.Context, in *moe.FeishuAuthorizeURLReq) (*moe.FeishuAuthorizeURLResp, error) {
 	l := logic.NewFeishuAuthorizeURLLogic(ctx, s.svcCtx)
 	return l.FeishuAuthorizeURL(in)
 }
 
-func (s *SuperServer) FeishuLogin(ctx context.Context, in *super.FeishuLoginReq) (*super.FeishuLoginResp, error) {
+func (s *SuperServer) FeishuLogin(ctx context.Context, in *moe.FeishuLoginReq) (*moe.FeishuLoginResp, error) {
 	l := logic.NewFeishuLoginLogic(ctx, s.svcCtx)
 	return l.FeishuLogin(in)
 }
 
-func (s *SuperServer) WechatAuthorizeURL(ctx context.Context, in *super.WechatAuthorizeURLReq) (*super.WechatAuthorizeURLResp, error) {
+func (s *SuperServer) WechatAuthorizeURL(ctx context.Context, in *moe.WechatAuthorizeURLReq) (*moe.WechatAuthorizeURLResp, error) {
 	l := logic.NewWechatAuthorizeURLLogic(ctx, s.svcCtx)
 	return l.WechatAuthorizeURL(in)
 }
 
-func (s *SuperServer) WechatLogin(ctx context.Context, in *super.WechatLoginReq) (*super.WechatLoginResp, error) {
+func (s *SuperServer) WechatLogin(ctx context.Context, in *moe.WechatLoginReq) (*moe.WechatLoginResp, error) {
 	l := logic.NewWechatLoginLogic(ctx, s.svcCtx)
 	return l.WechatLogin(in)
 }
 
-func (s *SuperServer) GetUserMemories(ctx context.Context, in *super.GetUserMemoriesReq) (*super.GetUserMemoriesResp, error) {
+func (s *SuperServer) GetUserMemories(ctx context.Context, in *moe.GetUserMemoriesReq) (*moe.GetUserMemoriesResp, error) {
 	l := logic.NewGetUserMemoriesLogic(ctx, s.svcCtx)
 	return l.GetUserMemories(in)
 }
 
-func (s *SuperServer) SyncUserDevice(ctx context.Context, in *super.SyncUserDeviceReq) (*super.SyncUserDeviceResp, error) {
+func (s *SuperServer) SyncUserDevice(ctx context.Context, in *moe.SyncUserDeviceReq) (*moe.SyncUserDeviceResp, error) {
 	l := logic.NewSyncUserDeviceLogic(ctx, s.svcCtx)
 	return l.SyncUserDevice(in)
 }
 
-func (s *SuperServer) ListUserDevices(ctx context.Context, in *super.ListUserDevicesReq) (*super.ListUserDevicesResp, error) {
+func (s *SuperServer) ListUserDevices(ctx context.Context, in *moe.ListUserDevicesReq) (*moe.ListUserDevicesResp, error) {
 	l := logic.NewListUserDevicesLogic(ctx, s.svcCtx)
 	return l.ListUserDevices(in)
 }
 
-func (s *SuperServer) GetNotifications(ctx context.Context, in *super.GetNotificationsReq) (*super.GetNotificationsResp, error) {
+func (s *SuperServer) GetNotifications(ctx context.Context, in *moe.GetNotificationsReq) (*moe.GetNotificationsResp, error) {
 	l := logic.NewGetNotificationsLogic(ctx, s.svcCtx)
 	return l.GetNotifications(in)
 }
 
-func (s *SuperServer) GetUnreadCount(ctx context.Context, in *super.GetUnreadCountReq) (*super.GetUnreadCountResp, error) {
+func (s *SuperServer) GetUnreadCount(ctx context.Context, in *moe.GetUnreadCountReq) (*moe.GetUnreadCountResp, error) {
 	l := logic.NewGetUnreadCountLogic(ctx, s.svcCtx)
 	return l.GetUnreadCount(in)
 }
 
-func (s *SuperServer) ReadNotification(ctx context.Context, in *super.ReadNotificationReq) (*super.ReadNotificationResp, error) {
+func (s *SuperServer) ReadNotification(ctx context.Context, in *moe.ReadNotificationReq) (*moe.ReadNotificationResp, error) {
 	l := logic.NewReadNotificationLogic(ctx, s.svcCtx)
 	return l.ReadNotification(in)
 }
 
-func (s *SuperServer) ReadAllNotifications(ctx context.Context, in *super.ReadAllNotificationsReq) (*super.ReadAllNotificationsResp, error) {
+func (s *SuperServer) ReadAllNotifications(ctx context.Context, in *moe.ReadAllNotificationsReq) (*moe.ReadAllNotificationsResp, error) {
 	l := logic.NewReadAllNotificationsLogic(ctx, s.svcCtx)
 	return l.ReadAllNotifications(in)
 }
 
-func (s *SuperServer) CreateNotification(ctx context.Context, in *super.CreateNotificationReq) (*super.CreateNotificationResp, error) {
+func (s *SuperServer) CreateNotification(ctx context.Context, in *moe.CreateNotificationReq) (*moe.CreateNotificationResp, error) {
 	l := logic.NewCreateNotificationLogic(ctx, s.svcCtx)
 	return l.CreateNotification(in)
 }
 
-func (s *SuperServer) SendPrivateMessage(ctx context.Context, in *super.SendPrivateMessageReq) (*super.SendPrivateMessageResp, error) {
+func (s *SuperServer) SendPrivateMessage(ctx context.Context, in *moe.SendPrivateMessageReq) (*moe.SendPrivateMessageResp, error) {
 	l := logic.NewSendPrivateMessageLogic(ctx, s.svcCtx)
 	return l.SendPrivateMessage(in)
 }
 
-func (s *SuperServer) ListPrivateMessages(ctx context.Context, in *super.ListPrivateMessagesReq) (*super.ListPrivateMessagesResp, error) {
+func (s *SuperServer) ListPrivateMessages(ctx context.Context, in *moe.ListPrivateMessagesReq) (*moe.ListPrivateMessagesResp, error) {
 	l := logic.NewListPrivateMessagesLogic(ctx, s.svcCtx)
 	return l.ListPrivateMessages(in)
 }
 
-func (s *SuperServer) ListPrivateConversations(ctx context.Context, in *super.ListPrivateConversationsReq) (*super.ListPrivateConversationsResp, error) {
+func (s *SuperServer) ListPrivateConversations(ctx context.Context, in *moe.ListPrivateConversationsReq) (*moe.ListPrivateConversationsResp, error) {
 	l := logic.NewListPrivateConversationsLogic(ctx, s.svcCtx)
 	return l.ListPrivateConversations(in)
 }
 
-func (s *SuperServer) Recharge(ctx context.Context, in *super.RechargeReq) (*super.RechargeResp, error) {
+func (s *SuperServer) Recharge(ctx context.Context, in *moe.RechargeReq) (*moe.RechargeResp, error) {
 	l := logic.NewRechargeLogic(ctx, s.svcCtx)
 	return l.Recharge(in)
 }
 
-func (s *SuperServer) GetTransactions(ctx context.Context, in *super.GetTransactionsReq) (*super.GetTransactionsResp, error) {
+func (s *SuperServer) GetTransactions(ctx context.Context, in *moe.GetTransactionsReq) (*moe.GetTransactionsResp, error) {
 	l := logic.NewGetTransactionsLogic(ctx, s.svcCtx)
 	return l.GetTransactions(in)
 }
 
-func (s *SuperServer) GetTransaction(ctx context.Context, in *super.GetTransactionReq) (*super.GetTransactionResp, error) {
+func (s *SuperServer) GetTransaction(ctx context.Context, in *moe.GetTransactionReq) (*moe.GetTransactionResp, error) {
 	l := logic.NewGetTransactionLogic(ctx, s.svcCtx)
 	return l.GetTransaction(in)
 }
 
-func (s *SuperServer) FollowUser(ctx context.Context, in *super.FollowUserReq) (*super.FollowUserResp, error) {
+func (s *SuperServer) FollowUser(ctx context.Context, in *moe.FollowUserReq) (*moe.FollowUserResp, error) {
 	l := logic.NewFollowUserLogic(ctx, s.svcCtx)
 	return l.FollowUser(in)
 }
 
-func (s *SuperServer) UnfollowUser(ctx context.Context, in *super.UnfollowUserReq) (*super.FollowUserResp, error) {
+func (s *SuperServer) UnfollowUser(ctx context.Context, in *moe.UnfollowUserReq) (*moe.FollowUserResp, error) {
 	l := logic.NewUnfollowUserLogic(ctx, s.svcCtx)
 	return l.UnfollowUser(in)
 }
 
-func (s *SuperServer) GetFollowings(ctx context.Context, in *super.GetFollowingsReq) (*super.GetFollowingsResp, error) {
+func (s *SuperServer) GetFollowings(ctx context.Context, in *moe.GetFollowingsReq) (*moe.GetFollowingsResp, error) {
 	l := logic.NewGetFollowingsLogic(ctx, s.svcCtx)
 	return l.GetFollowings(in)
 }
 
-func (s *SuperServer) GetFollowers(ctx context.Context, in *super.GetFollowersReq) (*super.GetFollowersResp, error) {
+func (s *SuperServer) GetFollowers(ctx context.Context, in *moe.GetFollowersReq) (*moe.GetFollowersResp, error) {
 	l := logic.NewGetFollowersLogic(ctx, s.svcCtx)
 	return l.GetFollowers(in)
 }
 
-func (s *SuperServer) CheckFollow(ctx context.Context, in *super.CheckFollowReq) (*super.CheckFollowResp, error) {
+func (s *SuperServer) CheckFollow(ctx context.Context, in *moe.CheckFollowReq) (*moe.CheckFollowResp, error) {
 	l := logic.NewCheckFollowLogic(ctx, s.svcCtx)
 	return l.CheckFollow(in)
 }
 
-func (s *SuperServer) SendFriendRequest(ctx context.Context, in *super.SendFriendRequestReq) (*super.SendFriendRequestResp, error) {
+func (s *SuperServer) SendFriendRequest(ctx context.Context, in *moe.SendFriendRequestReq) (*moe.SendFriendRequestResp, error) {
 	l := logic.NewSendFriendRequestLogic(ctx, s.svcCtx)
 	return l.SendFriendRequest(in)
 }
 
-func (s *SuperServer) ListIncomingFriendRequests(ctx context.Context, in *super.ListIncomingFriendRequestsReq) (*super.ListIncomingFriendRequestsResp, error) {
+func (s *SuperServer) ListIncomingFriendRequests(ctx context.Context, in *moe.ListIncomingFriendRequestsReq) (*moe.ListIncomingFriendRequestsResp, error) {
 	l := logic.NewListIncomingFriendRequestsLogic(ctx, s.svcCtx)
 	return l.ListIncomingFriendRequests(in)
 }
 
-func (s *SuperServer) ListOutgoingFriendRequests(ctx context.Context, in *super.ListOutgoingFriendRequestsReq) (*super.ListOutgoingFriendRequestsResp, error) {
+func (s *SuperServer) ListOutgoingFriendRequests(ctx context.Context, in *moe.ListOutgoingFriendRequestsReq) (*moe.ListOutgoingFriendRequestsResp, error) {
 	l := logic.NewListOutgoingFriendRequestsLogic(ctx, s.svcCtx)
 	return l.ListOutgoingFriendRequests(in)
 }
 
-func (s *SuperServer) AcceptFriendRequest(ctx context.Context, in *super.AcceptFriendRequestReq) (*super.AcceptFriendRequestResp, error) {
+func (s *SuperServer) AcceptFriendRequest(ctx context.Context, in *moe.AcceptFriendRequestReq) (*moe.AcceptFriendRequestResp, error) {
 	l := logic.NewAcceptFriendRequestLogic(ctx, s.svcCtx)
 	return l.AcceptFriendRequest(in)
 }
 
-func (s *SuperServer) RejectFriendRequest(ctx context.Context, in *super.RejectFriendRequestReq) (*super.RejectFriendRequestResp, error) {
+func (s *SuperServer) RejectFriendRequest(ctx context.Context, in *moe.RejectFriendRequestReq) (*moe.RejectFriendRequestResp, error) {
 	l := logic.NewRejectFriendRequestLogic(ctx, s.svcCtx)
 	return l.RejectFriendRequest(in)
 }
 
-func (s *SuperServer) ListFriends(ctx context.Context, in *super.ListFriendsReq) (*super.ListFriendsResp, error) {
+func (s *SuperServer) ListFriends(ctx context.Context, in *moe.ListFriendsReq) (*moe.ListFriendsResp, error) {
 	l := logic.NewListFriendsLogic(ctx, s.svcCtx)
 	return l.ListFriends(in)
 }
 
-func (s *SuperServer) GetFriendRelation(ctx context.Context, in *super.GetFriendRelationReq) (*super.GetFriendRelationResp, error) {
+func (s *SuperServer) GetFriendRelation(ctx context.Context, in *moe.GetFriendRelationReq) (*moe.GetFriendRelationResp, error) {
 	l := logic.NewGetFriendRelationLogic(ctx, s.svcCtx)
 	return l.GetFriendRelation(in)
 }
 
-func (s *SuperServer) GetUserAvatar(ctx context.Context, in *super.GetUserAvatarReq) (*super.GetUserAvatarResp, error) {
+func (s *SuperServer) GetUserAvatar(ctx context.Context, in *moe.GetUserAvatarReq) (*moe.GetUserAvatarResp, error) {
 	l := logic.NewGetUserAvatarLogic(ctx, s.svcCtx)
 	return l.GetUserAvatar(in)
 }
 
-func (s *SuperServer) UpdateUserAvatar(ctx context.Context, in *super.UpdateUserAvatarReq) (*super.UpdateUserAvatarResp, error) {
+func (s *SuperServer) UpdateUserAvatar(ctx context.Context, in *moe.UpdateUserAvatarReq) (*moe.UpdateUserAvatarResp, error) {
 	l := logic.NewUpdateUserAvatarLogic(ctx, s.svcCtx)
 	return l.UpdateUserAvatar(in)
 }
 
-func (s *SuperServer) GetUserUnlockedAchievements(ctx context.Context, in *super.GetUserUnlockedAchievementsReq) (*super.GetUserUnlockedAchievementsResp, error) {
+func (s *SuperServer) GetUserUnlockedAchievements(ctx context.Context, in *moe.GetUserUnlockedAchievementsReq) (*moe.GetUserUnlockedAchievementsResp, error) {
 	l := logic.NewGetUserUnlockedAchievementsLogic(ctx, s.svcCtx)
 	return l.GetUserUnlockedAchievements(in)
 }
 
 // --- domain: admin (77 rpc) ---
-func (s *SuperServer) AdminDashboard(ctx context.Context, in *super.AdminDashboardReq) (*super.AdminDashboardResp, error) {
+func (s *SuperServer) AdminDashboard(ctx context.Context, in *moe.AdminDashboardReq) (*moe.AdminDashboardResp, error) {
 	l := logic.NewAdminDashboardLogic(ctx, s.svcCtx)
 	return l.AdminDashboard(in)
 }
 
-func (s *SuperServer) AdminLogin(ctx context.Context, in *super.AdminLoginReq) (*super.AdminLoginResp, error) {
+func (s *SuperServer) AdminLogin(ctx context.Context, in *moe.AdminLoginReq) (*moe.AdminLoginResp, error) {
 	l := logic.NewAdminLoginLogic(ctx, s.svcCtx)
 	return l.AdminLogin(in)
 }
 
-func (s *SuperServer) AdminListUsers(ctx context.Context, in *super.AdminListUsersReq) (*super.AdminListUsersResp, error) {
+func (s *SuperServer) AdminListUsers(ctx context.Context, in *moe.AdminListUsersReq) (*moe.AdminListUsersResp, error) {
 	l := logic.NewAdminListUsersLogic(ctx, s.svcCtx)
 	return l.AdminListUsers(in)
 }
 
-func (s *SuperServer) AdminGetUser(ctx context.Context, in *super.AdminGetUserReq) (*super.AdminGetUserResp, error) {
+func (s *SuperServer) AdminGetUser(ctx context.Context, in *moe.AdminGetUserReq) (*moe.AdminGetUserResp, error) {
 	l := logic.NewAdminGetUserLogic(ctx, s.svcCtx)
 	return l.AdminGetUser(in)
 }
 
-func (s *SuperServer) AdminUpdateUser(ctx context.Context, in *super.AdminUpdateUserReq) (*super.AdminUpdateUserResp, error) {
+func (s *SuperServer) AdminUpdateUser(ctx context.Context, in *moe.AdminUpdateUserReq) (*moe.AdminUpdateUserResp, error) {
 	l := logic.NewAdminUpdateUserLogic(ctx, s.svcCtx)
 	return l.AdminUpdateUser(in)
 }
 
-func (s *SuperServer) AdminListVipPlans(ctx context.Context, in *super.AdminListVipPlansReq) (*super.AdminListVipPlansResp, error) {
+func (s *SuperServer) AdminListVipPlans(ctx context.Context, in *moe.AdminListVipPlansReq) (*moe.AdminListVipPlansResp, error) {
 	l := logic.NewAdminListVipPlansLogic(ctx, s.svcCtx)
 	return l.AdminListVipPlans(in)
 }
 
-func (s *SuperServer) AdminGetVipPlan(ctx context.Context, in *super.AdminGetVipPlanReq) (*super.AdminGetVipPlanResp, error) {
+func (s *SuperServer) AdminGetVipPlan(ctx context.Context, in *moe.AdminGetVipPlanReq) (*moe.AdminGetVipPlanResp, error) {
 	l := logic.NewAdminGetVipPlanLogic(ctx, s.svcCtx)
 	return l.AdminGetVipPlan(in)
 }
 
-func (s *SuperServer) AdminUpdateVipPlan(ctx context.Context, in *super.AdminUpdateVipPlanReq) (*super.AdminUpdateVipPlanResp, error) {
+func (s *SuperServer) AdminUpdateVipPlan(ctx context.Context, in *moe.AdminUpdateVipPlanReq) (*moe.AdminUpdateVipPlanResp, error) {
 	l := logic.NewAdminUpdateVipPlanLogic(ctx, s.svcCtx)
 	return l.AdminUpdateVipPlan(in)
 }
 
-func (s *SuperServer) AdminDeleteVipPlan(ctx context.Context, in *super.AdminDeleteVipPlanReq) (*super.AdminDeleteVipPlanResp, error) {
+func (s *SuperServer) AdminDeleteVipPlan(ctx context.Context, in *moe.AdminDeleteVipPlanReq) (*moe.AdminDeleteVipPlanResp, error) {
 	l := logic.NewAdminDeleteVipPlanLogic(ctx, s.svcCtx)
 	return l.AdminDeleteVipPlan(in)
 }
 
-func (s *SuperServer) AdminBootstrapVipPlans(ctx context.Context, in *super.AdminBootstrapVipPlansReq) (*super.AdminBootstrapVipPlansResp, error) {
+func (s *SuperServer) AdminBootstrapVipPlans(ctx context.Context, in *moe.AdminBootstrapVipPlansReq) (*moe.AdminBootstrapVipPlansResp, error) {
 	l := logic.NewAdminBootstrapVipPlansLogic(ctx, s.svcCtx)
 	return l.AdminBootstrapVipPlans(in)
 }
 
-func (s *SuperServer) AdminBootstrapAccount(ctx context.Context, in *super.AdminBootstrapAccountReq) (*super.AdminBootstrapAccountResp, error) {
+func (s *SuperServer) AdminBootstrapAccount(ctx context.Context, in *moe.AdminBootstrapAccountReq) (*moe.AdminBootstrapAccountResp, error) {
 	l := logic.NewAdminBootstrapAccountLogic(ctx, s.svcCtx)
 	return l.AdminBootstrapAccount(in)
 }
 
-func (s *SuperServer) AdminBootstrapAchievements(ctx context.Context, in *super.AdminBootstrapAchievementsReq) (*super.AdminBootstrapAchievementsResp, error) {
+func (s *SuperServer) AdminBootstrapAchievements(ctx context.Context, in *moe.AdminBootstrapAchievementsReq) (*moe.AdminBootstrapAchievementsResp, error) {
 	l := logic.NewAdminBootstrapAchievementsLogic(ctx, s.svcCtx)
 	return l.AdminBootstrapAchievements(in)
 }
 
-func (s *SuperServer) AdminListGifts(ctx context.Context, in *super.AdminListGiftsReq) (*super.AdminListGiftsResp, error) {
+func (s *SuperServer) AdminListGifts(ctx context.Context, in *moe.AdminListGiftsReq) (*moe.AdminListGiftsResp, error) {
 	l := logic.NewAdminListGiftsLogic(ctx, s.svcCtx)
 	return l.AdminListGifts(in)
 }
 
-func (s *SuperServer) AdminGetGift(ctx context.Context, in *super.AdminGetGiftReq) (*super.AdminGetGiftResp, error) {
+func (s *SuperServer) AdminGetGift(ctx context.Context, in *moe.AdminGetGiftReq) (*moe.AdminGetGiftResp, error) {
 	l := logic.NewAdminGetGiftLogic(ctx, s.svcCtx)
 	return l.AdminGetGift(in)
 }
 
-func (s *SuperServer) AdminCreateGift(ctx context.Context, in *super.AdminCreateGiftReq) (*super.AdminCreateGiftResp, error) {
+func (s *SuperServer) AdminCreateGift(ctx context.Context, in *moe.AdminCreateGiftReq) (*moe.AdminCreateGiftResp, error) {
 	l := logic.NewAdminCreateGiftLogic(ctx, s.svcCtx)
 	return l.AdminCreateGift(in)
 }
 
-func (s *SuperServer) AdminUpdateGift(ctx context.Context, in *super.AdminUpdateGiftReq) (*super.AdminUpdateGiftResp, error) {
+func (s *SuperServer) AdminUpdateGift(ctx context.Context, in *moe.AdminUpdateGiftReq) (*moe.AdminUpdateGiftResp, error) {
 	l := logic.NewAdminUpdateGiftLogic(ctx, s.svcCtx)
 	return l.AdminUpdateGift(in)
 }
 
-func (s *SuperServer) AdminDeleteGift(ctx context.Context, in *super.AdminDeleteGiftReq) (*super.AdminDeleteGiftResp, error) {
+func (s *SuperServer) AdminDeleteGift(ctx context.Context, in *moe.AdminDeleteGiftReq) (*moe.AdminDeleteGiftResp, error) {
 	l := logic.NewAdminDeleteGiftLogic(ctx, s.svcCtx)
 	return l.AdminDeleteGift(in)
 }
 
-func (s *SuperServer) AdminBootstrapGifts(ctx context.Context, in *super.AdminBootstrapGiftsReq) (*super.AdminBootstrapGiftsResp, error) {
+func (s *SuperServer) AdminBootstrapGifts(ctx context.Context, in *moe.AdminBootstrapGiftsReq) (*moe.AdminBootstrapGiftsResp, error) {
 	l := logic.NewAdminBootstrapGiftsLogic(ctx, s.svcCtx)
 	return l.AdminBootstrapGifts(in)
 }
 
-func (s *SuperServer) AdminDedupeGifts(ctx context.Context, in *super.AdminDedupeGiftsReq) (*super.AdminDedupeGiftsResp, error) {
+func (s *SuperServer) AdminDedupeGifts(ctx context.Context, in *moe.AdminDedupeGiftsReq) (*moe.AdminDedupeGiftsResp, error) {
 	l := logic.NewAdminDedupeGiftsLogic(ctx, s.svcCtx)
 	return l.AdminDedupeGifts(in)
 }
 
-func (s *SuperServer) AdminListVipOrders(ctx context.Context, in *super.AdminListVipOrdersReq) (*super.AdminListVipOrdersResp, error) {
+func (s *SuperServer) AdminListVipOrders(ctx context.Context, in *moe.AdminListVipOrdersReq) (*moe.AdminListVipOrdersResp, error) {
 	l := logic.NewAdminListVipOrdersLogic(ctx, s.svcCtx)
 	return l.AdminListVipOrders(in)
 }
 
-func (s *SuperServer) AdminListGiftPurchaseOrders(ctx context.Context, in *super.AdminListGiftPurchaseOrdersReq) (*super.AdminListGiftPurchaseOrdersResp, error) {
+func (s *SuperServer) AdminListGiftPurchaseOrders(ctx context.Context, in *moe.AdminListGiftPurchaseOrdersReq) (*moe.AdminListGiftPurchaseOrdersResp, error) {
 	l := logic.NewAdminListGiftPurchaseOrdersLogic(ctx, s.svcCtx)
 	return l.AdminListGiftPurchaseOrders(in)
 }
 
-func (s *SuperServer) AdminListPosts(ctx context.Context, in *super.AdminListPostsReq) (*super.AdminListPostsResp, error) {
+func (s *SuperServer) AdminListPosts(ctx context.Context, in *moe.AdminListPostsReq) (*moe.AdminListPostsResp, error) {
 	l := logic.NewAdminListPostsLogic(ctx, s.svcCtx)
 	return l.AdminListPosts(in)
 }
 
-func (s *SuperServer) AdminDeletePost(ctx context.Context, in *super.AdminDeletePostReq) (*super.AdminDeletePostResp, error) {
+func (s *SuperServer) AdminDeletePost(ctx context.Context, in *moe.AdminDeletePostReq) (*moe.AdminDeletePostResp, error) {
 	l := logic.NewAdminDeletePostLogic(ctx, s.svcCtx)
 	return l.AdminDeletePost(in)
 }
 
-func (s *SuperServer) AdminListComments(ctx context.Context, in *super.AdminListCommentsReq) (*super.AdminListCommentsResp, error) {
+func (s *SuperServer) AdminListComments(ctx context.Context, in *moe.AdminListCommentsReq) (*moe.AdminListCommentsResp, error) {
 	l := logic.NewAdminListCommentsLogic(ctx, s.svcCtx)
 	return l.AdminListComments(in)
 }
 
-func (s *SuperServer) AdminDeleteComment(ctx context.Context, in *super.AdminDeleteCommentReq) (*super.AdminDeleteCommentResp, error) {
+func (s *SuperServer) AdminDeleteComment(ctx context.Context, in *moe.AdminDeleteCommentReq) (*moe.AdminDeleteCommentResp, error) {
 	l := logic.NewAdminDeleteCommentLogic(ctx, s.svcCtx)
 	return l.AdminDeleteComment(in)
 }
 
-func (s *SuperServer) AdminListPostReports(ctx context.Context, in *super.AdminListPostReportsReq) (*super.AdminListPostReportsResp, error) {
+func (s *SuperServer) AdminListPostReports(ctx context.Context, in *moe.AdminListPostReportsReq) (*moe.AdminListPostReportsResp, error) {
 	l := logic.NewAdminListPostReportsLogic(ctx, s.svcCtx)
 	return l.AdminListPostReports(in)
 }
 
-func (s *SuperServer) AdminListGroups(ctx context.Context, in *super.AdminListGroupsReq) (*super.AdminListGroupsResp, error) {
+func (s *SuperServer) AdminListGroups(ctx context.Context, in *moe.AdminListGroupsReq) (*moe.AdminListGroupsResp, error) {
 	l := logic.NewAdminListGroupsLogic(ctx, s.svcCtx)
 	return l.AdminListGroups(in)
 }
 
-func (s *SuperServer) AdminDeleteGroup(ctx context.Context, in *super.AdminDeleteGroupReq) (*super.AdminDeleteGroupResp, error) {
+func (s *SuperServer) AdminDeleteGroup(ctx context.Context, in *moe.AdminDeleteGroupReq) (*moe.AdminDeleteGroupResp, error) {
 	l := logic.NewAdminDeleteGroupLogic(ctx, s.svcCtx)
 	return l.AdminDeleteGroup(in)
 }
 
-func (s *SuperServer) AdminListAchievements(ctx context.Context, in *super.AdminListAchievementsReq) (*super.AdminListAchievementsResp, error) {
+func (s *SuperServer) AdminListAchievements(ctx context.Context, in *moe.AdminListAchievementsReq) (*moe.AdminListAchievementsResp, error) {
 	l := logic.NewAdminListAchievementsLogic(ctx, s.svcCtx)
 	return l.AdminListAchievements(in)
 }
 
-func (s *SuperServer) AdminBootstrapLevels(ctx context.Context, in *super.AdminBootstrapLevelsReq) (*super.AdminBootstrapLevelsResp, error) {
+func (s *SuperServer) AdminBootstrapLevels(ctx context.Context, in *moe.AdminBootstrapLevelsReq) (*moe.AdminBootstrapLevelsResp, error) {
 	l := logic.NewAdminBootstrapLevelsLogic(ctx, s.svcCtx)
 	return l.AdminBootstrapLevels(in)
 }
 
-func (s *SuperServer) AdminGetGrowthStats(ctx context.Context, in *super.AdminGetGrowthStatsReq) (*super.AdminGetGrowthStatsResp, error) {
+func (s *SuperServer) AdminGetGrowthStats(ctx context.Context, in *moe.AdminGetGrowthStatsReq) (*moe.AdminGetGrowthStatsResp, error) {
 	l := logic.NewAdminGetGrowthStatsLogic(ctx, s.svcCtx)
 	return l.AdminGetGrowthStats(in)
 }
 
-func (s *SuperServer) AdminListLevelConfigs(ctx context.Context, in *super.AdminListLevelConfigsReq) (*super.AdminListLevelConfigsResp, error) {
+func (s *SuperServer) AdminListLevelConfigs(ctx context.Context, in *moe.AdminListLevelConfigsReq) (*moe.AdminListLevelConfigsResp, error) {
 	l := logic.NewAdminListLevelConfigsLogic(ctx, s.svcCtx)
 	return l.AdminListLevelConfigs(in)
 }
 
-func (s *SuperServer) AdminUpdateLevelConfig(ctx context.Context, in *super.AdminUpdateLevelConfigReq) (*super.AdminUpdateLevelConfigResp, error) {
+func (s *SuperServer) AdminUpdateLevelConfig(ctx context.Context, in *moe.AdminUpdateLevelConfigReq) (*moe.AdminUpdateLevelConfigResp, error) {
 	l := logic.NewAdminUpdateLevelConfigLogic(ctx, s.svcCtx)
 	return l.AdminUpdateLevelConfig(in)
 }
 
-func (s *SuperServer) AdminListCheckInRewards(ctx context.Context, in *super.AdminListCheckInRewardsReq) (*super.AdminListCheckInRewardsResp, error) {
+func (s *SuperServer) AdminListCheckInRewards(ctx context.Context, in *moe.AdminListCheckInRewardsReq) (*moe.AdminListCheckInRewardsResp, error) {
 	l := logic.NewAdminListCheckInRewardsLogic(ctx, s.svcCtx)
 	return l.AdminListCheckInRewards(in)
 }
 
-func (s *SuperServer) AdminUpdateCheckInReward(ctx context.Context, in *super.AdminUpdateCheckInRewardReq) (*super.AdminUpdateCheckInRewardResp, error) {
+func (s *SuperServer) AdminUpdateCheckInReward(ctx context.Context, in *moe.AdminUpdateCheckInRewardReq) (*moe.AdminUpdateCheckInRewardResp, error) {
 	l := logic.NewAdminUpdateCheckInRewardLogic(ctx, s.svcCtx)
 	return l.AdminUpdateCheckInReward(in)
 }
 
-func (s *SuperServer) AdminUpdateAchievement(ctx context.Context, in *super.AdminUpdateAchievementReq) (*super.AdminUpdateAchievementResp, error) {
+func (s *SuperServer) AdminUpdateAchievement(ctx context.Context, in *moe.AdminUpdateAchievementReq) (*moe.AdminUpdateAchievementResp, error) {
 	l := logic.NewAdminUpdateAchievementLogic(ctx, s.svcCtx)
 	return l.AdminUpdateAchievement(in)
 }
 
-func (s *SuperServer) AdminGetUserProfile(ctx context.Context, in *super.AdminGetUserProfileReq) (*super.AdminGetUserProfileResp, error) {
+func (s *SuperServer) AdminGetUserProfile(ctx context.Context, in *moe.AdminGetUserProfileReq) (*moe.AdminGetUserProfileResp, error) {
 	l := logic.NewAdminGetUserProfileLogic(ctx, s.svcCtx)
 	return l.AdminGetUserProfile(in)
 }
 
-func (s *SuperServer) AdminListAnnouncements(ctx context.Context, in *super.AdminListAnnouncementsReq) (*super.AdminListAnnouncementsResp, error) {
+func (s *SuperServer) AdminListAnnouncements(ctx context.Context, in *moe.AdminListAnnouncementsReq) (*moe.AdminListAnnouncementsResp, error) {
 	l := logic.NewAdminListAnnouncementsLogic(ctx, s.svcCtx)
 	return l.AdminListAnnouncements(in)
 }
 
-func (s *SuperServer) AdminGetAnnouncement(ctx context.Context, in *super.AdminGetAnnouncementReq) (*super.AdminGetAnnouncementResp, error) {
+func (s *SuperServer) AdminGetAnnouncement(ctx context.Context, in *moe.AdminGetAnnouncementReq) (*moe.AdminGetAnnouncementResp, error) {
 	l := logic.NewAdminGetAnnouncementLogic(ctx, s.svcCtx)
 	return l.AdminGetAnnouncement(in)
 }
 
-func (s *SuperServer) AdminCreateAnnouncement(ctx context.Context, in *super.AdminCreateAnnouncementReq) (*super.AdminCreateAnnouncementResp, error) {
+func (s *SuperServer) AdminCreateAnnouncement(ctx context.Context, in *moe.AdminCreateAnnouncementReq) (*moe.AdminCreateAnnouncementResp, error) {
 	l := logic.NewAdminCreateAnnouncementLogic(ctx, s.svcCtx)
 	return l.AdminCreateAnnouncement(in)
 }
 
-func (s *SuperServer) AdminUpdateAnnouncement(ctx context.Context, in *super.AdminUpdateAnnouncementReq) (*super.AdminUpdateAnnouncementResp, error) {
+func (s *SuperServer) AdminUpdateAnnouncement(ctx context.Context, in *moe.AdminUpdateAnnouncementReq) (*moe.AdminUpdateAnnouncementResp, error) {
 	l := logic.NewAdminUpdateAnnouncementLogic(ctx, s.svcCtx)
 	return l.AdminUpdateAnnouncement(in)
 }
 
-func (s *SuperServer) AdminDeleteAnnouncement(ctx context.Context, in *super.AdminDeleteAnnouncementReq) (*super.AdminDeleteAnnouncementResp, error) {
+func (s *SuperServer) AdminDeleteAnnouncement(ctx context.Context, in *moe.AdminDeleteAnnouncementReq) (*moe.AdminDeleteAnnouncementResp, error) {
 	l := logic.NewAdminDeleteAnnouncementLogic(ctx, s.svcCtx)
 	return l.AdminDeleteAnnouncement(in)
 }
 
-func (s *SuperServer) AdminPublishAnnouncement(ctx context.Context, in *super.AdminPublishAnnouncementReq) (*super.AdminPublishAnnouncementResp, error) {
+func (s *SuperServer) AdminPublishAnnouncement(ctx context.Context, in *moe.AdminPublishAnnouncementReq) (*moe.AdminPublishAnnouncementResp, error) {
 	l := logic.NewAdminPublishAnnouncementLogic(ctx, s.svcCtx)
 	return l.AdminPublishAnnouncement(in)
 }
 
-func (s *SuperServer) AdminBroadcastNotification(ctx context.Context, in *super.AdminBroadcastNotificationReq) (*super.AdminBroadcastNotificationResp, error) {
+func (s *SuperServer) AdminBroadcastNotification(ctx context.Context, in *moe.AdminBroadcastNotificationReq) (*moe.AdminBroadcastNotificationResp, error) {
 	l := logic.NewAdminBroadcastNotificationLogic(ctx, s.svcCtx)
 	return l.AdminBroadcastNotification(in)
 }
 
-func (s *SuperServer) AdminSendNotification(ctx context.Context, in *super.AdminSendNotificationReq) (*super.AdminSendNotificationResp, error) {
+func (s *SuperServer) AdminSendNotification(ctx context.Context, in *moe.AdminSendNotificationReq) (*moe.AdminSendNotificationResp, error) {
 	l := logic.NewAdminSendNotificationLogic(ctx, s.svcCtx)
 	return l.AdminSendNotification(in)
 }
 
-func (s *SuperServer) AdminListAiAgents(ctx context.Context, in *super.AdminListAiAgentsReq) (*super.AdminListAiAgentsResp, error) {
+func (s *SuperServer) AdminListAiAgents(ctx context.Context, in *moe.AdminListAiAgentsReq) (*moe.AdminListAiAgentsResp, error) {
 	l := logic.NewAdminListAiAgentsLogic(ctx, s.svcCtx)
 	return l.AdminListAiAgents(in)
 }
 
-func (s *SuperServer) AdminDeleteAiAgent(ctx context.Context, in *super.AdminDeleteAiAgentReq) (*super.AdminDeleteAiAgentResp, error) {
+func (s *SuperServer) AdminDeleteAiAgent(ctx context.Context, in *moe.AdminDeleteAiAgentReq) (*moe.AdminDeleteAiAgentResp, error) {
 	l := logic.NewAdminDeleteAiAgentLogic(ctx, s.svcCtx)
 	return l.AdminDeleteAiAgent(in)
 }
 
-func (s *SuperServer) AdminListFollows(ctx context.Context, in *super.AdminListFollowsReq) (*super.AdminListFollowsResp, error) {
+func (s *SuperServer) AdminListFollows(ctx context.Context, in *moe.AdminListFollowsReq) (*moe.AdminListFollowsResp, error) {
 	l := logic.NewAdminListFollowsLogic(ctx, s.svcCtx)
 	return l.AdminListFollows(in)
 }
 
-func (s *SuperServer) AdminListFriendRequests(ctx context.Context, in *super.AdminListFriendRequestsReq) (*super.AdminListFriendRequestsResp, error) {
+func (s *SuperServer) AdminListFriendRequests(ctx context.Context, in *moe.AdminListFriendRequestsReq) (*moe.AdminListFriendRequestsResp, error) {
 	l := logic.NewAdminListFriendRequestsLogic(ctx, s.svcCtx)
 	return l.AdminListFriendRequests(in)
 }
 
-func (s *SuperServer) AdminDeleteFollow(ctx context.Context, in *super.AdminDeleteFollowReq) (*super.AdminDeleteFollowResp, error) {
+func (s *SuperServer) AdminDeleteFollow(ctx context.Context, in *moe.AdminDeleteFollowReq) (*moe.AdminDeleteFollowResp, error) {
 	l := logic.NewAdminDeleteFollowLogic(ctx, s.svcCtx)
 	return l.AdminDeleteFollow(in)
 }
 
-func (s *SuperServer) AdminListAccounts(ctx context.Context, in *super.AdminListAccountsReq) (*super.AdminListAccountsResp, error) {
+func (s *SuperServer) AdminListAccounts(ctx context.Context, in *moe.AdminListAccountsReq) (*moe.AdminListAccountsResp, error) {
 	l := logic.NewAdminListAccountsLogic(ctx, s.svcCtx)
 	return l.AdminListAccounts(in)
 }
 
-func (s *SuperServer) AdminCreateAccount(ctx context.Context, in *super.AdminCreateAccountReq) (*super.AdminCreateAccountResp, error) {
+func (s *SuperServer) AdminCreateAccount(ctx context.Context, in *moe.AdminCreateAccountReq) (*moe.AdminCreateAccountResp, error) {
 	l := logic.NewAdminCreateAccountLogic(ctx, s.svcCtx)
 	return l.AdminCreateAccount(in)
 }
 
-func (s *SuperServer) AdminUpdateAccount(ctx context.Context, in *super.AdminUpdateAccountReq) (*super.AdminUpdateAccountResp, error) {
+func (s *SuperServer) AdminUpdateAccount(ctx context.Context, in *moe.AdminUpdateAccountReq) (*moe.AdminUpdateAccountResp, error) {
 	l := logic.NewAdminUpdateAccountLogic(ctx, s.svcCtx)
 	return l.AdminUpdateAccount(in)
 }
 
-func (s *SuperServer) AdminDeleteAccount(ctx context.Context, in *super.AdminDeleteAccountReq) (*super.AdminDeleteAccountResp, error) {
+func (s *SuperServer) AdminDeleteAccount(ctx context.Context, in *moe.AdminDeleteAccountReq) (*moe.AdminDeleteAccountResp, error) {
 	l := logic.NewAdminDeleteAccountLogic(ctx, s.svcCtx)
 	return l.AdminDeleteAccount(in)
 }
 
-func (s *SuperServer) AdminListMenus(ctx context.Context, in *super.AdminListMenusReq) (*super.AdminListMenusResp, error) {
+func (s *SuperServer) AdminListMenus(ctx context.Context, in *moe.AdminListMenusReq) (*moe.AdminListMenusResp, error) {
 	l := logic.NewAdminListMenusLogic(ctx, s.svcCtx)
 	return l.AdminListMenus(in)
 }
 
-func (s *SuperServer) AdminUpsertMenu(ctx context.Context, in *super.AdminUpsertMenuReq) (*super.AdminUpsertMenuResp, error) {
+func (s *SuperServer) AdminUpsertMenu(ctx context.Context, in *moe.AdminUpsertMenuReq) (*moe.AdminUpsertMenuResp, error) {
 	l := logic.NewAdminUpsertMenuLogic(ctx, s.svcCtx)
 	return l.AdminUpsertMenu(in)
 }
 
-func (s *SuperServer) AdminDeleteMenu(ctx context.Context, in *super.AdminDeleteMenuReq) (*super.AdminDeleteMenuResp, error) {
+func (s *SuperServer) AdminDeleteMenu(ctx context.Context, in *moe.AdminDeleteMenuReq) (*moe.AdminDeleteMenuResp, error) {
 	l := logic.NewAdminDeleteMenuLogic(ctx, s.svcCtx)
 	return l.AdminDeleteMenu(in)
 }
 
-func (s *SuperServer) AdminBootstrapMenus(ctx context.Context, in *super.AdminBootstrapMenusReq) (*super.AdminBootstrapMenusResp, error) {
+func (s *SuperServer) AdminBootstrapMenus(ctx context.Context, in *moe.AdminBootstrapMenusReq) (*moe.AdminBootstrapMenusResp, error) {
 	l := logic.NewAdminBootstrapMenusLogic(ctx, s.svcCtx)
 	return l.AdminBootstrapMenus(in)
 }
 
-func (s *SuperServer) AdminListMemories(ctx context.Context, in *super.AdminListMemoriesReq) (*super.AdminListMemoriesResp, error) {
+func (s *SuperServer) AdminListMemories(ctx context.Context, in *moe.AdminListMemoriesReq) (*moe.AdminListMemoriesResp, error) {
 	l := logic.NewAdminListMemoriesLogic(ctx, s.svcCtx)
 	return l.AdminListMemories(in)
 }
 
-func (s *SuperServer) AdminGetMemoryStats(ctx context.Context, in *super.AdminGetMemoryStatsReq) (*super.AdminGetMemoryStatsResp, error) {
+func (s *SuperServer) AdminGetMemoryStats(ctx context.Context, in *moe.AdminGetMemoryStatsReq) (*moe.AdminGetMemoryStatsResp, error) {
 	l := logic.NewAdminGetMemoryStatsLogic(ctx, s.svcCtx)
 	return l.AdminGetMemoryStats(in)
 }
 
-func (s *SuperServer) AdminDeleteMemory(ctx context.Context, in *super.AdminDeleteMemoryReq) (*super.AdminDeleteMemoryResp, error) {
+func (s *SuperServer) AdminDeleteMemory(ctx context.Context, in *moe.AdminDeleteMemoryReq) (*moe.AdminDeleteMemoryResp, error) {
 	l := logic.NewAdminDeleteMemoryLogic(ctx, s.svcCtx)
 	return l.AdminDeleteMemory(in)
 }
 
-func (s *SuperServer) AdminListAiChatSessions(ctx context.Context, in *super.AdminListAiChatSessionsReq) (*super.AdminListAiChatSessionsResp, error) {
+func (s *SuperServer) AdminListAiChatSessions(ctx context.Context, in *moe.AdminListAiChatSessionsReq) (*moe.AdminListAiChatSessionsResp, error) {
 	l := logic.NewAdminListAiChatSessionsLogic(ctx, s.svcCtx)
 	return l.AdminListAiChatSessions(in)
 }
 
-func (s *SuperServer) AdminListAiChatMessages(ctx context.Context, in *super.AdminListAiChatMessagesReq) (*super.AdminListAiChatMessagesResp, error) {
+func (s *SuperServer) AdminListAiChatMessages(ctx context.Context, in *moe.AdminListAiChatMessagesReq) (*moe.AdminListAiChatMessagesResp, error) {
 	l := logic.NewAdminListAiChatMessagesLogic(ctx, s.svcCtx)
 	return l.AdminListAiChatMessages(in)
 }
 
-func (s *SuperServer) AdminExportAiChatMessages(ctx context.Context, in *super.AdminExportAiChatMessagesReq) (*super.AdminExportAiChatMessagesResp, error) {
+func (s *SuperServer) AdminExportAiChatMessages(ctx context.Context, in *moe.AdminExportAiChatMessagesReq) (*moe.AdminExportAiChatMessagesResp, error) {
 	l := logic.NewAdminExportAiChatMessagesLogic(ctx, s.svcCtx)
 	return l.AdminExportAiChatMessages(in)
 }
 
-func (s *SuperServer) AdminAnalyticsOverview(ctx context.Context, in *super.AdminGetMemoryStatsReq) (*super.AdminAnalyticsOverviewResp, error) {
+func (s *SuperServer) AdminAnalyticsOverview(ctx context.Context, in *moe.AdminGetMemoryStatsReq) (*moe.AdminAnalyticsOverviewResp, error) {
 	l := logic.NewAdminAnalyticsOverviewLogic(ctx, s.svcCtx)
 	return l.AdminAnalyticsOverview(in)
 }
 
-func (s *SuperServer) AdminListTopicTags(ctx context.Context, in *super.AdminListTopicTagsReq) (*super.AdminListTopicTagsResp, error) {
+func (s *SuperServer) AdminListTopicTags(ctx context.Context, in *moe.AdminListTopicTagsReq) (*moe.AdminListTopicTagsResp, error) {
 	l := logic.NewAdminListTopicTagsLogic(ctx, s.svcCtx)
 	return l.AdminListTopicTags(in)
 }
 
-func (s *SuperServer) AdminCreateTopicTag(ctx context.Context, in *super.AdminCreateTopicTagReq) (*super.AdminCreateTopicTagResp, error) {
+func (s *SuperServer) AdminCreateTopicTag(ctx context.Context, in *moe.AdminCreateTopicTagReq) (*moe.AdminCreateTopicTagResp, error) {
 	l := logic.NewAdminCreateTopicTagLogic(ctx, s.svcCtx)
 	return l.AdminCreateTopicTag(in)
 }
 
-func (s *SuperServer) AdminUpdateTopicTag(ctx context.Context, in *super.AdminUpdateTopicTagReq) (*super.AdminUpdateTopicTagResp, error) {
+func (s *SuperServer) AdminUpdateTopicTag(ctx context.Context, in *moe.AdminUpdateTopicTagReq) (*moe.AdminUpdateTopicTagResp, error) {
 	l := logic.NewAdminUpdateTopicTagLogic(ctx, s.svcCtx)
 	return l.AdminUpdateTopicTag(in)
 }
 
-func (s *SuperServer) AdminDeleteTopicTag(ctx context.Context, in *super.AdminDeleteTopicTagReq) (*super.AdminDeleteTopicTagResp, error) {
+func (s *SuperServer) AdminDeleteTopicTag(ctx context.Context, in *moe.AdminDeleteTopicTagReq) (*moe.AdminDeleteTopicTagResp, error) {
 	l := logic.NewAdminDeleteTopicTagLogic(ctx, s.svcCtx)
 	return l.AdminDeleteTopicTag(in)
 }
 
-func (s *SuperServer) AdminBootstrapTopicTags(ctx context.Context, in *super.AdminBootstrapTopicTagsReq) (*super.AdminBootstrapTopicTagsResp, error) {
+func (s *SuperServer) AdminBootstrapTopicTags(ctx context.Context, in *moe.AdminBootstrapTopicTagsReq) (*moe.AdminBootstrapTopicTagsResp, error) {
 	l := logic.NewAdminBootstrapTopicTagsLogic(ctx, s.svcCtx)
 	return l.AdminBootstrapTopicTags(in)
 }
 
-func (s *SuperServer) AdminListTagDictionary(ctx context.Context, in *super.AdminListTagDictionaryReq) (*super.AdminListTagDictionaryResp, error) {
+func (s *SuperServer) AdminListTagDictionary(ctx context.Context, in *moe.AdminListTagDictionaryReq) (*moe.AdminListTagDictionaryResp, error) {
 	l := logic.NewAdminListTagDictionaryLogic(ctx, s.svcCtx)
 	return l.AdminListTagDictionary(in)
 }
 
-func (s *SuperServer) AdminCreateTagDictionary(ctx context.Context, in *super.AdminCreateTagDictionaryReq) (*super.AdminCreateTagDictionaryResp, error) {
+func (s *SuperServer) AdminCreateTagDictionary(ctx context.Context, in *moe.AdminCreateTagDictionaryReq) (*moe.AdminCreateTagDictionaryResp, error) {
 	l := logic.NewAdminCreateTagDictionaryLogic(ctx, s.svcCtx)
 	return l.AdminCreateTagDictionary(in)
 }
 
-func (s *SuperServer) AdminUpdateTagDictionary(ctx context.Context, in *super.AdminUpdateTagDictionaryReq) (*super.AdminUpdateTagDictionaryResp, error) {
+func (s *SuperServer) AdminUpdateTagDictionary(ctx context.Context, in *moe.AdminUpdateTagDictionaryReq) (*moe.AdminUpdateTagDictionaryResp, error) {
 	l := logic.NewAdminUpdateTagDictionaryLogic(ctx, s.svcCtx)
 	return l.AdminUpdateTagDictionary(in)
 }
 
-func (s *SuperServer) AdminDeleteTagDictionary(ctx context.Context, in *super.AdminDeleteTagDictionaryReq) (*super.AdminDeleteTagDictionaryResp, error) {
+func (s *SuperServer) AdminDeleteTagDictionary(ctx context.Context, in *moe.AdminDeleteTagDictionaryReq) (*moe.AdminDeleteTagDictionaryResp, error) {
 	l := logic.NewAdminDeleteTagDictionaryLogic(ctx, s.svcCtx)
 	return l.AdminDeleteTagDictionary(in)
 }
 
-func (s *SuperServer) AdminGetSchemaCatalog(ctx context.Context, in *super.AdminGetSchemaCatalogReq) (*super.AdminGetSchemaCatalogResp, error) {
+func (s *SuperServer) AdminGetSchemaCatalog(ctx context.Context, in *moe.AdminGetSchemaCatalogReq) (*moe.AdminGetSchemaCatalogResp, error) {
 	l := logic.NewAdminGetSchemaCatalogLogic(ctx, s.svcCtx)
 	return l.AdminGetSchemaCatalog(in)
 }
 
-func (s *SuperServer) AdminListAuditLogs(ctx context.Context, in *super.AdminListAuditLogsReq) (*super.AdminListAuditLogsResp, error) {
+func (s *SuperServer) AdminListAuditLogs(ctx context.Context, in *moe.AdminListAuditLogsReq) (*moe.AdminListAuditLogsResp, error) {
 	l := logic.NewAdminListAuditLogsLogic(ctx, s.svcCtx)
 	return l.AdminListAuditLogs(in)
 }
 
-func (s *SuperServer) RecordAdminAuditLog(ctx context.Context, in *super.RecordAdminAuditLogReq) (*super.RecordAdminAuditLogResp, error) {
+func (s *SuperServer) RecordAdminAuditLog(ctx context.Context, in *moe.RecordAdminAuditLogReq) (*moe.RecordAdminAuditLogResp, error) {
 	l := logic.NewRecordAdminAuditLogLogic(ctx, s.svcCtx)
 	return l.RecordAdminAuditLog(in)
 }
 
 // --- domain: vip (12 rpc) ---
-func (s *SuperServer) UpdateUserVip(ctx context.Context, in *super.UpdateUserVipReq) (*super.UpdateUserVipResp, error) {
+func (s *SuperServer) UpdateUserVip(ctx context.Context, in *moe.UpdateUserVipReq) (*moe.UpdateUserVipResp, error) {
 	l := logic.NewUpdateUserVipLogic(ctx, s.svcCtx)
 	return l.UpdateUserVip(in)
 }
 
-func (s *SuperServer) GetVipPlans(ctx context.Context, in *super.GetVipPlansReq) (*super.GetVipPlansResp, error) {
+func (s *SuperServer) GetVipPlans(ctx context.Context, in *moe.GetVipPlansReq) (*moe.GetVipPlansResp, error) {
 	l := logic.NewGetVipPlansLogic(ctx, s.svcCtx)
 	return l.GetVipPlans(in)
 }
 
-func (s *SuperServer) GetVipPlan(ctx context.Context, in *super.GetVipPlanReq) (*super.GetVipPlanResp, error) {
+func (s *SuperServer) GetVipPlan(ctx context.Context, in *moe.GetVipPlanReq) (*moe.GetVipPlanResp, error) {
 	l := logic.NewGetVipPlanLogic(ctx, s.svcCtx)
 	return l.GetVipPlan(in)
 }
 
-func (s *SuperServer) CreateVipPlan(ctx context.Context, in *super.CreateVipPlanReq) (*super.CreateVipPlanResp, error) {
+func (s *SuperServer) CreateVipPlan(ctx context.Context, in *moe.CreateVipPlanReq) (*moe.CreateVipPlanResp, error) {
 	l := logic.NewCreateVipPlanLogic(ctx, s.svcCtx)
 	return l.CreateVipPlan(in)
 }
 
-func (s *SuperServer) CreateVipOrder(ctx context.Context, in *super.CreateVipOrderReq) (*super.CreateVipOrderResp, error) {
+func (s *SuperServer) CreateVipOrder(ctx context.Context, in *moe.CreateVipOrderReq) (*moe.CreateVipOrderResp, error) {
 	l := logic.NewCreateVipOrderLogic(ctx, s.svcCtx)
 	return l.CreateVipOrder(in)
 }
 
-func (s *SuperServer) GetVipOrders(ctx context.Context, in *super.GetVipOrdersReq) (*super.GetVipOrdersResp, error) {
+func (s *SuperServer) GetVipOrders(ctx context.Context, in *moe.GetVipOrdersReq) (*moe.GetVipOrdersResp, error) {
 	l := logic.NewGetVipOrdersLogic(ctx, s.svcCtx)
 	return l.GetVipOrders(in)
 }
 
-func (s *SuperServer) GetVipRecords(ctx context.Context, in *super.GetVipRecordsReq) (*super.GetVipRecordsResp, error) {
+func (s *SuperServer) GetVipRecords(ctx context.Context, in *moe.GetVipRecordsReq) (*moe.GetVipRecordsResp, error) {
 	l := logic.NewGetVipRecordsLogic(ctx, s.svcCtx)
 	return l.GetVipRecords(in)
 }
 
-func (s *SuperServer) GetUserActiveVipRecord(ctx context.Context, in *super.GetUserActiveVipRecordReq) (*super.GetUserActiveVipRecordResp, error) {
+func (s *SuperServer) GetUserActiveVipRecord(ctx context.Context, in *moe.GetUserActiveVipRecordReq) (*moe.GetUserActiveVipRecordResp, error) {
 	l := logic.NewGetUserActiveVipRecordLogic(ctx, s.svcCtx)
 	return l.GetUserActiveVipRecord(in)
 }
 
-func (s *SuperServer) GetUserVipStatus(ctx context.Context, in *super.GetUserVipStatusReq) (*super.GetUserVipStatusResp, error) {
+func (s *SuperServer) GetUserVipStatus(ctx context.Context, in *moe.GetUserVipStatusReq) (*moe.GetUserVipStatusResp, error) {
 	l := logic.NewGetUserVipStatusLogic(ctx, s.svcCtx)
 	return l.GetUserVipStatus(in)
 }
 
-func (s *SuperServer) CheckUserVip(ctx context.Context, in *super.CheckUserVipReq) (*super.CheckUserVipResp, error) {
+func (s *SuperServer) CheckUserVip(ctx context.Context, in *moe.CheckUserVipReq) (*moe.CheckUserVipResp, error) {
 	l := logic.NewCheckUserVipLogic(ctx, s.svcCtx)
 	return l.CheckUserVip(in)
 }
 
-func (s *SuperServer) UpdateAutoRenew(ctx context.Context, in *super.UpdateAutoRenewReq) (*super.UpdateAutoRenewResp, error) {
+func (s *SuperServer) UpdateAutoRenew(ctx context.Context, in *moe.UpdateAutoRenewReq) (*moe.UpdateAutoRenewResp, error) {
 	l := logic.NewUpdateAutoRenewLogic(ctx, s.svcCtx)
 	return l.UpdateAutoRenew(in)
 }
 
-func (s *SuperServer) SyncUserVipStatus(ctx context.Context, in *super.SyncUserVipStatusReq) (*super.SyncUserVipStatusResp, error) {
+func (s *SuperServer) SyncUserVipStatus(ctx context.Context, in *moe.SyncUserVipStatusReq) (*moe.SyncUserVipStatusResp, error) {
 	l := logic.NewSyncUserVipStatusLogic(ctx, s.svcCtx)
 	return l.SyncUserVipStatus(in)
 }
 
 // --- domain: social (27 rpc) ---
-func (s *SuperServer) GetPosts(ctx context.Context, in *super.GetPostsReq) (*super.GetPostsResp, error) {
+func (s *SuperServer) GetPosts(ctx context.Context, in *moe.GetPostsReq) (*moe.GetPostsResp, error) {
 	l := logic.NewGetPostsLogic(ctx, s.svcCtx)
 	return l.GetPosts(in)
 }
 
-func (s *SuperServer) GetPost(ctx context.Context, in *super.GetPostReq) (*super.GetPostResp, error) {
+func (s *SuperServer) GetPost(ctx context.Context, in *moe.GetPostReq) (*moe.GetPostResp, error) {
 	l := logic.NewGetPostLogic(ctx, s.svcCtx)
 	return l.GetPost(in)
 }
 
-func (s *SuperServer) CreatePost(ctx context.Context, in *super.CreatePostReq) (*super.CreatePostResp, error) {
+func (s *SuperServer) CreatePost(ctx context.Context, in *moe.CreatePostReq) (*moe.CreatePostResp, error) {
 	l := logic.NewCreatePostLogic(ctx, s.svcCtx)
 	return l.CreatePost(in)
 }
 
-func (s *SuperServer) UpdatePost(ctx context.Context, in *super.UpdatePostReq) (*super.UpdatePostResp, error) {
+func (s *SuperServer) UpdatePost(ctx context.Context, in *moe.UpdatePostReq) (*moe.UpdatePostResp, error) {
 	l := logic.NewUpdatePostLogic(ctx, s.svcCtx)
 	return l.UpdatePost(in)
 }
 
-func (s *SuperServer) DeletePost(ctx context.Context, in *super.DeletePostReq) (*super.DeletePostResp, error) {
+func (s *SuperServer) DeletePost(ctx context.Context, in *moe.DeletePostReq) (*moe.DeletePostResp, error) {
 	l := logic.NewDeletePostLogic(ctx, s.svcCtx)
 	return l.DeletePost(in)
 }
 
-func (s *SuperServer) ReportPost(ctx context.Context, in *super.ReportPostReq) (*super.ReportPostResp, error) {
+func (s *SuperServer) ReportPost(ctx context.Context, in *moe.ReportPostReq) (*moe.ReportPostResp, error) {
 	l := logic.NewReportPostLogic(ctx, s.svcCtx)
 	return l.ReportPost(in)
 }
 
-func (s *SuperServer) LikePost(ctx context.Context, in *super.LikePostReq) (*super.LikePostResp, error) {
+func (s *SuperServer) LikePost(ctx context.Context, in *moe.LikePostReq) (*moe.LikePostResp, error) {
 	l := logic.NewLikePostLogic(ctx, s.svcCtx)
 	return l.LikePost(in)
 }
 
-func (s *SuperServer) GetPostComments(ctx context.Context, in *super.GetPostCommentsReq) (*super.GetPostCommentsResp, error) {
+func (s *SuperServer) GetPostComments(ctx context.Context, in *moe.GetPostCommentsReq) (*moe.GetPostCommentsResp, error) {
 	l := logic.NewGetPostCommentsLogic(ctx, s.svcCtx)
 	return l.GetPostComments(in)
 }
 
-func (s *SuperServer) CreateComment(ctx context.Context, in *super.CreateCommentReq) (*super.CreateCommentResp, error) {
+func (s *SuperServer) CreateComment(ctx context.Context, in *moe.CreateCommentReq) (*moe.CreateCommentResp, error) {
 	l := logic.NewCreateCommentLogic(ctx, s.svcCtx)
 	return l.CreateComment(in)
 }
 
-func (s *SuperServer) LikeComment(ctx context.Context, in *super.LikeCommentReq) (*super.LikeCommentResp, error) {
+func (s *SuperServer) LikeComment(ctx context.Context, in *moe.LikeCommentReq) (*moe.LikeCommentResp, error) {
 	l := logic.NewLikeCommentLogic(ctx, s.svcCtx)
 	return l.LikeComment(in)
 }
 
-func (s *SuperServer) CreateGroup(ctx context.Context, in *super.CreateGroupReq) (*super.CreateGroupResp, error) {
+func (s *SuperServer) CreateGroup(ctx context.Context, in *moe.CreateGroupReq) (*moe.CreateGroupResp, error) {
 	l := logic.NewCreateGroupLogic(ctx, s.svcCtx)
 	return l.CreateGroup(in)
 }
 
-func (s *SuperServer) GetGroup(ctx context.Context, in *super.GetGroupReq) (*super.GetGroupResp, error) {
+func (s *SuperServer) GetGroup(ctx context.Context, in *moe.GetGroupReq) (*moe.GetGroupResp, error) {
 	l := logic.NewGetGroupLogic(ctx, s.svcCtx)
 	return l.GetGroup(in)
 }
 
-func (s *SuperServer) GetGroups(ctx context.Context, in *super.GetGroupsReq) (*super.GetGroupsResp, error) {
+func (s *SuperServer) GetGroups(ctx context.Context, in *moe.GetGroupsReq) (*moe.GetGroupsResp, error) {
 	l := logic.NewGetGroupsLogic(ctx, s.svcCtx)
 	return l.GetGroups(in)
 }
 
-func (s *SuperServer) UpdateGroup(ctx context.Context, in *super.UpdateGroupReq) (*super.UpdateGroupResp, error) {
+func (s *SuperServer) UpdateGroup(ctx context.Context, in *moe.UpdateGroupReq) (*moe.UpdateGroupResp, error) {
 	l := logic.NewUpdateGroupLogic(ctx, s.svcCtx)
 	return l.UpdateGroup(in)
 }
 
-func (s *SuperServer) DeleteGroup(ctx context.Context, in *super.DeleteGroupReq) (*super.DeleteGroupResp, error) {
+func (s *SuperServer) DeleteGroup(ctx context.Context, in *moe.DeleteGroupReq) (*moe.DeleteGroupResp, error) {
 	l := logic.NewDeleteGroupLogic(ctx, s.svcCtx)
 	return l.DeleteGroup(in)
 }
 
-func (s *SuperServer) JoinGroup(ctx context.Context, in *super.JoinGroupReq) (*super.JoinGroupResp, error) {
+func (s *SuperServer) JoinGroup(ctx context.Context, in *moe.JoinGroupReq) (*moe.JoinGroupResp, error) {
 	l := logic.NewJoinGroupLogic(ctx, s.svcCtx)
 	return l.JoinGroup(in)
 }
 
-func (s *SuperServer) LeaveGroup(ctx context.Context, in *super.LeaveGroupReq) (*super.LeaveGroupResp, error) {
+func (s *SuperServer) LeaveGroup(ctx context.Context, in *moe.LeaveGroupReq) (*moe.LeaveGroupResp, error) {
 	l := logic.NewLeaveGroupLogic(ctx, s.svcCtx)
 	return l.LeaveGroup(in)
 }
 
-func (s *SuperServer) GetGroupMembers(ctx context.Context, in *super.GetGroupMembersReq) (*super.GetGroupMembersResp, error) {
+func (s *SuperServer) GetGroupMembers(ctx context.Context, in *moe.GetGroupMembersReq) (*moe.GetGroupMembersResp, error) {
 	l := logic.NewGetGroupMembersLogic(ctx, s.svcCtx)
 	return l.GetGroupMembers(in)
 }
 
-func (s *SuperServer) GetUserGroups(ctx context.Context, in *super.GetUserGroupsReq) (*super.GetUserGroupsResp, error) {
+func (s *SuperServer) GetUserGroups(ctx context.Context, in *moe.GetUserGroupsReq) (*moe.GetUserGroupsResp, error) {
 	l := logic.NewGetUserGroupsLogic(ctx, s.svcCtx)
 	return l.GetUserGroups(in)
 }
 
-func (s *SuperServer) CreateGroupPost(ctx context.Context, in *super.CreateGroupPostReq) (*super.CreateGroupPostResp, error) {
+func (s *SuperServer) CreateGroupPost(ctx context.Context, in *moe.CreateGroupPostReq) (*moe.CreateGroupPostResp, error) {
 	l := logic.NewCreateGroupPostLogic(ctx, s.svcCtx)
 	return l.CreateGroupPost(in)
 }
 
-func (s *SuperServer) GetGroupPosts(ctx context.Context, in *super.GetGroupPostsReq) (*super.GetGroupPostsResp, error) {
+func (s *SuperServer) GetGroupPosts(ctx context.Context, in *moe.GetGroupPostsReq) (*moe.GetGroupPostsResp, error) {
 	l := logic.NewGetGroupPostsLogic(ctx, s.svcCtx)
 	return l.GetGroupPosts(in)
 }
 
-func (s *SuperServer) GetGifts(ctx context.Context, in *super.GetGiftsReq) (*super.GetGiftsResp, error) {
+func (s *SuperServer) GetGifts(ctx context.Context, in *moe.GetGiftsReq) (*moe.GetGiftsResp, error) {
 	l := logic.NewGetGiftsLogic(ctx, s.svcCtx)
 	return l.GetGifts(in)
 }
 
-func (s *SuperServer) GetGift(ctx context.Context, in *super.GetGiftReq) (*super.GetGiftResp, error) {
+func (s *SuperServer) GetGift(ctx context.Context, in *moe.GetGiftReq) (*moe.GetGiftResp, error) {
 	l := logic.NewGetGiftLogic(ctx, s.svcCtx)
 	return l.GetGift(in)
 }
 
-func (s *SuperServer) SendGift(ctx context.Context, in *super.SendGiftReq) (*super.SendGiftResp, error) {
+func (s *SuperServer) SendGift(ctx context.Context, in *moe.SendGiftReq) (*moe.SendGiftResp, error) {
 	l := logic.NewSendGiftLogic(ctx, s.svcCtx)
 	return l.SendGift(in)
 }
 
-func (s *SuperServer) GetGiftRecords(ctx context.Context, in *super.GetGiftRecordsReq) (*super.GetGiftRecordsResp, error) {
+func (s *SuperServer) GetGiftRecords(ctx context.Context, in *moe.GetGiftRecordsReq) (*moe.GetGiftRecordsResp, error) {
 	l := logic.NewGetGiftRecordsLogic(ctx, s.svcCtx)
 	return l.GetGiftRecords(in)
 }
 
-func (s *SuperServer) PurchaseGift(ctx context.Context, in *super.PurchaseGiftReq) (*super.PurchaseGiftResp, error) {
+func (s *SuperServer) PurchaseGift(ctx context.Context, in *moe.PurchaseGiftReq) (*moe.PurchaseGiftResp, error) {
 	l := logic.NewPurchaseGiftLogic(ctx, s.svcCtx)
 	return l.PurchaseGift(in)
 }
 
-func (s *SuperServer) GetGiftPurchaseOrders(ctx context.Context, in *super.GetGiftPurchaseOrdersReq) (*super.GetGiftPurchaseOrdersResp, error) {
+func (s *SuperServer) GetGiftPurchaseOrders(ctx context.Context, in *moe.GetGiftPurchaseOrdersReq) (*moe.GetGiftPurchaseOrdersResp, error) {
 	l := logic.NewGetGiftPurchaseOrdersLogic(ctx, s.svcCtx)
 	return l.GetGiftPurchaseOrders(in)
 }
 
 // --- domain: ai_llm (21 rpc) ---
-func (s *SuperServer) RecordLlmChatTurn(ctx context.Context, in *super.RecordLlmChatTurnReq) (*super.RecordLlmChatTurnResp, error) {
+func (s *SuperServer) RecordLlmChatTurn(ctx context.Context, in *moe.RecordLlmChatTurnReq) (*moe.RecordLlmChatTurnResp, error) {
 	l := logic.NewRecordLlmChatTurnLogic(ctx, s.svcCtx)
 	return l.RecordLlmChatTurn(in)
 }
 
-func (s *SuperServer) UpsertUserMemory(ctx context.Context, in *super.UpsertUserMemoryReq) (*super.UpsertUserMemoryResp, error) {
+func (s *SuperServer) UpsertUserMemory(ctx context.Context, in *moe.UpsertUserMemoryReq) (*moe.UpsertUserMemoryResp, error) {
 	l := logic.NewUpsertUserMemoryLogic(ctx, s.svcCtx)
 	return l.UpsertUserMemory(in)
 }
 
-func (s *SuperServer) GetUserMemoryProfiles(ctx context.Context, in *super.GetUserMemoryProfilesReq) (*super.GetUserMemoryProfilesResp, error) {
+func (s *SuperServer) GetUserMemoryProfiles(ctx context.Context, in *moe.GetUserMemoryProfilesReq) (*moe.GetUserMemoryProfilesResp, error) {
 	l := logic.NewGetUserMemoryProfilesLogic(ctx, s.svcCtx)
 	return l.GetUserMemoryProfiles(in)
 }
 
-func (s *SuperServer) DeleteUserMemory(ctx context.Context, in *super.DeleteUserMemoryReq) (*super.DeleteUserMemoryResp, error) {
+func (s *SuperServer) DeleteUserMemory(ctx context.Context, in *moe.DeleteUserMemoryReq) (*moe.DeleteUserMemoryResp, error) {
 	l := logic.NewDeleteUserMemoryLogic(ctx, s.svcCtx)
 	return l.DeleteUserMemory(in)
 }
 
-func (s *SuperServer) SubmitUserMemoryFeedback(ctx context.Context, in *super.SubmitUserMemoryFeedbackReq) (*super.SubmitUserMemoryFeedbackResp, error) {
+func (s *SuperServer) SubmitUserMemoryFeedback(ctx context.Context, in *moe.SubmitUserMemoryFeedbackReq) (*moe.SubmitUserMemoryFeedbackResp, error) {
 	l := logic.NewSubmitUserMemoryFeedbackLogic(ctx, s.svcCtx)
 	return l.SubmitUserMemoryFeedback(in)
 }
 
-func (s *SuperServer) ListUserMemoryEmbeddings(ctx context.Context, in *super.ListUserMemoryEmbeddingsReq) (*super.ListUserMemoryEmbeddingsResp, error) {
+func (s *SuperServer) ListUserMemoryEmbeddings(ctx context.Context, in *moe.ListUserMemoryEmbeddingsReq) (*moe.ListUserMemoryEmbeddingsResp, error) {
 	l := logic.NewListUserMemoryEmbeddingsLogic(ctx, s.svcCtx)
 	return l.ListUserMemoryEmbeddings(in)
 }
 
-func (s *SuperServer) UpsertUserMemoryEmbedding(ctx context.Context, in *super.UpsertUserMemoryEmbeddingReq) (*super.UpsertUserMemoryEmbeddingResp, error) {
+func (s *SuperServer) UpsertUserMemoryEmbedding(ctx context.Context, in *moe.UpsertUserMemoryEmbeddingReq) (*moe.UpsertUserMemoryEmbeddingResp, error) {
 	l := logic.NewUpsertUserMemoryEmbeddingLogic(ctx, s.svcCtx)
 	return l.UpsertUserMemoryEmbedding(in)
 }
 
-func (s *SuperServer) RebuildUserMemoryEmbeddings(ctx context.Context, in *super.RebuildUserMemoryEmbeddingsReq) (*super.RebuildUserMemoryEmbeddingsResp, error) {
+func (s *SuperServer) RebuildUserMemoryEmbeddings(ctx context.Context, in *moe.RebuildUserMemoryEmbeddingsReq) (*moe.RebuildUserMemoryEmbeddingsResp, error) {
 	l := logic.NewRebuildUserMemoryEmbeddingsLogic(ctx, s.svcCtx)
 	return l.RebuildUserMemoryEmbeddings(in)
 }
 
-func (s *SuperServer) ListUserMemoryRelations(ctx context.Context, in *super.ListUserMemoryRelationsReq) (*super.ListUserMemoryRelationsResp, error) {
+func (s *SuperServer) ListUserMemoryRelations(ctx context.Context, in *moe.ListUserMemoryRelationsReq) (*moe.ListUserMemoryRelationsResp, error) {
 	l := logic.NewListUserMemoryRelationsLogic(ctx, s.svcCtx)
 	return l.ListUserMemoryRelations(in)
 }
 
-func (s *SuperServer) ListAiProviders(ctx context.Context, in *super.ListAiResourceReq) (*super.ListAiResourceResp, error) {
+func (s *SuperServer) ListAiProviders(ctx context.Context, in *moe.ListAiResourceReq) (*moe.ListAiResourceResp, error) {
 	l := logic.NewListAiProvidersLogic(ctx, s.svcCtx)
 	return l.ListAiProviders(in)
 }
 
-func (s *SuperServer) UpsertAiProvider(ctx context.Context, in *super.UpsertAiResourceReq) (*super.UpsertAiResourceResp, error) {
+func (s *SuperServer) UpsertAiProvider(ctx context.Context, in *moe.UpsertAiResourceReq) (*moe.UpsertAiResourceResp, error) {
 	l := logic.NewUpsertAiProviderLogic(ctx, s.svcCtx)
 	return l.UpsertAiProvider(in)
 }
 
-func (s *SuperServer) DeleteAiProvider(ctx context.Context, in *super.DeleteAiResourceReq) (*super.DeleteAiResourceResp, error) {
+func (s *SuperServer) DeleteAiProvider(ctx context.Context, in *moe.DeleteAiResourceReq) (*moe.DeleteAiResourceResp, error) {
 	l := logic.NewDeleteAiProviderLogic(ctx, s.svcCtx)
 	return l.DeleteAiProvider(in)
 }
 
-func (s *SuperServer) ListAiAgents(ctx context.Context, in *super.ListAiResourceReq) (*super.ListAiResourceResp, error) {
+func (s *SuperServer) ListAiAgents(ctx context.Context, in *moe.ListAiResourceReq) (*moe.ListAiResourceResp, error) {
 	l := logic.NewListAiAgentsLogic(ctx, s.svcCtx)
 	return l.ListAiAgents(in)
 }
 
-func (s *SuperServer) ListPublicAiAgents(ctx context.Context, in *super.ListPublicAiAgentsReq) (*super.ListAiResourceResp, error) {
+func (s *SuperServer) ListPublicAiAgents(ctx context.Context, in *moe.ListPublicAiAgentsReq) (*moe.ListAiResourceResp, error) {
 	l := logic.NewListPublicAiAgentsLogic(ctx, s.svcCtx)
 	return l.ListPublicAiAgents(in)
 }
 
-func (s *SuperServer) UpsertAiAgent(ctx context.Context, in *super.UpsertAiResourceReq) (*super.UpsertAiResourceResp, error) {
+func (s *SuperServer) UpsertAiAgent(ctx context.Context, in *moe.UpsertAiResourceReq) (*moe.UpsertAiResourceResp, error) {
 	l := logic.NewUpsertAiAgentLogic(ctx, s.svcCtx)
 	return l.UpsertAiAgent(in)
 }
 
-func (s *SuperServer) DeleteAiAgent(ctx context.Context, in *super.DeleteAiResourceReq) (*super.DeleteAiResourceResp, error) {
+func (s *SuperServer) DeleteAiAgent(ctx context.Context, in *moe.DeleteAiResourceReq) (*moe.DeleteAiResourceResp, error) {
 	l := logic.NewDeleteAiAgentLogic(ctx, s.svcCtx)
 	return l.DeleteAiAgent(in)
 }
 
-func (s *SuperServer) ListAiLorebooks(ctx context.Context, in *super.ListAiResourceReq) (*super.ListAiResourceResp, error) {
+func (s *SuperServer) ListAiLorebooks(ctx context.Context, in *moe.ListAiResourceReq) (*moe.ListAiResourceResp, error) {
 	l := logic.NewListAiLorebooksLogic(ctx, s.svcCtx)
 	return l.ListAiLorebooks(in)
 }
 
-func (s *SuperServer) UpsertAiLorebook(ctx context.Context, in *super.UpsertAiResourceReq) (*super.UpsertAiResourceResp, error) {
+func (s *SuperServer) UpsertAiLorebook(ctx context.Context, in *moe.UpsertAiResourceReq) (*moe.UpsertAiResourceResp, error) {
 	l := logic.NewUpsertAiLorebookLogic(ctx, s.svcCtx)
 	return l.UpsertAiLorebook(in)
 }
 
-func (s *SuperServer) DeleteAiLorebook(ctx context.Context, in *super.DeleteAiResourceReq) (*super.DeleteAiResourceResp, error) {
+func (s *SuperServer) DeleteAiLorebook(ctx context.Context, in *moe.DeleteAiResourceReq) (*moe.DeleteAiResourceResp, error) {
 	l := logic.NewDeleteAiLorebookLogic(ctx, s.svcCtx)
 	return l.DeleteAiLorebook(in)
 }
 
-func (s *SuperServer) GetAiUserConfig(ctx context.Context, in *super.GetAiUserConfigReq) (*super.GetAiUserConfigResp, error) {
+func (s *SuperServer) GetAiUserConfig(ctx context.Context, in *moe.GetAiUserConfigReq) (*moe.GetAiUserConfigResp, error) {
 	l := logic.NewGetAiUserConfigLogic(ctx, s.svcCtx)
 	return l.GetAiUserConfig(in)
 }
 
-func (s *SuperServer) UpsertAiUserConfig(ctx context.Context, in *super.UpsertAiUserConfigReq) (*super.UpsertAiUserConfigResp, error) {
+func (s *SuperServer) UpsertAiUserConfig(ctx context.Context, in *moe.UpsertAiUserConfigReq) (*moe.UpsertAiUserConfigResp, error) {
 	l := logic.NewUpsertAiUserConfigLogic(ctx, s.svcCtx)
 	return l.UpsertAiUserConfig(in)
 }
 
 // --- domain: platform (9 rpc) ---
-func (s *SuperServer) TrackUserBehaviorEvents(ctx context.Context, in *super.TrackUserBehaviorEventsReq) (*super.TrackUserBehaviorEventsResp, error) {
+func (s *SuperServer) TrackUserBehaviorEvents(ctx context.Context, in *moe.TrackUserBehaviorEventsReq) (*moe.TrackUserBehaviorEventsResp, error) {
 	l := logic.NewTrackUserBehaviorEventsLogic(ctx, s.svcCtx)
 	return l.TrackUserBehaviorEvents(in)
 }
 
-func (s *SuperServer) CheckIn(ctx context.Context, in *super.CheckInReq) (*super.CheckInResp, error) {
+func (s *SuperServer) CheckIn(ctx context.Context, in *moe.CheckInReq) (*moe.CheckInResp, error) {
 	l := logic.NewCheckInLogic(ctx, s.svcCtx)
 	return l.CheckIn(in)
 }
 
-func (s *SuperServer) GetUserLevel(ctx context.Context, in *super.GetUserLevelReq) (*super.GetUserLevelResp, error) {
+func (s *SuperServer) GetUserLevel(ctx context.Context, in *moe.GetUserLevelReq) (*moe.GetUserLevelResp, error) {
 	l := logic.NewGetUserLevelLogic(ctx, s.svcCtx)
 	return l.GetUserLevel(in)
 }
 
-func (s *SuperServer) GetCheckInStatus(ctx context.Context, in *super.GetCheckInStatusReq) (*super.GetCheckInStatusResp, error) {
+func (s *SuperServer) GetCheckInStatus(ctx context.Context, in *moe.GetCheckInStatusReq) (*moe.GetCheckInStatusResp, error) {
 	l := logic.NewGetCheckInStatusLogic(ctx, s.svcCtx)
 	return l.GetCheckInStatus(in)
 }
 
-func (s *SuperServer) GetCheckInHistory(ctx context.Context, in *super.GetCheckInHistoryReq) (*super.GetCheckInHistoryResp, error) {
+func (s *SuperServer) GetCheckInHistory(ctx context.Context, in *moe.GetCheckInHistoryReq) (*moe.GetCheckInHistoryResp, error) {
 	l := logic.NewGetCheckInHistoryLogic(ctx, s.svcCtx)
 	return l.GetCheckInHistory(in)
 }
 
-func (s *SuperServer) GetExpLogs(ctx context.Context, in *super.GetExpLogsReq) (*super.GetExpLogsResp, error) {
+func (s *SuperServer) GetExpLogs(ctx context.Context, in *moe.GetExpLogsReq) (*moe.GetExpLogsResp, error) {
 	l := logic.NewGetExpLogsLogic(ctx, s.svcCtx)
 	return l.GetExpLogs(in)
 }
 
-func (s *SuperServer) GetUserAchievements(ctx context.Context, in *super.GetUserAchievementsReq) (*super.GetUserAchievementsResp, error) {
+func (s *SuperServer) GetUserAchievements(ctx context.Context, in *moe.GetUserAchievementsReq) (*moe.GetUserAchievementsResp, error) {
 	l := logic.NewGetUserAchievementsLogic(ctx, s.svcCtx)
 	return l.GetUserAchievements(in)
 }
 
-func (s *SuperServer) GetUserAchievementSummary(ctx context.Context, in *super.GetUserAchievementSummaryReq) (*super.GetUserAchievementSummaryResp, error) {
+func (s *SuperServer) GetUserAchievementSummary(ctx context.Context, in *moe.GetUserAchievementSummaryReq) (*moe.GetUserAchievementSummaryResp, error) {
 	l := logic.NewGetUserAchievementSummaryLogic(ctx, s.svcCtx)
 	return l.GetUserAchievementSummary(in)
 }
 
-func (s *SuperServer) EnsureUserAchievements(ctx context.Context, in *super.EnsureUserAchievementsReq) (*super.EnsureUserAchievementsResp, error) {
+func (s *SuperServer) EnsureUserAchievements(ctx context.Context, in *moe.EnsureUserAchievementsReq) (*moe.EnsureUserAchievementsResp, error) {
 	l := logic.NewEnsureUserAchievementsLogic(ctx, s.svcCtx)
 	return l.EnsureUserAchievements(in)
 }
 
 // --- domain: moe (13 rpc) ---
-func (s *SuperServer) AdminListMoeRuntimes(ctx context.Context, in *super.AdminListMoeRuntimesReq) (*super.AdminListMoeRuntimesResp, error) {
+func (s *SuperServer) AdminListMoeRuntimes(ctx context.Context, in *moe.AdminListMoeRuntimesReq) (*moe.AdminListMoeRuntimesResp, error) {
 	l := logic.NewAdminListMoeRuntimesLogic(ctx, s.svcCtx)
 	return l.AdminListMoeRuntimes(in)
 }
 
-func (s *SuperServer) AdminUpsertMoeRuntime(ctx context.Context, in *super.AdminUpsertMoeRuntimeReq) (*super.AdminUpsertMoeRuntimeResp, error) {
+func (s *SuperServer) AdminUpsertMoeRuntime(ctx context.Context, in *moe.AdminUpsertMoeRuntimeReq) (*moe.AdminUpsertMoeRuntimeResp, error) {
 	l := logic.NewAdminUpsertMoeRuntimeLogic(ctx, s.svcCtx)
 	return l.AdminUpsertMoeRuntime(in)
 }
 
-func (s *SuperServer) AdminRunMoeAgentOnce(ctx context.Context, in *super.AdminRunMoeAgentOnceReq) (*super.AdminRunMoeAgentOnceResp, error) {
+func (s *SuperServer) AdminRunMoeAgentOnce(ctx context.Context, in *moe.AdminRunMoeAgentOnceReq) (*moe.AdminRunMoeAgentOnceResp, error) {
 	l := logic.NewAdminRunMoeAgentOnceLogic(ctx, s.svcCtx)
 	return l.AdminRunMoeAgentOnce(in)
 }
 
-func (s *SuperServer) AdminGetMoeBrain(ctx context.Context, in *super.AdminGetMoeBrainReq) (*super.AdminGetMoeBrainResp, error) {
+func (s *SuperServer) AdminGetMoeBrain(ctx context.Context, in *moe.AdminGetMoeBrainReq) (*moe.AdminGetMoeBrainResp, error) {
 	l := logic.NewAdminGetMoeBrainLogic(ctx, s.svcCtx)
 	return l.AdminGetMoeBrain(in)
 }
 
-func (s *SuperServer) AdminUpdateMoeBrainPolicy(ctx context.Context, in *super.AdminUpdateMoeBrainPolicyReq) (*super.AdminGetMoeBrainResp, error) {
+func (s *SuperServer) AdminUpdateMoeBrainPolicy(ctx context.Context, in *moe.AdminUpdateMoeBrainPolicyReq) (*moe.AdminGetMoeBrainResp, error) {
 	l := logic.NewAdminUpdateMoeBrainPolicyLogic(ctx, s.svcCtx)
 	return l.AdminUpdateMoeBrainPolicy(in)
 }
 
-func (s *SuperServer) AdminDeleteMoeBrainEpisode(ctx context.Context, in *super.AdminDeleteMoeBrainEpisodeReq) (*super.AdminDeleteMoeBrainEpisodeResp, error) {
+func (s *SuperServer) AdminDeleteMoeBrainEpisode(ctx context.Context, in *moe.AdminDeleteMoeBrainEpisodeReq) (*moe.AdminDeleteMoeBrainEpisodeResp, error) {
 	l := logic.NewAdminDeleteMoeBrainEpisodeLogic(ctx, s.svcCtx)
 	return l.AdminDeleteMoeBrainEpisode(in)
 }
 
-func (s *SuperServer) AdminRefineMoeBrainEpisode(ctx context.Context, in *super.AdminRefineMoeBrainEpisodeReq) (*super.AdminRefineMoeBrainEpisodeResp, error) {
+func (s *SuperServer) AdminRefineMoeBrainEpisode(ctx context.Context, in *moe.AdminRefineMoeBrainEpisodeReq) (*moe.AdminRefineMoeBrainEpisodeResp, error) {
 	l := logic.NewAdminRefineMoeBrainEpisodeLogic(ctx, s.svcCtx)
 	return l.AdminRefineMoeBrainEpisode(in)
 }
 
-func (s *SuperServer) AdminCurateMoeBrain(ctx context.Context, in *super.AdminCurateMoeBrainReq) (*super.AdminCurateMoeBrainResp, error) {
+func (s *SuperServer) AdminCurateMoeBrain(ctx context.Context, in *moe.AdminCurateMoeBrainReq) (*moe.AdminCurateMoeBrainResp, error) {
 	l := logic.NewAdminCurateMoeBrainLogic(ctx, s.svcCtx)
 	return l.AdminCurateMoeBrain(in)
 }
 
-func (s *SuperServer) AdminGetMoeBrainPipeline(ctx context.Context, in *super.AdminGetMoeBrainPipelineReq) (*super.AdminGetMoeBrainPipelineResp, error) {
+func (s *SuperServer) AdminGetMoeBrainPipeline(ctx context.Context, in *moe.AdminGetMoeBrainPipelineReq) (*moe.AdminGetMoeBrainPipelineResp, error) {
 	l := logic.NewAdminGetMoeBrainPipelineLogic(ctx, s.svcCtx)
 	return l.AdminGetMoeBrainPipeline(in)
 }
 
-func (s *SuperServer) AdminGetMoeToolStats(ctx context.Context, in *super.AdminGetMoeToolStatsReq) (*super.AdminGetMoeToolStatsResp, error) {
+func (s *SuperServer) AdminGetMoeToolStats(ctx context.Context, in *moe.AdminGetMoeToolStatsReq) (*moe.AdminGetMoeToolStatsResp, error) {
 	l := logic.NewAdminGetMoeToolStatsLogic(ctx, s.svcCtx)
 	return l.AdminGetMoeToolStats(in)
 }
 
-func (s *SuperServer) AdminListMoeToolCalls(ctx context.Context, in *super.AdminListMoeToolCallsReq) (*super.AdminListMoeToolCallsResp, error) {
+func (s *SuperServer) AdminListMoeToolCalls(ctx context.Context, in *moe.AdminListMoeToolCallsReq) (*moe.AdminListMoeToolCallsResp, error) {
 	l := logic.NewAdminListMoeToolCallsLogic(ctx, s.svcCtx)
 	return l.AdminListMoeToolCalls(in)
 }
 
-func (s *SuperServer) MoeExecuteTool(ctx context.Context, in *super.MoeExecuteToolReq) (*super.MoeExecuteToolResp, error) {
+func (s *SuperServer) MoeExecuteTool(ctx context.Context, in *moe.MoeExecuteToolReq) (*moe.MoeExecuteToolResp, error) {
 	l := logic.NewMoeExecuteToolLogic(ctx, s.svcCtx)
 	return l.MoeExecuteTool(in)
 }
 
-func (s *SuperServer) MoeSearchPosts(ctx context.Context, in *super.MoeSearchPostsReq) (*super.MoeSearchPostsResp, error) {
+func (s *SuperServer) MoeSearchPosts(ctx context.Context, in *moe.MoeSearchPostsReq) (*moe.MoeSearchPostsResp, error) {
 	l := logic.NewMoeSearchPostsLogic(ctx, s.svcCtx)
 	return l.MoeSearchPosts(in)
 }

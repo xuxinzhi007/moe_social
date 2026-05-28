@@ -7,7 +7,7 @@
 // - protoc             v6.33.1
 // source: moe.proto
 
-package super
+package moe
 
 import (
 	context "context"

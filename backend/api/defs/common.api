@@ -640,13 +640,17 @@ type AdminUpsertMoeRuntimeResp {
 
 type AdminRunMoeAgentReq {
 	AgentKey string `path:"agent_key"`
+	// Async 为 true 时立即返回，试跑在后台执行；进度通过 GET brain/pipeline/stream（SSE）推送。
+	Async bool `form:"async,optional"`
 }
 
 type AdminRunMoeAgentData {
-	AgentKey string `json:"agent_key"`
-	Ok       bool   `json:"ok"`
-	Detail   string `json:"detail"`
-	PostId   string `json:"post_id,optional"`
+	AgentKey       string `json:"agent_key"`
+	Ok             bool   `json:"ok"`
+	Detail         string `json:"detail"`
+	PostId         string `json:"post_id,optional"`
+	Accepted       bool   `json:"accepted,optional"`
+	AlreadyRunning bool   `json:"already_running,optional"`
 }
 
 type AdminRunMoeAgentResp {
@@ -782,6 +786,10 @@ type AdminGetMoeBrainPipelineData {
 	StabilityScore   int                         `json:"stability_score,optional"`
 	StabilityDelta   int                         `json:"stability_delta,optional"`
 	RunFeedback      string                      `json:"run_feedback,optional"`
+	Running          bool                        `json:"running,optional"`
+	CurrentPhase     string                      `json:"current_phase,optional"`
+	RunStartedAt     string                      `json:"run_started_at,optional"`
+	ActiveStepKey    string                      `json:"active_step_key,optional"`
 }
 
 type AdminGetMoeBrainPipelineResp {

@@ -194,6 +194,10 @@ func PipelineDataFromSuper(d *super.AdminGetMoeBrainPipelineResp) types.AdminGet
 	data.StabilityScore = int(d.GetStabilityScore())
 	data.StabilityDelta = int(d.GetStabilityDelta())
 	data.RunFeedback = d.GetRunFeedback()
+	data.Running = d.GetRunning()
+	data.CurrentPhase = d.GetCurrentPhase()
+	data.RunStartedAt = d.GetRunStartedAt()
+	data.ActiveStepKey = d.GetActiveStepKey()
 	return data
 }
 

@@ -91,6 +91,12 @@ func PipelineDataFromBiz(snap moebiz.PipelineSnapshot) types.AdminGetMoeBrainPip
 	data.StabilityScore = snap.StabilityScore
 	data.StabilityDelta = snap.StabilityDelta
 	data.RunFeedback = snap.RunFeedback
+	data.Running = snap.Running
+	data.CurrentPhase = snap.CurrentPhase
+	data.ActiveStepKey = snap.ActiveStepKey
+	if snap.Running && !snap.RunStartedAt.IsZero() {
+		data.RunStartedAt = snap.RunStartedAt.Format("2006-01-02 15:04:05")
+	}
 	return data
 }
 

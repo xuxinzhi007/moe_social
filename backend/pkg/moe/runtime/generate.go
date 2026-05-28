@@ -62,6 +62,7 @@ func generatePostContent(
 	}
 
 	if rec != nil {
+		rec.BeginStep("topic_profile", "分析话题画像")
 		t0 := time.Now()
 		overused := brain.ListOverusedTopics(deps.DB, rt.AgentKey, 3, 10)
 		rec.Add("topic_profile", "分析话题画像", "ok",
@@ -75,6 +76,7 @@ func generatePostContent(
 	}
 	_ = pick
 	if rec != nil {
+		rec.BeginStep("resolve_model", "解析发帖模型")
 		rec.Add("resolve_model", "解析发帖模型", "ok", modelName, time.Since(genPhaseStart))
 	}
 	persona := sanitizePersona(rt.SystemPrompt, rt)
@@ -85,6 +87,7 @@ func generatePostContent(
 		brainBlock = brain.PolicyBlock(rt, eps, deps.DB)
 	}
 	if rec != nil {
+		rec.BeginStep("assemble_prompt", "组装发帖 Prompt")
 		rec.Add("assemble_prompt", "组装发帖 Prompt", "ok",
 			fmt.Sprintf("自传 %d 条 · 策略块 %d 字", len(episodes), len(brainBlock)), time.Since(genPhaseStart))
 	}
@@ -96,6 +99,9 @@ func generatePostContent(
 		attempts    []GenAttemptRecord
 	)
 	for attempt := 1; attempt <= maxGenerateAttempts; attempt++ {
+		if rec != nil {
+			rec.BeginStep("generate", "LLM 生成正文")
+		}
 		attemptStart := time.Now()
 		stability := brain.EffectiveStabilityScore(rt)
 		gen, err := callPostLLM(ctx, deps, modelName, persona, rulesBlock, brainBlock, ctxBlock, recent, attempt, rejectNovel, stability)
@@ -111,7 +117,7 @@ func generatePostContent(
 				Outcome: GenOutcomeLLMError,
 				Note:    genAttemptNote(err),
 			})
-			recordGenAttemptStep(rec, attempt, "fail", GenOutcomeLLMError, "", genAttemptNote(err), time.Since(attemptStart))
+			recordGenAttemptStep(rec, attempt, "fail", GenOutcomeLLMError, "", genAttemptNote(err), time.Since(attemptStart), attempts)
 			continue
 		}
 		if contentTooSimilar(gen.Content, recent) {
@@ -125,7 +131,7 @@ func generatePostContent(
 				Outcome: GenOutcomeDuplicate,
 				Snippet: genSnippet(gen.Content),
 			})
-			recordGenAttemptStep(rec, attempt, "fail", GenOutcomeDuplicate, genSnippet(gen.Content), "与近期帖重复", time.Since(attemptStart))
+			recordGenAttemptStep(rec, attempt, "fail", GenOutcomeDuplicate, genSnippet(gen.Content), "与近期帖重复", time.Since(attemptStart), attempts)
 			continue
 		}
 		if meaningTooSimilar(gen.Content, recent, episodes) {
@@ -140,7 +146,7 @@ func generatePostContent(
 				Outcome: GenOutcomeTheme,
 				Snippet: genSnippet(gen.Content),
 			})
-			recordGenAttemptStep(rec, attempt, "fail", GenOutcomeTheme, genSnippet(gen.Content), "意思太像", time.Since(attemptStart))
+			recordGenAttemptStep(rec, attempt, "fail", GenOutcomeTheme, genSnippet(gen.Content), "意思太像", time.Since(attemptStart), attempts)
 			continue
 		}
 		score := novelStyleScore(gen.Content)
@@ -157,7 +163,7 @@ func generatePostContent(
 					Snippet: genSnippet(gen.Content),
 					Note:    strings.Join(hits, "、"),
 				})
-				recordGenAttemptStep(rec, attempt, "fail", GenOutcomeForbidden, genSnippet(gen.Content), strings.Join(hits, "、"), time.Since(attemptStart))
+				recordGenAttemptStep(rec, attempt, "fail", GenOutcomeForbidden, genSnippet(gen.Content), strings.Join(hits, "、"), time.Since(attemptStart), attempts)
 				continue
 			}
 			gen.Source = fmt.Sprintf("llm#%d", attempt)
@@ -166,7 +172,7 @@ func generatePostContent(
 				Outcome: GenOutcomeOK,
 				Snippet: genSnippet(gen.Content),
 			})
-			recordGenAttemptStep(rec, attempt, "ok", GenOutcomeOK, genSnippet(gen.Content), fmt.Sprintf("质量分约 %d", score), time.Since(attemptStart))
+			recordGenAttemptStep(rec, attempt, "ok", GenOutcomeOK, genSnippet(gen.Content), fmt.Sprintf("质量分约 %d", score), time.Since(attemptStart), attempts)
 			if rec != nil {
 				rec.Add("generate_finalize", "生成质检汇总", "ok",
 					FormatGenStepDetail(attempts, true, gen.Source), time.Since(genPhaseStart))
@@ -183,7 +189,7 @@ func generatePostContent(
 			Snippet: genSnippet(gen.Content),
 			Note:    fmt.Sprintf("得分 %d", score),
 		})
-		recordGenAttemptStep(rec, attempt, "fail", GenOutcomeNovel, genSnippet(gen.Content), fmt.Sprintf("剧本腔 %d", score), time.Since(attemptStart))
+		recordGenAttemptStep(rec, attempt, "fail", GenOutcomeNovel, genSnippet(gen.Content), fmt.Sprintf("剧本腔 %d", score), time.Since(attemptStart), attempts)
 	}
 
 	// 多次仍偏文艺：选得分最低且不与历史重复的一条发出，避免试跑永远失败
@@ -211,10 +217,12 @@ func generatePostContent(
 	return GeneratedPost{}, attempts, fmt.Errorf("多次生成仍不符合要求，请调整发帖规则或检查 llama-server")
 }
 
-func recordGenAttemptStep(rec *StepRecorder, attempt int, status string, outcome GenAttemptOutcome, snippet, note string, dur time.Duration) {
+func recordGenAttemptStep(rec *StepRecorder, attempt int, status string, outcome GenAttemptOutcome, snippet, note string, dur time.Duration, attempts []GenAttemptRecord) {
 	if rec == nil {
 		return
 	}
+	key := fmt.Sprintf("gen_attempt_%d", attempt)
+	rec.BeginStep(key, fmt.Sprintf("生成尝试 #%d", attempt))
 	detail := string(outcome)
 	if snippet != "" {
 		detail += " · " + snippet
@@ -222,13 +230,10 @@ func recordGenAttemptStep(rec *StepRecorder, attempt int, status string, outcome
 	if note != "" {
 		detail += "（" + note + "）"
 	}
-	rec.Add(
-		fmt.Sprintf("gen_attempt_%d", attempt),
-		fmt.Sprintf("LLM 生成 #%d", attempt),
-		status,
-		detail,
-		dur,
-	)
+	rec.Add(key, fmt.Sprintf("LLM 生成 #%d", attempt), status, detail, dur)
+	if rec.live != nil && len(attempts) > 0 {
+		rec.live.SyncGenAttempts(attempts)
+	}
 }
 
 func pickBestNovelFallback(cands []postGenCandidate, recent []model.Post, episodes []model.MoeBotEpisode) *postGenCandidate {
