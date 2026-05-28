@@ -16,7 +16,7 @@ make moe-social-dev
 - **配置 SSOT**：`config/config.yaml`（`-f`，可省略）
 - **入口 SSOT**：`cmd/moe-social`（`cmd/moe-social-stack` 仅开发附加 agent/monitor）
 - **迁移进度**：`curl -s http://127.0.0.1:8888/migration`
-- **验收**：`make verify`（同 `verify-kratos-pure-100`）
+- **检查**：`make check`（编译 + 核心包单测）
 - **布局**：见 [LAYOUT.md](LAYOUT.md)（`api/` + `rpc/` 目录 vs 单进程 Kratos）
 - **脚本**：见 [scripts/README.md](scripts/README.md)
 

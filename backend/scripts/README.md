@@ -1,29 +1,31 @@
 # backend/scripts
 
-## 日常验收（推荐）
+## 日常命令
 
-| 命令 | 脚本 | 何时跑 |
-|------|------|--------|
-| `make verify` | `verify/kratos-pure-100.sh` | 改 Kratos / 启动 / 配置 |
-| `make verify-kratos-regression` | `verify/kratos-regression.sh` | PK PR（pure-100 + fs9b） |
-| `make verify-sprint-fs9` | `verify/fs9.sh` | 契约文件名（较重，含 fs8b） |
-| `make verify-kratos-regression-full` | `verify/kratos-regression-full.sh` | 发版、大批合并 |
+| 命令 | 说明 |
+|------|------|
+| `make gen` | 域 proto + conf + RPC + `api/moehttp` 路由 |
+| `make gen-http-routes` | 仅同步 HTTP 路由（改 `routes.go` 后） |
+| `make check` | 编译 `cmd/moe-social` + 核心包单测 |
+| `make moe-social` | 生产单进程（:8888 + :8080） |
 
 ## 目录
 
 ```text
 scripts/
-  lib/backend-root.sh     # 定位 backend 根目录
-  verify/                 # 活跃门禁
-    kratos-*.sh           # 纯 Kratos
-    fs9.sh / fs9b.sh      # 契约
-    sprint/               # F 业务迁移（biz+gw）
-    domain/               # 域 / Hybrid 组合
-  _archive/kratos-pk/     # 历史 PK-0～12 里程碑（只存档，Makefile 不再调用）
-  gen-*.sh                # 代码生成
+  gen/                    # 代码生成（Makefile 唯一入口）
+    moe-proto.sh          # api/*/v1、rpc 域 proto
+    moe-conf.sh           # internal/conf
+    http-routes/          # → api/moehttp/routes_*_gen.go
+    fs8-*.py              # RPC defs 切分/组装
+    fs9*.sh               # goctl RPC 后处理
+    api-guard.sh          # gen-api 门禁
+    post-gen-check.sh     # 生成后空壳检查
+  tools/
+    fs9b-rewrite-imports/ # 一次性 import 重写（慎用）
+  fs8-split-super-proto.py  # 从单体 moe.proto 切分（慎用）
 ```
 
-## 运行时 vs 目录
+迁移验收脚本已移除；改 Kratos/路由后跑 `make check` 与 `make moe-social` 手测即可。
 
-生产 **`make moe-social`** 已是 **单进程 Kratos**（HTTP :8888 + gRPC :8080）。  
-仓库仍保留 **`api/`**（HTTP handler/logic）与 **`rpc/`**（gRPC logic）是 **goctl 生成链与历史分层**，不是两个独立部署单元。详见 [LAYOUT.md](../LAYOUT.md)。
+运行时布局见 [LAYOUT.md](../LAYOUT.md)。

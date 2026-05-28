@@ -22,7 +22,7 @@ make moe-social    # 单进程：Kratos HTTP :8888 + Kratos gRPC :8080
 **一个 OS 进程** 同时装配 API `ServiceContext` 与 RPC `ServiceContext`；对外只暴露 **8888 + 8080**。
 
 ```text
-Client → :8888  Kratos HTTP (moekratospilot) → api/logic → *gw → biz
+Client → :8888  Kratos HTTP (api/moehttp) → api/logic → *gw → biz
               ↘ :8080  Kratos gRPC → rpc/server → rpc/logic → biz
 ```
 

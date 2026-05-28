@@ -4,7 +4,7 @@ import (
 	"log"
 
 	moepb "backend/api/moe/v1"
-	"backend/api/moekratospilot"
+	"backend/api/moehttp"
 	moeconfv1 "backend/internal/conf/moe/v1"
 	moegrpcserver "backend/internal/server/moegrpc"
 	"backend/internal/server/moekratoshttp"
@@ -44,7 +44,7 @@ func newApp(
 
 	httpSrv := khttp.NewServer(khttp.Address(httpAddr))
 	moekratoshttp.Register(httpSrv, moeAdmin)
-	moekratospilot.RegisterAll(httpSrv, moekratospilot.PilotDeps{
+	moehttp.RegisterAll(httpSrv, moehttp.PilotDeps{
 		MoeAdmin: moeAdmin,
 		AdminApp: adminApp,
 		DB:       db,

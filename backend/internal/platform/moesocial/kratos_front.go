@@ -12,7 +12,7 @@ import (
 	"time"
 
 	apirun "backend/api/runserver"
-	"backend/api/moekratospilot"
+	"backend/api/moehttp"
 	"backend/internal/platform/kratosprogress"
 	"backend/utils"
 
@@ -46,7 +46,7 @@ func newKratosFrontServer(apiRes *apirun.StartResult, publicHost string, publicP
 	}
 
 	httpSrv := khttp.NewServer(khttp.Address(publicAddr))
-	moekratospilot.RegisterAll(httpSrv, pilotDepsFromAPI(apiRes))
+	moehttp.RegisterAll(httpSrv, pilotDepsFromAPI(apiRes))
 
 	// 未匹配试点路由 → go-zero 内网（PathPrefix 优先级低于已注册的精确路径）
 	httpSrv.HandlePrefix("/", proxy)
@@ -58,8 +58,8 @@ func newKratosFrontServer(apiRes *apirun.StartResult, publicHost string, publicP
 	}, nil
 }
 
-func pilotDepsFromAPI(res *apirun.StartResult) moekratospilot.PilotDeps {
-	d := moekratospilot.PilotDeps{
+func pilotDepsFromAPI(res *apirun.StartResult) moehttp.PilotDeps {
+	d := moehttp.PilotDeps{
 		MoeAdmin: res.Svc.MoeAdmin,
 		AdminApp: res.Svc.AdminApp,
 		Svc:      res.Svc,
