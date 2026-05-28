@@ -3,7 +3,17 @@ package svc
 import (
 	"fmt"
 
+	achievementapp "backend/internal/service/achievement"
+	chatapp "backend/internal/service/chat"
+	checkinapp "backend/internal/service/checkin"
+	commentapp "backend/internal/service/comment"
+	communityapp "backend/internal/service/community"
+	giftapp "backend/internal/service/gift"
+	landingapp "backend/internal/service/landing"
 	moeadmin "backend/internal/service/moe"
+	notifyapp "backend/internal/service/notify"
+	postapp "backend/internal/service/post"
+	userapp "backend/internal/service/user"
 	"backend/rpc/internal/config"
 	"backend/utils"
 
@@ -12,9 +22,19 @@ import (
 )
 
 type ServiceContext struct {
-	Config   config.Config
-	DB       *gorm.DB
-	MoeAdmin *moeadmin.AdminService
+	Config         config.Config
+	DB             *gorm.DB
+	MoeAdmin       *moeadmin.AdminService
+	LandingApp     *landingapp.AppService
+	CheckinApp     *checkinapp.AppService
+	AchievementApp *achievementapp.AppService
+	PostApp        *postapp.AppService
+	GiftApp        *giftapp.AppService
+	UserApp        *userapp.AppService
+	CommentApp     *commentapp.AppService
+	CommunityApp   *communityapp.AppService
+	ChatApp        *chatapp.AppService
+	NotifyApp      *notifyapp.AppService
 }
 
 func NewServiceContext(c config.Config, migrateOpts utils.MigrateOptions) *ServiceContext {
@@ -36,9 +56,19 @@ func NewServiceContext(c config.Config, migrateOpts utils.MigrateOptions) *Servi
 
 	db := utils.GetDB()
 	out := &ServiceContext{
-		Config:   c,
-		DB:       db,
-		MoeAdmin: moeadmin.NewAdmin(db),
+		Config:         c,
+		DB:             db,
+		MoeAdmin:       moeadmin.NewAdmin(db),
+		LandingApp:     landingapp.New(db),
+		CheckinApp:     checkinapp.New(db),
+		AchievementApp: achievementapp.New(db),
+		PostApp:        postapp.New(db, c.HandDrawRequireModeration),
+		GiftApp:        giftapp.New(db),
+		UserApp:        userapp.New(db),
+		CommentApp:     commentapp.New(db),
+		CommunityApp:   communityapp.New(db),
+		ChatApp:        chatapp.New(db),
+		NotifyApp:      notifyapp.New(db),
 	}
 	utils.StartPrivateMessageCleanup(out.DB)
 	return out

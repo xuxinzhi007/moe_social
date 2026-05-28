@@ -19,8 +19,8 @@ type LikeResult struct {
 }
 
 // Like 切换评论点赞状态。
-func Like(ctx context.Context, db *gorm.DB, commentIDStr, userIDStr string) (LikeResult, error) {
-	if db == nil {
+func Like(ctx context.Context, st CommentStore, commentIDStr, userIDStr string) (LikeResult, error) {
+	if st == nil {
 		return LikeResult{}, gorm.ErrInvalidDB
 	}
 	commentID, err := strconv.ParseUint(strings.TrimSpace(commentIDStr), 10, 32)
@@ -32,57 +32,59 @@ func Like(ctx context.Context, db *gorm.DB, commentIDStr, userIDStr string) (Lik
 		return LikeResult{}, ErrInvalidUserID
 	}
 
-	var comment model.Comment
-	if err := db.WithContext(ctx).First(&comment, commentID).Error; err != nil {
+	st = st.WithContext(ctx)
+	comment, err := st.GetComment(ctx, uint(commentID))
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return LikeResult{}, ErrCommentNotFound
 		}
 		return LikeResult{}, err
 	}
 
-	var like model.Like
-	hasLiked := db.WithContext(ctx).
-		Where("target_id = ? AND user_id = ? AND target_type = ?", commentID, userID, "comment").
-		First(&like).Error == nil
+	like, hasLiked, err := st.FindLike(ctx, uint(commentID), uint(userID), "comment")
+	if err != nil {
+		return LikeResult{}, err
+	}
 
-	tx := db.WithContext(ctx).Begin()
-	if tx.Error != nil {
-		return LikeResult{}, tx.Error
+	tx, err := st.Begin(ctx)
+	if err != nil {
+		return LikeResult{}, err
 	}
 	if hasLiked {
-		if err := tx.Delete(&like).Error; err != nil {
+		if err := tx.DeleteLike(&like); err != nil {
 			tx.Rollback()
 			return LikeResult{}, err
 		}
-		if err := tx.Model(&comment).Update("likes", comment.Likes-1).Error; err != nil {
+		if err := tx.UpdateCommentLikes(comment.ID, comment.Likes-1); err != nil {
 			tx.Rollback()
 			return LikeResult{}, err
 		}
 		comment.Likes--
 	} else {
 		newLike := model.Like{TargetID: uint(commentID), UserID: uint(userID), TargetType: "comment"}
-		if err := tx.Create(&newLike).Error; err != nil {
+		if err := tx.CreateLike(&newLike); err != nil {
 			tx.Rollback()
 			return LikeResult{}, err
 		}
-		if err := tx.Model(&comment).Update("likes", comment.Likes+1).Error; err != nil {
+		if err := tx.UpdateCommentLikes(comment.ID, comment.Likes+1); err != nil {
 			tx.Rollback()
 			return LikeResult{}, err
 		}
 		comment.Likes++
 	}
-	if err := tx.Commit().Error; err != nil {
+	if err := tx.Commit(); err != nil {
 		return LikeResult{}, err
 	}
 
-	if err := db.WithContext(ctx).Preload("User").First(&comment, commentID).Error; err != nil {
+	comment, err = st.GetCommentWithUser(ctx, uint(commentID))
+	if err != nil {
 		return LikeResult{}, err
 	}
 
-	var currentLike model.Like
-	isLiked := db.WithContext(ctx).
-		Where("target_id = ? AND user_id = ? AND target_type = ?", commentID, userID, "comment").
-		First(&currentLike).Error == nil
+	isLiked, err := st.HasLiked(ctx, uint(commentID), uint(userID), "comment")
+	if err != nil {
+		return LikeResult{}, err
+	}
 
 	return LikeResult{Comment: comment, User: comment.User, IsLiked: isLiked}, nil
 }

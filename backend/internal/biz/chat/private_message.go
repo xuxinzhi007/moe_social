@@ -20,8 +20,8 @@ import (
 var safePrivateImageToken = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
 
 // SendPrivateMessage 持久化一条私信并返回 proto 视图。
-func SendPrivateMessage(ctx context.Context, db *gorm.DB, in *moe.SendPrivateMessageReq) (*moe.SendPrivateMessageResp, error) {
-	if db == nil {
+func SendPrivateMessage(ctx context.Context, st PrivateMessageStore, in *moe.SendPrivateMessageReq) (*moe.SendPrivateMessageResp, error) {
+	if st == nil {
 		return nil, errors.New("db not ready")
 	}
 	senderID, err := strconv.ParseUint(strings.TrimSpace(in.GetSenderId()), 10, 32)
@@ -50,12 +50,18 @@ func SendPrivateMessage(ctx context.Context, db *gorm.DB, in *moe.SendPrivateMes
 		return nil, err
 	}
 
-	var sender model.User
-	if err := db.WithContext(ctx).First(&sender, uint(senderID)).Error; err != nil {
+	st = st.WithContext(ctx)
+	sender, err := st.GetUser(ctx, uint(senderID))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("sender not found")
+		}
 		return nil, errors.New("sender not found")
 	}
-	var receiver model.User
-	if err := db.WithContext(ctx).First(&receiver, uint(receiverID)).Error; err != nil {
+	if _, err := st.GetUser(ctx, uint(receiverID)); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("receiver not found")
+		}
 		return nil, errors.New("receiver not found")
 	}
 
@@ -77,11 +83,14 @@ func SendPrivateMessage(ctx context.Context, db *gorm.DB, in *moe.SendPrivateMes
 		row.ImagePaths = "[]"
 	}
 
-	if err := db.WithContext(ctx).Create(&row).Error; err != nil {
+	if err := st.CreatePrivateMessage(ctx, &row); err != nil {
 		return nil, errors.New("save failed")
 	}
 
-	moeBy := loadMoeNoByUserID(db.WithContext(ctx), row.SenderID, row.ReceiverID)
+	moeBy, err := st.MoeNoByUserIDs(ctx, []uint{row.SenderID, row.ReceiverID})
+	if err != nil {
+		moeBy = map[uint]string{}
+	}
 	return &moe.SendPrivateMessageResp{Message: privateMessageModelToProto(&row, moeBy)}, nil
 }
 
@@ -138,36 +147,6 @@ func privateMessageModelToProto(m *model.PrivateMessage, moeByUID map[uint]strin
 	}
 }
 
-func loadMoeNoByUserID(db *gorm.DB, ids ...uint) map[uint]string {
-	out := make(map[uint]string)
-	if db == nil || len(ids) == 0 {
-		return out
-	}
-	seen := make(map[uint]struct{})
-	uniq := make([]uint, 0, len(ids))
-	for _, id := range ids {
-		if id == 0 {
-			continue
-		}
-		if _, ok := seen[id]; ok {
-			continue
-		}
-		seen[id] = struct{}{}
-		uniq = append(uniq, id)
-	}
-	if len(uniq) == 0 {
-		return out
-	}
-	var users []model.User
-	if err := db.Select("id", "moe_no").Where("id IN ?", uniq).Find(&users).Error; err != nil {
-		return out
-	}
-	for _, u := range users {
-		out[u.ID] = u.MoeNo
-	}
-	return out
-}
-
 func retentionDaysToUint8(days int) uint8 {
 	if days < 1 {
 		days = 1
@@ -184,6 +163,13 @@ func PrivateMessageModelToProto(m *model.PrivateMessage, moeByUID map[uint]strin
 }
 
 // LoadMoeNoByUserID 批量加载 moe_no 展示字段。
-func LoadMoeNoByUserID(db *gorm.DB, ids ...uint) map[uint]string {
-	return loadMoeNoByUserID(db, ids...)
+func LoadMoeNoByUserID(st PrivateMessageStore, ids ...uint) map[uint]string {
+	if st == nil || len(ids) == 0 {
+		return map[uint]string{}
+	}
+	moeBy, err := st.MoeNoByUserIDs(context.Background(), ids)
+	if err != nil {
+		return map[uint]string{}
+	}
+	return moeBy
 }

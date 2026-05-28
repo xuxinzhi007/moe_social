@@ -12,8 +12,8 @@ import (
 )
 
 // ListGroups 群组列表。
-func ListGroups(ctx context.Context, db *gorm.DB, in *moe.GetGroupsReq) (*moe.GetGroupsResp, error) {
-	if db == nil {
+func ListGroups(ctx context.Context, store CommunityStore, in *moe.GetGroupsReq) (*moe.GetGroupsResp, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	page := in.GetPage()
@@ -24,41 +24,29 @@ func ListGroups(ctx context.Context, db *gorm.DB, in *moe.GetGroupsReq) (*moe.Ge
 	if pageSize <= 0 {
 		pageSize = 10
 	}
-	q := db.WithContext(ctx).Model(&model.Group{}).Where("status = ?", "active")
-	if in.GetIsPublic() {
-		q = q.Where("is_public = ?", true)
-	}
-	if kw := in.GetKeyword(); kw != "" {
-		like := "%" + kw + "%"
-		q = q.Where("name LIKE ? OR description LIKE ?", like, like)
-	}
-	var total int64
-	if err := q.Count(&total).Error; err != nil {
-		return nil, err
-	}
-	var groups []model.Group
 	offset := (int(page) - 1) * int(pageSize)
-	if err := q.Offset(offset).Limit(int(pageSize)).Find(&groups).Error; err != nil {
+	groups, total, err := store.ListActiveGroups(ctx, in.GetKeyword(), in.GetIsPublic(), offset, int(pageSize))
+	if err != nil {
 		return nil, err
 	}
 	out := make([]*moe.Group, len(groups))
 	for i, group := range groups {
-		out[i] = groupToProto(db.WithContext(ctx), group, in.GetUserId(), "2006-01-02 15:04:05")
+		out[i] = groupToProto(ctx, store, group, in.GetUserId(), "2006-01-02 15:04:05")
 	}
 	return &moe.GetGroupsResp{Groups: out, Total: int32(total)}, nil
 }
 
 // GetGroup 群组详情。
-func GetGroup(ctx context.Context, db *gorm.DB, in *moe.GetGroupReq) (*moe.GetGroupResp, error) {
-	if db == nil {
+func GetGroup(ctx context.Context, store CommunityStore, in *moe.GetGroupReq) (*moe.GetGroupResp, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	groupID, err := parseGroupID(in.GetGroupId())
 	if err != nil {
 		return &moe.GetGroupResp{Success: false, Message: "invalid group id"}, nil
 	}
-	var group model.Group
-	if err := db.WithContext(ctx).First(&group, groupID).Error; err != nil {
+	group, err := store.GetGroupByID(ctx, uint(groupID))
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &moe.GetGroupResp{Success: false, Message: "group not found"}, nil
 		}
@@ -67,13 +55,13 @@ func GetGroup(ctx context.Context, db *gorm.DB, in *moe.GetGroupReq) (*moe.GetGr
 	return &moe.GetGroupResp{
 		Success: true,
 		Message: "success",
-		Group:   groupToProto(db.WithContext(ctx), group, in.GetUserId(), "2006-01-02 15:04:05"),
+		Group:   groupToProto(ctx, store, group, in.GetUserId(), "2006-01-02 15:04:05"),
 	}, nil
 }
 
 // ListUserGroups 用户已加入群组。
-func ListUserGroups(ctx context.Context, db *gorm.DB, in *moe.GetUserGroupsReq) (*moe.GetUserGroupsResp, error) {
-	if db == nil {
+func ListUserGroups(ctx context.Context, store CommunityStore, in *moe.GetUserGroupsReq) (*moe.GetUserGroupsResp, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	userID, err := parseUserID(in.GetUserId())
@@ -88,14 +76,13 @@ func ListUserGroups(ctx context.Context, db *gorm.DB, in *moe.GetUserGroupsReq) 
 	if pageSize <= 0 {
 		pageSize = 10
 	}
-	q := db.WithContext(ctx).Model(&model.GroupMember{}).Where("user_id = ?", userID)
-	var total int64
-	if err := q.Count(&total).Error; err != nil {
+	offset := (int(page) - 1) * int(pageSize)
+	total, err := store.CountUserMemberships(ctx, uint(userID))
+	if err != nil {
 		return nil, err
 	}
-	var members []model.GroupMember
-	offset := (int(page) - 1) * int(pageSize)
-	if err := q.Offset(offset).Limit(int(pageSize)).Find(&members).Error; err != nil {
+	members, err := store.ListUserMemberships(ctx, uint(userID), offset, int(pageSize))
+	if err != nil {
 		return nil, err
 	}
 	groupIDs := make([]uint, len(members))
@@ -104,8 +91,7 @@ func ListUserGroups(ctx context.Context, db *gorm.DB, in *moe.GetUserGroupsReq) 
 	}
 	groupMap := map[uint]model.Group{}
 	if len(groupIDs) > 0 {
-		var groups []model.Group
-		_ = db.WithContext(ctx).Where("id IN ?", groupIDs).Find(&groups).Error
+		groups, _ := store.FindGroupsByIDs(ctx, groupIDs)
 		for _, g := range groups {
 			groupMap[g.ID] = g
 		}
@@ -113,15 +99,15 @@ func ListUserGroups(ctx context.Context, db *gorm.DB, in *moe.GetUserGroupsReq) 
 	out := make([]*moe.Group, 0, len(members))
 	for _, member := range members {
 		if group, ok := groupMap[member.GroupID]; ok {
-			out = append(out, groupToProtoWithMember(db.WithContext(ctx), group, member))
+			out = append(out, groupToProtoWithMember(ctx, store, group, member))
 		}
 	}
 	return &moe.GetUserGroupsResp{Groups: out, Total: int32(total)}, nil
 }
 
 // ListGroupMembers 群组成员。
-func ListGroupMembers(ctx context.Context, db *gorm.DB, in *moe.GetGroupMembersReq) (*moe.GetGroupMembersResp, error) {
-	if db == nil {
+func ListGroupMembers(ctx context.Context, store CommunityStore, in *moe.GetGroupMembersReq) (*moe.GetGroupMembersResp, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	groupID, err := parseGroupID(in.GetGroupId())
@@ -136,26 +122,25 @@ func ListGroupMembers(ctx context.Context, db *gorm.DB, in *moe.GetGroupMembersR
 	if pageSize <= 0 {
 		pageSize = 10
 	}
-	q := db.WithContext(ctx).Model(&model.GroupMember{}).Where("group_id = ?", groupID)
-	var total int64
-	if err := q.Count(&total).Error; err != nil {
+	offset := (int(page) - 1) * int(pageSize)
+	total, err := store.CountGroupMembers(ctx, uint(groupID))
+	if err != nil {
 		return nil, err
 	}
-	var members []model.GroupMember
-	offset := (int(page) - 1) * int(pageSize)
-	if err := q.Offset(offset).Limit(int(pageSize)).Find(&members).Error; err != nil {
+	members, err := store.ListGroupMembers(ctx, uint(groupID), offset, int(pageSize))
+	if err != nil {
 		return nil, err
 	}
 	out := make([]*moe.GroupMember, len(members))
 	for i, member := range members {
-		out[i] = memberToProto(db.WithContext(ctx), member)
+		out[i] = memberToProto(ctx, store, member)
 	}
 	return &moe.GetGroupMembersResp{Members: out, Total: int32(total)}, nil
 }
 
 // ListGroupPosts 群组帖子。
-func ListGroupPosts(ctx context.Context, db *gorm.DB, in *moe.GetGroupPostsReq) (*moe.GetGroupPostsResp, error) {
-	if db == nil {
+func ListGroupPosts(ctx context.Context, store CommunityStore, postStore postbiz.PostStore, in *moe.GetGroupPostsReq) (*moe.GetGroupPostsResp, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	groupID, err := parseGroupID(in.GetGroupId())
@@ -174,14 +159,13 @@ func ListGroupPosts(ctx context.Context, db *gorm.DB, in *moe.GetGroupPostsReq) 
 		pageSize = 100
 	}
 	viewerUID := optionalUserID(in.GetUserId())
-	base := db.WithContext(ctx).Model(&model.GroupPost{}).Where("group_id = ?", groupID)
-	var total int64
-	if err := base.Count(&total).Error; err != nil {
+	offset := int((page - 1) * pageSize)
+	total, err := store.CountGroupPostLinks(ctx, uint(groupID))
+	if err != nil {
 		return nil, err
 	}
-	var links []model.GroupPost
-	offset := (page - 1) * pageSize
-	if err := base.Order("created_at DESC").Offset(int(offset)).Limit(int(pageSize)).Find(&links).Error; err != nil {
+	links, err := store.ListGroupPostLinks(ctx, uint(groupID), offset, int(pageSize))
+	if err != nil {
 		return nil, err
 	}
 	if len(links) == 0 {
@@ -191,12 +175,8 @@ func ListGroupPosts(ctx context.Context, db *gorm.DB, in *moe.GetGroupPostsReq) 
 	for _, link := range links {
 		postIDs = append(postIDs, link.PostID)
 	}
-	var posts []model.Post
-	if err := db.WithContext(ctx).Preload("TopicTags").
-		Model(&model.Post{}).
-		Scopes(postbiz.ModerationVisibleScope(viewerUID)).
-		Where("id IN ?", postIDs).
-		Find(&posts).Error; err != nil {
+	posts, err := store.FindVisiblePostsByIDs(ctx, postIDs, viewerUID)
+	if err != nil {
 		return nil, err
 	}
 	postMap := make(map[uint]model.Post, len(posts))
@@ -207,8 +187,7 @@ func ListGroupPosts(ctx context.Context, db *gorm.DB, in *moe.GetGroupPostsReq) 
 	}
 	userMap := map[uint]model.User{}
 	if len(userIDs) > 0 {
-		var users []model.User
-		_ = db.WithContext(ctx).Where("id IN ?", userIDs).Find(&users).Error
+		users, _ := store.FindUsersByIDs(ctx, userIDs)
 		for _, u := range users {
 			userMap[u.ID] = u
 		}
@@ -217,7 +196,7 @@ func ListGroupPosts(ctx context.Context, db *gorm.DB, in *moe.GetGroupPostsReq) 
 	for id := range postMap {
 		visiblePostIDs = append(visiblePostIDs, id)
 	}
-	liked := postbiz.LikedTargetIDSet(db.WithContext(ctx), viewerUID, "post", visiblePostIDs)
+	liked := postbiz.LikedTargetIDSet(ctx, postStore, viewerUID, "post", visiblePostIDs)
 	out := make([]*moe.GroupPost, 0, len(links))
 	for _, link := range links {
 		post, ok := postMap[link.PostID]

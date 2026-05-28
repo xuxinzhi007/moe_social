@@ -24,7 +24,7 @@ func (l *RecordAdminAuditLogLogic) RecordAdminAuditLog(in *moe.RecordAdminAuditL
 	if in.GetAdminId() == 0 {
 		return &moe.RecordAdminAuditLogResp{}, nil
 	}
-	if err := adminbiz.RecordAuditLog(l.ctx, l.svcCtx.DB, in); err != nil {
+	if err := adminbiz.RecordAuditLog(l.ctx, l.svcCtx.AdminStore(), in); err != nil {
 		l.Errorf("[admin] record audit log: %v", err)
 	}
 	return &moe.RecordAdminAuditLogResp{}, nil

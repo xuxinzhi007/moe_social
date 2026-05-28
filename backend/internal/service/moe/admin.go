@@ -7,6 +7,7 @@ import (
 	"time"
 
 	moebiz "backend/internal/biz/moe"
+	moedata "backend/internal/data/moe"
 	"backend/model"
 	"backend/pkg/moe/brain"
 	"backend/pkg/moe/port"
@@ -21,6 +22,7 @@ import (
 // AdminService Moe 管理端应用服务（Kratos service 层，混合期由 go-zero RPC 调用）。
 type AdminService struct {
 	db              *gorm.DB
+	store           moebiz.MoeStore
 	runtimeDeps     RuntimeDepsFactory
 	superPort       SuperPortFactory
 	brainDeps       BrainDepsFactory
@@ -30,7 +32,7 @@ type AdminService struct {
 
 // NewAdmin 构造 AdminService。
 func NewAdmin(db *gorm.DB) *AdminService {
-	return &AdminService{db: db}
+	return &AdminService{db: db, store: moedata.NewStore(db)}
 }
 
 // AttachRuntimeDeps 注入试跑/调度所需的 runtime 依赖（RPC 启动时调用一次）。
@@ -111,22 +113,22 @@ func (s *AdminService) requireToolsDeps(ctx context.Context) (tools.Deps, error)
 
 // GetBrainPipeline 查询试跑流水线快照。
 func (s *AdminService) GetBrainPipeline(ctx context.Context, agentKey string) (moebiz.PipelineSnapshot, error) {
-	return moebiz.GetBrainPipeline(ctx, s.db, agentKey)
+	return moebiz.GetBrainPipeline(ctx, s.store, agentKey)
 }
 
 // GetBotFlowConfig 读取 Bot 编排画布配置。
 func (s *AdminService) GetBotFlowConfig(ctx context.Context, agentKey string) (moebiz.FlowConfig, error) {
-	return moebiz.GetFlowConfig(ctx, s.db, agentKey)
+	return moebiz.GetFlowConfig(ctx, s.store, agentKey)
 }
 
 // UpsertBotFlowConfig 保存 Bot 编排画布配置。
 func (s *AdminService) UpsertBotFlowConfig(ctx context.Context, agentKey string, in moebiz.FlowConfig) (moebiz.FlowConfig, error) {
-	return moebiz.UpsertFlowConfig(ctx, s.db, agentKey, in)
+	return moebiz.UpsertFlowConfig(ctx, s.store, agentKey, in)
 }
 
 // DeleteBotFlowConfig 重置为默认画布模板。
 func (s *AdminService) DeleteBotFlowConfig(ctx context.Context, agentKey string) (moebiz.FlowConfig, error) {
-	return moebiz.DeleteFlowConfig(ctx, s.db, agentKey)
+	return moebiz.DeleteFlowConfig(ctx, s.store, agentKey)
 }
 
 // RunOnceInvokeResult 试跑调用结果（同步完成或异步已接受）。
@@ -166,7 +168,7 @@ func (s *AdminService) GetBrainSnapshot(ctx context.Context, agentKey string) (*
 	if err != nil {
 		return nil, err
 	}
-	return moebiz.GetBrainSnapshot(ctx, s.db, rpc, agentKey)
+	return moebiz.GetBrainSnapshot(ctx, s.store, rpc, agentKey)
 }
 
 // UpdateBrainPolicy 更新标签策略并返回最新快照。
@@ -175,12 +177,12 @@ func (s *AdminService) UpdateBrainPolicy(ctx context.Context, agentKey string, f
 	if err != nil {
 		return nil, err
 	}
-	return moebiz.UpdateBrainPolicy(ctx, s.db, rpc, agentKey, forbiddenTags, preferredTags)
+	return moebiz.UpdateBrainPolicy(ctx, s.store, rpc, agentKey, forbiddenTags, preferredTags)
 }
 
 // ListRuntimes 列出 Bot 运行时。
 func (s *AdminService) ListRuntimes(ctx context.Context) ([]model.MoeAgentRuntime, error) {
-	return moebiz.ListRuntimes(ctx, s.db)
+	return moebiz.ListRuntimes(ctx, s.store)
 }
 
 // FindRuntimeByAgentKey 按 agent_key 查找运行时。
@@ -203,7 +205,7 @@ func (s *AdminService) FindRuntimeByAgentKey(ctx context.Context, agentKey strin
 
 // UpsertRuntime 创建或更新 Bot 运行时。
 func (s *AdminService) UpsertRuntime(ctx context.Context, p moebiz.UpsertRuntimeParams) (model.MoeAgentRuntime, error) {
-	return moebiz.UpsertRuntime(ctx, s.db, p)
+	return moebiz.UpsertRuntime(ctx, s.store, p)
 }
 
 // DeleteBrainEpisode 删除自传 episode。
@@ -235,12 +237,12 @@ func (s *AdminService) CurateBrain(ctx context.Context, agentKey string, opts br
 
 // QueryToolStats 工具调用统计。
 func (s *AdminService) QueryToolStats(ctx context.Context, f moebiz.ToolStatsFilter) (moebiz.ToolStatsResult, error) {
-	return moebiz.QueryToolStats(ctx, s.db, f)
+	return moebiz.QueryToolStats(ctx, s.store, f)
 }
 
 // ListToolCalls 工具调用列表。
 func (s *AdminService) ListToolCalls(ctx context.Context, f moebiz.ToolCallsFilter) ([]moebiz.ToolCallRow, int64, error) {
-	return moebiz.ListToolCalls(ctx, s.db, f)
+	return moebiz.ListToolCalls(ctx, s.store, f)
 }
 
 // ExecuteTool 执行 Moe 工具。
@@ -249,12 +251,12 @@ func (s *AdminService) ExecuteTool(ctx context.Context, in moebiz.ExecuteToolInp
 	if err != nil {
 		return moebiz.ExecuteToolResult{}, err
 	}
-	return moebiz.ExecuteTool(ctx, s.db, deps, in), nil
+	return moebiz.ExecuteTool(ctx, s.store, deps, in), nil
 }
 
 // SearchPosts 检索社区帖子。
 func (s *AdminService) SearchPosts(ctx context.Context, in moebiz.SearchPostsInput) ([]postpulse.SearchHit, error) {
-	return moebiz.SearchPosts(ctx, s.db, in)
+	return moebiz.SearchPosts(ctx, s.store, in)
 }
 
 // ParseTimeFilter 解析管理端时间筛选（透传 toolaudit）。

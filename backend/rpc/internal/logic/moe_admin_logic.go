@@ -339,7 +339,7 @@ func NewMoeSearchPostsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Mo
 }
 
 func (l *MoeSearchPostsLogic) MoeSearchPosts(in *moe.MoeSearchPostsReq) (*moe.MoeSearchPostsResp, error) {
-	out, err := postbiz.Search(l.ctx, l.svcCtx.DB, postbiz.SearchInput{
+	out, err := postbiz.Search(l.ctx, l.svcCtx.PostStore(), postbiz.SearchInput{
 		Query: in.GetQuery(), Limit: in.GetLimit(), ViewerUserID: in.GetViewerUserId(),
 		MoodTag: in.GetMoodTag(), TopicTagID: in.GetTopicTagId(),
 	})

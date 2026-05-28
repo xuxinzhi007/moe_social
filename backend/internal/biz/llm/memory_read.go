@@ -18,7 +18,11 @@ var (
 )
 
 // GetUserMemories 分页查询用户记忆（排除设备同步项）。
-func GetUserMemories(ctx context.Context, db *gorm.DB, in *moe.GetUserMemoriesReq) (*moe.GetUserMemoriesResp, error) {
+func GetUserMemories(ctx context.Context, st MemoryStore, in *moe.GetUserMemoriesReq) (*moe.GetUserMemoriesResp, error) {
+	db := dbFromStore(ctx, st)
+	if db == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	if in.GetUserId() == "" {
 		return nil, ErrMemoryEmptyUserID
 	}
@@ -39,7 +43,7 @@ func GetUserMemories(ctx context.Context, db *gorm.DB, in *moe.GetUserMemoriesRe
 		offset = 0
 	}
 
-	memScope := db.WithContext(ctx).Model(&model.UserMemory{}).
+	memScope := db.Model(&model.UserMemory{}).
 		Where("user_id = ?", uint(userID)).
 		Where("`key` NOT LIKE ?", "device_info:%").
 		Where("source <> ?", "device_sync")
@@ -69,7 +73,11 @@ func GetUserMemories(ctx context.Context, db *gorm.DB, in *moe.GetUserMemoriesRe
 }
 
 // GetUserMemoryProfiles 返回用户画像缓存（必要时重建）。
-func GetUserMemoryProfiles(ctx context.Context, db *gorm.DB, in *moe.GetUserMemoryProfilesReq) (*moe.GetUserMemoryProfilesResp, error) {
+func GetUserMemoryProfiles(ctx context.Context, st MemoryStore, in *moe.GetUserMemoryProfilesReq) (*moe.GetUserMemoryProfilesResp, error) {
+	db := dbFromStore(ctx, st)
+	if db == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	if strings.TrimSpace(in.GetUserId()) == "" {
 		return nil, ErrMemoryEmptyUserID
 	}
@@ -90,7 +98,7 @@ func GetUserMemoryProfiles(ctx context.Context, db *gorm.DB, in *moe.GetUserMemo
 	}
 
 	var caches []model.UserMemoryProfileCache
-	if err := db.WithContext(ctx).Model(&model.UserMemoryProfileCache{}).
+	if err := db.Model(&model.UserMemoryProfileCache{}).
 		Where("user_id = ?", uint(userID)).
 		Order("item_count desc, confidence desc").
 		Limit(limit).
@@ -111,7 +119,11 @@ func GetUserMemoryProfiles(ctx context.Context, db *gorm.DB, in *moe.GetUserMemo
 }
 
 // DeleteUserMemory 按 user_id + key 删除记忆。
-func DeleteUserMemory(ctx context.Context, db *gorm.DB, in *moe.DeleteUserMemoryReq) (*moe.DeleteUserMemoryResp, error) {
+func DeleteUserMemory(ctx context.Context, st MemoryStore, in *moe.DeleteUserMemoryReq) (*moe.DeleteUserMemoryResp, error) {
+	db := dbFromStore(ctx, st)
+	if db == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	if in.GetUserId() == "" {
 		return nil, ErrMemoryEmptyUserID
 	}
@@ -123,7 +135,7 @@ func DeleteUserMemory(ctx context.Context, db *gorm.DB, in *moe.DeleteUserMemory
 		return nil, ErrMemoryInvalidUser
 	}
 
-	result := db.WithContext(ctx).Where("user_id = ? AND `key` = ?", uint(userID), in.GetKey()).
+	result := db.Where("user_id = ? AND `key` = ?", uint(userID), in.GetKey()).
 		Delete(&model.UserMemory{})
 	if result.Error != nil {
 		return nil, result.Error

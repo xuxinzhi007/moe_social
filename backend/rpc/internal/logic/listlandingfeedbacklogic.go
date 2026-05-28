@@ -4,6 +4,7 @@ import (
 	"context"
 
 	landingbiz "backend/internal/biz/landing"
+	landingdata "backend/internal/data/landing"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/moe"
@@ -26,7 +27,7 @@ func NewListLandingFeedbackLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *ListLandingFeedbackLogic) ListLandingFeedback(in *moe.ListLandingFeedbackReq) (*moe.ListLandingFeedbackResp, error) {
-	result, err := landingbiz.List(l.ctx, l.svcCtx.DB, landingbiz.ListFilter{
+	result, err := landingbiz.List(l.ctx, landingdata.NewFeedbackStore(l.svcCtx.DB), landingbiz.ListFilter{
 		Page:     in.GetPage(),
 		PageSize: in.GetPageSize(),
 		Category: in.GetCategory(),

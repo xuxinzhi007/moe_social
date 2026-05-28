@@ -4,13 +4,66 @@ package comment.v1;
 
 option go_package = "backend/api/comment/v1;commentv1";
 
-// CommentApp — 域 SSOT。
-// POST /api/comments
-// POST /api/comments/:comment_id/like
+// Comment — 域 gRPC SSOT（P4-C；与 Super 并存）。
+// HTTP: GET /api/posts/:post_id/comments, POST /api/comments, POST like
 
-message PingRequest {}
-message PingReply {}
+message Comment {
+  string id = 1;
+  string post_id = 2;
+  string user_id = 3;
+  string user_name = 4;
+  string user_avatar = 5;
+  string content = 6;
+  int32 likes = 7;
+  bool is_liked = 8;
+  string created_at = 9;
+  string parent_id = 10;
+  string reply_to_user_name = 11;
+}
 
-service CommentApp {
-  rpc Ping(PingRequest) returns (PingReply);
+message AchievementUnlock {
+  string badge_id = 1;
+  string name = 2;
+  int32 exp_granted = 3;
+  bool level_up = 4;
+  int32 new_level = 5;
+}
+
+message GetPostCommentsRequest {
+  string post_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+  string viewer_user_id = 4;
+}
+
+message GetPostCommentsReply {
+  repeated Comment comments = 1;
+  int32 total = 2;
+}
+
+message CreateCommentRequest {
+  string post_id = 1;
+  string user_id = 2;
+  string content = 3;
+  string parent_id = 4;
+}
+
+message CreateCommentReply {
+  Comment comment = 1;
+  repeated AchievementUnlock new_achievements = 2;
+}
+
+message LikeCommentRequest {
+  string comment_id = 1;
+  string user_id = 2;
+}
+
+message LikeCommentReply {
+  Comment comment = 1;
+}
+
+service CommentService {
+  rpc GetPostComments(GetPostCommentsRequest) returns (GetPostCommentsReply);
+  rpc CreateComment(CreateCommentRequest) returns (CreateCommentReply);
+  rpc LikeComment(LikeCommentRequest) returns (LikeCommentReply);
 }

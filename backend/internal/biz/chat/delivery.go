@@ -10,7 +10,6 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"google.golang.org/grpc"
-	"gorm.io/gorm"
 )
 
 // NotificationTypePrivateChat 与 model.Notification.Type 一致：6=私信。
@@ -28,9 +27,9 @@ type NotificationWriter interface {
 
 // DeliveryDeps 私信实时投递依赖。
 type DeliveryDeps struct {
-	UserReader UserProfileReader
-	DB         *gorm.DB
-	NotifyRPC  NotificationWriter
+	UserReader  UserProfileReader
+	NotifyStore notifybiz.NotifyStore
+	NotifyRPC   NotificationWriter
 }
 
 // ResolvePrivateMessageSenderProfile 私信投递时的展示名与头像。
@@ -92,8 +91,8 @@ func PersistOfflinePrivateChatNotification(ctx context.Context, deps DeliveryDep
 		Content:  body,
 	}
 	var err error
-	if deps.DB != nil {
-		err = notifybiz.CreateInbox(ctx, deps.DB, req)
+	if deps.NotifyStore != nil {
+		err = notifybiz.CreateInbox(ctx, deps.NotifyStore, req)
 	} else if deps.NotifyRPC != nil {
 		_, err = deps.NotifyRPC.CreateNotification(ctx, req)
 	}

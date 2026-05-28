@@ -27,7 +27,8 @@ type MemoryWriteOptions struct {
 }
 
 // UpsertUserMemory 创建或更新用户记忆（含冲突策略与异步索引）。
-func UpsertUserMemory(ctx context.Context, db *gorm.DB, in *moe.UpsertUserMemoryReq, opts MemoryWriteOptions) (*moe.UpsertUserMemoryResp, error) {
+func UpsertUserMemory(ctx context.Context, st MemoryStore, in *moe.UpsertUserMemoryReq, opts MemoryWriteOptions) (*moe.UpsertUserMemoryResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}

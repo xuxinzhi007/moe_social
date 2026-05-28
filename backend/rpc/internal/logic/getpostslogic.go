@@ -21,7 +21,7 @@ func NewGetPostsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPosts
 }
 
 func (l *GetPostsLogic) GetPosts(in *moe.GetPostsReq) (*moe.GetPostsResp, error) {
-	posts, total, err := postbiz.List(l.ctx, l.svcCtx.DB, postbiz.ListFilter{
+	posts, total, err := postbiz.List(l.ctx, l.svcCtx.PostStore(), postbiz.ListFilter{
 		Page: in.GetPage(), PageSize: in.GetPageSize(), ViewerUserID: in.GetViewerUserId(),
 		FeedMode: in.GetFeedMode(), TopicTagID: in.GetTopicTagId(), AuthorUserID: in.GetAuthorUserId(),
 	})

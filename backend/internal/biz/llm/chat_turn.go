@@ -12,7 +12,8 @@ import (
 )
 
 // RecordChatTurn 持久化 LLM 会话轮次。
-func RecordChatTurn(ctx context.Context, db *gorm.DB, in *moe.RecordLlmChatTurnReq) (*moe.RecordLlmChatTurnResp, error) {
+func RecordChatTurn(ctx context.Context, st MemoryStore, in *moe.RecordLlmChatTurnReq) (*moe.RecordLlmChatTurnResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil || in.GetUserId() == 0 {
 		return &moe.RecordLlmChatTurnResp{Ok: false}, nil
 	}

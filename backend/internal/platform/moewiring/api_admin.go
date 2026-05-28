@@ -5,6 +5,7 @@ import (
 
 	moebiz "backend/internal/biz/moe"
 	"backend/internal/adapter/moeconfig"
+	moedata "backend/internal/data/moe"
 	moeadmin "backend/internal/service/moe"
 	"backend/pkg/moe/brain"
 	"backend/pkg/moe/flowexec"
@@ -39,7 +40,7 @@ func NewAPIAdminService(superClient moe.SuperClient) (*moeadmin.AdminService, er
 		return runtime.Deps{
 			DB: db, RPC: grpcPort, Inference: inf,
 			ResolvePostingPlan: func(ctx context.Context, gdb *gorm.DB, agentKey string) (plan flowexec.Plan, err error) {
-				return moebiz.ResolvePostingPlan(ctx, gdb, agentKey)
+				return moebiz.ResolvePostingPlan(ctx, moedata.NewStore(gdb), agentKey)
 			},
 		}
 	})

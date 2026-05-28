@@ -15,9 +15,16 @@ import (
 )
 
 // DeleteUser 注销账号（脱敏后软删）。
-func DeleteUser(ctx context.Context, db *gorm.DB, in *moe.DeleteUserReq) (*moe.DeleteUserResp, error) {
-	var user model.User
-	if err := db.WithContext(ctx).First(&user, in.GetUserId()).Error; err != nil {
+func DeleteUser(ctx context.Context, store UserStore, in *moe.DeleteUserReq) (*moe.DeleteUserResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
+	userID, err := parseUserIDString(in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	user, err := store.GetUserByID(ctx, userID)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotFound
 		}
@@ -26,10 +33,10 @@ func DeleteUser(ctx context.Context, db *gorm.DB, in *moe.DeleteUserReq) (*moe.D
 	if err := scrubUserBeforeDelete(&user); err != nil {
 		return nil, err
 	}
-	if err := db.WithContext(ctx).Save(&user).Error; err != nil {
+	if err := store.SaveUser(ctx, &user); err != nil {
 		return nil, err
 	}
-	if err := db.WithContext(ctx).Delete(&user).Error; err != nil {
+	if err := store.DeleteUserHard(ctx, user.ID); err != nil {
 		return nil, err
 	}
 	return &moe.DeleteUserResp{}, nil

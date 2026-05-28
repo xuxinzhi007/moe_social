@@ -22,7 +22,7 @@ func NewUpsertUserMemoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *UpsertUserMemoryLogic) UpsertUserMemory(in *moe.UpsertUserMemoryReq) (*moe.UpsertUserMemoryResp, error) {
-	resp, err := llmbiz.UpsertUserMemory(l.ctx, l.svcCtx.DB, in, llmbiz.MemoryWriteOptions{
+	resp, err := llmbiz.UpsertUserMemory(l.ctx, l.svcCtx.MemoryStore(), in, llmbiz.MemoryWriteOptions{
 		InferenceBaseURL: moeconfig.InferenceFromViper().BaseURL,
 	})
 	if err != nil {

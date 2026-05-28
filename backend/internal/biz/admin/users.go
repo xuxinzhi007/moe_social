@@ -2,10 +2,8 @@ package adminbiz
 
 import (
 	"context"
-	"strings"
 
 	userbiz "backend/internal/biz/user"
-	"backend/model"
 	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
@@ -19,8 +17,8 @@ type UserPage struct {
 }
 
 // ListUsers Admin 用户列表。
-func ListUsers(ctx context.Context, db *gorm.DB, in UserPage) ([]*moe.User, int32, error) {
-	if db == nil {
+func ListUsers(ctx context.Context, store AdminStore, in UserPage) ([]*moe.User, int32, error) {
+	if store == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
 	page := in.Page
@@ -35,20 +33,9 @@ func ListUsers(ctx context.Context, db *gorm.DB, in UserPage) ([]*moe.User, int3
 		pageSize = 100
 	}
 
-	q := db.WithContext(ctx).Model(&model.User{})
-	if kw := strings.TrimSpace(in.Keyword); kw != "" {
-		like := "%" + kw + "%"
-		q = q.Where("username LIKE ? OR email LIKE ? OR moe_no LIKE ?", like, like, like)
-	}
-
-	var total int64
-	if err := q.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	var users []model.User
 	offset := int((page - 1) * pageSize)
-	if err := q.Order("id ASC").Offset(offset).Limit(int(pageSize)).Find(&users).Error; err != nil {
+	users, total, err := store.ListUsers(ctx, in.Keyword, offset, int(pageSize))
+	if err != nil {
 		return nil, 0, err
 	}
 

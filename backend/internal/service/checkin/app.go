@@ -5,6 +5,7 @@ import (
 	"context"
 
 	checkinbiz "backend/internal/biz/checkin"
+	checkindata "backend/internal/data/checkin"
 	"backend/pkg/achievement"
 	"backend/rpc/pb/moe"
 
@@ -13,16 +14,16 @@ import (
 
 // AppService 签到应用层。
 type AppService struct {
-	db *gorm.DB
+	store checkinbiz.CheckInStore
 }
 
 // New 构造 AppService。
 func New(db *gorm.DB) *AppService {
-	return &AppService{db: db}
+	return &AppService{store: checkindata.NewStore(db)}
 }
 
 func (s *AppService) GetCheckInStatus(ctx context.Context, in *moe.GetCheckInStatusReq) (*moe.GetCheckInStatusResp, error) {
-	status, err := checkinbiz.GetStatus(ctx, s.db, in.GetUserId())
+	status, err := checkinbiz.GetStatus(ctx, s.store, in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +31,7 @@ func (s *AppService) GetCheckInStatus(ctx context.Context, in *moe.GetCheckInSta
 }
 
 func (s *AppService) CheckIn(ctx context.Context, in *moe.CheckInReq) (*moe.CheckInResp, error) {
-	result, err := checkinbiz.CheckIn(ctx, s.db, in.GetUserId())
+	result, err := checkinbiz.CheckIn(ctx, s.store, in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +43,7 @@ func (s *AppService) CheckIn(ctx context.Context, in *moe.CheckInReq) (*moe.Chec
 }
 
 func (s *AppService) GetCheckInHistory(ctx context.Context, in *moe.GetCheckInHistoryReq) (*moe.GetCheckInHistoryResp, error) {
-	records, total, err := checkinbiz.ListHistory(ctx, s.db, in.GetUserId(), in.GetPage(), in.GetPageSize())
+	records, total, err := checkinbiz.ListHistory(ctx, s.store, in.GetUserId(), in.GetPage(), in.GetPageSize())
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +51,7 @@ func (s *AppService) GetCheckInHistory(ctx context.Context, in *moe.GetCheckInHi
 }
 
 func (s *AppService) GetExpLogs(ctx context.Context, in *moe.GetExpLogsReq) (*moe.GetExpLogsResp, error) {
-	logs, total, err := checkinbiz.ListExpLogs(ctx, s.db, in.GetUserId(), in.GetPage(), in.GetPageSize())
+	logs, total, err := checkinbiz.ListExpLogs(ctx, s.store, in.GetUserId(), in.GetPage(), in.GetPageSize())
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +59,7 @@ func (s *AppService) GetExpLogs(ctx context.Context, in *moe.GetExpLogsReq) (*mo
 }
 
 func (s *AppService) GetUserLevel(ctx context.Context, in *moe.GetUserLevelReq) (*moe.GetUserLevelResp, error) {
-	info, err := checkinbiz.GetUserLevel(ctx, s.db, in.GetUserId())
+	info, err := checkinbiz.GetUserLevel(ctx, s.store, in.GetUserId())
 	if err != nil {
 		return nil, err
 	}

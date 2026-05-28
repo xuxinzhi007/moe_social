@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package vip.v1;
+
+option go_package = "backend/api/vip/v1;vipv1";
+
+// VipService — 用户 VIP 域 gRPC SSOT（P4-C；与 Super 并存）。
+
+message VipRecord {
+  string id = 1;
+  string user_id = 2;
+  string plan_id = 3;
+  string plan_name = 4;
+  string start_at = 5;
+  string end_at = 6;
+  string status = 7;
+  string created_at = 8;
+}
+
+message GetVipRecordsRequest {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetVipRecordsReply {
+  repeated VipRecord records = 1;
+  int32 total = 2;
+}
+
+message GetUserActiveVipRecordRequest {
+  string user_id = 1;
+}
+
+message GetUserActiveVipRecordReply {
+  VipRecord record = 1;
+}
+
+message CreateVipOrderRequest {
+  string user_id = 1;
+  string plan_id = 2;
+}
+
+message CreateVipOrderReply {
+  bool success = 1;
+  string order_no = 2;
+}
+
+service VipService {
+  rpc GetVipRecords(GetVipRecordsRequest) returns (GetVipRecordsReply);
+  rpc GetUserActiveVipRecord(GetUserActiveVipRecordRequest) returns (GetUserActiveVipRecordReply);
+  rpc CreateVipOrder(CreateVipOrderRequest) returns (CreateVipOrderReply);
+}

@@ -25,5 +25,5 @@ func NewUpdateUserAvatarLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *UpdateUserAvatarLogic) UpdateUserAvatar(in *moe.UpdateUserAvatarReq) (*moe.UpdateUserAvatarResp, error) {
-	return userbiz.UpdateUserAvatar(l.ctx, l.svcCtx.DB, in)
+	return userbiz.UpdateUserAvatar(l.ctx, l.svcCtx.UserStore(), in)
 }

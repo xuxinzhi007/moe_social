@@ -30,8 +30,8 @@ func (g *Gateway) UpdateUserAvatar(ctx context.Context, in *moe.UpdateUserAvatar
 }
 
 func (g *Gateway) CreateNotification(ctx context.Context, in *moe.CreateNotificationReq, opts ...grpc.CallOption) (*moe.CreateNotificationResp, error) {
-	if g != nil && g.local != nil && g.local.DB() != nil {
-		if err := notifybiz.CreateInbox(ctx, g.local.DB(), in); err != nil {
+	if g != nil && g.local != nil && g.local.Notify() != nil {
+		if err := notifybiz.CreateInbox(ctx, g.local.Notify(), in); err != nil {
 			return nil, err
 		}
 		return &moe.CreateNotificationResp{}, nil

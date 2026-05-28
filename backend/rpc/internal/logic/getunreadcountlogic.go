@@ -23,7 +23,7 @@ func NewGetUnreadCountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 }
 
 func (l *GetUnreadCountLogic) GetUnreadCount(in *moe.GetUnreadCountReq) (*moe.GetUnreadCountResp, error) {
-	count, err := notifybiz.UnreadCount(l.ctx, l.svcCtx.DB, in.GetUserId())
+	count, err := notifybiz.UnreadCount(l.ctx, l.svcCtx.NotifyStore(), in.GetUserId())
 	if err != nil {
 		if errors.Is(err, notifybiz.ErrInvalidUserID) {
 			return nil, errorx.InvalidArgument("用户 ID 无效")

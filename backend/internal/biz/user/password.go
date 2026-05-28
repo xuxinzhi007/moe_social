@@ -5,7 +5,6 @@ import (
 	"errors"
 	"strings"
 
-	"backend/model"
 	"backend/rpc/pb/moe"
 	"backend/utils"
 
@@ -13,9 +12,16 @@ import (
 )
 
 // UpdateUserPassword 校验旧密码后更新。
-func UpdateUserPassword(ctx context.Context, db *gorm.DB, in *moe.UpdateUserPasswordReq) (*moe.UpdateUserPasswordResp, error) {
-	var user model.User
-	if err := db.WithContext(ctx).First(&user, in.GetUserId()).Error; err != nil {
+func UpdateUserPassword(ctx context.Context, store UserStore, in *moe.UpdateUserPasswordReq) (*moe.UpdateUserPasswordResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
+	userID, err := parseUserIDString(in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	user, err := store.GetUserByID(ctx, userID)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotFound
 		}
@@ -25,16 +31,18 @@ func UpdateUserPassword(ctx context.Context, db *gorm.DB, in *moe.UpdateUserPass
 		return nil, ErrWrongPassword
 	}
 	user.Password = in.GetNewPassword()
-	if err := db.WithContext(ctx).Save(&user).Error; err != nil {
+	if err := store.SaveUser(ctx, &user); err != nil {
 		return nil, err
 	}
 	return &moe.UpdateUserPasswordResp{}, nil
 }
 
 // ResetPassword 按邮箱重置密码。
-func ResetPassword(ctx context.Context, db *gorm.DB, in *moe.ResetPasswordReq) (*moe.ResetPasswordResp, error) {
-	var user model.User
-	err := db.WithContext(ctx).Where("email = ?", in.GetEmail()).First(&user).Error
+func ResetPassword(ctx context.Context, store UserStore, in *moe.ResetPasswordReq) (*moe.ResetPasswordResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
+	user, err := store.FindUserByEmail(ctx, in.GetEmail())
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, ErrNotFound
 	}
@@ -42,25 +50,28 @@ func ResetPassword(ctx context.Context, db *gorm.DB, in *moe.ResetPasswordReq) (
 		return nil, err
 	}
 	user.Password = in.GetNewPassword()
-	if err := db.WithContext(ctx).Save(&user).Error; err != nil {
+	if err := store.SaveUser(ctx, &user); err != nil {
 		return nil, err
 	}
 	return &moe.ResetPasswordResp{}, nil
 }
 
 // GetUserByEmail 按邮箱查询用户。
-func GetUserByEmail(ctx context.Context, db *gorm.DB, in *moe.GetUserByEmailReq) (*moe.GetUserByEmailResp, error) {
+func GetUserByEmail(ctx context.Context, store UserStore, in *moe.GetUserByEmailReq) (*moe.GetUserByEmailResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	email := strings.TrimSpace(in.GetEmail())
-	var user model.User
-	if err := db.WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
+	user, err := store.FindUserByEmail(ctx, email)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotFound
 		}
 		return nil, err
 	}
-	if _, err := utils.EnsureUserMoeNo(db, user.ID); err != nil {
+	if _, err := utils.EnsureUserMoeNo(store.Raw(), user.ID); err != nil {
 		return nil, err
 	}
-	_ = db.WithContext(ctx).First(&user, user.ID).Error
+	user, _ = store.ReloadUser(ctx, user.ID)
 	return &moe.GetUserByEmailResp{User: ModelToProto(&user)}, nil
 }

@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"backend/model"
-
-	"gorm.io/gorm"
 )
 
 // ParseUserID 解析 AI 资源 user_id。
@@ -22,30 +20,6 @@ func ParseUserID(raw string) (uint, error) {
 		return 0, ErrInvalidUserID
 	}
 	return uint(value), nil
-}
-
-// LoadOrCreateConfig 加载或创建用户 AI 配置行。
-func LoadOrCreateConfig(db *gorm.DB, userID uint) (*model.AiUserConfig, error) {
-	var cfg model.AiUserConfig
-	err := db.Where("user_id = ?", userID).First(&cfg).Error
-	if err == nil {
-		return &cfg, nil
-	}
-	if err != gorm.ErrRecordNotFound {
-		return nil, err
-	}
-	cfg = model.AiUserConfig{
-		UserID:               userID,
-		ProviderProfilesJSON: "[]",
-		AgentsJSON:           "[]",
-		LorebooksJSON:        "[]",
-		UserPersona:          "",
-		PreferencesJSON:      "{}",
-	}
-	if err := db.Create(&cfg).Error; err != nil {
-		return nil, err
-	}
-	return &cfg, nil
 }
 
 // DecodeJSONArray 解析 AI 配置 JSON 数组。
@@ -160,27 +134,4 @@ func ParseAgentCreatedAt(raw interface{}) time.Time {
 		}
 	}
 	return time.Now()
-}
-
-// ResolveUserDisplayName 用户展示名（含飞书别名）。
-func ResolveUserDisplayName(db *gorm.DB, userID uint) string {
-	var user model.User
-	if err := db.Select("id", "username", "email", "feishu_name").First(&user, userID).Error; err != nil {
-		return fmt.Sprintf("user#%d", userID)
-	}
-	username := strings.TrimSpace(user.Username)
-	feishuName := strings.TrimSpace(user.FeishuName)
-	if username != "" && feishuName != "" && username != feishuName {
-		return username + "（飞书：" + feishuName + "）"
-	}
-	if username != "" {
-		return username
-	}
-	if feishuName != "" {
-		return feishuName
-	}
-	if strings.TrimSpace(user.Email) != "" {
-		return user.Email
-	}
-	return fmt.Sprintf("user#%d", userID)
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"strconv"
 
-	"backend/model"
 	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
@@ -17,8 +16,8 @@ type VipOrdersPage struct {
 }
 
 // ListVipOrders 用户 VIP 订单列表。
-func ListVipOrders(ctx context.Context, db *gorm.DB, userIDRaw string, page VipOrdersPage) ([]*moe.VipOrder, int32, error) {
-	if db == nil {
+func ListVipOrders(ctx context.Context, store UserStore, userIDRaw string, page VipOrdersPage) ([]*moe.VipOrder, int32, error) {
+	if store == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
 	userID, err := strconv.ParseUint(userIDRaw, 10, 64)
@@ -35,16 +34,13 @@ func ListVipOrders(ctx context.Context, db *gorm.DB, userIDRaw string, page VipO
 	}
 	offset := int((p - 1) * ps)
 
-	var total int64
-	if err := db.WithContext(ctx).Model(&model.VipOrder{}).Where("user_id = ?", userID).Count(&total).Error; err != nil {
+	total, err := store.CountVipOrders(ctx, userID)
+	if err != nil {
 		return nil, 0, err
 	}
 
-	var orders []model.VipOrder
-	if err := db.WithContext(ctx).Preload("Plan").
-		Where("user_id = ?", userID).
-		Offset(offset).Limit(int(ps)).
-		Find(&orders).Error; err != nil {
+	orders, err := store.ListVipOrdersWithPlan(ctx, userID, offset, int(ps))
+	if err != nil {
 		return nil, 0, err
 	}
 

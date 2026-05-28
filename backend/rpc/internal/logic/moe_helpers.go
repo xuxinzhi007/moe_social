@@ -6,6 +6,7 @@ import (
 	moebiz "backend/internal/biz/moe"
 	"backend/internal/adapter/moeconfig"
 	"backend/internal/adapter/rpcsuper"
+	moedata "backend/internal/data/moe"
 	"backend/pkg/moe/brain"
 	"backend/pkg/moe/flowexec"
 	"backend/pkg/moe/runtime"
@@ -25,7 +26,7 @@ func moeRuntimeDeps(ctx context.Context, svc *svc.ServiceContext) runtime.Deps {
 		RPC:       rpcsuper.NewSuperPort(ctx, moeSuperPort(ctx, svc)),
 		Inference: moeconfig.InferenceFromViper(),
 		ResolvePostingPlan: func(ctx context.Context, db *gorm.DB, agentKey string) (flowexec.Plan, error) {
-			return moebiz.ResolvePostingPlan(ctx, db, agentKey)
+			return moebiz.ResolvePostingPlan(ctx, moedata.NewStore(db), agentKey)
 		},
 	}
 }

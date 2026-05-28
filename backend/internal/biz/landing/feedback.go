@@ -12,7 +12,18 @@ import (
 	"gorm.io/gorm"
 )
 
-// SubmitInput 提交落地页反馈。
+// FeedbackStore 落地页反馈持久化（P4-D1；默认由 data 层实现）。
+type FeedbackStore interface {
+	CountRecentByEmail(ctx context.Context, email string, since time.Time) (int64, error)
+	Create(ctx context.Context, row *model.LandingFeedback) error
+	List(ctx context.Context, category string, page, pageSize int32) (FeedbackListResult, error)
+}
+
+// FeedbackListResult 分页列表（biz 层视图）。
+type FeedbackListResult struct {
+	Rows  []model.LandingFeedback
+	Total int64
+}
 type SubmitInput struct {
 	Email     string
 	Category  string
@@ -23,8 +34,8 @@ type SubmitInput struct {
 }
 
 // Submit 保存反馈并尝试飞书通知。
-func Submit(ctx context.Context, db *gorm.DB, in SubmitInput) (uint64, error) {
-	if db == nil {
+func Submit(ctx context.Context, store FeedbackStore, in SubmitInput) (uint64, error) {
+	if store == nil {
 		return 0, gorm.ErrInvalidDB
 	}
 	email, err := utils.NormalizeFeishuEmail(in.Email)
@@ -48,10 +59,8 @@ func Submit(ctx context.Context, db *gorm.DB, in SubmitInput) (uint64, error) {
 	}
 
 	since := time.Now().Add(-1 * time.Hour)
-	var recentCount int64
-	if err := db.WithContext(ctx).Model(&model.LandingFeedback{}).
-		Where("email = ? AND created_at >= ?", email, since).
-		Count(&recentCount).Error; err != nil {
+	recentCount, err := store.CountRecentByEmail(ctx, email, since)
+	if err != nil {
 		return 0, err
 	}
 	if recentCount >= 5 {
@@ -67,7 +76,7 @@ func Submit(ctx context.Context, db *gorm.DB, in SubmitInput) (uint64, error) {
 		UserAgent: TruncateRunes(strings.TrimSpace(in.UserAgent), 255),
 		CreatedAt: time.Now(),
 	}
-	if err := db.WithContext(ctx).Create(&row).Error; err != nil {
+	if err := store.Create(ctx, &row); err != nil {
 		return 0, err
 	}
 
@@ -98,37 +107,19 @@ type ListResult struct {
 }
 
 // List 分页查询落地页反馈。
-func List(ctx context.Context, db *gorm.DB, f ListFilter) (ListResult, error) {
-	if db == nil {
+func List(ctx context.Context, store FeedbackStore, f ListFilter) (ListResult, error) {
+	if store == nil {
 		return ListResult{}, gorm.ErrInvalidDB
 	}
-	page := f.Page
-	if page <= 0 {
-		page = 1
-	}
-	pageSize := f.PageSize
-	if pageSize <= 0 {
-		pageSize = 20
-	}
-	if pageSize > 100 {
-		pageSize = 100
-	}
-
-	q := db.WithContext(ctx).Model(&model.LandingFeedback{})
 	category := strings.TrimSpace(f.Category)
 	if category != "" && category != "all" {
-		q = q.Where("category = ?", NormalizeCategory(category))
+		category = NormalizeCategory(category)
+	} else {
+		category = ""
 	}
-
-	var total int64
-	if err := q.Count(&total).Error; err != nil {
+	raw, err := store.List(ctx, category, f.Page, f.PageSize)
+	if err != nil {
 		return ListResult{}, err
 	}
-
-	var rows []model.LandingFeedback
-	offset := int((page - 1) * pageSize)
-	if err := q.Order("created_at DESC").Offset(offset).Limit(int(pageSize)).Find(&rows).Error; err != nil {
-		return ListResult{}, err
-	}
-	return ListResult{Rows: rows, Total: total}, nil
+	return ListResult{Rows: raw.Rows, Total: raw.Total}, nil
 }

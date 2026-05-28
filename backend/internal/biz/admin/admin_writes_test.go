@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	adminbiz "backend/internal/biz/admin"
+	admindata "backend/internal/data/admin"
 	"backend/model"
 )
 
@@ -14,7 +15,8 @@ func TestUpdateUserRole(t *testing.T) {
 	if err := db.Create(&user).Error; err != nil {
 		t.Fatal(err)
 	}
-	out, err := adminbiz.UpdateUser(context.Background(), db, adminbiz.UpdateUserInput{
+	store := admindata.NewStore(db)
+	out, err := adminbiz.UpdateUser(context.Background(), store, adminbiz.UpdateUserInput{
 		UserID: user.ID,
 		Role:   "admin",
 	})
@@ -28,7 +30,8 @@ func TestUpdateUserRole(t *testing.T) {
 
 func TestUpsertAndDeleteMenu(t *testing.T) {
 	db := openAdminListDB(t)
-	item, err := adminbiz.UpsertMenu(context.Background(), db, adminbiz.UpsertMenuInput{
+	store := admindata.NewStore(db)
+	item, err := adminbiz.UpsertMenu(context.Background(), store, adminbiz.UpsertMenuInput{
 		Key: "ops.test", Kind: "item", Label: "Test", SortOrder: 1, Enabled: true,
 	})
 	if err != nil {
@@ -37,7 +40,7 @@ func TestUpsertAndDeleteMenu(t *testing.T) {
 	if item.GetKey() != "ops.test" {
 		t.Fatalf("unexpected key %q", item.GetKey())
 	}
-	if err := adminbiz.DeleteMenu(context.Background(), db, "ops.test"); err != nil {
+	if err := adminbiz.DeleteMenu(context.Background(), store, "ops.test"); err != nil {
 		t.Fatalf("delete: %v", err)
 	}
 }

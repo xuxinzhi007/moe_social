@@ -12,13 +12,15 @@ import (
 )
 
 // GetTransactions 分页查询用户交易记录。
-func GetTransactions(ctx context.Context, db *gorm.DB, in *moe.GetTransactionsReq) (*moe.GetTransactionsResp, error) {
+func GetTransactions(ctx context.Context, store UserStore, in *moe.GetTransactionsReq) (*moe.GetTransactionsResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	userID, err := strconv.Atoi(in.GetUserId())
 	if err != nil {
 		return nil, ErrInvalidArgument
 	}
-	var user model.User
-	if err := db.WithContext(ctx).First(&user, userID).Error; err != nil {
+	if _, err := store.GetUserByID(ctx, uint(userID)); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotFound
 		}
@@ -33,16 +35,14 @@ func GetTransactions(ctx context.Context, db *gorm.DB, in *moe.GetTransactionsRe
 	if pageSize <= 0 {
 		pageSize = 10
 	}
-	offset := (page - 1) * pageSize
+	offset := int((page - 1) * pageSize)
 
-	var total int64
-	if err := db.WithContext(ctx).Model(&model.Transaction{}).Where("user_id = ?", userID).Count(&total).Error; err != nil {
+	total, err := store.CountTransactions(ctx, userID)
+	if err != nil {
 		return nil, err
 	}
-	var transactions []model.Transaction
-	if err := db.WithContext(ctx).Where("user_id = ?", userID).
-		Order("created_at DESC").Offset(int(offset)).Limit(int(pageSize)).
-		Find(&transactions).Error; err != nil {
+	transactions, err := store.ListTransactions(ctx, userID, offset, int(pageSize))
+	if err != nil {
 		return nil, err
 	}
 
@@ -54,13 +54,16 @@ func GetTransactions(ctx context.Context, db *gorm.DB, in *moe.GetTransactionsRe
 }
 
 // GetTransaction 按 ID 查询单笔交易。
-func GetTransaction(ctx context.Context, db *gorm.DB, in *moe.GetTransactionReq) (*moe.GetTransactionResp, error) {
+func GetTransaction(ctx context.Context, store UserStore, in *moe.GetTransactionReq) (*moe.GetTransactionResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	id, err := strconv.Atoi(in.GetId())
 	if err != nil {
 		return nil, ErrInvalidArgument
 	}
-	var transaction model.Transaction
-	if err := db.WithContext(ctx).First(&transaction, id).Error; err != nil {
+	transaction, err := store.GetTransactionByID(ctx, id)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrTransactionNotFound
 		}
@@ -70,7 +73,10 @@ func GetTransaction(ctx context.Context, db *gorm.DB, in *moe.GetTransactionReq)
 }
 
 // Recharge 钱包充值（事务）。
-func Recharge(ctx context.Context, db *gorm.DB, in *moe.RechargeReq) (*moe.RechargeResp, error) {
+func Recharge(ctx context.Context, store UserStore, in *moe.RechargeReq) (*moe.RechargeResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	if in.GetUserId() == "" {
 		return nil, ErrInvalidArgument
 	}
@@ -83,32 +89,38 @@ func Recharge(ctx context.Context, db *gorm.DB, in *moe.RechargeReq) (*moe.Recha
 	}
 
 	var newBalance float64
-	err = db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var user model.User
-		if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&user, uint(userID)).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return ErrNotFound
-			}
-			return err
-		}
-		amount := float64(in.GetAmount())
-		newBalance = user.Balance + amount
-		if newBalance < 0 {
-			return ErrInsufficientBalance
-		}
-		if err := tx.Model(&user).UpdateColumn("balance", newBalance).Error; err != nil {
-			return err
-		}
-		transaction := model.Transaction{
-			UserID:      uint(userID),
-			Amount:      amount,
-			Type:        "recharge",
-			Status:      "success",
-			Description: in.GetDescription(),
-		}
-		return tx.Create(&transaction).Error
-	})
+	tx, err := store.Begin(ctx)
 	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	user, err := tx.GetUserForUpdate(uint(userID))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	amount := float64(in.GetAmount())
+	newBalance = user.Balance + amount
+	if newBalance < 0 {
+		return nil, ErrInsufficientBalance
+	}
+	if err := tx.UpdateUserBalance(user.ID, newBalance); err != nil {
+		return nil, err
+	}
+	transaction := model.Transaction{
+		UserID:      uint(userID),
+		Amount:      amount,
+		Type:        "recharge",
+		Status:      "success",
+		Description: in.GetDescription(),
+	}
+	if err := tx.CreateTransaction(&transaction); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 	return &moe.RechargeResp{Message: "充值成功", NewBalance: float32(newBalance)}, nil

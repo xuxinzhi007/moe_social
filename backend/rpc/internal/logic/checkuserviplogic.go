@@ -30,7 +30,7 @@ func (l *CheckUserVipLogic) CheckUserVip(in *moe.CheckUserVipReq) (*moe.CheckUse
 	if err != nil || uid == 0 {
 		return nil, mapUserBizErr(userbiz.ErrInvalidArgument)
 	}
-	active, err := userbiz.CheckVipActive(l.ctx, l.svcCtx.DB, uint(uid))
+	active, err := userbiz.CheckVipActive(l.ctx, l.svcCtx.UserStore(), uint(uid))
 	if err != nil {
 		return nil, mapUserBizErr(err)
 	}

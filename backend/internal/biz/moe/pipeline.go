@@ -8,11 +8,10 @@ import (
 	"backend/internal/data/moedata"
 	"backend/pkg/moe/runtime"
 	"backend/pkg/moe/toolaudit"
-
-	"gorm.io/gorm"
 )
 
-func pipelineFromLive(ctx context.Context, db *gorm.DB, agentKey string, live runtime.LiveRunSnapshot) PipelineSnapshot {
+func pipelineFromLive(ctx context.Context, st MoeStore, agentKey string, live runtime.LiveRunSnapshot) PipelineSnapshot {
+	db := dbFromStore(ctx, st)
 	out := PipelineSnapshot{
 		AgentKey:      agentKey,
 		Running:       true,
@@ -125,7 +124,8 @@ func defaultPipelineSteps() []PipelineStep {
 }
 
 // GetBrainPipeline 返回指定 agent 最近一次试跑流水线；无记录时返回默认占位步骤。
-func GetBrainPipeline(ctx context.Context, db *gorm.DB, agentKey string) (PipelineSnapshot, error) {
+func GetBrainPipeline(ctx context.Context, st MoeStore, agentKey string) (PipelineSnapshot, error) {
+	db := dbFromStore(ctx, st)
 	key := strings.TrimSpace(agentKey)
 	out := PipelineSnapshot{
 		AgentKey: key,
@@ -135,7 +135,7 @@ func GetBrainPipeline(ctx context.Context, db *gorm.DB, agentKey string) (Pipeli
 		return out, nil
 	}
 	if liveSnap, ok := runtime.LiveRuns.SnapshotForAgent(key); ok {
-		return pipelineFromLive(ctx, db, key, liveSnap), nil
+		return pipelineFromLive(ctx, st, key, liveSnap), nil
 	}
 	if db == nil {
 		return out, nil

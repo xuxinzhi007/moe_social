@@ -5,6 +5,7 @@ import (
 	"context"
 
 	llmbiz "backend/internal/biz/llm"
+	llmdata "backend/internal/data/llm"
 	"backend/pkg/llminference"
 	"backend/pkg/localmodels"
 	"backend/rpc/pb/moe"
@@ -25,13 +26,14 @@ type Deps struct {
 // AppService LLM 应用层。
 type AppService struct {
 	db                  *gorm.DB
+	memory              llmbiz.MemoryStore
 	deps                Deps
 	platformChatGateway llmbiz.PlatformChatGateway
 }
 
 // New 构造 AppService。
 func New(db *gorm.DB, deps Deps) *AppService {
-	return &AppService{db: db, deps: deps}
+	return &AppService{db: db, memory: llmdata.NewStore(db), deps: deps}
 }
 
 func (s *AppService) ListModels(ctx context.Context) ([]string, error) {
@@ -57,7 +59,7 @@ func (s *AppService) ConfigSnapshot() llmbiz.ConfigSnapshot {
 }
 
 func (s *AppService) RecordLlmChatTurn(ctx context.Context, in *moe.RecordLlmChatTurnReq) (*moe.RecordLlmChatTurnResp, error) {
-	return llmbiz.RecordChatTurn(ctx, s.db, in)
+	return llmbiz.RecordChatTurn(ctx, s.memory, in)
 }
 
 // FindLocalModel 按 id 查找本地模型（供 download handler 使用）。
@@ -77,7 +79,7 @@ func (s *AppService) PostChatCompletion(
 
 // UpsertUserMemory 写入用户记忆（含异步索引）。
 func (s *AppService) UpsertUserMemory(ctx context.Context, in *moe.UpsertUserMemoryReq) (*moe.UpsertUserMemoryResp, error) {
-	return llmbiz.UpsertUserMemory(ctx, s.db, in, llmbiz.MemoryWriteOptions{
+	return llmbiz.UpsertUserMemory(ctx, s.memory, in, llmbiz.MemoryWriteOptions{
 		InferenceBaseURL: s.deps.Inference.BaseURL,
 	})
 }

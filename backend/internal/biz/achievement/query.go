@@ -20,16 +20,15 @@ func parseUserID(raw string) (uint, error) {
 }
 
 // ListBadges 用户成就列表（含未解锁）。
-func ListBadges(ctx context.Context, db *gorm.DB, userIDRaw string) ([]*moe.AchievementBadgeItem, error) {
-	if db == nil {
+func ListBadges(ctx context.Context, store Store, userIDRaw string) ([]*moe.AchievementBadgeItem, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	userID, err := parseUserID(userIDRaw)
 	if err != nil {
 		return nil, err
 	}
-	engine := achievement.NewEngine(db)
-	badges, err := engine.ListUserAchievements(db.WithContext(ctx), userID, true)
+	badges, err := store.ListUserAchievements(ctx, userID, true)
 	if err != nil {
 		return nil, err
 	}
@@ -37,16 +36,15 @@ func ListBadges(ctx context.Context, db *gorm.DB, userIDRaw string) ([]*moe.Achi
 }
 
 // ListUnlockedBadges 已解锁成就。
-func ListUnlockedBadges(ctx context.Context, db *gorm.DB, userIDRaw string) ([]*moe.AchievementBadgeItem, error) {
-	if db == nil {
+func ListUnlockedBadges(ctx context.Context, store Store, userIDRaw string) ([]*moe.AchievementBadgeItem, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	userID, err := parseUserID(userIDRaw)
 	if err != nil {
 		return nil, err
 	}
-	engine := achievement.NewEngine(db)
-	all, err := engine.ListUserAchievements(db.WithContext(ctx), userID, true)
+	all, err := store.ListUserAchievements(ctx, userID, true)
 	if err != nil {
 		return nil, err
 	}
@@ -60,18 +58,20 @@ func ListUnlockedBadges(ctx context.Context, db *gorm.DB, userIDRaw string) ([]*
 }
 
 // GetSummary 成就汇总。
-func GetSummary(ctx context.Context, db *gorm.DB, userIDRaw string) (*moe.AchievementSummary, error) {
-	if db == nil {
+func GetSummary(ctx context.Context, store Store, userIDRaw string) (*moe.AchievementSummary, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	userID, err := parseUserID(userIDRaw)
 	if err != nil {
 		return nil, err
 	}
-	engine := achievement.NewEngine(db)
-	summary, err := engine.GetSummary(db.WithContext(ctx), userID)
+	summary, err := store.GetSummary(ctx, userID)
 	if err != nil {
 		return nil, err
+	}
+	if summary == nil {
+		return &moe.AchievementSummary{}, nil
 	}
 	return &moe.AchievementSummary{
 		TotalBadges: int32(summary.TotalBadges), UnlockedBadges: int32(summary.UnlockedBadges),
@@ -80,25 +80,16 @@ func GetSummary(ctx context.Context, db *gorm.DB, userIDRaw string) (*moe.Achiev
 }
 
 // EnsureInitialized 初始化用户成就（welcome 等）。
-func EnsureInitialized(ctx context.Context, db *gorm.DB, userIDRaw string) ([]*moe.AchievementUnlock, error) {
-	if db == nil {
+func EnsureInitialized(ctx context.Context, store Store, userIDRaw string) ([]*moe.AchievementUnlock, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	userID, err := parseUserID(userIDRaw)
 	if err != nil {
 		return nil, err
 	}
-	tx := db.WithContext(ctx).Begin()
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-	engine := achievement.NewEngine(db)
-	unlocks, err := engine.EnsureUserInitialized(tx, userID)
+	unlocks, err := store.EnsureUserInitialized(ctx, userID)
 	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-	if err := tx.Commit().Error; err != nil {
 		return nil, err
 	}
 	return achievement.UnlocksToProto(unlocks), nil

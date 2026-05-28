@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"backend/pkg/moe/toolaudit"
-
-	"gorm.io/gorm"
 )
 
 // ToolStatsFilter 工具调用统计筛选。
@@ -51,9 +49,11 @@ type ToolCallRow struct {
 }
 
 // QueryToolStats 查询工具调用统计。
-func QueryToolStats(ctx context.Context, db *gorm.DB, f ToolStatsFilter) (ToolStatsResult, error) {
-	_ = ctx
-	return toolaudit.QueryStats(db, toolaudit.StatsFilter{
+func QueryToolStats(ctx context.Context, store MoeStore, f ToolStatsFilter) (ToolStatsResult, error) {
+	if err := requireStore(store); err != nil {
+		return ToolStatsResult{}, err
+	}
+	return store.WithContext(ctx).QueryToolStats(ctx, toolaudit.StatsFilter{
 		From:     f.From,
 		To:       f.To,
 		AgentKey: strings.TrimSpace(f.AgentKey),
@@ -62,9 +62,11 @@ func QueryToolStats(ctx context.Context, db *gorm.DB, f ToolStatsFilter) (ToolSt
 }
 
 // ListToolCalls 分页列出工具调用。
-func ListToolCalls(ctx context.Context, db *gorm.DB, f ToolCallsFilter) ([]ToolCallRow, int64, error) {
-	_ = ctx
-	rows, total, err := toolaudit.ListCalls(db, toolaudit.ListFilter{
+func ListToolCalls(ctx context.Context, store MoeStore, f ToolCallsFilter) ([]ToolCallRow, int64, error) {
+	if err := requireStore(store); err != nil {
+		return nil, 0, err
+	}
+	rows, total, err := store.WithContext(ctx).ListToolCalls(ctx, toolaudit.ListFilter{
 		From:        f.From,
 		To:          f.To,
 		AgentKey:    strings.TrimSpace(f.AgentKey),

@@ -23,7 +23,7 @@ func NewAdminLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AdminL
 }
 
 func (l *AdminLoginLogic) AdminLogin(in *moe.AdminLoginReq) (*moe.AdminLoginResp, error) {
-	resp, err := adminbiz.AdminLogin(l.ctx, l.svcCtx.DB, in)
+	resp, err := adminbiz.AdminLogin(l.ctx, l.svcCtx.AdminStore(), in)
 	if err != nil {
 		if errors.Is(err, adminbiz.ErrAdminLoginEmpty) {
 			return nil, errorx.InvalidArgument("请输入用户名和密码")

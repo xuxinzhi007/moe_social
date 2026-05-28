@@ -25,5 +25,5 @@ func NewGetUserAvatarLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 }
 
 func (l *GetUserAvatarLogic) GetUserAvatar(in *moe.GetUserAvatarReq) (*moe.GetUserAvatarResp, error) {
-	return userbiz.GetUserAvatar(l.ctx, l.svcCtx.DB, in)
+	return userbiz.GetUserAvatar(l.ctx, l.svcCtx.UserStore(), in)
 }

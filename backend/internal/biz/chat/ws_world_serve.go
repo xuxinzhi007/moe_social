@@ -21,11 +21,11 @@ var (
 )
 
 type worldMember struct {
-	writeMu             sync.Mutex
-	conn                *websocket.Conn
-	x, y                float64
-	username            string
-	lastMoveBroadcast   time.Time
+	writeMu           sync.Mutex
+	conn              *websocket.Conn
+	x, y              float64
+	username          string
+	lastMoveBroadcast time.Time
 }
 
 func (m *worldMember) writeJSON(msg interface{}) bool {

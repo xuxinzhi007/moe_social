@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	postbiz "backend/internal/biz/post"
 	"backend/model"
 	"backend/rpc/pb/moe"
 	"backend/utils"
@@ -21,9 +20,24 @@ type ListFilter struct {
 	ViewerUserID string
 }
 
+func likedTargetIDSet(ctx context.Context, st CommentStore, userID uint, targetType string, targetIDs []uint) map[uint]bool {
+	out := make(map[uint]bool)
+	if st == nil || userID == 0 || len(targetIDs) == 0 {
+		return out
+	}
+	found, err := st.PluckLikedTargetIDs(ctx, userID, targetType, targetIDs)
+	if err != nil {
+		return out
+	}
+	for _, id := range found {
+		out[id] = true
+	}
+	return out
+}
+
 // ListByPost 帖子评论列表。
-func ListByPost(ctx context.Context, db *gorm.DB, f ListFilter) ([]*moe.Comment, int32, error) {
-	if db == nil {
+func ListByPost(ctx context.Context, st CommentStore, f ListFilter) ([]*moe.Comment, int32, error) {
+	if st == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
 	postID, err := strconv.ParseUint(strings.TrimSpace(f.PostID), 10, 32)
@@ -42,13 +56,9 @@ func ListByPost(ctx context.Context, db *gorm.DB, f ListFilter) ([]*moe.Comment,
 	}
 	offset := int((page - 1) * pageSize)
 
-	var total int64
-	if err := db.WithContext(ctx).Model(&model.Comment{}).Where("post_id = ?", postID).Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-	var comments []model.Comment
-	if err := db.WithContext(ctx).Where("post_id = ?", postID).
-		Order("created_at ASC").Offset(offset).Limit(int(pageSize)).Find(&comments).Error; err != nil {
+	st = st.WithContext(ctx)
+	comments, total, err := st.ListCommentsByPost(ctx, uint(postID), offset, int(pageSize))
+	if err != nil {
 		return nil, 0, err
 	}
 
@@ -58,8 +68,7 @@ func ListByPost(ctx context.Context, db *gorm.DB, f ListFilter) ([]*moe.Comment,
 		for _, c := range comments {
 			userIDs = append(userIDs, c.UserID)
 		}
-		var users []model.User
-		db.WithContext(ctx).Where("id IN ?", userIDs).Find(&users)
+		users, _ := st.GetUsersByIDs(ctx, userIDs)
 		for _, u := range users {
 			userMap[u.ID] = u
 		}
@@ -74,7 +83,7 @@ func ListByPost(ctx context.Context, db *gorm.DB, f ListFilter) ([]*moe.Comment,
 	for _, c := range comments {
 		commentIDs = append(commentIDs, c.ID)
 	}
-	likedComments := postbiz.LikedTargetIDSet(db, viewerUID, "comment", commentIDs)
+	likedComments := likedTargetIDSet(ctx, st, viewerUID, "comment", commentIDs)
 
 	parentNameMap := map[uint]string{}
 	parentIDs := make([]uint, 0)
@@ -84,8 +93,7 @@ func ListByPost(ctx context.Context, db *gorm.DB, f ListFilter) ([]*moe.Comment,
 		}
 	}
 	if len(parentIDs) > 0 {
-		var parents []model.Comment
-		_ = db.WithContext(ctx).Preload("User").Where("id IN ?", parentIDs).Find(&parents).Error
+		parents, _ := st.ListCommentsWithUserByIDs(ctx, parentIDs)
 		for _, p := range parents {
 			name := "用户"
 			if p.User.Username != "" {

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	moebiz "backend/internal/biz/moe"
+	moedata "backend/internal/data/moe"
 	"backend/model"
 	"backend/rpc/pb/moe"
 
@@ -23,8 +24,11 @@ type SearchInput struct {
 }
 
 // Search 关键词检索帖子。
-func Search(ctx context.Context, db *gorm.DB, in SearchInput) (*moe.MoeSearchPostsResp, error) {
-	hits, err := moebiz.SearchPosts(ctx, db, moebiz.SearchPostsInput{
+func Search(ctx context.Context, st PostStore, in SearchInput) (*moe.MoeSearchPostsResp, error) {
+	if st == nil {
+		return nil, gorm.ErrInvalidDB
+	}
+	hits, err := moebiz.SearchPosts(ctx, moedata.NewStore(st.Raw()), moebiz.SearchPostsInput{
 		Query:        in.Query,
 		ViewerUserID: uint(in.ViewerUserID),
 		MoodTag:      in.MoodTag,
@@ -47,16 +51,17 @@ func Search(ctx context.Context, db *gorm.DB, in SearchInput) (*moe.MoeSearchPos
 }
 
 // GetByID 单帖详情。
-func GetByID(ctx context.Context, db *gorm.DB, postIDRaw, viewerUserIDRaw string) (*moe.Post, error) {
-	if db == nil {
+func GetByID(ctx context.Context, st PostStore, postIDRaw, viewerUserIDRaw string) (*moe.Post, error) {
+	if st == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	postID, err := strconv.ParseUint(strings.TrimSpace(postIDRaw), 10, 32)
 	if err != nil || postID == 0 {
 		return nil, ErrInvalidPostID
 	}
-	var post model.Post
-	if err := db.WithContext(ctx).Preload("TopicTags").Where("id = ?", postID).First(&post).Error; err != nil {
+	st = st.WithContext(ctx)
+	post, err := st.GetPostWithTopicTags(ctx, uint(postID))
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrPostNotFound
 		}
@@ -75,13 +80,13 @@ func GetByID(ctx context.Context, db *gorm.DB, postIDRaw, viewerUserIDRaw string
 	if ms == "pending" && post.UserID != viewerUID {
 		return nil, ErrPostNotFound
 	}
-	var user model.User
-	if err := db.WithContext(ctx).Where("id = ?", post.UserID).First(&user).Error; err != nil {
+	user, err := st.GetUser(ctx, post.UserID)
+	if err != nil {
 		return nil, err
 	}
 	isLiked := false
 	if viewerUID > 0 {
-		liked := LikedTargetIDSet(db, viewerUID, "post", []uint{post.ID})
+		liked := LikedTargetIDSet(ctx, st, viewerUID, "post", []uint{post.ID})
 		isLiked = liked[post.ID]
 	}
 	return BuildProtoPost(post, user, isLiked), nil
@@ -98,8 +103,8 @@ type ListFilter struct {
 }
 
 // List 帖子 feed 列表。
-func List(ctx context.Context, db *gorm.DB, f ListFilter) ([]*moe.Post, int32, error) {
-	if db == nil {
+func List(ctx context.Context, st PostStore, f ListFilter) ([]*moe.Post, int32, error) {
+	if st == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
 	page, pageSize := f.Page, f.PageSize
@@ -135,44 +140,22 @@ func List(ctx context.Context, db *gorm.DB, f ListFilter) ([]*moe.Post, int32, e
 		}
 	}
 
-	listQuery := db.WithContext(ctx).Model(&model.Post{}).Scopes(ModerationVisibleScope(viewerUID))
-	if topicTagID > 0 {
-		sub := db.Model(&model.PostTopic{}).Select("post_id").Where("topic_tag_id = ?", topicTagID)
-		listQuery = listQuery.Where("id IN (?)", sub)
-	}
-	if authorUID > 0 {
-		listQuery = listQuery.Where("user_id = ?", authorUID)
-	} else if feedMode == "following" {
-		if viewerUID == 0 {
-			listQuery = listQuery.Where("1 = 0")
-		} else {
-			sub := db.Model(&model.Follow{}).Select("following_id").Where("follower_id = ?", viewerUID)
-			listQuery = listQuery.Where("user_id = ? OR user_id IN (?)", viewerUID, sub)
-		}
-	}
-	switch feedMode {
-	case "hot":
-		listQuery = listQuery.Order("(likes * 2 + comments) DESC").Order("created_at DESC").Order("id DESC")
-	default:
-		listQuery = listQuery.Order("created_at DESC").Order("id DESC")
+	st = st.WithContext(ctx)
+	posts, total, err := st.ListPosts(ctx, ListPostsFilter{
+		Offset: offset, Limit: int(pageSize), ViewerUID: viewerUID,
+		TopicTagID: topicTagID, AuthorUID: authorUID, FeedMode: feedMode,
+	})
+	if err != nil {
+		return nil, 0, err
 	}
 
-	var total int64
-	if err := listQuery.Session(&gorm.Session{}).Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-	var posts []model.Post
-	if err := listQuery.Preload("TopicTags").Offset(offset).Limit(int(pageSize)).Find(&posts).Error; err != nil {
-		return nil, 0, err
-	}
 	userMap := map[uint]model.User{}
 	if len(posts) > 0 {
 		userIDs := make([]uint, 0, len(posts))
 		for _, post := range posts {
 			userIDs = append(userIDs, post.UserID)
 		}
-		var users []model.User
-		db.WithContext(ctx).Where("id IN ?", userIDs).Find(&users)
+		users, _ := st.GetUsersByIDs(ctx, userIDs)
 		for _, user := range users {
 			userMap[user.ID] = user
 		}
@@ -181,7 +164,7 @@ func List(ctx context.Context, db *gorm.DB, f ListFilter) ([]*moe.Post, int32, e
 	for _, p := range posts {
 		postIDs = append(postIDs, p.ID)
 	}
-	likedPosts := LikedTargetIDSet(db, viewerUID, "post", postIDs)
+	likedPosts := LikedTargetIDSet(ctx, st, viewerUID, "post", postIDs)
 	out := make([]*moe.Post, 0, len(posts))
 	for _, post := range posts {
 		out = append(out, BuildProtoPost(post, userMap[post.UserID], likedPosts[post.ID]))

@@ -43,7 +43,7 @@ func chatWSDeps(svcCtx *svc.ServiceContext) chatbiz.ChatWSDeps {
 	if svcCtx != nil {
 		deps.PM = svcCtx.ChatGW
 		if svcCtx.UserApp != nil {
-			deps.Delivery.DB = svcCtx.UserApp.DB()
+			deps.Delivery.NotifyStore = svcCtx.UserApp.Notify()
 		}
 	}
 	return deps

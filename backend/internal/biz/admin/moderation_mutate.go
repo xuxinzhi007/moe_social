@@ -86,11 +86,11 @@ func DeleteComment(ctx context.Context, db *gorm.DB, in *moe.AdminDeleteCommentR
 }
 
 // DeleteGroup Admin 删除社区。
-func DeleteGroup(ctx context.Context, db *gorm.DB, in *moe.AdminDeleteGroupReq) (*moe.AdminDeleteGroupResp, error) {
-	if db == nil {
+func DeleteGroup(ctx context.Context, community communitybiz.CommunityStore, in *moe.AdminDeleteGroupReq) (*moe.AdminDeleteGroupResp, error) {
+	if community == nil {
 		return nil, gorm.ErrInvalidDB
 	}
-	_, err := communitybiz.DeleteGroup(ctx, db, &moe.DeleteGroupReq{GroupId: in.GetGroupId()})
+	_, err := communitybiz.DeleteGroup(ctx, community, &moe.DeleteGroupReq{GroupId: in.GetGroupId()})
 	return &moe.AdminDeleteGroupResp{}, err
 }
 

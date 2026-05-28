@@ -77,6 +77,23 @@ func TestCompletePureKratosAtLeast90(t *testing.T) {
 	}
 }
 
+func TestCompletePureKratosAtLeast100WhenLogicRetired(t *testing.T) {
+	if !moewiring.KratosPureEnabled() {
+		t.Fatal("set moe.kratos_pure_enabled: true in backend/config/config.yaml")
+	}
+	if LegacyLogicFileCount() > 0 {
+		t.Skip("logic files remain; percent may be <100")
+	}
+	rep := Current()
+	if rep.Percent < 100 {
+		t.Fatalf("expected percent == 100 after logic retirement, got %d breakdown=%v",
+			rep.Percent, rep.Breakdown)
+	}
+	if rep.Breakdown["legacy_logic_files_left"] != 0 {
+		t.Fatalf("expected legacy_logic_files_left == 0, got %d", rep.Breakdown["legacy_logic_files_left"])
+	}
+}
+
 func TestCompletePureKratosNot100UntilLogicRetired(t *testing.T) {
 	if !moewiring.KratosPureEnabled() {
 		t.Fatal("set moe.kratos_pure_enabled: true in backend/config/config.yaml")
@@ -86,8 +103,8 @@ func TestCompletePureKratosNot100UntilLogicRetired(t *testing.T) {
 		t.Fatalf("percent should be <100 while legacy logic files remain: percent=%d logic_left=%d",
 			rep.Percent, rep.Breakdown["legacy_logic_files_left"])
 	}
-	if rep.Breakdown["legacy_logic_retired_pct"] <= 0 {
-		t.Fatalf("expected legacy_logic_retired_pct > 0 after P3-W4 batches")
+	if LegacyLogicFileCount() > 0 && rep.Breakdown["legacy_logic_retired_pct"] <= 0 {
+		t.Fatalf("expected legacy_logic_retired_pct > 0 while logic files remain")
 	}
 }
 

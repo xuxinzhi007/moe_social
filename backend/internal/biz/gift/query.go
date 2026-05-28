@@ -6,15 +6,14 @@ import (
 	"strconv"
 	"strings"
 
-	"backend/model"
 	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // ListGifts 礼物列表（含 viewer 库存）。
-func ListGifts(ctx context.Context, db *gorm.DB, page, pageSize int32, viewerUserID string) ([]*moe.Gift, int32, error) {
-	if db == nil {
+func ListGifts(ctx context.Context, store GiftStore, page, pageSize int32, viewerUserID string) ([]*moe.Gift, int32, error) {
+	if store == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
 	if page <= 0 {
@@ -23,14 +22,13 @@ func ListGifts(ctx context.Context, db *gorm.DB, page, pageSize int32, viewerUse
 	if pageSize <= 0 {
 		pageSize = 10
 	}
-	var total int64
-	if err := db.WithContext(ctx).Model(&model.Gift{}).Count(&total).Error; err != nil {
+	total, err := store.CountGifts(ctx)
+	if err != nil {
 		return nil, 0, err
 	}
-	var gifts []model.Gift
 	offset := int((page - 1) * pageSize)
-	if err := db.WithContext(ctx).Order("sort_order ASC, price ASC, id ASC").
-		Offset(offset).Limit(int(pageSize)).Find(&gifts).Error; err != nil {
+	gifts, err := store.ListGifts(ctx, offset, int(pageSize))
+	if err != nil {
 		return nil, 0, err
 	}
 	stockByGift := map[uint]int32{}
@@ -40,8 +38,7 @@ func ListGifts(ctx context.Context, db *gorm.DB, page, pageSize int32, viewerUse
 			for _, g := range gifts {
 				ids = append(ids, g.ID)
 			}
-			var rows []model.UserGiftStock
-			_ = db.WithContext(ctx).Where("user_id = ? AND gift_id IN ?", uid, ids).Find(&rows).Error
+			rows, _ := store.FindUserGiftStock(ctx, uint(uid), ids)
 			for _, r := range rows {
 				stockByGift[r.GiftID] = int32(r.Quantity)
 			}
@@ -55,16 +52,16 @@ func ListGifts(ctx context.Context, db *gorm.DB, page, pageSize int32, viewerUse
 }
 
 // GetGift 单个礼物详情。
-func GetGift(ctx context.Context, db *gorm.DB, giftIDRaw string) (*moe.GetGiftResp, error) {
-	if db == nil {
+func GetGift(ctx context.Context, store GiftStore, giftIDRaw string) (*moe.GetGiftResp, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	giftID, err := ParseGiftID(giftIDRaw)
 	if err != nil {
 		return &moe.GetGiftResp{Success: false, Message: "invalid gift id"}, nil
 	}
-	var gift model.Gift
-	if err := db.WithContext(ctx).First(&gift, giftID).Error; err != nil {
+	gift, err := store.GetGiftByID(ctx, giftID)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &moe.GetGiftResp{Success: false, Message: "gift not found"}, nil
 		}
@@ -76,8 +73,8 @@ func GetGift(ctx context.Context, db *gorm.DB, giftIDRaw string) (*moe.GetGiftRe
 }
 
 // ListRecords 用户礼物赠送记录。
-func ListRecords(ctx context.Context, db *gorm.DB, userIDRaw string, page, pageSize int32) ([]*moe.GiftRecord, int32, error) {
-	if db == nil {
+func ListRecords(ctx context.Context, store GiftStore, userIDRaw string, page, pageSize int32) ([]*moe.GiftRecord, int32, error) {
+	if store == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
 	userID, err := strconv.ParseUint(strings.TrimSpace(userIDRaw), 10, 64)
@@ -90,23 +87,19 @@ func ListRecords(ctx context.Context, db *gorm.DB, userIDRaw string, page, pageS
 	if pageSize <= 0 {
 		pageSize = 10
 	}
-	var total int64
-	q := db.WithContext(ctx).Model(&model.GiftRecord{}).
-		Where("from_user_id = ? OR to_user_id = ?", userID, userID)
-	if err := q.Count(&total).Error; err != nil {
+	total, err := store.CountGiftRecords(ctx, uint(userID))
+	if err != nil {
 		return nil, 0, err
 	}
-	var rows []model.GiftRecord
 	offset := int((page - 1) * pageSize)
-	if err := db.WithContext(ctx).Where("from_user_id = ? OR to_user_id = ?", userID, userID).
-		Preload("Gift").Order("created_at DESC").Offset(offset).Limit(int(pageSize)).Find(&rows).Error; err != nil {
+	rows, err := store.ListGiftRecords(ctx, uint(userID), offset, int(pageSize))
+	if err != nil {
 		return nil, 0, err
 	}
 	out := make([]*moe.GiftRecord, len(rows))
 	for i, record := range rows {
-		var fromUser, toUser model.User
-		db.WithContext(ctx).First(&fromUser, record.FromUserID)
-		db.WithContext(ctx).First(&toUser, record.ToUserID)
+		fromUser, _ := store.GetUserByID(ctx, record.FromUserID)
+		toUser, _ := store.GetUserByID(ctx, record.ToUserID)
 		var giftProto *moe.Gift
 		if record.Gift.ID != 0 {
 			giftProto = &moe.Gift{
@@ -121,15 +114,15 @@ func ListRecords(ctx context.Context, db *gorm.DB, userIDRaw string, page, pageS
 }
 
 // ListPurchaseOrders 用户礼物购买订单。
-func ListPurchaseOrders(ctx context.Context, db *gorm.DB, userIDRaw string, page, pageSize int32) ([]*moe.GiftPurchaseOrder, int32, error) {
-	if db == nil {
+func ListPurchaseOrders(ctx context.Context, store GiftStore, userIDRaw string, page, pageSize int32) ([]*moe.GiftPurchaseOrder, int32, error) {
+	if store == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
 	uid, err := strconv.ParseUint(strings.TrimSpace(userIDRaw), 10, 64)
 	if err != nil || uid == 0 {
 		return nil, 0, ErrInvalidUserID
 	}
-	if err := db.WithContext(ctx).First(&model.User{}, uid).Error; err != nil {
+	if err := store.UserExists(ctx, uint(uid)); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, 0, ErrUserNotFound
 		}
@@ -141,15 +134,13 @@ func ListPurchaseOrders(ctx context.Context, db *gorm.DB, userIDRaw string, page
 	if pageSize <= 0 {
 		pageSize = 10
 	}
-	offset := (page - 1) * pageSize
-	var total int64
-	if err := db.WithContext(ctx).Model(&model.GiftPurchaseOrder{}).
-		Where("user_id = ?", uid).Count(&total).Error; err != nil {
+	offset := int((page - 1) * pageSize)
+	total, err := store.CountPurchaseOrders(ctx, uint(uid))
+	if err != nil {
 		return nil, 0, err
 	}
-	var rows []model.GiftPurchaseOrder
-	if err := db.WithContext(ctx).Where("user_id = ?", uid).
-		Order("created_at DESC").Offset(int(offset)).Limit(int(pageSize)).Find(&rows).Error; err != nil {
+	rows, err := store.ListPurchaseOrders(ctx, uint(uid), offset, int(pageSize))
+	if err != nil {
 		return nil, 0, err
 	}
 	out := make([]*moe.GiftPurchaseOrder, 0, len(rows))

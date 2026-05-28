@@ -23,7 +23,7 @@ func NewReadAllNotificationsLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *ReadAllNotificationsLogic) ReadAllNotifications(in *moe.ReadAllNotificationsReq) (*moe.ReadAllNotificationsResp, error) {
-	if err := notifybiz.MarkAllRead(l.ctx, l.svcCtx.DB, in.GetUserId()); err != nil {
+	if err := notifybiz.MarkAllRead(l.ctx, l.svcCtx.NotifyStore(), in.GetUserId()); err != nil {
 		if errors.Is(err, notifybiz.ErrInvalidUserID) {
 			return nil, errorx.InvalidArgument("用户 ID 无效")
 		}

@@ -70,26 +70,14 @@ func adminAuditLogToProto(row model.AdminAuditLog) *moe.AdminAuditLogItem {
 }
 
 // ListAnnouncements 公告列表。
-func ListAnnouncements(ctx context.Context, db *gorm.DB, p AnnouncementPage) ([]*moe.AdminAnnouncementItem, int32, error) {
-	if db == nil {
+func ListAnnouncements(ctx context.Context, store AdminStore, p AnnouncementPage) ([]*moe.AdminAnnouncementItem, int32, error) {
+	if store == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
 	page, pageSize := adminPageParams(p.Page, p.PageSize)
-	q := db.WithContext(ctx).Model(&model.AdminAnnouncement{})
-	if kw := strings.TrimSpace(p.Keyword); kw != "" {
-		like := "%" + kw + "%"
-		q = q.Where("title LIKE ? OR content LIKE ?", like, like)
-	}
-	if st := strings.TrimSpace(p.Status); st != "" {
-		q = q.Where("status = ?", st)
-	}
-	var total int64
-	if err := q.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-	var rows []model.AdminAnnouncement
 	offset := int((page - 1) * pageSize)
-	if err := q.Order("id DESC").Offset(offset).Limit(int(pageSize)).Find(&rows).Error; err != nil {
+	rows, total, err := store.ListAnnouncements(ctx, p.Keyword, p.Status, offset, int(pageSize))
+	if err != nil {
 		return nil, 0, err
 	}
 	items := make([]*moe.AdminAnnouncementItem, len(rows))
@@ -100,16 +88,16 @@ func ListAnnouncements(ctx context.Context, db *gorm.DB, p AnnouncementPage) ([]
 }
 
 // GetAnnouncement 公告详情。
-func GetAnnouncement(ctx context.Context, db *gorm.DB, idRaw string) (*moe.AdminAnnouncementItem, error) {
-	if db == nil {
+func GetAnnouncement(ctx context.Context, store AdminStore, idRaw string) (*moe.AdminAnnouncementItem, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	id, err := strconv.ParseUint(strings.TrimSpace(idRaw), 10, 64)
 	if err != nil || id == 0 {
 		return nil, ErrInvalidAnnouncementID
 	}
-	var row model.AdminAnnouncement
-	if err := db.WithContext(ctx).First(&row, id).Error; err != nil {
+	row, err := store.GetAnnouncementByID(ctx, id)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrAnnouncementNotFound
 		}
@@ -129,32 +117,22 @@ type AuditLogFilter struct {
 }
 
 // ListAuditLogs 审计日志列表。
-func ListAuditLogs(ctx context.Context, db *gorm.DB, f AuditLogFilter) ([]*moe.AdminAuditLogItem, int32, error) {
-	if db == nil {
+func ListAuditLogs(ctx context.Context, store AdminStore, f AuditLogFilter) ([]*moe.AdminAuditLogItem, int32, error) {
+	if store == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
 	page, pageSize := adminPageParams(f.Page, f.PageSize)
-	q := db.WithContext(ctx).Model(&model.AdminAuditLog{})
-	if action := strings.TrimSpace(f.Action); action != "" {
-		q = q.Where("action = ?", action)
-	}
-	if resource := strings.TrimSpace(f.Resource); resource != "" {
-		q = q.Where("resource = ?", resource)
-	}
-	if adminID := strings.TrimSpace(f.AdminID); adminID != "" {
-		id, err := strconv.ParseUint(adminID, 10, 64)
+	var adminID uint64
+	if adminIDRaw := strings.TrimSpace(f.AdminID); adminIDRaw != "" {
+		id, err := strconv.ParseUint(adminIDRaw, 10, 64)
 		if err != nil {
 			return nil, 0, ErrInvalidArgument
 		}
-		q = q.Where("admin_id = ?", id)
+		adminID = id
 	}
-	var total int64
-	if err := q.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-	var rows []model.AdminAuditLog
 	offset := int((page - 1) * pageSize)
-	if err := q.Order("id DESC").Offset(offset).Limit(int(pageSize)).Find(&rows).Error; err != nil {
+	rows, total, err := store.ListAuditLogs(ctx, f.Action, f.Resource, adminID, offset, int(pageSize))
+	if err != nil {
 		return nil, 0, err
 	}
 	items := make([]*moe.AdminAuditLogItem, len(rows))

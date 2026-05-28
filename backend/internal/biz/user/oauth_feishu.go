@@ -18,7 +18,10 @@ import (
 )
 
 // FeishuLogin OAuth 登录或注册。
-func FeishuLogin(ctx context.Context, db *gorm.DB, in *moe.FeishuLoginReq) (*moe.FeishuLoginResp, error) {
+func FeishuLogin(ctx context.Context, store UserStore, in *moe.FeishuLoginReq) (*moe.FeishuLoginResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	if !viper.GetBool("feishu.enabled") {
 		return nil, ErrOAuthDisabled
 	}
@@ -28,14 +31,14 @@ func FeishuLogin(ctx context.Context, db *gorm.DB, in *moe.FeishuLoginReq) (*moe
 	}
 	_ = utils.TryEnsureFeishuDirectoryUser(ctx, info.Name, info.Email)
 
-	user, isNew, err := findOrCreateFeishuUser(ctx, db, info)
+	user, isNew, err := findOrCreateFeishuUser(ctx, store, info)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := utils.EnsureUserMoeNo(db, user.ID); err != nil {
+	if _, err := utils.EnsureUserMoeNo(store.Raw(), user.ID); err != nil {
 		return nil, err
 	}
-	_ = db.WithContext(ctx).First(&user, user.ID).Error
+	user, _ = store.ReloadUser(ctx, user.ID)
 
 	token, err := utils.GenerateToken(user.ID, user.Username)
 	if err != nil {
@@ -61,7 +64,10 @@ func FeishuAuthorizeURL(_ context.Context, in *moe.FeishuAuthorizeURLReq) (*moe.
 }
 
 // BindFeishu 绑定飞书邮箱。
-func BindFeishu(ctx context.Context, db *gorm.DB, in *moe.BindFeishuReq) (*moe.BindFeishuResp, error) {
+func BindFeishu(ctx context.Context, store UserStore, in *moe.BindFeishuReq) (*moe.BindFeishuResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	userID, err := strconv.ParseUint(in.GetUserId(), 10, 64)
 	if err != nil || userID == 0 {
 		return nil, ErrInvalidArgument
@@ -70,48 +76,54 @@ func BindFeishu(ctx context.Context, db *gorm.DB, in *moe.BindFeishuReq) (*moe.B
 	if err != nil {
 		return nil, ErrInvalidArgument
 	}
-	var user model.User
-	if err := db.WithContext(ctx).First(&user, uint(userID)).Error; err != nil {
+	user, err := store.GetUserByID(ctx, uint(userID))
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotFound
 		}
 		return nil, err
 	}
 	user.FeishuEmail = email
-	if err := db.WithContext(ctx).Save(&user).Error; err != nil {
+	if err := store.SaveUser(ctx, &user); err != nil {
 		return nil, err
 	}
 	return &moe.BindFeishuResp{User: ModelToProto(&user)}, nil
 }
 
 // UnbindFeishu 解绑飞书邮箱。
-func UnbindFeishu(ctx context.Context, db *gorm.DB, in *moe.UnbindFeishuReq) (*moe.UnbindFeishuResp, error) {
+func UnbindFeishu(ctx context.Context, store UserStore, in *moe.UnbindFeishuReq) (*moe.UnbindFeishuResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	userID, err := strconv.ParseUint(in.GetUserId(), 10, 64)
 	if err != nil || userID == 0 {
 		return nil, ErrInvalidArgument
 	}
-	var user model.User
-	if err := db.WithContext(ctx).First(&user, uint(userID)).Error; err != nil {
+	user, err := store.GetUserByID(ctx, uint(userID))
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotFound
 		}
 		return nil, err
 	}
 	user.FeishuEmail = ""
-	if err := db.WithContext(ctx).Save(&user).Error; err != nil {
+	if err := store.SaveUser(ctx, &user); err != nil {
 		return nil, err
 	}
 	return &moe.UnbindFeishuResp{User: ModelToProto(&user)}, nil
 }
 
 // SendFeishuTestCard 发送飞书测试卡片。
-func SendFeishuTestCard(ctx context.Context, db *gorm.DB, in *moe.SendFeishuTestCardReq) (*moe.SendFeishuTestCardResp, error) {
+func SendFeishuTestCard(ctx context.Context, store UserStore, in *moe.SendFeishuTestCardReq) (*moe.SendFeishuTestCardResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	userID, err := strconv.ParseUint(in.GetUserId(), 10, 64)
 	if err != nil || userID == 0 {
 		return nil, ErrInvalidArgument
 	}
-	var user model.User
-	if err := db.WithContext(ctx).Select("id", "feishu_email").First(&user, uint(userID)).Error; err != nil {
+	user, err := store.GetUserSelectedFields(ctx, uint(userID), "id", "feishu_email")
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotFound
 		}
@@ -127,13 +139,12 @@ func SendFeishuTestCard(ctx context.Context, db *gorm.DB, in *moe.SendFeishuTest
 	return &moe.SendFeishuTestCardResp{}, nil
 }
 
-func findOrCreateFeishuUser(ctx context.Context, db *gorm.DB, info utils.FeishuOAuthUserInfo) (model.User, bool, error) {
+func findOrCreateFeishuUser(ctx context.Context, store UserStore, info utils.FeishuOAuthUserInfo) (model.User, bool, error) {
 	openID := strings.TrimSpace(info.OpenID)
-	var user model.User
-	err := db.WithContext(ctx).Where("feishu_open_id = ?", openID).First(&user).Error
+	user, err := store.FindUserByFeishuOpenID(ctx, openID)
 	if err == nil {
 		applyFeishuProfile(&user, info)
-		if err := db.WithContext(ctx).Save(&user).Error; err != nil {
+		if err := store.SaveUser(ctx, &user); err != nil {
 			return model.User{}, false, err
 		}
 		return user, false, nil
@@ -144,18 +155,20 @@ func findOrCreateFeishuUser(ctx context.Context, db *gorm.DB, info utils.FeishuO
 
 	email := strings.TrimSpace(info.Email)
 	if email != "" {
-		if err := db.WithContext(ctx).Where("email = ?", email).First(&user).Error; err == nil {
+		user, err = store.FindUserByEmail(ctx, email)
+		if err == nil {
 			applyFeishuProfile(&user, info)
-			if err := db.WithContext(ctx).Save(&user).Error; err != nil {
+			if err := store.SaveUser(ctx, &user); err != nil {
 				return model.User{}, false, err
 			}
 			return user, false, nil
-		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return model.User{}, false, err
 		}
 	}
 
-	username, err := allocateFeishuUsername(ctx, db, info.Name, email)
+	username, err := allocateFeishuUsername(ctx, store, info.Name, email)
 	if err != nil {
 		return model.User{}, false, err
 	}
@@ -175,7 +188,7 @@ func findOrCreateFeishuUser(ctx context.Context, db *gorm.DB, info utils.FeishuO
 		FeishuOpenID: &openIDCopy,
 	}
 	applyFeishuProfile(&user, info)
-	if err := db.WithContext(ctx).Create(&user).Error; err != nil {
+	if err := store.CreateUser(ctx, &user); err != nil {
 		return model.User{}, false, err
 	}
 	return user, true, nil
@@ -197,7 +210,7 @@ func applyFeishuProfile(user *model.User, info utils.FeishuOAuthUserInfo) {
 	}
 }
 
-func allocateFeishuUsername(ctx context.Context, db *gorm.DB, feishuName, email string) (string, error) {
+func allocateFeishuUsername(ctx context.Context, store UserStore, feishuName, email string) (string, error) {
 	base := sanitizeFeishuUsername(feishuName)
 	if base == "" && email != "" {
 		if at := strings.Index(email, "@"); at > 0 {
@@ -209,13 +222,12 @@ func allocateFeishuUsername(ctx context.Context, db *gorm.DB, feishuName, email 
 	}
 	candidate := base
 	for i := 0; i < 8; i++ {
-		var existing model.User
-		err := db.WithContext(ctx).Where("username = ?", candidate).First(&existing).Error
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return candidate, nil
-		}
+		taken, err := store.UsernameTaken(ctx, candidate)
 		if err != nil {
 			return "", err
+		}
+		if !taken {
+			return candidate, nil
 		}
 		suffix, _ := randomOAuthHex(3)
 		candidate = fmt.Sprintf("%s_%s", base, suffix)

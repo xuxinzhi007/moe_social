@@ -3,8 +3,6 @@ package userbiz
 import (
 	"context"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 // VipStatus 用户 VIP 状态摘要。
@@ -15,8 +13,8 @@ type VipStatus struct {
 }
 
 // GetVipStatus 查询用户 VIP 状态。
-func GetVipStatus(ctx context.Context, db *gorm.DB, userID uint) (VipStatus, error) {
-	user, err := GetByID(ctx, db, userID)
+func GetVipStatus(ctx context.Context, store UserStore, userID uint) (VipStatus, error) {
+	user, err := GetByID(ctx, store, userID)
 	if err != nil {
 		return VipStatus{}, err
 	}
@@ -32,8 +30,8 @@ func GetVipStatus(ctx context.Context, db *gorm.DB, userID uint) (VipStatus, err
 }
 
 // CheckVipActive 是否仍在 VIP 有效期内。
-func CheckVipActive(ctx context.Context, db *gorm.DB, userID uint) (bool, error) {
-	user, err := GetByID(ctx, db, userID)
+func CheckVipActive(ctx context.Context, store UserStore, userID uint) (bool, error) {
+	user, err := GetByID(ctx, store, userID)
 	if err != nil {
 		return false, err
 	}

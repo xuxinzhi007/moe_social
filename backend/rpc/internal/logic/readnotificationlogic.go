@@ -23,7 +23,7 @@ func NewReadNotificationLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *ReadNotificationLogic) ReadNotification(in *moe.ReadNotificationReq) (*moe.ReadNotificationResp, error) {
-	if err := notifybiz.MarkRead(l.ctx, l.svcCtx.DB, in.GetUserId(), in.GetId()); err != nil {
+	if err := notifybiz.MarkRead(l.ctx, l.svcCtx.NotifyStore(), in.GetUserId(), in.GetId()); err != nil {
 		switch {
 		case errors.Is(err, notifybiz.ErrInvalidUserID), errors.Is(err, notifybiz.ErrInvalidNotificationID):
 			return nil, errorx.InvalidArgument("参数无效")

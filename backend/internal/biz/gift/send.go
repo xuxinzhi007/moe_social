@@ -15,8 +15,8 @@ import (
 )
 
 // Send 赠送礼物。
-func Send(ctx context.Context, db *gorm.DB, fromRaw, toRaw, giftRaw string, quantity int32) (*moe.SendGiftResp, error) {
-	if db == nil {
+func Send(ctx context.Context, store GiftStore, fromRaw, toRaw, giftRaw string, quantity int32) (*moe.SendGiftResp, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	fromUserID, err := strconv.ParseUint(strings.TrimSpace(fromRaw), 10, 64)
@@ -35,57 +35,51 @@ func Send(ctx context.Context, db *gorm.DB, fromRaw, toRaw, giftRaw string, quan
 		quantity = 1
 	}
 
-	var sender model.User
-	if err := db.WithContext(ctx).First(&sender, fromUserID).Error; err != nil {
+	sender, err := store.GetUserByID(ctx, uint(fromUserID))
+	if err != nil {
 		return &moe.SendGiftResp{Success: false, Message: "sender not found"}, nil
 	}
-	var receiver model.User
-	if err := db.WithContext(ctx).First(&receiver, toUserID).Error; err != nil {
+	receiver, err := store.GetUserByID(ctx, uint(toUserID))
+	if err != nil {
 		return &moe.SendGiftResp{Success: false, Message: "receiver not found"}, nil
 	}
-	var gift model.Gift
-	if err := db.WithContext(ctx).First(&gift, giftID).Error; err != nil {
+	gift, err := store.GetGiftByID(ctx, uint(giftID))
+	if err != nil {
 		return &moe.SendGiftResp{Success: false, Message: "gift not found"}, nil
 	}
 
 	var record model.GiftRecord
-	err = db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var s model.User
-		if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&s, fromUserID).Error; err != nil {
+	err = store.Transaction(ctx, func(tx GiftTx) error {
+		s, err := tx.GetUserForUpdate(uint(fromUserID))
+		if err != nil {
 			return err
 		}
-		var recv model.User
-		if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&recv, toUserID).Error; err != nil {
+		recv, err := tx.GetUserForUpdate(uint(toUserID))
+		if err != nil {
 			return err
 		}
 		receiver = recv
 
 		cost := float64(gift.Price) * float64(quantity)
-		var stock model.UserGiftStock
-		errStock := tx.Where("user_id = ? AND gift_id = ?", fromUserID, giftID).First(&stock).Error
+		stock, errStock := tx.FindUserGiftStock(uint(fromUserID), uint(giftID))
 		useStock := errStock == nil && stock.Quantity >= int(quantity)
 
 		if useStock {
-			if err := tx.Model(&stock).Update("quantity", stock.Quantity-int(quantity)).Error; err != nil {
+			if err := tx.UpdateUserGiftStockQuantity(&stock, stock.Quantity-int(quantity)); err != nil {
 				return err
 			}
 		} else {
 			if s.Balance < cost {
 				return ErrInsufficientBal
 			}
-			res := tx.Model(&model.User{}).Where("id = ? AND balance >= ?", fromUserID, cost).
-				Update("balance", gorm.Expr("balance - ?", cost))
-			if res.Error != nil {
-				return res.Error
-			}
-			if res.RowsAffected != 1 {
-				return ErrInsufficientBal
+			if err := tx.DeductBalance(uint(fromUserID), cost); err != nil {
+				return err
 			}
 			tr := model.Transaction{
 				UserID: uint(fromUserID), Amount: cost, Type: "consume", Status: "success",
 				Description: fmt.Sprintf("赠送礼物「%s」×%d 给好友", gift.Name, quantity),
 			}
-			if err := tx.Create(&tr).Error; err != nil {
+			if err := tx.CreateTransaction(&tr); err != nil {
 				return err
 			}
 		}
@@ -94,15 +88,12 @@ func Send(ctx context.Context, db *gorm.DB, fromRaw, toRaw, giftRaw string, quan
 			FromUserID: uint(fromUserID), ToUserID: uint(toUserID),
 			GiftID: uint(giftID), Quantity: int(quantity),
 		}
-		if err := tx.Create(&record).Error; err != nil {
+		if err := tx.CreateGiftRecord(&record); err != nil {
 			return err
 		}
 		addCharm := gift.Price * int(quantity)
 		addValue := float64(gift.Price) * float64(quantity)
-		return tx.Model(&model.User{}).Where("id = ?", toUserID).Updates(map[string]interface{}{
-			"gift_charm":          gorm.Expr("gift_charm + ?", addCharm),
-			"received_gift_value": gorm.Expr("received_gift_value + ?", addValue),
-		}).Error
+		return tx.UpdateReceiverGiftStats(uint(toUserID), addCharm, addValue)
 	})
 
 	if err != nil {
@@ -113,7 +104,7 @@ func Send(ctx context.Context, db *gorm.DB, fromRaw, toRaw, giftRaw string, quan
 	}
 
 	addValue := float64(gift.Price) * float64(quantity)
-	achUnlocks := socialhook.ApplyGiftSentAchievements(db, socialhook.GiftSentMeta{
+	achUnlocks := socialhook.ApplyGiftSentAchievements(store.Raw(), socialhook.GiftSentMeta{
 		UserID: uint(fromUserID), GiftCount: int(quantity), GiftValue: addValue,
 	})
 

@@ -16,8 +16,8 @@ import (
 var ErrEmptyAnnouncementTitle = errors.New("empty announcement title")
 
 // CreateAnnouncement 创建草稿公告。
-func CreateAnnouncement(ctx context.Context, db *gorm.DB, title, content, createdByRaw string) (*moe.AdminAnnouncementItem, error) {
-	if db == nil {
+func CreateAnnouncement(ctx context.Context, store AdminStore, title, content, createdByRaw string) (*moe.AdminAnnouncementItem, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	title = strings.TrimSpace(title)
@@ -31,7 +31,7 @@ func CreateAnnouncement(ctx context.Context, db *gorm.DB, title, content, create
 		Status:    model.AnnouncementStatusDraft,
 		CreatedBy: uint(createdBy),
 	}
-	if err := db.WithContext(ctx).Create(&row).Error; err != nil {
+	if err := store.CreateAnnouncement(ctx, &row); err != nil {
 		return nil, err
 	}
 	item := announcementToProto(row)
@@ -48,16 +48,16 @@ type UpdateAnnouncementInput struct {
 }
 
 // UpdateAnnouncement 更新公告。
-func UpdateAnnouncement(ctx context.Context, db *gorm.DB, in UpdateAnnouncementInput) (*moe.AdminAnnouncementItem, error) {
-	if db == nil {
+func UpdateAnnouncement(ctx context.Context, store AdminStore, in UpdateAnnouncementInput) (*moe.AdminAnnouncementItem, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	id, err := strconv.ParseUint(strings.TrimSpace(in.AnnouncementID), 10, 64)
 	if err != nil || id == 0 {
 		return nil, ErrInvalidAnnouncementID
 	}
-	var row model.AdminAnnouncement
-	if err := db.WithContext(ctx).First(&row, id).Error; err != nil {
+	row, err := store.GetAnnouncementByID(ctx, id)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrAnnouncementNotFound
 		}
@@ -87,7 +87,7 @@ func UpdateAnnouncement(ctx context.Context, db *gorm.DB, in UpdateAnnouncementI
 			updates = true
 		}
 	}
-	if err := db.WithContext(ctx).Save(&row).Error; err != nil {
+	if err := store.SaveAnnouncement(ctx, &row); err != nil {
 		return nil, err
 	}
 	item := announcementToProto(row)
@@ -95,16 +95,16 @@ func UpdateAnnouncement(ctx context.Context, db *gorm.DB, in UpdateAnnouncementI
 }
 
 // PublishAnnouncement 发布公告。
-func PublishAnnouncement(ctx context.Context, db *gorm.DB, idRaw string) (*moe.AdminAnnouncementItem, error) {
-	if db == nil {
+func PublishAnnouncement(ctx context.Context, store AdminStore, idRaw string) (*moe.AdminAnnouncementItem, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	id, err := strconv.ParseUint(strings.TrimSpace(idRaw), 10, 64)
 	if err != nil || id == 0 {
 		return nil, ErrInvalidAnnouncementID
 	}
-	var row model.AdminAnnouncement
-	if err := db.WithContext(ctx).First(&row, id).Error; err != nil {
+	row, err := store.GetAnnouncementByID(ctx, id)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrAnnouncementNotFound
 		}
@@ -113,7 +113,7 @@ func PublishAnnouncement(ctx context.Context, db *gorm.DB, idRaw string) (*moe.A
 	now := time.Now()
 	row.Status = model.AnnouncementStatusPublished
 	row.PublishedAt = &now
-	if err := db.WithContext(ctx).Save(&row).Error; err != nil {
+	if err := store.SaveAnnouncement(ctx, &row); err != nil {
 		return nil, err
 	}
 	item := announcementToProto(row)
@@ -121,16 +121,13 @@ func PublishAnnouncement(ctx context.Context, db *gorm.DB, idRaw string) (*moe.A
 }
 
 // DeleteAnnouncement 删除公告。
-func DeleteAnnouncement(ctx context.Context, db *gorm.DB, idRaw string) error {
-	if db == nil {
+func DeleteAnnouncement(ctx context.Context, store AdminStore, idRaw string) error {
+	if store == nil {
 		return gorm.ErrInvalidDB
 	}
 	id, err := strconv.ParseUint(strings.TrimSpace(idRaw), 10, 64)
 	if err != nil || id == 0 {
 		return ErrInvalidAnnouncementID
 	}
-	if err := db.WithContext(ctx).Delete(&model.AdminAnnouncement{}, id).Error; err != nil {
-		return err
-	}
-	return nil
+	return store.DeleteAnnouncement(ctx, id)
 }

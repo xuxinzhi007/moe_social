@@ -32,20 +32,20 @@ type TopicTagInput struct {
 
 // CreateResult 创建帖子结果（成就等副作用由 service 层处理）。
 type CreateResult struct {
-	Post              model.Post
-	User              model.User
-	TopicTags         []model.TopicTag
-	Images            []string
-	ModerationStatus  string
-	HandDrawApproved  bool
-	TopicTagCount     int
-	ImageCount        int
-	ContentRuneLen    int
+	Post             model.Post
+	User             model.User
+	TopicTags        []model.TopicTag
+	Images           []string
+	ModerationStatus string
+	HandDrawApproved bool
+	TopicTagCount    int
+	ImageCount       int
+	ContentRuneLen   int
 }
 
 // Create 创建帖子。
-func Create(ctx context.Context, db *gorm.DB, in CreateInput) (CreateResult, error) {
-	if db == nil {
+func Create(ctx context.Context, st PostStore, in CreateInput) (CreateResult, error) {
+	if st == nil {
 		return CreateResult{}, gorm.ErrInvalidDB
 	}
 	if in.UserID == "" {
@@ -59,14 +59,15 @@ func Create(ctx context.Context, db *gorm.DB, in CreateInput) (CreateResult, err
 		return CreateResult{}, ErrInvalidUserID
 	}
 
-	var user model.User
-	if err := db.WithContext(ctx).Where("id = ?", userID).First(&user).Error; err != nil {
+	st = st.WithContext(ctx)
+	user, err := st.GetUser(ctx, uint(userID))
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return CreateResult{}, ErrUserNotFound
 		}
 		return CreateResult{}, err
 	}
-	if err := RequireGroupMember(db.WithContext(ctx), in.GroupID, uint(userID)); err != nil {
+	if err := RequireGroupMember(ctx, st, in.GroupID, uint(userID)); err != nil {
 		return CreateResult{}, err
 	}
 
@@ -75,9 +76,9 @@ func Create(ctx context.Context, db *gorm.DB, in CreateInput) (CreateResult, err
 		modStatus = "pending"
 	}
 
-	tx := db.WithContext(ctx).Begin()
-	if tx.Error != nil {
-		return CreateResult{}, tx.Error
+	tx, err := st.Begin(ctx)
+	if err != nil {
+		return CreateResult{}, err
 	}
 	defer func() {
 		if r := recover(); r != nil {
@@ -101,25 +102,23 @@ func Create(ctx context.Context, db *gorm.DB, in CreateInput) (CreateResult, err
 		}
 		post.Images = string(imagesJSON)
 	}
-	if err := tx.Create(&post).Error; err != nil {
+	if err := tx.CreatePost(&post); err != nil {
 		tx.Rollback()
 		return CreateResult{}, err
 	}
 
 	var topicTags []model.TopicTag
 	for _, tag := range in.TopicTagNames {
-		var topicTag model.TopicTag
-		if err := tx.Where("name = ?", tag.Name).FirstOrCreate(&topicTag, model.TopicTag{
-			Name: tag.Name, Color: tag.Color,
-		}).Error; err != nil {
+		topicTag, err := tx.FirstOrCreateTopicTag(tag.Name, tag.Color)
+		if err != nil {
 			continue
 		}
 		topicTags = append(topicTags, topicTag)
 	}
 	if len(topicTags) > 0 {
-		tx.Where("post_id = ?", post.ID).Delete(&model.PostTopic{})
+		tx.DeletePostTopics(post.ID)
 		for _, tag := range topicTags {
-			_ = tx.Create(&model.PostTopic{PostID: post.ID, TopicTagID: tag.ID}).Error
+			_ = tx.CreatePostTopic(post.ID, tag.ID)
 		}
 	}
 
@@ -127,7 +126,7 @@ func Create(ctx context.Context, db *gorm.DB, in CreateInput) (CreateResult, err
 		tx.Rollback()
 		return CreateResult{}, err
 	}
-	if err := tx.Commit().Error; err != nil {
+	if err := tx.Commit(); err != nil {
 		return CreateResult{}, err
 	}
 

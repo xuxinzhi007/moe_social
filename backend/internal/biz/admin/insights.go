@@ -13,15 +13,15 @@ import (
 )
 
 // GrowthStats 管理台成长统计。
-func GrowthStats(ctx context.Context, db *gorm.DB) (*moe.AdminGrowthStats, error) {
-	if db == nil {
+func GrowthStats(ctx context.Context, store AdminStore) (*moe.AdminGrowthStats, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	stats := &moe.AdminGrowthStats{}
 
 	count := func(model any, dest *int32) error {
-		var n int64
-		if err := db.WithContext(ctx).Model(model).Count(&n).Error; err != nil {
+		n, err := store.CountModel(ctx, model)
+		if err != nil {
 			return err
 		}
 		*dest = int32(n)
@@ -31,8 +31,8 @@ func GrowthStats(ctx context.Context, db *gorm.DB) (*moe.AdminGrowthStats, error
 	if err := count(&model.AchievementDefinition{}, &stats.AchievementDefinitions); err != nil {
 		return nil, err
 	}
-	var unlocked int64
-	if err := db.WithContext(ctx).Model(&model.UserAchievementProgress{}).Where("unlocked_at IS NOT NULL").Count(&unlocked).Error; err != nil {
+	unlocked, err := store.CountUnlockedProgressRecords(ctx)
+	if err != nil {
 		return nil, err
 	}
 	stats.UnlockedProgressRecords = int32(unlocked)
@@ -52,10 +52,8 @@ func GrowthStats(ctx context.Context, db *gorm.DB) (*moe.AdminGrowthStats, error
 
 	now := time.Now()
 	dayStart, dayEnd := calendar.ShanghaiDayBounds(now)
-	var todayCount int64
-	if err := db.WithContext(ctx).Model(&model.UserCheckIn{}).
-		Where("check_in_date >= ? AND check_in_date < ?", dayStart, dayEnd).
-		Count(&todayCount).Error; err != nil {
+	todayCount, err := store.CountCheckInsBetween(ctx, dayStart, dayEnd)
+	if err != nil {
 		return nil, err
 	}
 	stats.CheckInsToday = int32(todayCount)
@@ -63,8 +61,8 @@ func GrowthStats(ctx context.Context, db *gorm.DB) (*moe.AdminGrowthStats, error
 }
 
 // SchemaCatalog 数据目录与行数统计。
-func SchemaCatalog(ctx context.Context, db *gorm.DB) (*moe.AdminGetSchemaCatalogResp, error) {
-	if db == nil {
+func SchemaCatalog(ctx context.Context, store AdminStore) (*moe.AdminGetSchemaCatalogResp, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	catalog := utils.AdminSchemaCatalog()
@@ -72,8 +70,8 @@ func SchemaCatalog(ctx context.Context, db *gorm.DB) (*moe.AdminGetSchemaCatalog
 	summary := &moe.AdminSchemaCatalogSummary{TotalTables: int32(len(catalog))}
 
 	for _, entry := range catalog {
-		tableName := schemaTableName(db, entry.Model)
-		rowCount := countSchemaRows(db.WithContext(ctx), entry.Model)
+		tableName := store.ModelTableName(entry.Model)
+		rowCount := countSchemaRows(ctx, store, entry.Model)
 		if rowCount >= 0 {
 			summary.TotalRows += rowCount
 		}
@@ -102,23 +100,12 @@ func SchemaCatalog(ctx context.Context, db *gorm.DB) (*moe.AdminGetSchemaCatalog
 	return &moe.AdminGetSchemaCatalogResp{Summary: summary, Items: items}, nil
 }
 
-func schemaTableName(db *gorm.DB, model interface{}) string {
-	if db == nil || model == nil {
-		return ""
-	}
-	stmt := &gorm.Statement{DB: db}
-	if err := stmt.Parse(model); err != nil {
-		return ""
-	}
-	return stmt.Table
-}
-
-func countSchemaRows(db *gorm.DB, model interface{}) int64 {
-	if db == nil || model == nil {
+func countSchemaRows(ctx context.Context, store AdminStore, model any) int64 {
+	if store == nil || model == nil {
 		return -1
 	}
-	var n int64
-	if err := db.Model(model).Count(&n).Error; err != nil {
+	n, err := store.CountModel(ctx, model)
+	if err != nil {
 		return -1
 	}
 	return n

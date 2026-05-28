@@ -7,6 +7,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/types"
 	vipbiz "backend/internal/biz/vip"
+	vipdata "backend/internal/data/vip"
 	"backend/model"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
@@ -29,7 +30,8 @@ func adminListVipPlans(db *gorm.DB) func(khttp.Context) error {
 		pageSize, _ := strconv.Atoi(q.Get("page_size"))
 		includeDeleted := q.Get("include_deleted") == "true" || q.Get("include_deleted") == "1"
 
-		rows, total, err := vipbiz.ListPlans(ctx, db, vipbiz.ListPlansFilter{
+		store := vipdata.NewStore(db)
+		rows, total, err := vipbiz.ListPlans(ctx, store, vipbiz.ListPlansFilter{
 			Page: page, PageSize: pageSize,
 			Keyword: q.Get("keyword"), IncludeDeleted: includeDeleted,
 		})

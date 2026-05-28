@@ -34,8 +34,8 @@ func parseNotificationID(raw string) (uint, error) {
 }
 
 // ListInbox 用户通知列表。
-func ListInbox(ctx context.Context, db *gorm.DB, userIDRaw string, page InboxPage) ([]*moe.Notification, int32, error) {
-	if db == nil {
+func ListInbox(ctx context.Context, st NotifyStore, userIDRaw string, page InboxPage) ([]*moe.Notification, int32, error) {
+	if st == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
 	userID, err := parseUserID32(userIDRaw)
@@ -52,44 +52,37 @@ func ListInbox(ctx context.Context, db *gorm.DB, userIDRaw string, page InboxPag
 	}
 	offset := int((p - 1) * ps)
 
-	var total int64
-	base := db.WithContext(ctx).Model(&model.Notification{}).Where("user_id = ?", userID)
-	if err := base.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	var rows []model.Notification
-	if err := base.Order("created_at desc").Offset(offset).Limit(int(ps)).Preload("Sender").Find(&rows).Error; err != nil {
+	st = st.WithContext(ctx)
+	rows, total, err := st.ListInbox(ctx, userID, offset, int(ps))
+	if err != nil {
 		return nil, 0, err
 	}
 	out := make([]*moe.Notification, 0, len(rows))
-	for _, n := range rows {
-		out = append(out, modelToProto(&n))
+	for i := range rows {
+		out = append(out, modelToProto(&rows[i]))
 	}
 	return out, int32(total), nil
 }
 
 // UnreadCount 未读数量。
-func UnreadCount(ctx context.Context, db *gorm.DB, userIDRaw string) (int32, error) {
-	if db == nil {
+func UnreadCount(ctx context.Context, st NotifyStore, userIDRaw string) (int32, error) {
+	if st == nil {
 		return 0, gorm.ErrInvalidDB
 	}
 	userID, err := parseUserID32(userIDRaw)
 	if err != nil {
 		return 0, err
 	}
-	var count int64
-	if err := db.WithContext(ctx).Model(&model.Notification{}).
-		Where("user_id = ? AND is_read = ?", userID, false).
-		Count(&count).Error; err != nil {
+	count, err := st.WithContext(ctx).CountUnread(ctx, userID)
+	if err != nil {
 		return 0, err
 	}
 	return int32(count), nil
 }
 
 // MarkRead 标记单条已读。
-func MarkRead(ctx context.Context, db *gorm.DB, userIDRaw, notificationIDRaw string) error {
-	if db == nil {
+func MarkRead(ctx context.Context, st NotifyStore, userIDRaw, notificationIDRaw string) error {
+	if st == nil {
 		return gorm.ErrInvalidDB
 	}
 	userID, err := parseUserID32(userIDRaw)
@@ -100,28 +93,24 @@ func MarkRead(ctx context.Context, db *gorm.DB, userIDRaw, notificationIDRaw str
 	if err != nil {
 		return err
 	}
-	return db.WithContext(ctx).Model(&model.Notification{}).
-		Where("id = ? AND user_id = ?", nid, userID).
-		Update("is_read", true).Error
+	return st.WithContext(ctx).MarkRead(ctx, userID, nid)
 }
 
 // MarkAllRead 全部已读。
-func MarkAllRead(ctx context.Context, db *gorm.DB, userIDRaw string) error {
-	if db == nil {
+func MarkAllRead(ctx context.Context, st NotifyStore, userIDRaw string) error {
+	if st == nil {
 		return gorm.ErrInvalidDB
 	}
 	userID, err := parseUserID32(userIDRaw)
 	if err != nil {
 		return err
 	}
-	return db.WithContext(ctx).Model(&model.Notification{}).
-		Where("user_id = ? AND is_read = ?", userID, false).
-		Update("is_read", true).Error
+	return st.WithContext(ctx).MarkAllRead(ctx, userID)
 }
 
 // CreateInbox 写入一条用户通知（等同 CreateNotification RPC）。
-func CreateInbox(ctx context.Context, db *gorm.DB, in *moe.CreateNotificationReq) error {
-	if db == nil {
+func CreateInbox(ctx context.Context, st NotifyStore, in *moe.CreateNotificationReq) error {
+	if st == nil {
 		return gorm.ErrInvalidDB
 	}
 	userID, err := parseUserID32(in.GetUserId())
@@ -154,15 +143,11 @@ func CreateInbox(ctx context.Context, db *gorm.DB, in *moe.CreateNotificationReq
 		Content:  content,
 		IsRead:   false,
 	}
+	omitPostID := postID == 0
 	if postID > 0 {
 		notification.PostID = postID
 	}
-
-	createDB := db.WithContext(ctx)
-	if postID == 0 {
-		createDB = createDB.Omit("PostID")
-	}
-	return createDB.Create(&notification).Error
+	return st.WithContext(ctx).CreateNotification(ctx, &notification, omitPostID)
 }
 
 func modelToProto(n *model.Notification) *moe.Notification {

@@ -4,15 +4,75 @@ package achievement.v1;
 
 option go_package = "backend/api/achievement/v1;achievementv1";
 
-// AchievementApp — 域 SSOT。
-// GET  /api/user/:user_id/achievements
-// GET  /api/user/:user_id/achievements/unlocked
-// GET  /api/user/:user_id/achievements/summary
-// POST /api/user/:user_id/achievements/ensure
+// Achievement — 域 gRPC SSOT（P4-C；与 Super 并存）。
+// HTTP: GET  /api/user/:user_id/achievements
+// HTTP: GET  /api/user/:user_id/achievements/unlocked
+// HTTP: GET  /api/user/:user_id/achievements/summary
+// HTTP: POST /api/user/:user_id/achievements/ensure
 
-message PingRequest {}
-message PingReply {}
+message AchievementBadgeItem {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string category = 4;
+  string rarity = 5;
+  string condition = 6;
+  int32 required_count = 7;
+  int32 current_count = 8;
+  double progress = 9;
+  bool is_unlocked = 10;
+  string unlocked_at = 11;
+}
 
-service AchievementApp {
-  rpc Ping(PingRequest) returns (PingReply);
+message AchievementSummary {
+  int32 total_badges = 1;
+  int32 unlocked_badges = 2;
+  double completion_percentage = 3;
+}
+
+message AchievementUnlock {
+  string badge_id = 1;
+  string name = 2;
+  int32 exp_granted = 3;
+  bool level_up = 4;
+  int32 new_level = 5;
+}
+
+message GetUserAchievementsRequest {
+  string user_id = 1;
+}
+
+message GetUserAchievementsReply {
+  repeated AchievementBadgeItem badges = 1;
+}
+
+message GetUserUnlockedAchievementsRequest {
+  string user_id = 1;
+}
+
+message GetUserUnlockedAchievementsReply {
+  repeated AchievementBadgeItem badges = 1;
+}
+
+message GetUserAchievementSummaryRequest {
+  string user_id = 1;
+}
+
+message GetUserAchievementSummaryReply {
+  AchievementSummary summary = 1;
+}
+
+message EnsureUserAchievementsRequest {
+  string user_id = 1;
+}
+
+message EnsureUserAchievementsReply {
+  repeated AchievementUnlock new_achievements = 1;
+}
+
+service Achievement {
+  rpc GetUserAchievements(GetUserAchievementsRequest) returns (GetUserAchievementsReply);
+  rpc GetUserUnlockedAchievements(GetUserUnlockedAchievementsRequest) returns (GetUserUnlockedAchievementsReply);
+  rpc GetUserAchievementSummary(GetUserAchievementSummaryRequest) returns (GetUserAchievementSummaryReply);
+  rpc EnsureUserAchievements(EnsureUserAchievementsRequest) returns (EnsureUserAchievementsReply);
 }

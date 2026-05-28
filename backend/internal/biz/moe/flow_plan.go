@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"backend/pkg/moe/flowexec"
-
-	"gorm.io/gorm"
 )
 
 // FlowConfigToGraph 转为 flowexec 图。
@@ -33,8 +31,8 @@ func FlowConfigToGraph(cfg FlowConfig) flowexec.Graph {
 }
 
 // ResolvePostingPlan 加载并编译 Bot 发帖编排；失败时回退默认计划。
-func ResolvePostingPlan(ctx context.Context, db *gorm.DB, agentKey string) (flowexec.Plan, error) {
-	cfg, err := GetFlowConfig(ctx, db, agentKey)
+func ResolvePostingPlan(ctx context.Context, store MoeStore, agentKey string) (flowexec.Plan, error) {
+	cfg, err := GetFlowConfig(ctx, store, agentKey)
 	if err != nil {
 		return flowexec.DefaultPostingPlan(), err
 	}

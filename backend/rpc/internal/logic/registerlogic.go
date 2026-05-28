@@ -38,7 +38,7 @@ func (l *RegisterLogic) Register(in *moe.RegisterReq) (*moe.RegisterResp, error)
 		return nil, errorx.New(400, "邮箱不能为空")
 	}
 
-	user, token, err := userbiz.Register(l.ctx, l.svcCtx.DB, username, emailNorm, in.GetPassword())
+	user, token, err := userbiz.Register(l.ctx, l.svcCtx.UserStore(), username, emailNorm, in.GetPassword())
 	if err != nil {
 		if errors.Is(err, userbiz.ErrAlreadyExists) {
 			if strings.Contains(err.Error(), "email") {

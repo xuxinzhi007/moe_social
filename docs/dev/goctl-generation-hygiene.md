@@ -1,54 +1,45 @@
 # goctl 生成与合并 Logic 说明
 
-> **更新：2026-05-27**
+> **更新：2026-05-28**（P3 logic 退役后）
 
-## 核心原则（本仓库）
+## P3 后纪律（必读）
 
-**不要把业务从合并文件搬到 goctl 单文件里。**  
-正确做法相反：
+| 事实 | 说明 |
+|------|------|
+| **logic 层已删除** | `api/internal/logic/` 仅 `.gitkeep` |
+| **handler 直调 GW/biz** | 见 `api/internal/handler/README.md` |
+| **生产不注册 handler** | `WireOnly=true` → 仅 `api/moehttp` |
 
-| goctl 生成 | 本仓库做法 |
-|------------|------------|
-| 每接口一个 `admincreatetopictaglogic.go` 空壳 | **删掉空壳**，实现留在 **`admin_insights_logic.go`** |
-| `// todo: add your logic` | 在**合并文件**里写完整方法 |
+`make gen-api` 后 **自动**执行：
 
-`make gen-api` 结束后会自动跑 `prune-api-logic-shells.sh`（已修复路径），删除与合并文件重复的 todo 壳。
+1. `prune-api-logic-shells.sh`（兼容旧合并文件清单）
+2. **`prune-api-logic-retired.sh`** — 删除 goctl 重新生成的全部 `logic/*.go`
+3. **`tag-hybrid-routes.sh`** — 为 `routes.go` 补 `//go:build hybrid`（P4-H）
 
-## 合并文件 SSOT（示例）
+## 改存量 HTTP 的推荐顺序
 
-| 域 | 合并实现文件 | goctl 会误生成的壳 |
-|----|--------------|-------------------|
-| Admin 洞察/标签 | `api/internal/logic/admin/admin_insights_logic.go` | `admin*topictag*logic.go`、`admin*aichat*logic.go` 等 |
-| Admin Moe Flow | `api/internal/logic/admin/admin_moe_flow_logic.go` | `admin*moebotflow*logic.go` |
-| User 好友 | `api/internal/logic/user/friendlogic.go` | `sendfriendrequestlogic.go` 等（handler 用 `NewFriendLogic`） |
-| LLM 配置 | handler 直调 `LLMApp` | `configlogic.go` |
-
-新增接口若与现有合并文件同域，**扩展现有 `*_logic.go`**，不要新建 goctl 单文件再迁代码。
+1. **优先**：`api/moehttp/*_compat.go` + `internal/service` / `internal/biz`
+2. **必须动 defs**：`make gen-api` → **diff handler/**（goctl 可能覆盖）→ 从 git 恢复已迁移 handler
+3. **禁止**：把业务写回 `api/internal/logic`
 
 ## 命令
 
 ```bash
 cd backend
-make gen-api          # goctl → 自动 prune → post-gen-check → gen-http-routes
+make gen-api          # 慎用；自动 prune logic + gen-http-routes
 make check
+make audit-logic-orphans   # 应为 none
 ```
 
-若 prune 漏删，登记 `scripts/goctl-orphan-stubs.txt`。
-
-## P3 logic 退役（2026-05-28）
-
-- compat 层 **不得** import `api/internal/logic`（已达成）
-- 删除 logic 前：`make audit-logic-orphans`（无 handler 引用才可删）
-- handler 已直调 biz 的域（image、remote WS）logic 已删；其余 ~252 类型待 handler 改线后删
-
-## 冲突症状
-
-- `redeclared in this block`：同一 `AdminCreateTopicTagLogic` 在两个 `.go` 里
-- `not enough return values`：空壳 `return` 无返回值
-
-**处理**：保留 `admin_insights_logic.go` 中的实现，删除 `admincreatetopictaglogic.go` 等壳（或再跑 `bash scripts/gen/prune-api-logic-shells.sh`）。
+日常契约改动优先 **`make gen`**（域 proto + 路由），不跑 goctl api。
 
 ## 与 `make gen` 的关系
 
-- **`make gen`**：不跑 goctl api，**不会**产生这些壳
-- **`make gen-api`**：才会 goctl 生成；**必须**带 prune
+| 命令 | 跑 goctl api | 影响 logic |
+|------|-------------|-----------|
+| `make gen` | 否 | 无 |
+| `make gen-api` | 是 | 生成后 **立即 prune 清空** |
+
+## 历史：合并 logic 文件（已归档）
+
+P3 前 Admin/User 等使用 `admin_insights_logic.go` 等合并文件 — 已随 logic 层删除。详见 [../archive/dev/kratos/](../archive/dev/kratos/)。

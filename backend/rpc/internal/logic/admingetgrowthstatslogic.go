@@ -22,7 +22,7 @@ func NewAdminGetGrowthStatsLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *AdminGetGrowthStatsLogic) AdminGetGrowthStats(_ *moe.AdminGetGrowthStatsReq) (*moe.AdminGetGrowthStatsResp, error) {
-	stats, err := adminbiz.GrowthStats(l.ctx, l.svcCtx.DB)
+	stats, err := adminbiz.GrowthStats(l.ctx, l.svcCtx.AdminStore())
 	if err != nil {
 		l.Errorf("[admin] growth stats: %v", err)
 		return nil, errorx.Internal("查询成长统计失败")

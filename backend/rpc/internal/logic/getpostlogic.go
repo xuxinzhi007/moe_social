@@ -26,7 +26,7 @@ func (l *GetPostLogic) GetPost(in *moe.GetPostReq) (*moe.GetPostResp, error) {
 	if in.GetPostId() == "" {
 		return nil, errorx.New(400, "帖子ID不能为空")
 	}
-	post, err := postbiz.GetByID(l.ctx, l.svcCtx.DB, in.GetPostId(), in.GetViewerUserId())
+	post, err := postbiz.GetByID(l.ctx, l.svcCtx.PostStore(), in.GetPostId(), in.GetViewerUserId())
 	if err != nil {
 		switch {
 		case errors.Is(err, postbiz.ErrInvalidPostID):

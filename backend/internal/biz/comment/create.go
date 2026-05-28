@@ -21,13 +21,13 @@ type CreateInput struct {
 
 // CreateResult 创建评论结果。
 type CreateResult struct {
-	Comment       model.Comment
+	Comment         model.Comment
 	ReplyToUserName string
 }
 
 // Create 创建评论并发送通知。
-func Create(ctx context.Context, db *gorm.DB, in CreateInput) (CreateResult, error) {
-	if db == nil {
+func Create(ctx context.Context, st CommentStore, in CreateInput) (CreateResult, error) {
+	if st == nil {
 		return CreateResult{}, gorm.ErrInvalidDB
 	}
 	postID, err := strconv.ParseUint(strings.TrimSpace(in.PostID), 10, 32)
@@ -39,24 +39,24 @@ func Create(ctx context.Context, db *gorm.DB, in CreateInput) (CreateResult, err
 		return CreateResult{}, ErrInvalidUserID
 	}
 
-	var post model.Post
-	if err := db.WithContext(ctx).First(&post, postID).Error; err != nil {
+	st = st.WithContext(ctx)
+	post, err := st.GetPost(ctx, uint(postID))
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return CreateResult{}, ErrPostNotFound
 		}
 		return CreateResult{}, err
 	}
-	var user model.User
-	if err := db.WithContext(ctx).First(&user, userID).Error; err != nil {
+	if _, err := st.GetUser(ctx, uint(userID)); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return CreateResult{}, ErrUserNotFound
 		}
 		return CreateResult{}, err
 	}
 
-	tx := db.WithContext(ctx).Begin()
-	if tx.Error != nil {
-		return CreateResult{}, tx.Error
+	tx, err := st.Begin(ctx)
+	if err != nil {
+		return CreateResult{}, err
 	}
 	defer func() {
 		if r := recover(); r != nil {
@@ -71,8 +71,8 @@ func Create(ctx context.Context, db *gorm.DB, in CreateInput) (CreateResult, err
 			tx.Rollback()
 			return CreateResult{}, ErrInvalidParentID
 		}
-		var parent model.Comment
-		if err := tx.First(&parent, parsed).Error; err != nil {
+		parent, err := tx.GetComment(uint(parsed))
+		if err != nil {
 			tx.Rollback()
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return CreateResult{}, ErrParentNotFound
@@ -89,11 +89,11 @@ func Create(ctx context.Context, db *gorm.DB, in CreateInput) (CreateResult, err
 	comment := model.Comment{
 		PostID: uint(postID), ParentID: parentID, UserID: uint(userID), Content: in.Content,
 	}
-	if err := tx.Create(&comment).Error; err != nil {
+	if err := tx.CreateComment(&comment); err != nil {
 		tx.Rollback()
 		return CreateResult{}, err
 	}
-	if err := tx.Model(&post).Update("comments", post.Comments+1).Error; err != nil {
+	if err := tx.UpdatePostComments(post.ID, post.Comments+1); err != nil {
 		tx.Rollback()
 		return CreateResult{}, err
 	}
@@ -103,33 +103,32 @@ func Create(ctx context.Context, db *gorm.DB, in CreateInput) (CreateResult, err
 		notifyContent = notifyContent[:200]
 	}
 	if parentID > 0 {
-		var parent model.Comment
-		if err := tx.First(&parent, parentID).Error; err == nil && parent.UserID != uint(userID) {
-			_ = tx.Create(&model.Notification{
+		parent, err := tx.GetComment(parentID)
+		if err == nil && parent.UserID != uint(userID) {
+			_ = tx.CreateNotification(&model.Notification{
 				UserID: parent.UserID, SenderID: uint(userID), Type: 2,
 				PostID: uint(postID), Content: notifyContent, IsRead: false,
-			}).Error
+			})
 		}
 	} else if uint(userID) != post.UserID {
-		_ = tx.Create(&model.Notification{
+		_ = tx.CreateNotification(&model.Notification{
 			UserID: post.UserID, SenderID: uint(userID), Type: 2,
 			PostID: uint(postID), Content: notifyContent, IsRead: false,
-		}).Error
+		})
 	}
-	if err := tx.Commit().Error; err != nil {
+	if err := tx.Commit(); err != nil {
 		return CreateResult{}, err
 	}
 
 	replyToName := ""
 	if comment.ParentID > 0 {
-		var parent model.Comment
-		if err := db.WithContext(ctx).Preload("User").First(&parent, comment.ParentID).Error; err == nil {
-			if parent.User.Username != "" {
-				replyToName = parent.User.Username
-			}
+		parent, err := st.GetCommentWithUser(ctx, comment.ParentID)
+		if err == nil && parent.User.Username != "" {
+			replyToName = parent.User.Username
 		}
 	}
-	if err := db.WithContext(ctx).Preload("User").First(&comment, comment.ID).Error; err != nil {
+	comment, err = st.GetCommentWithUser(ctx, comment.ID)
+	if err != nil {
 		return CreateResult{}, err
 	}
 	return CreateResult{Comment: comment, ReplyToUserName: replyToName}, nil

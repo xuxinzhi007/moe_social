@@ -25,7 +25,7 @@ func NewCheckFollowLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Check
 }
 
 func (l *CheckFollowLogic) CheckFollow(in *moe.CheckFollowReq) (*moe.CheckFollowResp, error) {
-	ok, err := userbiz.IsFollowingByStringID(l.ctx, l.svcCtx.DB, in.GetFollowerId(), in.GetFollowingId())
+	ok, err := userbiz.IsFollowingByStringID(l.ctx, l.svcCtx.UserStore(), in.GetFollowerId(), in.GetFollowingId())
 	if err != nil {
 		l.Error("检查关注状态失败:", err)
 		return nil, err
