@@ -38,7 +38,7 @@ Client → :8888  Kratos HTTP (api/moehttp)
               → internal/biz/<domain>
 ```
 
-存量 200+ 路由仍经 `api/moehttp/routes_native_gen.go` 桥到 `api/internal/logic`（逐步按域迁出，新接口不要走这条链）。
+存量路由均在 `api/moehttp/*_compat.go` 注册（`routes_native_gen` 已为 **0**）；多数仍经 `invokeLogicJSON` 或 `wrapNativeHTTP` 进入 `api/internal/logic`，逐步改为直挂 `internal/service`（见 [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md)）。**新接口不要走 logic 链。**
 
 ---
 
@@ -47,7 +47,7 @@ Client → :8888  Kratos HTTP (api/moehttp)
 | 你做的修改 | 应执行的命令 | 生成物 |
 |------------|--------------|--------|
 | 新增/修改 `api/<domain>/v1/*.proto` | **`make gen`** | `*.pb.go`、`*_grpc.pb.go` |
-| 仅同步 Kratos 路由表（未改 defs） | `make gen` | `api/moehttp/routes_*_gen.go` |
+| 仅同步 Kratos 路由表（未改 defs） | `make gen-http-routes` | `api/moehttp/routes_*_gen.go`（`native=0` 时为空壳） |
 | 修改 `api/defs/*.api`（**存量**） | `make gen-api` | handler、types、routes.go + 上表路由 |
 | 修改 `rpc` 契约 | `make gen-rpc` | rpc server/pb 等 |
 | proto + defs 都改了 | `make gen-all` | 以上合并 |
@@ -124,12 +124,28 @@ curl -s "http://127.0.0.1:8888/api/v1/example/items?page=1&page_size=10"
 
 ## 5. 参考实现
 
+### 直挂 `internal/service`（推荐对照）
+
 | 域 | Proto | Service | HTTP 注册 |
 |----|-------|---------|-----------|
-| VIP 读 | `api/vip/v1/vip_read.proto` | `internal/service/vip/` | `api/moehttp/vip_compat.go` |
+| Post | `api/post/v1/post.proto` | `internal/service/post/` | `api/moehttp/post_compat.go` |
+| Gift | `api/gift/v1/gift.proto` | `internal/service/gift/` | `api/moehttp/gift_compat.go` |
+| Comment | `api/comment/v1/comment.proto` | `internal/service/comment/` | `api/moehttp/comment_compat.go` |
+| Community | `api/community/v1/community.proto` | `internal/service/community/` | `api/moehttp/community_compat.go` |
+| Checkin | `api/checkin/v1/checkin.proto` | `internal/service/checkin/` | `api/moehttp/checkin_compat.go` |
+| Achievement / Behavior | 同目录 `api/*/v1/` | `internal/service/*/` | `achievement_compat.go` · `behavior_compat.go` |
+
+### Pilot / 读路径
+
+| 域 | Proto | Service | HTTP 注册 |
+|----|-------|---------|-----------|
+| VIP 读 | `api/vip/v1/vip_read.proto` | DB / biz | `api/moehttp/vip_compat.go` |
 | Landing | （RPC pb 复用） | `internal/service/landing/` | `api/moehttp/landing_compat.go` |
+| LLM 读 | `api/llm/v1/llm_chat.proto` | `internal/service/llm/` | `api/moehttp/llm_read_compat.go` |
 | Moe Admin | `api/moe/v1/moe.proto` | `internal/service/moe/` | `api/moehttp/admin_compat.go` |
 | Admin Insights | `api/admin/v1/admin_insights.proto` | `internal/service/admin/` | `api/moehttp/admin_insights_compat.go` |
+
+完整 compat 清单见 [kratos-legacy-api-migration.md §2.1](./kratos-legacy-api-migration.md#21-apimoehttp-compat-清单263-路由)。
 
 ---
 

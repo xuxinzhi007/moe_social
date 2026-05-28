@@ -1,0 +1,46 @@
+# 多 Agent 并行协作（Playbook）
+
+> **Cursor 规则（自动注入）**：`.cursor/rules/parallel-agent-workflow.mdc`  
+> **外部参考**：[Claude Code — git worktrees 并行会话](https://code.claude.com/docs/en/common-workflows#run-parallel-claude-code-sessions-with-git-worktrees)
+
+## 为什么
+
+- **大任务单线程**：上下文膨胀、后半段质量下降、合并前才发现冲突。
+- **worktree 优于同目录多分支**：每个 Agent 会话独占目录，避免未保存/错分支/互相覆盖。
+
+## 快速决策
+
+| 场景 | 做法 |
+|------|------|
+| 改 1～2 个文件、明确 bug | 单 Agent |
+| 多域迁移、多 compat 文件、调研+实现+文档 | **拆子任务 + 并行子代理** |
+| 两个功能互不依赖 | **两个 worktree + 两个会话** |
+
+## 操作清单（父 Agent / 人类）
+
+1. 列出子任务表（域、文件边界、验收命令、禁止触碰）。
+2. 创建 worktree（可选但推荐）：
+   ```bash
+   git worktree add ../moe_social-<short-name> -b feat/<short-name>
+   ```
+3. 并行启动子代理（Cursor `Task`），每个只拿一张子任务表。
+4. 共享文件（如 `register_all.go`）**最后由一人改**。
+5. 合并分支 → `cd backend && make check` → 更新一篇 SSOT 文档。
+
+## 本仓库：Kratos compat 拆分示例
+
+见 [kratos-legacy-api-migration.md](../dev/kratos-legacy-api-migration.md) §5「下一批建议优先级」。典型并行：
+
+- **A**：`admin_service_compat` → `AdminApp`
+- **B**：`user_compat` + `user_memory_compat`
+- **C**：`ai_compat` + `chat_compat`
+- **D**：`platform_compat`
+
+## 可选 Cursor 能力（了解即可）
+
+- `/hooks`：长任务进度监控  
+- 远程/报告类能力随 Cursor 版本变化，以官方文档为准  
+
+---
+
+维护：规则以 `.cursor/rules/parallel-agent-workflow.mdc` 为准；本文供人类阅读与 onboarding。

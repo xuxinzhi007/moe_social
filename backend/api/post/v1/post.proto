@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package post.v1;
+
+option go_package = "backend/api/post/v1;postv1";
+
+// PostApp — 域 SSOT（HTTP 与 api/defs/social.api 一致）。
+// GET    /api/posts
+// POST   /api/posts
+// GET    /api/posts/:post_id
+// PUT    /api/posts/:post_id
+// DELETE /api/posts/:post_id
+// GET    /api/posts/:post_id/comments
+// POST   /api/posts/:post_id/like
+// POST   /api/posts/:post_id/report
+// GET    /api/posts/search
+
+message PingRequest {}
+message PingReply {}
+
+service PostApp {
+  rpc Ping(PingRequest) returns (PingReply);
+}

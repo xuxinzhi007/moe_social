@@ -1,0 +1,46 @@
+package moehttp
+
+import (
+	"context"
+	"net/http"
+
+	"backend/api/internal/svc"
+	"backend/api/internal/types"
+
+	khttp "github.com/go-kratos/kratos/v2/transport/http"
+	"github.com/zeromicro/go-zero/rest/httpx"
+)
+
+// invokeLogicJSON 解析 types 请求并调用 legacy logic，返回可 JSON 序列化的响应。
+func invokeLogicJSON[Req any](
+	svcCtx *svc.ServiceContext,
+	call func(context.Context, *svc.ServiceContext, *Req) (any, error),
+) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req Req
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
+				Code: -1, Message: err.Error(), Success: false,
+			})
+		}
+		resp, err := call(ctx, svcCtx, &req)
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, resp)
+	}
+}
+
+// invokeLogicEmpty 无 body 的 GET 等请求。
+func invokeLogicEmpty(
+	svcCtx *svc.ServiceContext,
+	call func(context.Context, *svc.ServiceContext) (any, error),
+) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		resp, err := call(ctx, svcCtx)
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, resp)
+	}
+}

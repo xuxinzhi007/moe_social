@@ -27,12 +27,15 @@ make moe-social-stop   # 端口占用时
 
 ```text
 HTTP  Client → :8888
-              → api/moehttp (Kratos)
-              → [compat] internal/service
-              → [存量] api/internal/logic → *gw → biz
+              → api/moehttp/register_all.go
+              → *_compat.go（263 路由；routes_native_gen=0）
+              → [直挂 ~56] internal/service → biz
+              → [薄转 ~207] handler/logic → *gw (in_process) → biz
 
 gRPC  Client → :8080 → rpc/logic 或 moegrpc → biz
 ```
+
+compat 文件清单：[kratos-legacy-api-migration.md §2.1](./kratos-legacy-api-migration.md#21-apimoehttp-compat-清单263-路由)
 
 ## 生成（与运行时无关）
 

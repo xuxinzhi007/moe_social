@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package community.v1;
+
+option go_package = "backend/api/community/v1;communityv1";
+
+// CommunityApp — 社群域 SSOT（/api/community/groups/*）。
+
+message PingRequest {}
+message PingReply {}
+
+service CommunityApp {
+  rpc Ping(PingRequest) returns (PingReply);
+}

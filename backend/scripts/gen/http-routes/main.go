@@ -58,7 +58,7 @@ var skipExactPaths = map[string]struct{}{
 	"/api/user/:user_id/gifts/purchase":              {},
 	"/api/comments":                                  {},
 	"/api/comments/:comment_id/like":                 {},
-	// 波次2：user + post/community/ai 等（见 api/moehttp/user_logic_compat.go、wave2_logic_compat.go）
+	// 波次2：user/community/ai/chat 等（见 user_compat、community_compat、ai_compat、chat_compat、wave2_misc_compat）
 	"/api/auth/feishu/authorize-url":                              {},
 	"/api/auth/feishu/callback":                                   {},
 	"/api/auth/feishu/login":                                      {},
@@ -159,7 +159,7 @@ var skipExactPaths = map[string]struct{}{
 	"/api/private-messages/conversations":                         {},
 	"/api/vip/plans":                                              {},
 	"/api/vip/plans/:plan_id":                                     {},
-	// 波次3：admin + llm/voice/moe/appcfg/content（见 admin_logic_compat.go、platform_logic_compat.go）
+	// 波次3：admin + platform（见 admin_service_compat、admin_legacy_compat、platform_compat）
 	"/api/admin/accounts":                         {},
 	"/api/admin/accounts/:account_id":               {},
 	"/api/admin/achievements/bootstrap":             {},

@@ -1,27 +1,20 @@
 ---
-description: Kratos hybrid migration rules for backend Moe domain
+description: Kratos 后端迁移纪律（compat / proto / service）
 globs: backend/**/*
 alwaysApply: false
 ---
 
-# Kratos 混合迁移纪律
+# Kratos 迁移纪律（后端）
 
-> **更新：2026-05-27** · **阶段 FS-3b** · SSOT：[docs/dev/kratos-migration.md](../docs/dev/kratos-migration.md)
+> **更新：2026-05-27** · SSOT：[docs/dev/kratos-migration.md](../docs/dev/kratos-migration.md) · 存量 compat：[kratos-legacy-api-migration.md](../docs/dev/kratos-legacy-api-migration.md)
 
-| 进度 | 文档 | 验收 |
-|------|------|------|
-| Hybrid Moe 100% (A) | `kratos-migration.md` | `make verify-moe-complete` |
-| 纯 Kratos 试点 100% (B) | `kratos-pure-migration-plan.md` | `make verify-kratos-100` |
-| VIP 套餐 100% | `kratos-full-site-migration-plan.md` FS-2 | `make verify-domain-vip` |
-| User 核心 FS-3a | 同上 FS-3a | `make verify-domain-user` |
-| 全站迁移 ~48% (F) | `kratos-full-site-migration-plan.md` | `make verify-full-site-50` |
+**大任务并行**：多域 compat / 多文件迁移时，遵循 [.cursor/rules/parallel-agent-workflow.mdc](./parallel-agent-workflow.mdc)（子代理 + worktree），不要单会话串行扛完全部域。
 
-## 生产架构（当前）
+## 当前状态（摘要）
 
-- 对外 **:8888**：`make moe-social`
-- 三网关 **in_process**（默认）：`moeadmingw` / `vipadmingw` / `usergw`
-- 内网 **:8080**：`super.Super` + `moe.v1`；非 in_process 路由仍走 RPC
-- 试点（非对外）：`make moe-kratos` → :19031/:19032
+- 生产：`make moe-social` · HTTP `:8888` · `routes_native_gen = 0`
+- compat：**263** 条 · 约 **56** 条已直挂 `internal/service`
+- 验收：`make check` · `curl /migration`（**勿**再引用已删除的 `make verify-*`）
 
 ## 配置（`config.yaml` → `moe`）
 
@@ -51,11 +44,12 @@ make gen-moe-admin   # 改 super.api 后
 ## 验收
 
 ```bash
+cd backend && make check
 make moe-social
-make verify-full-site-50
+curl -s http://127.0.0.1:8888/migration
 ```
 
 ## 禁止
 
-- Moe 已迁路径禁止回退巨型 logic
-- 勿把「B=100%」说成「全站纯 Kratos」
+- 新路由写进 `api/defs`（走域 proto + `*_compat.go`）
+- 多子代理同时改 `register_all.go` / `route_stats.go`（由父代理合并时单点改）
