@@ -14,7 +14,7 @@
 | 管理台（React） | [../moe-admin/README.md](../moe-admin/README.md) · [dev/moe-admin.md](./dev/moe-admin.md) |
 | 产品优先级与 AI 酒馆 | [product/项目开发总览与当前优先级-2026-05-18.md](./product/项目开发总览与当前优先级-2026-05-18.md) · [product/AI酒馆化改造方案.md](./product/AI酒馆化改造方案.md) |
 | 开发规范 | [guidelines/Codex启动指南-后端.md](./guidelines/Codex启动指南-后端.md) · [guidelines/Codex启动指南-前端.md](./guidelines/Codex启动指南-前端.md) · [../code_review.md](../code_review.md) |
-| **Kratos 后端（P0–P5 ✅）** | [dev/kratos-migration-status.md](./dev/kratos-migration-status.md)（状态板） · [dev/kratos-migration.md](./dev/kratos-migration.md) · [dev/kratos-p5d-zero-gozero.md](./dev/kratos-p5d-zero-gozero.md) · [dev/new-api-kratos.md](./dev/new-api-kratos.md) |
+| **Kratos 后端（P0–P5 ✅ · P6 ~80%）** | [dev/kratos-migration-status.md](./dev/kratos-migration-status.md)（状态板） · [dev/kratos-p6-defs-to-proto.md](./dev/kratos-p6-defs-to-proto.md)（P6 契约） · [dev/kratos-legacy-api-migration.md](./dev/kratos-legacy-api-migration.md) · [dev/kratos-migration.md](./dev/kratos-migration.md) · [dev/new-api-kratos.md](./dev/new-api-kratos.md) |
 | **大任务多 Agent** | [guidelines/parallel-agent-workflow.md](./guidelines/parallel-agent-workflow.md) |
 | Agent 长期记忆 / Session 复盘 | [guidelines/agent-long-term-memory.md](./guidelines/agent-long-term-memory.md) · [.cursor/LESSONS.md](../.cursor/LESSONS.md) · [guidelines/sessions/](./guidelines/sessions/) |
 | 历史 / 过时文档 | [archive/README.md](./archive/README.md) |

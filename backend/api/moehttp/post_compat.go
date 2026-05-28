@@ -3,13 +3,14 @@ package moehttp
 import (
 	"net/http"
 
+	commentv1 "backend/api/comment/v1"
+	postv1 "backend/api/post/v1"
 	"backend/api/internal/common"
 	"backend/api/internal/moebridge"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 	commentapp "backend/internal/service/comment"
 	postapp "backend/internal/service/post"
-	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
@@ -44,7 +45,7 @@ func getPosts(app *postapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetPosts(ctx, &moe.GetPostsReq{
+		rpcResp, err := app.GetPosts(ctx, &postv1.GetPostsRequest{
 			Page: int32(req.Page), PageSize: int32(req.PageSize), ViewerUserId: req.ViewerUserId,
 			FeedMode: req.FeedMode, TopicTagId: req.TopicTagId, AuthorUserId: req.AuthorUserId,
 		})
@@ -53,7 +54,7 @@ func getPosts(app *postapp.AppService) func(khttp.Context) error {
 		}
 		return ctx.JSON(http.StatusOK, types.GetPostsResp{
 			BaseResp: common.HandleRPCError(nil, "获取帖子列表成功"),
-			Data:     postsFromRPC(rpcResp.GetPosts()),
+			Data:     postsFromProto(rpcResp.GetPosts()),
 			Total:    int(rpcResp.GetTotal()),
 		})
 	}
@@ -67,9 +68,9 @@ func createPost(app *postapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.CreatePost(ctx, &moe.CreatePostReq{
+		rpcResp, err := app.CreatePost(ctx, &postv1.CreatePostRequest{
 			UserId: req.UserId, Content: req.Content, Images: req.Images,
-			TopicTags: topicTagsToRPC(req.TopicTags), HandDrawCard: req.HandDrawCard,
+			TopicTags: topicTagsToProto(req.TopicTags), HandDrawCard: req.HandDrawCard,
 			HandDrawThumbUrl: req.HandDrawThumbUrl, MoodTag: req.MoodTag, GroupId: req.GroupId,
 		})
 		if err != nil {
@@ -77,8 +78,8 @@ func createPost(app *postapp.AppService) func(khttp.Context) error {
 		}
 		return ctx.JSON(http.StatusOK, types.CreatePostResp{
 			BaseResp:        common.HandleRPCError(nil, "创建帖子成功"),
-			NewAchievements: achievementUnlocksFromRPC(rpcResp.GetNewAchievements()),
-			Data:            postFromRPC(rpcResp.GetPost()),
+			NewAchievements: achievementUnlocksFromRPC(postv1.AchievementUnlocksToMoe(rpcResp.GetNewAchievements())),
+			Data:            postFromProto(rpcResp.GetPost()),
 		})
 	}
 }
@@ -91,13 +92,13 @@ func getPost(app *postapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetPost(ctx, &moe.GetPostReq{PostId: req.PostId, ViewerUserId: req.ViewerUserId})
+		rpcResp, err := app.GetPost(ctx, &postv1.GetPostRequest{PostId: req.PostId, ViewerUserId: req.ViewerUserId})
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetPostResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.GetPostResp{
 			BaseResp: common.HandleRPCError(nil, "获取帖子成功"),
-			Data:     postFromRPC(rpcResp.GetPost()),
+			Data:     postFromProto(rpcResp.GetPost()),
 		})
 	}
 }
@@ -110,9 +111,9 @@ func updatePost(app *postapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.UpdatePost(ctx, &moe.UpdatePostReq{
+		rpcResp, err := app.UpdatePost(ctx, &postv1.UpdatePostRequest{
 			PostId: req.PostId, UserId: req.UserId, Content: req.Content, Images: req.Images,
-			TopicTags: topicTagsToRPC(req.TopicTags), HandDrawCard: req.HandDrawCard,
+			TopicTags: topicTagsToProto(req.TopicTags), HandDrawCard: req.HandDrawCard,
 			HandDrawThumbUrl: req.HandDrawThumbUrl,
 		})
 		if err != nil {
@@ -120,7 +121,7 @@ func updatePost(app *postapp.AppService) func(khttp.Context) error {
 		}
 		return ctx.JSON(http.StatusOK, types.UpdatePostResp{
 			BaseResp: common.HandleRPCError(nil, "更新帖子成功"),
-			Data:     postFromRPC(rpcResp.GetPost()),
+			Data:     postFromProto(rpcResp.GetPost()),
 		})
 	}
 }
@@ -133,7 +134,7 @@ func deletePost(app *postapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		_, err := app.DeletePost(ctx, &moe.DeletePostReq{PostId: req.PostId, UserId: req.UserId})
+		_, err := app.DeletePost(ctx, &postv1.DeletePostRequest{PostId: req.PostId, UserId: req.UserId})
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.DeletePostResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -154,7 +155,7 @@ func getPostComments(app *commentapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetPostComments(ctx, &moe.GetPostCommentsReq{
+		rpcResp, err := app.GetPostComments(ctx, &commentv1.GetPostCommentsRequest{
 			PostId: req.PostId, Page: int32(req.Page), PageSize: int32(req.PageSize),
 			ViewerUserId: req.ViewerUserId,
 		})
@@ -165,7 +166,7 @@ func getPostComments(app *commentapp.AppService) func(khttp.Context) error {
 		}
 		return ctx.JSON(http.StatusOK, types.GetPostCommentsResp{
 			BaseResp: common.HandleRPCError(nil, "获取评论列表成功"),
-			Data:     commentsFromRPC(rpcResp.GetComments()),
+			Data:     commentsFromProto(rpcResp.GetComments()),
 			Total:    int(rpcResp.GetTotal()),
 		})
 	}
@@ -179,13 +180,13 @@ func likePost(app *postapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.LikePost(ctx, &moe.LikePostReq{PostId: req.PostId, UserId: req.UserId})
+		rpcResp, err := app.LikePost(ctx, &postv1.LikePostRequest{PostId: req.PostId, UserId: req.UserId})
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.LikePostResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.LikePostResp{
 			BaseResp: common.HandleRPCError(nil, "操作成功"),
-			Data:     postFromRPC(rpcResp.GetPost()),
+			Data:     postFromProto(rpcResp.GetPost()),
 		})
 	}
 }
@@ -198,7 +199,7 @@ func reportPost(app *postapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		_, err := app.ReportPost(ctx, &moe.ReportPostReq{
+		_, err := app.ReportPost(ctx, &postv1.ReportPostRequest{
 			PostId: req.PostId, ReporterUserId: req.ReporterUserId, Reason: req.Reason,
 		})
 		if err != nil {
@@ -218,7 +219,7 @@ func searchPosts(app *postapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.MoeSearchPosts(ctx, &moe.MoeSearchPostsReq{
+		rpcResp, err := app.MoeSearchPosts(ctx, &postv1.MoeSearchPostsRequest{
 			Query: req.Q, Limit: searchPostsLimit(req.PageSize),
 			ViewerUserId: parseUint32ID(req.ViewerUserId), MoodTag: req.MoodTag,
 			TopicTagId: parseUint32ID(req.TopicTagId),
@@ -228,7 +229,7 @@ func searchPosts(app *postapp.AppService) func(khttp.Context) error {
 		}
 		return ctx.JSON(http.StatusOK, types.SearchPostsResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
-			Data:     moebridge.SearchPostsFromRPC(rpcResp),
+			Data:     moebridge.SearchPostsFromRPC(postv1.MoeSearchPostsReplyToMoe(rpcResp)),
 		})
 	}
 }

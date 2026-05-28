@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strconv"
 
+	giftv1 "backend/api/gift/v1"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 	giftapp "backend/internal/service/gift"
-	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
@@ -30,7 +30,7 @@ func RegisterGiftCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 	r.POST("/api/user/:user_id/gifts/purchase", giftPurchase(app))
 }
 
-func giftRecordFromRPC(r *moe.GiftRecord) types.GiftRecord {
+func giftRecordFromRPC(r *giftv1.GiftRecord) types.GiftRecord {
 	if r == nil {
 		return types.GiftRecord{}
 	}
@@ -48,7 +48,7 @@ func giftRecordFromRPC(r *moe.GiftRecord) types.GiftRecord {
 	return rec
 }
 
-func giftFromRPC(g *moe.Gift) types.Gift {
+func giftFromRPC(g *giftv1.Gift) types.Gift {
 	if g == nil {
 		return types.Gift{}
 	}
@@ -68,7 +68,7 @@ func giftList(app *giftapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetGifts(ctx, &moe.GetGiftsReq{
+		rpcResp, err := app.GetGifts(ctx, &giftv1.GetGiftsRequest{
 			Page: int32(req.Page), PageSize: int32(req.PageSize), ViewerUserId: req.UserId,
 		})
 		if err != nil {
@@ -94,7 +94,7 @@ func giftGet(app *giftapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetGift(ctx, &moe.GetGiftReq{GiftId: req.GiftId})
+		rpcResp, err := app.GetGift(ctx, &giftv1.GetGiftRequest{GiftId: req.GiftId})
 		if err != nil {
 			return err
 		}
@@ -113,7 +113,7 @@ func giftSend(app *giftapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.SendGift(ctx, &moe.SendGiftReq{
+		rpcResp, err := app.SendGift(ctx, &giftv1.SendGiftRequest{
 			FromUserId: req.UserId, ToUserId: req.ToUserId, GiftId: req.GiftId, Quantity: int32(req.Quantity),
 		})
 		if err != nil {
@@ -139,7 +139,7 @@ func giftRecords(app *giftapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetGiftRecords(ctx, &moe.GetGiftRecordsReq{
+		rpcResp, err := app.GetGiftRecords(ctx, &giftv1.GetGiftRecordsRequest{
 			UserId: req.UserId, Page: int32(req.Page), PageSize: int32(req.PageSize),
 		})
 		if err != nil {
@@ -168,7 +168,7 @@ func giftPurchaseOrders(app *giftapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetGiftPurchaseOrders(ctx, &moe.GetGiftPurchaseOrdersReq{
+		rpcResp, err := app.GetGiftPurchaseOrders(ctx, &giftv1.GetGiftPurchaseOrdersRequest{
 			UserId: req.UserId, Page: int32(req.Page), PageSize: int32(req.PageSize),
 		})
 		if err != nil {
@@ -202,7 +202,7 @@ func giftPurchase(app *giftapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.PurchaseGift(ctx, &moe.PurchaseGiftReq{
+		rpcResp, err := app.PurchaseGift(ctx, &giftv1.PurchaseGiftRequest{
 			UserId: req.UserId, GiftId: req.GiftId, Quantity: int32(req.Quantity),
 		})
 		if err != nil {

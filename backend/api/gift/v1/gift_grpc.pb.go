@@ -19,11 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	GiftService_GetGifts_FullMethodName       = "/gift.v1.GiftService/GetGifts"
-	GiftService_GetGift_FullMethodName        = "/gift.v1.GiftService/GetGift"
-	GiftService_SendGift_FullMethodName       = "/gift.v1.GiftService/SendGift"
-	GiftService_PurchaseGift_FullMethodName   = "/gift.v1.GiftService/PurchaseGift"
-	GiftService_GetGiftRecords_FullMethodName = "/gift.v1.GiftService/GetGiftRecords"
+	GiftService_GetGifts_FullMethodName              = "/gift.v1.GiftService/GetGifts"
+	GiftService_GetGift_FullMethodName               = "/gift.v1.GiftService/GetGift"
+	GiftService_SendGift_FullMethodName              = "/gift.v1.GiftService/SendGift"
+	GiftService_PurchaseGift_FullMethodName          = "/gift.v1.GiftService/PurchaseGift"
+	GiftService_GetGiftRecords_FullMethodName        = "/gift.v1.GiftService/GetGiftRecords"
+	GiftService_GetGiftPurchaseOrders_FullMethodName = "/gift.v1.GiftService/GetGiftPurchaseOrders"
 )
 
 // GiftServiceClient is the client API for GiftService service.
@@ -35,6 +36,7 @@ type GiftServiceClient interface {
 	SendGift(ctx context.Context, in *SendGiftRequest, opts ...grpc.CallOption) (*SendGiftReply, error)
 	PurchaseGift(ctx context.Context, in *PurchaseGiftRequest, opts ...grpc.CallOption) (*PurchaseGiftReply, error)
 	GetGiftRecords(ctx context.Context, in *GetGiftRecordsRequest, opts ...grpc.CallOption) (*GetGiftRecordsReply, error)
+	GetGiftPurchaseOrders(ctx context.Context, in *GetGiftPurchaseOrdersRequest, opts ...grpc.CallOption) (*GetGiftPurchaseOrdersReply, error)
 }
 
 type giftServiceClient struct {
@@ -95,6 +97,16 @@ func (c *giftServiceClient) GetGiftRecords(ctx context.Context, in *GetGiftRecor
 	return out, nil
 }
 
+func (c *giftServiceClient) GetGiftPurchaseOrders(ctx context.Context, in *GetGiftPurchaseOrdersRequest, opts ...grpc.CallOption) (*GetGiftPurchaseOrdersReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetGiftPurchaseOrdersReply)
+	err := c.cc.Invoke(ctx, GiftService_GetGiftPurchaseOrders_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GiftServiceServer is the server API for GiftService service.
 // All implementations must embed UnimplementedGiftServiceServer
 // for forward compatibility.
@@ -104,6 +116,7 @@ type GiftServiceServer interface {
 	SendGift(context.Context, *SendGiftRequest) (*SendGiftReply, error)
 	PurchaseGift(context.Context, *PurchaseGiftRequest) (*PurchaseGiftReply, error)
 	GetGiftRecords(context.Context, *GetGiftRecordsRequest) (*GetGiftRecordsReply, error)
+	GetGiftPurchaseOrders(context.Context, *GetGiftPurchaseOrdersRequest) (*GetGiftPurchaseOrdersReply, error)
 	mustEmbedUnimplementedGiftServiceServer()
 }
 
@@ -128,6 +141,9 @@ func (UnimplementedGiftServiceServer) PurchaseGift(context.Context, *PurchaseGif
 }
 func (UnimplementedGiftServiceServer) GetGiftRecords(context.Context, *GetGiftRecordsRequest) (*GetGiftRecordsReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGiftRecords not implemented")
+}
+func (UnimplementedGiftServiceServer) GetGiftPurchaseOrders(context.Context, *GetGiftPurchaseOrdersRequest) (*GetGiftPurchaseOrdersReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGiftPurchaseOrders not implemented")
 }
 func (UnimplementedGiftServiceServer) mustEmbedUnimplementedGiftServiceServer() {}
 func (UnimplementedGiftServiceServer) testEmbeddedByValue()                     {}
@@ -240,6 +256,24 @@ func _GiftService_GetGiftRecords_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GiftService_GetGiftPurchaseOrders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGiftPurchaseOrdersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GiftServiceServer).GetGiftPurchaseOrders(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GiftService_GetGiftPurchaseOrders_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GiftServiceServer).GetGiftPurchaseOrders(ctx, req.(*GetGiftPurchaseOrdersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GiftService_ServiceDesc is the grpc.ServiceDesc for GiftService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -266,6 +300,10 @@ var GiftService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetGiftRecords",
 			Handler:    _GiftService_GetGiftRecords_Handler,
+		},
+		{
+			MethodName: "GetGiftPurchaseOrders",
+			Handler:    _GiftService_GetGiftPurchaseOrders_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

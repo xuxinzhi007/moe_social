@@ -4,12 +4,29 @@ package behavior.v1;
 
 option go_package = "backend/api/behavior/v1;behaviorv1";
 
-// BehaviorApp — 域 SSOT。
+// Behavior — 域 HTTP/gRPC 契约 SSOT（P6-0）。
 // POST /api/user/:user_id/behavior/events
 
-message PingRequest {}
-message PingReply {}
+message UserBehaviorEventItem {
+  string event = 1;
+  string screen = 2;
+  map<string, string> params = 3;
+  int64 duration_ms = 4;
+  string session_id = 5;
+  int64 client_ts = 6;
+  // 与 moe.UserBehaviorEventInput.params_json 对齐（gateway / 内部调用）
+  string params_json = 7;
+}
+
+message TrackUserBehaviorEventsRequest {
+  uint64 user_id = 1;
+  repeated UserBehaviorEventItem events = 2;
+}
+
+message TrackUserBehaviorEventsReply {
+  int32 accepted = 1;
+}
 
 service BehaviorApp {
-  rpc Ping(PingRequest) returns (PingReply);
+  rpc TrackEvents(TrackUserBehaviorEventsRequest) returns (TrackUserBehaviorEventsReply);
 }

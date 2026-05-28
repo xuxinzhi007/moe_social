@@ -4,9 +4,9 @@ package achievementapp
 import (
 	"context"
 
+	achievementv1 "backend/api/achievement/v1"
 	achievementbiz "backend/internal/biz/achievement"
 	achievementdata "backend/internal/data/achievement"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -21,34 +21,43 @@ func New(db *gorm.DB) *AppService {
 	return &AppService{store: achievementdata.NewStore(db)}
 }
 
-func (s *AppService) GetUserAchievements(ctx context.Context, in *moe.GetUserAchievementsReq) (*moe.GetUserAchievementsResp, error) {
+func (s *AppService) GetUserAchievements(ctx context.Context, in *achievementv1.GetUserAchievementsRequest) (*achievementv1.GetUserAchievementsReply, error) {
 	badges, err := achievementbiz.ListBadges(ctx, s.store, in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
-	return &moe.GetUserAchievementsResp{Badges: badges}, nil
+	return &achievementv1.GetUserAchievementsReply{Badges: achievementv1.BadgesFromMoe(badges)}, nil
 }
 
-func (s *AppService) GetUserUnlockedAchievements(ctx context.Context, in *moe.GetUserUnlockedAchievementsReq) (*moe.GetUserUnlockedAchievementsResp, error) {
+func (s *AppService) GetUserUnlockedAchievements(ctx context.Context, in *achievementv1.GetUserUnlockedAchievementsRequest) (*achievementv1.GetUserUnlockedAchievementsReply, error) {
 	badges, err := achievementbiz.ListUnlockedBadges(ctx, s.store, in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
-	return &moe.GetUserUnlockedAchievementsResp{Badges: badges}, nil
+	return &achievementv1.GetUserUnlockedAchievementsReply{Badges: achievementv1.BadgesFromMoe(badges)}, nil
 }
 
-func (s *AppService) GetUserAchievementSummary(ctx context.Context, in *moe.GetUserAchievementSummaryReq) (*moe.GetUserAchievementSummaryResp, error) {
+func (s *AppService) GetUserAchievementSummary(ctx context.Context, in *achievementv1.GetUserAchievementSummaryRequest) (*achievementv1.GetUserAchievementSummaryReply, error) {
 	summary, err := achievementbiz.GetSummary(ctx, s.store, in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
-	return &moe.GetUserAchievementSummaryResp{Summary: summary}, nil
+	if summary == nil {
+		return &achievementv1.GetUserAchievementSummaryReply{}, nil
+	}
+	return &achievementv1.GetUserAchievementSummaryReply{
+		Summary: &achievementv1.AchievementSummary{
+			TotalBadges:            summary.GetTotalBadges(),
+			UnlockedBadges:         summary.GetUnlockedBadges(),
+			CompletionPercentage:   summary.GetCompletionPercentage(),
+		},
+	}, nil
 }
 
-func (s *AppService) EnsureUserAchievements(ctx context.Context, in *moe.EnsureUserAchievementsReq) (*moe.EnsureUserAchievementsResp, error) {
+func (s *AppService) EnsureUserAchievements(ctx context.Context, in *achievementv1.EnsureUserAchievementsRequest) (*achievementv1.EnsureUserAchievementsReply, error) {
 	unlocks, err := achievementbiz.EnsureInitialized(ctx, s.store, in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
-	return &moe.EnsureUserAchievementsResp{NewAchievements: unlocks}, nil
+	return &achievementv1.EnsureUserAchievementsReply{NewAchievements: achievementv1.UnlocksFromMoe(unlocks)}, nil
 }

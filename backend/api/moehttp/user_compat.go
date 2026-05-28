@@ -7,6 +7,8 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	userv1 "backend/api/user/v1"
+	vipv1 "backend/api/vip/v1"
 	userapp "backend/internal/service/user"
 	"backend/rpc/pb/moe"
 	"backend/utils"
@@ -88,9 +90,9 @@ func feishuAuthorizeURL(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.FeishuAuthorizeURL(ctx, &moe.FeishuAuthorizeURLReq{
+		rpcResp, err := app.FeishuAuthorizeURL(ctx, userv1.FeishuAuthorizeURLReqFromMoe(&moe.FeishuAuthorizeURLReq{
 			State: strings.TrimSpace(req.State),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.FeishuAuthorizeURLResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -109,14 +111,14 @@ func feishuLogin(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.FeishuLogin(ctx, &moe.FeishuLoginReq{Code: strings.TrimSpace(req.Code)})
+		rpcResp, err := app.FeishuLogin(ctx, userv1.FeishuLoginReqFromMoe(&moe.FeishuLoginReq{Code: strings.TrimSpace(req.Code)}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.FeishuLoginResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		resp := types.FeishuLoginResp{BaseResp: common.HandleRPCError(nil, "登录成功")}
 		if rpcResp.GetUser() != nil {
 			resp.Data = types.FeishuLoginData{
-				User: userFromRPC(rpcResp.GetUser()), Token: rpcResp.GetToken(), IsNewUser: rpcResp.GetIsNewUser(),
+				User: userFromUserV1(rpcResp.GetUser()), Token: rpcResp.GetToken(), IsNewUser: rpcResp.GetIsNewUser(),
 			}
 		}
 		return ctx.JSON(http.StatusOK, resp)
@@ -143,9 +145,9 @@ func wechatAuthorizeURL(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.WechatAuthorizeURL(ctx, &moe.WechatAuthorizeURLReq{
+		rpcResp, err := app.WechatAuthorizeURL(ctx, userv1.WechatAuthorizeURLReqFromMoe(&moe.WechatAuthorizeURLReq{
 			State: strings.TrimSpace(req.State), Flow: strings.TrimSpace(req.Flow),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.WechatAuthorizeURLResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -164,16 +166,16 @@ func wechatLogin(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.WechatLogin(ctx, &moe.WechatLoginReq{
+		rpcResp, err := app.WechatLogin(ctx, userv1.WechatLoginReqFromMoe(&moe.WechatLoginReq{
 			Code: strings.TrimSpace(req.Code), Flow: strings.TrimSpace(req.Flow),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.WechatLoginResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		resp := types.WechatLoginResp{BaseResp: common.HandleRPCError(nil, "登录成功")}
 		if rpcResp.GetUser() != nil {
 			resp.Data = types.WechatLoginData{
-				User: userFromRPC(rpcResp.GetUser()), Token: rpcResp.GetToken(), IsNewUser: rpcResp.GetIsNewUser(),
+				User: userFromUserV1(rpcResp.GetUser()), Token: rpcResp.GetToken(), IsNewUser: rpcResp.GetIsNewUser(),
 			}
 		}
 		return ctx.JSON(http.StatusOK, resp)
@@ -188,15 +190,15 @@ func login(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.Login(ctx, &moe.LoginReq{
+		rpcResp, err := app.Login(ctx, userv1.LoginReqFromMoe(&moe.LoginReq{
 			Username: req.Username, Password: req.Password, Email: req.Email,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.LoginResp{BaseResp: common.HandleUserGWError(err, "")})
 		}
 		resp := types.LoginResp{BaseResp: common.HandleRPCError(nil, "登录成功")}
 		if rpcResp.User != nil {
-			resp.Data = types.LoginData{User: userFromRPC(rpcResp.User), Token: rpcResp.Token}
+			resp.Data = types.LoginData{User: userFromUserV1(rpcResp.User), Token: rpcResp.Token}
 		}
 		return ctx.JSON(http.StatusOK, resp)
 	}
@@ -210,15 +212,15 @@ func register(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.Register(ctx, &moe.RegisterReq{
+		rpcResp, err := app.Register(ctx, userv1.RegisterReqFromMoe(&moe.RegisterReq{
 			Username: req.Username, Password: req.Password, Email: req.Email,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.RegisterResp{BaseResp: common.HandleUserGWError(err, "")})
 		}
 		resp := types.RegisterResp{BaseResp: common.HandleRPCError(nil, "注册成功")}
 		if rpcResp.User != nil {
-			resp.Data = types.RegisterData{User: userFromRPC(rpcResp.User), Token: rpcResp.Token}
+			resp.Data = types.RegisterData{User: userFromUserV1(rpcResp.User), Token: rpcResp.Token}
 		}
 		return ctx.JSON(http.StatusOK, resp)
 	}
@@ -242,7 +244,7 @@ func resetPassword(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: common.HandleError(errEmptyPassword()),
 			})
 		}
-		_, err := app.ResetPassword(ctx, &moe.ResetPasswordReq{Email: req.Email, NewPassword: req.NewPassword})
+		_, err := app.ResetPassword(ctx, userv1.ResetPasswordReqFromMoe(&moe.ResetPasswordReq{Email: req.Email, NewPassword: req.NewPassword}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.ResetPasswordResp{
 				BaseResp: common.HandleRPCError(err, "重置密码失败"),
@@ -267,13 +269,13 @@ func checkUserByEmail(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: common.HandleError(errEmptyEmail()),
 			})
 		}
-		rpcResp, err := app.GetUserByEmail(ctx, &moe.GetUserByEmailReq{Email: req.Email})
+		rpcResp, err := app.GetUserByEmail(ctx, userv1.GetUserByEmailReqFromMoe(&moe.GetUserByEmailReq{Email: req.Email}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetUserByEmailResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.GetUserByEmailResp{
 			BaseResp: common.HandleRPCError(nil, "查询成功"),
-			Data:     userFromRPC(rpcResp.User),
+			Data:     userFromUserV1(rpcResp.User),
 		})
 	}
 }
@@ -286,7 +288,7 @@ func getUsers(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetUsers(ctx, &moe.GetUsersReq{Page: int32(req.Page), PageSize: int32(req.PageSize)})
+		rpcResp, err := app.GetUsers(ctx, userv1.GetUsersReqFromMoe(&moe.GetUsersReq{Page: int32(req.Page), PageSize: int32(req.PageSize)}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetUsersResp{
 				BaseResp: common.HandleRPCError(err, ""), Data: nil, Total: 0,
@@ -294,7 +296,7 @@ func getUsers(app *userapp.AppService) func(khttp.Context) error {
 		}
 		users := make([]types.User, 0, len(rpcResp.Users))
 		for _, u := range rpcResp.Users {
-			users = append(users, userFromRPC(u))
+			users = append(users, userFromUserV1(u))
 		}
 		return ctx.JSON(http.StatusOK, types.GetUsersResp{
 			BaseResp: common.HandleRPCError(nil, "获取用户列表成功"), Data: users, Total: int(rpcResp.Total),
@@ -304,7 +306,7 @@ func getUsers(app *userapp.AppService) func(khttp.Context) error {
 
 func getUserCount(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
-		rpcResp, err := app.GetUserCount(ctx, &moe.GetUserCountReq{})
+		rpcResp, err := app.GetUserCount(ctx, userv1.GetUserCountReqFromMoe(&moe.GetUserCountReq{}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetUserCountResp{
 				BaseResp: common.HandleRPCError(err, ""), Data: 0,
@@ -324,12 +326,12 @@ func getUserInfo(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetUserInfo(ctx, &moe.GetUserInfoReq{UserId: req.UserId})
+		rpcResp, err := app.GetUserInfo(ctx, userv1.GetUserInfoReqFromMoe(&moe.GetUserInfoReq{UserId: req.UserId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetUserInfoResp{BaseResp: common.HandleUserGWError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.GetUserInfoResp{
-			BaseResp: common.HandleRPCError(nil, "获取用户信息成功"), Data: userFromRPC(rpcResp.User),
+			BaseResp: common.HandleRPCError(nil, "获取用户信息成功"), Data: userFromUserV1(rpcResp.User),
 		})
 	}
 }
@@ -342,12 +344,12 @@ func getUser(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetUser(ctx, &moe.GetUserReq{UserId: req.UserId})
+		rpcResp, err := app.GetUser(ctx, userv1.GetUserReqFromMoe(&moe.GetUserReq{UserId: req.UserId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetUserResp{BaseResp: common.HandleUserGWError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.GetUserResp{
-			BaseResp: common.HandleRPCError(nil, "获取用户信息成功"), Data: userFromRPC(rpcResp.User),
+			BaseResp: common.HandleRPCError(nil, "获取用户信息成功"), Data: userFromUserV1(rpcResp.User),
 		})
 	}
 }
@@ -360,17 +362,17 @@ func updateUserInfo(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.UpdateUserInfo(ctx, &moe.UpdateUserInfoReq{
+		rpcResp, err := app.UpdateUserInfo(ctx, userv1.UpdateUserInfoReqFromMoe(&moe.UpdateUserInfoReq{
 			UserId: req.UserId, Username: req.Username, Email: req.Email, Avatar: req.Avatar,
 			Signature: req.Signature, Gender: req.Gender, Birthday: req.Birthday,
 			Inventory: req.Inventory, EquippedFrameId: req.EquippedFrameId,
 			ClearEquippedFrame: req.ClearEquippedFrame, MessageRetention: req.MessageRetention,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.UpdateUserInfoResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.UpdateUserInfoResp{
-			BaseResp: common.HandleRPCError(nil, "更新用户信息成功"), Data: userFromRPC(rpcResp.User),
+			BaseResp: common.HandleRPCError(nil, "更新用户信息成功"), Data: userFromUserV1(rpcResp.User),
 		})
 	}
 }
@@ -383,9 +385,9 @@ func updateUserPassword(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		_, err := app.UpdateUserPassword(ctx, &moe.UpdateUserPasswordReq{
+		_, err := app.UpdateUserPassword(ctx, userv1.UpdateUserPasswordReqFromMoe(&moe.UpdateUserPasswordReq{
 			UserId: req.UserId, OldPassword: req.OldPassword, NewPassword: req.NewPassword,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.UpdateUserPasswordResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -403,7 +405,7 @@ func deleteUser(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		_, err := app.DeleteUser(ctx, &moe.DeleteUserReq{UserId: req.UserId})
+		_, err := app.DeleteUser(ctx, userv1.DeleteUserReqFromMoe(&moe.DeleteUserReq{UserId: req.UserId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.DeleteUserResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -421,7 +423,7 @@ func deleteMyAccount(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: 401, Message: "请先登录", Success: false},
 			})
 		}
-		_, err = app.DeleteUser(ctx, &moe.DeleteUserReq{UserId: userID})
+		_, err = app.DeleteUser(ctx, userv1.DeleteUserReqFromMoe(&moe.DeleteUserReq{UserId: userID}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.DeleteUserResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -445,12 +447,12 @@ func bindFeishu(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: 401, Message: "请先登录", Success: false},
 			})
 		}
-		rpcResp, err := app.BindFeishu(ctx, &moe.BindFeishuReq{UserId: userID, FeishuEmail: req.FeishuEmail})
+		rpcResp, err := app.BindFeishu(ctx, userv1.BindFeishuReqFromMoe(&moe.BindFeishuReq{UserId: userID, FeishuEmail: req.FeishuEmail}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.BindFeishuResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.BindFeishuResp{
-			BaseResp: common.HandleRPCError(nil, "飞书绑定成功"), Data: userFromRPC(rpcResp.User),
+			BaseResp: common.HandleRPCError(nil, "飞书绑定成功"), Data: userFromUserV1(rpcResp.User),
 		})
 	}
 }
@@ -463,12 +465,12 @@ func unbindFeishu(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: 401, Message: "请先登录", Success: false},
 			})
 		}
-		rpcResp, err := app.UnbindFeishu(ctx, &moe.UnbindFeishuReq{UserId: userID})
+		rpcResp, err := app.UnbindFeishu(ctx, userv1.UnbindFeishuReqFromMoe(&moe.UnbindFeishuReq{UserId: userID}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.UnbindFeishuResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.UnbindFeishuResp{
-			BaseResp: common.HandleRPCError(nil, "已解除飞书绑定"), Data: userFromRPC(rpcResp.User),
+			BaseResp: common.HandleRPCError(nil, "已解除飞书绑定"), Data: userFromUserV1(rpcResp.User),
 		})
 	}
 }
@@ -481,7 +483,7 @@ func sendFeishuTestCard(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: 401, Message: "请先登录", Success: false},
 			})
 		}
-		_, err = app.SendFeishuTestCard(ctx, &moe.SendFeishuTestCardReq{UserId: userID})
+		_, err = app.SendFeishuTestCard(ctx, userv1.SendFeishuTestCardReqFromMoe(&moe.SendFeishuTestCardReq{UserId: userID}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.SendFeishuTestCardResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -499,7 +501,7 @@ func followUser(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.Follow(ctx, &moe.FollowUserReq{UserId: req.UserId, FollowingId: req.FollowingId})
+		rpcResp, err := app.Follow(ctx, userv1.FollowUserReqFromMoe(&moe.FollowUserReq{UserId: req.UserId, FollowingId: req.FollowingId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.FollowUserResp{
 				BaseResp: common.HandleUserGWError(err, ""), Data: false,
@@ -517,7 +519,7 @@ func unfollowUser(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.Unfollow(ctx, &moe.UnfollowUserReq{UserId: req.UserId, FollowingId: req.FollowingId})
+		rpcResp, err := app.Unfollow(ctx, userv1.UnfollowUserReqFromMoe(&moe.UnfollowUserReq{UserId: req.UserId, FollowingId: req.FollowingId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.FollowUserResp{
 				BaseResp: common.HandleUserGWError(err, ""), Data: false,
@@ -535,9 +537,9 @@ func checkFollow(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.CheckFollow(ctx, &moe.CheckFollowReq{
+		rpcResp, err := app.CheckFollow(ctx, userv1.CheckFollowReqFromMoe(&moe.CheckFollowReq{
 			FollowerId: req.FollowerId, FollowingId: req.FollowingId,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.CheckFollowResp{
 				BaseResp: common.HandleUserGWError(err, ""), Data: false,
@@ -555,9 +557,9 @@ func getFollowers(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetFollowers(ctx, &moe.GetFollowersReq{
+		rpcResp, err := app.GetFollowers(ctx, userv1.GetFollowersReqFromMoe(&moe.GetFollowersReq{
 			UserId: req.UserId, Page: int32(req.Page), PageSize: int32(req.PageSize),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetFollowersResp{
 				BaseResp: common.HandleUserGWError(err, ""), Data: nil, Total: 0,
@@ -565,7 +567,7 @@ func getFollowers(app *userapp.AppService) func(khttp.Context) error {
 		}
 		users := make([]types.User, 0, len(rpcResp.Users))
 		for _, u := range rpcResp.Users {
-			users = append(users, userFromRPC(u))
+			users = append(users, userFromUserV1(u))
 		}
 		return ctx.JSON(http.StatusOK, types.GetFollowersResp{
 			BaseResp: common.HandleError(nil), Data: users, Total: int(rpcResp.Total),
@@ -581,9 +583,9 @@ func getFollowings(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetFollowings(ctx, &moe.GetFollowingsReq{
+		rpcResp, err := app.GetFollowings(ctx, userv1.GetFollowingsReqFromMoe(&moe.GetFollowingsReq{
 			UserId: req.UserId, Page: int32(req.Page), PageSize: int32(req.PageSize),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetFollowingsResp{
 				BaseResp: common.HandleUserGWError(err, ""), Data: nil, Total: 0,
@@ -591,7 +593,7 @@ func getFollowings(app *userapp.AppService) func(khttp.Context) error {
 		}
 		users := make([]types.User, 0, len(rpcResp.Users))
 		for _, u := range rpcResp.Users {
-			users = append(users, userFromRPC(u))
+			users = append(users, userFromUserV1(u))
 		}
 		return ctx.JSON(http.StatusOK, types.GetFollowingsResp{
 			BaseResp: common.HandleError(nil), Data: users, Total: int(rpcResp.Total),
@@ -619,14 +621,14 @@ func sendFriendRequest(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false},
 			})
 		}
-		rpcResp, err := app.SendFriendRequest(ctx, &moe.SendFriendRequestReq{
+		rpcResp, err := app.SendFriendRequest(ctx, userv1.SendFriendRequestReqFromMoe(&moe.SendFriendRequestReq{
 			ActorUserId: actorString(me), ToUserId: strings.TrimSpace(req.ToUserId), ToMoeNo: strings.TrimSpace(req.ToMoeNo),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.SendFriendRequestResp{BaseResp: common.HandleUserGWError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.SendFriendRequestResp{
-			BaseResp: common.HandleRPCError(nil, "好友申请已发送"), Data: friendViewFromRPC(rpcResp.Data),
+			BaseResp: common.HandleRPCError(nil, "好友申请已发送"), Data: friendViewFromUserV1(rpcResp.Data),
 		})
 	}
 }
@@ -659,23 +661,23 @@ func friendRequestList(app *userapp.AppService, incoming bool) func(khttp.Contex
 				BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false},
 			})
 		}
-		var data []*moe.FriendRequestView
+		var views []*userv1.FriendRequestView
 		if incoming {
-			rpcResp, rpcErr := app.ListIncomingFriendRequests(ctx, &moe.ListIncomingFriendRequestsReq{ActorUserId: actorString(me)})
+			rpcResp, rpcErr := app.ListIncomingFriendRequests(ctx, userv1.ListIncomingFriendRequestsReqFromMoe(&moe.ListIncomingFriendRequestsReq{ActorUserId: actorString(me)}))
 			if rpcErr != nil {
 				return ctx.JSON(http.StatusOK, types.ListFriendRequestsResp{BaseResp: common.HandleUserGWError(rpcErr, "")})
 			}
-			data = rpcResp.Data
+			views = rpcResp.Data
 		} else {
-			rpcResp, rpcErr := app.ListOutgoingFriendRequests(ctx, &moe.ListOutgoingFriendRequestsReq{ActorUserId: actorString(me)})
+			rpcResp, rpcErr := app.ListOutgoingFriendRequests(ctx, userv1.ListOutgoingFriendRequestsReqFromMoe(&moe.ListOutgoingFriendRequestsReq{ActorUserId: actorString(me)}))
 			if rpcErr != nil {
 				return ctx.JSON(http.StatusOK, types.ListFriendRequestsResp{BaseResp: common.HandleUserGWError(rpcErr, "")})
 			}
-			data = rpcResp.Data
+			views = rpcResp.Data
 		}
-		out := make([]types.FriendRequestView, 0, len(data))
-		for _, v := range data {
-			out = append(out, friendViewFromRPC(v))
+		out := make([]types.FriendRequestView, 0, len(views))
+		for _, v := range views {
+			out = append(out, friendViewFromUserV1(v))
 		}
 		return ctx.JSON(http.StatusOK, types.ListFriendRequestsResp{
 			BaseResp: common.HandleRPCError(nil, "ok"), Data: out,
@@ -712,9 +714,9 @@ func friendRequestAction(app *userapp.AppService, accept bool) func(khttp.Contex
 			})
 		}
 		if accept {
-			_, err = app.AcceptFriendRequest(ctx, &moe.AcceptFriendRequestReq{
+			_, err = app.AcceptFriendRequest(ctx, userv1.AcceptFriendRequestReqFromMoe(&moe.AcceptFriendRequestReq{
 				ActorUserId: actorString(me), RequestId: req.RequestId,
-			})
+			}))
 			if err != nil {
 				return ctx.JSON(http.StatusOK, types.FriendRequestActionResp{BaseResp: common.HandleUserGWError(err, "")})
 			}
@@ -722,9 +724,9 @@ func friendRequestAction(app *userapp.AppService, accept bool) func(khttp.Contex
 				BaseResp: common.HandleRPCError(nil, "已同意好友申请"), Data: true,
 			})
 		}
-		_, err = app.RejectFriendRequest(ctx, &moe.RejectFriendRequestReq{
+		_, err = app.RejectFriendRequest(ctx, userv1.RejectFriendRequestReqFromMoe(&moe.RejectFriendRequestReq{
 			ActorUserId: actorString(me), RequestId: req.RequestId,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.FriendRequestActionResp{BaseResp: common.HandleUserGWError(err, "")})
 		}
@@ -754,13 +756,13 @@ func listFriends(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false},
 			})
 		}
-		rpcResp, err := app.ListFriends(ctx, &moe.ListFriendsReq{ActorUserId: actorString(me)})
+		rpcResp, err := app.ListFriends(ctx, userv1.ListFriendsReqFromMoe(&moe.ListFriendsReq{ActorUserId: actorString(me)}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.ListFriendsResp{BaseResp: common.HandleUserGWError(err, "")})
 		}
 		out := make([]types.User, 0, len(rpcResp.Users))
 		for _, u := range rpcResp.Users {
-			out = append(out, userFromRPC(u))
+			out = append(out, userFromUserV1(u))
 		}
 		return ctx.JSON(http.StatusOK, types.ListFriendsResp{
 			BaseResp: common.HandleRPCError(nil, "ok"), Data: out,
@@ -788,9 +790,9 @@ func getFriendStatus(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false},
 			})
 		}
-		rpcResp, err := app.GetFriendRelation(ctx, &moe.GetFriendRelationReq{
+		rpcResp, err := app.GetFriendRelation(ctx, userv1.GetFriendRelationReqFromMoe(&moe.GetFriendRelationReq{
 			ActorUserId: actorString(me), OtherUserId: strings.TrimSpace(req.OtherUserId),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.FriendStatusResp{BaseResp: common.HandleUserGWError(err, "")})
 		}
@@ -809,15 +811,15 @@ func listUserDevices(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.ListUserDevices(ctx, &moe.ListUserDevicesReq{
+		rpcResp, err := app.ListUserDevices(ctx, userv1.ListUserDevicesReqFromMoe(&moe.ListUserDevicesReq{
 			UserId: req.UserId, Limit: int32(req.Limit), Offset: int32(req.Offset),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.ListUserDevicesResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.UserDeviceRecord, 0, len(rpcResp.Devices))
 		for _, d := range rpcResp.Devices {
-			items = append(items, userDeviceFromRPC(d))
+			items = append(items, userDeviceFromUserV1(d))
 		}
 		return ctx.JSON(http.StatusOK, types.ListUserDevicesResp{
 			BaseResp: common.HandleRPCError(nil, "查询设备列表成功"),
@@ -834,16 +836,16 @@ func syncUserDevice(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.SyncUserDevice(ctx, &moe.SyncUserDeviceReq{
+		rpcResp, err := app.SyncUserDevice(ctx, userv1.SyncUserDeviceReqFromMoe(&moe.SyncUserDeviceReq{
 			UserId: req.UserId, DeviceId: req.DeviceId, Platform: req.Platform,
 			OsVersion: req.OSVersion, AppVersion: req.AppVersion, DeviceName: req.DeviceName,
 			LastSeen: req.LastSeen, PayloadJson: req.PayloadJSON,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.SyncUserDeviceResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.SyncUserDeviceResp{
-			BaseResp: common.HandleRPCError(nil, "同步设备信息成功"), Data: userDeviceFromRPC(rpcResp.Device),
+			BaseResp: common.HandleRPCError(nil, "同步设备信息成功"), Data: userDeviceFromUserV1(rpcResp.Device),
 		})
 	}
 }
@@ -856,15 +858,15 @@ func getTransactions(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetTransactions(ctx, &moe.GetTransactionsReq{
+		rpcResp, err := app.GetTransactions(ctx, userv1.GetTransactionsReqFromMoe(&moe.GetTransactionsReq{
 			UserId: req.UserId, Page: int32(req.Page), PageSize: int32(req.PageSize),
-		})
+		}))
 		if err != nil {
 			return err
 		}
 		transactions := make([]types.Transaction, 0, len(rpcResp.Transactions))
 		for _, t := range rpcResp.Transactions {
-			transactions = append(transactions, transactionFromRPC(t))
+			transactions = append(transactions, transactionFromUserV1(t))
 		}
 		return ctx.JSON(http.StatusOK, types.GetTransactionsResp{
 			BaseResp: types.BaseResp{Code: 200, Message: "获取交易记录成功", Success: true},
@@ -881,13 +883,13 @@ func getTransaction(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetTransaction(ctx, &moe.GetTransactionReq{Id: req.TransactionId})
+		rpcResp, err := app.GetTransaction(ctx, userv1.GetTransactionReqFromMoe(&moe.GetTransactionReq{Id: req.TransactionId}))
 		if err != nil {
 			return err
 		}
 		return ctx.JSON(http.StatusOK, types.GetTransactionResp{
 			BaseResp: types.BaseResp{Code: 200, Message: "获取交易详情成功", Success: true},
-			Data:     transactionFromRPC(rpcResp.Transaction),
+			Data:     transactionFromUserV1(rpcResp.Transaction),
 		})
 	}
 }
@@ -900,9 +902,9 @@ func recharge(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		_, err := app.Recharge(ctx, &moe.RechargeReq{
+		_, err := app.Recharge(ctx, userv1.RechargeReqFromMoe(&moe.RechargeReq{
 			UserId: req.UserId, Amount: float32(req.Amount), Description: req.Description,
-		})
+		}))
 		if err != nil {
 			return err
 		}
@@ -924,7 +926,7 @@ func getUserVipStatus(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetUserVipStatus(ctx, &moe.GetUserVipStatusReq{UserId: req.UserId})
+		rpcResp, err := app.GetUserVipStatus(ctx, vipv1.GetUserVipStatusReqFromMoe(&moe.GetUserVipStatusReq{UserId: req.UserId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetUserVipStatusResp{BaseResp: common.HandleUserGWError(err, "")})
 		}
@@ -945,7 +947,7 @@ func checkUserVip(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.CheckUserVip(ctx, &moe.CheckUserVipReq{UserId: req.UserId})
+		rpcResp, err := app.CheckUserVip(ctx, vipv1.CheckUserVipReqFromMoe(&moe.CheckUserVipReq{UserId: req.UserId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.CheckUserVipResp{
 				BaseResp: common.HandleUserGWError(err, ""), Data: false,
@@ -965,14 +967,14 @@ func updateUserVip(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.UpdateUserVip(ctx, &moe.UpdateUserVipReq{
+		rpcResp, err := app.UpdateUserVip(ctx, vipv1.UpdateUserVipReqFromMoe(&moe.UpdateUserVipReq{
 			UserId: req.UserId, IsVip: req.IsVip, VipExpires: req.VipExpires,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.UpdateUserVipResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.UpdateUserVipResp{
-			BaseResp: common.HandleRPCError(nil, "更新用户VIP状态成功"), Data: userFromRPC(rpcResp.User),
+			BaseResp: common.HandleRPCError(nil, "更新用户VIP状态成功"), Data: userFromVipV1(rpcResp.User),
 		})
 	}
 }
@@ -985,7 +987,7 @@ func syncUserVipStatus(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.SyncUserVipStatus(ctx, &moe.SyncUserVipStatusReq{UserId: req.UserId})
+		rpcResp, err := app.SyncUserVipStatus(ctx, vipv1.SyncUserVipStatusReqFromMoe(&moe.SyncUserVipStatusReq{UserId: req.UserId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.SyncUserVipStatusResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -1002,7 +1004,7 @@ func updateAutoRenew(app *userapp.AppService) func(khttp.Context) error {
 		if err := bindRequest(ctx, &req); err != nil {
 			return err
 		}
-		_, err := app.UpdateAutoRenew(ctx, &moe.UpdateAutoRenewReq{UserId: req.UserId, AutoRenew: req.AutoRenew})
+		_, err := app.UpdateAutoRenew(ctx, vipv1.UpdateAutoRenewReqFromMoe(&moe.UpdateAutoRenewReq{UserId: req.UserId, AutoRenew: req.AutoRenew}))
 		if err != nil {
 			return err
 		}
@@ -1018,13 +1020,13 @@ func getUserActiveVipRecord(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetUserActiveVipRecord(ctx, &moe.GetUserActiveVipRecordReq{UserId: req.UserId})
+		rpcResp, err := app.GetUserActiveVipRecord(ctx, vipv1.GetUserActiveVipRecordReqFromMoe(&moe.GetUserActiveVipRecordReq{UserId: req.UserId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetUserActiveVipRecordResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.GetUserActiveVipRecordResp{
 			BaseResp: common.HandleRPCError(nil, "获取用户活跃VIP记录成功"),
-			Data:     vipRecordFromRPC(rpcResp.Record),
+			Data:     vipRecordFromVipV1(rpcResp.Record),
 		})
 	}
 }
@@ -1037,9 +1039,9 @@ func getVipOrders(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetVipOrders(ctx, &moe.GetVipOrdersReq{
+		rpcResp, err := app.GetVipOrders(ctx, vipv1.GetVipOrdersReqFromMoe(&moe.GetVipOrdersReq{
 			UserId: req.UserId, Page: int32(req.Page), PageSize: int32(req.PageSize),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetVipOrdersResp{
 				BaseResp: common.HandleRPCError(err, ""), Data: nil, Total: 0,
@@ -1047,7 +1049,7 @@ func getVipOrders(app *userapp.AppService) func(khttp.Context) error {
 		}
 		orders := make([]types.VipOrder, 0, len(rpcResp.Orders))
 		for _, o := range rpcResp.Orders {
-			orders = append(orders, vipOrderFromRPC(o))
+			orders = append(orders, vipOrderFromVipV1(o))
 		}
 		return ctx.JSON(http.StatusOK, types.GetVipOrdersResp{
 			BaseResp: common.HandleRPCError(nil, "获取VIP订单列表成功"), Data: orders, Total: int(rpcResp.Total),
@@ -1063,14 +1065,14 @@ func createVipOrder(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.CreateVipOrder(ctx, &moe.CreateVipOrderReq{UserId: req.UserId, PlanId: req.PlanId})
+		rpcResp, err := app.CreateVipOrder(ctx, vipv1.CreateVipOrderReqFromMoe(&moe.CreateVipOrderReq{UserId: req.UserId, PlanId: req.PlanId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.CreateVipOrderResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.CreateVipOrderResp{
 			BaseResp:        common.HandleRPCError(nil, "创建VIP订单成功"),
-			NewAchievements: achievementUnlocksFromRPC(rpcResp.NewAchievements),
-			Data:            vipOrderFromRPC(rpcResp.Order),
+			NewAchievements: achievementUnlocksFromVipV1(rpcResp.NewAchievements),
+			Data:            vipOrderFromVipV1(rpcResp.Order),
 		})
 	}
 }
@@ -1083,9 +1085,9 @@ func getVipHistory(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetVipRecords(ctx, &moe.GetVipRecordsReq{
+		rpcResp, err := app.GetVipRecords(ctx, vipv1.GetVipRecordsReqFromMoe(&moe.GetVipRecordsReq{
 			UserId: req.UserId, Page: int32(req.Page), PageSize: int32(req.PageSize),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetVipHistoryResp{
 				BaseResp: common.HandleRPCError(err, ""), Data: nil, Total: 0,
@@ -1093,7 +1095,7 @@ func getVipHistory(app *userapp.AppService) func(khttp.Context) error {
 		}
 		records := make([]types.VipRecord, 0, len(rpcResp.Records))
 		for _, rec := range rpcResp.Records {
-			records = append(records, vipRecordFromRPC(rec))
+			records = append(records, vipRecordFromVipV1(rec))
 		}
 		return ctx.JSON(http.StatusOK, types.GetVipHistoryResp{
 			BaseResp: common.HandleRPCError(nil, "获取VIP历史记录成功"), Data: records, Total: int(rpcResp.Total),

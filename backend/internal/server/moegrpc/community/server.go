@@ -5,7 +5,6 @@ import (
 
 	communityv1 "backend/api/community/v1"
 	communityapp "backend/internal/service/community"
-	moerpc "backend/rpc/pb/moe"
 )
 
 // Server 实现 community.v1.Community gRPC（P4-C；与 Super 并存）。
@@ -31,14 +30,7 @@ func (s *Server) GetGroups(ctx context.Context, in *communityv1.GetGroupsRequest
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.GetGroups(ctx, &moerpc.GetGroupsReq{
-		Page: in.GetPage(), PageSize: in.GetPageSize(), Keyword: in.GetKeyword(),
-		IsPublic: in.GetIsPublic(), UserId: in.GetUserId(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &communityv1.GetGroupsReply{Groups: groupsToProto(resp.GetGroups()), Total: resp.GetTotal()}, nil
+	return app.GetGroups(ctx, in)
 }
 
 func (s *Server) GetGroup(ctx context.Context, in *communityv1.GetGroupRequest) (*communityv1.GetGroupReply, error) {
@@ -46,15 +38,7 @@ func (s *Server) GetGroup(ctx context.Context, in *communityv1.GetGroupRequest) 
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.GetGroup(ctx, &moerpc.GetGroupReq{
-		GroupId: in.GetGroupId(), UserId: in.GetUserId(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &communityv1.GetGroupReply{
-		Success: resp.GetSuccess(), Message: resp.GetMessage(), Group: groupToProto(resp.GetGroup()),
-	}, nil
+	return app.GetGroup(ctx, in)
 }
 
 func (s *Server) CreateGroup(ctx context.Context, in *communityv1.CreateGroupRequest) (*communityv1.CreateGroupReply, error) {
@@ -62,16 +46,7 @@ func (s *Server) CreateGroup(ctx context.Context, in *communityv1.CreateGroupReq
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.CreateGroup(ctx, &moerpc.CreateGroupReq{
-		Name: in.GetName(), Description: in.GetDescription(), Avatar: in.GetAvatar(),
-		Cover: in.GetCover(), UserId: in.GetUserId(), IsPublic: in.GetIsPublic(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &communityv1.CreateGroupReply{
-		Success: resp.GetSuccess(), Message: resp.GetMessage(), Group: groupToProto(resp.GetGroup()),
-	}, nil
+	return app.CreateGroup(ctx, in)
 }
 
 func (s *Server) JoinGroup(ctx context.Context, in *communityv1.JoinGroupRequest) (*communityv1.JoinGroupReply, error) {
@@ -79,11 +54,5 @@ func (s *Server) JoinGroup(ctx context.Context, in *communityv1.JoinGroupRequest
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.JoinGroup(ctx, &moerpc.JoinGroupReq{
-		GroupId: in.GetGroupId(), UserId: in.GetUserId(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &communityv1.JoinGroupReply{Success: resp.GetSuccess(), Message: resp.GetMessage()}, nil
+	return app.JoinGroup(ctx, in)
 }

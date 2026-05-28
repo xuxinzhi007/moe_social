@@ -3,9 +3,9 @@ package landingapp
 import (
 	"context"
 
+	landingv1 "backend/api/landing/v1"
 	landingbiz "backend/internal/biz/landing"
 	landingdata "backend/internal/data/landing"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -21,7 +21,7 @@ func New(db *gorm.DB) *AppService {
 }
 
 // Submit 提交落地页反馈。
-func (s *AppService) Submit(ctx context.Context, in *moe.SubmitLandingFeedbackReq) (*moe.SubmitLandingFeedbackResp, error) {
+func (s *AppService) Submit(ctx context.Context, in *landingv1.SubmitLandingFeedbackRequest) (*landingv1.SubmitLandingFeedbackReply, error) {
 	id, err := landingbiz.Submit(ctx, s.feedback, landingbiz.SubmitInput{
 		Email:     in.GetEmail(),
 		Category:  in.GetCategory(),
@@ -33,11 +33,11 @@ func (s *AppService) Submit(ctx context.Context, in *moe.SubmitLandingFeedbackRe
 	if err != nil {
 		return nil, err
 	}
-	return &moe.SubmitLandingFeedbackResp{Id: id}, nil
+	return &landingv1.SubmitLandingFeedbackReply{Id: id}, nil
 }
 
 // List 分页列表。
-func (s *AppService) List(ctx context.Context, in *moe.ListLandingFeedbackReq) (*moe.ListLandingFeedbackResp, error) {
+func (s *AppService) List(ctx context.Context, in *landingv1.ListLandingFeedbackRequest) (*landingv1.ListLandingFeedbackReply, error) {
 	result, err := landingbiz.List(ctx, s.feedback, landingbiz.ListFilter{
 		Page:     in.GetPage(),
 		PageSize: in.GetPageSize(),
@@ -46,8 +46,8 @@ func (s *AppService) List(ctx context.Context, in *moe.ListLandingFeedbackReq) (
 	if err != nil {
 		return nil, err
 	}
-	return &moe.ListLandingFeedbackResp{
-		Items: landingbiz.FeedbackItemsToProto(result.Rows),
+	return &landingv1.ListLandingFeedbackReply{
+		Items: landingv1.FeedbackItemsFromMoe(landingbiz.FeedbackItemsToProto(result.Rows)),
 		Total: int32(result.Total),
 	}, nil
 }

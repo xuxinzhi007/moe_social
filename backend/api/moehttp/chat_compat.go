@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"strings"
 
+	chatv1 "backend/api/chat/v1"
 	"backend/api/internal/common"
 	"backend/api/internal/presence"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 	chatbiz "backend/internal/biz/chat"
 	chatapp "backend/internal/service/chat"
-	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
@@ -56,7 +56,7 @@ func pmSendPrivateMessage(svcCtx *svc.ServiceContext, app *chatapp.AppService) f
 				BaseResp: types.BaseResp{Code: 401, Message: "请先登录", Success: false},
 			})
 		}
-		rpcResp, err := app.SendPrivateMessage(ctx, &moe.SendPrivateMessageReq{
+		rpcResp, err := app.SendPrivateMessage(ctx, &chatv1.SendPrivateMessageRequest{
 			SenderId:   senderID,
 			ReceiverId: req.ReceiverId,
 			Body:       req.Body,
@@ -74,10 +74,11 @@ func pmSendPrivateMessage(svcCtx *svc.ServiceContext, app *chatapp.AppService) f
 		}
 
 		deliveryDeps := chatDeliveryDeps(svcCtx)
+		moeMsg := chatv1.PrivateMessageToMoe(rpcResp.Message)
 		senderName, senderAvatar := chatbiz.ResolvePrivateMessageSenderProfile(
-			ctx, deliveryDeps, senderID, rpcResp.Message, "",
+			ctx, deliveryDeps, senderID, moeMsg, "",
 		)
-		chatbiz.DeliverPrivateMessageRealTime(ctx, deliveryDeps, senderID, req.ReceiverId, req.Body, senderName, senderAvatar, rpcResp.Message)
+		chatbiz.DeliverPrivateMessageRealTime(ctx, deliveryDeps, senderID, req.ReceiverId, req.Body, senderName, senderAvatar, moeMsg)
 
 		return ctx.JSON(http.StatusOK, types.SendPrivateMessageResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -100,7 +101,7 @@ func pmListPrivateMessages(app *chatapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: 401, Message: "请先登录", Success: false},
 			})
 		}
-		rpcResp, err := app.ListPrivateMessages(ctx, &moe.ListPrivateMessagesReq{
+		rpcResp, err := app.ListPrivateMessages(ctx, &chatv1.ListPrivateMessagesRequest{
 			ViewerId: viewerID,
 			PeerId:   req.PeerUserId,
 			BeforeId: req.BeforeId,
@@ -140,7 +141,7 @@ func pmListPrivateConversations(app *chatapp.AppService) func(khttp.Context) err
 				BaseResp: types.BaseResp{Code: 401, Message: "请先登录", Success: false},
 			})
 		}
-		rpcResp, err := app.ListPrivateConversations(ctx, &moe.ListPrivateConversationsReq{
+		rpcResp, err := app.ListPrivateConversations(ctx, &chatv1.ListPrivateConversationsRequest{
 			ViewerId: viewerID,
 			Limit:    int32(req.Limit),
 			Offset:   int32(req.Offset),
@@ -221,7 +222,7 @@ func chatDeliveryDeps(svcCtx *svc.ServiceContext) chatbiz.DeliveryDeps {
 	return deps
 }
 
-func privateMessageItemFromProto(m *moe.PrivateMessage) types.PrivateMessageItem {
+func privateMessageItemFromProto(m *chatv1.PrivateMessage) types.PrivateMessageItem {
 	paths := m.GetImagePaths()
 	if paths == nil {
 		paths = []string{}
@@ -240,7 +241,7 @@ func privateMessageItemFromProto(m *moe.PrivateMessage) types.PrivateMessageItem
 	}
 }
 
-func privateConversationItemFromProto(c *moe.PrivateConversation) types.PrivateConversationItem {
+func privateConversationItemFromProto(c *chatv1.PrivateConversation) types.PrivateConversationItem {
 	last := types.PrivateMessageItem{}
 	if c != nil && c.LastMessage != nil {
 		last = privateMessageItemFromProto(c.LastMessage)

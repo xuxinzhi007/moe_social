@@ -925,6 +925,462 @@ func (x *LikePostReply) GetPost() *Post {
 	return nil
 }
 
+type GetPostsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Page          int32                  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	ViewerUserId  string                 `protobuf:"bytes,3,opt,name=viewer_user_id,json=viewerUserId,proto3" json:"viewer_user_id,omitempty"`
+	FeedMode      string                 `protobuf:"bytes,4,opt,name=feed_mode,json=feedMode,proto3" json:"feed_mode,omitempty"`
+	TopicTagId    string                 `protobuf:"bytes,5,opt,name=topic_tag_id,json=topicTagId,proto3" json:"topic_tag_id,omitempty"`
+	AuthorUserId  string                 `protobuf:"bytes,6,opt,name=author_user_id,json=authorUserId,proto3" json:"author_user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPostsRequest) Reset() {
+	*x = GetPostsRequest{}
+	mi := &file_api_post_v1_post_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPostsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPostsRequest) ProtoMessage() {}
+
+func (x *GetPostsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_post_v1_post_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPostsRequest.ProtoReflect.Descriptor instead.
+func (*GetPostsRequest) Descriptor() ([]byte, []int) {
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *GetPostsRequest) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *GetPostsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *GetPostsRequest) GetViewerUserId() string {
+	if x != nil {
+		return x.ViewerUserId
+	}
+	return ""
+}
+
+func (x *GetPostsRequest) GetFeedMode() string {
+	if x != nil {
+		return x.FeedMode
+	}
+	return ""
+}
+
+func (x *GetPostsRequest) GetTopicTagId() string {
+	if x != nil {
+		return x.TopicTagId
+	}
+	return ""
+}
+
+func (x *GetPostsRequest) GetAuthorUserId() string {
+	if x != nil {
+		return x.AuthorUserId
+	}
+	return ""
+}
+
+type GetPostsReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Posts         []*Post                `protobuf:"bytes,1,rep,name=posts,proto3" json:"posts,omitempty"`
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPostsReply) Reset() {
+	*x = GetPostsReply{}
+	mi := &file_api_post_v1_post_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPostsReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPostsReply) ProtoMessage() {}
+
+func (x *GetPostsReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_post_v1_post_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPostsReply.ProtoReflect.Descriptor instead.
+func (*GetPostsReply) Descriptor() ([]byte, []int) {
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *GetPostsReply) GetPosts() []*Post {
+	if x != nil {
+		return x.Posts
+	}
+	return nil
+}
+
+func (x *GetPostsReply) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+type UpdatePostRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	PostId           string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	UserId           string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Content          string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
+	Images           []string               `protobuf:"bytes,4,rep,name=images,proto3" json:"images,omitempty"`
+	TopicTags        []*TopicTag            `protobuf:"bytes,5,rep,name=topic_tags,json=topicTags,proto3" json:"topic_tags,omitempty"`
+	HandDrawCard     string                 `protobuf:"bytes,6,opt,name=hand_draw_card,json=handDrawCard,proto3" json:"hand_draw_card,omitempty"`
+	HandDrawThumbUrl string                 `protobuf:"bytes,7,opt,name=hand_draw_thumb_url,json=handDrawThumbUrl,proto3" json:"hand_draw_thumb_url,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *UpdatePostRequest) Reset() {
+	*x = UpdatePostRequest{}
+	mi := &file_api_post_v1_post_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdatePostRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdatePostRequest) ProtoMessage() {}
+
+func (x *UpdatePostRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_post_v1_post_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdatePostRequest.ProtoReflect.Descriptor instead.
+func (*UpdatePostRequest) Descriptor() ([]byte, []int) {
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *UpdatePostRequest) GetPostId() string {
+	if x != nil {
+		return x.PostId
+	}
+	return ""
+}
+
+func (x *UpdatePostRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *UpdatePostRequest) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *UpdatePostRequest) GetImages() []string {
+	if x != nil {
+		return x.Images
+	}
+	return nil
+}
+
+func (x *UpdatePostRequest) GetTopicTags() []*TopicTag {
+	if x != nil {
+		return x.TopicTags
+	}
+	return nil
+}
+
+func (x *UpdatePostRequest) GetHandDrawCard() string {
+	if x != nil {
+		return x.HandDrawCard
+	}
+	return ""
+}
+
+func (x *UpdatePostRequest) GetHandDrawThumbUrl() string {
+	if x != nil {
+		return x.HandDrawThumbUrl
+	}
+	return ""
+}
+
+type UpdatePostReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Post          *Post                  `protobuf:"bytes,1,opt,name=post,proto3" json:"post,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdatePostReply) Reset() {
+	*x = UpdatePostReply{}
+	mi := &file_api_post_v1_post_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdatePostReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdatePostReply) ProtoMessage() {}
+
+func (x *UpdatePostReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_post_v1_post_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdatePostReply.ProtoReflect.Descriptor instead.
+func (*UpdatePostReply) Descriptor() ([]byte, []int) {
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *UpdatePostReply) GetPost() *Post {
+	if x != nil {
+		return x.Post
+	}
+	return nil
+}
+
+type DeletePostRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeletePostRequest) Reset() {
+	*x = DeletePostRequest{}
+	mi := &file_api_post_v1_post_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeletePostRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeletePostRequest) ProtoMessage() {}
+
+func (x *DeletePostRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_post_v1_post_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeletePostRequest.ProtoReflect.Descriptor instead.
+func (*DeletePostRequest) Descriptor() ([]byte, []int) {
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *DeletePostRequest) GetPostId() string {
+	if x != nil {
+		return x.PostId
+	}
+	return ""
+}
+
+func (x *DeletePostRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type DeletePostReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeletePostReply) Reset() {
+	*x = DeletePostReply{}
+	mi := &file_api_post_v1_post_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeletePostReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeletePostReply) ProtoMessage() {}
+
+func (x *DeletePostReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_post_v1_post_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeletePostReply.ProtoReflect.Descriptor instead.
+func (*DeletePostReply) Descriptor() ([]byte, []int) {
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{17}
+}
+
+type ReportPostRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	PostId         string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	ReporterUserId string                 `protobuf:"bytes,2,opt,name=reporter_user_id,json=reporterUserId,proto3" json:"reporter_user_id,omitempty"`
+	Reason         string                 `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ReportPostRequest) Reset() {
+	*x = ReportPostRequest{}
+	mi := &file_api_post_v1_post_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReportPostRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReportPostRequest) ProtoMessage() {}
+
+func (x *ReportPostRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_post_v1_post_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReportPostRequest.ProtoReflect.Descriptor instead.
+func (*ReportPostRequest) Descriptor() ([]byte, []int) {
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *ReportPostRequest) GetPostId() string {
+	if x != nil {
+		return x.PostId
+	}
+	return ""
+}
+
+func (x *ReportPostRequest) GetReporterUserId() string {
+	if x != nil {
+		return x.ReporterUserId
+	}
+	return ""
+}
+
+func (x *ReportPostRequest) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+type ReportPostReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReportPostReply) Reset() {
+	*x = ReportPostReply{}
+	mi := &file_api_post_v1_post_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReportPostReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReportPostReply) ProtoMessage() {}
+
+func (x *ReportPostReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_post_v1_post_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReportPostReply.ProtoReflect.Descriptor instead.
+func (*ReportPostReply) Descriptor() ([]byte, []int) {
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{19}
+}
+
 var File_api_post_v1_post_proto protoreflect.FileDescriptor
 
 const file_api_post_v1_post_proto_rawDesc = "" +
@@ -1010,13 +1466,51 @@ const file_api_post_v1_post_proto_rawDesc = "" +
 	"\apost_id\x18\x01 \x01(\tR\x06postId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\"2\n" +
 	"\rLikePostReply\x12!\n" +
-	"\x04post\x18\x01 \x01(\v2\r.post.v1.PostR\x04post2\x9a\x02\n" +
+	"\x04post\x18\x01 \x01(\v2\r.post.v1.PostR\x04post\"\xcd\x01\n" +
+	"\x0fGetPostsRequest\x12\x12\n" +
+	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12$\n" +
+	"\x0eviewer_user_id\x18\x03 \x01(\tR\fviewerUserId\x12\x1b\n" +
+	"\tfeed_mode\x18\x04 \x01(\tR\bfeedMode\x12 \n" +
+	"\ftopic_tag_id\x18\x05 \x01(\tR\n" +
+	"topicTagId\x12$\n" +
+	"\x0eauthor_user_id\x18\x06 \x01(\tR\fauthorUserId\"J\n" +
+	"\rGetPostsReply\x12#\n" +
+	"\x05posts\x18\x01 \x03(\v2\r.post.v1.PostR\x05posts\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"\xfe\x01\n" +
+	"\x11UpdatePostRequest\x12\x17\n" +
+	"\apost_id\x18\x01 \x01(\tR\x06postId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x18\n" +
+	"\acontent\x18\x03 \x01(\tR\acontent\x12\x16\n" +
+	"\x06images\x18\x04 \x03(\tR\x06images\x120\n" +
+	"\n" +
+	"topic_tags\x18\x05 \x03(\v2\x11.post.v1.TopicTagR\ttopicTags\x12$\n" +
+	"\x0ehand_draw_card\x18\x06 \x01(\tR\fhandDrawCard\x12-\n" +
+	"\x13hand_draw_thumb_url\x18\a \x01(\tR\x10handDrawThumbUrl\"4\n" +
+	"\x0fUpdatePostReply\x12!\n" +
+	"\x04post\x18\x01 \x01(\v2\r.post.v1.PostR\x04post\"E\n" +
+	"\x11DeletePostRequest\x12\x17\n" +
+	"\apost_id\x18\x01 \x01(\tR\x06postId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"\x11\n" +
+	"\x0fDeletePostReply\"n\n" +
+	"\x11ReportPostRequest\x12\x17\n" +
+	"\apost_id\x18\x01 \x01(\tR\x06postId\x12(\n" +
+	"\x10reporter_user_id\x18\x02 \x01(\tR\x0ereporterUserId\x12\x16\n" +
+	"\x06reason\x18\x03 \x01(\tR\x06reason\"\x11\n" +
+	"\x0fReportPostReply2\xa4\x04\n" +
 	"\vPostService\x129\n" +
-	"\aGetPost\x12\x17.post.v1.GetPostRequest\x1a\x15.post.v1.GetPostReply\x12N\n" +
+	"\aGetPost\x12\x17.post.v1.GetPostRequest\x1a\x15.post.v1.GetPostReply\x12<\n" +
+	"\bGetPosts\x12\x18.post.v1.GetPostsRequest\x1a\x16.post.v1.GetPostsReply\x12N\n" +
 	"\x0eMoeSearchPosts\x12\x1e.post.v1.MoeSearchPostsRequest\x1a\x1c.post.v1.MoeSearchPostsReply\x12B\n" +
 	"\n" +
 	"CreatePost\x12\x1a.post.v1.CreatePostRequest\x1a\x18.post.v1.CreatePostReply\x12<\n" +
-	"\bLikePost\x12\x18.post.v1.LikePostRequest\x1a\x16.post.v1.LikePostReplyB\x1cZ\x1abackend/api/post/v1;postv1b\x06proto3"
+	"\bLikePost\x12\x18.post.v1.LikePostRequest\x1a\x16.post.v1.LikePostReply\x12B\n" +
+	"\n" +
+	"UpdatePost\x12\x1a.post.v1.UpdatePostRequest\x1a\x18.post.v1.UpdatePostReply\x12B\n" +
+	"\n" +
+	"DeletePost\x12\x1a.post.v1.DeletePostRequest\x1a\x18.post.v1.DeletePostReply\x12B\n" +
+	"\n" +
+	"ReportPost\x12\x1a.post.v1.ReportPostRequest\x1a\x18.post.v1.ReportPostReplyB\x1cZ\x1abackend/api/post/v1;postv1b\x06proto3"
 
 var (
 	file_api_post_v1_post_proto_rawDescOnce sync.Once
@@ -1030,7 +1524,7 @@ func file_api_post_v1_post_proto_rawDescGZIP() []byte {
 	return file_api_post_v1_post_proto_rawDescData
 }
 
-var file_api_post_v1_post_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_api_post_v1_post_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_api_post_v1_post_proto_goTypes = []any{
 	(*TopicTag)(nil),              // 0: post.v1.TopicTag
 	(*Post)(nil),                  // 1: post.v1.Post
@@ -1044,6 +1538,14 @@ var file_api_post_v1_post_proto_goTypes = []any{
 	(*CreatePostReply)(nil),       // 9: post.v1.CreatePostReply
 	(*LikePostRequest)(nil),       // 10: post.v1.LikePostRequest
 	(*LikePostReply)(nil),         // 11: post.v1.LikePostReply
+	(*GetPostsRequest)(nil),       // 12: post.v1.GetPostsRequest
+	(*GetPostsReply)(nil),         // 13: post.v1.GetPostsReply
+	(*UpdatePostRequest)(nil),     // 14: post.v1.UpdatePostRequest
+	(*UpdatePostReply)(nil),       // 15: post.v1.UpdatePostReply
+	(*DeletePostRequest)(nil),     // 16: post.v1.DeletePostRequest
+	(*DeletePostReply)(nil),       // 17: post.v1.DeletePostReply
+	(*ReportPostRequest)(nil),     // 18: post.v1.ReportPostRequest
+	(*ReportPostReply)(nil),       // 19: post.v1.ReportPostReply
 }
 var file_api_post_v1_post_proto_depIdxs = []int32{
 	0,  // 0: post.v1.Post.topic_tags:type_name -> post.v1.TopicTag
@@ -1053,19 +1555,30 @@ var file_api_post_v1_post_proto_depIdxs = []int32{
 	1,  // 4: post.v1.CreatePostReply.post:type_name -> post.v1.Post
 	2,  // 5: post.v1.CreatePostReply.new_achievements:type_name -> post.v1.AchievementUnlock
 	1,  // 6: post.v1.LikePostReply.post:type_name -> post.v1.Post
-	3,  // 7: post.v1.PostService.GetPost:input_type -> post.v1.GetPostRequest
-	5,  // 8: post.v1.PostService.MoeSearchPosts:input_type -> post.v1.MoeSearchPostsRequest
-	8,  // 9: post.v1.PostService.CreatePost:input_type -> post.v1.CreatePostRequest
-	10, // 10: post.v1.PostService.LikePost:input_type -> post.v1.LikePostRequest
-	4,  // 11: post.v1.PostService.GetPost:output_type -> post.v1.GetPostReply
-	7,  // 12: post.v1.PostService.MoeSearchPosts:output_type -> post.v1.MoeSearchPostsReply
-	9,  // 13: post.v1.PostService.CreatePost:output_type -> post.v1.CreatePostReply
-	11, // 14: post.v1.PostService.LikePost:output_type -> post.v1.LikePostReply
-	11, // [11:15] is the sub-list for method output_type
-	7,  // [7:11] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	1,  // 7: post.v1.GetPostsReply.posts:type_name -> post.v1.Post
+	0,  // 8: post.v1.UpdatePostRequest.topic_tags:type_name -> post.v1.TopicTag
+	1,  // 9: post.v1.UpdatePostReply.post:type_name -> post.v1.Post
+	3,  // 10: post.v1.PostService.GetPost:input_type -> post.v1.GetPostRequest
+	12, // 11: post.v1.PostService.GetPosts:input_type -> post.v1.GetPostsRequest
+	5,  // 12: post.v1.PostService.MoeSearchPosts:input_type -> post.v1.MoeSearchPostsRequest
+	8,  // 13: post.v1.PostService.CreatePost:input_type -> post.v1.CreatePostRequest
+	10, // 14: post.v1.PostService.LikePost:input_type -> post.v1.LikePostRequest
+	14, // 15: post.v1.PostService.UpdatePost:input_type -> post.v1.UpdatePostRequest
+	16, // 16: post.v1.PostService.DeletePost:input_type -> post.v1.DeletePostRequest
+	18, // 17: post.v1.PostService.ReportPost:input_type -> post.v1.ReportPostRequest
+	4,  // 18: post.v1.PostService.GetPost:output_type -> post.v1.GetPostReply
+	13, // 19: post.v1.PostService.GetPosts:output_type -> post.v1.GetPostsReply
+	7,  // 20: post.v1.PostService.MoeSearchPosts:output_type -> post.v1.MoeSearchPostsReply
+	9,  // 21: post.v1.PostService.CreatePost:output_type -> post.v1.CreatePostReply
+	11, // 22: post.v1.PostService.LikePost:output_type -> post.v1.LikePostReply
+	15, // 23: post.v1.PostService.UpdatePost:output_type -> post.v1.UpdatePostReply
+	17, // 24: post.v1.PostService.DeletePost:output_type -> post.v1.DeletePostReply
+	19, // 25: post.v1.PostService.ReportPost:output_type -> post.v1.ReportPostReply
+	18, // [18:26] is the sub-list for method output_type
+	10, // [10:18] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_api_post_v1_post_proto_init() }
@@ -1079,7 +1592,7 @@ func file_api_post_v1_post_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_post_v1_post_proto_rawDesc), len(file_api_post_v1_post_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

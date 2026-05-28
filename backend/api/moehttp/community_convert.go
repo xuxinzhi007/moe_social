@@ -3,9 +3,14 @@ package moehttp
 import (
 	"strconv"
 
+	communityv1 "backend/api/community/v1"
 	"backend/api/internal/types"
 	"backend/rpc/pb/moe"
 )
+
+func groupFromProto(g *communityv1.Group) types.Group {
+	return groupFromRPC(communityv1.GroupToMoe(g))
+}
 
 func groupFromRPC(g *moe.Group) types.Group {
 	if g == nil {
@@ -26,6 +31,10 @@ func groupFromRPC(g *moe.Group) types.Group {
 		IsJoined:    g.GetIsJoined(),
 		UserRole:    g.GetUserRole(),
 	}
+}
+
+func groupPostFromProto(gp *communityv1.GroupPost) types.GroupPost {
+	return groupPostFromRPC(communityv1.GroupPostToMoe(gp))
 }
 
 func groupPostFromRPC(gp *moe.GroupPost) types.GroupPost {

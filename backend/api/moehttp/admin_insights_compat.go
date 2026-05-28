@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	adminv1 "backend/api/admin/v1"
 	"backend/api/internal/common"
 	"backend/api/internal/types"
 	adminapp "backend/internal/service/admin"
@@ -30,17 +31,17 @@ func adminListAiChatSessions(app *adminapp.AppService) func(khttp.Context) error
 		q := ctx.Request().URL.Query()
 		page, _ := strconv.Atoi(q.Get("page"))
 		pageSize, _ := strconv.Atoi(q.Get("page_size"))
-		rpcResp, err := app.ListAiChatSessions(ctx, &moe.AdminListAiChatSessionsReq{
+		rpcResp, err := app.ListAiChatSessions(ctx, adminv1.AdminListAiChatSessionsReqFromMoe(&moe.AdminListAiChatSessionsReq{
 			Page: int32(page), PageSize: int32(pageSize),
 			UserId: q.Get("user_id"), SessionId: q.Get("session_id"),
 			From: q.Get("from"), To: q.Get("to"),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListAiChatSessionsResp{BaseResp: common.HandleError(err)})
 		}
 		items := make([]types.AdminAiChatSessionItem, 0, len(rpcResp.GetItems()))
 		for _, row := range rpcResp.GetItems() {
-			items = append(items, common.RpcAdminAiChatSessionToTypes(row))
+			items = append(items, common.RpcAdminAiChatSessionToTypes(adminv1.AdminAiChatSessionItemToMoe(row)))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListAiChatSessionsResp{
 			BaseResp: common.HandleError(nil),
@@ -54,18 +55,18 @@ func adminListAiChatMessages(app *adminapp.AppService) func(khttp.Context) error
 		q := ctx.Request().URL.Query()
 		page, _ := strconv.Atoi(q.Get("page"))
 		pageSize, _ := strconv.Atoi(q.Get("page_size"))
-		rpcResp, err := app.ListAiChatMessages(ctx, &moe.AdminListAiChatMessagesReq{
+		rpcResp, err := app.ListAiChatMessages(ctx, adminv1.AdminListAiChatMessagesReqFromMoe(&moe.AdminListAiChatMessagesReq{
 			Page: int32(page), PageSize: int32(pageSize),
 			UserId: q.Get("user_id"), SessionId: q.Get("session_id"),
 			Role: q.Get("role"), Keyword: q.Get("keyword"),
 			From: q.Get("from"), To: q.Get("to"),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListAiChatMessagesResp{BaseResp: common.HandleError(err)})
 		}
 		items := make([]types.AdminAiChatMessageItem, 0, len(rpcResp.GetItems()))
 		for _, row := range rpcResp.GetItems() {
-			items = append(items, common.RpcAdminAiChatMessageToTypes(row))
+			items = append(items, common.RpcAdminAiChatMessageToTypes(adminv1.AdminAiChatMessageItemToMoe(row)))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListAiChatMessagesResp{
 			BaseResp: common.HandleError(nil),
@@ -78,12 +79,12 @@ func adminExportAiChatMessages(app *adminapp.AppService) func(khttp.Context) err
 	return func(ctx khttp.Context) error {
 		q := ctx.Request().URL.Query()
 		limit, _ := strconv.Atoi(q.Get("limit"))
-		rpcResp, err := app.ExportAiChatMessages(ctx, &moe.AdminExportAiChatMessagesReq{
+		rpcResp, err := app.ExportAiChatMessages(ctx, adminv1.AdminExportAiChatMessagesReqFromMoe(&moe.AdminExportAiChatMessagesReq{
 			UserId: q.Get("user_id"), SessionId: q.Get("session_id"),
 			Role: q.Get("role"), Keyword: q.Get("keyword"),
 			From: q.Get("from"), To: q.Get("to"),
 			Limit: int32(limit),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminExportAiChatMessagesResp{BaseResp: common.HandleError(err)})
 		}
@@ -98,13 +99,13 @@ func adminExportAiChatMessages(app *adminapp.AppService) func(khttp.Context) err
 
 func adminAnalyticsOverview(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
-		rpcResp, err := app.AnalyticsOverview(ctx, &moe.AdminGetMemoryStatsReq{})
+		rpcResp, err := app.AnalyticsOverview(ctx, adminv1.AdminGetMemoryStatsReqFromMoe(&moe.AdminGetMemoryStatsReq{}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminAnalyticsOverviewResp{BaseResp: common.HandleError(err)})
 		}
 		return ctx.JSON(http.StatusOK, types.AdminAnalyticsOverviewResp{
 			BaseResp: common.HandleError(nil),
-			Data:     common.RpcAdminAnalyticsOverviewToTypes(rpcResp),
+			Data:     common.RpcAdminAnalyticsOverviewToTypes(adminv1.AdminAnalyticsOverviewRespToMoe(rpcResp)),
 		})
 	}
 }
@@ -114,15 +115,15 @@ func adminListTopicTags(app *adminapp.AppService) func(khttp.Context) error {
 		q := ctx.Request().URL.Query()
 		page, _ := strconv.Atoi(q.Get("page"))
 		pageSize, _ := strconv.Atoi(q.Get("page_size"))
-		rpcResp, err := app.ListTopicTags(ctx, &moe.AdminListTopicTagsReq{
+		rpcResp, err := app.ListTopicTags(ctx, adminv1.AdminListTopicTagsReqFromMoe(&moe.AdminListTopicTagsReq{
 			Page: int32(page), PageSize: int32(pageSize), Keyword: q.Get("keyword"),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListTopicTagsResp{BaseResp: common.HandleError(err)})
 		}
 		items := make([]types.TopicTag, 0, len(rpcResp.GetItems()))
 		for _, row := range rpcResp.GetItems() {
-			items = append(items, common.RpcTopicTagToTypes(row))
+			items = append(items, common.RpcTopicTagToTypes(adminv1.TopicTagToMoe(row)))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListTopicTagsResp{
 			BaseResp: common.HandleError(nil),

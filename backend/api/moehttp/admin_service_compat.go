@@ -8,6 +8,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	adminv1 "backend/api/admin/v1"
 	adminapp "backend/internal/service/admin"
 	"backend/rpc/pb/moe"
 
@@ -88,15 +89,15 @@ func adminListAccounts(app *adminapp.AppService) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := app.ListAccounts(ctx, &moe.AdminListAccountsReq{
+		rpcResp, err := app.ListAccounts(ctx, adminv1.AdminListAccountsReqFromMoe(&moe.AdminListAccountsReq{
 			Page: int32(req.Page), PageSize: int32(req.PageSize), Keyword: req.Keyword,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListAccountsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.AdminAccountItem, len(rpcResp.GetItems()))
 		for i, item := range rpcResp.GetItems() {
-			items[i] = common.RpcAdminAccountToTypes(item)
+			items[i] = common.RpcAdminAccountToTypes(adminv1.AdminAccountItemToMoe(item))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListAccountsResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -113,15 +114,15 @@ func adminCreateAccount(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := svcCtx.AdminApp.CreateAccount(ctx, &moe.AdminCreateAccountReq{
+		rpcResp, err := svcCtx.AdminApp.CreateAccount(ctx, adminv1.AdminCreateAccountReqFromMoe(&moe.AdminCreateAccountReq{
 			Username: req.Username, Password: req.Password, Role: req.Role,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminCreateAccountResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		resp := types.AdminCreateAccountResp{
 			BaseResp: common.HandleRPCError(nil, "创建成功"),
-			Data:     common.RpcAdminAccountToTypes(rpcResp.GetAccount()),
+			Data:     common.RpcAdminAccountToTypes(adminv1.AdminAccountItemToMoe(rpcResp.GetAccount())),
 		}
 		if resp.BaseResp.Success {
 			common.TryRecordAdminAudit(ctx, svcCtx, "create", "admin_account", resp.Data.Id, "创建管理员账号")
@@ -151,13 +152,13 @@ func adminUpdateAccount(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 			rpcReq.Role = role
 			rpcReq.UpdateRole = true
 		}
-		rpcResp, err := svcCtx.AdminApp.UpdateAccount(ctx, rpcReq)
+		rpcResp, err := svcCtx.AdminApp.UpdateAccount(ctx, adminv1.AdminUpdateAccountReqFromMoe(rpcReq))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminUpdateAccountResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		resp := types.AdminUpdateAccountResp{
 			BaseResp: common.HandleRPCError(nil, "更新成功"),
-			Data:     common.RpcAdminAccountToTypes(rpcResp.GetAccount()),
+			Data:     common.RpcAdminAccountToTypes(adminv1.AdminAccountItemToMoe(rpcResp.GetAccount())),
 		}
 		if resp.BaseResp.Success {
 			common.TryRecordAdminAudit(ctx, svcCtx, "update", "admin_account", req.AccountId, "更新管理员账号")
@@ -174,7 +175,7 @@ func adminDeleteAccount(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		_, err := svcCtx.AdminApp.DeleteAccount(ctx, &moe.AdminDeleteAccountReq{AccountId: req.AccountId})
+		_, err := svcCtx.AdminApp.DeleteAccount(ctx, adminv1.AdminDeleteAccountReqFromMoe(&moe.AdminDeleteAccountReq{AccountId: req.AccountId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminDeleteAccountResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -194,7 +195,7 @@ func adminBootstrapAchievements(svcCtx *svc.ServiceContext) func(khttp.Context) 
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := svcCtx.AdminApp.BootstrapAchievements(ctx, &moe.AdminBootstrapAchievementsReq{})
+		rpcResp, err := svcCtx.AdminApp.BootstrapAchievements(ctx, adminv1.AdminBootstrapAchievementsReqFromMoe(&moe.AdminBootstrapAchievementsReq{}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminBootstrapAchievementsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -221,15 +222,15 @@ func adminListAiAgents(app *adminapp.AppService) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := app.ListAiAgents(ctx, &moe.AdminListAiAgentsReq{
+		rpcResp, err := app.ListAiAgents(ctx, adminv1.AdminListAiAgentsReqFromMoe(&moe.AdminListAiAgentsReq{
 			Page: int32(req.Page), PageSize: int32(req.PageSize), Keyword: req.Keyword,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListAiAgentsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.AdminAiAgentItem, 0, len(rpcResp.GetItems()))
 		for _, item := range rpcResp.GetItems() {
-			items = append(items, common.RpcAdminAiAgentToTypes(item))
+			items = append(items, common.RpcAdminAiAgentToTypes(adminv1.AdminAiAgentItemToMoe(item)))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListAiAgentsResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -246,9 +247,9 @@ func adminDeleteAiAgent(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		_, err := svcCtx.AdminApp.DeleteAiAgent(ctx, &moe.AdminDeleteAiAgentReq{
+		_, err := svcCtx.AdminApp.DeleteAiAgent(ctx, adminv1.AdminDeleteAiAgentReqFromMoe(&moe.AdminDeleteAiAgentReq{
 			UserId: req.UserId, AgentId: req.AgentId,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminDeleteAiAgentResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -268,15 +269,15 @@ func adminListAnnouncements(app *adminapp.AppService) func(khttp.Context) error 
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := app.ListAnnouncements(ctx, &moe.AdminListAnnouncementsReq{
+		rpcResp, err := app.ListAnnouncements(ctx, adminv1.AdminListAnnouncementsReqFromMoe(&moe.AdminListAnnouncementsReq{
 			Page: int32(req.Page), PageSize: int32(req.PageSize), Keyword: req.Keyword, Status: req.Status,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListAnnouncementsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.AdminAnnouncementItem, 0, len(rpcResp.GetItems()))
 		for _, item := range rpcResp.GetItems() {
-			items = append(items, common.RpcAdminAnnouncementToTypes(item))
+			items = append(items, common.RpcAdminAnnouncementToTypes(adminv1.AdminAnnouncementItemToMoe(item)))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListAnnouncementsResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -293,15 +294,15 @@ func adminCreateAnnouncement(svcCtx *svc.ServiceContext) func(khttp.Context) err
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := svcCtx.AdminApp.CreateAnnouncement(ctx, &moe.AdminCreateAnnouncementReq{
+		rpcResp, err := svcCtx.AdminApp.CreateAnnouncement(ctx, adminv1.AdminCreateAnnouncementReqFromMoe(&moe.AdminCreateAnnouncementReq{
 			Title: req.Title, Content: req.Content,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminCreateAnnouncementResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		resp := types.AdminCreateAnnouncementResp{
 			BaseResp: common.HandleRPCError(nil, "创建成功"),
-			Data:     common.RpcAdminAnnouncementToTypes(rpcResp.GetAnnouncement()),
+			Data:     common.RpcAdminAnnouncementToTypes(adminv1.AdminAnnouncementItemToMoe(rpcResp.GetAnnouncement())),
 		}
 		if resp.BaseResp.Success {
 			common.TryRecordAdminAudit(ctx, svcCtx, "create", "announcement", resp.Data.Id, "创建公告")
@@ -318,13 +319,13 @@ func adminGetAnnouncement(app *adminapp.AppService) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := app.GetAnnouncement(ctx, &moe.AdminGetAnnouncementReq{AnnouncementId: req.AnnouncementId})
+		rpcResp, err := app.GetAnnouncement(ctx, adminv1.AdminGetAnnouncementReqFromMoe(&moe.AdminGetAnnouncementReq{AnnouncementId: req.AnnouncementId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminGetAnnouncementResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.AdminGetAnnouncementResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
-			Data:     common.RpcAdminAnnouncementToTypes(rpcResp.GetAnnouncement()),
+			Data:     common.RpcAdminAnnouncementToTypes(adminv1.AdminAnnouncementItemToMoe(rpcResp.GetAnnouncement())),
 		})
 	}
 }
@@ -346,13 +347,13 @@ func adminUpdateAnnouncement(svcCtx *svc.ServiceContext) func(khttp.Context) err
 			rpcReq.Content = req.Content
 			rpcReq.UpdateContent = true
 		}
-		rpcResp, err := svcCtx.AdminApp.UpdateAnnouncement(ctx, rpcReq)
+		rpcResp, err := svcCtx.AdminApp.UpdateAnnouncement(ctx, adminv1.AdminUpdateAnnouncementReqFromMoe(rpcReq))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminUpdateAnnouncementResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		resp := types.AdminUpdateAnnouncementResp{
 			BaseResp: common.HandleRPCError(nil, "更新成功"),
-			Data:     common.RpcAdminAnnouncementToTypes(rpcResp.GetAnnouncement()),
+			Data:     common.RpcAdminAnnouncementToTypes(adminv1.AdminAnnouncementItemToMoe(rpcResp.GetAnnouncement())),
 		}
 		if resp.BaseResp.Success {
 			common.TryRecordAdminAudit(ctx, svcCtx, "update", "announcement", req.AnnouncementId, "更新公告")
@@ -369,7 +370,7 @@ func adminDeleteAnnouncement(svcCtx *svc.ServiceContext) func(khttp.Context) err
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		_, err := svcCtx.AdminApp.DeleteAnnouncement(ctx, &moe.AdminDeleteAnnouncementReq{AnnouncementId: req.AnnouncementId})
+		_, err := svcCtx.AdminApp.DeleteAnnouncement(ctx, adminv1.AdminDeleteAnnouncementReqFromMoe(&moe.AdminDeleteAnnouncementReq{AnnouncementId: req.AnnouncementId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminDeleteAnnouncementResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -389,13 +390,13 @@ func adminPublishAnnouncement(svcCtx *svc.ServiceContext) func(khttp.Context) er
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := svcCtx.AdminApp.PublishAnnouncement(ctx, &moe.AdminPublishAnnouncementReq{AnnouncementId: req.AnnouncementId})
+		rpcResp, err := svcCtx.AdminApp.PublishAnnouncement(ctx, adminv1.AdminPublishAnnouncementReqFromMoe(&moe.AdminPublishAnnouncementReq{AnnouncementId: req.AnnouncementId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminPublishAnnouncementResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		resp := types.AdminPublishAnnouncementResp{
 			BaseResp: common.HandleRPCError(nil, "发布成功"),
-			Data:     common.RpcAdminAnnouncementToTypes(rpcResp.GetAnnouncement()),
+			Data:     common.RpcAdminAnnouncementToTypes(adminv1.AdminAnnouncementItemToMoe(rpcResp.GetAnnouncement())),
 		}
 		if resp.BaseResp.Success {
 			common.TryRecordAdminAudit(ctx, svcCtx, "publish", "announcement", req.AnnouncementId, "发布公告")
@@ -412,16 +413,16 @@ func adminListAuditLogs(app *adminapp.AppService) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := app.ListAuditLogs(ctx, &moe.AdminListAuditLogsReq{
+		rpcResp, err := app.ListAuditLogs(ctx, adminv1.AdminListAuditLogsReqFromMoe(&moe.AdminListAuditLogsReq{
 			Page: int32(req.Page), PageSize: int32(req.PageSize),
 			Action: req.Action, Resource: req.Resource, AdminId: req.AdminId,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListAuditLogsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.AdminAuditLogItem, 0, len(rpcResp.GetItems()))
 		for _, item := range rpcResp.GetItems() {
-			items = append(items, common.RpcAdminAuditLogToTypes(item))
+			items = append(items, common.RpcAdminAuditLogToTypes(adminv1.AdminAuditLogItemToMoe(item)))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListAuditLogsResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -440,15 +441,15 @@ func adminListComments(app *adminapp.AppService) func(khttp.Context) error {
 		}
 		page := adminPageOrDefault(req.Page, 1)
 		pageSize := adminPageSizeOrDefault(req.PageSize, 50)
-		rpcResp, err := app.ListComments(ctx, &moe.AdminListCommentsReq{
+		rpcResp, err := app.ListComments(ctx, adminv1.AdminListCommentsReqFromMoe(&moe.AdminListCommentsReq{
 			Page: int32(page), PageSize: int32(pageSize), Keyword: req.Keyword, PostId: req.PostId,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListCommentsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.Comment, 0, len(rpcResp.GetComments()))
 		for _, c := range rpcResp.GetComments() {
-			items = append(items, common.RpcCommentToTypes(c))
+			items = append(items, common.RpcCommentToTypes(adminv1.CommentToMoe(c)))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListCommentsResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -465,7 +466,7 @@ func adminDeleteComment(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		_, err := svcCtx.AdminApp.DeleteComment(ctx, &moe.AdminDeleteCommentReq{CommentId: req.CommentId})
+		_, err := svcCtx.AdminApp.DeleteComment(ctx, adminv1.AdminDeleteCommentReqFromMoe(&moe.AdminDeleteCommentReq{CommentId: req.CommentId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminDeleteCommentResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -487,15 +488,15 @@ func adminListGroups(app *adminapp.AppService) func(khttp.Context) error {
 		}
 		page := adminPageOrDefault(req.Page, 1)
 		pageSize := adminPageSizeOrDefault(req.PageSize, 50)
-		rpcResp, err := app.ListGroups(ctx, &moe.AdminListGroupsReq{
+		rpcResp, err := app.ListGroups(ctx, adminv1.AdminListGroupsReqFromMoe(&moe.AdminListGroupsReq{
 			Page: int32(page), PageSize: int32(pageSize), Keyword: req.Keyword,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListGroupsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.Group, 0, len(rpcResp.GetGroups()))
 		for _, g := range rpcResp.GetGroups() {
-			items = append(items, common.RpcGroupToTypes(g))
+			items = append(items, common.RpcGroupToTypes(adminv1.GroupToMoe(g)))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListGroupsResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -512,7 +513,7 @@ func adminDeleteGroup(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		_, err := svcCtx.AdminApp.DeleteGroup(ctx, &moe.AdminDeleteGroupReq{GroupId: req.GroupId})
+		_, err := svcCtx.AdminApp.DeleteGroup(ctx, adminv1.AdminDeleteGroupReqFromMoe(&moe.AdminDeleteGroupReq{GroupId: req.GroupId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminDeleteGroupResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -534,15 +535,15 @@ func adminListGifts(app *adminapp.AppService) func(khttp.Context) error {
 		}
 		page := adminPageOrDefault(req.Page, 1)
 		pageSize := adminPageSizeOrDefault(req.PageSize, 50)
-		rpcResp, err := app.AdminListGifts(ctx, &moe.AdminListGiftsReq{
+		rpcResp, err := app.AdminListGifts(ctx, adminv1.AdminListGiftsReqFromMoe(&moe.AdminListGiftsReq{
 			Page: int32(page), PageSize: int32(pageSize), Keyword: req.Keyword, Category: req.Category,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListGiftsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.Gift, 0, len(rpcResp.GetGifts()))
 		for _, g := range rpcResp.GetGifts() {
-			items = append(items, common.RpcGiftToTypes(g))
+			items = append(items, common.RpcGiftToTypes(adminv1.GiftToMoe(g)))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListGiftsResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -569,16 +570,16 @@ func adminCreateGift(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Success: false, Message: "价格不能为负数"},
 			})
 		}
-		rpcResp, err := svcCtx.AdminApp.AdminCreateGift(ctx, &moe.AdminCreateGiftReq{
+		rpcResp, err := svcCtx.AdminApp.AdminCreateGift(ctx, adminv1.AdminCreateGiftReqFromMoe(&moe.AdminCreateGiftReq{
 			Name: strings.TrimSpace(req.Name), Price: int32(req.Price), Icon: req.Icon,
 			Description: req.Description, Category: req.Category, SortOrder: int32(req.SortOrder),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminCreateGiftResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		resp := types.AdminCreateGiftResp{
 			BaseResp: common.HandleRPCError(nil, "创建成功"),
-			Data:     common.RpcGiftToTypes(rpcResp.GetGift()),
+			Data:     common.RpcGiftToTypes(adminv1.GiftToMoe(rpcResp.GetGift())),
 		}
 		if resp.BaseResp.Success {
 			common.TryRecordAdminAudit(ctx, svcCtx, "create", "gift", resp.Data.Id, "创建礼物")
@@ -595,13 +596,13 @@ func adminGetGift(app *adminapp.AppService) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := app.AdminGetGift(ctx, &moe.AdminGetGiftReq{GiftId: req.GiftId})
+		rpcResp, err := app.AdminGetGift(ctx, adminv1.AdminGetGiftReqFromMoe(&moe.AdminGetGiftReq{GiftId: req.GiftId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminGetGiftResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.AdminGetGiftResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
-			Data:     common.RpcGiftToTypes(rpcResp.GetGift()),
+			Data:     common.RpcGiftToTypes(adminv1.GiftToMoe(rpcResp.GetGift())),
 		})
 	}
 }
@@ -614,18 +615,18 @@ func adminUpdateGift(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := svcCtx.AdminApp.AdminUpdateGift(ctx, &moe.AdminUpdateGiftReq{
+		rpcResp, err := svcCtx.AdminApp.AdminUpdateGift(ctx, adminv1.AdminUpdateGiftReqFromMoe(&moe.AdminUpdateGiftReq{
 			GiftId: req.GiftId, Name: req.Name, Price: int32(req.Price), Icon: req.Icon,
 			Description: req.Description, Category: req.Category, SortOrder: int32(req.SortOrder),
 			UpdateName: req.UpdateName, UpdatePrice: req.UpdatePrice, UpdateIcon: req.UpdateIcon,
 			UpdateDescription: req.UpdateDescription, UpdateCategory: req.UpdateCategory, UpdateSortOrder: req.UpdateSortOrder,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminUpdateGiftResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		resp := types.AdminUpdateGiftResp{
 			BaseResp: common.HandleRPCError(nil, "保存成功"),
-			Data:     common.RpcGiftToTypes(rpcResp.GetGift()),
+			Data:     common.RpcGiftToTypes(adminv1.GiftToMoe(rpcResp.GetGift())),
 		}
 		if resp.BaseResp.Success {
 			common.TryRecordAdminAudit(ctx, svcCtx, "update", "gift", req.GiftId, "更新礼物")
@@ -642,7 +643,7 @@ func adminDeleteGift(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		_, err := svcCtx.AdminApp.AdminDeleteGift(ctx, &moe.AdminDeleteGiftReq{GiftId: req.GiftId})
+		_, err := svcCtx.AdminApp.AdminDeleteGift(ctx, adminv1.AdminDeleteGiftReqFromMoe(&moe.AdminDeleteGiftReq{GiftId: req.GiftId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminDeleteGiftResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -662,7 +663,7 @@ func adminBootstrapGifts(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := svcCtx.AdminApp.AdminBootstrapGifts(ctx, &moe.AdminBootstrapGiftsReq{})
+		rpcResp, err := svcCtx.AdminApp.AdminBootstrapGifts(ctx, adminv1.AdminBootstrapGiftsReqFromMoe(&moe.AdminBootstrapGiftsReq{}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminBootstrapGiftsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -685,7 +686,7 @@ func adminDedupeGifts(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := svcCtx.AdminApp.AdminDedupeGifts(ctx, &moe.AdminDedupeGiftsReq{})
+		rpcResp, err := svcCtx.AdminApp.AdminDedupeGifts(ctx, adminv1.AdminDedupeGiftsReqFromMoe(&moe.AdminDedupeGiftsReq{}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminDedupeGiftsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -708,15 +709,15 @@ func adminListAchievements(app *adminapp.AppService) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := app.ListAchievements(ctx, &moe.AdminListAchievementsReq{
+		rpcResp, err := app.ListAchievements(ctx, adminv1.AdminListAchievementsReqFromMoe(&moe.AdminListAchievementsReq{
 			Page: int32(req.Page), PageSize: int32(req.PageSize), Keyword: req.Keyword, Category: req.Category,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListAchievementsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.AdminAchievementItem, 0, len(rpcResp.GetItems()))
 		for _, item := range rpcResp.GetItems() {
-			items = append(items, common.RpcAdminAchievementToTypes(item))
+			items = append(items, common.RpcAdminAchievementToTypes(adminv1.AdminAchievementItemToMoe(item)))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListAchievementsResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -733,18 +734,18 @@ func adminUpdateAchievement(svcCtx *svc.ServiceContext) func(khttp.Context) erro
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := svcCtx.AdminApp.UpdateAchievement(ctx, &moe.AdminUpdateAchievementReq{
+		rpcResp, err := svcCtx.AdminApp.UpdateAchievement(ctx, adminv1.AdminUpdateAchievementReqFromMoe(&moe.AdminUpdateAchievementReq{
 			Id: req.AchievementId, Name: req.Name, Description: req.Description, Enabled: req.Enabled,
 			ExpReward: int32(req.ExpReward), SortOrder: int32(req.SortOrder),
 			UpdateName: req.UpdateName, UpdateDescription: req.UpdateDescription,
 			UpdateEnabled: req.UpdateEnabled, UpdateExpReward: req.UpdateExpReward, UpdateSortOrder: req.UpdateSortOrder,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminUpdateAchievementResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		resp := types.AdminUpdateAchievementResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
-			Data:     common.RpcAdminAchievementToTypes(rpcResp.GetItem()),
+			Data:     common.RpcAdminAchievementToTypes(adminv1.AdminAchievementItemToMoe(rpcResp.GetItem())),
 		}
 		if resp.BaseResp.Success {
 			common.TryRecordAdminAudit(ctx, svcCtx, "update", "achievement", req.AchievementId, "更新成就定义")
@@ -761,13 +762,13 @@ func adminListLevelConfigs(app *adminapp.AppService) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := app.ListLevelConfigs(ctx, &moe.AdminListLevelConfigsReq{})
+		rpcResp, err := app.ListLevelConfigs(ctx, adminv1.AdminListLevelConfigsReqFromMoe(&moe.AdminListLevelConfigsReq{}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListLevelConfigsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.AdminLevelConfigItem, len(rpcResp.GetItems()))
 		for i, item := range rpcResp.GetItems() {
-			items[i] = common.RpcAdminLevelConfigToTypes(item)
+			items[i] = common.RpcAdminLevelConfigToTypes(adminv1.AdminLevelConfigItemToMoe(item))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListLevelConfigsResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -784,18 +785,18 @@ func adminUpdateLevelConfig(svcCtx *svc.ServiceContext) func(khttp.Context) erro
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := svcCtx.AdminApp.UpdateLevelConfig(ctx, &moe.AdminUpdateLevelConfigReq{
+		rpcResp, err := svcCtx.AdminApp.UpdateLevelConfig(ctx, adminv1.AdminUpdateLevelConfigReqFromMoe(&moe.AdminUpdateLevelConfigReq{
 			Id: req.LevelId, Title: req.Title, MinExp: int32(req.MinExp), MaxExp: int32(req.MaxExp),
 			Privileges: req.Privileges, BadgeUrl: req.BadgeUrl,
 			UpdateTitle: req.UpdateTitle, UpdateMinExp: req.UpdateMinExp, UpdateMaxExp: req.UpdateMaxExp,
 			UpdatePrivileges: req.UpdatePrivileges, UpdateBadgeUrl: req.UpdateBadgeUrl,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminUpdateLevelConfigResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		resp := types.AdminUpdateLevelConfigResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
-			Data:     common.RpcAdminLevelConfigToTypes(rpcResp.GetItem()),
+			Data:     common.RpcAdminLevelConfigToTypes(adminv1.AdminLevelConfigItemToMoe(rpcResp.GetItem())),
 		}
 		if resp.BaseResp.Success {
 			common.TryRecordAdminAudit(ctx, svcCtx, "update", "level_config", fmt.Sprintf("%d", req.LevelId), "更新等级配置")
@@ -812,7 +813,7 @@ func adminBootstrapLevels(svcCtx *svc.ServiceContext) func(khttp.Context) error 
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := svcCtx.AdminApp.BootstrapLevels(ctx, &moe.AdminBootstrapLevelsReq{})
+		rpcResp, err := svcCtx.AdminApp.BootstrapLevels(ctx, adminv1.AdminBootstrapLevelsReqFromMoe(&moe.AdminBootstrapLevelsReq{}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminBootstrapLevelsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -838,9 +839,9 @@ func adminBroadcastNotification(svcCtx *svc.ServiceContext) func(khttp.Context) 
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := svcCtx.AdminApp.BroadcastNotification(ctx, &moe.AdminBroadcastNotificationReq{
+		rpcResp, err := svcCtx.AdminApp.BroadcastNotification(ctx, adminv1.AdminBroadcastNotificationReqFromMoe(&moe.AdminBroadcastNotificationReq{
 			Title: req.Title, Content: req.Content,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminBroadcastNotificationResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -872,9 +873,9 @@ func adminSendNotification(svcCtx *svc.ServiceContext) func(khttp.Context) error
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := svcCtx.AdminApp.SendNotification(ctx, &moe.AdminSendNotificationReq{
+		rpcResp, err := svcCtx.AdminApp.SendNotification(ctx, adminv1.AdminSendNotificationReqFromMoe(&moe.AdminSendNotificationReq{
 			UserId: req.UserId, Title: req.Title, Content: req.Content,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminSendNotificationResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -908,15 +909,15 @@ func adminListGiftPurchaseOrders(app *adminapp.AppService) func(khttp.Context) e
 		}
 		page := adminPageOrDefault(req.Page, 1)
 		pageSize := adminPageSizeOrDefault(req.PageSize, 50)
-		rpcResp, err := app.ListGiftPurchaseOrders(ctx, &moe.AdminListGiftPurchaseOrdersReq{
+		rpcResp, err := app.ListGiftPurchaseOrders(ctx, adminv1.AdminListGiftPurchaseOrdersReqFromMoe(&moe.AdminListGiftPurchaseOrdersReq{
 			Page: int32(page), PageSize: int32(pageSize), UserId: req.UserId, Keyword: req.Keyword, Status: req.Status,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListGiftPurchaseOrdersResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.GiftPurchaseOrder, 0, len(rpcResp.GetOrders()))
 		for _, o := range rpcResp.GetOrders() {
-			items = append(items, common.RpcGiftPurchaseOrderToTypes(o))
+			items = append(items, common.RpcGiftPurchaseOrderToTypes(adminv1.GiftPurchaseOrderToMoe(o)))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListGiftPurchaseOrdersResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -935,15 +936,15 @@ func adminListVipOrders(app *adminapp.AppService) func(khttp.Context) error {
 		}
 		page := adminPageOrDefault(req.Page, 1)
 		pageSize := adminPageSizeOrDefault(req.PageSize, 50)
-		rpcResp, err := app.ListVipOrders(ctx, &moe.AdminListVipOrdersReq{
+		rpcResp, err := app.ListVipOrders(ctx, adminv1.AdminListVipOrdersReqFromMoe(&moe.AdminListVipOrdersReq{
 			Page: int32(page), PageSize: int32(pageSize), UserId: req.UserId, Keyword: req.Keyword, Status: req.Status,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListVipOrdersResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.VipOrder, 0, len(rpcResp.GetOrders()))
 		for _, o := range rpcResp.GetOrders() {
-			items = append(items, common.RpcVipOrderToTypes(o))
+			items = append(items, common.RpcVipOrderToTypes(adminv1.VipOrderToMoe(o)))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListVipOrdersResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -962,15 +963,15 @@ func adminListPostReports(app *adminapp.AppService) func(khttp.Context) error {
 		}
 		page := adminPageOrDefault(req.Page, 1)
 		pageSize := adminPageSizeOrDefault(req.PageSize, 50)
-		rpcResp, err := app.ListPostReports(ctx, &moe.AdminListPostReportsReq{
+		rpcResp, err := app.ListPostReports(ctx, adminv1.AdminListPostReportsReqFromMoe(&moe.AdminListPostReportsReq{
 			Page: int32(page), PageSize: int32(pageSize),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListPostReportsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.AdminPostReportItem, 0, len(rpcResp.GetReports()))
 		for _, r := range rpcResp.GetReports() {
-			items = append(items, rpcAdminPostReportToTypes(r))
+			items = append(items, rpcAdminPostReportToTypes(adminv1.AdminPostReportItemToMoe(r)))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListPostReportsResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -989,16 +990,16 @@ func adminListPosts(app *adminapp.AppService) func(khttp.Context) error {
 		}
 		page := adminPageOrDefault(req.Page, 1)
 		pageSize := adminPageSizeOrDefault(req.PageSize, 20)
-		rpcResp, err := app.ListPosts(ctx, &moe.AdminListPostsReq{
+		rpcResp, err := app.ListPosts(ctx, adminv1.AdminListPostsReqFromMoe(&moe.AdminListPostsReq{
 			Page: int32(page), PageSize: int32(pageSize), Keyword: req.Keyword,
 			ModerationStatus: req.ModerationStatus, IncludeDeleted: req.IncludeDeleted,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListPostsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.Post, 0, len(rpcResp.GetPosts()))
 		for _, p := range rpcResp.GetPosts() {
-			items = append(items, common.RpcPostToTypes(p))
+			items = append(items, common.RpcPostToTypes(adminv1.PostToMoe(p)))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListPostsResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -1015,7 +1016,7 @@ func adminDeletePost(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		_, err := svcCtx.AdminApp.DeletePost(ctx, &moe.AdminDeletePostReq{PostId: req.PostId})
+		_, err := svcCtx.AdminApp.DeletePost(ctx, adminv1.AdminDeletePostReqFromMoe(&moe.AdminDeletePostReq{PostId: req.PostId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminDeletePostResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -1035,15 +1036,15 @@ func adminListFollows(app *adminapp.AppService) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := app.ListFollows(ctx, &moe.AdminListFollowsReq{
+		rpcResp, err := app.ListFollows(ctx, adminv1.AdminListFollowsReqFromMoe(&moe.AdminListFollowsReq{
 			Page: int32(req.Page), PageSize: int32(req.PageSize), Keyword: req.Keyword, UserId: req.UserId,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListFollowsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.AdminFollowItem, 0, len(rpcResp.GetItems()))
 		for _, item := range rpcResp.GetItems() {
-			items = append(items, common.RpcAdminFollowToTypes(item))
+			items = append(items, common.RpcAdminFollowToTypes(adminv1.AdminFollowItemToMoe(item)))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListFollowsResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -1060,7 +1061,7 @@ func adminDeleteFollow(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		_, err := svcCtx.AdminApp.DeleteFollow(ctx, &moe.AdminDeleteFollowReq{FollowId: req.FollowId})
+		_, err := svcCtx.AdminApp.DeleteFollow(ctx, adminv1.AdminDeleteFollowReqFromMoe(&moe.AdminDeleteFollowReq{FollowId: req.FollowId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminDeleteFollowResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -1080,15 +1081,15 @@ func adminListFriendRequests(app *adminapp.AppService) func(khttp.Context) error
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := app.ListFriendRequests(ctx, &moe.AdminListFriendRequestsReq{
+		rpcResp, err := app.ListFriendRequests(ctx, adminv1.AdminListFriendRequestsReqFromMoe(&moe.AdminListFriendRequestsReq{
 			Page: int32(req.Page), PageSize: int32(req.PageSize), Status: req.Status, Keyword: req.Keyword,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListFriendRequestsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.AdminFriendRequestItem, 0, len(rpcResp.GetItems()))
 		for _, item := range rpcResp.GetItems() {
-			items = append(items, common.RpcAdminFriendRequestToTypes(item))
+			items = append(items, common.RpcAdminFriendRequestToTypes(adminv1.AdminFriendRequestItemToMoe(item)))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListFriendRequestsResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -1105,15 +1106,15 @@ func adminListTagDictionary(app *adminapp.AppService) func(khttp.Context) error 
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := app.ListTagDictionary(ctx, &moe.AdminListTagDictionaryReq{
+		rpcResp, err := app.ListTagDictionary(ctx, adminv1.AdminListTagDictionaryReqFromMoe(&moe.AdminListTagDictionaryReq{
 			Page: int32(req.Page), PageSize: int32(req.PageSize), Category: req.Category, Keyword: req.Keyword,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListTagDictionaryResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.AdminTagDictionaryItem, 0, len(rpcResp.GetItems()))
 		for _, row := range rpcResp.GetItems() {
-			items = append(items, common.RpcAdminTagDictionaryToTypes(row))
+			items = append(items, common.RpcAdminTagDictionaryToTypes(adminv1.AdminTagDictionaryItemToMoe(row)))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListTagDictionaryResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -1130,16 +1131,16 @@ func adminCreateTagDictionary(svcCtx *svc.ServiceContext) func(khttp.Context) er
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := svcCtx.AdminApp.CreateTagDictionary(ctx, &moe.AdminCreateTagDictionaryReq{
+		rpcResp, err := svcCtx.AdminApp.CreateTagDictionary(ctx, adminv1.AdminCreateTagDictionaryReqFromMoe(&moe.AdminCreateTagDictionaryReq{
 			Category: req.Category, Tag: req.Tag, Label: req.Label, Note: req.Note,
 			SortOrder: int32(req.SortOrder), Enabled: req.Enabled,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminCreateTagDictionaryResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		resp := types.AdminCreateTagDictionaryResp{
 			BaseResp: common.HandleRPCError(nil, "创建成功"),
-			Data:     common.RpcAdminTagDictionaryToTypes(rpcResp.GetItem()),
+			Data:     common.RpcAdminTagDictionaryToTypes(adminv1.AdminTagDictionaryItemToMoe(rpcResp.GetItem())),
 		}
 		if resp.BaseResp.Success {
 			common.TryRecordAdminAudit(ctx, svcCtx, "create", "tag_dictionary", resp.Data.Id, "创建 Bot 策略标签")
@@ -1160,16 +1161,16 @@ func adminUpdateTagDictionary(svcCtx *svc.ServiceContext) func(khttp.Context) er
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminUpdateTagDictionaryResp{BaseResp: common.HandleRPCError(err, "条目 ID 无效")})
 		}
-		rpcResp, err := svcCtx.AdminApp.UpdateTagDictionary(ctx, &moe.AdminUpdateTagDictionaryReq{
+		rpcResp, err := svcCtx.AdminApp.UpdateTagDictionary(ctx, adminv1.AdminUpdateTagDictionaryReqFromMoe(&moe.AdminUpdateTagDictionaryReq{
 			EntryId: entryID, Category: req.Category, Tag: req.Tag, Label: req.Label, Note: req.Note,
 			SortOrder: int32(req.SortOrder), Enabled: req.Enabled, UpdateEnabled: req.UpdateEnabled,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminUpdateTagDictionaryResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		resp := types.AdminUpdateTagDictionaryResp{
 			BaseResp: common.HandleRPCError(nil, "更新成功"),
-			Data:     common.RpcAdminTagDictionaryToTypes(rpcResp.GetItem()),
+			Data:     common.RpcAdminTagDictionaryToTypes(adminv1.AdminTagDictionaryItemToMoe(rpcResp.GetItem())),
 		}
 		if resp.BaseResp.Success {
 			common.TryRecordAdminAudit(ctx, svcCtx, "update", "tag_dictionary", req.EntryId, "更新 Bot 策略标签")
@@ -1190,7 +1191,7 @@ func adminDeleteTagDictionary(svcCtx *svc.ServiceContext) func(khttp.Context) er
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminDeleteTagDictionaryResp{BaseResp: common.HandleRPCError(err, "条目 ID 无效")})
 		}
-		_, err = svcCtx.AdminApp.DeleteTagDictionary(ctx, &moe.AdminDeleteTagDictionaryReq{EntryId: entryID})
+		_, err = svcCtx.AdminApp.DeleteTagDictionary(ctx, adminv1.AdminDeleteTagDictionaryReqFromMoe(&moe.AdminDeleteTagDictionaryReq{EntryId: entryID}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminDeleteTagDictionaryResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -1214,15 +1215,15 @@ func adminUpdateTopicTag(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminUpdateTopicTagResp{BaseResp: common.HandleRPCError(err, "标签 ID 无效")})
 		}
-		rpcResp, err := svcCtx.AdminApp.UpdateTopicTag(ctx, &moe.AdminUpdateTopicTagReq{
+		rpcResp, err := svcCtx.AdminApp.UpdateTopicTag(ctx, adminv1.AdminUpdateTopicTagReqFromMoe(&moe.AdminUpdateTopicTagReq{
 			TagId: tagID, Name: req.Name, Color: req.Color,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminUpdateTopicTagResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		resp := types.AdminUpdateTopicTagResp{
 			BaseResp: common.HandleRPCError(nil, "更新成功"),
-			Data:     common.RpcTopicTagToTypes(rpcResp.GetItem()),
+			Data:     common.RpcTopicTagToTypes(adminv1.TopicTagToMoe(rpcResp.GetItem())),
 		}
 		if resp.BaseResp.Success {
 			common.TryRecordAdminAudit(ctx, svcCtx, "update", "topic_tag", req.TagId, "更新话题标签")
@@ -1243,7 +1244,7 @@ func adminDeleteTopicTag(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminDeleteTopicTagResp{BaseResp: common.HandleRPCError(err, "标签 ID 无效")})
 		}
-		_, err = svcCtx.AdminApp.DeleteTopicTag(ctx, &moe.AdminDeleteTopicTagReq{TagId: tagID})
+		_, err = svcCtx.AdminApp.DeleteTopicTag(ctx, adminv1.AdminDeleteTopicTagReqFromMoe(&moe.AdminDeleteTopicTagReq{TagId: tagID}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminDeleteTopicTagResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -1263,7 +1264,7 @@ func adminBootstrapTopicTags(svcCtx *svc.ServiceContext) func(khttp.Context) err
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := svcCtx.AdminApp.AdminBootstrapTopicTags(ctx, &moe.AdminBootstrapTopicTagsReq{})
+		rpcResp, err := svcCtx.AdminApp.AdminBootstrapTopicTags(ctx, adminv1.AdminBootstrapTopicTagsReqFromMoe(&moe.AdminBootstrapTopicTagsReq{}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminBootstrapTopicTagsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -1292,15 +1293,15 @@ func adminListUsers(app *adminapp.AppService) func(khttp.Context) error {
 		}
 		page := adminPageOrDefault(req.Page, 1)
 		pageSize := adminPageSizeOrDefault(req.PageSize, 20)
-		rpcResp, err := app.ListUsers(ctx, &moe.AdminListUsersReq{
+		rpcResp, err := app.ListUsers(ctx, adminv1.AdminListUsersReqFromMoe(&moe.AdminListUsersReq{
 			Page: int32(page), PageSize: int32(pageSize), Keyword: req.Keyword,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListUsersResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.User, 0, len(rpcResp.GetUsers()))
 		for _, u := range rpcResp.GetUsers() {
-			items = append(items, common.RpcUserToTypes(u))
+			items = append(items, common.RpcUserToTypes(adminv1.UserToMoe(u)))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListUsersResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -1317,13 +1318,13 @@ func adminGetUser(app *adminapp.AppService) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := app.GetUser(ctx, &moe.AdminGetUserReq{UserId: req.UserId})
+		rpcResp, err := app.GetUser(ctx, adminv1.AdminGetUserReqFromMoe(&moe.AdminGetUserReq{UserId: req.UserId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminGetUserResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.AdminGetUserResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
-			Data:     common.RpcUserToTypes(rpcResp.GetUser()),
+			Data:     common.RpcUserToTypes(adminv1.UserToMoe(rpcResp.GetUser())),
 		})
 	}
 }
@@ -1336,17 +1337,17 @@ func adminUpdateUser(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := svcCtx.AdminApp.UpdateUser(ctx, &moe.AdminUpdateUserReq{
+		rpcResp, err := svcCtx.AdminApp.UpdateUser(ctx, adminv1.AdminUpdateUserReqFromMoe(&moe.AdminUpdateUserReq{
 			UserId: req.UserId, Role: req.Role, IsVip: req.IsVip, UpdateIsVip: req.UpdateIsVip,
 			Signature: req.Signature, UpdateSignature: req.UpdateSignature,
 			Avatar: req.Avatar, UpdateAvatar: req.UpdateAvatar,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminUpdateUserResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		resp := types.AdminUpdateUserResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
-			Data:     common.RpcUserToTypes(rpcResp.GetUser()),
+			Data:     common.RpcUserToTypes(adminv1.UserToMoe(rpcResp.GetUser())),
 		}
 		if resp.BaseResp.Success {
 			common.TryRecordAdminAudit(ctx, svcCtx, "update", "user", fmt.Sprintf("%d", req.UserId), "更新 App 用户")
@@ -1363,13 +1364,13 @@ func adminGetUserProfile(app *adminapp.AppService) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := app.GetUserProfile(ctx, &moe.AdminGetUserProfileReq{UserId: req.UserId})
+		rpcResp, err := app.GetUserProfile(ctx, adminv1.AdminGetUserProfileReqFromMoe(&moe.AdminGetUserProfileReq{UserId: req.UserId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminGetUserProfileResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.AdminGetUserProfileResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
-			Data:     common.RpcAdminUserProfileToTypes(rpcResp.GetData()),
+			Data:     common.RpcAdminUserProfileToTypes(adminv1.AdminUserProfileDataToMoe(rpcResp.GetData())),
 		})
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"backend/api/internal/gwutil"
 	"context"
 
+	achievementv1 "backend/api/achievement/v1"
 	achievementapp "backend/internal/service/achievement"
 	"backend/rpc/pb/moe"
 
@@ -32,28 +33,44 @@ func (g *Gateway) Route() string {
 
 func (g *Gateway) GetUserAchievements(ctx context.Context, in *moe.GetUserAchievementsReq, opts ...grpc.CallOption) (*moe.GetUserAchievementsResp, error) {
 	if g != nil && g.local != nil {
-		return g.local.GetUserAchievements(ctx, in)
+		out, err := g.local.GetUserAchievements(ctx, achievementv1.GetUserAchievementsRequestFromMoe(in))
+		if err != nil {
+			return nil, err
+		}
+		return achievementv1.GetUserAchievementsReplyToMoe(out), nil
 	}
 	return nil, gwutil.ErrUnavailable
 }
 
 func (g *Gateway) GetUserUnlockedAchievements(ctx context.Context, in *moe.GetUserUnlockedAchievementsReq, opts ...grpc.CallOption) (*moe.GetUserUnlockedAchievementsResp, error) {
 	if g != nil && g.local != nil {
-		return g.local.GetUserUnlockedAchievements(ctx, in)
+		out, err := g.local.GetUserUnlockedAchievements(ctx, achievementv1.GetUserUnlockedAchievementsRequestFromMoe(in))
+		if err != nil {
+			return nil, err
+		}
+		return achievementv1.GetUserUnlockedAchievementsReplyToMoe(out), nil
 	}
 	return nil, gwutil.ErrUnavailable
 }
 
 func (g *Gateway) GetUserAchievementSummary(ctx context.Context, in *moe.GetUserAchievementSummaryReq, opts ...grpc.CallOption) (*moe.GetUserAchievementSummaryResp, error) {
 	if g != nil && g.local != nil {
-		return g.local.GetUserAchievementSummary(ctx, in)
+		out, err := g.local.GetUserAchievementSummary(ctx, achievementv1.GetUserAchievementSummaryRequestFromMoe(in))
+		if err != nil {
+			return nil, err
+		}
+		return achievementv1.GetUserAchievementSummaryReplyToMoe(out), nil
 	}
 	return nil, gwutil.ErrUnavailable
 }
 
 func (g *Gateway) EnsureUserAchievements(ctx context.Context, in *moe.EnsureUserAchievementsReq, opts ...grpc.CallOption) (*moe.EnsureUserAchievementsResp, error) {
 	if g != nil && g.local != nil {
-		return g.local.EnsureUserAchievements(ctx, in)
+		out, err := g.local.EnsureUserAchievements(ctx, achievementv1.EnsureUserAchievementsRequestFromMoe(in))
+		if err != nil {
+			return nil, err
+		}
+		return achievementv1.EnsureUserAchievementsReplyToMoe(out), nil
 	}
 	return nil, gwutil.ErrUnavailable
 }

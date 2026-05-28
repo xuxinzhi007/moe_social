@@ -6,8 +6,8 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	communityv1 "backend/api/community/v1"
 	communityapp "backend/internal/service/community"
-	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
@@ -42,7 +42,7 @@ func getGroups(app *communityapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetGroups(ctx, &moe.GetGroupsReq{
+		rpcResp, err := app.GetGroups(ctx, &communityv1.GetGroupsRequest{
 			Page: int32(req.Page), PageSize: int32(req.PageSize),
 			Keyword: req.Keyword, IsPublic: req.IsPublic, UserId: req.UserId,
 		})
@@ -51,7 +51,7 @@ func getGroups(app *communityapp.AppService) func(khttp.Context) error {
 		}
 		groups := make([]types.Group, 0, len(rpcResp.GetGroups()))
 		for _, g := range rpcResp.GetGroups() {
-			groups = append(groups, groupFromRPC(g))
+			groups = append(groups, groupFromProto(g))
 		}
 		return ctx.JSON(http.StatusOK, types.GetGroupsResp{
 			BaseResp: types.BaseResp{Code: 0, Message: "ok", Success: true},
@@ -69,7 +69,7 @@ func createGroup(app *communityapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.CreateGroup(ctx, &moe.CreateGroupReq{
+		rpcResp, err := app.CreateGroup(ctx, &communityv1.CreateGroupRequest{
 			Name: req.Name, Description: req.Description, Avatar: req.Avatar,
 			Cover: req.Cover, IsPublic: req.IsPublic, UserId: req.UserId,
 		})
@@ -78,7 +78,7 @@ func createGroup(app *communityapp.AppService) func(khttp.Context) error {
 		}
 		return ctx.JSON(http.StatusOK, types.CreateGroupResp{
 			BaseResp: types.BaseResp{Code: 0, Message: rpcResp.GetMessage(), Success: rpcResp.GetSuccess()},
-			Data:     groupFromRPC(rpcResp.GetGroup()),
+			Data:     groupFromProto(rpcResp.GetGroup()),
 		})
 	}
 }
@@ -91,13 +91,13 @@ func getGroup(app *communityapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetGroup(ctx, &moe.GetGroupReq{GroupId: req.GroupId, UserId: req.UserId})
+		rpcResp, err := app.GetGroup(ctx, &communityv1.GetGroupRequest{GroupId: req.GroupId, UserId: req.UserId})
 		if err != nil {
 			return err
 		}
 		return ctx.JSON(http.StatusOK, types.GetGroupResp{
 			BaseResp: types.BaseResp{Code: 0, Message: "ok", Success: true},
-			Data:     groupFromRPC(rpcResp.GetGroup()),
+			Data:     groupFromProto(rpcResp.GetGroup()),
 		})
 	}
 }
@@ -110,7 +110,7 @@ func updateGroup(app *communityapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.UpdateGroup(ctx, &moe.UpdateGroupReq{
+		rpcResp, err := app.UpdateGroup(ctx, &communityv1.UpdateGroupRequest{
 			GroupId: req.GroupId, Name: req.Name, Description: req.Description,
 			Avatar: req.Avatar, Cover: req.Cover, IsPublic: req.IsPublic,
 		})
@@ -119,7 +119,7 @@ func updateGroup(app *communityapp.AppService) func(khttp.Context) error {
 		}
 		return ctx.JSON(http.StatusOK, types.UpdateGroupResp{
 			BaseResp: types.BaseResp{Code: 0, Message: rpcResp.GetMessage(), Success: rpcResp.GetSuccess()},
-			Data:     groupFromRPC(rpcResp.GetGroup()),
+			Data:     groupFromProto(rpcResp.GetGroup()),
 		})
 	}
 }
@@ -132,7 +132,7 @@ func deleteGroup(app *communityapp.AppService) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := app.DeleteGroup(ctx, &moe.DeleteGroupReq{GroupId: req.GroupId, UserId: req.UserId})
+		rpcResp, err := app.DeleteGroup(ctx, &communityv1.DeleteGroupRequest{GroupId: req.GroupId, UserId: req.UserId})
 		if err != nil {
 			return err
 		}
@@ -150,7 +150,7 @@ func joinGroup(app *communityapp.AppService) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := app.JoinGroup(ctx, &moe.JoinGroupReq{GroupId: req.GroupId, UserId: req.UserId})
+		rpcResp, err := app.JoinGroup(ctx, &communityv1.JoinGroupRequest{GroupId: req.GroupId, UserId: req.UserId})
 		if err != nil {
 			return err
 		}
@@ -168,7 +168,7 @@ func leaveGroup(app *communityapp.AppService) func(khttp.Context) error {
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := app.LeaveGroup(ctx, &moe.LeaveGroupReq{GroupId: req.GroupId, UserId: req.UserId})
+		rpcResp, err := app.LeaveGroup(ctx, &communityv1.LeaveGroupRequest{GroupId: req.GroupId, UserId: req.UserId})
 		if err != nil {
 			return err
 		}
@@ -186,7 +186,7 @@ func getGroupMembers(app *communityapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetGroupMembers(ctx, &moe.GetGroupMembersReq{
+		rpcResp, err := app.GetGroupMembers(ctx, &communityv1.GetGroupMembersRequest{
 			GroupId: req.GroupId, Page: int32(req.Page), PageSize: int32(req.PageSize),
 		})
 		if err != nil {
@@ -224,7 +224,7 @@ func createGroupPost(app *communityapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.CreateGroupPost(ctx, &moe.CreateGroupPostReq{
+		rpcResp, err := app.CreateGroupPost(ctx, &communityv1.CreateGroupPostRequest{
 			GroupId: req.GroupId, PostId: req.PostId, UserId: req.UserId,
 		})
 		if err != nil {
@@ -237,7 +237,7 @@ func createGroupPost(app *communityapp.AppService) func(khttp.Context) error {
 		}
 		return ctx.JSON(http.StatusOK, types.CreateGroupPostResp{
 			BaseResp: types.BaseResp{Code: 0, Message: rpcResp.GetMessage(), Success: true},
-			Data:     groupPostFromRPC(rpcResp.GetGroupPost()),
+			Data:     groupPostFromProto(rpcResp.GetGroupPost()),
 		})
 	}
 }
@@ -250,7 +250,7 @@ func getGroupPosts(app *communityapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetGroupPosts(ctx, &moe.GetGroupPostsReq{
+		rpcResp, err := app.GetGroupPosts(ctx, &communityv1.GetGroupPostsRequest{
 			GroupId: req.GroupId, Page: int32(req.Page), PageSize: int32(req.PageSize),
 		})
 		if err != nil {
@@ -258,7 +258,7 @@ func getGroupPosts(app *communityapp.AppService) func(khttp.Context) error {
 		}
 		items := make([]types.GroupPost, 0, len(rpcResp.GetPosts()))
 		for _, gp := range rpcResp.GetPosts() {
-			items = append(items, groupPostFromRPC(gp))
+			items = append(items, groupPostFromProto(gp))
 		}
 		return ctx.JSON(http.StatusOK, types.GetGroupPostsResp{
 			BaseResp: types.BaseResp{Code: 0, Message: "ok", Success: true},
@@ -276,7 +276,7 @@ func getUserGroups(app *communityapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetUserGroups(ctx, &moe.GetUserGroupsReq{
+		rpcResp, err := app.GetUserGroups(ctx, &communityv1.GetUserGroupsRequest{
 			UserId: req.UserId, Page: int32(req.Page), PageSize: int32(req.PageSize),
 		})
 		if err != nil {
@@ -284,7 +284,7 @@ func getUserGroups(app *communityapp.AppService) func(khttp.Context) error {
 		}
 		groups := make([]types.Group, 0, len(rpcResp.GetGroups()))
 		for _, g := range rpcResp.GetGroups() {
-			groups = append(groups, groupFromRPC(g))
+			groups = append(groups, groupFromProto(g))
 		}
 		return ctx.JSON(http.StatusOK, types.GetUserGroupsResp{
 			BaseResp: types.BaseResp{Code: 0, Message: "ok", Success: true},

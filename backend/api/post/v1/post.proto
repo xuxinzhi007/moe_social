@@ -4,7 +4,7 @@ package post.v1;
 
 option go_package = "backend/api/post/v1;postv1";
 
-// Post — 域 gRPC SSOT（P4-C；与 Super 并存）。
+// Post — 域 HTTP/gRPC 契约 SSOT（P6-0）。
 // HTTP: GET/POST /api/posts, GET /api/posts/:post_id, POST like, GET search
 
 message TopicTag {
@@ -102,9 +102,56 @@ message LikePostReply {
   Post post = 1;
 }
 
+message GetPostsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string viewer_user_id = 3;
+  string feed_mode = 4;
+  string topic_tag_id = 5;
+  string author_user_id = 6;
+}
+
+message GetPostsReply {
+  repeated Post posts = 1;
+  int32 total = 2;
+}
+
+message UpdatePostRequest {
+  string post_id = 1;
+  string user_id = 2;
+  string content = 3;
+  repeated string images = 4;
+  repeated TopicTag topic_tags = 5;
+  string hand_draw_card = 6;
+  string hand_draw_thumb_url = 7;
+}
+
+message UpdatePostReply {
+  Post post = 1;
+}
+
+message DeletePostRequest {
+  string post_id = 1;
+  string user_id = 2;
+}
+
+message DeletePostReply {}
+
+message ReportPostRequest {
+  string post_id = 1;
+  string reporter_user_id = 2;
+  string reason = 3;
+}
+
+message ReportPostReply {}
+
 service PostService {
   rpc GetPost(GetPostRequest) returns (GetPostReply);
+  rpc GetPosts(GetPostsRequest) returns (GetPostsReply);
   rpc MoeSearchPosts(MoeSearchPostsRequest) returns (MoeSearchPostsReply);
   rpc CreatePost(CreatePostRequest) returns (CreatePostReply);
   rpc LikePost(LikePostRequest) returns (LikePostReply);
+  rpc UpdatePost(UpdatePostRequest) returns (UpdatePostReply);
+  rpc DeletePost(DeletePostRequest) returns (DeletePostReply);
+  rpc ReportPost(ReportPostRequest) returns (ReportPostReply);
 }

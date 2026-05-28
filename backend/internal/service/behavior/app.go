@@ -3,10 +3,11 @@ package behaviorapp
 
 import (
 	"context"
+	"encoding/json"
 
+	behaviorv1 "backend/api/behavior/v1"
 	behaviorbiz "backend/internal/biz/behavior"
 	behaviordata "backend/internal/data/behavior"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -22,10 +23,10 @@ func New(db *gorm.DB) *AppService {
 }
 
 // TrackEvents 批量上报行为事件。
-func (s *AppService) TrackEvents(ctx context.Context, in *moe.TrackUserBehaviorEventsReq) (*moe.TrackUserBehaviorEventsResp, error) {
+func (s *AppService) TrackEvents(ctx context.Context, in *behaviorv1.TrackUserBehaviorEventsRequest) (*behaviorv1.TrackUserBehaviorEventsReply, error) {
 	events := in.GetEvents()
 	if len(events) == 0 {
-		return &moe.TrackUserBehaviorEventsResp{Accepted: 0}, nil
+		return &behaviorv1.TrackUserBehaviorEventsReply{Accepted: 0}, nil
 	}
 	userID := in.GetUserId()
 	if userID == 0 {
@@ -36,15 +37,33 @@ func (s *AppService) TrackEvents(ctx context.Context, in *moe.TrackUserBehaviorE
 		inputs = append(inputs, behaviorbiz.EventInput{
 			Event:      ev.GetEvent(),
 			Screen:     ev.GetScreen(),
-			ParamsJSON: ev.GetParamsJson(),
+			ParamsJSON: behaviorEventParamsJSON(ev),
 			DurationMs: ev.GetDurationMs(),
 			SessionID:  ev.GetSessionId(),
-			ClientTsMs: ev.GetClientTsMs(),
+			ClientTsMs: ev.GetClientTs(),
 		})
 	}
 	accepted, err := behaviorbiz.TrackEvents(ctx, s.store, uint(userID), inputs)
 	if err != nil {
 		return nil, err
 	}
-	return &moe.TrackUserBehaviorEventsResp{Accepted: accepted}, nil
+	return &behaviorv1.TrackUserBehaviorEventsReply{Accepted: int32(accepted)}, nil
+}
+
+func behaviorEventParamsJSON(ev *behaviorv1.UserBehaviorEventItem) string {
+	if ev == nil {
+		return ""
+	}
+	if pj := ev.GetParamsJson(); pj != "" {
+		return pj
+	}
+	m := ev.GetParams()
+	if len(m) == 0 {
+		return ""
+	}
+	b, err := json.Marshal(m)
+	if err != nil {
+		return ""
+	}
+	return string(b)
 }

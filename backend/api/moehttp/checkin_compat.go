@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"net/http"
 
+	checkinv1 "backend/api/checkin/v1"
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	adminv1 "backend/api/admin/v1"
 	checkinapp "backend/internal/service/checkin"
 	adminapp "backend/internal/service/admin"
 	"backend/rpc/pb/moe"
@@ -47,7 +49,7 @@ func checkIn(app *checkinapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.CheckIn(ctx, &moe.CheckInReq{UserId: req.UserId})
+		rpcResp, err := app.CheckIn(ctx, &checkinv1.CheckInRequest{UserId: req.UserId})
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.CheckInResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
@@ -56,12 +58,12 @@ func checkIn(app *checkinapp.AppService) func(khttp.Context) error {
 		return ctx.JSON(http.StatusOK, types.CheckInResp{
 			BaseResp: types.BaseResp{Code: 0, Message: "签到成功", Success: true},
 			Data: types.CheckInData{
-				ExpGained:       int(rpcResp.ExpGained),
-				NewLevel:        int(rpcResp.NewLevel),
-				ConsecutiveDays: int(rpcResp.ConsecutiveDays),
-				LevelUp:         rpcResp.LevelUp,
-				SpecialReward:   rpcResp.SpecialReward,
-				NewAchievements: achievementUnlocksFromRPC(rpcResp.NewAchievements),
+				ExpGained:       int(rpcResp.GetExpGained()),
+				NewLevel:        int(rpcResp.GetNewLevel()),
+				ConsecutiveDays: int(rpcResp.GetConsecutiveDays()),
+				LevelUp:         rpcResp.GetLevelUp(),
+				SpecialReward:   rpcResp.GetSpecialReward(),
+				NewAchievements: achievementUnlocksFromRPC(checkinv1.AchievementUnlocksToMoe(rpcResp.GetNewAchievements())),
 			},
 		})
 	}
@@ -75,7 +77,7 @@ func getCheckInStatus(app *checkinapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetCheckInStatus(ctx, &moe.GetCheckInStatusReq{UserId: req.UserId})
+		rpcResp, err := app.GetCheckInStatus(ctx, &checkinv1.GetCheckInStatusRequest{UserId: req.UserId})
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetCheckInStatusResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
@@ -103,7 +105,7 @@ func getCheckInHistory(app *checkinapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetCheckInHistory(ctx, &moe.GetCheckInHistoryReq{
+		rpcResp, err := app.GetCheckInHistory(ctx, &checkinv1.GetCheckInHistoryRequest{
 			UserId: req.UserId, Page: int32(req.Page), PageSize: int32(req.PageSize),
 		})
 		if err != nil {
@@ -137,7 +139,7 @@ func getExpLogs(app *checkinapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetExpLogs(ctx, &moe.GetExpLogsReq{
+		rpcResp, err := app.GetExpLogs(ctx, &checkinv1.GetExpLogsRequest{
 			UserId: req.UserId, Page: int32(req.Page), PageSize: int32(req.PageSize),
 		})
 		if err != nil {
@@ -171,7 +173,7 @@ func getUserLevel(app *checkinapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetUserLevel(ctx, &moe.GetUserLevelReq{UserId: req.UserId})
+		rpcResp, err := app.GetUserLevel(ctx, &checkinv1.GetUserLevelRequest{UserId: req.UserId})
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetUserLevelResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
@@ -198,7 +200,7 @@ func adminListCheckInRewards(app *adminapp.AppService) func(khttp.Context) error
 		if _, br := common.RequireAdminToken(ctx.Request()); br != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListCheckInRewardsResp{BaseResp: *br})
 		}
-		rpcResp, err := app.ListCheckInRewards(ctx, &moe.AdminListCheckInRewardsReq{})
+		rpcResp, err := app.ListCheckInRewards(ctx, adminv1.AdminListCheckInRewardsReqFromMoe(&moe.AdminListCheckInRewardsReq{}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListCheckInRewardsResp{
 				BaseResp: common.HandleRPCError(err, ""),
@@ -206,7 +208,7 @@ func adminListCheckInRewards(app *adminapp.AppService) func(khttp.Context) error
 		}
 		items := make([]types.AdminCheckInRewardItem, len(rpcResp.GetItems()))
 		for i, item := range rpcResp.GetItems() {
-			items[i] = common.RpcAdminCheckInRewardToTypes(item)
+			items[i] = common.RpcAdminCheckInRewardToTypes(adminv1.AdminCheckInRewardItemToMoe(item))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListCheckInRewardsResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -226,7 +228,7 @@ func adminUpdateCheckInReward(app *adminapp.AppService, svcCtx *svc.ServiceConte
 				BaseResp: common.HandleError(err),
 			})
 		}
-		rpcResp, err := app.UpdateCheckInReward(ctx, &moe.AdminUpdateCheckInRewardReq{
+		rpcResp, err := app.UpdateCheckInReward(ctx, adminv1.AdminUpdateCheckInRewardReqFromMoe(&moe.AdminUpdateCheckInRewardReq{
 			Id:                    req.RewardId,
 			ConsecutiveDays:       int32(req.ConsecutiveDays),
 			ExpReward:             int32(req.ExpReward),
@@ -234,7 +236,7 @@ func adminUpdateCheckInReward(app *adminapp.AppService, svcCtx *svc.ServiceConte
 			UpdateConsecutiveDays: req.UpdateConsecutiveDays,
 			UpdateExpReward:       req.UpdateExpReward,
 			UpdateExtraReward:     req.UpdateExtraReward,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminUpdateCheckInRewardResp{
 				BaseResp: common.HandleRPCError(err, ""),
@@ -242,7 +244,7 @@ func adminUpdateCheckInReward(app *adminapp.AppService, svcCtx *svc.ServiceConte
 		}
 		resp := types.AdminUpdateCheckInRewardResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
-			Data:     common.RpcAdminCheckInRewardToTypes(rpcResp.GetItem()),
+			Data:     common.RpcAdminCheckInRewardToTypes(adminv1.AdminCheckInRewardItemToMoe(rpcResp.GetItem())),
 		}
 		if resp.BaseResp.Success && svcCtx != nil {
 			common.TryRecordAdminAudit(ctx, svcCtx, "update", "check_in_reward", fmt.Sprintf("%d", req.RewardId), "更新签到奖励")

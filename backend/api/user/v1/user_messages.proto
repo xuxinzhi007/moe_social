@@ -1,0 +1,628 @@
+syntax = "proto3";
+package user.v1;
+option go_package = "backend/api/user/v1;userv1";
+
+// P6: extracted from rpc/defs/common.proto (105 messages)
+
+message AcceptFriendRequestReq {
+  string actor_user_id = 1;
+  string request_id = 2;
+}
+
+message AcceptFriendRequestResp {
+  bool ok = 1;
+}
+
+message AchievementBadgeItem {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string category = 4;
+  string rarity = 5;
+  string condition = 6;
+  int32 required_count = 7;
+  int32 current_count = 8;
+  double progress = 9;
+  bool is_unlocked = 10;
+  string unlocked_at = 11;
+}
+
+message AvatarBaseConfig {
+  string face_shape = 1;
+  string skin_color = 2;
+  string eye_type = 3;
+  string hair_style = 4;
+  string hair_color = 5;
+}
+
+message AvatarOutfitConfig {
+  string clothes = 1;
+  repeated string accessories = 2;
+  string background = 3;
+}
+
+message BindFeishuReq {
+  string user_id = 1;
+  string feishu_email = 2;
+}
+
+message BindFeishuResp {
+  User user = 1;
+}
+
+message CheckFollowReq {
+  string follower_id = 1;
+  string following_id = 2;
+}
+
+message CheckFollowResp {
+  bool is_following = 1;
+}
+
+message CreateNotificationReq {
+  string user_id = 1;
+  string sender_id = 2;
+  int32 type = 3;
+  string post_id = 4;
+  string content = 5;
+}
+
+message CreateNotificationResp {
+  Notification notification = 1;
+}
+
+message DeleteUserReq {
+  string user_id = 1;
+}
+
+message DeleteUserResp {
+}
+
+message FeishuAuthorizeURLReq {
+  string state = 1;
+}
+
+message FeishuAuthorizeURLResp {
+  string authorize_url = 1;
+}
+
+message FeishuLoginReq {
+  string code = 1;
+}
+
+message FeishuLoginResp {
+  User user = 1;
+  string token = 2;
+  bool is_new_user = 3;
+}
+
+message FollowUserReq {
+  string user_id = 1;
+  string following_id = 2;
+}
+
+message FollowUserResp {
+  bool success = 1;
+}
+
+message FriendRequestView {
+  string id = 1;
+  User from_user = 2;
+  User to_user = 3;
+  string status = 4;
+  string created_at = 5;
+}
+
+message GetFollowersReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetFollowersResp {
+  repeated User users = 1;
+  int32 total = 2;
+}
+
+message GetFollowingsReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetFollowingsResp {
+  repeated User users = 1;
+  int32 total = 2;
+}
+
+message GetFriendRelationReq {
+  string actor_user_id = 1;
+  string other_user_id = 2;
+}
+
+message GetFriendRelationResp {
+  string relation = 1;
+}
+
+message GetNotificationsReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetNotificationsResp {
+  repeated Notification notifications = 1;
+  int32 total = 2;
+}
+
+message GetTransactionReq {
+  string id = 1;
+}
+
+message GetTransactionResp {
+  Transaction transaction = 1;
+}
+
+message GetTransactionsReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetTransactionsResp {
+  repeated Transaction transactions = 1;
+  int32 total = 2;
+}
+
+message GetUnreadCountReq {
+  string user_id = 1;
+}
+
+message GetUnreadCountResp {
+  int32 count = 1;
+}
+
+message GetUserAvatarReq {
+  string user_id = 1;
+}
+
+message GetUserAvatarResp {
+  UserAvatarData avatar = 1;
+}
+
+message GetUserByEmailReq {
+  string email = 1;
+}
+
+message GetUserByEmailResp {
+  User user = 1;
+}
+
+message GetUserCountReq {
+}
+
+message GetUserCountResp {
+  int32 count = 1;
+}
+
+message GetUserInfoReq {
+  string user_id = 1;
+}
+
+message GetUserInfoResp {
+  User user = 1;
+}
+
+message GetUserMemoriesReq {
+  string user_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message GetUserMemoriesResp {
+  repeated UserMemory memories = 1;
+  int64 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  bool has_more = 5;
+}
+
+message GetUserReq {
+  string user_id = 1;
+}
+
+message GetUserResp {
+  User user = 1;
+}
+
+message GetUserUnlockedAchievementsReq {
+  string user_id = 1;
+}
+
+message GetUserUnlockedAchievementsResp {
+  repeated AchievementBadgeItem badges = 1;
+}
+
+message GetUsersReq {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message GetUsersResp {
+  repeated User users = 1;
+  int32 total = 2;
+}
+
+message ListFriendsReq {
+  string actor_user_id = 1;
+}
+
+message ListFriendsResp {
+  repeated User users = 1;
+}
+
+message ListIncomingFriendRequestsReq {
+  string actor_user_id = 1;
+}
+
+message ListIncomingFriendRequestsResp {
+  repeated FriendRequestView data = 1;
+}
+
+message ListOutgoingFriendRequestsReq {
+  string actor_user_id = 1;
+}
+
+message ListOutgoingFriendRequestsResp {
+  repeated FriendRequestView data = 1;
+}
+
+message ListPrivateConversationsReq {
+  string viewer_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message ListPrivateConversationsResp {
+  repeated PrivateConversation conversations = 1;
+  int32 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  bool has_more = 5;
+}
+
+message ListPrivateMessagesReq {
+  string viewer_id = 1;
+  string peer_id = 2;
+  string before_id = 3;
+  int32 limit = 4;
+}
+
+message ListPrivateMessagesResp {
+  repeated PrivateMessage messages = 1;
+  bool has_more = 2;
+}
+
+message ListUserDevicesReq {
+  string user_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message ListUserDevicesResp {
+  repeated UserDeviceRecord devices = 1;
+  int64 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  bool has_more = 5;
+}
+
+message LoginReq {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+}
+
+message LoginResp {
+  User user = 1;
+  string token = 2;
+}
+
+message Notification {
+  string id = 1;
+  string user_id = 2;
+  string sender_id = 3;
+  string sender_name = 4;
+  string sender_avatar = 5;
+  int32 type = 6;
+  string post_id = 7;
+  string content = 8;
+  bool is_read = 9;
+  string created_at = 10;
+}
+
+message PrivateConversation {
+  string peer_id = 1;
+  string peer_name = 2;
+  string peer_avatar = 3;
+  string peer_moe_no = 4;
+  string peer_display_user_id = 5;
+  PrivateMessage last_message = 6;
+  int32 unread_count = 7;
+}
+
+message PrivateMessage {
+  string id = 1;
+  string sender_id = 2;
+  string receiver_id = 3;
+  string body = 4;
+  repeated string image_paths = 5;
+  int32 retention_days = 6;
+  string created_at = 7;
+  string expires_at = 8;
+  // 展示用 Moe 号（10 位）；查询入参仍用 sender_id/receiver_id 主键
+  string sender_moe_no = 9;
+  string receiver_moe_no = 10;
+}
+
+message ReadAllNotificationsReq {
+  string user_id = 1;
+}
+
+message ReadAllNotificationsResp {
+}
+
+message ReadNotificationReq {
+  string id = 1;
+  string user_id = 2;
+}
+
+message ReadNotificationResp {
+}
+
+message RechargeReq {
+  string user_id = 1;
+  float amount = 2;
+  string description = 3;
+}
+
+message RechargeResp {
+  string message = 1;
+  float new_balance = 2;
+}
+
+message RegisterReq {
+  string username = 1;
+  string password = 2;
+  string email = 3;
+}
+
+message RegisterResp {
+  User user = 1;
+  string token = 2;
+}
+
+message RejectFriendRequestReq {
+  string actor_user_id = 1;
+  string request_id = 2;
+}
+
+message RejectFriendRequestResp {
+  bool ok = 1;
+}
+
+message ResetPasswordReq {
+  string email = 1;
+  string new_password = 2;
+}
+
+message ResetPasswordResp {
+}
+
+message SendFeishuTestCardReq {
+  string user_id = 1;
+}
+
+message SendFeishuTestCardResp {}
+
+message SendFriendRequestReq {
+  string actor_user_id = 1;
+  string to_user_id = 2;
+  string to_moe_no = 3;
+}
+
+message SendFriendRequestResp {
+  FriendRequestView data = 1;
+}
+
+message SendPrivateMessageReq {
+  string sender_id = 1;
+  string receiver_id = 2;
+  string body = 3;
+  repeated string image_paths = 4;
+}
+
+message SendPrivateMessageResp {
+  PrivateMessage message = 1;
+}
+
+message SyncUserDeviceReq {
+  string user_id = 1;
+  string device_id = 2;
+  string platform = 3;
+  string os_version = 4;
+  string app_version = 5;
+  string device_name = 6;
+  string payload_json = 7;
+  string last_seen = 8;
+}
+
+message SyncUserDeviceResp {
+  UserDeviceRecord device = 1;
+}
+
+message Transaction {
+  string id = 1;
+  string user_id = 2;
+  float amount = 3;
+  string type = 4;
+  string status = 5;
+  string description = 6;
+  string created_at = 7;
+}
+
+message UnbindFeishuReq {
+  string user_id = 1;
+}
+
+message UnbindFeishuResp {
+  User user = 1;
+}
+
+message UnfollowUserReq {
+  string user_id = 1;
+  string following_id = 2;
+}
+
+message UpdateUserAvatarReq {
+  string user_id = 1;
+  AvatarBaseConfig base_config = 2;
+  AvatarOutfitConfig current_outfit = 3;
+}
+
+message UpdateUserAvatarResp {
+  UserAvatarData avatar = 1;
+}
+
+message UpdateUserInfoReq {
+  string user_id = 1;
+  string username = 2;
+  string email = 3;
+  string avatar = 4;
+  string signature = 5;   // 个性签名
+  string gender = 6;      // 性别
+  string birthday = 7;    // 生日
+  string inventory = 8;
+  string equipped_frame_id = 9;
+  bool clear_equipped_frame = 10;
+  // 空=不修改。auto=恢复自动；7 / 30 为自选保存天数（写入 users.message_retention_choice）
+  string message_retention = 11;
+}
+
+message UpdateUserInfoResp {
+  User user = 1;
+}
+
+message UpdateUserPasswordReq {
+  string user_id = 1;
+  string old_password = 2;
+  string new_password = 3;
+}
+
+message UpdateUserPasswordResp {
+}
+
+message User {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string avatar = 4;
+  string signature = 5;   // 个性签名
+  string gender = 6;      // 性别
+  string birthday = 7;    // 生日
+  string created_at = 8;
+  string updated_at = 9;
+  bool is_vip = 10;
+  string vip_expires_at = 11;
+  bool auto_renew = 12;
+  float balance = 13; // 钱包余额
+  string inventory = 14;
+  string equipped_frame_id = 15;
+  string moe_no = 16;
+  // 收到他人赠送礼物累计：魅力点（与礼物标价挂钩）与面值总和（展示用）
+  int32 gift_charm = 17;
+  double received_gift_value = 18;
+  // 与 moe_no 相同，个人中心等「对外展示账号」请用本字段或 moe_no；业务主键仍为 id
+  string display_user_id = 19;
+  // 0=自动（YAML+VIP）；7 或 30 为用户在设置里自选的私信保留天数（仅影响新消息）
+  int32 message_retention_choice = 20;
+  // 绑定的企业飞书邮箱（receive_id_type=email）
+  string feishu_email = 21;
+  // 飞书 OAuth 显示名（通知卡片「操作者」会附带）
+  string feishu_name = 22;
+  // 是否已通过飞书 OAuth 绑定
+  bool feishu_bound = 23;
+  string role = 24; // App 用户角色 user | admin | super_admin
+  // 微信 OAuth 昵称
+  string wechat_nickname = 25;
+  // 是否已通过微信 OAuth 绑定
+  bool wechat_bound = 26;
+  // 社区 AI Bot 账号（由 moe_agent_runtimes 绑定）
+  bool is_bot = 27;
+  string bot_agent_key = 28;
+}
+
+message UserAvatarData {
+  string user_id = 1;
+  AvatarBaseConfig base_config = 2;
+  AvatarOutfitConfig current_outfit = 3;
+  repeated string owned_outfits = 4;
+}
+
+message UserDeviceRecord {
+  string id = 1;
+  string user_id = 2;
+  string device_id = 3;
+  string platform = 4;
+  string os_version = 5;
+  string app_version = 6;
+  string device_name = 7;
+  string payload_json = 8;
+  string last_seen = 9;
+  string created_at = 10;
+  string updated_at = 11;
+}
+
+message UserMemory {
+  string id = 1;
+  string user_id = 2;
+  string key = 3;
+  string value = 4;
+  string memory_type = 5;
+  double confidence = 6;
+  string source = 7;
+  string created_at = 8;
+  string updated_at = 9;
+  string source_msg_id = 10;
+  string session_id = 11;
+}
+
+message WechatAuthorizeURLReq {
+  string state = 1;
+  // website=开放平台网站应用扫码；mp=公众号网页授权（仅微信内）
+  string flow = 2;
+}
+
+message WechatAuthorizeURLResp {
+  string authorize_url = 1;
+}
+
+message WechatLoginReq {
+  string code = 1;
+  // app=移动应用 SDK；website=网站应用扫码；mp=公众号
+  string flow = 2;
+}
+
+message WechatLoginResp {
+  User user = 1;
+  string token = 2;
+  bool is_new_user = 3;
+}
+
+service UserService {
+  rpc Login(LoginReq) returns (LoginResp);
+  rpc Register(RegisterReq) returns (RegisterResp);
+  rpc GetUserInfo(GetUserInfoReq) returns (GetUserInfoResp);
+  rpc GetUser(GetUserReq) returns (GetUserResp);
+  rpc UpdateUserInfo(UpdateUserInfoReq) returns (UpdateUserInfoResp);
+}

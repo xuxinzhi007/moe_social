@@ -4,8 +4,9 @@ package community.v1;
 
 option go_package = "backend/api/community/v1;communityv1";
 
-// Community — 域 gRPC SSOT（P4-C；与 Super 并存）。
-// HTTP: /api/community/groups/*
+import "api/post/v1/post.proto";
+
+// Community — 域契约 SSOT（P6）；HTTP: /api/community/groups/*
 
 message Group {
   uint64 id = 1;
@@ -21,6 +22,25 @@ message Group {
   string created_at = 11;
   bool is_joined = 12;
   string user_role = 13;
+}
+
+message GroupMember {
+  uint64 id = 1;
+  uint64 group_id = 2;
+  uint64 user_id = 3;
+  string user_name = 4;
+  string user_avatar = 5;
+  string role = 6;
+  string join_at = 7;
+  string created_at = 8;
+}
+
+message GroupPost {
+  uint64 id = 1;
+  uint64 group_id = 2;
+  uint64 post_id = 3;
+  post.v1.Post post = 4;
+  string created_at = 5;
 }
 
 message GetGroupsRequest {
@@ -62,6 +82,31 @@ message CreateGroupReply {
   Group group = 3;
 }
 
+message UpdateGroupRequest {
+  string group_id = 1;
+  string name = 2;
+  string description = 3;
+  string avatar = 4;
+  string cover = 5;
+  bool is_public = 6;
+}
+
+message UpdateGroupReply {
+  bool success = 1;
+  string message = 2;
+  Group group = 3;
+}
+
+message DeleteGroupRequest {
+  string group_id = 1;
+  string user_id = 2;
+}
+
+message DeleteGroupReply {
+  bool success = 1;
+  string message = 2;
+}
+
 message JoinGroupRequest {
   string group_id = 1;
   string user_id = 2;
@@ -70,6 +115,62 @@ message JoinGroupRequest {
 message JoinGroupReply {
   bool success = 1;
   string message = 2;
+}
+
+message LeaveGroupRequest {
+  string group_id = 1;
+  string user_id = 2;
+}
+
+message LeaveGroupReply {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetGroupMembersRequest {
+  string group_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetGroupMembersReply {
+  repeated GroupMember members = 1;
+  int32 total = 2;
+}
+
+message GetUserGroupsRequest {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetUserGroupsReply {
+  repeated Group groups = 1;
+  int32 total = 2;
+}
+
+message CreateGroupPostRequest {
+  string group_id = 1;
+  string post_id = 2;
+  string user_id = 3;
+}
+
+message CreateGroupPostReply {
+  bool success = 1;
+  string message = 2;
+  GroupPost group_post = 3;
+}
+
+message GetGroupPostsRequest {
+  string group_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+  string user_id = 4;
+}
+
+message GetGroupPostsReply {
+  repeated GroupPost posts = 1;
+  int32 total = 2;
 }
 
 service Community {
