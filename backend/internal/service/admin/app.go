@@ -471,3 +471,21 @@ func (s *AppService) ListVipOrders(ctx context.Context, in *super.AdminListVipOr
 func (s *AppService) ListGiftPurchaseOrders(ctx context.Context, in *super.AdminListGiftPurchaseOrdersReq) (*super.AdminListGiftPurchaseOrdersResp, error) {
 	return adminbiz.ListGiftPurchaseOrders(ctx, s.db, in)
 }
+
+// RecordAuditLog 写入管理端操作审计。
+func (s *AppService) RecordAuditLog(ctx context.Context, in *super.RecordAdminAuditLogReq) (*super.RecordAdminAuditLogResp, error) {
+	if err := adminbiz.RecordAuditLog(ctx, s.db, in); err != nil {
+		return nil, err
+	}
+	return &super.RecordAdminAuditLogResp{}, nil
+}
+
+// AdminLogin 管理端登录。
+func (s *AppService) AdminLogin(ctx context.Context, in *super.AdminLoginReq) (*super.AdminLoginResp, error) {
+	return adminbiz.AdminLogin(ctx, s.db, in)
+}
+
+// AdminBootstrapAccount 引导默认超管。
+func (s *AppService) AdminBootstrapAccount(ctx context.Context, in *super.AdminBootstrapAccountReq) (*super.AdminBootstrapAccountResp, error) {
+	return adminbiz.BootstrapAdminAccount(ctx, s.db, in)
+}

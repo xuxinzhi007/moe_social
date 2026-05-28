@@ -2,9 +2,8 @@ package logic
 
 import (
 	"context"
-	"strconv"
 
-	"backend/model"
+	notifybiz "backend/internal/biz/notify"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -26,60 +25,9 @@ func NewCreateNotificationLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *CreateNotificationLogic) CreateNotification(in *super.CreateNotificationReq) (*super.CreateNotificationResp, error) {
-	userID, err := strconv.ParseUint(in.UserId, 10, 32)
-	if err != nil {
-		return nil, err
-	}
-
-	senderID, err := strconv.ParseUint(in.SenderId, 10, 32)
-	if err != nil {
-		return nil, err
-	}
-
-	var postID uint64
-	if in.PostId != "" {
-		postID, err = strconv.ParseUint(in.PostId, 10, 32)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	content := in.Content
-	if len(content) > 200 {
-		content = content[:200]
-	}
-
-	notification := model.Notification{
-		UserID:   uint(userID),
-		SenderID: uint(senderID),
-		Type:     int(in.Type),
-		Content:  content,
-		IsRead:   false,
-	}
-	if postID > 0 {
-		notification.PostID = uint(postID)
-	}
-
-	db := l.svcCtx.DB
-	if postID == 0 {
-		db = db.Omit("PostID")
-	}
-	if err := db.Create(&notification).Error; err != nil {
+	if err := notifybiz.CreateInbox(l.ctx, l.svcCtx.DB, in); err != nil {
 		l.Error("创建通知失败:", err)
 		return nil, err
 	}
-
-	return &super.CreateNotificationResp{
-		Notification: &super.Notification{
-			Id:        strconv.FormatUint(uint64(notification.ID), 10),
-			UserId:    strconv.FormatUint(uint64(notification.UserID), 10),
-			SenderId:  strconv.FormatUint(uint64(notification.SenderID), 10),
-			Type:      int32(notification.Type),
-			PostId:    strconv.FormatUint(uint64(notification.PostID), 10),
-			Content:   notification.Content,
-			IsRead:    notification.IsRead,
-			CreatedAt: notification.CreatedAt.Format("2006-01-02 15:04:05"),
-		},
-	}, nil
-
+	return &super.CreateNotificationResp{}, nil
 }

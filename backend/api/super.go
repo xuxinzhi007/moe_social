@@ -7,7 +7,7 @@ import (
 	apirun "backend/api/runserver"
 )
 
-var configFile = flag.String("f", "etc/super.yaml", "the config file")
+var configFile = flag.String("f", "etc/moe.yaml", "the config file")
 
 func main() {
 	flag.Parse()

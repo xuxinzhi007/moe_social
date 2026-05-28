@@ -2,7 +2,7 @@
 
 
 
-.PHONY: all gen gen-moe-proto gen-moe-conf gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto verify-moe-migration verify-moe-grpc verify-moe-gateway verify-moe-complete verify-domain-vip verify-domain-user verify-domain-misc verify-platform verify-full-site-50 verify-kratos-pilot verify-kratos-50 verify-kratos-60 verify-kratos-80 verify-kratos-100 moe-social moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
+.PHONY: all gen gen-moe-proto gen-moe-conf gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto verify-moe-migration verify-moe-grpc verify-moe-gateway verify-moe-complete verify-domain-vip verify-domain-user verify-domain-misc verify-platform verify-full-site-50 verify-kratos-pilot verify-kratos-50 verify-kratos-60 verify-kratos-80 verify-kratos-100 verify-kratos-rollout-pk0 verify-kratos-rollout-pk1 verify-kratos-rollout-pk2 verify-kratos-rollout-pk12 moe-social moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
 
 	deploy-agent deploy-agent-stop moe-social-stop admin \
 
@@ -20,7 +20,7 @@ all: gen
 
 
 
-# 生成：api/**/v1 proto（Kratos 风格目录）+ legacy goctl（super.api / super.proto）
+# 生成：api/**/v1 proto（Kratos 风格目录）+ legacy goctl（moe.api / moe.proto）
 gen: gen-moe-proto gen-moe-conf gen-rpc gen-api gen-swagger
 
 gen-moe-proto:
@@ -33,15 +33,27 @@ gen-moe-conf:
 
 # --client=false：避免与 pb 包名冲突、生成坏 client
 
-gen-rpc:
+gen-rpc: fs8-assemble-super-proto
 
-	goctl rpc protoc rpc/super.proto --go_out=. --go-grpc_out=. --zrpc_out=./rpc -I rpc --go_opt=module=backend --go-grpc_opt=module=backend --client=false
+	goctl rpc protoc rpc/moe.proto --go_out=. --go-grpc_out=. --zrpc_out=./rpc -I rpc --go_opt=module=backend --go-grpc_opt=module=backend --client=false
+	@rm -f rpc/pb/super/super.pb.go rpc/pb/super/super_grpc.pb.go
+	bash scripts/fs9-fix-rpc-server-import.sh
+	bash scripts/prune-rpc-logic-shells.sh
+
+fs8-assemble-super-proto:
+	python3 scripts/fs8-assemble-super-proto.py
+
+# 仅从单体 moe.proto 重新切分（覆盖 defs 手工编辑，慎用）
+fs8-split-super-proto:
+	python3 scripts/fs8-split-super-proto.py
+	python3 scripts/fs8-assemble-super-proto.py
 
 
 
 gen-api:
 
-	cd api && goctl api go -api super.api -dir ./
+	cd api && goctl api go -api moe.api -dir ./
+	bash scripts/prune-api-logic-shells.sh
 
 
 
@@ -49,7 +61,7 @@ gen-swagger:
 
 	@command -v goctl-swagger >/dev/null 2>&1 || (echo "goctl-swagger 未安装，请先执行: go install github.com/zeromicro/goctl-swagger@latest" && exit 1)
 
-	cd api && goctl api plugin -plugin goctl-swagger="swagger -filename ../rest.swagger.json" -api super.api -dir ./
+	cd api && goctl api plugin -plugin goctl-swagger="swagger -filename ../rest.swagger.json" -api moe.api -dir ./
 
 
 
@@ -272,6 +284,84 @@ else
 	@go build ./api ./rpc
 endif
 
+verify-gen-hygiene:
+	bash scripts/verify-gen-hygiene.sh
+
+verify-sprint-fs10-admin-rpc:
+	bash scripts/verify-sprint-fs10-admin-rpc.sh
+	@grep -q 'newAdminApp' rpc/internal/logic/adminlistmemorieslogic.go
+	@grep -q 'newAdminApp' rpc/internal/logic/admindashboardlogic.go
+
+verify-sprint-fs10:
+	bash scripts/verify-sprint-fs10-admin-rpc.sh
+	bash scripts/verify-sprint-fs10-rpc-thin.sh
+	@grep -q 'newLLMApp' rpc/internal/logic/upsertusermemoryembeddinglogic.go
+	@grep -q 'newVipAdminApp' rpc/internal/logic/adminupdatevipplanlogic.go
+	@go build ./api ./rpc
+
+# FS-8：仅从单体 moe.api 重新切分 defs（会覆盖 defs 手工编辑，慎用）
+fs8-split-api:
+	python3 scripts/fs8-split-super-api.py
+
+verify-sprint-fs8:
+	bash scripts/verify-sprint-fs8.sh
+
+verify-sprint-fs8b:
+	bash scripts/verify-sprint-fs8b.sh
+
+verify-sprint-fs9:
+	bash scripts/verify-sprint-fs9.sh
+
+verify-sprint-f113-rpc-notify:
+	@grep -q 'notifybiz.CreateInbox' rpc/internal/logic/createnotificationlogic.go
+	@go build ./api ./rpc
+
+verify-sprint-f112:
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f112.ps1
+else
+	@test -f internal/biz/admin/auth.go
+	@test -f internal/biz/ai/user_config.go
+	@grep -q 'g.local.AdminLogin' api/internal/admingw/gateway_public.go
+	@grep -q 'g.local.GetAiUserConfig' api/internal/llmgw/gateway.go
+	@grep -q 'ResolveVoiceUserDisplay' api/internal/logic/voice/voicecalllogic.go
+	@bash scripts/verify-gw-local-first.sh
+	@go test ./internal/biz/admin/... ./internal/biz/ai/... -count=1
+	@go build ./api ./rpc
+endif
+
+verify-sprint-f111:
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f111.ps1
+else
+	@test -f internal/biz/admin/audit_write.go
+	@test -f internal/biz/user/avatar.go
+	@test -f api/internal/admingw/gateway_audit.go
+	@grep -q 'AdminGW.RecordAdminAuditLog' api/internal/common/admin_audit_writer.go
+	@! grep -q 'SuperRpcClient' api/internal/common/admin_audit_writer.go
+	@grep -q 'g.local.GetUserAvatar' api/internal/usergw/gateway_f110.go
+	@grep -q 'g.local.ExecuteTool' api/internal/moeadmingw/gateway_tools.go
+	@grep -q 'userbiz.GetUserAvatar' rpc/internal/logic/getuseravatarlogic.go
+	@go test ./internal/biz/user/... ./internal/biz/admin/... -count=1
+	@go build ./api ./rpc
+endif
+
+verify-sprint-f110:
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f110.ps1
+else
+	@! grep -r 'SuperRpcClient' api/internal/logic/ 2>/dev/null || (echo "F110: SuperRpcClient still in api/internal/logic" && exit 1)
+	@test -f api/internal/usergw/gateway_f110.go
+	@test -f api/internal/admingw/gateway_public.go
+	@test -f api/internal/moeadmingw/gateway_tools.go
+	@grep -q 'UpsertAiUserConfig' api/internal/llmgw/gateway.go
+	@grep -q 'UserGW.GetUserAvatar' api/internal/logic/avatar/getuseravatarlogic.go
+	@grep -q 'AdminGW.AdminLogin' api/internal/logic/admin_public/adminloginlogic.go
+	@grep -q 'MoeGW.MoeExecuteTool' api/internal/logic/moe/executemoetoollogic.go
+	@grep -q 'UserGW.CreateNotification' api/internal/logic/chat/private_chat_delivery.go
+	@go build ./api ./rpc
+endif
+
 verify-sprint-f108-admin-tail:
 
 ifeq ($(OS),Windows_NT)
@@ -297,13 +387,13 @@ else
 	@test -f api/chat/v1/private_message.proto
 	@grep -q 'AdminGW.AdminListAiChatSessions' api/internal/logic/admin/admin_insights_logic.go
 	@grep -q 'AIGW' api/internal/logic/ai/resource_logic.go
-	@grep -q 'DEPRECATED' api/super.api rpc/super.proto
+	@grep -q 'DEPRECATED' api/moe.api rpc/moe.proto
 	@go build ./api ./rpc
 endif
 
 moe-social:
 
-	go run ./cmd/moe-social-stack -f-api api/etc/super.yaml -f-rpc rpc/etc/super.yaml
+	go run ./cmd/moe-social-stack -f-api api/etc/moe.yaml -f-rpc rpc/etc/moe.yaml
 
 # 释放 8080/8888/19010/19011/19012（Ctrl+C 未完全退出时用）
 moe-social-stop:
@@ -337,6 +427,22 @@ verify-kratos-80:
 verify-kratos-100:
 
 	bash scripts/verify-kratos-100.sh
+
+verify-kratos-rollout-pk0:
+
+	bash scripts/verify-kratos-rollout-pk0.sh
+
+verify-kratos-rollout-pk1:
+
+	bash scripts/verify-kratos-rollout-pk1.sh
+
+verify-kratos-rollout-pk2:
+
+	bash scripts/verify-kratos-rollout-pk2.sh
+
+verify-kratos-rollout-pk12:
+
+	bash scripts/verify-kratos-rollout-pk12.sh
 
 moe-kratos:
 
@@ -390,13 +496,13 @@ env-status:
 
 rpc:
 
-	go run ./rpc/super.go -f rpc/etc/super.yaml
+	go run ./rpc/super.go -f rpc/etc/moe.yaml
 
 
 
 api:
 
-	go run ./api/super.go -f api/etc/super.yaml
+	go run ./api/super.go -f api/etc/moe.yaml
 
 
 
@@ -420,7 +526,7 @@ rpc-migrate: db-migrate
 
 rpc-debug:
 
-	go run ./rpc/super.go -f rpc/etc/super.yaml -debug
+	go run ./rpc/super.go -f rpc/etc/moe.yaml -debug
 
 
 
@@ -571,6 +677,10 @@ help:
 
 	@echo make moe-kratos            - 纯 Kratos 试点 (:19031+:19032，并行)
 
+	@echo make verify-kratos-rollout-pk12 - PK-1+PK-2 纯 Kratos 契约与灰度验收
+	@echo make verify-kratos-rollout-pk0  - 纯 Kratos PK-0 基线
+	@echo make verify-kratos-rollout-pk1  - PK-1 域 proto 纪律
+	@echo make verify-kratos-rollout-pk2  - PK-2 Moe/VIP kratos_http 灰度
 	@echo make verify-kratos-100     - 纯 Kratos 100%% + Hybrid 回归（推荐）
 	@echo make verify-kratos-80      - 纯 Kratos 80%% 验收（Phase 0-4）
 	@echo make build-moe-social      - 生产推荐单二进制（:8888+:8080）

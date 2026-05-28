@@ -9,7 +9,7 @@ import (
 	"backend/utils"
 )
 
-var configFile = flag.String("f", "etc/super.yaml", "the config file")
+var configFile = flag.String("f", "etc/moe.yaml", "the config file")
 
 var migrate = flag.Bool("migrate", false, "run schema migrate before starting RPC")
 var migrateModels = flag.String("migrate-models", "", "with -migrate: comma-separated table keys (empty=all)")

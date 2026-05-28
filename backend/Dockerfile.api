@@ -30,7 +30,7 @@ RUN apk add --no-cache ca-certificates
 # 从编译阶段复制编译好的可执行文件
 COPY --from=builder /app/api /app/api
 
-COPY api/etc/super.yaml /app/etc/super.yaml
+COPY api/etc/moe.yaml /app/etc/moe.yaml
 COPY config/config.yaml /app/config/config.yaml
 
 # 创建必要的目录
@@ -43,4 +43,4 @@ EXPOSE 8888
 ENV GIN_MODE=release
 
 # 启动 API 服务
-CMD ["/app/api", "-f", "etc/super.yaml"]
+CMD ["/app/api", "-f", "etc/moe.yaml"]

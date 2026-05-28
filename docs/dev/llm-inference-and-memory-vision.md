@@ -50,6 +50,12 @@
 - **压缩**：优先规则截断 + 对话摘要；可选「记忆摘要」专用 prompt。  
 - **上下文上限**：从 llama-server 配置/`n_ctx` 读取（待管理台展示）；prompt 侧用 token 估算。
 
+## Bot 发帖话题分析（避模板）
+
+- 发帖成功或试跑被拒时：`brain.AnalyzeAndTagContent` 用 **规则 + 可选 LLM** 打标签，写入 `moe_bot_episodes.tags_json` 与 `moe_agent_topic_stats`（按 agent 累计场景/活动/主题使用次数）。  
+- 生成前注入 `BuildTopicDiversityBlock`：列出 DB 中「近期过多」话题，并给出可换角度建议。  
+- 可选配置 `moe.topic_analyze_model`（默认回退 `llm_inference.memory_model`）；LLM 不可用或 0.5B 解析失败时 **自动仅用规则**，不阻塞发帖。
+
 ## 遗留 API
 
 - `POST /api/llm/agents`（Ollama modelfile）：仅当 `api_style=ollama`；llama-server 场景返回 400 说明。  

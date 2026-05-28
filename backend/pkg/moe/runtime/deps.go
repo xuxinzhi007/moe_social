@@ -1,17 +1,24 @@
 package runtime
 
 import (
+	"context"
+
 	"backend/pkg/llminference"
+	"backend/pkg/moe/flowexec"
 	"backend/pkg/moe/port"
 
 	"gorm.io/gorm"
 )
 
+// PostingPlanResolver 按 agent 加载发帖编排（由 RPC/平台注入，避免 pkg 依赖 internal）。
+type PostingPlanResolver func(ctx context.Context, db *gorm.DB, agentKey string) (flowexec.Plan, error)
+
 // Deps Agent 运行时依赖。
 type Deps struct {
-	DB        *gorm.DB
-	RPC       port.SuperPort
-	Inference llminference.Config
+	DB                 *gorm.DB
+	RPC                port.SuperPort
+	Inference          llminference.Config
+	ResolvePostingPlan PostingPlanResolver
 }
 
 // SmartOpts 智能发送调度参数（可由 config.yaml 覆盖）。

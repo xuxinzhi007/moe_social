@@ -1,7 +1,7 @@
 # 全站迁移路线图：F70 → F100+
 
 > **起点**：F ≈ **70%**（Sprint F70 完成，2026-05 初）  
-> **当前**：F ≈ **98%**（**F109 完成**，2026-05-28）  
+> **当前**：F ≈ **100%**（**F112 完成**，2026-05-28）  
 > **终态**：F = **100%**（各域 biz 化 + 域契约拆分 + 可退役 `super.*`）  
 > **原则**：小步迁移 · 每批 `make verify-sprint-fNN` · 不凑权重数字  
 > **勾选清单**：[kratos-migration-status.md](./kratos-migration-status.md)
@@ -13,12 +13,12 @@
 | 项 | 状态 |
 |----|------|
 | Admin / User HTTP | ✅ logic 目录零 SuperRpc（F108 + F109） |
+| **全 HTTP logic** | ✅ F110：`api/internal/logic/**` 零 SuperRpc |
 | LLM 记忆全路径 | ✅ 写 + 读 + 向量/图谱 in_process |
 | AI agents / Chat 私信 | ✅ aigw / chatgw |
-| **未完成** | ~8 个 logic 仍 SuperRpc（avatar/ai config/admin_public/moe/chat 回退） |
 | **FS-8/9** | proto stub + deprecated 头；goctl 仍用 `super.*` |
 
-**下一 Sprint F110**：HTTP 层 `SuperRpcClient` → 0。见 status 清单「HTTP SuperRpc 残留」表。
+**下一 Sprint FS-8**：按域切 goctl 契约；见 [kratos-migration-status.md](./kratos-migration-status.md)。
 
 ---
 
@@ -29,19 +29,19 @@ F = Σ (域权重 × 域内进度)
 域内进度：0 → 20 → 60 → 100
 ```
 
-| 域 | 权重 | F70 域内 | **F109 域内** | F100 目标 |
+| 域 | 权重 | F70 域内 | **F110 域内** | F100 目标 |
 |----|------|----------|---------------|-----------|
 | Moe | 12% | 100% | **100%** | 100% |
 | VIP | 8% | 100% | **100%** | 100% |
 | User | 20% | ~98% | **100%** | 100% |
 | Admin（非 Moe） | 14% | ~35% | **100%** | 100% |
-| 社交 | 18% | 0% | **~95%** | 100% |
-| AI / LLM | 14% | 0% | **~97%** | 100% |
-| 实时 / 通知 | 8% | ~30% | **~90%** | 100% |
+| 社交 | 18% | 0% | **100%** | 100% |
+| AI / LLM | 14% | 0% | **100%** | 100% |
+| 实时 / 通知 | 8% | ~30% | **~95%** | 100% |
 | 其它 | 6% | 100% | **100%** | 100% |
 | 平台 | 10% | 100% | **100%** | 100% |
 
-**F70 合计 ≈ 70%** · **F109 合计 ≈ 98%** · **F100 终态 = 100%**（含 FS-8～10）
+**F70 合计 ≈ 70%** · **F109 合计 ≈ 98%** · **F110 合计 ≈ 99%** · **F100 终态 = 100%**（含 FS-8～10）
 
 ---
 
@@ -103,14 +103,9 @@ Admin 尾巴 29 接口 biz 化；`admin/` logic 零 SuperRpc → `verify-sprint-
 
 User 尾巴 ~33 接口 + LLM 记忆读 local；`user/` logic 零 SuperRpc → `verify-sprint-f109-user-tail`
 
-### F110 ⬜（计划）
+### F110 ✅（2026-05-28）
 
-| 步 | 内容 |
-|----|------|
-| A1 | avatar → `usergw` |
-| A2 | AI user memory config → `aigw`/`llmgw` |
-| A3 | admin_public login/bootstrap → `admingw` |
-| A4 | moe tool execute → `moeadmingw`；chat notify 回退移除 |
+HTTP logic 零 `SuperRpcClient`：avatar / AI config / admin_public / moe tool / chat notify → `usergw` / `llmgw` / `admingw` / `moeadmingw` → `make verify-sprint-f110`
 
 ---
 
@@ -118,11 +113,12 @@ User 尾巴 ~33 接口 + LLM 记忆读 local；`user/` logic 零 SuperRpc → `v
 
 | 阶段 | 内容 | 当前 |
 |------|------|------|
-| FS-6 | AI / LLM 写路径 + 工具执行 | ✅ 写路径；Moe execute 待 F110 |
+| FS-6 | AI / LLM 写路径 + 工具执行 | ✅ F110 含 Moe execute GW 透传 |
 | FS-7 | Chat / Voice / WS 边界 | ✅ 文档 + chatgw；Voice 可选 voicegw |
-| FS-8 | 按域 `api/<domain>/v1/*.proto` | 🔄 stub 已有；goctl 未切 |
-| FS-9 | 退役 `super.*` | 🔄 deprecated 头；未删除 |
-| FS-10 | RPC 薄层 + 零 legacy 直写 DB | ⬜ 大量 RPC logic 仍 fat |
+| FS-8 HTTP | `api/defs/*.api` | ✅ `make verify-sprint-fs8` |
+| FS-8b RPC | `rpc/defs` + assemble | ✅ `make verify-sprint-fs8b` |
+| FS-9 | 退役 `super.*` 文件名 | ✅ `make verify-sprint-fs9` |
+| FS-10 | RPC 薄层 + 零 legacy 直写 DB | ✅ `make verify-sprint-fs10` |
 
 ---
 

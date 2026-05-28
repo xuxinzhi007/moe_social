@@ -29,7 +29,7 @@ func NewAdminLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AdminL
 }
 
 func (l *AdminLoginLogic) AdminLogin(req *types.AdminLoginReq) (resp *types.AdminLoginResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminLogin(l.ctx, &super.AdminLoginReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminLogin(l.ctx, &super.AdminLoginReq{
 		Username: req.Username,
 		Password: req.Password,
 	})

@@ -78,6 +78,7 @@ func mapViperToBootstrap(v *viper.Viper) *moeconfv1.Bootstrap {
 			SingleProcess:           v.GetBool("moe.single_process"),
 			KratosAdminHttpEnabled:  v.GetBool("moe.kratos_admin_http_enabled"),
 			KratosAdminBaseUrl:      strings.TrimSpace(v.GetString("moe.kratos_admin_base_url")),
+			KratosVipHttpEnabled:    v.GetBool("moe.kratos_vip_http_enabled"),
 		},
 	}
 }

@@ -1,0 +1,93 @@
+// FS-8: ai_llm 域路由（goctl group → api/internal/logic/<group>）
+syntax = "v1"
+
+import "common.api"
+@server (
+	group: llm
+)
+service Super {
+	// 获取可用模型列表
+	@handler models
+	get /api/llm/models (EmptyReq) returns (LlmModelsResp)
+
+	// 手机离线模型目录（GGUF 由服务端托管，App 下载到本机）
+	@handler localModelsCatalog
+	get /api/llm/local-models/catalog (EmptyReq) returns (LlmLocalModelsCatalogResp)
+
+	// 创建带有个性化系统提示词的新模型
+	@handler createAgent
+	post /api/llm/agents (LlmCreateAgentReq) returns (BaseResp)
+
+	// 下载模型
+	@handler downloadModel
+	post /api/llm/models/download (LlmDownloadModelReq) returns (BaseResp)
+
+	// 删除模型
+	@handler deleteModel
+	post /api/llm/models/delete (LlmDeleteModelReq) returns (BaseResp)
+
+	// 发送聊天消息
+	@handler chat
+	post /api/llm/chat (LlmChatReq) returns (LlmChatResp)
+
+	// Ollama 原样转发（终端同款，无服务端记忆注入）
+	@handler modelsRaw
+	get /api/llm/models/raw (EmptyReq)
+
+	@handler config
+	get /api/llm/config (EmptyReq)
+
+	@handler chatRaw
+	post /api/llm/chat/raw (EmptyReq)
+
+	@handler showRaw
+	post /api/llm/show/raw (EmptyReq)
+}
+
+@server (
+	group: ai
+	jwt:   Auth
+)
+service Super {
+	@handler getUserConfig
+	get /api/ai/config (EmptyReq) returns (AiUserConfigResp)
+
+	@handler upsertUserConfig
+	put /api/ai/config (AiUserConfigReq) returns (AiUserConfigResp)
+
+	@handler getAiMemorySettings
+	get /api/ai/memory/settings (EmptyReq) returns (AiMemorySettingsResp)
+
+	@handler putAiMemorySettings
+	put /api/ai/memory/settings (AiMemorySettingsReq) returns (AiMemorySettingsResp)
+
+	@handler listProviders
+	get /api/ai/providers (EmptyReq) returns (AiProviderProfilesResp)
+
+	@handler upsertProvider
+	put /api/ai/providers (AiResourceUpsertReq) returns (BaseResp)
+
+	@handler deleteProvider
+	delete /api/ai/providers (AiResourceDeleteReq) returns (BaseResp)
+
+	@handler listAgents
+	get /api/ai/agents (EmptyReq) returns (AiAgentsResp)
+
+	@handler listPublicAgents
+	get /api/ai/agents/public (ListPublicAiAgentsReq) returns (AiAgentsResp)
+
+	@handler upsertAgent
+	put /api/ai/agents (AiResourceUpsertReq) returns (BaseResp)
+
+	@handler deleteAgent
+	delete /api/ai/agents (AiResourceDeleteReq) returns (BaseResp)
+
+	@handler listLorebooks
+	get /api/ai/lorebooks (EmptyReq) returns (AiLorebooksResp)
+
+	@handler upsertLorebook
+	put /api/ai/lorebooks (AiLorebookUpsertReq) returns (BaseResp)
+
+	@handler deleteLorebook
+	delete /api/ai/lorebooks (AiResourceDeleteReq) returns (BaseResp)
+}

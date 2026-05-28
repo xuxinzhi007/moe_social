@@ -3,7 +3,6 @@ package logic
 import (
 	"context"
 
-	vipbiz "backend/internal/biz/vip"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -25,13 +24,10 @@ func NewAdminDeleteVipPlanLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *AdminDeleteVipPlanLogic) AdminDeleteVipPlan(in *super.AdminDeleteVipPlanReq) (*super.AdminDeleteVipPlanResp, error) {
-	planID, err := parseVipPlanID(in.GetPlanId())
+	resp, err := newVipAdminApp(l.svcCtx.DB).AdminDeleteVipPlan(l.ctx, in)
 	if err != nil {
-		return nil, err
-	}
-	if err := vipbiz.DeletePlan(l.ctx, l.svcCtx.DB, planID); err != nil {
 		l.Errorf("[admin] delete vip plan: %v", err)
 		return nil, mapVipBizErr(err)
 	}
-	return &super.AdminDeleteVipPlanResp{}, nil
+	return resp, nil
 }

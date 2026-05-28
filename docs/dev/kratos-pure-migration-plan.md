@@ -1,8 +1,9 @@
-# 纯 Kratos 迁移方案（执行版）
+# 纯 Kratos 迁移方案（试点 B · 已完成）
 
 > **当前进度：100%**（Phase 0～6 已完成）  
-> **对外 HTTP 端口：始终 :8888**（`make moe-social` / go-zero API）  
-> **验收**：`cd backend && make verify-kratos-100`
+> **下一阶段的执行手册**（PK-0～PK-5）：**[kratos-pure-rollout.md](./kratos-pure-rollout.md)** ← 开工看这个  
+> **对外 HTTP 端口：始终 :8888**（`make moe-social`）  
+> **验收**：`make verify-kratos-100` · 基线 `make verify-kratos-rollout-pk0`
 
 ---
 
@@ -48,7 +49,7 @@ make verify-moe-complete
 
 # 生产推荐单二进制
 make build-moe-social
-./bin/moe-social -f-api api/etc/super.yaml -f-rpc rpc/etc/super.yaml
+./bin/moe-social -f-api api/etc/moe.yaml -f-rpc rpc/etc/moe.yaml
 ```
 
 ### 日常开发

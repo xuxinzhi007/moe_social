@@ -35,3 +35,7 @@ func (s *AppService) ListUserMemoryEmbeddings(ctx context.Context, in *super.Lis
 func (s *AppService) ListUserMemoryRelations(ctx context.Context, in *super.ListUserMemoryRelationsReq) (*super.ListUserMemoryRelationsResp, error) {
 	return llmbiz.ListUserMemoryRelations(ctx, s.db, in)
 }
+
+func (s *AppService) UpsertUserMemoryEmbedding(ctx context.Context, in *super.UpsertUserMemoryEmbeddingReq) (*super.UpsertUserMemoryEmbeddingResp, error) {
+	return llmbiz.UpsertUserMemoryEmbedding(ctx, s.db, in)
+}

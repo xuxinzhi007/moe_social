@@ -12,26 +12,34 @@ import (
 
 var errNoBackend = errors.New("VIP 后端未配置")
 
-// Gateway Admin / 公开 VIP 套餐路由：进程内 biz → legacy super。
+// Gateway Admin / 公开 VIP 套餐路由：kratos HTTP（灰度）→ 进程内 biz → legacy super。
 type Gateway struct {
-	local *vipadmin.AdminService
-	super super.SuperClient
+	kratos *KratosHTTPClient
+	local  *vipadmin.AdminService
+	super  super.SuperClient
 }
 
-// New 构造网关。
-func New(local *vipadmin.AdminService, legacy super.SuperClient) *Gateway {
-	return &Gateway{local: local, super: legacy}
+// New 构造网关；kratos 非 nil 且启用时，ListPlans 走纯 Kratos HTTP（PK-2）。
+func New(local *vipadmin.AdminService, legacy super.SuperClient, kratos *KratosHTTPClient) *Gateway {
+	return &Gateway{local: local, super: legacy, kratos: kratos}
 }
 
 // Available 是否至少有一个后端。
 func (g *Gateway) Available() bool {
-	return g != nil && (g.local != nil || g.super != nil)
+	return g != nil && (g.kratosHTTPReady() || g.local != nil || g.super != nil)
+}
+
+func (g *Gateway) kratosHTTPReady() bool {
+	return g != nil && g.kratos != nil && g.kratos.enabled()
 }
 
 // Route 当前优先路由（日志/观测）。
 func (g *Gateway) Route() string {
 	if g == nil {
 		return "none"
+	}
+	if g.kratosHTTPReady() {
+		return "kratos_http"
 	}
 	if g.local != nil {
 		return "in_process"
@@ -45,6 +53,9 @@ func (g *Gateway) Route() string {
 func (g *Gateway) ListPlans(ctx context.Context, f vipbiz.ListPlansFilter) ([]model.VipPlan, int64, error) {
 	if g == nil {
 		return nil, 0, errNoBackend
+	}
+	if g.kratosHTTPReady() {
+		return g.kratos.ListPlans(ctx, f)
 	}
 	if g.local != nil {
 		return g.local.ListPlans(ctx, f)

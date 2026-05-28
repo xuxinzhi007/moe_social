@@ -77,9 +77,20 @@ func PipelineDataFromBiz(snap moebiz.PipelineSnapshot) types.AdminGetMoeBrainPip
 			DurationMs: s.DurationMS,
 		})
 	}
+	for _, t := range snap.ToolsInvoked {
+		data.ToolsInvoked = append(data.ToolsInvoked, types.MoePipelineToolInvokeItem{
+			Tool:      t.Tool,
+			Ok:        t.Ok,
+			LatencyMs: t.LatencyMs,
+			CreatedAt: t.CreatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
 	if len(data.Steps) == 0 {
 		data.Steps = DefaultPipelineStepTypes()
 	}
+	data.StabilityScore = snap.StabilityScore
+	data.StabilityDelta = snap.StabilityDelta
+	data.RunFeedback = snap.RunFeedback
 	return data
 }
 
@@ -143,6 +154,15 @@ func BrainDataFromSnapshot(s *brain.Snapshot) types.AdminGetMoeBrainData {
 		ContextLimit:       gm.ContextLimit,
 		ContextUsedPct:     gm.ContextUsedPct,
 		Note:               gm.Note,
+	}
+	out.StabilityScore = s.StabilityScore
+	out.StabilityDelta = s.StabilityDelta
+	if len(s.Episodes) > 0 {
+		sum := 0
+		for _, e := range s.Episodes {
+			sum += e.QualityScore
+		}
+		out.AvgEpisodeQuality = sum / len(s.Episodes)
 	}
 	return out
 }

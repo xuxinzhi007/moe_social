@@ -16,7 +16,7 @@ var allowedRemoteConfigPaths = map[string]bool{
 	"docker-compose.yml":         true,
 	"config.yaml":                true,
 	"config/config.yaml":         true,
-	"api/etc/super.yaml":         true,
+	"api/etc/moe.yaml":         true,
 }
 
 // ValidateRemoteConfigName returns safe relative path for remote file ops.

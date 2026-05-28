@@ -6,6 +6,7 @@ import (
 	aibiz "backend/internal/biz/ai"
 	adminbiz "backend/internal/biz/admin"
 	llmbiz "backend/internal/biz/llm"
+	notifybiz "backend/internal/biz/notify"
 	"backend/rpc/internal/errorx"
 )
 
@@ -267,5 +268,54 @@ func mapAdminGetUserErr(err error) error {
 		return errorx.NotFound("用户不存在")
 	default:
 		return errorx.Internal("服务器内部错误")
+	}
+}
+
+func mapAdminListErr(err error) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, adminbiz.ErrInvalidArgument) {
+		return errorx.InvalidArgument("参数无效")
+	}
+	if errors.Is(err, adminbiz.ErrInvalidAnnouncementID) {
+		return errorx.InvalidArgument("无效的公告 ID")
+	}
+	return errorx.Internal("操作失败")
+}
+
+func mapAdminAnnouncementErr(err error) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, adminbiz.ErrInvalidArgument) {
+		return errorx.InvalidArgument("参数无效")
+	}
+	return errorx.Internal("查询公告失败")
+}
+
+func mapAdminAuditListErr(err error) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, adminbiz.ErrInvalidArgument) {
+		return errorx.InvalidArgument("管理员 ID 无效")
+	}
+	return errorx.Internal("查询审计日志失败")
+}
+
+func mapAdminNotifyErr(err error) error {
+	if err == nil {
+		return nil
+	}
+	switch {
+	case errors.Is(err, notifybiz.ErrInvalidUserID):
+		return errorx.InvalidArgument("用户 ID 无效")
+	case errors.Is(err, notifybiz.ErrEmptyContent):
+		return errorx.InvalidArgument("通知内容不能为空")
+	case errors.Is(err, notifybiz.ErrUserNotFound):
+		return errorx.NotFound("用户不存在")
+	default:
+		return errorx.Internal("发送通知失败")
 	}
 }

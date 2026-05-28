@@ -1,0 +1,11 @@
+{
+  "landing": ["landing", "ops"],
+  "user": ["user", "avatar", "emoji", "privatemsg", "notification"],
+  "admin": ["admin", "admin_public"],
+  "vip": ["vip"],
+  "social": ["post", "comment", "community", "gift", "content"],
+  "ai_llm": ["llm", "ai"],
+  "realtime": ["chat", "voice"],
+  "platform": ["doc", "image", "appcfg", "checkin", "achievement", "behavior"],
+  "moe": ["moe"]
+}

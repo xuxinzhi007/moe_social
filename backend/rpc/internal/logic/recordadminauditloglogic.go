@@ -3,9 +3,9 @@ package logic
 import (
 	"context"
 
+	adminbiz "backend/internal/biz/admin"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
-	"backend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -24,16 +24,7 @@ func (l *RecordAdminAuditLogLogic) RecordAdminAuditLog(in *super.RecordAdminAudi
 	if in.GetAdminId() == 0 {
 		return &super.RecordAdminAuditLogResp{}, nil
 	}
-	err := utils.WriteAdminAuditLog(l.svcCtx.DB, utils.AdminAuditEntry{
-		AdminID:    uint(in.GetAdminId()),
-		AdminName:  in.GetAdminName(),
-		Action:     in.GetAction(),
-		Resource:   in.GetResource(),
-		ResourceID: in.GetResourceId(),
-		Detail:     in.GetDetail(),
-		IP:         in.GetIp(),
-	})
-	if err != nil {
+	if err := adminbiz.RecordAuditLog(l.ctx, l.svcCtx.DB, in); err != nil {
 		l.Errorf("[admin] record audit log: %v", err)
 	}
 	return &super.RecordAdminAuditLogResp{}, nil

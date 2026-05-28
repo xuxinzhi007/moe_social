@@ -83,6 +83,9 @@ func BrainDataFromRPC(d *super.AdminGetMoeBrainResp) types.AdminGetMoeBrainData 
 			Note:               gm.Note,
 		}
 	}
+	out.StabilityScore = int(d.GetStabilityScore())
+	out.StabilityDelta = int(d.GetStabilityDelta())
+	out.AvgEpisodeQuality = int(d.GetAvgEpisodeQuality())
 	return out
 }
 
@@ -188,6 +191,9 @@ func PipelineDataFromSuper(d *super.AdminGetMoeBrainPipelineResp) types.AdminGet
 	if len(data.Steps) == 0 {
 		data.Steps = DefaultPipelineStepTypes()
 	}
+	data.StabilityScore = int(d.GetStabilityScore())
+	data.StabilityDelta = int(d.GetStabilityDelta())
+	data.RunFeedback = d.GetRunFeedback()
 	return data
 }
 

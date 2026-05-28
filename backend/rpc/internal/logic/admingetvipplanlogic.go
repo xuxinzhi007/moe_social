@@ -3,7 +3,6 @@ package logic
 import (
 	"context"
 
-	vipbiz "backend/internal/biz/vip"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -17,24 +16,14 @@ type AdminGetVipPlanLogic struct {
 }
 
 func NewAdminGetVipPlanLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AdminGetVipPlanLogic {
-	return &AdminGetVipPlanLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+	return &AdminGetVipPlanLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
 func (l *AdminGetVipPlanLogic) AdminGetVipPlan(in *super.AdminGetVipPlanReq) (*super.AdminGetVipPlanResp, error) {
-	planID, err := parseVipPlanID(in.GetPlanId())
-	if err != nil {
-		return nil, err
-	}
-	plan, err := vipbiz.GetPlan(l.ctx, l.svcCtx.DB, planID)
+	resp, err := newVipAdminApp(l.svcCtx.DB).AdminGetVipPlan(l.ctx, in)
 	if err != nil {
 		l.Errorf("[admin] get vip plan: %v", err)
 		return nil, mapVipBizErr(err)
 	}
-	return &super.AdminGetVipPlanResp{
-		Plan: vipPlanModelToProto(plan),
-	}, nil
+	return resp, nil
 }

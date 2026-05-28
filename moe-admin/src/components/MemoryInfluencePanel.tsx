@@ -36,12 +36,14 @@ export function MemoryInfluencePanel({ meta }: Props) {
           <div className="value">{meta.episodes_in_prompt}</div>
         </div>
         <div className="metric">
-          <div className="label">提示词行数</div>
+          <div className="label">记忆块行数</div>
           <div className="value">{meta.prompt_memory_lines}</div>
         </div>
         <div className="metric">
           <div className="label">发帖走 memory 工具</div>
-          <div className="value">{meta.post_uses_tool_memory ? '是' : '否'}</div>
+          <div className="value" title="发帖链路为系统提示词直注记忆，不经过 memory_search 工具调用">
+            {meta.post_uses_tool_memory ? '是' : '否（设计如此）'}
+          </div>
         </div>
         {meta.prompt_est_tokens && meta.prompt_est_tokens > 0 ? (
           <div className="metric">

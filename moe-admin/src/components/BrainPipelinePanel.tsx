@@ -157,7 +157,7 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0 }: Props) {
         <div>
           <h3>发帖流水线</h3>
           <p className="muted">
-            试跑时按代码路径逐步执行；<strong>LLM 生成</strong> 通常占绝大部分时间。使用页头「试跑发帖」触发，「刷新」同步本页与流水线。
+            试跑会记录<strong>实际执行步骤</strong>（话题画像、每次 LLM、质检、发帖等）；失败会扣稳定度，成功会加分。使用页头「试跑发帖」触发。
           </p>
         </div>
       </header>
@@ -169,6 +169,20 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0 }: Props) {
       {data && !loading ? (
         <>
           <div className="admin-metrics page-insight-strip brain-pipeline-metrics">
+            {data.stability_score !== undefined && data.stability_score > 0 ? (
+              <div className="metric">
+                <div className="label">稳定度</div>
+                <div className="value" style={{ fontSize: 14 }}>
+                  {data.stability_score}
+                  {data.stability_delta !== undefined && data.stability_delta !== 0 ? (
+                    <AdminTag
+                      label={`${data.stability_delta > 0 ? '+' : ''}${data.stability_delta}`}
+                      tone={data.stability_delta > 0 ? 'ok' : 'fail'}
+                    />
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
             <div className="metric">
               <div className="label">末次结果</div>
               <div className="value">
@@ -193,6 +207,10 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0 }: Props) {
               </div>
             </div>
           </div>
+
+          {data.run_feedback ? (
+            <p className="muted brain-pipeline-feedback">{data.run_feedback}</p>
+          ) : null}
 
           {data.detail || data.post_id ? (
             <div className="brain-pipeline-meta">

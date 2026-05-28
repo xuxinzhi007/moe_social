@@ -15,20 +15,21 @@ import (
 )
 
 const (
-	botRecentPostLimit   = 12
-	communityPostLimit   = 8
-	maxGenerateAttempts  = 5
-	duplicateSimilarMin  = 0.68
+	botRecentPostLimit  = 12
+	communityPostLimit  = 8
+	maxGenerateAttempts = 5
+	duplicateSimilarMin = 0.68
 )
 
 // postContextBlock 注入 LLM 的上下文块。
 type postContextBlock struct {
-	ownPosts    string
-	posts       string
-	memories    string
-	timeHint    string
-	topicHint   string
+	ownPosts     string
+	posts        string
+	memories     string
+	timeHint     string
+	topicHint    string
 	meaningBlock string
+	topicAvoid   string
 }
 
 func gatherPostContext(ctx context.Context, deps Deps, rt model.MoeAgentRuntime) postContextBlock {
@@ -76,6 +77,9 @@ func gatherPostContext(ctx context.Context, deps Deps, rt model.MoeAgentRuntime)
 		recentPosts = listBotRecentPosts(deps.DB, rt.BotUserID, botRecentPostLimit)
 	}
 	out.meaningBlock = buildMeaningAwareBlock(recentPosts, episodes)
+	if deps.DB != nil {
+		out.topicAvoid = brain.BuildTopicDiversityBlock(rt, episodes, deps.DB)
+	}
 	return out
 }
 

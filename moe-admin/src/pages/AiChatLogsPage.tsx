@@ -251,7 +251,7 @@ export function AiChatLogsPage() {
   return (
     <TabbedPageLayout
       title="AI 对话日志"
-      description="查询 ai_chat_sessions / messages，用于审计与排障（非训练数据导出）"
+      description="仅记录 App 端用户与 AI 酒馆/聊天的对话（RecordLlmChatTurn）。Bot 试跑发帖、memory_* 工具调用请分别看「AI 大脑·发帖流水线」与「工具与 Bot·调用审计」。"
       metrics={[{ label: '匹配结果', value: loading ? '…' : total }]}
       headActions={
         tab === 'messages' ? (

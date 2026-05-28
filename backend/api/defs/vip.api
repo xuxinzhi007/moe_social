@@ -1,0 +1,17 @@
+// FS-8: vip 域路由（goctl group → api/internal/logic/<group>）
+syntax = "v1"
+
+import "common.api"
+@server (
+	group: vip
+)
+service Super {
+	@handler getVipPlans
+	get /api/vip/plans (EmptyReq) returns (GetVipPlansResp)
+
+	@handler getVipPlan
+	get /api/vip/plans/:plan_id (GetVipPlanReq) returns (GetVipPlanResp)
+
+	@handler createVipPlan
+	post /api/vip/plans (CreateVipPlanReq) returns (CreateVipPlanResp)
+}

@@ -3,8 +3,6 @@ package logic
 import (
 	"context"
 
-	adminbiz "backend/internal/biz/admin"
-	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -22,12 +20,10 @@ func NewAdminListAnnouncementsLogic(ctx context.Context, svcCtx *svc.ServiceCont
 }
 
 func (l *AdminListAnnouncementsLogic) AdminListAnnouncements(in *super.AdminListAnnouncementsReq) (*super.AdminListAnnouncementsResp, error) {
-	items, total, err := adminbiz.ListAnnouncements(l.ctx, l.svcCtx.DB, adminbiz.AnnouncementPage{
-		Page: in.GetPage(), PageSize: in.GetPageSize(), Keyword: in.GetKeyword(), Status: in.GetStatus(),
-	})
+	resp, err := newAdminApp(l.svcCtx.DB).ListAnnouncements(l.ctx, in)
 	if err != nil {
 		l.Errorf("[admin] list announcements: %v", err)
-		return nil, errorx.Internal("查询公告失败")
+		return nil, mapAdminAnnouncementErr(err)
 	}
-	return &super.AdminListAnnouncementsResp{Items: items, Total: total}, nil
+	return resp, nil
 }

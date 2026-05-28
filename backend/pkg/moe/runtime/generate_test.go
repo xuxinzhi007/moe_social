@@ -67,6 +67,17 @@ func TestIsNovelStyleContent(t *testing.T) {
 	}
 }
 
+func TestLooseExtractPostJSON(t *testing.T) {
+	raw := `{"content":"我正在深夜为手绘作品做最后的调整，手心有些微微发烫`
+	got, err := parsePostGenJSON(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got.Content, "手绘") {
+		t.Fatalf("unexpected: %+v", got)
+	}
+}
+
 func TestResolvePostModelPrefersConfig(t *testing.T) {
 	deps := Deps{Inference: llminference.Config{DefaultModel: "default-model"}}
 	rt := model.MoeAgentRuntime{ModelName: "my-tavern-character-card-alias"}

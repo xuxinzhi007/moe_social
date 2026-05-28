@@ -1,0 +1,13 @@
+// FS-8b: vip 域 RPC（编入 service Super）
+  rpc UpdateUserVip(UpdateUserVipReq) returns (UpdateUserVipResp);
+  rpc GetVipPlans(GetVipPlansReq) returns (GetVipPlansResp);
+  rpc GetVipPlan(GetVipPlanReq) returns (GetVipPlanResp);
+  rpc CreateVipPlan(CreateVipPlanReq) returns (CreateVipPlanResp);
+  rpc CreateVipOrder(CreateVipOrderReq) returns (CreateVipOrderResp);
+  rpc GetVipOrders(GetVipOrdersReq) returns (GetVipOrdersResp);
+  rpc GetVipRecords(GetVipRecordsReq) returns (GetVipRecordsResp);
+  rpc GetUserActiveVipRecord(GetUserActiveVipRecordReq) returns (GetUserActiveVipRecordResp);
+  rpc GetUserVipStatus(GetUserVipStatusReq) returns (GetUserVipStatusResp);
+  rpc CheckUserVip(CheckUserVipReq) returns (CheckUserVipResp);
+  rpc UpdateAutoRenew(UpdateAutoRenewReq) returns (UpdateAutoRenewResp);
+  rpc SyncUserVipStatus(SyncUserVipStatusReq) returns (SyncUserVipStatusResp);

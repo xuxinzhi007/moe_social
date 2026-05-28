@@ -28,7 +28,7 @@ func NewExecuteMoeToolLogic(ctx context.Context, svcCtx *svc.ServiceContext, act
 }
 
 func (l *ExecuteMoeToolLogic) ExecuteMoeTool(req *types.MoeToolExecuteReq) (*types.MoeToolExecuteResp, error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.MoeExecuteTool(l.ctx, &super.MoeExecuteToolReq{
+	rpcResp, err := l.svcCtx.MoeGW.MoeExecuteTool(l.ctx, &super.MoeExecuteToolReq{
 		Tool:           req.Tool,
 		ArgumentsJson:  req.Arguments,
 		AgentKey:       req.AgentKey,

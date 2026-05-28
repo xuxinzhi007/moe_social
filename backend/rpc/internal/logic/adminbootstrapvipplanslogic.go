@@ -3,7 +3,6 @@ package logic
 import (
 	"context"
 
-	vipbiz "backend/internal/biz/vip"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -25,13 +24,10 @@ func NewAdminBootstrapVipPlansLogic(ctx context.Context, svcCtx *svc.ServiceCont
 }
 
 func (l *AdminBootstrapVipPlansLogic) AdminBootstrapVipPlans(in *super.AdminBootstrapVipPlansReq) (*super.AdminBootstrapVipPlansResp, error) {
-	_ = in
-	created, err := vipbiz.BootstrapPlans(l.ctx, l.svcCtx.DB)
+	resp, err := newVipAdminApp(l.svcCtx.DB).AdminBootstrapVipPlans(l.ctx, in)
 	if err != nil {
 		l.Errorf("[admin] bootstrap vip plans: %v", err)
 		return nil, mapVipBizErr(err)
 	}
-	return &super.AdminBootstrapVipPlansResp{
-		Created: int32(created),
-	}, nil
+	return resp, nil
 }

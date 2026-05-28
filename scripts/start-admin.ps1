@@ -16,9 +16,9 @@ function Start-JobWindow {
     ) | Out-Null
 }
 
-Start-JobWindow "RPC :8080" $Backend "go run ./rpc/super.go -f rpc/etc/super.yaml -migrate"
+Start-JobWindow "RPC :8080" $Backend "go run ./rpc/super.go -f rpc/etc/moe.yaml -migrate"
 Start-Sleep -Seconds 2
-Start-JobWindow "API :8888" $Backend "go run ./api/super.go -f api/etc/super.yaml"
+Start-JobWindow "API :8888" $Backend "go run ./api/super.go -f api/etc/moe.yaml"
 Start-Sleep -Seconds 2
 Start-JobWindow "Deploy Agent :19010" $Backend "go run ./cmd/deploy-agent -f deploy/config.yaml"
 Start-JobWindow "Moe Admin :5173" $MoeAdmin "if (-not (Test-Path node_modules)) { npm ci }; npm run dev"

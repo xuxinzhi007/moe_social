@@ -2,6 +2,7 @@ package brain
 
 import (
 	"context"
+	"encoding/json"
 	"sort"
 	"strconv"
 	"strings"
@@ -16,15 +17,17 @@ import (
 
 // Snapshot 管理端 AI 大脑视图。
 type Snapshot struct {
-	AgentKey      string
-	DisplayName   string
-	BotUserID     uint
-	ForbiddenTags []string
-	PreferredTags []string
-	TagStats      []TagStat
-	Episodes      []EpisodeItem
+	AgentKey       string
+	DisplayName    string
+	BotUserID      uint
+	ForbiddenTags  []string
+	PreferredTags  []string
+	TagStats       []TagStat
+	Episodes       []EpisodeItem
 	Memories       []MemoryItem
 	GenerationMeta GenerationMeta
+	StabilityScore int
+	StabilityDelta int
 }
 
 type TagStat struct {
@@ -121,6 +124,9 @@ func LoadSnapshot(ctx context.Context, db *gorm.DB, rpc port.SuperPort, agentKey
 		}
 	}
 
+	stability := EffectiveStabilityScore(rt)
+	stabilityDelta := lastRunStabilityDelta(db, agentKey)
+
 	return &Snapshot{
 		AgentKey:       rt.AgentKey,
 		DisplayName:    rt.DisplayName,
@@ -131,6 +137,8 @@ func LoadSnapshot(ctx context.Context, db *gorm.DB, rpc port.SuperPort, agentKey
 		Episodes:       items,
 		Memories:       memories,
 		GenerationMeta: BuildGenerationMeta(ctx, db, rpc, rt, len(memories)),
+		StabilityScore: stability,
+		StabilityDelta: stabilityDelta,
 	}, nil
 }
 
@@ -140,6 +148,30 @@ func UpdatePolicy(db *gorm.DB, agentKey string, forbidden, preferred []string) e
 		"forbidden_tags": strings.Join(forbidden, "\n"),
 		"preferred_tags": strings.Join(preferred, "\n"),
 	}).Error
+}
+
+func lastRunStabilityDelta(db *gorm.DB, agentKey string) int {
+	if db == nil {
+		return 0
+	}
+	var row model.MoeAgentRunLog
+	err := db.Where("agent_key = ?", strings.TrimSpace(agentKey)).
+		Order("created_at desc").
+		First(&row).Error
+	if err != nil {
+		return 0
+	}
+	raw := strings.TrimSpace(row.StepsJSON)
+	if raw == "" || !strings.HasPrefix(raw, "{") {
+		return 0
+	}
+	var bundle struct {
+		StabilityDelta int `json:"stability_delta"`
+	}
+	if json.Unmarshal([]byte(raw), &bundle) != nil {
+		return 0
+	}
+	return bundle.StabilityDelta
 }
 
 // ListRecentEpisodes 供生成时读取。

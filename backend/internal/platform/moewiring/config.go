@@ -84,6 +84,19 @@ func VIPAPIInProcessEnabled() bool {
 	return boolOr(moeViper(), []string{"moe.vip_api_in_process"}, false)
 }
 
+// KratosVipHTTPEnabled config.yaml: moe.kratos_vip_http_enabled（PK-2 VIP ListPlans 灰度）
+func KratosVipHTTPEnabled() bool {
+	if b, err := moeconf.LoadBootstrap(); err == nil && b.GetMoe() != nil && moeViper().IsSet("moe.kratos_vip_http_enabled") {
+		return b.GetMoe().GetKratosVipHttpEnabled()
+	}
+	return boolOr(moeViper(), []string{"moe.kratos_vip_http_enabled"}, false)
+}
+
+// KratosPilotBaseURL 纯 Kratos 试点 HTTP 基址（Moe/VIP 灰度共用）。
+func KratosPilotBaseURL() string {
+	return KratosAdminBaseURL()
+}
+
 // KratosAdminBaseURL config.yaml: moe.kratos_admin_base_url（默认 moe-kratos HTTP）
 func KratosAdminBaseURL() string {
 	if b, err := moeconf.LoadBootstrap(); err == nil && b.GetMoe() != nil {

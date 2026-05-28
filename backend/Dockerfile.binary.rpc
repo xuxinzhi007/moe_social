@@ -8,4 +8,4 @@ RUN mkdir -p /app/rpc/etc /app/config && \
 
 EXPOSE 8080
 
-CMD ["/app/rpc/moe-social-rpc", "-f", "/app/rpc/etc/super.yaml"]
+CMD ["/app/rpc/moe-social-rpc", "-f", "/app/rpc/etc/moe.yaml"]

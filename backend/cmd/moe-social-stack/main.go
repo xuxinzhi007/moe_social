@@ -18,8 +18,8 @@ import (
 )
 
 var (
-	apiConfig = flag.String("f-api", "api/etc/super.yaml", "API config (go-zero rest)")
-	rpcConfig = flag.String("f-rpc", "rpc/etc/super.yaml", "RPC config (go-zero zrpc)")
+	apiConfig = flag.String("f-api", "api/etc/moe.yaml", "API config (go-zero rest)")
+	rpcConfig = flag.String("f-rpc", "rpc/etc/moe.yaml", "RPC config (go-zero zrpc)")
 	migrate   = flag.Bool("migrate", false, "run schema migrate before starting")
 	withAgent   = flag.Bool("agent", true, "start deploy-agent on :19010 (devtools / deploy proxy)")
 	withMonitor = flag.Bool("monitor", true, "RPC debug API on :19011 for moe-admin RPC 监控")

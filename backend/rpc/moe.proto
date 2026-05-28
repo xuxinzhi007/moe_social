@@ -1,0 +1,255 @@
+// FS-9: goctl RPC 入口（assemble 生成；编辑 RPC 请改 defs/services/<domain>.rpcfrag）
+// message SSOT: defs/common.proto
+syntax = "proto3";
+
+package super;
+
+option go_package = "backend/rpc/pb/super";
+
+import "defs/common.proto";
+
+service Super {
+
+  // --- domain: landing (2 rpc) ---
+  rpc SubmitLandingFeedback(SubmitLandingFeedbackReq) returns (SubmitLandingFeedbackResp);
+  rpc ListLandingFeedback(ListLandingFeedbackReq) returns (ListLandingFeedbackResp);
+
+  // --- domain: user (47 rpc) ---
+  rpc Register(RegisterReq) returns (RegisterResp);
+  rpc Login(LoginReq) returns (LoginResp);
+  rpc GetUserInfo(GetUserInfoReq) returns (GetUserInfoResp);
+  rpc GetUser(GetUserReq) returns (GetUserResp);
+  rpc GetUserByEmail(GetUserByEmailReq) returns (GetUserByEmailResp);
+  rpc UpdateUserInfo(UpdateUserInfoReq) returns (UpdateUserInfoResp);
+  rpc UpdateUserPassword(UpdateUserPasswordReq) returns (UpdateUserPasswordResp);
+  rpc ResetPassword(ResetPasswordReq) returns (ResetPasswordResp);
+  rpc DeleteUser(DeleteUserReq) returns (DeleteUserResp);
+  rpc GetUsers(GetUsersReq) returns (GetUsersResp);
+  rpc GetUserCount(GetUserCountReq) returns (GetUserCountResp);
+  rpc BindFeishu(BindFeishuReq) returns (BindFeishuResp);
+  rpc UnbindFeishu(UnbindFeishuReq) returns (UnbindFeishuResp);
+  rpc SendFeishuTestCard(SendFeishuTestCardReq) returns (SendFeishuTestCardResp);
+  rpc FeishuAuthorizeURL(FeishuAuthorizeURLReq) returns (FeishuAuthorizeURLResp);
+  rpc FeishuLogin(FeishuLoginReq) returns (FeishuLoginResp);
+  rpc WechatAuthorizeURL(WechatAuthorizeURLReq) returns (WechatAuthorizeURLResp);
+  rpc WechatLogin(WechatLoginReq) returns (WechatLoginResp);
+  rpc GetUserMemories(GetUserMemoriesReq) returns (GetUserMemoriesResp);
+  rpc SyncUserDevice(SyncUserDeviceReq) returns (SyncUserDeviceResp);
+  rpc ListUserDevices(ListUserDevicesReq) returns (ListUserDevicesResp);
+  rpc GetNotifications(GetNotificationsReq) returns (GetNotificationsResp);
+  rpc GetUnreadCount(GetUnreadCountReq) returns (GetUnreadCountResp);
+  rpc ReadNotification(ReadNotificationReq) returns (ReadNotificationResp);
+  rpc ReadAllNotifications(ReadAllNotificationsReq) returns (ReadAllNotificationsResp);
+  rpc CreateNotification(CreateNotificationReq) returns (CreateNotificationResp);
+  rpc SendPrivateMessage(SendPrivateMessageReq) returns (SendPrivateMessageResp);
+  rpc ListPrivateMessages(ListPrivateMessagesReq) returns (ListPrivateMessagesResp);
+  rpc ListPrivateConversations(ListPrivateConversationsReq) returns (ListPrivateConversationsResp);
+  rpc Recharge(RechargeReq) returns (RechargeResp);
+  rpc GetTransactions(GetTransactionsReq) returns (GetTransactionsResp);
+  rpc GetTransaction(GetTransactionReq) returns (GetTransactionResp);
+  rpc FollowUser(FollowUserReq) returns (FollowUserResp);
+  rpc UnfollowUser(UnfollowUserReq) returns (FollowUserResp);
+  rpc GetFollowings(GetFollowingsReq) returns (GetFollowingsResp);
+  rpc GetFollowers(GetFollowersReq) returns (GetFollowersResp);
+  rpc CheckFollow(CheckFollowReq) returns (CheckFollowResp);
+  rpc SendFriendRequest(SendFriendRequestReq) returns (SendFriendRequestResp);
+  rpc ListIncomingFriendRequests(ListIncomingFriendRequestsReq) returns (ListIncomingFriendRequestsResp);
+  rpc ListOutgoingFriendRequests(ListOutgoingFriendRequestsReq) returns (ListOutgoingFriendRequestsResp);
+  rpc AcceptFriendRequest(AcceptFriendRequestReq) returns (AcceptFriendRequestResp);
+  rpc RejectFriendRequest(RejectFriendRequestReq) returns (RejectFriendRequestResp);
+  rpc ListFriends(ListFriendsReq) returns (ListFriendsResp);
+  rpc GetFriendRelation(GetFriendRelationReq) returns (GetFriendRelationResp);
+  rpc GetUserAvatar(GetUserAvatarReq) returns (GetUserAvatarResp);
+  rpc UpdateUserAvatar(UpdateUserAvatarReq) returns (UpdateUserAvatarResp);
+  rpc GetUserUnlockedAchievements(GetUserUnlockedAchievementsReq) returns (GetUserUnlockedAchievementsResp);
+
+  // --- domain: admin (77 rpc) ---
+  rpc AdminDashboard(AdminDashboardReq) returns (AdminDashboardResp);
+  rpc AdminLogin(AdminLoginReq) returns (AdminLoginResp);
+  rpc AdminListUsers(AdminListUsersReq) returns (AdminListUsersResp);
+  rpc AdminGetUser(AdminGetUserReq) returns (AdminGetUserResp);
+  rpc AdminUpdateUser(AdminUpdateUserReq) returns (AdminUpdateUserResp);
+  rpc AdminListVipPlans(AdminListVipPlansReq) returns (AdminListVipPlansResp);
+  rpc AdminGetVipPlan(AdminGetVipPlanReq) returns (AdminGetVipPlanResp);
+  rpc AdminUpdateVipPlan(AdminUpdateVipPlanReq) returns (AdminUpdateVipPlanResp);
+  rpc AdminDeleteVipPlan(AdminDeleteVipPlanReq) returns (AdminDeleteVipPlanResp);
+  rpc AdminBootstrapVipPlans(AdminBootstrapVipPlansReq) returns (AdminBootstrapVipPlansResp);
+  rpc AdminBootstrapAccount(AdminBootstrapAccountReq) returns (AdminBootstrapAccountResp);
+  rpc AdminBootstrapAchievements(AdminBootstrapAchievementsReq) returns (AdminBootstrapAchievementsResp);
+  rpc AdminListGifts(AdminListGiftsReq) returns (AdminListGiftsResp);
+  rpc AdminGetGift(AdminGetGiftReq) returns (AdminGetGiftResp);
+  rpc AdminCreateGift(AdminCreateGiftReq) returns (AdminCreateGiftResp);
+  rpc AdminUpdateGift(AdminUpdateGiftReq) returns (AdminUpdateGiftResp);
+  rpc AdminDeleteGift(AdminDeleteGiftReq) returns (AdminDeleteGiftResp);
+  rpc AdminBootstrapGifts(AdminBootstrapGiftsReq) returns (AdminBootstrapGiftsResp);
+  rpc AdminDedupeGifts(AdminDedupeGiftsReq) returns (AdminDedupeGiftsResp);
+  rpc AdminListVipOrders(AdminListVipOrdersReq) returns (AdminListVipOrdersResp);
+  rpc AdminListGiftPurchaseOrders(AdminListGiftPurchaseOrdersReq) returns (AdminListGiftPurchaseOrdersResp);
+  rpc AdminListPosts(AdminListPostsReq) returns (AdminListPostsResp);
+  rpc AdminDeletePost(AdminDeletePostReq) returns (AdminDeletePostResp);
+  rpc AdminListComments(AdminListCommentsReq) returns (AdminListCommentsResp);
+  rpc AdminDeleteComment(AdminDeleteCommentReq) returns (AdminDeleteCommentResp);
+  rpc AdminListPostReports(AdminListPostReportsReq) returns (AdminListPostReportsResp);
+  rpc AdminListGroups(AdminListGroupsReq) returns (AdminListGroupsResp);
+  rpc AdminDeleteGroup(AdminDeleteGroupReq) returns (AdminDeleteGroupResp);
+  rpc AdminListAchievements(AdminListAchievementsReq) returns (AdminListAchievementsResp);
+  rpc AdminBootstrapLevels(AdminBootstrapLevelsReq) returns (AdminBootstrapLevelsResp);
+  rpc AdminGetGrowthStats(AdminGetGrowthStatsReq) returns (AdminGetGrowthStatsResp);
+  rpc AdminListLevelConfigs(AdminListLevelConfigsReq) returns (AdminListLevelConfigsResp);
+  rpc AdminUpdateLevelConfig(AdminUpdateLevelConfigReq) returns (AdminUpdateLevelConfigResp);
+  rpc AdminListCheckInRewards(AdminListCheckInRewardsReq) returns (AdminListCheckInRewardsResp);
+  rpc AdminUpdateCheckInReward(AdminUpdateCheckInRewardReq) returns (AdminUpdateCheckInRewardResp);
+  rpc AdminUpdateAchievement(AdminUpdateAchievementReq) returns (AdminUpdateAchievementResp);
+  rpc AdminGetUserProfile(AdminGetUserProfileReq) returns (AdminGetUserProfileResp);
+  rpc AdminListAnnouncements(AdminListAnnouncementsReq) returns (AdminListAnnouncementsResp);
+  rpc AdminGetAnnouncement(AdminGetAnnouncementReq) returns (AdminGetAnnouncementResp);
+  rpc AdminCreateAnnouncement(AdminCreateAnnouncementReq) returns (AdminCreateAnnouncementResp);
+  rpc AdminUpdateAnnouncement(AdminUpdateAnnouncementReq) returns (AdminUpdateAnnouncementResp);
+  rpc AdminDeleteAnnouncement(AdminDeleteAnnouncementReq) returns (AdminDeleteAnnouncementResp);
+  rpc AdminPublishAnnouncement(AdminPublishAnnouncementReq) returns (AdminPublishAnnouncementResp);
+  rpc AdminBroadcastNotification(AdminBroadcastNotificationReq) returns (AdminBroadcastNotificationResp);
+  rpc AdminSendNotification(AdminSendNotificationReq) returns (AdminSendNotificationResp);
+  rpc AdminListAiAgents(AdminListAiAgentsReq) returns (AdminListAiAgentsResp);
+  rpc AdminDeleteAiAgent(AdminDeleteAiAgentReq) returns (AdminDeleteAiAgentResp);
+  rpc AdminListFollows(AdminListFollowsReq) returns (AdminListFollowsResp);
+  rpc AdminListFriendRequests(AdminListFriendRequestsReq) returns (AdminListFriendRequestsResp);
+  rpc AdminDeleteFollow(AdminDeleteFollowReq) returns (AdminDeleteFollowResp);
+  rpc AdminListAccounts(AdminListAccountsReq) returns (AdminListAccountsResp);
+  rpc AdminCreateAccount(AdminCreateAccountReq) returns (AdminCreateAccountResp);
+  rpc AdminUpdateAccount(AdminUpdateAccountReq) returns (AdminUpdateAccountResp);
+  rpc AdminDeleteAccount(AdminDeleteAccountReq) returns (AdminDeleteAccountResp);
+  rpc AdminListMenus(AdminListMenusReq) returns (AdminListMenusResp);
+  rpc AdminUpsertMenu(AdminUpsertMenuReq) returns (AdminUpsertMenuResp);
+  rpc AdminDeleteMenu(AdminDeleteMenuReq) returns (AdminDeleteMenuResp);
+  rpc AdminBootstrapMenus(AdminBootstrapMenusReq) returns (AdminBootstrapMenusResp);
+  rpc AdminListMemories(AdminListMemoriesReq) returns (AdminListMemoriesResp);
+  rpc AdminGetMemoryStats(AdminGetMemoryStatsReq) returns (AdminGetMemoryStatsResp);
+  rpc AdminDeleteMemory(AdminDeleteMemoryReq) returns (AdminDeleteMemoryResp);
+  rpc AdminListAiChatSessions(AdminListAiChatSessionsReq) returns (AdminListAiChatSessionsResp);
+  rpc AdminListAiChatMessages(AdminListAiChatMessagesReq) returns (AdminListAiChatMessagesResp);
+  rpc AdminExportAiChatMessages(AdminExportAiChatMessagesReq) returns (AdminExportAiChatMessagesResp);
+  rpc AdminAnalyticsOverview(AdminGetMemoryStatsReq) returns (AdminAnalyticsOverviewResp);
+  rpc AdminListTopicTags(AdminListTopicTagsReq) returns (AdminListTopicTagsResp);
+  rpc AdminCreateTopicTag(AdminCreateTopicTagReq) returns (AdminCreateTopicTagResp);
+  rpc AdminUpdateTopicTag(AdminUpdateTopicTagReq) returns (AdminUpdateTopicTagResp);
+  rpc AdminDeleteTopicTag(AdminDeleteTopicTagReq) returns (AdminDeleteTopicTagResp);
+  rpc AdminBootstrapTopicTags(AdminBootstrapTopicTagsReq) returns (AdminBootstrapTopicTagsResp);
+  rpc AdminListTagDictionary(AdminListTagDictionaryReq) returns (AdminListTagDictionaryResp);
+  rpc AdminCreateTagDictionary(AdminCreateTagDictionaryReq) returns (AdminCreateTagDictionaryResp);
+  rpc AdminUpdateTagDictionary(AdminUpdateTagDictionaryReq) returns (AdminUpdateTagDictionaryResp);
+  rpc AdminDeleteTagDictionary(AdminDeleteTagDictionaryReq) returns (AdminDeleteTagDictionaryResp);
+  rpc AdminGetSchemaCatalog(AdminGetSchemaCatalogReq) returns (AdminGetSchemaCatalogResp);
+  rpc AdminListAuditLogs(AdminListAuditLogsReq) returns (AdminListAuditLogsResp);
+  rpc RecordAdminAuditLog(RecordAdminAuditLogReq) returns (RecordAdminAuditLogResp);
+
+  // --- domain: vip (12 rpc) ---
+  rpc UpdateUserVip(UpdateUserVipReq) returns (UpdateUserVipResp);
+  rpc GetVipPlans(GetVipPlansReq) returns (GetVipPlansResp);
+  rpc GetVipPlan(GetVipPlanReq) returns (GetVipPlanResp);
+  rpc CreateVipPlan(CreateVipPlanReq) returns (CreateVipPlanResp);
+  rpc CreateVipOrder(CreateVipOrderReq) returns (CreateVipOrderResp);
+  rpc GetVipOrders(GetVipOrdersReq) returns (GetVipOrdersResp);
+  rpc GetVipRecords(GetVipRecordsReq) returns (GetVipRecordsResp);
+  rpc GetUserActiveVipRecord(GetUserActiveVipRecordReq) returns (GetUserActiveVipRecordResp);
+  rpc GetUserVipStatus(GetUserVipStatusReq) returns (GetUserVipStatusResp);
+  rpc CheckUserVip(CheckUserVipReq) returns (CheckUserVipResp);
+  rpc UpdateAutoRenew(UpdateAutoRenewReq) returns (UpdateAutoRenewResp);
+  rpc SyncUserVipStatus(SyncUserVipStatusReq) returns (SyncUserVipStatusResp);
+
+  // --- domain: social (27 rpc) ---
+  rpc GetPosts(GetPostsReq) returns (GetPostsResp);
+  rpc GetPost(GetPostReq) returns (GetPostResp);
+  rpc CreatePost(CreatePostReq) returns (CreatePostResp);
+  rpc UpdatePost(UpdatePostReq) returns (UpdatePostResp);
+  rpc DeletePost(DeletePostReq) returns (DeletePostResp);
+  rpc ReportPost(ReportPostReq) returns (ReportPostResp);
+  rpc LikePost(LikePostReq) returns (LikePostResp);
+  rpc GetPostComments(GetPostCommentsReq) returns (GetPostCommentsResp);
+  rpc CreateComment(CreateCommentReq) returns (CreateCommentResp);
+  rpc LikeComment(LikeCommentReq) returns (LikeCommentResp);
+  rpc CreateGroup(CreateGroupReq) returns (CreateGroupResp);
+  rpc GetGroup(GetGroupReq) returns (GetGroupResp);
+  rpc GetGroups(GetGroupsReq) returns (GetGroupsResp);
+  rpc UpdateGroup(UpdateGroupReq) returns (UpdateGroupResp);
+  rpc DeleteGroup(DeleteGroupReq) returns (DeleteGroupResp);
+  rpc JoinGroup(JoinGroupReq) returns (JoinGroupResp);
+  rpc LeaveGroup(LeaveGroupReq) returns (LeaveGroupResp);
+  rpc GetGroupMembers(GetGroupMembersReq) returns (GetGroupMembersResp);
+  rpc GetUserGroups(GetUserGroupsReq) returns (GetUserGroupsResp);
+  rpc CreateGroupPost(CreateGroupPostReq) returns (CreateGroupPostResp);
+  rpc GetGroupPosts(GetGroupPostsReq) returns (GetGroupPostsResp);
+  rpc GetGifts(GetGiftsReq) returns (GetGiftsResp);
+  rpc GetGift(GetGiftReq) returns (GetGiftResp);
+  rpc SendGift(SendGiftReq) returns (SendGiftResp);
+  rpc GetGiftRecords(GetGiftRecordsReq) returns (GetGiftRecordsResp);
+  rpc PurchaseGift(PurchaseGiftReq) returns (PurchaseGiftResp);
+  rpc GetGiftPurchaseOrders(GetGiftPurchaseOrdersReq) returns (GetGiftPurchaseOrdersResp);
+
+  // --- domain: ai_llm (21 rpc) ---
+  rpc RecordLlmChatTurn(RecordLlmChatTurnReq) returns (RecordLlmChatTurnResp);
+  rpc UpsertUserMemory(UpsertUserMemoryReq) returns (UpsertUserMemoryResp);
+  rpc GetUserMemoryProfiles(GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp);
+  rpc DeleteUserMemory(DeleteUserMemoryReq) returns (DeleteUserMemoryResp);
+  rpc SubmitUserMemoryFeedback(SubmitUserMemoryFeedbackReq) returns (SubmitUserMemoryFeedbackResp);
+  rpc ListUserMemoryEmbeddings(ListUserMemoryEmbeddingsReq) returns (ListUserMemoryEmbeddingsResp);
+  rpc UpsertUserMemoryEmbedding(UpsertUserMemoryEmbeddingReq) returns (UpsertUserMemoryEmbeddingResp);
+  rpc RebuildUserMemoryEmbeddings(RebuildUserMemoryEmbeddingsReq) returns (RebuildUserMemoryEmbeddingsResp);
+  rpc ListUserMemoryRelations(ListUserMemoryRelationsReq) returns (ListUserMemoryRelationsResp);
+  rpc ListAiProviders(ListAiResourceReq) returns (ListAiResourceResp);
+  rpc UpsertAiProvider(UpsertAiResourceReq) returns (UpsertAiResourceResp);
+  rpc DeleteAiProvider(DeleteAiResourceReq) returns (DeleteAiResourceResp);
+  rpc ListAiAgents(ListAiResourceReq) returns (ListAiResourceResp);
+  rpc ListPublicAiAgents(ListPublicAiAgentsReq) returns (ListAiResourceResp);
+  rpc UpsertAiAgent(UpsertAiResourceReq) returns (UpsertAiResourceResp);
+  rpc DeleteAiAgent(DeleteAiResourceReq) returns (DeleteAiResourceResp);
+  rpc ListAiLorebooks(ListAiResourceReq) returns (ListAiResourceResp);
+  rpc UpsertAiLorebook(UpsertAiResourceReq) returns (UpsertAiResourceResp);
+  rpc DeleteAiLorebook(DeleteAiResourceReq) returns (DeleteAiResourceResp);
+  rpc GetAiUserConfig(GetAiUserConfigReq) returns (GetAiUserConfigResp);
+  rpc UpsertAiUserConfig(UpsertAiUserConfigReq) returns (UpsertAiUserConfigResp);
+
+  // --- domain: platform (9 rpc) ---
+  rpc TrackUserBehaviorEvents(TrackUserBehaviorEventsReq) returns (TrackUserBehaviorEventsResp);
+  rpc CheckIn(CheckInReq) returns (CheckInResp);
+  rpc GetUserLevel(GetUserLevelReq) returns (GetUserLevelResp);
+  rpc GetCheckInStatus(GetCheckInStatusReq) returns (GetCheckInStatusResp);
+  rpc GetCheckInHistory(GetCheckInHistoryReq) returns (GetCheckInHistoryResp);
+  rpc GetExpLogs(GetExpLogsReq) returns (GetExpLogsResp);
+  rpc GetUserAchievements(GetUserAchievementsReq) returns (GetUserAchievementsResp);
+  rpc GetUserAchievementSummary(GetUserAchievementSummaryReq) returns (GetUserAchievementSummaryResp);
+  rpc EnsureUserAchievements(EnsureUserAchievementsReq) returns (EnsureUserAchievementsResp);
+
+  // --- domain: moe (13 rpc) ---
+  // 用户相关服务
+  // Moe Intelligence Stack
+  rpc AdminListMoeRuntimes(AdminListMoeRuntimesReq) returns (AdminListMoeRuntimesResp);
+  rpc AdminUpsertMoeRuntime(AdminUpsertMoeRuntimeReq) returns (AdminUpsertMoeRuntimeResp);
+  rpc AdminRunMoeAgentOnce(AdminRunMoeAgentOnceReq) returns (AdminRunMoeAgentOnceResp);
+  rpc AdminGetMoeBrain(AdminGetMoeBrainReq) returns (AdminGetMoeBrainResp);
+  rpc AdminUpdateMoeBrainPolicy(AdminUpdateMoeBrainPolicyReq) returns (AdminGetMoeBrainResp);
+  rpc AdminDeleteMoeBrainEpisode(AdminDeleteMoeBrainEpisodeReq) returns (AdminDeleteMoeBrainEpisodeResp);
+  rpc AdminRefineMoeBrainEpisode(AdminRefineMoeBrainEpisodeReq) returns (AdminRefineMoeBrainEpisodeResp);
+  rpc AdminCurateMoeBrain(AdminCurateMoeBrainReq) returns (AdminCurateMoeBrainResp);
+  rpc AdminGetMoeBrainPipeline(AdminGetMoeBrainPipelineReq) returns (AdminGetMoeBrainPipelineResp);
+  rpc AdminGetMoeToolStats(AdminGetMoeToolStatsReq) returns (AdminGetMoeToolStatsResp);
+  rpc AdminListMoeToolCalls(AdminListMoeToolCallsReq) returns (AdminListMoeToolCallsResp);
+  rpc MoeExecuteTool(MoeExecuteToolReq) returns (MoeExecuteToolResp);
+  rpc MoeSearchPosts(MoeSearchPostsReq) returns (MoeSearchPostsResp);
+  // VIP套餐相关服务
+  // VIP订单相关服务
+  // VIP记录相关服务
+  // VIP状态相关服务
+  // 帖子相关服务
+  // 评论相关服务
+  // 通知相关服务
+  // 钱包相关服务
+  // 交易记录相关服务
+  // 关注相关服务
+  // 虚拟形象相关服务
+  // 签到等级相关服务
+  // 成就系统
+  // 群组相关服务
+  // 礼物相关服务
+  // 用心意（余额）购买礼物，增加背包数量
+  // 礼物购买订单列表
+}

@@ -29,7 +29,7 @@ func (l *GetUserAvatarLogic) GetUserAvatar(req *types.GetUserAvatarReq) (resp *t
 	logx.Infof("API: 获取用户虚拟形象: UserID=%s", req.UserId)
 
 	// 调用RPC服务获取用户虚拟形象
-	rpcResp, err := l.svcCtx.SuperRpcClient.GetUserAvatar(l.ctx, &super.GetUserAvatarReq{
+	rpcResp, err := l.svcCtx.UserGW.GetUserAvatar(l.ctx, &super.GetUserAvatarReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

@@ -3,12 +3,16 @@ package logic
 import (
 	"context"
 
+	moebiz "backend/internal/biz/moe"
 	"backend/internal/adapter/moeconfig"
 	"backend/internal/adapter/rpcsuper"
 	"backend/pkg/moe/brain"
+	"backend/pkg/moe/flowexec"
 	"backend/pkg/moe/runtime"
 	"backend/pkg/moe/tools"
 	"backend/rpc/internal/svc"
+
+	"gorm.io/gorm"
 )
 
 func moeSuperPort(ctx context.Context, svc *svc.ServiceContext) rpcsuper.Bridge {
@@ -20,6 +24,9 @@ func moeRuntimeDeps(ctx context.Context, svc *svc.ServiceContext) runtime.Deps {
 		DB:        svc.DB,
 		RPC:       rpcsuper.NewSuperPort(ctx, moeSuperPort(ctx, svc)),
 		Inference: moeconfig.InferenceFromViper(),
+		ResolvePostingPlan: func(ctx context.Context, db *gorm.DB, agentKey string) (flowexec.Plan, error) {
+			return moebiz.ResolvePostingPlan(ctx, db, agentKey)
+		},
 	}
 }
 

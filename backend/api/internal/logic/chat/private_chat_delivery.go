@@ -162,8 +162,8 @@ func PersistOfflinePrivateChatNotification(ctx context.Context, svc *svc.Service
 	var err error
 	if svc.UserApp != nil && svc.UserApp.DB() != nil {
 		err = notifybiz.CreateInbox(ctx, svc.UserApp.DB(), req)
-	} else if svc.SuperRpcClient != nil {
-		_, err = svc.SuperRpcClient.CreateNotification(ctx, req)
+	} else if svc.UserGW != nil {
+		_, err = svc.UserGW.CreateNotification(ctx, req)
 	}
 	if err != nil {
 		logx.WithContext(ctx).Errorf("offline private chat notify to=%s from=%s: %v", targetUserID, fromUserID, err)

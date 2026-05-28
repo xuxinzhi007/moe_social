@@ -29,7 +29,7 @@ func (l *UpdateUserAvatarLogic) UpdateUserAvatar(req *types.UpdateUserAvatarReq)
 	logx.Infof("API: 更新用户虚拟形象: UserID=%s", req.UserId)
 
 	// 调用RPC服务更新用户虚拟形象
-	rpcResp, err := l.svcCtx.SuperRpcClient.UpdateUserAvatar(l.ctx, &super.UpdateUserAvatarReq{
+	rpcResp, err := l.svcCtx.UserGW.UpdateUserAvatar(l.ctx, &super.UpdateUserAvatarReq{
 		UserId: req.UserId,
 		BaseConfig: &super.AvatarBaseConfig{
 			FaceShape: req.BaseConfig.FaceShape,

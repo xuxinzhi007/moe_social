@@ -84,6 +84,15 @@ func moeBrainSnapshotProto(s *brain.Snapshot) *super.AdminGetMoeBrainResp {
 		ContextUsedPct:     gm.ContextUsedPct,
 		Note:               gm.Note,
 	}
+	out.StabilityScore = int32(s.StabilityScore)
+	out.StabilityDelta = int32(s.StabilityDelta)
+	if len(s.Episodes) > 0 {
+		sum := 0
+		for _, e := range s.Episodes {
+			sum += e.QualityScore
+		}
+		out.AvgEpisodeQuality = int32(sum / len(s.Episodes))
+	}
 	return out
 }
 

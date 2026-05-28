@@ -1,0 +1,33 @@
+// FS-8b: moe 域 RPC（编入 service Super）
+  // 用户相关服务
+  // Moe Intelligence Stack
+  rpc AdminListMoeRuntimes(AdminListMoeRuntimesReq) returns (AdminListMoeRuntimesResp);
+  rpc AdminUpsertMoeRuntime(AdminUpsertMoeRuntimeReq) returns (AdminUpsertMoeRuntimeResp);
+  rpc AdminRunMoeAgentOnce(AdminRunMoeAgentOnceReq) returns (AdminRunMoeAgentOnceResp);
+  rpc AdminGetMoeBrain(AdminGetMoeBrainReq) returns (AdminGetMoeBrainResp);
+  rpc AdminUpdateMoeBrainPolicy(AdminUpdateMoeBrainPolicyReq) returns (AdminGetMoeBrainResp);
+  rpc AdminDeleteMoeBrainEpisode(AdminDeleteMoeBrainEpisodeReq) returns (AdminDeleteMoeBrainEpisodeResp);
+  rpc AdminRefineMoeBrainEpisode(AdminRefineMoeBrainEpisodeReq) returns (AdminRefineMoeBrainEpisodeResp);
+  rpc AdminCurateMoeBrain(AdminCurateMoeBrainReq) returns (AdminCurateMoeBrainResp);
+  rpc AdminGetMoeBrainPipeline(AdminGetMoeBrainPipelineReq) returns (AdminGetMoeBrainPipelineResp);
+  rpc AdminGetMoeToolStats(AdminGetMoeToolStatsReq) returns (AdminGetMoeToolStatsResp);
+  rpc AdminListMoeToolCalls(AdminListMoeToolCallsReq) returns (AdminListMoeToolCallsResp);
+  rpc MoeExecuteTool(MoeExecuteToolReq) returns (MoeExecuteToolResp);
+  rpc MoeSearchPosts(MoeSearchPostsReq) returns (MoeSearchPostsResp);
+  // VIP套餐相关服务
+  // VIP订单相关服务
+  // VIP记录相关服务
+  // VIP状态相关服务
+  // 帖子相关服务
+  // 评论相关服务
+  // 通知相关服务
+  // 钱包相关服务
+  // 交易记录相关服务
+  // 关注相关服务
+  // 虚拟形象相关服务
+  // 签到等级相关服务
+  // 成就系统
+  // 群组相关服务
+  // 礼物相关服务
+  // 用心意（余额）购买礼物，增加背包数量
+  // 礼物购买订单列表

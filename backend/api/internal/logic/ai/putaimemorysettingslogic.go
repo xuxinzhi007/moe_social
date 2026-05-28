@@ -30,16 +30,16 @@ func (l *PutAiMemorySettingsLogic) PutAiMemorySettings(req *types.AiMemorySettin
 	}
 	uid := strconv.FormatUint(uint64(userID), 10)
 	existing := map[string]interface{}{}
-	if l.svcCtx.SuperRpcClient != nil {
-		if cur, err := l.svcCtx.SuperRpcClient.GetAiUserConfig(l.ctx, &super.GetAiUserConfigReq{UserId: uid}); err == nil && cur != nil {
+	if l.svcCtx.LLMGW != nil {
+		if cur, err := l.svcCtx.LLMGW.GetAiUserConfig(l.ctx, &super.GetAiUserConfigReq{UserId: uid}); err == nil && cur != nil {
 			existing = decodePrefsMap(cur.GetPreferencesJson())
 		}
 	}
 	prefsJSON := llmlogic.MergeMemoryAutoLearnPref(existing, req.AutoLearn)
-	if l.svcCtx.SuperRpcClient == nil {
+	if l.svcCtx.LLMGW == nil {
 		return &types.AiMemorySettingsResp{BaseResp: common.HandleError(nil), Data: types.AiMemorySettingsData{AutoLearn: req.AutoLearn}}, nil
 	}
-	_, rpcErr := l.svcCtx.SuperRpcClient.UpsertAiUserConfig(l.ctx, &super.UpsertAiUserConfigReq{
+	_, rpcErr := l.svcCtx.LLMGW.UpsertAiUserConfig(l.ctx, &super.UpsertAiUserConfigReq{
 		UserId:          uid,
 		PreferencesJson: prefsJSON,
 	})

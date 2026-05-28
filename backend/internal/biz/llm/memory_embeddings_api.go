@@ -87,6 +87,25 @@ func ListUserMemoryEmbeddings(ctx context.Context, db *gorm.DB, in *super.ListUs
 	return &super.ListUserMemoryEmbeddingsResp{Items: items}, nil
 }
 
+// UpsertUserMemoryEmbedding 直接写入单条记忆向量（供 RPC/调试）。
+func UpsertUserMemoryEmbedding(ctx context.Context, db *gorm.DB, in *super.UpsertUserMemoryEmbeddingReq) (*super.UpsertUserMemoryEmbeddingResp, error) {
+	userID, err := parseUserIDUint(in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	if in.GetMemoryKey() == "" || len(in.GetValues()) == 0 {
+		return nil, ErrMemoryEmptyKey
+	}
+	vec := make([]float32, len(in.GetValues()))
+	for i, v := range in.GetValues() {
+		vec[i] = v
+	}
+	if err := upsertMemoryEmbedding(db.WithContext(ctx), userID, in.GetMemoryKey(), in.GetChunkText(), in.GetProvider(), in.GetModel(), vec); err != nil {
+		return nil, err
+	}
+	return &super.UpsertUserMemoryEmbeddingResp{}, nil
+}
+
 // ListUserMemoryRelations 列出用户记忆关系边。
 func ListUserMemoryRelations(ctx context.Context, db *gorm.DB, in *super.ListUserMemoryRelationsReq) (*super.ListUserMemoryRelationsResp, error) {
 	userID, err := parseUserIDUint(in.GetUserId())

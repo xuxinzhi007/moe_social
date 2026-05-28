@@ -1,0 +1,14 @@
+# RPC goctl 空壳：实现已合并到 moe_admin_logic.go / admin_insights_logic.go 等
+
+rpc/internal/logic/admingetmoebrainlogic.go
+rpc/internal/logic/adminupdatemoebrainpolicylogic.go
+rpc/internal/logic/adminrefinemoebrainepisodelogic.go
+rpc/internal/logic/admingetmoetoolstatslogic.go
+rpc/internal/logic/adminlistmoeruntimeslogic.go
+rpc/internal/logic/admincuratemoebrainlogic.go
+rpc/internal/logic/adminrunmoeagentoncelogic.go
+rpc/internal/logic/adminupsertmoeruntimelogic.go
+rpc/internal/logic/admindeletemoebrainepisodelogic.go
+rpc/internal/logic/adminlistmoetoolcallslogic.go
+rpc/internal/logic/moeexecutetoollogic.go
+rpc/internal/logic/moesearchpostslogic.go

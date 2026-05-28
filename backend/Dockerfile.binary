@@ -8,6 +8,6 @@ RUN mkdir -p /app/data/images /app/etc /app/rpc/etc /app/config
 EXPOSE 8888
 EXPOSE 8080
 
-RUN printf '#!/bin/sh\n/app/rpc -f /app/rpc/etc/super.yaml &\n/app/api -f /app/etc/super.yaml\n' > /app/start.sh && chmod +x /app/start.sh
+RUN printf '#!/bin/sh\n/app/rpc -f /app/rpc/etc/moe.yaml &\n/app/api -f /app/etc/moe.yaml\n' > /app/start.sh && chmod +x /app/start.sh
 
 CMD ["/app/start.sh"]

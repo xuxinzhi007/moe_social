@@ -1,0 +1,21 @@
+// FS-9: goctl HTTP 入口（仅 import）；契约 SSOT 在 api/defs/*.api
+syntax = "v1"
+
+info (
+	title:   "Moe Social API"
+	desc:    "Moe Social REST API (domain-sharded)"
+	author:  "Moe Social"
+	email:   "team@moe.social"
+	version: "1.0.0"
+)
+
+import "defs/common.api"
+import "defs/landing.api"
+import "defs/user.api"
+import "defs/admin.api"
+import "defs/vip.api"
+import "defs/social.api"
+import "defs/ai_llm.api"
+import "defs/realtime.api"
+import "defs/platform.api"
+import "defs/moe.api"

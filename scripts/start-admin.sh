@@ -24,9 +24,9 @@ start_bg() {
   echo $! >"$pidfile"
 }
 
-start_bg rpc "cd '$BACKEND' && go run ./rpc/super.go -f rpc/etc/super.yaml -migrate"
+start_bg rpc "cd '$BACKEND' && go run ./rpc/super.go -f rpc/etc/moe.yaml -migrate"
 sleep 2
-start_bg api "cd '$BACKEND' && go run ./api/super.go -f api/etc/super.yaml"
+start_bg api "cd '$BACKEND' && go run ./api/super.go -f api/etc/moe.yaml"
 sleep 2
 start_bg agent "cd '$BACKEND' && go run ./cmd/deploy-agent -f deploy/config.yaml"
 start_bg vite "cd '$MOE_ADMIN' && ( [ -d node_modules ] || npm ci ) && npm run dev"

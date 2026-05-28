@@ -1,0 +1,3 @@
+// FS-8b: landing 域 RPC（编入 service Super）
+  rpc SubmitLandingFeedback(SubmitLandingFeedbackReq) returns (SubmitLandingFeedbackResp);
+  rpc ListLandingFeedback(ListLandingFeedbackReq) returns (ListLandingFeedbackResp);

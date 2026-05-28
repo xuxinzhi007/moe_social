@@ -130,6 +130,13 @@ export type MoeHostMetrics = {
   gpu_note?: string
 }
 
+export type MoePipelineToolInvokeItem = {
+  tool: string
+  ok: boolean
+  latency_ms?: number
+  created_at?: string
+}
+
 export type MoeBrainPipelineData = {
   agent_key: string
   run_at?: string
@@ -140,6 +147,47 @@ export type MoeBrainPipelineData = {
   host_metrics?: MoeHostMetrics
   generate_attempts?: MoeGenAttemptItem[]
   steps: MoePipelineStepItem[]
+  tools_invoked?: MoePipelineToolInvokeItem[]
+  stability_score?: number
+  stability_delta?: number
+  run_feedback?: string
+}
+
+export type MoeFlowNodeItem = {
+  id: string
+  type: 'core' | 'step' | 'tool' | string
+  kind?: string
+  label: string
+  subtitle?: string
+  step_key?: string
+  tool_name?: string
+  position_x: number
+  position_y: number
+  enabled?: boolean
+  on_fail?: string
+  retry_max?: number
+}
+
+export type MoeFlowEdgeItem = {
+  id: string
+  source: string
+  target: string
+  kind?: string
+  label?: string
+}
+
+export type MoeBotFlowData = {
+  agent_key: string
+  version?: number
+  entry_node_id?: string
+  nodes: MoeFlowNodeItem[]
+  edges: MoeFlowEdgeItem[]
+  viewport_zoom?: number
+  viewport_x?: number
+  viewport_y?: number
+  updated_at?: string
+  is_default?: boolean
+  warnings?: string[]
 }
 
 export type AdminUserProfileData = {
@@ -1459,6 +1507,36 @@ export function createAdminClient(opts: AdminClientOptions) {
     getMoeBrainPipeline: (agentKey: string) =>
       api<BaseResp<MoeBrainPipelineData>>(
         `${adminApiPath('/moe/brain/pipeline')}?agent_key=${encodeURIComponent(agentKey)}`,
+      ),
+
+    getMoeBotFlow: (agentKey: string) =>
+      api<BaseResp<MoeBotFlowData>>(
+        adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/flow`),
+      ),
+
+    putMoeBotFlow: (
+      agentKey: string,
+      body: {
+        nodes: MoeFlowNodeItem[]
+        edges: MoeFlowEdgeItem[]
+        viewport_zoom?: number
+        viewport_x?: number
+        viewport_y?: number
+      },
+    ) =>
+      api<BaseResp<MoeBotFlowData>>(
+        adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/flow`),
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+      ),
+
+    deleteMoeBotFlow: (agentKey: string) =>
+      api<BaseResp<MoeBotFlowData>>(
+        adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/flow`),
+        { method: 'DELETE' },
       ),
 
     getMoeBrain: (agentKey: string) =>
