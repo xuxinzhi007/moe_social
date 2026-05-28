@@ -31,7 +31,7 @@ func (l *AdminBroadcastNotificationLogic) AdminBroadcastNotification(req *types.
 		return &types.AdminBroadcastNotificationResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}
 
-	wsSent := chat.NewRemoteWsLogic(l.ctx, l.svcCtx).BroadcastNotification(&chat.BroadcastNotificationReq{
+	wsSent := chat.BroadcastWSNotification(&chat.BroadcastNotificationReq{
 		Type: "system_notification",
 		Data: map[string]interface{}{
 			"title":   req.Title,

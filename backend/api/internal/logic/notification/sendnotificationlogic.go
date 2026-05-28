@@ -25,30 +25,21 @@ func NewSendNotificationLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *SendNotificationLogic) SendNotification(req *types.SendNotificationReq) (resp *types.BaseResp, err error) {
-	// 创建 RemoteWsLogic 实例来发送通知
-	remoteWsLogic := chat.NewRemoteWsLogic(l.ctx, l.svcCtx)
-
-	// 构建通知请求
-	notificationReq := &chat.SendNotificationReq{
+	success := chat.SendWSNotification(&chat.SendNotificationReq{
 		UserID: req.UserId,
 		Type:   req.Type,
 		Data:   req.Data,
-	}
-
-	// 发送通知
-	success := remoteWsLogic.SendNotification(notificationReq)
-
-	if success {
+	})
+	if !success {
 		return &types.BaseResp{
-			Code:    200,
-			Message: "发送成功",
-			Success: true,
-		}, nil
-	} else {
-		return &types.BaseResp{
-			Code:    404,
-			Message: "用户不在线",
+			Code:    500,
+			Message: "发送失败",
 			Success: false,
 		}, nil
 	}
+	return &types.BaseResp{
+		Code:    200,
+		Message: "发送成功",
+		Success: true,
+	}, nil
 }

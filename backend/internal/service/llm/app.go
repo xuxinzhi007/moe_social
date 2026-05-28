@@ -5,8 +5,8 @@ import (
 	"context"
 
 	llmbiz "backend/internal/biz/llm"
-	"backend/pkg/localmodels"
 	"backend/pkg/llminference"
+	"backend/pkg/localmodels"
 	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
@@ -14,18 +14,19 @@ import (
 
 // Deps 进程内 LLM 服务依赖。
 type Deps struct {
-	Inference              llminference.Config
-	MemoryModel            string
-	MemorySummaryPrompt    string
-	MemoryExtractPrompt    string
-	LocalModelsStorageDir  string
-	LocalModelsCatalog     []localmodels.CatalogEntry
+	Inference             llminference.Config
+	MemoryModel           string
+	MemorySummaryPrompt   string
+	MemoryExtractPrompt   string
+	LocalModelsStorageDir string
+	LocalModelsCatalog    []localmodels.CatalogEntry
 }
 
 // AppService LLM 应用层。
 type AppService struct {
-	db   *gorm.DB
-	deps Deps
+	db                  *gorm.DB
+	deps                Deps
+	platformChatGateway llmbiz.PlatformChatGateway
 }
 
 // New 构造 AppService。

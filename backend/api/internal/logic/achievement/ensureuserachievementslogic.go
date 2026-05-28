@@ -37,7 +37,7 @@ func (l *EnsureUserAchievementsLogic) EnsureUserAchievements(req *types.EnsureUs
 	return &types.EnsureUserAchievementsResp{
 		BaseResp: types.BaseResp{Code: 0, Message: "成就初始化成功", Success: true},
 		Data: types.EnsureUserAchievementsData{
-			NewAchievements: unlocksFromRPC(rpcResp.NewAchievements),
+			NewAchievements: UnlocksFromRPC(rpcResp.NewAchievements),
 		},
 	}, nil
 }

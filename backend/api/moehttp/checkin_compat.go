@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	achlogic "backend/api/internal/logic/achievement"
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
@@ -63,7 +62,7 @@ func checkIn(app *checkinapp.AppService) func(khttp.Context) error {
 				ConsecutiveDays: int(rpcResp.ConsecutiveDays),
 				LevelUp:         rpcResp.LevelUp,
 				SpecialReward:   rpcResp.SpecialReward,
-				NewAchievements: achlogic.UnlocksFromRPC(rpcResp.NewAchievements),
+				NewAchievements: achievementUnlocksFromRPC(rpcResp.NewAchievements),
 			},
 		})
 	}

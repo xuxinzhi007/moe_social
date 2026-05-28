@@ -9,21 +9,21 @@
 
 ## 0. 状态快照（Now → Next）
 
-### 0.1 当前状态（Latest）
+### 0.1 当前状态（Latest · 2026-05-28）
 
-**阶段名：传输完成 · 实现层收口（二期）**
+**阶段名：P2 完成 · P3 logic 退役进行中**
 
 | 维度 | 状态 | 说明 |
 |------|------|------|
-| **传输 / 路由注册** | ✅ 完成 | 268 goctl 路由均在 Kratos；`native_gen=0`；`bridge=2` |
-| **compat 文件结构** | ✅ 完成 | 按域拆分 20+ 个 `*_compat.go`；已删 4 个聚合文件（见 §2.1） |
-| **实现层直挂 App** | 🔄 **21%** | **56 / 263** 条 compat 直接调 `internal/service` |
-| **invokeLogicJSON 薄转** | 🔄 进行中 | **~107** 条（ai、wave2_misc、admin CRUD、platform 部分） |
-| **wrapNativeHTTP 薄转** | 🔄 进行中 | **~100** 条（user、记忆、WS、admin legacy、voice/moe） |
-| **域 proto** | 🔄 部分 | **15** 个 `api/*/v1/*.proto`；多数为 Ping/占位，RPC 随域补全 |
-| **biz + GW** | ✅ 完成 | `in_process`；logic 无 `SuperRpcClient` |
-| **工程验收** | ✅ | `make check` 通过（moehttp + kratosprogress） |
-| **协作方式** | ✅ 已落档 | `.cursor/rules/parallel-agent-workflow.mdc` + Playbook |
+| **传输 / 路由注册** | ✅ 完成 | compat **263**；`native_gen=0`；`bridge=2` |
+| **实现层直挂 App/biz** | ✅ **263 / 263** | A 档 **263** · B 档 **0** · C 档 **0** |
+| **P3 重点桥接** | ✅ WS + platform chat | 4 WS + `ExecutePlatformChat` 已 biz 化 |
+| **biz + GW** | ✅ 完成 | compat 无 logic import |
+| **工程验收** | ✅ | `make check` 通过 |
+
+**2026-05-28 批次（P3-W2/W3）**：chat/presence/world WS → `internal/biz/chat`；platform chat → `llmbiz.ExecutePlatformChat`；`internal/pkg/presence` 抽出。
+
+> 历史批次（P2-A～H、C 档 7 条清零）见 [kratos-migration-status.md](./kratos-migration-status.md)。
 
 **本阶段已交付（2026-05-27 批次）**
 
@@ -46,35 +46,27 @@ backend/api/moehttp/routes_native_gen.go # nativeDomainRouteCount = 0
 
 ### 0.2 下一步状态（Next）
 
-**阶段名：实现层直挂 `internal/service`（按域并行）**
+**阶段名：P3 logic 退役（handler → biz 后删 logic）**
 
-**目标（Done 时）**
+| 指标 | 当前 | 下一步 |
+|------|------|--------|
+| compat 直挂 App/biz | **263 / 263** | 维持 |
+| compat import logic | **0** | 维持 |
+| `api/internal/logic` 文件 | ~244 | 按域删无引用 + handler 改线 |
+| 审计 | `make audit-logic-orphans` | 每批 PR 必跑 |
 
-| 指标 | 当前 | 下一步目标 |
-|------|------|------------|
-| 分档 A（直挂 App） | 56 / 263 | **263 / 263**（WS/流式允许保留 handler 包装） |
-| `admin_service_compat` | logic 壳 | **直调 `AdminApp`** |
-| `user_*` | handler 壳 | **`UserApp` + `LLMApp`（记忆）** |
-| `ai_compat` / 私信 | logic 壳 | **`AIApp` / `ChatApp`** |
-| `platform_compat` | 混合 | **`LLMApp` 覆盖写路径**；voice/moe 可暂留 handler |
-| 活跃 `api/internal/logic` | 仍大量引用 | 按域删除无引用 logic（**最后**动 defs） |
+**推荐并行子任务（P3-W4b）**
 
-**推荐并行子任务（4 轨，各 1 PR + 可选 worktree）**
+| 轨道 | 范围 | 说明 |
+|------|------|------|
+| **U** | user handler → `UserApp` / biz | 体量最大 |
+| **A** | admin handler → `AdminApp` | 99 个 logic 类型 |
+| **M** | 杂项（notification/voice 等） | 小域快速清 |
 
-| 轨道 | 范围 | 路由约计 | 分支示例 | 禁止改 |
-|------|------|----------|----------|--------|
-| **A** | `admin_service_compat.go` → `AdminApp` | 55 | `feat/admin-app-compat` | `user_*`、`platform_*` |
-| **B** | `user_compat` + `user_memory_compat` | 57 | `feat/user-app-compat` | `admin_service_*` |
-| **C** | `ai_compat` + `chat_compat`（私信直挂；WS 可不动） | 23 | `feat/ai-chat-app-compat` | admin、user |
-| **D** | `platform_compat`（LLM 写优先） | 17 | `feat/platform-llm-compat` | admin、user |
-
-**父会话/合并人唯一修改**：`register_all.go`、`route_stats.go`（若路由常量变化）、迁移文档 §0 快照。
-
-**单轨验收（每 PR）**
+**单轨验收**
 
 ```bash
-cd backend && make check
-# 手测该域 1～2 条关键 API
+cd backend && make check && make audit-logic-orphans
 ```
 
 **阶段顺序建议**

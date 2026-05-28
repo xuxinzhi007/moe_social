@@ -1,19 +1,29 @@
 package moehttp
 
 import (
-	"context"
+	"errors"
+	"fmt"
+	"net/http"
+	"os"
 
-	adminpubliclogic "backend/api/internal/logic/admin_public"
-	avatarlogic "backend/api/internal/logic/avatar"
-	contentlogic "backend/api/internal/logic/content"
-	emojiLogic "backend/api/internal/logic/emoji"
-	imagelogic "backend/api/internal/logic/image"
-	notificationlogic "backend/api/internal/logic/notification"
-	viplogic "backend/api/internal/logic/vip"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	contentbiz "backend/internal/biz/content"
+	emojibiz "backend/internal/biz/emoji"
+	mediabiz "backend/internal/biz/media"
+	userbiz "backend/internal/biz/user"
+	vipbiz "backend/internal/biz/vip"
+	contentapp "backend/internal/service/content"
+	chatapp "backend/internal/service/chat"
+	mediaapp "backend/internal/service/media"
+	adminapp "backend/internal/service/admin"
+	userapp "backend/internal/service/user"
+	vipadmin "backend/internal/service/vip"
+	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
+	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 const PilotNativeWave2MiscCompatRoutes = 27
@@ -23,220 +33,776 @@ func RegisterWave2MiscCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 		return
 	}
 	r := srv.Route("/")
-	r.POST("/api/admin/bootstrap/account", hadminpublicAdminBootstrapAccount(svcCtx))
-	r.POST("/api/admin/login", hadminpublicAdminLogin(svcCtx))
-	r.GET("/api/avatar/:user_id", havatarGetUserAvatar(svcCtx))
-	r.PUT("/api/avatar/:user_id", havatarUpdateUserAvatar(svcCtx))
-	r.GET("/api/avatar/outfits", havatarGetAvatarOutfits(svcCtx))
-	r.GET("/api/avatar/outfits/:outfit_id", havatarGetAvatarOutfit(svcCtx))
-	r.POST("/api/avatar/outfits/:outfit_id/purchase", havatarPurchaseAvatarOutfit(svcCtx))
-	r.POST("/api/content/generate", hcontentGenerateContent(svcCtx))
-	r.GET("/api/emoji/packs", hemojiGetEmojiPacks(svcCtx))
-	r.GET("/api/emoji/packs/:pack_id", hemojiGetEmojiPack(svcCtx))
-	r.POST("/api/emoji/packs/:pack_id/favorite", hemojiFavoriteEmojiPack(svcCtx))
-	r.POST("/api/emoji/packs/:pack_id/purchase", hemojiPurchaseEmojiPack(svcCtx))
-	r.GET("/api/user/:user_id/emoji/packs", hemojiGetUserEmojiPacks(svcCtx))
-	r.GET("/api/images", himageGetImageList(svcCtx))
-	r.DELETE("/api/images/:filename", himageDeleteImage(svcCtx))
-	r.GET("/api/images/:filename", himageGetImage(svcCtx))
-	r.POST("/api/upload", himageUploadImage(svcCtx))
-	r.POST("/api/notification/broadcast", hnotificationBroadcastNotification(svcCtx))
-	r.POST("/api/notification/send", hnotificationSendNotification(svcCtx))
-	r.POST("/api/notification/send-batch", hnotificationSendBatchNotification(svcCtx))
-	r.GET("/api/notifications", hnotificationGetNotifications(svcCtx))
-	r.POST("/api/notifications/:id/read", hnotificationReadNotification(svcCtx))
-	r.POST("/api/notifications/read-all", hnotificationReadAllNotifications(svcCtx))
-	r.GET("/api/notifications/unread", hnotificationGetUnreadCount(svcCtx))
-	r.GET("/api/vip/plans", hvipGetVipPlans(svcCtx))
-	r.POST("/api/vip/plans", hvipCreateVipPlan(svcCtx))
-	r.GET("/api/vip/plans/:plan_id", hvipGetVipPlan(svcCtx))
+
+	if admin := svcCtx.AdminApp; admin != nil {
+		r.POST("/api/admin/bootstrap/account", adminBootstrapAccount(admin))
+		r.POST("/api/admin/login", adminLogin(admin))
+	}
+
+	if user := svcCtx.UserApp; user != nil {
+		r.GET("/api/avatar/:user_id", getUserAvatar(user))
+		r.PUT("/api/avatar/:user_id", updateUserAvatar(user))
+		r.GET("/api/notifications", getNotifications(user))
+		r.POST("/api/notifications/:id/read", readNotification(user))
+		r.POST("/api/notifications/read-all", readAllNotifications(user))
+		r.GET("/api/notifications/unread", getUnreadCount(user))
+
+		r.GET("/api/avatar/outfits", getAvatarOutfits(user))
+		r.GET("/api/avatar/outfits/:outfit_id", getAvatarOutfit(user))
+		r.POST("/api/avatar/outfits/:outfit_id/purchase", purchaseAvatarOutfit(user))
+		r.GET("/api/emoji/packs", getEmojiPacks(user))
+		r.GET("/api/emoji/packs/:pack_id", getEmojiPack(user))
+		r.POST("/api/emoji/packs/:pack_id/favorite", favoriteEmojiPack(user))
+		r.POST("/api/emoji/packs/:pack_id/purchase", purchaseEmojiPack(user))
+		r.GET("/api/user/:user_id/emoji/packs", getUserEmojiPacks(user))
+	}
+
+	contentApp := contentapp.New()
+	r.POST("/api/content/generate", generateContent(contentApp))
+
+	mediaApp := mediaapp.New(mediabiz.ImageConfig{
+		LocalDir:      svcCtx.Config.Image.LocalDir,
+		PublicBaseURL: svcCtx.Config.Image.PublicBaseUrl,
+	})
+	r.GET("/api/images", getImageList(mediaApp))
+	r.DELETE("/api/images/:filename", deleteImage(mediaApp))
+	r.GET("/api/images/:filename", serveImage(mediaApp))
+	r.POST("/api/upload", uploadImage(mediaApp))
+
+	chat := svcCtx.ChatApp
+	if chat == nil {
+		chat = chatapp.New(nil)
+	}
+	r.POST("/api/notification/broadcast", broadcastNotification(chat))
+	r.POST("/api/notification/send", sendNotification(chat))
+	r.POST("/api/notification/send-batch", sendBatchNotification(chat))
+
+	if vip := svcCtx.VipAdmin; vip != nil {
+		r.POST("/api/vip/plans", createVipPlan(vip))
+		r.GET("/api/vip/plans/:plan_id", getVipPlan(vip))
+		r.GET("/api/vip/plans", listVipPlans(vip))
+	}
 }
 
-func hadminpublicAdminBootstrapAccount(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.EmptyReq) (any, error) {
-		l := adminpubliclogic.NewAdminBootstrapAccountLogic(ctx, svcCtx)
-		return l.AdminBootstrapAccount(req)
-	})
+func adminBootstrapAccount(app *adminapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		rpcResp, err := app.AdminBootstrapAccount(ctx, &moe.AdminBootstrapAccountReq{})
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.AdminBootstrapAccountResp{BaseResp: common.HandleRPCError(err, "")})
+		}
+		msg := "管理员账号已存在，未创建"
+		if rpcResp.GetCreated() > 0 {
+			msg = "已创建默认超管，请尽快登录并修改密码"
+		}
+		return ctx.JSON(http.StatusOK, types.AdminBootstrapAccountResp{
+			BaseResp: common.HandleRPCError(nil, msg),
+			Data:     types.AdminBootstrapAccountData{Created: int(rpcResp.GetCreated())},
+		})
+	}
 }
 
-func hadminpublicAdminLogin(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.AdminLoginReq) (any, error) {
-		l := adminpubliclogic.NewAdminLoginLogic(ctx, svcCtx)
-		return l.AdminLogin(req)
-	})
+func adminLogin(app *adminapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.AdminLoginReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.AdminLoginResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		rpcResp, err := app.AdminLogin(ctx, &moe.AdminLoginReq{
+			Username: req.Username,
+			Password: req.Password,
+		})
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.AdminLoginResp{BaseResp: common.HandleRPCError(err, "")})
+		}
+		return ctx.JSON(http.StatusOK, types.AdminLoginResp{
+			BaseResp: common.HandleRPCError(nil, "ok"),
+			Data: types.AdminLoginData{
+				Token:    rpcResp.Token,
+				AdminId:  rpcResp.AdminId,
+				Username: rpcResp.Username,
+				Role:     rpcResp.Role,
+				ExpireAt: rpcResp.ExpireAt,
+			},
+		})
+	}
 }
 
-func havatarGetUserAvatar(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.GetUserAvatarReq) (any, error) {
-		l := avatarlogic.NewGetUserAvatarLogic(ctx, svcCtx)
-		return l.GetUserAvatar(req)
-	})
+func getUserAvatar(app *userapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.GetUserAvatarReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.GetUserAvatarResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		rpcResp, err := app.GetUserAvatar(ctx, &moe.GetUserAvatarReq{UserId: req.UserId})
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.GetUserAvatarResp{BaseResp: common.HandleUserGWError(err, "")})
+		}
+		if rpcResp.Avatar == nil {
+			return ctx.JSON(http.StatusOK, types.GetUserAvatarResp{
+				BaseResp: common.HandleError(nil),
+				Data:     defaultUserAvatar(req.UserId),
+			})
+		}
+		return ctx.JSON(http.StatusOK, types.GetUserAvatarResp{
+			BaseResp: common.HandleError(nil),
+			Data:     userAvatarFromRPC(rpcResp.Avatar),
+		})
+	}
 }
 
-func havatarUpdateUserAvatar(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.UpdateUserAvatarReq) (any, error) {
-		l := avatarlogic.NewUpdateUserAvatarLogic(ctx, svcCtx)
-		return l.UpdateUserAvatar(req)
-	})
+func updateUserAvatar(app *userapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.UpdateUserAvatarReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.UpdateUserAvatarResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		rpcResp, err := app.UpdateUserAvatar(ctx, &moe.UpdateUserAvatarReq{
+			UserId: req.UserId,
+			BaseConfig: &moe.AvatarBaseConfig{
+				FaceShape: req.BaseConfig.FaceShape,
+				SkinColor: req.BaseConfig.SkinColor,
+				EyeType:   req.BaseConfig.EyeType,
+				HairStyle: req.BaseConfig.HairStyle,
+				HairColor: req.BaseConfig.HairColor,
+			},
+			CurrentOutfit: &moe.AvatarOutfitConfig{
+				Clothes:     req.CurrentOutfit.Clothes,
+				Accessories: req.CurrentOutfit.Accessories,
+				Background:  req.CurrentOutfit.Background,
+			},
+		})
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.UpdateUserAvatarResp{BaseResp: common.HandleUserGWError(err, "")})
+		}
+		if rpcResp.Avatar == nil {
+			return ctx.JSON(http.StatusOK, types.UpdateUserAvatarResp{BaseResp: common.HandleUserGWError(fmt.Errorf("empty avatar"), "")})
+		}
+		return ctx.JSON(http.StatusOK, types.UpdateUserAvatarResp{
+			BaseResp: common.HandleError(nil),
+			Data:     userAvatarFromRPC(rpcResp.Avatar),
+		})
+	}
 }
 
-func havatarGetAvatarOutfits(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.GetAvatarOutfitsReq) (any, error) {
-		l := avatarlogic.NewGetAvatarOutfitsLogic(ctx, svcCtx)
-		return l.GetAvatarOutfits(req)
-	})
+func getNotifications(app *userapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.GetNotificationsReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.GetNotificationsResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		rpcResp, err := app.GetNotifications(ctx, &moe.GetNotificationsReq{
+			UserId:   req.UserId,
+			Page:     int32(req.Page),
+			PageSize: int32(req.PageSize),
+		})
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.GetNotificationsResp{BaseResp: common.HandleRPCError(err, "")})
+		}
+		return ctx.JSON(http.StatusOK, types.GetNotificationsResp{
+			BaseResp: common.HandleRPCError(nil, "获取通知列表成功"),
+			Data:     notificationsFromRPC(rpcResp.GetNotifications()),
+			Total:    int(rpcResp.GetTotal()),
+		})
+	}
 }
 
-func havatarGetAvatarOutfit(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.GetAvatarOutfitReq) (any, error) {
-		l := avatarlogic.NewGetAvatarOutfitLogic(ctx, svcCtx)
-		return l.GetAvatarOutfit(req)
-	})
+func readNotification(app *userapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.ReadNotificationReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{Code: -1, Message: err.Error(), Success: false})
+		}
+		_, err := app.ReadNotification(ctx, &moe.ReadNotificationReq{
+			Id:     req.Id,
+			UserId: req.UserId,
+		})
+		if err != nil {
+			result := common.HandleRPCError(err, "")
+			return ctx.JSON(http.StatusOK, result)
+		}
+		result := common.HandleRPCError(nil, "标记已读成功")
+		return ctx.JSON(http.StatusOK, result)
+	}
 }
 
-func havatarPurchaseAvatarOutfit(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.PurchaseAvatarOutfitReq) (any, error) {
-		l := avatarlogic.NewPurchaseAvatarOutfitLogic(ctx, svcCtx)
-		return l.PurchaseAvatarOutfit(req)
-	})
+func readAllNotifications(app *userapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.ReadAllNotificationsReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{Code: -1, Message: err.Error(), Success: false})
+		}
+		_, err := app.ReadAllNotifications(ctx, &moe.ReadAllNotificationsReq{UserId: req.UserId})
+		if err != nil {
+			result := common.HandleRPCError(err, "")
+			return ctx.JSON(http.StatusOK, result)
+		}
+		result := common.HandleRPCError(nil, "标记全部已读成功")
+		return ctx.JSON(http.StatusOK, result)
+	}
 }
 
-func hcontentGenerateContent(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.ContentGenerationReq) (any, error) {
-		l := contentlogic.NewGenerateContentLogic(ctx, svcCtx)
-		return l.GenerateContent(req)
-	})
+func getUnreadCount(app *userapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.GetUnreadCountReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.GetUnreadCountResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		rpcResp, err := app.GetUnreadCount(ctx, &moe.GetUnreadCountReq{UserId: req.UserId})
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.GetUnreadCountResp{BaseResp: common.HandleRPCError(err, "")})
+		}
+		return ctx.JSON(http.StatusOK, types.GetUnreadCountResp{
+			BaseResp: common.HandleRPCError(nil, "获取未读数成功"),
+			Data:     int(rpcResp.GetCount()),
+		})
+	}
 }
 
-func hemojiGetEmojiPacks(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.GetEmojiPacksReq) (any, error) {
-		l := emojiLogic.NewGetEmojiPacksLogic(ctx, svcCtx)
-		return l.GetEmojiPacks(req)
-	})
+func createVipPlan(vip *vipadmin.AdminService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.CreateVipPlanReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.CreateVipPlanResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		plan, err := vip.CreatePlan(ctx, vipbiz.CreatePlanInput{
+			Name:         req.Name,
+			Description:  req.Description,
+			Price:        req.Price,
+			DurationDays: req.DurationDays,
+		})
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.CreateVipPlanResp{BaseResp: common.HandleVipGWError(err, "")})
+		}
+		return ctx.JSON(http.StatusOK, types.CreateVipPlanResp{
+			BaseResp: common.HandleRPCError(nil, "创建VIP套餐成功"),
+			Data:     common.VipPlanModelToTypes(plan),
+		})
+	}
 }
 
-func hemojiGetEmojiPack(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.GetEmojiPackReq) (any, error) {
-		l := emojiLogic.NewGetEmojiPackLogic(ctx, svcCtx)
-		return l.GetEmojiPack(req)
-	})
+func getVipPlan(vip *vipadmin.AdminService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.GetVipPlanReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.GetVipPlanResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		planID, err := vipbiz.ParsePlanID(req.PlanId)
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.GetVipPlanResp{BaseResp: common.HandleVipGWError(err, "")})
+		}
+		plan, err := vip.GetPlan(ctx, planID)
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.GetVipPlanResp{BaseResp: common.HandleVipGWError(err, "")})
+		}
+		return ctx.JSON(http.StatusOK, types.GetVipPlanResp{
+			BaseResp: common.HandleRPCError(nil, "获取VIP套餐成功"),
+			Data:     common.VipPlanModelToTypes(plan),
+		})
+	}
 }
 
-func hemojiFavoriteEmojiPack(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.FavoriteEmojiPackReq) (any, error) {
-		l := emojiLogic.NewFavoriteEmojiPackLogic(ctx, svcCtx)
-		return l.FavoriteEmojiPack(req)
-	})
+func listVipPlans(vip *vipadmin.AdminService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		rows, err := vip.ListAllPlans(ctx)
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.GetVipPlansResp{BaseResp: common.HandleVipGWError(err, "")})
+		}
+		respPlans := make([]types.VipPlan, 0, len(rows))
+		for _, plan := range rows {
+			respPlans = append(respPlans, common.VipPlanModelToTypes(plan))
+		}
+		return ctx.JSON(http.StatusOK, types.GetVipPlansResp{
+			BaseResp: common.HandleRPCError(nil, "获取VIP套餐列表成功"),
+			Data:     respPlans,
+		})
+	}
 }
 
-func hemojiPurchaseEmojiPack(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.PurchaseEmojiPackReq) (any, error) {
-		l := emojiLogic.NewPurchaseEmojiPackLogic(ctx, svcCtx)
-		return l.PurchaseEmojiPack(req)
-	})
+func getAvatarOutfits(app *userapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.GetAvatarOutfitsReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.GetAvatarOutfitsResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		result, err := app.ListAvatarOutfits(ctx, userbiz.ListAvatarOutfitsFilter{
+			Category: req.Category,
+			Style:    req.Style,
+			Page:     req.Page,
+			PageSize: req.PageSize,
+		})
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.GetAvatarOutfitsResp{BaseResp: common.HandleUserGWError(err, "")})
+		}
+		items := make([]types.AvatarOutfit, 0, len(result.Items))
+		for _, item := range result.Items {
+			items = append(items, avatarOutfitToTypes(item))
+		}
+		return ctx.JSON(http.StatusOK, types.GetAvatarOutfitsResp{
+			BaseResp: common.HandleError(nil),
+			Data:     items,
+			Total:    result.Total,
+		})
+	}
 }
 
-func hemojiGetUserEmojiPacks(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.GetUserEmojiPacksReq) (any, error) {
-		l := emojiLogic.NewGetUserEmojiPacksLogic(ctx, svcCtx)
-		return l.GetUserEmojiPacks(req)
-	})
+func getAvatarOutfit(app *userapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.GetAvatarOutfitReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.GetAvatarOutfitResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		item, err := app.GetAvatarOutfit(ctx, req.OutfitId)
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.GetAvatarOutfitResp{BaseResp: common.HandleUserGWError(err, "")})
+		}
+		return ctx.JSON(http.StatusOK, types.GetAvatarOutfitResp{
+			BaseResp: common.HandleError(nil),
+			Data:     avatarOutfitToTypes(item),
+		})
+	}
 }
 
-func himageGetImageList(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.GetImageListReq) (any, error) {
-		l := imagelogic.NewGetImageListLogic(ctx, svcCtx)
-		return l.GetImageList(req)
-	})
+func purchaseAvatarOutfit(app *userapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.PurchaseAvatarOutfitReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.PurchaseAvatarOutfitResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		purchaseID, err := app.PurchaseAvatarOutfit(ctx, req.UserId, req.OutfitId)
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.PurchaseAvatarOutfitResp{BaseResp: common.HandleUserGWError(err, "")})
+		}
+		return ctx.JSON(http.StatusOK, types.PurchaseAvatarOutfitResp{
+			BaseResp: common.HandleError(nil),
+			Data:     purchaseID,
+		})
+	}
 }
 
-func himageDeleteImage(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.DeleteImageReq) (any, error) {
-		l := imagelogic.NewDeleteImageLogic(ctx, svcCtx)
-		return l.DeleteImage(req)
-	})
+func getEmojiPacks(app *userapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.GetEmojiPacksReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.GetEmojiPacksResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		result, err := app.ListEmojiPacks(ctx, emojibiz.ListEmojiPacksFilter{
+			Category: req.Category,
+			Page:     req.Page,
+			PageSize: req.PageSize,
+		})
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.GetEmojiPacksResp{BaseResp: common.HandleUserGWError(err, "")})
+		}
+		items := make([]types.EmojiPack, 0, len(result.Items))
+		for _, item := range result.Items {
+			items = append(items, emojiPackToTypes(item))
+		}
+		return ctx.JSON(http.StatusOK, types.GetEmojiPacksResp{
+			BaseResp: common.HandleError(nil),
+			Data:     items,
+			Total:    result.Total,
+		})
+	}
 }
 
-func himageGetImage(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.DeleteImageReq) (any, error) {
-		l := imagelogic.NewGetImageLogic(ctx, svcCtx)
-		return l.GetImage(req)
-	})
+func getEmojiPack(app *userapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.GetEmojiPackReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.GetEmojiPackResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		item, err := app.GetEmojiPack(ctx, req.PackId)
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.GetEmojiPackResp{BaseResp: common.HandleUserGWError(err, "")})
+		}
+		return ctx.JSON(http.StatusOK, types.GetEmojiPackResp{
+			BaseResp: common.HandleError(nil),
+			Data:     emojiPackToTypes(item),
+		})
+	}
 }
 
-func himageUploadImage(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.UploadImageReq) (any, error) {
-		l := imagelogic.NewUploadImageLogic(ctx, svcCtx)
-		return l.UploadImage(req)
-	})
+func favoriteEmojiPack(app *userapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.FavoriteEmojiPackReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.FavoriteEmojiPackResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		if err := app.FavoriteEmojiPack(ctx, req.UserId, req.PackId); err != nil {
+			return ctx.JSON(http.StatusOK, types.FavoriteEmojiPackResp{BaseResp: common.HandleUserGWError(err, "")})
+		}
+		return ctx.JSON(http.StatusOK, types.FavoriteEmojiPackResp{BaseResp: common.HandleError(nil)})
+	}
 }
 
-func hnotificationBroadcastNotification(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.BroadcastNotificationReq) (any, error) {
-		l := notificationlogic.NewBroadcastNotificationLogic(ctx, svcCtx)
-		return l.BroadcastNotification(req)
-	})
+func purchaseEmojiPack(app *userapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.PurchaseEmojiPackReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.PurchaseEmojiPackResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		purchaseID, err := app.PurchaseEmojiPack(ctx, req.UserId, req.PackId)
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.PurchaseEmojiPackResp{BaseResp: common.HandleUserGWError(err, "")})
+		}
+		return ctx.JSON(http.StatusOK, types.PurchaseEmojiPackResp{
+			BaseResp: common.HandleError(nil),
+			Data:     purchaseID,
+		})
+	}
 }
 
-func hnotificationSendNotification(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.SendNotificationReq) (any, error) {
-		l := notificationlogic.NewSendNotificationLogic(ctx, svcCtx)
-		return l.SendNotification(req)
-	})
+func getUserEmojiPacks(app *userapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.GetUserEmojiPacksReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.GetUserEmojiPacksResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		items, err := app.ListUserEmojiPacks(ctx, req.UserId)
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.GetUserEmojiPacksResp{BaseResp: common.HandleUserGWError(err, "")})
+		}
+		respItems := make([]types.EmojiPack, 0, len(items))
+		for _, item := range items {
+			respItems = append(respItems, emojiPackToTypes(item))
+		}
+		return ctx.JSON(http.StatusOK, types.GetUserEmojiPacksResp{
+			BaseResp: common.HandleError(nil),
+			Data:     respItems,
+		})
+	}
 }
 
-func hnotificationSendBatchNotification(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.SendBatchNotificationReq) (any, error) {
-		l := notificationlogic.NewSendBatchNotificationLogic(ctx, svcCtx)
-		return l.SendBatchNotification(req)
-	})
+func generateContent(app *contentapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.ContentGenerationReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.ContentGenerationResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		result, err := app.GenerateContent(ctx, contentbiz.GenerateInput{
+			UserID:  req.UserId,
+			Type:    req.Type,
+			Prompt:  req.Prompt,
+			Options: req.Options,
+		})
+		if errors.Is(err, contentbiz.ErrUnsupportedContentType) {
+			return ctx.JSON(http.StatusOK, types.ContentGenerationResp{
+				BaseResp: types.BaseResp{Code: 400, Message: "不支持的内容类型", Success: false},
+			})
+		}
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.ContentGenerationResp{BaseResp: common.HandleRPCError(err, "")})
+		}
+		return ctx.JSON(http.StatusOK, types.ContentGenerationResp{
+			BaseResp: types.BaseResp{Code: 200, Message: "内容生成成功", Success: true},
+			Data: types.ContentGenerationData{
+				Id:        result.ID,
+				Type:      result.Type,
+				Url:       result.URL,
+				Content:   result.Content,
+				CreatedAt: result.CreatedAt,
+			},
+		})
+	}
 }
 
-func hnotificationGetNotifications(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.GetNotificationsReq) (any, error) {
-		l := notificationlogic.NewGetNotificationsLogic(ctx, svcCtx)
-		return l.GetNotifications(req)
-	})
+func getImageList(app *mediaapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		claims, err := mediabiz.ParseClaimsFromRequest(ctx.Request())
+		if err != nil {
+			return ctx.JSON(http.StatusUnauthorized, types.BaseResp{Code: 401, Message: "unauthorized", Success: false})
+		}
+		var req types.GetImageListReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.GetImageListResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		userFolder := mediabiz.FolderNameForUser(claims.UserID, claims.Username)
+		result, err := app.ListImages(ctx, mediabiz.ListImagesInput{
+			UserFolder: userFolder,
+			Page:       req.Page,
+			PageSize:   req.PageSize,
+		})
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.GetImageListResp{BaseResp: common.HandleError(err)})
+		}
+		items := make([]types.ImageInfo, 0, len(result.Items))
+		for _, item := range result.Items {
+			items = append(items, imageInfoToTypes(item))
+		}
+		return ctx.JSON(http.StatusOK, types.GetImageListResp{
+			BaseResp: common.HandleError(nil),
+			Data:     items,
+			Total:    result.Total,
+		})
+	}
 }
 
-func hnotificationReadNotification(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.ReadNotificationReq) (any, error) {
-		l := notificationlogic.NewReadNotificationLogic(ctx, svcCtx)
-		return l.ReadNotification(req)
-	})
+func deleteImage(app *mediaapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		claims, err := mediabiz.ParseClaimsFromRequest(ctx.Request())
+		if err != nil {
+			return ctx.JSON(http.StatusUnauthorized, types.BaseResp{Code: 401, Message: "unauthorized", Success: false})
+		}
+		var req types.DeleteImageReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.DeleteImageResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		userFolder := mediabiz.FolderNameForUser(claims.UserID, claims.Username)
+		if err := app.DeleteImage(ctx, userFolder, req.Filename); err != nil {
+			if errors.Is(err, os.ErrPermission) {
+				return ctx.JSON(http.StatusForbidden, types.DeleteImageResp{
+					BaseResp: types.BaseResp{Code: 403, Message: "forbidden", Success: false},
+				})
+			}
+			return ctx.JSON(http.StatusOK, types.DeleteImageResp{BaseResp: common.HandleError(err)})
+		}
+		return ctx.JSON(http.StatusOK, types.DeleteImageResp{BaseResp: common.HandleError(nil)})
+	}
 }
 
-func hnotificationReadAllNotifications(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.ReadAllNotificationsReq) (any, error) {
-		l := notificationlogic.NewReadAllNotificationsLogic(ctx, svcCtx)
-		return l.ReadAllNotifications(req)
-	})
+func serveImage(app *mediaapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.DeleteImageReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{Code: -1, Message: err.Error(), Success: false})
+		}
+		file, err := app.OpenImage(ctx, req.Filename)
+		if err != nil {
+			return ctx.JSON(http.StatusNotFound, types.BaseResp{Code: 404, Message: "图片不存在", Success: false})
+		}
+		f, err := os.Open(file.Path)
+		if err != nil {
+			return ctx.JSON(http.StatusNotFound, types.BaseResp{Code: 404, Message: "图片不存在", Success: false})
+		}
+		defer f.Close()
+
+		w := ctx.Response()
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		w.Header().Set("Content-Type", file.ContentType)
+		w.Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=%s", file.Filename))
+		http.ServeContent(w, ctx.Request(), file.Filename, file.ModTime, f)
+		return nil
+	}
 }
 
-func hnotificationGetUnreadCount(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.GetUnreadCountReq) (any, error) {
-		l := notificationlogic.NewGetUnreadCountLogic(ctx, svcCtx)
-		return l.GetUnreadCount(req)
-	})
+func uploadImage(app *mediaapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		claims, err := mediabiz.ParseClaimsFromRequest(ctx.Request())
+		if err != nil {
+			return ctx.JSON(http.StatusUnauthorized, types.BaseResp{Code: 401, Message: "unauthorized", Success: false})
+		}
+		r := ctx.Request()
+		if err := r.ParseMultipartForm(100 << 20); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.UploadImageResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		file, fileHeader, err := r.FormFile("file")
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.UploadImageResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+		}
+		defer file.Close()
+
+		userFolder := mediabiz.FolderNameForUser(claims.UserID, claims.Username)
+		info, err := app.UploadImage(ctx, mediabiz.UploadInput{
+			UserFolder: userFolder,
+			OrigName:   fileHeader.Filename,
+			Reader:     file,
+		})
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.UploadImageResp{BaseResp: common.HandleError(err)})
+		}
+		return ctx.JSON(http.StatusOK, types.UploadImageResp{
+			BaseResp: common.HandleError(nil),
+			Data:     imageInfoToTypes(info),
+		})
+	}
 }
 
-func hvipGetVipPlans(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.EmptyReq) (any, error) {
-		l := viplogic.NewGetVipPlansLogic(ctx, svcCtx)
-		return l.GetVipPlans(req)
-	})
+func broadcastNotification(app *chatapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.BroadcastNotificationReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{Code: -1, Message: err.Error(), Success: false})
+		}
+		_ = app.BroadcastPushNotification(ctx, req.Type, req.Data)
+		return ctx.JSON(http.StatusOK, types.BaseResp{Code: 200, Message: "广播成功", Success: true})
+	}
 }
 
-func hvipCreateVipPlan(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.CreateVipPlanReq) (any, error) {
-		l := viplogic.NewCreateVipPlanLogic(ctx, svcCtx)
-		return l.CreateVipPlan(req)
-	})
+func sendNotification(app *chatapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.SendNotificationReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{Code: -1, Message: err.Error(), Success: false})
+		}
+		if app.PushNotification(ctx, req.UserId, req.Type, req.Data) {
+			return ctx.JSON(http.StatusOK, types.BaseResp{Code: 200, Message: "发送成功", Success: true})
+		}
+		return ctx.JSON(http.StatusOK, types.BaseResp{Code: 404, Message: "用户不在线", Success: false})
+	}
 }
 
-func hvipGetVipPlan(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.GetVipPlanReq) (any, error) {
-		l := viplogic.NewGetVipPlanLogic(ctx, svcCtx)
-		return l.GetVipPlan(req)
-	})
+func sendBatchNotification(app *chatapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.SendBatchNotificationReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{Code: -1, Message: err.Error(), Success: false})
+		}
+		_ = app.PushBatchNotification(ctx, req.UserIDs, req.Type, req.Data)
+		return ctx.JSON(http.StatusOK, types.BaseResp{Code: 200, Message: "发送成功", Success: true})
+	}
+}
+
+func defaultUserAvatar(userID string) types.UserAvatar {
+	return types.UserAvatar{
+		UserId: userID,
+		BaseConfig: types.BaseConfig{
+			FaceShape: "face_1",
+			SkinColor: "#FDBCB4",
+			EyeType:   "eyes_1",
+			HairStyle: "hair_1",
+			HairColor: "#8B4513",
+		},
+		CurrentOutfit: types.OutfitConfig{
+			Clothes:     "clothes_1",
+			Accessories: []string{},
+			Background:  "default",
+		},
+		OwnedOutfits: []string{},
+	}
+}
+
+func userAvatarFromRPC(a *moe.UserAvatarData) types.UserAvatar {
+	avatar := types.UserAvatar{
+		UserId:       a.GetUserId(),
+		OwnedOutfits: a.GetOwnedOutfits(),
+	}
+	if bc := a.GetBaseConfig(); bc != nil {
+		avatar.BaseConfig = types.BaseConfig{
+			FaceShape: bc.GetFaceShape(),
+			SkinColor: bc.GetSkinColor(),
+			EyeType:   bc.GetEyeType(),
+			HairStyle: bc.GetHairStyle(),
+			HairColor: bc.GetHairColor(),
+		}
+	}
+	if co := a.GetCurrentOutfit(); co != nil {
+		avatar.CurrentOutfit = types.OutfitConfig{
+			Clothes:     co.GetClothes(),
+			Accessories: co.GetAccessories(),
+			Background:  co.GetBackground(),
+		}
+	}
+	return avatar
+}
+
+func notificationsFromRPC(items []*moe.Notification) []types.Notification {
+	notifications := make([]types.Notification, 0, len(items))
+	for _, n := range items {
+		notifications = append(notifications, types.Notification{
+			Id:           n.GetId(),
+			UserId:       n.GetUserId(),
+			SenderId:     n.GetSenderId(),
+			SenderName:   n.GetSenderName(),
+			SenderAvatar: n.GetSenderAvatar(),
+			Type:         int(n.GetType()),
+			PostId:       n.GetPostId(),
+			Content:      n.GetContent(),
+			IsRead:       n.GetIsRead(),
+			CreatedAt:    n.GetCreatedAt(),
+		})
+	}
+	return notifications
+}
+
+func avatarOutfitToTypes(item userbiz.AvatarOutfitItem) types.AvatarOutfit {
+	parts := make([]types.OutfitPart, 0, len(item.Parts))
+	for _, p := range item.Parts {
+		parts = append(parts, types.OutfitPart{Id: p.ID, Type: p.Type, ImageUrl: p.ImageURL})
+	}
+	return types.AvatarOutfit{
+		Id:          item.ID,
+		Name:        item.Name,
+		Description: item.Description,
+		Category:    item.Category,
+		Style:       item.Style,
+		Price:       item.Price,
+		IsFree:      item.IsFree,
+		ImageUrl:    item.ImageURL,
+		Parts:       parts,
+		CreatedAt:   item.CreatedAt,
+	}
+}
+
+func emojiPackToTypes(item emojibiz.EmojiPackItem) types.EmojiPack {
+	emojis := make([]types.Emoji, 0, len(item.Emojis))
+	for _, e := range item.Emojis {
+		emojis = append(emojis, types.Emoji{
+			Id:         e.ID,
+			ImageUrl:   e.ImageURL,
+			Tags:       e.Tags,
+			IsAnimated: e.IsAnimated,
+		})
+	}
+	return types.EmojiPack{
+		Id:            item.ID,
+		Name:          item.Name,
+		Description:   item.Description,
+		AuthorName:    item.AuthorName,
+		Category:      item.Category,
+		Price:         item.Price,
+		IsFree:        item.IsFree,
+		CoverImage:    item.CoverImage,
+		Emojis:        emojis,
+		DownloadCount: item.DownloadCount,
+	}
+}
+
+func imageInfoToTypes(item mediabiz.ImageInfo) types.ImageInfo {
+	return types.ImageInfo{
+		Id:        item.ID,
+		Filename:  item.Filename,
+		Url:       item.URL,
+		Size:      item.Size,
+		CreatedAt: item.CreatedAt,
+	}
 }

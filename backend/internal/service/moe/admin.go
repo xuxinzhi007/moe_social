@@ -3,6 +3,7 @@ package moeadmin
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	moebiz "backend/internal/biz/moe"
@@ -180,6 +181,24 @@ func (s *AdminService) UpdateBrainPolicy(ctx context.Context, agentKey string, f
 // ListRuntimes 列出 Bot 运行时。
 func (s *AdminService) ListRuntimes(ctx context.Context) ([]model.MoeAgentRuntime, error) {
 	return moebiz.ListRuntimes(ctx, s.db)
+}
+
+// FindRuntimeByAgentKey 按 agent_key 查找运行时。
+func (s *AdminService) FindRuntimeByAgentKey(ctx context.Context, agentKey string) (*model.MoeAgentRuntime, error) {
+	agentKey = strings.TrimSpace(agentKey)
+	if agentKey == "" {
+		return nil, nil
+	}
+	rows, err := s.ListRuntimes(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range rows {
+		if rows[i].AgentKey == agentKey {
+			return &rows[i], nil
+		}
+	}
+	return nil, nil
 }
 
 // UpsertRuntime 创建或更新 Bot 运行时。

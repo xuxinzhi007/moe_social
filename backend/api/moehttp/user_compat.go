@@ -4,10 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	achlogic "backend/api/internal/logic/achievement"
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
-	huser "backend/api/internal/handler/user"
 	"backend/api/internal/types"
 	userapp "backend/internal/service/user"
 	"backend/rpc/pb/moe"
@@ -17,7 +15,7 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-// PilotNativeUserCompatRoutes 用户 / 鉴权 / 社交 / VIP（UserApp tier-A；OAuth callback / refresh-token 仍为 wrapNativeHTTP）。
+// PilotNativeUserCompatRoutes 用户 / 鉴权 / 社交 / VIP（UserApp tier-A）。
 const PilotNativeUserCompatRoutes = 49
 
 func RegisterUserCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
@@ -27,11 +25,9 @@ func RegisterUserCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 	app := svcCtx.UserApp
 	r := srv.Route("/")
 
-	// OAuth callbacks: special http.ResponseWriter flow — C-tier wrapNativeHTTP
-	r.GET("/api/auth/feishu/callback", wrapNativeHTTP(huser.FeishuOAuthCallbackHandler(svcCtx)))
-	r.GET("/api/auth/wechat/callback", wrapNativeHTTP(huser.WechatOAuthCallbackHandler(svcCtx)))
-	// refresh-token: handler-only JWT rotation — C-tier wrapNativeHTTP
-	r.POST("/api/user/refresh-token", wrapNativeHTTP(huser.RefreshTokenHandler(svcCtx)))
+	r.GET("/api/auth/feishu/callback", userFeishuOAuthCallback())
+	r.GET("/api/auth/wechat/callback", userWechatOAuthCallback())
+	r.POST("/api/user/refresh-token", userRefreshToken())
 
 	if app == nil {
 		return
@@ -1074,7 +1070,7 @@ func createVipOrder(app *userapp.AppService) func(khttp.Context) error {
 		}
 		return ctx.JSON(http.StatusOK, types.CreateVipOrderResp{
 			BaseResp:        common.HandleRPCError(nil, "创建VIP订单成功"),
-			NewAchievements: achlogic.UnlocksFromRPC(rpcResp.NewAchievements),
+			NewAchievements: achievementUnlocksFromRPC(rpcResp.NewAchievements),
 			Data:            vipOrderFromRPC(rpcResp.Order),
 		})
 	}

@@ -1,13 +1,23 @@
 package moehttp
 
 import (
-	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
 
-	ailogic "backend/api/internal/logic/ai"
+	"backend/api/internal/common"
+	llmbiz "backend/internal/biz/llm"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	aiapp "backend/internal/service/ai"
+	llmapp "backend/internal/service/llm"
+	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
+	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 const PilotNativeAiCompatRoutes = 14
@@ -16,117 +26,496 @@ func RegisterAiCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 	if srv == nil || svcCtx == nil || svcCtx.AIApp == nil {
 		return
 	}
+	aiApp := svcCtx.AIApp
+	llmApp := svcCtx.LLMApp
 	r := srv.Route("/")
-	r.GET("/api/ai/agents", aiListAgents(svcCtx))
-	r.PUT("/api/ai/agents", aiUpsertAgent(svcCtx))
-	r.DELETE("/api/ai/agents", aiDeleteAgent(svcCtx))
-	r.GET("/api/ai/agents/public", aiListPublicAgents(svcCtx))
-	r.GET("/api/ai/config", aiGetUserConfig(svcCtx))
-	r.PUT("/api/ai/config", aiUpsertUserConfig(svcCtx))
-	r.GET("/api/ai/lorebooks", aiListLorebooks(svcCtx))
-	r.PUT("/api/ai/lorebooks", aiUpsertLorebook(svcCtx))
-	r.DELETE("/api/ai/lorebooks", aiDeleteLorebook(svcCtx))
-	r.GET("/api/ai/memory/settings", aiGetAiMemorySettings(svcCtx))
-	r.PUT("/api/ai/memory/settings", aiPutAiMemorySettings(svcCtx))
-	r.GET("/api/ai/providers", aiListProviders(svcCtx))
-	r.PUT("/api/ai/providers", aiUpsertProvider(svcCtx))
-	r.DELETE("/api/ai/providers", aiDeleteProvider(svcCtx))
+	r.GET("/api/ai/agents", aiListAgents(aiApp))
+	r.PUT("/api/ai/agents", aiUpsertAgent(aiApp))
+	r.DELETE("/api/ai/agents", aiDeleteAgent(aiApp))
+	r.GET("/api/ai/agents/public", aiListPublicAgents(aiApp))
+	r.GET("/api/ai/lorebooks", aiListLorebooks(aiApp))
+	r.PUT("/api/ai/lorebooks", aiUpsertLorebook(aiApp))
+	r.DELETE("/api/ai/lorebooks", aiDeleteLorebook(aiApp))
+	r.GET("/api/ai/providers", aiListProviders(aiApp))
+	r.PUT("/api/ai/providers", aiUpsertProvider(aiApp))
+	r.DELETE("/api/ai/providers", aiDeleteProvider(aiApp))
+	if llmApp == nil {
+		return
+	}
+	r.GET("/api/ai/config", aiGetUserConfig(llmApp))
+	r.PUT("/api/ai/config", aiUpsertUserConfig(llmApp))
+	r.GET("/api/ai/memory/settings", aiGetAiMemorySettings(llmApp))
+	r.PUT("/api/ai/memory/settings", aiPutAiMemorySettings(llmApp))
 }
 
-func aiListAgents(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.EmptyReq) (any, error) {
-		l := ailogic.NewListAgentsLogic(ctx, svcCtx)
-		return l.ListAgents(req)
-	})
+func aiListAgents(app *aiapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.EmptyReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
+				Code: -1, Message: err.Error(), Success: false,
+			})
+		}
+		userID, err := common.UserIDUint(ctx)
+		if err != nil {
+			return err
+		}
+		items, base := aiListResource(ctx, app, userID, "agents")
+		return ctx.JSON(http.StatusOK, types.AiAgentsResp{BaseResp: base, Data: items})
+	}
 }
 
-func aiUpsertAgent(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.AiResourceUpsertReq) (any, error) {
-		l := ailogic.NewUpsertAgentLogic(ctx, svcCtx)
-		return l.UpsertAgent(req)
-	})
+func aiUpsertAgent(app *aiapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.AiResourceUpsertReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
+				Code: -1, Message: err.Error(), Success: false,
+			})
+		}
+		userID, err := common.UserIDUint(ctx)
+		if err != nil {
+			return err
+		}
+		full, err := aiUpsertResource(ctx, app, userID, "agents", req.Data)
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, &full.BaseResp)
+	}
 }
 
-func aiDeleteAgent(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.AiResourceDeleteReq) (any, error) {
-		l := ailogic.NewDeleteAgentLogic(ctx, svcCtx)
-		return l.DeleteAgent(req)
-	})
+func aiDeleteAgent(app *aiapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.AiResourceDeleteReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
+				Code: -1, Message: err.Error(), Success: false,
+			})
+		}
+		if req.Id == "" {
+			return errors.New("missing agent id")
+		}
+		userID, err := common.UserIDUint(ctx)
+		if err != nil {
+			return err
+		}
+		full, err := aiDeleteResource(ctx, app, userID, "agents", req.Id)
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, &full.BaseResp)
+	}
 }
 
-func aiListPublicAgents(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.ListPublicAiAgentsReq) (any, error) {
-		l := ailogic.NewListPublicAgentsLogic(ctx, svcCtx)
-		return l.ListPublicAgents(req)
-	})
+func aiListPublicAgents(app *aiapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.ListPublicAiAgentsReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
+				Code: -1, Message: err.Error(), Success: false,
+			})
+		}
+		limit := int32(req.Limit)
+		if limit <= 0 {
+			limit = 50
+		}
+		resp, err := app.ListPublicAiAgents(ctx, &moe.ListPublicAiAgentsReq{Limit: limit})
+		if err != nil {
+			return err
+		}
+		items := make([]map[string]interface{}, 0, len(resp.GetItems()))
+		for _, item := range resp.GetItems() {
+			items = append(items, aiDecodeObject(item.GetPayloadJson()))
+		}
+		return ctx.JSON(http.StatusOK, types.AiAgentsResp{
+			BaseResp: common.HandleRPCError(nil, "操作成功"),
+			Data:     items,
+		})
+	}
 }
 
-func aiGetUserConfig(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.EmptyReq) (any, error) {
-		l := ailogic.NewGetUserConfigLogic(ctx, svcCtx)
-		return l.GetUserConfig(req)
-	})
+func aiListLorebooks(app *aiapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.EmptyReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
+				Code: -1, Message: err.Error(), Success: false,
+			})
+		}
+		userID, err := common.UserIDUint(ctx)
+		if err != nil {
+			return err
+		}
+		items, base := aiListResource(ctx, app, userID, "lorebooks")
+		return ctx.JSON(http.StatusOK, types.AiLorebooksResp{BaseResp: base, Data: items})
+	}
 }
 
-func aiUpsertUserConfig(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.AiUserConfigReq) (any, error) {
-		l := ailogic.NewUpsertUserConfigLogic(ctx, svcCtx)
-		return l.UpsertUserConfig(req)
-	})
+func aiUpsertLorebook(app *aiapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.AiLorebookUpsertReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
+				Code: -1, Message: err.Error(), Success: false,
+			})
+		}
+		userID, err := common.UserIDUint(ctx)
+		if err != nil {
+			return err
+		}
+		item := req.Data
+		if req.Entries != nil {
+			item["entries"] = req.Entries
+		}
+		full, err := aiUpsertResource(ctx, app, userID, "lorebooks", item)
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, &full.BaseResp)
+	}
 }
 
-func aiListLorebooks(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.EmptyReq) (any, error) {
-		l := ailogic.NewListLorebooksLogic(ctx, svcCtx)
-		return l.ListLorebooks(req)
-	})
+func aiDeleteLorebook(app *aiapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.AiResourceDeleteReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
+				Code: -1, Message: err.Error(), Success: false,
+			})
+		}
+		if req.Id == "" {
+			return errors.New("missing lorebook id")
+		}
+		userID, err := common.UserIDUint(ctx)
+		if err != nil {
+			return err
+		}
+		full, err := aiDeleteResource(ctx, app, userID, "lorebooks", req.Id)
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, &full.BaseResp)
+	}
 }
 
-func aiUpsertLorebook(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.AiLorebookUpsertReq) (any, error) {
-		l := ailogic.NewUpsertLorebookLogic(ctx, svcCtx)
-		return l.UpsertLorebook(req)
-	})
+func aiListProviders(app *aiapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.EmptyReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
+				Code: -1, Message: err.Error(), Success: false,
+			})
+		}
+		userID, err := common.UserIDUint(ctx)
+		if err != nil {
+			return err
+		}
+		items, base := aiListResource(ctx, app, userID, "providers")
+		return ctx.JSON(http.StatusOK, types.AiProviderProfilesResp{BaseResp: base, Data: items})
+	}
 }
 
-func aiDeleteLorebook(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.AiResourceDeleteReq) (any, error) {
-		l := ailogic.NewDeleteLorebookLogic(ctx, svcCtx)
-		return l.DeleteLorebook(req)
-	})
+func aiUpsertProvider(app *aiapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.AiResourceUpsertReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
+				Code: -1, Message: err.Error(), Success: false,
+			})
+		}
+		userID, err := common.UserIDUint(ctx)
+		if err != nil {
+			return err
+		}
+		full, err := aiUpsertResource(ctx, app, userID, "providers", req.Data)
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, &full.BaseResp)
+	}
 }
 
-func aiGetAiMemorySettings(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.EmptyReq) (any, error) {
-		l := ailogic.NewGetAiMemorySettingsLogic(ctx, svcCtx)
-		return l.GetAiMemorySettings(req)
-	})
+func aiDeleteProvider(app *aiapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.AiResourceDeleteReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
+				Code: -1, Message: err.Error(), Success: false,
+			})
+		}
+		if req.Id == "" {
+			return errors.New("missing provider id")
+		}
+		userID, err := common.UserIDUint(ctx)
+		if err != nil {
+			return err
+		}
+		full, err := aiDeleteResource(ctx, app, userID, "providers", req.Id)
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, &full.BaseResp)
+	}
 }
 
-func aiPutAiMemorySettings(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.AiMemorySettingsReq) (any, error) {
-		l := ailogic.NewPutAiMemorySettingsLogic(ctx, svcCtx)
-		return l.PutAiMemorySettings(req)
-	})
+func aiGetUserConfig(app *llmapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.EmptyReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
+				Code: -1, Message: err.Error(), Success: false,
+			})
+		}
+		userID, err := common.UserIDUint(ctx)
+		if err != nil {
+			return err
+		}
+		resp, err := app.GetAiUserConfig(ctx, &moe.GetAiUserConfigReq{
+			UserId: strconv.FormatUint(uint64(userID), 10),
+		})
+		if err != nil {
+			return ctx.JSON(http.StatusOK, types.AiUserConfigResp{BaseResp: common.HandleRPCError(err, "")})
+		}
+		return ctx.JSON(http.StatusOK, types.AiUserConfigResp{
+			BaseResp: common.HandleRPCError(nil, "操作成功"),
+			Data: types.AiUserConfigData{
+				ProviderProfiles: []map[string]interface{}{},
+				Agents:           []map[string]interface{}{},
+				Lorebooks:        []map[string]interface{}{},
+				UserPersona:      resp.GetUserPersona(),
+				Preferences:      aiDecodeObject(resp.GetPreferencesJson()),
+			},
+		})
+	}
 }
 
-func aiListProviders(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.EmptyReq) (any, error) {
-		l := ailogic.NewListProvidersLogic(ctx, svcCtx)
-		return l.ListProviders(req)
-	})
+func aiUpsertUserConfig(app *llmapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.AiUserConfigReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
+				Code: -1, Message: err.Error(), Success: false,
+			})
+		}
+		userID, err := common.UserIDUint(ctx)
+		if err != nil {
+			return err
+		}
+		var preferencesJSON string
+		if req.Preferences != nil {
+			raw, marshalErr := json.Marshal(req.Preferences)
+			if marshalErr != nil {
+				return ctx.JSON(http.StatusOK, types.AiUserConfigResp{
+					BaseResp: common.HandleError(fmt.Errorf("marshal preferences: %w", marshalErr)),
+				})
+			}
+			preferencesJSON = string(raw)
+		}
+		resp, rpcErr := app.UpsertAiUserConfig(ctx, &moe.UpsertAiUserConfigReq{
+			UserId:          strconv.FormatUint(uint64(userID), 10),
+			UserPersona:     req.UserPersona,
+			HasUserPersona:  req.HasUserPersona,
+			PreferencesJson: preferencesJSON,
+		})
+		if rpcErr != nil {
+			return ctx.JSON(http.StatusOK, types.AiUserConfigResp{BaseResp: common.HandleRPCError(rpcErr, "")})
+		}
+		return ctx.JSON(http.StatusOK, types.AiUserConfigResp{
+			BaseResp: common.HandleRPCError(nil, "操作成功"),
+			Data: types.AiUserConfigData{
+				ProviderProfiles: []map[string]interface{}{},
+				Agents:           []map[string]interface{}{},
+				Lorebooks:        []map[string]interface{}{},
+				UserPersona:      resp.GetUserPersona(),
+				Preferences:      aiDecodeObject(resp.GetPreferencesJson()),
+			},
+		})
+	}
 }
 
-func aiUpsertProvider(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.AiResourceUpsertReq) (any, error) {
-		l := ailogic.NewUpsertProviderLogic(ctx, svcCtx)
-		return l.UpsertProvider(req)
-	})
+func aiGetAiMemorySettings(app *llmapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.EmptyReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
+				Code: -1, Message: err.Error(), Success: false,
+			})
+		}
+		userID, err := common.UserIDUint(ctx)
+		if err != nil {
+			return err
+		}
+		uid := strconv.FormatUint(uint64(userID), 10)
+		auto := aiUserMemoryAutoLearnEnabled(ctx, app, uid)
+		return ctx.JSON(http.StatusOK, types.AiMemorySettingsResp{
+			BaseResp: common.HandleError(nil),
+			Data:     types.AiMemorySettingsData{AutoLearn: auto},
+		})
+	}
 }
 
-func aiDeleteProvider(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	return invokeLogicJSON(svcCtx, func(ctx context.Context, svcCtx *svc.ServiceContext, req *types.AiResourceDeleteReq) (any, error) {
-		l := ailogic.NewDeleteProviderLogic(ctx, svcCtx)
-		return l.DeleteProvider(req)
-	})
+func aiPutAiMemorySettings(app *llmapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		var req types.AiMemorySettingsReq
+		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
+				Code: -1, Message: err.Error(), Success: false,
+			})
+		}
+		userID, err := common.UserIDUint(ctx)
+		if err != nil {
+			return err
+		}
+		uid := strconv.FormatUint(uint64(userID), 10)
+		existing := map[string]interface{}{}
+		if cur, getErr := app.GetAiUserConfig(ctx, &moe.GetAiUserConfigReq{UserId: uid}); getErr == nil && cur != nil {
+			existing = llmbiz.DecodePreferencesJSON(cur.GetPreferencesJson())
+		}
+		prefsJSON := llmbiz.MergeMemoryAutoLearnPref(existing, req.AutoLearn)
+		if _, rpcErr := app.UpsertAiUserConfig(ctx, &moe.UpsertAiUserConfigReq{
+			UserId:          uid,
+			PreferencesJson: prefsJSON,
+		}); rpcErr != nil {
+			return ctx.JSON(http.StatusOK, types.AiMemorySettingsResp{
+				BaseResp: common.HandleRPCError(rpcErr, ""),
+			})
+		}
+		return ctx.JSON(http.StatusOK, types.AiMemorySettingsResp{
+			BaseResp: common.HandleError(nil),
+			Data:     types.AiMemorySettingsData{AutoLearn: req.AutoLearn},
+		})
+	}
+}
+
+func aiListResource(ctx khttp.Context, app *aiapp.AppService, userID uint, kind string) ([]map[string]interface{}, types.BaseResp) {
+	req := &moe.ListAiResourceReq{UserId: strconv.FormatUint(uint64(userID), 10)}
+	var (
+		resp *moe.ListAiResourceResp
+		err  error
+	)
+	switch kind {
+	case "providers":
+		resp, err = app.ListAiProviders(ctx, req)
+	case "agents":
+		resp, err = app.ListAiAgents(ctx, req)
+	case "lorebooks":
+		resp, err = app.ListAiLorebooks(ctx, req)
+	default:
+		return []map[string]interface{}{}, common.HandleError(fmt.Errorf("unknown ai resource kind: %s", kind))
+	}
+	if err != nil {
+		return []map[string]interface{}{}, common.HandleRPCError(err, "")
+	}
+	items := make([]map[string]interface{}, 0, len(resp.GetItems()))
+	for _, item := range resp.GetItems() {
+		items = append(items, aiDecodeObject(item.GetPayloadJson()))
+	}
+	return items, common.HandleRPCError(nil, "操作成功")
+}
+
+func aiUpsertResource(
+	ctx khttp.Context,
+	app *aiapp.AppService,
+	userID uint,
+	kind string,
+	item map[string]interface{},
+) (types.AiAgentsResp, error) {
+	id := aiStringify(item["id"])
+	if id == "" {
+		return types.AiAgentsResp{BaseResp: common.HandleError(fmt.Errorf("missing resource id"))}, nil
+	}
+	raw, err := json.Marshal(item)
+	if err != nil {
+		return types.AiAgentsResp{BaseResp: common.HandleError(fmt.Errorf("marshal resource payload: %w", err))}, nil
+	}
+	req := &moe.UpsertAiResourceReq{
+		UserId:      strconv.FormatUint(uint64(userID), 10),
+		Id:          id,
+		PayloadJson: string(raw),
+	}
+	var rpcErr error
+	switch kind {
+	case "providers":
+		_, rpcErr = app.UpsertAiProvider(ctx, req)
+	case "agents":
+		_, rpcErr = app.UpsertAiAgent(ctx, req)
+	case "lorebooks":
+		_, rpcErr = app.UpsertAiLorebook(ctx, req)
+	default:
+		return types.AiAgentsResp{BaseResp: common.HandleError(fmt.Errorf("unknown ai resource kind: %s", kind))}, nil
+	}
+	if rpcErr != nil {
+		return types.AiAgentsResp{BaseResp: common.HandleRPCError(rpcErr, "")}, nil
+	}
+	items, base := aiListResource(ctx, app, userID, kind)
+	return types.AiAgentsResp{BaseResp: base, Data: items}, nil
+}
+
+func aiDeleteResource(
+	ctx khttp.Context,
+	app *aiapp.AppService,
+	userID uint,
+	kind, id string,
+) (types.AiAgentsResp, error) {
+	req := &moe.DeleteAiResourceReq{
+		UserId: strconv.FormatUint(uint64(userID), 10),
+		Id:     id,
+	}
+	var err error
+	switch kind {
+	case "providers":
+		_, err = app.DeleteAiProvider(ctx, req)
+	case "agents":
+		_, err = app.DeleteAiAgent(ctx, req)
+	case "lorebooks":
+		_, err = app.DeleteAiLorebook(ctx, req)
+	default:
+		return types.AiAgentsResp{BaseResp: common.HandleError(fmt.Errorf("unknown ai resource kind: %s", kind))}, nil
+	}
+	if err != nil {
+		return types.AiAgentsResp{BaseResp: common.HandleRPCError(err, "")}, nil
+	}
+	items, base := aiListResource(ctx, app, userID, kind)
+	return types.AiAgentsResp{BaseResp: base, Data: items}, nil
+}
+
+func aiDecodeObject(raw string) map[string]interface{} {
+	if raw == "" {
+		return map[string]interface{}{}
+	}
+	var out map[string]interface{}
+	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+		return map[string]interface{}{}
+	}
+	return out
+}
+
+func aiStringify(v interface{}) string {
+	if v == nil {
+		return ""
+	}
+	return strings.TrimSpace(fmt.Sprint(v))
+}
+
+func aiUserMemoryAutoLearnEnabled(ctx khttp.Context, app *llmapp.AppService, userID string) bool {
+	if app == nil || userID == "" {
+		return true
+	}
+	resp, err := app.GetAiUserConfig(ctx, &moe.GetAiUserConfigReq{UserId: userID})
+	if err != nil || resp == nil {
+		return true
+	}
+	prefs := llmbiz.DecodePreferencesJSON(resp.GetPreferencesJson())
+	if v, ok := prefs["memory_auto_learn"]; ok {
+		switch t := v.(type) {
+		case bool:
+			return t
+		case string:
+			return t != "false" && t != "0"
+		case float64:
+			return t != 0
+		}
+	}
+	return true
 }

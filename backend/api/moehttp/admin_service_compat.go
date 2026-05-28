@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"backend/api/internal/common"
-	chatlogic "backend/api/internal/logic/chat"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 	adminapp "backend/internal/service/admin"
@@ -846,10 +845,12 @@ func adminBroadcastNotification(svcCtx *svc.ServiceContext) func(khttp.Context) 
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminBroadcastNotificationResp{BaseResp: common.HandleRPCError(err, "")})
 		}
-		wsSent := chatlogic.NewRemoteWsLogic(ctx, svcCtx).BroadcastNotification(&chatlogic.BroadcastNotificationReq{
-			Type: "system_notification",
-			Data: map[string]interface{}{"title": req.Title, "content": req.Content},
-		})
+		wsSent := 0
+		if svcCtx.ChatApp != nil {
+			wsSent = svcCtx.ChatApp.BroadcastPushNotification(ctx, "system_notification", map[string]interface{}{
+				"title": req.Title, "content": req.Content,
+			})
+		}
 		resp := types.AdminBroadcastNotificationResp{
 			BaseResp: common.HandleRPCError(nil, "广播成功"),
 			Data: types.AdminBroadcastNotificationData{
@@ -878,10 +879,12 @@ func adminSendNotification(svcCtx *svc.ServiceContext) func(khttp.Context) error
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminSendNotificationResp{BaseResp: common.HandleRPCError(err, "")})
 		}
-		wsSent := chatlogic.NewRemoteWsLogic(ctx, svcCtx).SendNotification(&chatlogic.SendNotificationReq{
-			UserID: req.UserId, Type: "system_notification",
-			Data: map[string]interface{}{"title": req.Title, "content": req.Content},
-		})
+		wsSent := false
+		if svcCtx.ChatApp != nil {
+			wsSent = svcCtx.ChatApp.PushNotification(ctx, req.UserId, "system_notification", map[string]interface{}{
+				"title": req.Title, "content": req.Content,
+			})
+		}
 		resp := types.AdminSendNotificationResp{
 			BaseResp: common.HandleRPCError(nil, "发送成功"),
 			Data: types.AdminSendNotificationData{

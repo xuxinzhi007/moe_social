@@ -2,9 +2,8 @@ package llm
 
 import (
 	"context"
-	"encoding/json"
-	"strconv"
 
+	llmbiz "backend/internal/biz/llm"
 	"backend/api/internal/svc"
 	"backend/rpc/pb/moe"
 )
@@ -18,49 +17,15 @@ func UserMemoryAutoLearnEnabled(ctx context.Context, svcCtx *svc.ServiceContext,
 	if err != nil || resp == nil {
 		return true
 	}
-	prefs := decodePrefs(resp.GetPreferencesJson())
-	if v, ok := prefs["memory_auto_learn"]; ok {
-		switch t := v.(type) {
-		case bool:
-			return t
-		case string:
-			return t != "false" && t != "0"
-		case float64:
-			return t != 0
-		}
-	}
-	return true
+	return llmbiz.MemoryAutoLearnEnabled(llmbiz.DecodePreferencesJSON(resp.GetPreferencesJson()))
 }
 
 // DecodePreferencesJSON 解析 ai_user_config.preferences_json。
 func DecodePreferencesJSON(raw string) map[string]interface{} {
-	return decodePrefs(raw)
+	return llmbiz.DecodePreferencesJSON(raw)
 }
 
 // MergeMemoryAutoLearnPref 合并 memory_auto_learn 开关。
 func MergeMemoryAutoLearnPref(existing map[string]interface{}, autoLearn bool) string {
-	return mergeMemoryAutoLearnPref(existing, autoLearn)
-}
-
-func decodePrefs(raw string) map[string]interface{} {
-	if raw == "" {
-		return map[string]interface{}{}
-	}
-	var out map[string]interface{}
-	if err := json.Unmarshal([]byte(raw), &out); err != nil {
-		return map[string]interface{}{}
-	}
-	return out
-}
-
-func mergeMemoryAutoLearnPref(existing map[string]interface{}, autoLearn bool) string {
-	if existing == nil {
-		existing = map[string]interface{}{}
-	}
-	existing["memory_auto_learn"] = autoLearn
-	raw, err := json.Marshal(existing)
-	if err != nil {
-		return `{"memory_auto_learn":` + strconv.FormatBool(autoLearn) + `}`
-	}
-	return string(raw)
+	return llmbiz.MergeMemoryAutoLearnPref(existing, autoLearn)
 }
