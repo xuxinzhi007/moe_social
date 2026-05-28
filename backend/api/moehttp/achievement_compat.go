@@ -3,7 +3,6 @@ package moehttp
 import (
 	"net/http"
 
-	achlogic "backend/api/internal/logic/achievement"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 	achievementapp "backend/internal/service/achievement"
@@ -45,7 +44,7 @@ func getUserAchievements(app *achievementapp.AppService) func(khttp.Context) err
 		}
 		return ctx.JSON(http.StatusOK, types.GetUserAchievementsResp{
 			BaseResp: types.BaseResp{Code: 0, Message: "获取成就列表成功", Success: true},
-			Data:     achlogic.BadgesFromRPC(rpcResp.GetBadges()),
+			Data:     achievementBadgesFromRPC(rpcResp.GetBadges()),
 		})
 	}
 }
@@ -66,7 +65,7 @@ func getUserUnlockedAchievements(app *achievementapp.AppService) func(khttp.Cont
 		}
 		return ctx.JSON(http.StatusOK, types.GetUserUnlockedAchievementsResp{
 			BaseResp: types.BaseResp{Code: 0, Message: "获取已解锁成就成功", Success: true},
-			Data:     achlogic.BadgesFromRPC(rpcResp.GetBadges()),
+			Data:     achievementBadgesFromRPC(rpcResp.GetBadges()),
 		})
 	}
 }
@@ -114,7 +113,7 @@ func ensureUserAchievements(app *achievementapp.AppService) func(khttp.Context) 
 		return ctx.JSON(http.StatusOK, types.EnsureUserAchievementsResp{
 			BaseResp: types.BaseResp{Code: 0, Message: "成就初始化成功", Success: true},
 			Data: types.EnsureUserAchievementsData{
-				NewAchievements: achlogic.UnlocksFromRPC(rpcResp.GetNewAchievements()),
+				NewAchievements: achievementUnlocksFromRPC(rpcResp.GetNewAchievements()),
 			},
 		})
 	}

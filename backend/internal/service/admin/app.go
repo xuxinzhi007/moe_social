@@ -42,6 +42,11 @@ func (s *AppService) ReadRuntimeConfig() (utils.RuntimeConfigView, error) {
 	return adminbiz.RuntimeConfigView()
 }
 
+// RuntimeOverview 进程内存与布局汇总。
+func (s *AppService) RuntimeOverview(ctx context.Context) (*adminbiz.RuntimeOverviewResult, error) {
+	return adminbiz.RuntimeOverview(ctx)
+}
+
 // BroadcastNotification 广播系统通知。
 func (s *AppService) BroadcastNotification(ctx context.Context, in *moe.AdminBroadcastNotificationReq) (*moe.AdminBroadcastNotificationResp, error) {
 	created, err := notifybiz.Broadcast(ctx, s.db, in.GetTitle(), in.GetContent())

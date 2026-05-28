@@ -19,6 +19,7 @@
 | `make gen-rpc` | 改了 `rpc` 契约 |
 | `make gen-all` | defs + rpc + proto 一起改 |
 | `make check` | 编译 + 核心单测 |
+| `make audit-logic-orphans` | P3：列出无 handler 引用的 `api/internal/logic` 文件 |
 
 ## 覆盖范围
 

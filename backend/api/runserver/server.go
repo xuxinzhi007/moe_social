@@ -223,6 +223,9 @@ func StartWithResult(opts Options) (*StartResult, error) {
 	}
 	ctx.LLMGW = llmgw.New(ctx.LLMApp, ctx.SuperRpcClient)
 	log.Printf("llm gateway route: %s", ctx.LLMGW.Route())
+	if ctx.LLMApp != nil && ctx.LLMGW != nil {
+		ctx.LLMApp.SetPlatformChatGateway(ctx.LLMGW)
+	}
 	if moewiring.AIAPIInProcessEnabled() {
 		aiApp, err := moewiring.NewAPIAIService()
 		if err != nil {

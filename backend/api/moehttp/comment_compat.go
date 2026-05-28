@@ -3,7 +3,6 @@ package moehttp
 import (
 	"net/http"
 
-	achlogic "backend/api/internal/logic/achievement"
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
@@ -45,7 +44,7 @@ func createComment(app *commentapp.AppService) func(khttp.Context) error {
 		c := rpcResp.GetComment()
 		return ctx.JSON(http.StatusOK, types.CreateCommentResp{
 			BaseResp:        common.HandleRPCError(nil, "创建评论成功"),
-			NewAchievements: achlogic.UnlocksFromRPC(rpcResp.GetNewAchievements()),
+			NewAchievements: achievementUnlocksFromRPC(rpcResp.GetNewAchievements()),
 			Data: types.Comment{
 				Id: c.GetId(), PostId: c.GetPostId(), UserId: c.GetUserId(),
 				UserName: c.GetUserName(), UserAvatar: c.GetUserAvatar(), Content: c.GetContent(),

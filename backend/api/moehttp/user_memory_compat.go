@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	userlogic "backend/api/internal/logic/user"
+	userbiz "backend/internal/biz/user"
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
@@ -132,7 +132,7 @@ func getUserMemoriesDisplay(app *llmapp.AppService) func(khttp.Context) error {
 				"code": base.Code, "message": base.Message, "success": false,
 			})
 		}
-		data := userlogic.BuildUserMemoryDisplay(memResp.Memories, profResp.Profiles)
+		data := userbiz.BuildUserMemoryDisplay(memResp.Memories, profResp.Profiles)
 		base := common.HandleRPCError(nil, "获取记忆展示数据成功")
 		return ctx.JSON(http.StatusOK, map[string]interface{}{
 			"code": base.Code, "message": base.Message, "success": base.Success, "data": data,
@@ -225,7 +225,14 @@ func searchUserMemories(svcCtx *svc.ServiceContext, app *llmapp.AppService) func
 				"code": base.Code, "message": base.Message, "success": false,
 			})
 		}
-		result := userlogic.HybridSearchUserFacingMemories(ctx, svcCtx, req.UserId, memResp.Memories, req.Q, limit)
+		result := userbiz.HybridSearchUserFacingMemories(ctx, userbiz.MemorySearchParams{
+			Gateway:          svcCtx.LLMGW,
+			InferenceBaseURL: svcCtx.Config.LLMInference.BaseUrl,
+			UserID:           req.UserId,
+			Memories:         memResp.Memories,
+			Query:            req.Q,
+			Limit:            limit,
+		})
 		base := common.HandleRPCError(nil, "记忆检索成功")
 		return ctx.JSON(http.StatusOK, map[string]interface{}{
 			"code": base.Code, "message": base.Message, "success": base.Success, "data": result,

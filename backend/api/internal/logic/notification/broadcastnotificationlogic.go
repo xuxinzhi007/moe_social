@@ -25,17 +25,10 @@ func NewBroadcastNotificationLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *BroadcastNotificationLogic) BroadcastNotification(req *types.BroadcastNotificationReq) (resp *types.BaseResp, err error) {
-	// 创建 RemoteWsLogic 实例来发送通知
-	remoteWsLogic := chat.NewRemoteWsLogic(l.ctx, l.svcCtx)
-
-	// 构建广播通知请求
-	notificationReq := &chat.BroadcastNotificationReq{
+	_ = chat.BroadcastWSNotification(&chat.BroadcastNotificationReq{
 		Type: req.Type,
 		Data: req.Data,
-	}
-
-	// 发送广播通知
-	_ = remoteWsLogic.BroadcastNotification(notificationReq)
+	})
 
 	return &types.BaseResp{
 		Code:    200,

@@ -36,6 +36,6 @@ func (l *GetUserUnlockedAchievementsLogic) GetUserUnlockedAchievements(req *type
 
 	return &types.GetUserUnlockedAchievementsResp{
 		BaseResp: types.BaseResp{Code: 0, Message: "获取已解锁成就成功", Success: true},
-		Data:     badgesFromRPC(rpcResp.Badges),
+		Data:     BadgesFromRPC(rpcResp.Badges),
 	}, nil
 }

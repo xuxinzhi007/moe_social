@@ -2,78 +2,13 @@ package chat
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
-	"strings"
-	"sync"
-	"time"
 
-	"backend/api/internal/presence"
+	chatbiz "backend/internal/biz/chat"
 	"backend/api/internal/svc"
-	"backend/utils"
 
-	"github.com/gorilla/websocket"
 	"github.com/zeromicro/go-zero/core/logx"
 )
-
-// 全局在线状态连接映射
-var (
-	presenceConnections      = make(map[string]*presenceConn)
-	presenceConnectionsMutex sync.RWMutex
-)
-
-type presenceConn struct {
-	writeMu sync.Mutex // gorilla/websocket：同一 Conn 禁止并发 WriteMessage
-	conn    *websocket.Conn
-}
-
-func (pc *presenceConn) writeJSON(data interface{}) bool {
-	if pc == nil {
-		return false
-	}
-	msgData, err := json.Marshal(data)
-	if err != nil {
-		return false
-	}
-	return pc.writeText(msgData)
-}
-
-func (pc *presenceConn) writeText(msgData []byte) bool {
-	if pc == nil {
-		return false
-	}
-	pc.writeMu.Lock()
-	defer pc.writeMu.Unlock()
-	if pc.conn == nil {
-		return false
-	}
-	_ = pc.conn.SetWriteDeadline(time.Now().Add(8 * time.Second))
-	if err := pc.conn.WriteMessage(websocket.TextMessage, msgData); err != nil {
-		return false
-	}
-	return true
-}
-
-func (pc *presenceConn) close() {
-	if pc == nil {
-		return
-	}
-	pc.writeMu.Lock()
-	defer pc.writeMu.Unlock()
-	if pc.conn != nil {
-		_ = pc.conn.Close()
-		pc.conn = nil
-	}
-}
-
-// 在线状态消息结构
-type PresenceMessage struct {
-	Type          string   `json:"type"`
-	UserID        string   `json:"user_id,omitempty"`
-	Online        bool     `json:"online,omitempty"`
-	OnlineUserIDs []string `json:"online_user_ids,omitempty"`
-}
 
 type PresenceWsLogic struct {
 	logx.Logger
@@ -81,7 +16,6 @@ type PresenceWsLogic struct {
 	svcCtx *svc.ServiceContext
 }
 
-// WebSocket在线状态服务
 func NewPresenceWsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *PresenceWsLogic {
 	return &PresenceWsLogic{
 		Logger: logx.WithContext(ctx),
@@ -91,228 +25,18 @@ func NewPresenceWsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Presen
 }
 
 func (l *PresenceWsLogic) PresenceWs() error {
-	// 从上下文获取 HTTP 请求
 	r, ok := l.ctx.Value("http.Request").(*http.Request)
 	if !ok {
 		return nil
 	}
-
 	w, ok := l.ctx.Value("http.ResponseWriter").(*http.ResponseWriter)
 	if !ok {
 		return nil
 	}
-
-	// 验证 token
-	token := r.Header.Get("Authorization")
-	if token == "" {
-		// 尝试从查询参数获取 token
-		token = r.URL.Query().Get("token")
-		if token == "" {
-			http.Error(*w, "Unauthorized", http.StatusUnauthorized)
-			return nil
-		}
-	} else {
-		// 处理 Bearer token
-		if strings.HasPrefix(token, "Bearer ") {
-			token = strings.TrimPrefix(token, "Bearer ")
-		}
-	}
-
-	// 验证 token
-	claims, err := utils.ParseToken(token)
-	if err != nil {
-		http.Error(*w, "Invalid token", http.StatusUnauthorized)
-		return nil
-	}
-
-	// 获取用户 ID
-	userID := fmt.Sprintf("%d", claims.UserID)
-
-	// 升级 HTTP 连接为 WebSocket
-	conn, err := upgrader.Upgrade(*w, r, nil)
-	if err != nil {
-		l.Logger.Errorf("Error upgrading connection: %v", err)
-		return nil
-	}
-
-	member := &presenceConn{conn: conn}
-
-	// 同用户重连时关闭旧连接，避免旧 goroutine 与新连接并发写
-	presenceConnectionsMutex.Lock()
-	if old, exists := presenceConnections[userID]; exists && old != nil {
-		old.close()
-	}
-	presenceConnections[userID] = member
-	presenceConnectionsMutex.Unlock()
-
-	becameOnline := presence.DefaultState.Add(userID)
-
-	l.Logger.Infof("Presence user %s connected", userID)
-
-	// 发送在线状态快照
-	l.sendPresenceSnapshot(userID)
-
-	if becameOnline {
-		l.broadcastPresence(userID, true)
-	}
-
-	// 处理消息
-	go l.handleConnection(userID, member)
-
+	chatbiz.ServePresenceWS(*w, r)
 	return nil
 }
 
-// 处理 WebSocket 连接
-func (l *PresenceWsLogic) handleConnection(userID string, member *presenceConn) {
-	defer func() {
-		var becameOffline bool
-		presenceConnectionsMutex.Lock()
-		if current, ok := presenceConnections[userID]; ok && current == member {
-			delete(presenceConnections, userID)
-			becameOffline = presence.DefaultState.Remove(userID)
-		}
-		presenceConnectionsMutex.Unlock()
-
-		member.close()
-		l.Logger.Infof("Presence user %s disconnected", userID)
-
-		if becameOffline {
-			l.broadcastPresence(userID, false)
-		}
-	}()
-
-	if member.conn == nil {
-		return
-	}
-
-	// 设置读取超时
-	_ = member.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-	member.conn.SetPongHandler(func(string) error {
-		if member.conn != nil {
-			_ = member.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-		}
-		return nil
-	})
-
-	for {
-		if member.conn == nil {
-			break
-		}
-		_, message, err := member.conn.ReadMessage()
-		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				l.Logger.Errorf("WebSocket error: %v", err)
-			}
-			break
-		}
-		l.Logger.Infof("Received presence message from %s: %s", userID, message)
-		// 处理前端发送的消息
-		l.handleMessage(userID, message)
-	}
-}
-
-// 处理前端发送的消息
-func (l *PresenceWsLogic) handleMessage(userID string, message []byte) {
-	// 解析消息
-	var msg map[string]interface{}
-	if err := json.Unmarshal(message, &msg); err != nil {
-		l.Logger.Errorf("Error unmarshaling message: %v", err)
-		return
-	}
-
-	// 根据消息类型处理
-	msgType, ok := msg["type"].(string)
-	if !ok {
-		l.Logger.Errorf("Invalid message type")
-		return
-	}
-
-	switch msgType {
-	case "ping":
-		// 响应 ping
-		l.sendToUser(userID, map[string]interface{}{
-			"type": "pong",
-		})
-	case "get_online":
-		// 发送在线状态快照
-		l.sendPresenceSnapshot(userID)
-	default:
-		l.Logger.Infof("Unknown message type: %s", msgType)
-	}
-}
-
-// 发送在线状态快照
-func (l *PresenceWsLogic) sendPresenceSnapshot(userID string) {
-	userIDs := presence.DefaultState.OnlineUserIDs()
-
-	message := PresenceMessage{
-		Type:          "presence_snapshot",
-		OnlineUserIDs: userIDs,
-	}
-
-	l.sendToUser(userID, message)
-}
-
-// 广播用户在线状态变化
-func (l *PresenceWsLogic) broadcastPresence(userID string, online bool) {
-	message := PresenceMessage{
-		Type:   "presence",
-		UserID: userID,
-		Online: online,
-	}
-
-	msgData, err := json.Marshal(message)
-	if err != nil {
-		l.Logger.Errorf("Error marshaling presence message: %v", err)
-		return
-	}
-
-	presenceConnectionsMutex.RLock()
-	recipients := make([]*presenceConn, 0, len(presenceConnections))
-	for id, pc := range presenceConnections {
-		if id == userID || pc == nil {
-			continue
-		}
-		recipients = append(recipients, pc)
-	}
-	presenceConnectionsMutex.RUnlock()
-
-	for _, pc := range recipients {
-		if !pc.writeText(msgData) {
-			l.Logger.Errorf("Error sending presence broadcast")
-		}
-	}
-}
-
-// 发送消息给指定用户
-func (l *PresenceWsLogic) sendToUser(userID string, data interface{}) bool {
-	presenceConnectionsMutex.RLock()
-	pc, ok := presenceConnections[userID]
-	presenceConnectionsMutex.RUnlock()
-
-	if !ok || pc == nil {
-		return false
-	}
-
-	if !pc.writeJSON(data) {
-		l.Logger.Errorf("Error sending message to %s", userID)
-		presenceConnectionsMutex.Lock()
-		if current, exists := presenceConnections[userID]; exists && current == pc {
-			delete(presenceConnections, userID)
-		}
-		presenceConnectionsMutex.Unlock()
-		pc.close()
-		return false
-	}
-
-	return true
-}
-
-// 获取在线用户列表
 func (l *PresenceWsLogic) GetOnlineUsers() map[string]bool {
-	result := make(map[string]bool)
-	for _, id := range presence.DefaultState.OnlineUserIDs() {
-		result[id] = true
-	}
-	return result
+	return chatbiz.OnlineUserIDSet()
 }

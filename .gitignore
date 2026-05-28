@@ -141,3 +141,5 @@ backend/.dev/
 backend/api/.../moe-social-api
 backend/api/.../super.api
 backend/api/.../super.go
+backend/api/.../moe.api
+backend/api/.../README.md

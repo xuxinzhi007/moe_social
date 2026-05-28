@@ -35,6 +35,12 @@ make check
 
 若 prune 漏删，登记 `scripts/goctl-orphan-stubs.txt`。
 
+## P3 logic 退役（2026-05-28）
+
+- compat 层 **不得** import `api/internal/logic`（已达成）
+- 删除 logic 前：`make audit-logic-orphans`（无 handler 引用才可删）
+- handler 已直调 biz 的域（image、remote WS）logic 已删；其余 ~252 类型待 handler 改线后删
+
 ## 冲突症状
 
 - `redeclared in this block`：同一 `AdminCreateTopicTagLogic` 在两个 `.go` 里

@@ -32,7 +32,7 @@ func (l *AdminSendNotificationLogic) AdminSendNotification(req *types.AdminSendN
 		return &types.AdminSendNotificationResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}
 
-	wsSent := chat.NewRemoteWsLogic(l.ctx, l.svcCtx).SendNotification(&chat.SendNotificationReq{
+	wsSent := chat.SendWSNotification(&chat.SendNotificationReq{
 		UserID: req.UserId,
 		Type:   "system_notification",
 		Data: map[string]interface{}{

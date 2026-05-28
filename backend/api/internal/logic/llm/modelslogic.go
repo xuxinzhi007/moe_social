@@ -38,7 +38,7 @@ func (l *ModelsLogic) Models(req *types.EmptyReq) (resp *types.LlmModelsResp, er
 	if l.svcCtx.LLMApp != nil {
 		names, err = l.svcCtx.LLMApp.ListModels(l.ctx)
 	} else {
-		cfg, cfgErr := inferenceConfigFromSvc(l.svcCtx)
+		cfg, cfgErr := common.InferenceFromLLMConf(l.svcCtx.Config.LLMInference)
 		if cfgErr != nil {
 			return &types.LlmModelsResp{
 				BaseResp: common.HandleError(cfgErr),

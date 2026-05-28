@@ -1,66 +1,14 @@
 package presence
 
-import "sync"
+import pkgpresence "backend/internal/pkg/presence"
 
-// State tracks user online presence at app-level.
-// One user can have multiple active connections.
-type State struct {
-	mu     sync.RWMutex
-	online map[string]int
-}
+// DefaultState re-exports the process-wide presence tracker (moved to internal/pkg/presence).
+var DefaultState = pkgpresence.DefaultState
 
+// State re-exports presence tracker type.
+type State = pkgpresence.State
+
+// NewState constructs an empty presence tracker.
 func NewState() *State {
-	return &State{online: make(map[string]int)}
-}
-
-var DefaultState = NewState()
-
-// Add increments online connection count. Returns true if user became online.
-func (s *State) Add(userID string) bool {
-	if userID == "" {
-		return false
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	prev := s.online[userID]
-	s.online[userID] = prev + 1
-	return prev == 0
-}
-
-// Remove decrements online connection count. Returns true if user became offline.
-func (s *State) Remove(userID string) bool {
-	if userID == "" {
-		return false
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	prev := s.online[userID]
-	if prev <= 1 {
-		delete(s.online, userID)
-		return prev > 0
-	}
-	s.online[userID] = prev - 1
-	return false
-}
-
-func (s *State) IsOnline(userID string) bool {
-	if userID == "" {
-		return false
-	}
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.online[userID] > 0
-}
-
-func (s *State) OnlineUserIDs() []string {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	ids := make([]string, 0, len(s.online))
-	for id, n := range s.online {
-		if n <= 0 {
-			continue
-		}
-		ids = append(ids, id)
-	}
-	return ids
+	return pkgpresence.NewState()
 }

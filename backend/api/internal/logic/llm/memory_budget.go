@@ -1,5 +1,7 @@
 package llm
 
+import llmbiz "backend/internal/biz/llm"
+
 type MemoryBudgetConfig struct {
 	MaxInjectedMemoryItems int     `json:"max_injected_memory_items"`
 	MaxInjectedMemoryRunes int     `json:"max_injected_memory_runes"`
@@ -10,12 +12,13 @@ type MemoryBudgetConfig struct {
 }
 
 func CurrentMemoryBudgetConfig() MemoryBudgetConfig {
+	b := llmbiz.DefaultMemoryBudget()
 	return MemoryBudgetConfig{
-		MaxInjectedMemoryItems: maxInjectedMemoryItems,
-		MaxInjectedMemoryRunes: maxInjectedMemoryRunes,
-		MaxHistoryMessages:     maxHistoryMessages,
-		KeepRecentMessages:     keepRecentMessages,
-		MaxCtxTokens:           maxCtxTokens,
-		CtxSafeRatio:           ctxSafeRatio,
+		MaxInjectedMemoryItems: b.MaxInjectedMemoryItems,
+		MaxInjectedMemoryRunes: b.MaxInjectedMemoryRunes,
+		MaxHistoryMessages:     b.MaxHistoryMessages,
+		KeepRecentMessages:     b.KeepRecentMessages,
+		MaxCtxTokens:           b.MaxCtxTokens,
+		CtxSafeRatio:           b.CtxSafeRatio,
 	}
 }

@@ -3,7 +3,6 @@ package moehttp
 import (
 	"net/http"
 
-	achlogic "backend/api/internal/logic/achievement"
 	"backend/api/internal/common"
 	"backend/api/internal/moebridge"
 	"backend/api/internal/svc"
@@ -79,7 +78,7 @@ func createPost(app *postapp.AppService) func(khttp.Context) error {
 		}
 		return ctx.JSON(http.StatusOK, types.CreatePostResp{
 			BaseResp:        common.HandleRPCError(nil, "创建帖子成功"),
-			NewAchievements: achlogic.UnlocksFromRPC(rpcResp.GetNewAchievements()),
+			NewAchievements: achievementUnlocksFromRPC(rpcResp.GetNewAchievements()),
 			Data:            postFromRPC(rpcResp.GetPost()),
 		})
 	}

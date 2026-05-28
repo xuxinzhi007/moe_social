@@ -92,6 +92,10 @@ check:
 	go build -o /dev/null ./cmd/moe-social
 	go test ./internal/platform/moesocial/... ./api/moehttp/... ./internal/platform/kratosprogress/... -count=1
 
+# P3-W4：列出无 handler 引用的 logic 文件（Windows/Linux 均可）
+audit-logic-orphans:
+	go run ./scripts/tools/logic-orphan-audit
+
 moe-social:
 
 	go run ./cmd/moe-social
