@@ -1,14 +1,14 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package ai
 
 import (
+	"errors"
 	"net/http"
 
-	"backend/api/internal/logic/ai"
+	"backend/api/internal/common"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -20,12 +20,20 @@ func DeleteProviderHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := ai.NewDeleteProviderLogic(r.Context(), svcCtx)
-		resp, err := l.DeleteProvider(&req)
+		if req.Id == "" {
+			httpx.ErrorCtx(r.Context(), w, errors.New("missing provider id"))
+			return
+		}
+		userID, err := common.UserIDUint(r.Context())
+		if err != nil {
+			httpx.ErrorCtx(r.Context(), w, err)
+			return
+		}
+		full, err := handlerutil.AIDeleteProvider(r.Context(), svcCtx, userID, req.Id)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(r.Context(), w, &full.BaseResp)
 		}
 	}
 }

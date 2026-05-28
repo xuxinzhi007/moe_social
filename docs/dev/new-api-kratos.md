@@ -38,7 +38,7 @@ Client → :8888  Kratos HTTP (api/moehttp)
               → internal/biz/<domain>
 ```
 
-存量路由均在 `api/moehttp/*_compat.go` 注册（`routes_native_gen` 已为 **0**）；多数仍经 `invokeLogicJSON` 或 `wrapNativeHTTP` 进入 `api/internal/logic`，逐步改为直挂 `internal/service`（见 [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md)）。**新接口不要走 logic 链。**
+存量路由均在 `api/moehttp/*_compat.go` 注册（`routes_native_gen` 已为 **0**）；**已全部**直挂 `internal/service` / `internal/biz`（P2 完成）。Hybrid 回滚路径的 goctl handler 正按 [kratos-architecture-complete.md](./kratos-architecture-complete.md) P3-W4 退役 logic。
 
 ---
 

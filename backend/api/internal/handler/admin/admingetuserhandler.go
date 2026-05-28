@@ -1,17 +1,12 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-
+	"backend/rpc/pb/moe"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminGetUserHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -20,15 +15,26 @@ func AdminGetUserHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.OkJsonCtx(r.Context(), w, &types.AdminGetUserResp{BaseResp: *br})
 			return
 		}
-
 		var req types.AdminGetUserReq
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
+		resp, err := func(req *types.AdminGetUserReq) (resp *types.AdminGetUserResp, err error) {
+			rpcResp, err := svcCtx.AdminGW.AdminGetUser(r.Context(), &moe.AdminGetUserReq{
+			UserId: req.UserId,
+			})
+			if err != nil {
+			return &types.AdminGetUserResp{
+			BaseResp: common.HandleRPCError(err, ""),
+			}, nil
+			}
 
-		l := admin.NewAdminGetUserLogic(r.Context(), svcCtx)
-		resp, err := l.AdminGetUser(&req)
+			return &types.AdminGetUserResp{
+			BaseResp: common.HandleRPCError(nil, "ok"),
+			Data:     common.RpcUserToTypes(rpcResp.User),
+			}, nil
+		}(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

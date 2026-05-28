@@ -1,15 +1,12 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package admin
 
 import (
-	"net/http"
-
-	"backend/api/internal/logic/admin"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminCreateTopicTagHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -19,9 +16,23 @@ func AdminCreateTopicTagHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
-
-		l := admin.NewAdminCreateTopicTagLogic(r.Context(), svcCtx)
-		resp, err := l.AdminCreateTopicTag(&req)
+		resp, err := func(req *types.AdminCreateTopicTagReq) (*types.AdminCreateTopicTagResp, error) {
+			rpcResp, err := svcCtx.AdminGW.AdminCreateTopicTag(r.Context(), &moe.AdminCreateTopicTagReq{
+			Name:  req.Name,
+			Color: req.Color,
+			})
+			if err != nil {
+			return &types.AdminCreateTopicTagResp{BaseResp: common.HandleRPCError(err, "")}, nil
+			}
+			resp := &types.AdminCreateTopicTagResp{
+			BaseResp: common.HandleRPCError(nil, "创建成功"),
+			Data:     common.RpcTopicTagToTypes(rpcResp.GetItem()),
+			}
+			if resp.BaseResp.Success {
+			common.TryRecordAdminAudit(r.Context(), svcCtx, "create", "topic_tag", resp.Data.Id, "创建话题标签")
+			}
+			return resp, nil
+		}(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

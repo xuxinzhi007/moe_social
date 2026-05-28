@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	"backend/api/internal/logic/moe"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
@@ -33,12 +34,25 @@ func ExecuteMoeToolHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := moe.NewExecuteMoeToolLogic(r.Context(), svcCtx, userID)
-		resp, err := l.ExecuteMoeTool(&req)
+		rpcResp, err := svcCtx.MoeGW.MoeExecuteTool(r.Context(), &moe.MoeExecuteToolReq{
+			Tool:           req.Tool,
+			ArgumentsJson:  req.Arguments,
+			AgentKey:       req.AgentKey,
+			ActorUserId:    uint64(userID),
+			IdempotencyKey: req.IdempotencyKey,
+			Source:         "api",
+		})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.OkJsonCtx(r.Context(), w, &types.MoeToolExecuteResp{BaseResp: common.HandleRPCError(err, "")})
 			return
 		}
-		httpx.OkJsonCtx(r.Context(), w, resp)
+		httpx.OkJsonCtx(r.Context(), w, &types.MoeToolExecuteResp{
+			BaseResp: common.HandleRPCError(nil, "ok"),
+			Data: types.MoeToolExecuteData{
+				Ok:     rpcResp.Ok,
+				Result: rpcResp.Result,
+				Error:  rpcResp.Error,
+			},
+		})
 	}
 }

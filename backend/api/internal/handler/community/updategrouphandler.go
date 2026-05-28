@@ -1,14 +1,12 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package community
 
 import (
 	"net/http"
 
-	"backend/api/internal/logic/community"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -20,12 +18,25 @@ func UpdateGroupHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := community.NewUpdateGroupLogic(r.Context(), svcCtx)
-		resp, err := l.UpdateGroup(&req)
+		rpcResp, err := svcCtx.CommunityGW.UpdateGroup(r.Context(), &moe.UpdateGroupReq{
+			GroupId:     req.GroupId,
+			Name:        req.Name,
+			Description: req.Description,
+			Avatar:      req.Avatar,
+			Cover:       req.Cover,
+			IsPublic:    req.IsPublic,
+		})
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			return
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.UpdateGroupResp{
+			BaseResp: types.BaseResp{
+				Code:    0,
+				Message: rpcResp.Message,
+				Success: rpcResp.Success,
+			},
+		})
 	}
 }

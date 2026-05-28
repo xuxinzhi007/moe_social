@@ -55,9 +55,11 @@ func Current() Report {
 			"http_route_on_kratos_pct":     httpRouteCoveragePercent(),
 			"http_transport_kratos_pct":    transportHTTPPurePercent(),
 			"grpc_service_native_pct":      grpcMoeServiceLayerPercent(),
-			"grpc_transport_kratos_pct":      grpcTransportNativePercent(),
-			"grpc_lifecycle_managed_pct":     grpcLifecycleManagedPercent(),
-			"http_bridge_cleared_pct":        bridgeClearedPercent(),
+			"grpc_transport_kratos_pct":    grpcTransportNativePercent(),
+			"grpc_lifecycle_managed_pct":   grpcLifecycleManagedPercent(),
+			"http_bridge_cleared_pct":      bridgeClearedPercent(),
+			"legacy_logic_retired_pct":     LegacyLogicRetiredPercent(),
+			"legacy_logic_files_left":      LegacyLogicFileCount(),
 			"biz_gw_in_process":            biz,
 			"contract_fs8_fs9":             contract,
 			"kratos_pure_production":       boolPercent(moewiring.KratosPureEnabled()),
@@ -69,17 +71,27 @@ func Current() Report {
 			"grpc: kratos transport/grpc :8080 (Super + MoeAdmin)",
 		},
 		Notes: []string{
-			"percent = 40%http_native + 30%grpc_service + 20%http_transport + 10%grpc_transport (pure)",
-			"rollout_percent = PK 传输铺轨（可达100）",
+			"percent = 85% transport stack + 15% legacy_logic_retired (baseline 273 files)",
+			"rollout_percent = PK 传输铺轨（可达100，不含 logic 清库）",
 			"production: make moe-social — kratos HTTP :8888 + kratos grpc :8080",
 			"Rollback: kratos_pure_enabled=false",
 		},
-		Docs: "docs/dev/kratos-legacy-api-migration.md",
+		Docs: "docs/dev/kratos-architecture-complete.md",
 	}
 }
 
-// completePureKratosPercent 完整纯 Kratos（PK-12：与 kratos-pure-complete-migration.md §3 对齐）。
+// completePureKratosPercent 完整纯 Kratos：传输栈 + legacy logic 退役进度。
 func completePureKratosPercent() int {
+	transport := transportStackPercent()
+	logicRet := LegacyLogicRetiredPercent()
+	p := (transport*85 + logicRet*15) / 100
+	if p > 100 {
+		return 100
+	}
+	return p
+}
+
+func transportStackPercent() int {
 	httpN := httpNativeHandlerPercent()
 	httpT := transportHTTPPurePercent()
 	grpcSvc := grpcMoeServiceLayerPercent()
@@ -91,7 +103,6 @@ func completePureKratosPercent() int {
 		}
 		return p
 	}
-	// Hybrid 回退口径（旧权重 + bridge/pk8）
 	grpcStack := (grpcSvc + grpcLifecycleManagedPercent()) / 2
 	bridgeFree := bridgeClearedPercent()
 	pk8 := boolPercent(moewiring.KratosPK8GoctlRetired())

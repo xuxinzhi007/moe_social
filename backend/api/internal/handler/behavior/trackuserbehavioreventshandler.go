@@ -1,14 +1,13 @@
 package behavior
 
 import (
-	"errors"
+	"encoding/json"
 	"net/http"
-	"strconv"
 	"strings"
 
-	"backend/api/internal/logic/behavior"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
@@ -24,7 +23,7 @@ func TrackUserBehaviorEventsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc
 
 		authHeader := r.Header.Get("Authorization")
 		if !strings.HasPrefix(authHeader, "Bearer ") {
-			httpx.ErrorCtx(r.Context(), w, errors.New("missing or invalid authorization header"))
+			http.Error(w, "missing or invalid authorization header", http.StatusUnauthorized)
 			return
 		}
 
@@ -35,14 +34,41 @@ func TrackUserBehaviorEventsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc
 			return
 		}
 
-		req.UserId = strconv.Itoa(int(userID))
-
-		l := behavior.NewTrackUserBehaviorEventsLogic(r.Context(), svcCtx)
-		resp, err := l.TrackUserBehaviorEvents(&req)
-		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+		uid := uint64(userID)
+		if uid == 0 {
+			httpx.OkJsonCtx(r.Context(), w, &types.TrackUserBehaviorEventsResp{
+				BaseResp: types.BaseResp{Code: -1, Message: "invalid user_id", Success: false},
+			})
+			return
 		}
+
+		events := make([]*moe.UserBehaviorEventInput, 0, len(req.Events))
+		for _, item := range req.Events {
+			paramsJSON := ""
+			if len(item.Params) > 0 {
+				if b, marshalErr := json.Marshal(item.Params); marshalErr == nil {
+					paramsJSON = string(b)
+				}
+			}
+			events = append(events, &moe.UserBehaviorEventInput{
+				Event: item.Event, Screen: item.Screen, ParamsJson: paramsJSON,
+				DurationMs: item.DurationMs, SessionId: item.SessionId, ClientTsMs: item.ClientTs,
+			})
+		}
+
+		rpcResp, err := svcCtx.BehaviorGW.TrackUserBehaviorEvents(r.Context(), &moe.TrackUserBehaviorEventsReq{
+			UserId: uid, Events: events,
+		})
+		if err != nil {
+			httpx.OkJsonCtx(r.Context(), w, &types.TrackUserBehaviorEventsResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+			return
+		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.TrackUserBehaviorEventsResp{
+			BaseResp: types.BaseResp{Code: 0, Message: "ok", Success: true},
+			Data:     types.TrackUserBehaviorEventsData{Accepted: int(rpcResp.GetAccepted())},
+		})
 	}
 }

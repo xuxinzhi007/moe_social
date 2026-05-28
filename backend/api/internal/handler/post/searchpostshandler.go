@@ -1,14 +1,15 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package post
 
 import (
 	"net/http"
 
-	"backend/api/internal/logic/post"
+	"backend/api/internal/common"
+	"backend/api/internal/handler/handlerutil"
+	"backend/api/internal/moebridge"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -20,12 +21,23 @@ func SearchPostsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := post.NewSearchPostsLogic(r.Context(), svcCtx)
-		resp, err := l.SearchPosts(&req)
+		rpcResp, err := svcCtx.PostGW.MoeSearchPosts(r.Context(), &moe.MoeSearchPostsReq{
+			Query:        req.Q,
+			Limit:        handlerutil.SearchPostsLimit(req.PageSize),
+			ViewerUserId: handlerutil.ParseUint32ID(req.ViewerUserId),
+			MoodTag:      req.MoodTag,
+			TopicTagId:   handlerutil.ParseUint32ID(req.TopicTagId),
+		})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(r.Context(), w, &types.SearchPostsResp{
+				BaseResp: common.HandleRPCError(err, "检索失败"),
+			})
+			return
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.SearchPostsResp{
+			BaseResp: common.HandleRPCError(nil, "ok"),
+			Data:     moebridge.SearchPostsFromRPC(rpcResp),
+		})
 	}
 }

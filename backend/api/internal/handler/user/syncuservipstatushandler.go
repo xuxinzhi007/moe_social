@@ -3,9 +3,11 @@ package user
 import (
 	"net/http"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -17,12 +19,20 @@ func SyncUserVipStatusHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := user.NewSyncUserVipStatusLogic(r.Context(), svcCtx)
-		resp, err := l.SyncUserVipStatus(&req)
+		rpcResp, err := svcCtx.UserGW.SyncUserVipStatus(r.Context(), &moe.SyncUserVipStatusReq{UserId: req.UserId})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(r.Context(), w, &types.SyncUserVipStatusResp{
+				BaseResp: common.HandleRPCError(err, ""),
+			})
+			return
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.SyncUserVipStatusResp{
+			BaseResp: common.HandleRPCError(nil, "同步用户VIP状态成功"),
+			Data: types.SyncUserVipStatusData{
+				IsVip:     rpcResp.IsVip,
+				ExpiresAt: rpcResp.ExpiresAt,
+			},
+		})
 	}
 }

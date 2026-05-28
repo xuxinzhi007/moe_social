@@ -3,9 +3,11 @@ package user
 import (
 	"net/http"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -17,12 +19,21 @@ func CheckFollowHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := user.NewCheckFollowLogic(r.Context(), svcCtx)
-		resp, err := l.CheckFollow(&req)
+		rpcResp, err := svcCtx.UserGW.CheckFollow(r.Context(), &moe.CheckFollowReq{
+			FollowerId:  req.FollowerId,
+			FollowingId: req.FollowingId,
+		})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(r.Context(), w, &types.CheckFollowResp{
+				BaseResp: common.HandleUserGWError(err, ""),
+				Data:     false,
+			})
+			return
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.CheckFollowResp{
+			BaseResp: common.HandleError(nil),
+			Data:     rpcResp.IsFollowing,
+		})
 	}
 }

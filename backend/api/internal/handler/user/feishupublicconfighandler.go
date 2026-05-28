@@ -1,18 +1,18 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package user
 
 import (
 	"net/http"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/utils"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func FeishuPublicConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	_ = svcCtx
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.EmptyReq
 		if err := httpx.Parse(r, &req); err != nil {
@@ -20,12 +20,14 @@ func FeishuPublicConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := user.NewFeishuPublicConfigLogic(r.Context(), svcCtx)
-		resp, err := l.FeishuPublicConfig(&req)
-		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
-		}
+		cfg := utils.GetFeishuPublicConfig()
+		httpx.OkJsonCtx(r.Context(), w, &types.FeishuPublicConfigResp{
+			BaseResp: common.HandleRPCError(nil, ""),
+			Data: types.FeishuPublicConfigData{
+				Enabled:             cfg.Enabled,
+				EnterpriseInviteURL: cfg.EnterpriseInviteURL,
+				Notice:              cfg.Notice,
+			},
+		})
 	}
 }

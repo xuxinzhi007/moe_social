@@ -1,14 +1,14 @@
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
+	"backend/api/internal/moebridge"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
+	moeadmin "backend/internal/service/moe"
+	moebiz "backend/internal/biz/moe"
 )
 
 func AdminGetMoeToolStatsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -22,12 +22,25 @@ func AdminGetMoeToolStatsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.ErrorCtx(ctx, w, err)
 			return
 		}
-		l := admin.NewAdminGetMoeToolStatsLogic(ctx, svcCtx)
-		resp, err := l.AdminGetMoeToolStats(&req)
+		resp, err := func(req *types.AdminGetMoeToolStatsReq) (*types.AdminGetMoeToolStatsResp, error) {
+			stats, err := svcCtx.MoeGW.QueryToolStats(ctx, moebiz.ToolStatsFilter{
+			From:     moeadmin.ParseTimeFilter(req.From, false),
+			To:       moeadmin.ParseTimeFilter(req.To, true),
+			AgentKey: req.AgentKey,
+			Tool:     req.Tool,
+			})
+			if err != nil {
+			return &types.AdminGetMoeToolStatsResp{BaseResp: common.HandleError(err)}, nil
+			}
+			return &types.AdminGetMoeToolStatsResp{
+			BaseResp: common.HandleError(nil),
+			Data:     moebridge.ToolStatsDataFromBiz(stats),
+			}, nil
+		}(&req)
 		if err != nil {
 			httpx.ErrorCtx(ctx, w, err)
-			return
+		} else {
+			httpx.OkJsonCtx(ctx, w, resp)
 		}
-		httpx.OkJsonCtx(ctx, w, resp)
 	}
 }

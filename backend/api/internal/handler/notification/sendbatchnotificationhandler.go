@@ -6,13 +6,15 @@ package notification
 import (
 	"net/http"
 
-	"backend/api/internal/logic/notification"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func SendBatchNotificationHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	_ = svcCtx
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.SendBatchNotificationReq
 		if err := httpx.Parse(r, &req); err != nil {
@@ -20,12 +22,11 @@ func SendBatchNotificationHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := notification.NewSendBatchNotificationLogic(r.Context(), svcCtx)
-		resp, err := l.SendBatchNotification(&req)
-		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
-		}
+		_ = handlerutil.SendWSBatchNotification(req.UserIDs, req.Type, req.Data)
+		httpx.OkJsonCtx(r.Context(), w, &types.BaseResp{
+			Code:    200,
+			Message: "发送成功",
+			Success: true,
+		})
 	}
 }

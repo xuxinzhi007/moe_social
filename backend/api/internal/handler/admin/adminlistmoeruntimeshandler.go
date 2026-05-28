@@ -1,16 +1,12 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
+	"backend/api/internal/moebridge"
 	"backend/api/internal/svc"
-
+	"backend/api/internal/types"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminListMoeRuntimesHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -19,8 +15,20 @@ func AdminListMoeRuntimesHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		if !ok {
 			return
 		}
-		l := admin.NewAdminListMoeRuntimesLogic(ctx, svcCtx)
-		resp, err := l.AdminListMoeRuntimes()
+		resp, err := func() (*types.AdminListMoeRuntimesResp, error) {
+			rows, err := svcCtx.MoeGW.ListRuntimes(ctx)
+			if err != nil {
+			return &types.AdminListMoeRuntimesResp{BaseResp: common.HandleError(err)}, nil
+			}
+			items := make([]types.MoeAgentRuntimeItem, 0, len(rows))
+			for _, rt := range rows {
+			items = append(items, moebridge.RuntimeItemFromModel(rt))
+			}
+			return &types.AdminListMoeRuntimesResp{
+			BaseResp: common.HandleError(nil),
+			Data:     types.AdminListMoeRuntimesData{Items: items},
+			}, nil
+		}()
 		if err != nil {
 			httpx.ErrorCtx(ctx, w, err)
 		} else {

@@ -1,15 +1,13 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package landing
 
 import (
 	"net/http"
+	"strings"
 
 	"backend/api/internal/common"
-	"backend/api/internal/logic/landing"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
@@ -22,16 +20,25 @@ func SubmitLandingFeedbackHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := landing.NewSubmitLandingFeedbackLogic(r.Context(), svcCtx)
-		resp, err := l.SubmitLandingFeedback(
-			&req,
-			common.ClientIPFromRequest(r),
-			r.Header.Get("User-Agent"),
-		)
-		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+		source := strings.TrimSpace(req.Source)
+		if source == "" {
+			source = "official-site"
 		}
+
+		_, err := svcCtx.LandingGW.SubmitLandingFeedback(r.Context(), &moe.SubmitLandingFeedbackReq{
+			Email: strings.TrimSpace(req.Email), Category: strings.TrimSpace(req.Category),
+			Content: req.Content, Source: source,
+			ClientIp: common.ClientIPFromRequest(r), UserAgent: r.Header.Get("User-Agent"),
+		})
+		if err != nil {
+			httpx.OkJsonCtx(r.Context(), w, &types.SubmitLandingFeedbackResp{
+				BaseResp: common.HandleLandingGWError(err, ""),
+			})
+			return
+		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.SubmitLandingFeedbackResp{
+			BaseResp: common.HandleLandingGWError(nil, "感谢你的反馈，我们已收到"),
+		})
 	}
 }

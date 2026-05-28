@@ -1,16 +1,13 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminGetRuntimeConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -21,16 +18,26 @@ func AdminGetRuntimeConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		var req types.EmptyReq
 		if err := httpx.Parse(r, &req); err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 			return
 		}
-
-		l := admin.NewAdminGetRuntimeConfigLogic(ctx, svcCtx)
-		resp, err := l.AdminGetRuntimeConfig(&req)
+		resp, err := func(req *types.EmptyReq) (*types.AdminRuntimeConfigResp, error) {
+			view, err := svcCtx.AdminGW.ReadRuntimeConfig()
+			if err != nil {
+			logx.WithContext(ctx).Errorf("[admin] read runtime config: %v", err)
+			return &types.AdminRuntimeConfigResp{
+			BaseResp: common.HandleError(err),
+			}, nil
+			}
+			return &types.AdminRuntimeConfigResp{
+			BaseResp: common.HandleError(nil),
+			Data:     runtimeConfigToTypes(view, svcCtx),
+			}, nil
+		}(&req)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(ctx, w, resp)
 		}
 	}
 }

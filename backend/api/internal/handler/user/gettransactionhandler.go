@@ -3,9 +3,10 @@ package user
 import (
 	"net/http"
 
-	"backend/api/internal/logic/user"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -17,12 +18,28 @@ func GetTransactionHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := user.NewGetTransactionLogic(r.Context(), svcCtx)
-		resp, err := l.GetTransaction(&req)
+		rpcResp, err := svcCtx.UserGW.GetTransaction(r.Context(), &moe.GetTransactionReq{Id: req.TransactionId})
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			return
 		}
+
+		t := rpcResp.Transaction
+		httpx.OkJsonCtx(r.Context(), w, &types.GetTransactionResp{
+			BaseResp: types.BaseResp{
+				Code:    200,
+				Message: "获取交易详情成功",
+				Success: true,
+			},
+			Data: types.Transaction{
+				Id:          t.Id,
+				UserId:      t.UserId,
+				Type:        t.Type,
+				Amount:      float64(t.Amount),
+				Description: t.Description,
+				Status:      t.Status,
+				CreatedAt:   t.CreatedAt,
+			},
+		})
 	}
 }

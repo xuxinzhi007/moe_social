@@ -21,7 +21,8 @@
 |------|------|
 | [kratos-migration.md](./kratos-migration.md) | **架构 SSOT**（纯 Kratos 生产、`make gen`） |
 | [new-api-kratos.md](./new-api-kratos.md) | **新接口开发**（域 proto，勿扩 defs） |
-| [kratos-migration-status.md](./kratos-migration-status.md) | **当前 / 下一步状态板**（P2✅ P3-W4 进行中） |
+| [kratos-migration-status.md](./kratos-migration-status.md) | **当前 / 下一步状态板**（P2✅ P3-W4b 进行中） |
+| [kratos-architecture-complete.md](./kratos-architecture-complete.md) | **架构完整 DoD** + `/migration` 公式 |
 | [moe-social-runtime.md](./moe-social-runtime.md) | `make moe-social` 运行时 |
 | [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md) | 存量迁移 SSOT（§0 快照 · compat 清单） |
 | [../guidelines/parallel-agent-workflow.md](../guidelines/parallel-agent-workflow.md) | 大任务多 Agent + worktree |

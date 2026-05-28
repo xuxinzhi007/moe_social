@@ -1,17 +1,12 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
+	vipbiz "backend/internal/biz/vip"
 )
 
 func AdminListVipPlansHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -20,15 +15,46 @@ func AdminListVipPlansHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.OkJsonCtx(r.Context(), w, &types.AdminListVipPlansResp{BaseResp: *br})
 			return
 		}
-
 		var req types.AdminListVipPlansReq
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
+		resp, err := func(req *types.AdminListVipPlansReq) (resp *types.AdminListVipPlansResp, err error) {
+			page := req.Page
+			if page <= 0 {
+			page = 1
+			}
+			pageSize := req.PageSize
+			if pageSize <= 0 {
+			pageSize = 50
+			}
 
-		l := admin.NewAdminListVipPlansLogic(r.Context(), svcCtx)
-		resp, err := l.AdminListVipPlans(&req)
+			rows, total, err := svcCtx.VipGW.ListPlans(r.Context(), vipbiz.ListPlansFilter{
+			Page:           page,
+			PageSize:       pageSize,
+			Keyword:        req.Keyword,
+			IncludeDeleted: req.IncludeDeleted,
+			})
+			if err != nil {
+			return &types.AdminListVipPlansResp{
+			BaseResp: common.HandleVipGWError(err, ""),
+			}, nil
+			}
+
+			items := make([]types.VipPlan, 0, len(rows))
+			for _, p := range rows {
+			items = append(items, common.VipPlanModelToTypes(p))
+			}
+
+			return &types.AdminListVipPlansResp{
+			BaseResp: common.HandleRPCError(nil, "ok"),
+			Data: types.AdminListVipPlansData{
+			Items: items,
+			Total: int(total),
+			},
+			}, nil
+		}(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

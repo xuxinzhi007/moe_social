@@ -1,15 +1,14 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package admin
 
 import (
-	"net/http"
-
-	"backend/api/internal/logic/admin"
+	"backend/api/internal/common"
+	"backend/api/internal/moebridge"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/pkg/moe/brain"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
+	"strings"
 )
 
 func AdminCurateMoeBrainHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -19,9 +18,29 @@ func AdminCurateMoeBrainHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
-
-		l := admin.NewAdminCurateMoeBrainLogic(r.Context(), svcCtx)
-		resp, err := l.AdminCurateMoeBrain(&req)
+		resp, err := func(req *types.AdminCurateMoeBrainReq) (*types.AdminCurateMoeBrainResp, error) {
+			agentKey := strings.TrimSpace(req.AgentKey)
+			results, err := svcCtx.MoeGW.CurateBrain(r.Context(), agentKey, brain.CurateOptions{
+			MaxEpisodes:           req.MaxEpisodes,
+			MaxAttemptsPerEpisode: req.MaxAttempts,
+			MinQuality:            req.MinQuality,
+			Force:                 req.Force,
+			})
+			if err != nil {
+			return &types.AdminCurateMoeBrainResp{BaseResp: common.HandleError(err)}, nil
+			}
+			out := types.AdminCurateMoeBrainData{AgentKey: agentKey, Total: len(results)}
+			for _, r := range results {
+			if r.Approved {
+			out.Approved++
+			}
+			out.Results = append(out.Results, moebridge.RefineDataFromBiz(r))
+			}
+			return &types.AdminCurateMoeBrainResp{
+			BaseResp: common.HandleError(nil),
+			Data:     out,
+			}, nil
+		}(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

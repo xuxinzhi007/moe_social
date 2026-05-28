@@ -1,39 +1,37 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package post
 
 import (
-	"fmt"
 	"net/http"
 
-	"backend/api/internal/logic/post"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func DeletePostHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		claims, err := parseJWTClaims(r)
-		if err != nil {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
-
 		var req types.DeletePostReq
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
-		req.UserId = fmt.Sprintf("%d", claims.UserID)
 
-		l := post.NewDeletePostLogic(r.Context(), svcCtx)
-		resp, err := l.DeletePost(&req)
+		_, err := svcCtx.PostGW.DeletePost(r.Context(), &moe.DeletePostReq{
+			PostId: req.PostId,
+			UserId: req.UserId,
+		})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(r.Context(), w, &types.DeletePostResp{
+				BaseResp: common.HandleRPCError(err, ""),
+			})
+			return
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.DeletePostResp{
+			BaseResp: common.HandleRPCError(nil, "删除成功"),
+		})
 	}
 }

@@ -3,9 +3,10 @@ package llm
 import (
 	"net/http"
 
-	"backend/api/internal/logic/llm"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -17,8 +18,7 @@ func DeleteModelHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := llm.NewDeleteModelLogic(r.Context(), svcCtx)
-		resp, err := l.DeleteModel(&req)
+		resp, err := handlerutil.LLMDeleteModel(r.Context(), svcCtx, &req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

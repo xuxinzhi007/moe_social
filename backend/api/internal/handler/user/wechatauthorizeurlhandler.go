@@ -1,14 +1,14 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package user
 
 import (
 	"net/http"
+	"strings"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -20,12 +20,22 @@ func WechatAuthorizeURLHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := user.NewWechatAuthorizeURLLogic(r.Context(), svcCtx)
-		resp, err := l.WechatAuthorizeURL(&req)
-		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+		rpcResp, rpcErr := svcCtx.UserGW.WechatAuthorizeURL(r.Context(), &moe.WechatAuthorizeURLReq{
+			State: strings.TrimSpace(req.State),
+			Flow:  strings.TrimSpace(req.Flow),
+		})
+		if rpcErr != nil {
+			httpx.OkJsonCtx(r.Context(), w, &types.WechatAuthorizeURLResp{
+				BaseResp: common.HandleRPCError(rpcErr, ""),
+			})
+			return
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.WechatAuthorizeURLResp{
+			BaseResp: common.HandleRPCError(nil, ""),
+			Data: types.WechatAuthorizeURLData{
+				AuthorizeURL: rpcResp.GetAuthorizeUrl(),
+			},
+		})
 	}
 }

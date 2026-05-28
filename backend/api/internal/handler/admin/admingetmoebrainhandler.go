@@ -1,14 +1,13 @@
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
+	"backend/api/internal/moebridge"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
+	"strings"
 )
 
 func AdminGetMoeBrainHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -22,8 +21,17 @@ func AdminGetMoeBrainHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.ErrorCtx(ctx, w, err)
 			return
 		}
-		l := admin.NewAdminGetMoeBrainLogic(ctx, svcCtx)
-		resp, err := l.AdminGetMoeBrain(&req)
+		resp, err := func(req *types.AdminGetMoeBrainReq) (*types.AdminGetMoeBrainResp, error) {
+			agentKey := strings.TrimSpace(req.AgentKey)
+			snap, err := svcCtx.MoeGW.GetBrainSnapshot(ctx, agentKey)
+			if err != nil {
+			return &types.AdminGetMoeBrainResp{BaseResp: common.HandleError(err)}, nil
+			}
+			return &types.AdminGetMoeBrainResp{
+			BaseResp: common.HandleError(nil),
+			Data:     moebridge.BrainDataFromSnapshot(snap),
+			}, nil
+		}(&req)
 		if err != nil {
 			httpx.ErrorCtx(ctx, w, err)
 		} else {

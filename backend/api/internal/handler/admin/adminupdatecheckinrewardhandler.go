@@ -1,16 +1,13 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+	"fmt"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminUpdateCheckInRewardHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -21,16 +18,36 @@ func AdminUpdateCheckInRewardHandler(svcCtx *svc.ServiceContext) http.HandlerFun
 		}
 		var req types.AdminUpdateCheckInRewardReq
 		if err := httpx.Parse(r, &req); err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 			return
 		}
+		resp, err := func(req *types.AdminUpdateCheckInRewardReq) (*types.AdminUpdateCheckInRewardResp, error) {
+			rpcResp, err := svcCtx.AdminGW.AdminUpdateCheckInReward(ctx, &moe.AdminUpdateCheckInRewardReq{
+			Id:                    req.RewardId,
+			ConsecutiveDays:       int32(req.ConsecutiveDays),
+			ExpReward:             int32(req.ExpReward),
+			ExtraReward:           req.ExtraReward,
+			UpdateConsecutiveDays: req.UpdateConsecutiveDays,
+			UpdateExpReward:       req.UpdateExpReward,
+			UpdateExtraReward:     req.UpdateExtraReward,
+			})
+			if err != nil {
+			return &types.AdminUpdateCheckInRewardResp{BaseResp: common.HandleRPCError(err, "")}, nil
+			}
 
-		l := admin.NewAdminUpdateCheckInRewardLogic(ctx, svcCtx)
-		resp, err := l.AdminUpdateCheckInReward(&req)
+			resp := &types.AdminUpdateCheckInRewardResp{
+			BaseResp: common.HandleRPCError(nil, "ok"),
+			Data:     common.RpcAdminCheckInRewardToTypes(rpcResp.GetItem()),
+			}
+			if resp.BaseResp.Success {
+			common.TryRecordAdminAudit(ctx, svcCtx, "update", "check_in_reward", fmt.Sprintf("%d", req.RewardId), "更新签到奖励")
+			}
+			return resp, nil
+		}(&req)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(ctx, w, resp)
 		}
 	}
 }

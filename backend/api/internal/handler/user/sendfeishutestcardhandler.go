@@ -1,14 +1,13 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package user
 
 import (
 	"net/http"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -20,12 +19,22 @@ func SendFeishuTestCardHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := user.NewSendFeishuTestCardLogic(r.Context(), svcCtx)
-		resp, err := l.SendFeishuTestCard(&req)
+		userID, err := common.UserIDString(r.Context())
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			return
 		}
+
+		_, rpcErr := svcCtx.UserGW.SendFeishuTestCard(r.Context(), &moe.SendFeishuTestCardReq{UserId: userID})
+		if rpcErr != nil {
+			httpx.OkJsonCtx(r.Context(), w, &types.SendFeishuTestCardResp{
+				BaseResp: common.HandleRPCError(rpcErr, ""),
+			})
+			return
+		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.SendFeishuTestCardResp{
+			BaseResp: common.HandleRPCError(nil, "测试卡片已发送，请在飞书客户端查看"),
+		})
 	}
 }

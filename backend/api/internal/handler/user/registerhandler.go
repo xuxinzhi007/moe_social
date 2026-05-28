@@ -3,9 +3,11 @@ package user
 import (
 	"net/http"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -17,12 +19,25 @@ func RegisterHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := user.NewRegisterLogic(r.Context(), svcCtx)
-		resp, err := l.Register(&req)
+		rpcResp, err := svcCtx.UserGW.Register(r.Context(), &moe.RegisterReq{
+			Username: req.Username,
+			Password: req.Password,
+			Email:    req.Email,
+		})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(r.Context(), w, &types.RegisterResp{
+				BaseResp: common.HandleUserGWError(err, ""),
+			})
+			return
 		}
+
+		resp := &types.RegisterResp{BaseResp: common.HandleRPCError(nil, "注册成功")}
+		if rpcResp.User != nil {
+			resp.Data = types.RegisterData{
+				User:  common.RpcUserToTypes(rpcResp.User),
+				Token: rpcResp.Token,
+			}
+		}
+		httpx.OkJsonCtx(r.Context(), w, resp)
 	}
 }

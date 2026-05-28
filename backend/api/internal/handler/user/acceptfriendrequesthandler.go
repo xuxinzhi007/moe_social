@@ -3,9 +3,11 @@ package user
 import (
 	"net/http"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/common"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
@@ -17,12 +19,36 @@ func AcceptFriendRequestHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
-		l := user.NewFriendLogic(r.Context(), svcCtx)
-		resp, err := l.AcceptFriendRequest(r, &req)
+
+		me, err := handlerutil.BearerUserID(r)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.OkJsonCtx(r.Context(), w, &types.FriendRequestActionResp{
+				BaseResp: types.BaseResp{Code: 401, Message: "请先登录", Success: false},
+			})
 			return
 		}
-		httpx.OkJsonCtx(r.Context(), w, resp)
+		pathUID, err := handlerutil.ParsePathUint(req.UserId)
+		if err != nil || pathUID != me {
+			httpx.OkJsonCtx(r.Context(), w, &types.FriendRequestActionResp{
+				BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false},
+			})
+			return
+		}
+
+		_, err = svcCtx.UserGW.AcceptFriendRequest(r.Context(), &moe.AcceptFriendRequestReq{
+			ActorUserId: handlerutil.ActorString(me),
+			RequestId:   req.RequestId,
+		})
+		if err != nil {
+			httpx.OkJsonCtx(r.Context(), w, &types.FriendRequestActionResp{
+				BaseResp: common.HandleUserGWError(err, ""),
+			})
+			return
+		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.FriendRequestActionResp{
+			BaseResp: common.HandleRPCError(nil, "已同意好友申请"),
+			Data:     true,
+		})
 	}
 }

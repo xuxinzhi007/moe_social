@@ -1,17 +1,12 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminMeHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -21,15 +16,30 @@ func AdminMeHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.OkJsonCtx(r.Context(), w, &types.AdminMeResp{BaseResp: *br})
 			return
 		}
-
 		var req types.EmptyReq
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
-
-		l := admin.NewAdminMeLogic(r.Context(), svcCtx)
-		resp, err := l.AdminMe(claims)
+		resp, err := func(req *types.EmptyReq) (resp *types.AdminMeResp, err error) {
+			if claims == nil {
+			return &types.AdminMeResp{
+			BaseResp: types.BaseResp{
+			Code:    401,
+			Message: "请先登录管理后台",
+			Success: false,
+			},
+			}, nil
+			}
+			return &types.AdminMeResp{
+			BaseResp: common.HandleRPCError(nil, "ok"),
+			Data: types.AdminMeData{
+			AdminId:  uint64(claims.AdminID),
+			Username: claims.Username,
+			Role:     claims.Role,
+			},
+			}, nil
+		}(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

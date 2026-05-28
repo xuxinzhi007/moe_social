@@ -2,10 +2,13 @@ package user
 
 import (
 	"net/http"
+	"strings"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/common"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
@@ -17,12 +20,36 @@ func GetFriendStatusHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
-		l := user.NewFriendLogic(r.Context(), svcCtx)
-		resp, err := l.FriendStatus(r, req.UserId, req.OtherUserId)
+
+		me, err := handlerutil.BearerUserID(r)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.OkJsonCtx(r.Context(), w, &types.FriendStatusResp{
+				BaseResp: types.BaseResp{Code: 401, Message: "请先登录", Success: false},
+			})
 			return
 		}
-		httpx.OkJsonCtx(r.Context(), w, resp)
+		pathUID, err := handlerutil.ParsePathUint(req.UserId)
+		if err != nil || pathUID != me {
+			httpx.OkJsonCtx(r.Context(), w, &types.FriendStatusResp{
+				BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false},
+			})
+			return
+		}
+
+		rpcResp, err := svcCtx.UserGW.GetFriendRelation(r.Context(), &moe.GetFriendRelationReq{
+			ActorUserId: handlerutil.ActorString(me),
+			OtherUserId: strings.TrimSpace(req.OtherUserId),
+		})
+		if err != nil {
+			httpx.OkJsonCtx(r.Context(), w, &types.FriendStatusResp{
+				BaseResp: common.HandleUserGWError(err, ""),
+			})
+			return
+		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.FriendStatusResp{
+			BaseResp: common.HandleRPCError(nil, "ok"),
+			Data:     types.FriendRelationData{Relation: rpcResp.Relation},
+		})
 	}
 }

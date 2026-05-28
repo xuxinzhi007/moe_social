@@ -1,15 +1,12 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package admin
 
 import (
-	"net/http"
-
-	"backend/api/internal/logic/admin"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminCreateTagDictionaryHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -19,9 +16,27 @@ func AdminCreateTagDictionaryHandler(svcCtx *svc.ServiceContext) http.HandlerFun
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
-
-		l := admin.NewAdminCreateTagDictionaryLogic(r.Context(), svcCtx)
-		resp, err := l.AdminCreateTagDictionary(&req)
+		resp, err := func(req *types.AdminCreateTagDictionaryReq) (*types.AdminCreateTagDictionaryResp, error) {
+			rpcResp, err := svcCtx.AdminGW.AdminCreateTagDictionary(r.Context(), &moe.AdminCreateTagDictionaryReq{
+			Category:  req.Category,
+			Tag:       req.Tag,
+			Label:     req.Label,
+			Note:      req.Note,
+			SortOrder: int32(req.SortOrder),
+			Enabled:   req.Enabled,
+			})
+			if err != nil {
+			return &types.AdminCreateTagDictionaryResp{BaseResp: common.HandleRPCError(err, "")}, nil
+			}
+			resp := &types.AdminCreateTagDictionaryResp{
+			BaseResp: common.HandleRPCError(nil, "创建成功"),
+			Data:     common.RpcAdminTagDictionaryToTypes(rpcResp.GetItem()),
+			}
+			if resp.BaseResp.Success {
+			common.TryRecordAdminAudit(r.Context(), svcCtx, "create", "tag_dictionary", resp.Data.Id, "创建 Bot 策略标签")
+			}
+			return resp, nil
+		}(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

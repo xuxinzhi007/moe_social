@@ -1,15 +1,13 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package admin
 
 import (
-	"net/http"
-
-	"backend/api/internal/logic/admin"
+	"backend/api/internal/common"
+	"backend/api/internal/moebridge"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
+	"strings"
 )
 
 func AdminGetMoeBotFlowHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -19,9 +17,18 @@ func AdminGetMoeBotFlowHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
-
-		l := admin.NewAdminGetMoeBotFlowLogic(r.Context(), svcCtx)
-		resp, err := l.AdminGetMoeBotFlow(&req)
+		resp, err := func(req *types.AdminGetMoeBotFlowReq) (*types.AdminGetMoeBotFlowResp, error) {
+			agentKey := strings.TrimSpace(req.AgentKey)
+			cfg, err := svcCtx.MoeGW.GetBotFlow(r.Context(), agentKey)
+			if err != nil {
+			return &types.AdminGetMoeBotFlowResp{BaseResp: common.HandleError(err)}, nil
+			}
+			cfg.AgentKey = agentKey
+			return &types.AdminGetMoeBotFlowResp{
+			BaseResp: common.HandleError(nil),
+			Data:     moebridge.FlowDataFromBiz(cfg),
+			}, nil
+		}(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

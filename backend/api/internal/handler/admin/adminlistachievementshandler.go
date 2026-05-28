@@ -1,16 +1,12 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminListAchievementsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -21,16 +17,32 @@ func AdminListAchievementsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		var req types.AdminListAchievementsReq
 		if err := httpx.Parse(r, &req); err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 			return
 		}
-
-		l := admin.NewAdminListAchievementsLogic(ctx, svcCtx)
-		resp, err := l.AdminListAchievements(&req)
+		resp, err := func(req *types.AdminListAchievementsReq) (*types.AdminListAchievementsResp, error) {
+			rpcResp, err := svcCtx.AdminGW.AdminListAchievements(ctx, &moe.AdminListAchievementsReq{
+			Page:     int32(req.Page),
+			PageSize: int32(req.PageSize),
+			Keyword:  req.Keyword,
+			Category: req.Category,
+			})
+			if err != nil {
+			return &types.AdminListAchievementsResp{BaseResp: common.HandleRPCError(err, "")}, nil
+			}
+			items := make([]types.AdminAchievementItem, len(rpcResp.GetItems()))
+			for i, item := range rpcResp.GetItems() {
+			items[i] = common.RpcAdminAchievementToTypes(item)
+			}
+			return &types.AdminListAchievementsResp{
+			BaseResp: common.HandleRPCError(nil, "ok"),
+			Data:     types.AdminListAchievementsData{Items: items, Total: int(rpcResp.GetTotal())},
+			}, nil
+		}(&req)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(ctx, w, resp)
 		}
 	}
 }

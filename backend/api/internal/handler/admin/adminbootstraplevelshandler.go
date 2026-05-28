@@ -1,16 +1,12 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminBootstrapLevelsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -21,16 +17,30 @@ func AdminBootstrapLevelsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		var req types.EmptyReq
 		if err := httpx.Parse(r, &req); err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 			return
 		}
-
-		l := admin.NewAdminBootstrapLevelsLogic(ctx, svcCtx)
-		resp, err := l.AdminBootstrapLevels(&req)
+		resp, err := func(req *types.EmptyReq) (*types.AdminBootstrapLevelsResp, error) {
+			rpcResp, err := svcCtx.AdminGW.AdminBootstrapLevels(ctx, &moe.AdminBootstrapLevelsReq{})
+			if err != nil {
+			return &types.AdminBootstrapLevelsResp{BaseResp: common.HandleRPCError(err, "")}, nil
+			}
+			resp := &types.AdminBootstrapLevelsResp{
+			BaseResp: common.HandleRPCError(nil, "初始化成功"),
+			Data: types.AdminBootstrapLevelsData{
+			LevelConfigsCreated:   int(rpcResp.GetLevelConfigsCreated()),
+			CheckInRewardsCreated: int(rpcResp.GetCheckInRewardsCreated()),
+			},
+			}
+			if resp.BaseResp.Success {
+			common.TryRecordAdminAudit(ctx, svcCtx, "bootstrap", "level_config", "", "导入默认等级配置")
+			}
+			return resp, nil
+		}(&req)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(ctx, w, resp)
 		}
 	}
 }
