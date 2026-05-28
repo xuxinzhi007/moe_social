@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewDeleteUserMemoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *DeleteUserMemoryLogic) DeleteUserMemory(req *types.DeleteUserMemoryReq) (resp *types.DeleteUserMemoryResp, err error) {
-	_, err = l.svcCtx.LLMGW.DeleteUserMemory(l.ctx, &super.DeleteUserMemoryReq{
+	_, err = l.svcCtx.LLMGW.DeleteUserMemory(l.ctx, &moe.DeleteUserMemoryReq{
 		UserId: req.UserId,
 		Key:    req.Key,
 	})

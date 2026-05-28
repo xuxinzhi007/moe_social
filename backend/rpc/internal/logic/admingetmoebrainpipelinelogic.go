@@ -5,7 +5,7 @@ import (
 
 	moebiz "backend/internal/biz/moe"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -24,7 +24,7 @@ func NewAdminGetMoeBrainPipelineLogic(ctx context.Context, svcCtx *svc.ServiceCo
 	}
 }
 
-func (l *AdminGetMoeBrainPipelineLogic) AdminGetMoeBrainPipeline(in *super.AdminGetMoeBrainPipelineReq) (*super.AdminGetMoeBrainPipelineResp, error) {
+func (l *AdminGetMoeBrainPipelineLogic) AdminGetMoeBrainPipeline(in *moe.AdminGetMoeBrainPipelineReq) (*moe.AdminGetMoeBrainPipelineResp, error) {
 	snap, err := l.svcCtx.MoeAdmin.GetBrainPipeline(l.ctx, in.GetAgentKey())
 	if err != nil {
 		return nil, err
@@ -32,8 +32,8 @@ func (l *AdminGetMoeBrainPipelineLogic) AdminGetMoeBrainPipeline(in *super.Admin
 	return pipelineSnapshotToProto(snap), nil
 }
 
-func pipelineSnapshotToProto(snap moebiz.PipelineSnapshot) *super.AdminGetMoeBrainPipelineResp {
-	out := &super.AdminGetMoeBrainPipelineResp{
+func pipelineSnapshotToProto(snap moebiz.PipelineSnapshot) *moe.AdminGetMoeBrainPipelineResp {
+	out := &moe.AdminGetMoeBrainPipelineResp{
 		AgentKey: snap.AgentKey,
 		Ok:       snap.OK,
 		Detail:   snap.Detail,
@@ -44,18 +44,18 @@ func pipelineSnapshotToProto(snap moebiz.PipelineSnapshot) *super.AdminGetMoeBra
 		out.TotalDurationMs = snap.TotalDurationMS
 		out.HostMetrics = hostMetricsProtoFromBiz(snap.Metrics)
 	}
-	out.GenerateAttempts = make([]*super.MoeGenAttemptItem, 0, len(snap.GenerateAttempts))
+	out.GenerateAttempts = make([]*moe.MoeGenAttemptItem, 0, len(snap.GenerateAttempts))
 	for _, a := range snap.GenerateAttempts {
-		out.GenerateAttempts = append(out.GenerateAttempts, &super.MoeGenAttemptItem{
+		out.GenerateAttempts = append(out.GenerateAttempts, &moe.MoeGenAttemptItem{
 			Attempt: int32(a.Attempt),
 			Outcome: a.Outcome,
 			Snippet: a.Snippet,
 			Note:    a.Note,
 		})
 	}
-	out.Steps = make([]*super.MoePipelineStepItem, 0, len(snap.Steps))
+	out.Steps = make([]*moe.MoePipelineStepItem, 0, len(snap.Steps))
 	for _, s := range snap.Steps {
-		out.Steps = append(out.Steps, &super.MoePipelineStepItem{
+		out.Steps = append(out.Steps, &moe.MoePipelineStepItem{
 			Key:        s.Key,
 			Label:      s.Label,
 			Status:     s.Status,
@@ -75,11 +75,11 @@ func pipelineSnapshotToProto(snap moebiz.PipelineSnapshot) *super.AdminGetMoeBra
 	return out
 }
 
-func hostMetricsProtoFromBiz(m moebiz.HostMetrics) *super.MoeHostMetrics {
+func hostMetricsProtoFromBiz(m moebiz.HostMetrics) *moe.MoeHostMetrics {
 	if m.NumCPU == 0 && m.ProcAllocMB == 0 && !m.InferenceOnline && m.GpuNote == "" {
 		return nil
 	}
-	return &super.MoeHostMetrics{
+	return &moe.MoeHostMetrics{
 		ProcAllocMb:      m.ProcAllocMB,
 		ProcSysMb:        m.ProcSysMB,
 		NumCpu:           int32(m.NumCPU),

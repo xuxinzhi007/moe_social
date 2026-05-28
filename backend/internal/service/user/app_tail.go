@@ -5,105 +5,105 @@ import (
 	"context"
 
 	userbiz "backend/internal/biz/user"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
-func (s *AppService) GetUsers(ctx context.Context, in *super.GetUsersReq) (*super.GetUsersResp, error) {
+func (s *AppService) GetUsers(ctx context.Context, in *moe.GetUsersReq) (*moe.GetUsersResp, error) {
 	return userbiz.GetUsers(ctx, s.db, in)
 }
 
-func (s *AppService) GetUserCount(ctx context.Context, in *super.GetUserCountReq) (*super.GetUserCountResp, error) {
+func (s *AppService) GetUserCount(ctx context.Context, in *moe.GetUserCountReq) (*moe.GetUserCountResp, error) {
 	return userbiz.GetUserCount(ctx, s.db, in)
 }
 
-func (s *AppService) GetUserByEmail(ctx context.Context, in *super.GetUserByEmailReq) (*super.GetUserByEmailResp, error) {
+func (s *AppService) GetUserByEmail(ctx context.Context, in *moe.GetUserByEmailReq) (*moe.GetUserByEmailResp, error) {
 	return userbiz.GetUserByEmail(ctx, s.db, in)
 }
 
-func (s *AppService) UpdateUserInfo(ctx context.Context, in *super.UpdateUserInfoReq) (*super.UpdateUserInfoResp, error) {
+func (s *AppService) UpdateUserInfo(ctx context.Context, in *moe.UpdateUserInfoReq) (*moe.UpdateUserInfoResp, error) {
 	return userbiz.UpdateUserInfo(ctx, s.db, in)
 }
 
-func (s *AppService) UpdateUserPassword(ctx context.Context, in *super.UpdateUserPasswordReq) (*super.UpdateUserPasswordResp, error) {
+func (s *AppService) UpdateUserPassword(ctx context.Context, in *moe.UpdateUserPasswordReq) (*moe.UpdateUserPasswordResp, error) {
 	return userbiz.UpdateUserPassword(ctx, s.db, in)
 }
 
-func (s *AppService) ResetPassword(ctx context.Context, in *super.ResetPasswordReq) (*super.ResetPasswordResp, error) {
+func (s *AppService) ResetPassword(ctx context.Context, in *moe.ResetPasswordReq) (*moe.ResetPasswordResp, error) {
 	return userbiz.ResetPassword(ctx, s.db, in)
 }
 
-func (s *AppService) DeleteUser(ctx context.Context, in *super.DeleteUserReq) (*super.DeleteUserResp, error) {
+func (s *AppService) DeleteUser(ctx context.Context, in *moe.DeleteUserReq) (*moe.DeleteUserResp, error) {
 	return userbiz.DeleteUser(ctx, s.db, in)
 }
 
-func (s *AppService) CreateVipOrder(ctx context.Context, in *super.CreateVipOrderReq) (*super.CreateVipOrderResp, error) {
+func (s *AppService) CreateVipOrder(ctx context.Context, in *moe.CreateVipOrderReq) (*moe.CreateVipOrderResp, error) {
 	return userbiz.CreateVipOrder(ctx, s.db, in)
 }
 
-func (s *AppService) UpdateUserVip(ctx context.Context, in *super.UpdateUserVipReq) (*super.UpdateUserVipResp, error) {
+func (s *AppService) UpdateUserVip(ctx context.Context, in *moe.UpdateUserVipReq) (*moe.UpdateUserVipResp, error) {
 	return userbiz.UpdateUserVip(ctx, s.db, in)
 }
 
-func (s *AppService) SyncUserVipStatus(ctx context.Context, in *super.SyncUserVipStatusReq) (*super.SyncUserVipStatusResp, error) {
+func (s *AppService) SyncUserVipStatus(ctx context.Context, in *moe.SyncUserVipStatusReq) (*moe.SyncUserVipStatusResp, error) {
 	return userbiz.SyncUserVipStatus(ctx, s.db, in)
 }
 
-func (s *AppService) UpdateAutoRenew(ctx context.Context, in *super.UpdateAutoRenewReq) (*super.UpdateAutoRenewResp, error) {
+func (s *AppService) UpdateAutoRenew(ctx context.Context, in *moe.UpdateAutoRenewReq) (*moe.UpdateAutoRenewResp, error) {
 	return userbiz.UpdateAutoRenew(ctx, s.db, in)
 }
 
-func (s *AppService) GetVipRecords(ctx context.Context, in *super.GetVipRecordsReq) (*super.GetVipRecordsResp, error) {
+func (s *AppService) GetVipRecords(ctx context.Context, in *moe.GetVipRecordsReq) (*moe.GetVipRecordsResp, error) {
 	return userbiz.GetVipRecords(ctx, s.db, in)
 }
 
-func (s *AppService) GetUserActiveVipRecord(ctx context.Context, in *super.GetUserActiveVipRecordReq) (*super.GetUserActiveVipRecordResp, error) {
+func (s *AppService) GetUserActiveVipRecord(ctx context.Context, in *moe.GetUserActiveVipRecordReq) (*moe.GetUserActiveVipRecordResp, error) {
 	return userbiz.GetUserActiveVipRecord(ctx, s.db, in)
 }
 
-func (s *AppService) GetTransactions(ctx context.Context, in *super.GetTransactionsReq) (*super.GetTransactionsResp, error) {
+func (s *AppService) GetTransactions(ctx context.Context, in *moe.GetTransactionsReq) (*moe.GetTransactionsResp, error) {
 	return userbiz.GetTransactions(ctx, s.db, in)
 }
 
-func (s *AppService) GetTransaction(ctx context.Context, in *super.GetTransactionReq) (*super.GetTransactionResp, error) {
+func (s *AppService) GetTransaction(ctx context.Context, in *moe.GetTransactionReq) (*moe.GetTransactionResp, error) {
 	return userbiz.GetTransaction(ctx, s.db, in)
 }
 
-func (s *AppService) Recharge(ctx context.Context, in *super.RechargeReq) (*super.RechargeResp, error) {
+func (s *AppService) Recharge(ctx context.Context, in *moe.RechargeReq) (*moe.RechargeResp, error) {
 	return userbiz.Recharge(ctx, s.db, in)
 }
 
-func (s *AppService) FeishuLogin(ctx context.Context, in *super.FeishuLoginReq) (*super.FeishuLoginResp, error) {
+func (s *AppService) FeishuLogin(ctx context.Context, in *moe.FeishuLoginReq) (*moe.FeishuLoginResp, error) {
 	return userbiz.FeishuLogin(ctx, s.db, in)
 }
 
-func (s *AppService) FeishuAuthorizeURL(ctx context.Context, in *super.FeishuAuthorizeURLReq) (*super.FeishuAuthorizeURLResp, error) {
+func (s *AppService) FeishuAuthorizeURL(ctx context.Context, in *moe.FeishuAuthorizeURLReq) (*moe.FeishuAuthorizeURLResp, error) {
 	return userbiz.FeishuAuthorizeURL(ctx, in)
 }
 
-func (s *AppService) BindFeishu(ctx context.Context, in *super.BindFeishuReq) (*super.BindFeishuResp, error) {
+func (s *AppService) BindFeishu(ctx context.Context, in *moe.BindFeishuReq) (*moe.BindFeishuResp, error) {
 	return userbiz.BindFeishu(ctx, s.db, in)
 }
 
-func (s *AppService) UnbindFeishu(ctx context.Context, in *super.UnbindFeishuReq) (*super.UnbindFeishuResp, error) {
+func (s *AppService) UnbindFeishu(ctx context.Context, in *moe.UnbindFeishuReq) (*moe.UnbindFeishuResp, error) {
 	return userbiz.UnbindFeishu(ctx, s.db, in)
 }
 
-func (s *AppService) SendFeishuTestCard(ctx context.Context, in *super.SendFeishuTestCardReq) (*super.SendFeishuTestCardResp, error) {
+func (s *AppService) SendFeishuTestCard(ctx context.Context, in *moe.SendFeishuTestCardReq) (*moe.SendFeishuTestCardResp, error) {
 	return userbiz.SendFeishuTestCard(ctx, s.db, in)
 }
 
-func (s *AppService) WechatLogin(ctx context.Context, in *super.WechatLoginReq) (*super.WechatLoginResp, error) {
+func (s *AppService) WechatLogin(ctx context.Context, in *moe.WechatLoginReq) (*moe.WechatLoginResp, error) {
 	return userbiz.WechatLogin(ctx, s.db, in)
 }
 
-func (s *AppService) WechatAuthorizeURL(ctx context.Context, in *super.WechatAuthorizeURLReq) (*super.WechatAuthorizeURLResp, error) {
+func (s *AppService) WechatAuthorizeURL(ctx context.Context, in *moe.WechatAuthorizeURLReq) (*moe.WechatAuthorizeURLResp, error) {
 	return userbiz.WechatAuthorizeURL(ctx, in)
 }
 
-func (s *AppService) ListUserDevices(ctx context.Context, in *super.ListUserDevicesReq) (*super.ListUserDevicesResp, error) {
+func (s *AppService) ListUserDevices(ctx context.Context, in *moe.ListUserDevicesReq) (*moe.ListUserDevicesResp, error) {
 	return userbiz.ListUserDevices(ctx, s.db, in)
 }
 
-func (s *AppService) SyncUserDevice(ctx context.Context, in *super.SyncUserDeviceReq) (*super.SyncUserDeviceResp, error) {
+func (s *AppService) SyncUserDevice(ctx context.Context, in *moe.SyncUserDeviceReq) (*moe.SyncUserDeviceResp, error) {
 	return userbiz.SyncUserDevice(ctx, s.db, in)
 }

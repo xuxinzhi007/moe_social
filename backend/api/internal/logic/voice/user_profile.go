@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"backend/api/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 // ResolveVoiceUserDisplay 从 UserGW 解析通话展示名与头像（F112 Voice 收口）。
@@ -19,7 +19,7 @@ func ResolveVoiceUserDisplay(ctx context.Context, svcCtx *svc.ServiceContext, us
 	if userID == "" {
 		return displayName, avatar
 	}
-	resp, err := svcCtx.UserGW.GetUser(ctx, &super.GetUserReq{UserId: userID})
+	resp, err := svcCtx.UserGW.GetUser(ctx, &moe.GetUserReq{UserId: userID})
 	if err != nil || resp == nil || resp.GetUser() == nil {
 		return displayName, avatar
 	}

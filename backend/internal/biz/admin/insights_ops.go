@@ -11,7 +11,7 @@ import (
 
 	moebiz "backend/internal/biz/moe"
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -29,7 +29,7 @@ func errNotFound(msg string) error { return fmt.Errorf("%w: %s", ErrInsightsNotF
 
 // —— AI 对话日志 ——
 
-func AdminListAiChatSessions(ctx context.Context, db *gorm.DB, in *super.AdminListAiChatSessionsReq) (*super.AdminListAiChatSessionsResp, error) {
+func AdminListAiChatSessions(ctx context.Context, db *gorm.DB, in *moe.AdminListAiChatSessionsReq) (*moe.AdminListAiChatSessionsResp, error) {
 	if db == nil {
 		return nil, ErrInsightsDB
 	}
@@ -82,9 +82,9 @@ func AdminListAiChatSessions(ctx context.Context, db *gorm.DB, in *super.AdminLi
 			aggMap[a.SessionID] = msgAgg{SessionID: a.SessionID, Cnt: a.Cnt, LastAt: a.LastAt}
 		}
 	}
-	out := &super.AdminListAiChatSessionsResp{Total: int32(total)}
+	out := &moe.AdminListAiChatSessionsResp{Total: int32(total)}
 	for _, row := range rows {
-		item := &super.AdminAiChatSessionItem{
+		item := &moe.AdminAiChatSessionItem{
 			Id:        strconv.FormatUint(uint64(row.ID), 10),
 			UserId:    strconv.FormatUint(uint64(row.UserID), 10),
 			Username:  names[row.UserID],
@@ -104,7 +104,7 @@ func AdminListAiChatSessions(ctx context.Context, db *gorm.DB, in *super.AdminLi
 	return out, nil
 }
 
-func AdminListAiChatMessages(ctx context.Context, db *gorm.DB, in *super.AdminListAiChatMessagesReq) (*super.AdminListAiChatMessagesResp, error) {
+func AdminListAiChatMessages(ctx context.Context, db *gorm.DB, in *moe.AdminListAiChatMessagesReq) (*moe.AdminListAiChatMessagesResp, error) {
 	if db == nil {
 		return nil, ErrInsightsDB
 	}
@@ -120,14 +120,14 @@ func AdminListAiChatMessages(ctx context.Context, db *gorm.DB, in *super.AdminLi
 		return nil, errInternal("查询消息失败")
 	}
 	names := loadUsernames(db, messageUserIDs(rows))
-	out := &super.AdminListAiChatMessagesResp{Total: int32(total)}
+	out := &moe.AdminListAiChatMessagesResp{Total: int32(total)}
 	for _, row := range rows {
 		out.Items = append(out.Items, aiChatMessageToProto(row, names[row.UserID]))
 	}
 	return out, nil
 }
 
-func AdminExportAiChatMessages(ctx context.Context, db *gorm.DB, in *super.AdminExportAiChatMessagesReq) (*super.AdminExportAiChatMessagesResp, error) {
+func AdminExportAiChatMessages(ctx context.Context, db *gorm.DB, in *moe.AdminExportAiChatMessagesReq) (*moe.AdminExportAiChatMessagesResp, error) {
 	if db == nil {
 		return nil, ErrInsightsDB
 	}
@@ -138,7 +138,7 @@ func AdminExportAiChatMessages(ctx context.Context, db *gorm.DB, in *super.Admin
 	if limit > 20000 {
 		limit = 20000
 	}
-	listReq := &super.AdminListAiChatMessagesReq{
+	listReq := &moe.AdminListAiChatMessagesReq{
 		UserId:    in.GetUserId(),
 		SessionId: in.GetSessionId(),
 		Role:      in.GetRole(),
@@ -174,7 +174,7 @@ func AdminExportAiChatMessages(ctx context.Context, db *gorm.DB, in *super.Admin
 		})
 	}
 	w.Flush()
-	return &super.AdminExportAiChatMessagesResp{
+	return &moe.AdminExportAiChatMessagesResp{
 		Csv:       b.String(),
 		RowCount:  int32(len(rows)),
 		Truncated: truncated,
@@ -183,11 +183,11 @@ func AdminExportAiChatMessages(ctx context.Context, db *gorm.DB, in *super.Admin
 
 // —— 数据分析 ——
 
-func AdminAnalyticsOverview(ctx context.Context, db *gorm.DB, _ *super.AdminGetMemoryStatsReq) (*super.AdminAnalyticsOverviewResp, error) {
+func AdminAnalyticsOverview(ctx context.Context, db *gorm.DB, _ *moe.AdminGetMemoryStatsReq) (*moe.AdminAnalyticsOverviewResp, error) {
 	if db == nil {
 		return nil, ErrInsightsDB
 	}
-	out := &super.AdminAnalyticsOverviewResp{}
+	out := &moe.AdminAnalyticsOverviewResp{}
 	now := time.Now()
 	since7d := now.AddDate(0, 0, -7)
 
@@ -220,7 +220,7 @@ func AdminAnalyticsOverview(ctx context.Context, db *gorm.DB, _ *super.AdminGetM
 				out.MoeToolSuccessRate = float64(stats.SuccessCalls) / float64(stats.TotalCalls)
 			}
 			for _, row := range stats.ByDay {
-				out.MoeToolsByDay = append(out.MoeToolsByDay, &super.AdminDayStat{
+				out.MoeToolsByDay = append(out.MoeToolsByDay, &moe.AdminDayStat{
 					Date:  row.Date,
 					Count: int32(row.TotalCalls),
 				})
@@ -241,7 +241,7 @@ func AdminAnalyticsOverview(ctx context.Context, db *gorm.DB, _ *super.AdminGetM
 
 // —— 话题标签 ——
 
-func AdminListTopicTags(ctx context.Context, db *gorm.DB, in *super.AdminListTopicTagsReq) (*super.AdminListTopicTagsResp, error) {
+func AdminListTopicTags(ctx context.Context, db *gorm.DB, in *moe.AdminListTopicTagsReq) (*moe.AdminListTopicTagsResp, error) {
 	if db == nil {
 		return nil, ErrInsightsDB
 	}
@@ -260,14 +260,14 @@ func AdminListTopicTags(ctx context.Context, db *gorm.DB, in *super.AdminListTop
 	if err := q.Order("id DESC").Offset(offset).Limit(int(pageSize)).Find(&rows).Error; err != nil {
 		return nil, errInternal("查询话题标签失败")
 	}
-	out := &super.AdminListTopicTagsResp{Total: int32(total)}
+	out := &moe.AdminListTopicTagsResp{Total: int32(total)}
 	for _, row := range rows {
 		out.Items = append(out.Items, topicTagToProto(row))
 	}
 	return out, nil
 }
 
-func AdminCreateTopicTag(ctx context.Context, db *gorm.DB, in *super.AdminCreateTopicTagReq) (*super.AdminCreateTopicTagResp, error) {
+func AdminCreateTopicTag(ctx context.Context, db *gorm.DB, in *moe.AdminCreateTopicTagReq) (*moe.AdminCreateTopicTagResp, error) {
 	if db == nil {
 		return nil, ErrInsightsDB
 	}
@@ -283,10 +283,10 @@ func AdminCreateTopicTag(ctx context.Context, db *gorm.DB, in *super.AdminCreate
 	if err := db.Create(&row).Error; err != nil {
 		return nil, errInvalid("创建失败，可能名称已存在")
 	}
-	return &super.AdminCreateTopicTagResp{Item: topicTagToProto(row)}, nil
+	return &moe.AdminCreateTopicTagResp{Item: topicTagToProto(row)}, nil
 }
 
-func AdminUpdateTopicTag(ctx context.Context, db *gorm.DB, in *super.AdminUpdateTopicTagReq) (*super.AdminUpdateTopicTagResp, error) {
+func AdminUpdateTopicTag(ctx context.Context, db *gorm.DB, in *moe.AdminUpdateTopicTagReq) (*moe.AdminUpdateTopicTagResp, error) {
 	var row model.TopicTag
 	if err := db.First(&row, in.GetTagId()).Error; err != nil {
 		return nil, errNotFound("标签不存在")
@@ -304,19 +304,19 @@ func AdminUpdateTopicTag(ctx context.Context, db *gorm.DB, in *super.AdminUpdate
 		}
 		_ = db.First(&row, row.ID).Error
 	}
-	return &super.AdminUpdateTopicTagResp{Item: topicTagToProto(row)}, nil
+	return &moe.AdminUpdateTopicTagResp{Item: topicTagToProto(row)}, nil
 }
 
-func AdminDeleteTopicTag(ctx context.Context, db *gorm.DB, in *super.AdminDeleteTopicTagReq) (*super.AdminDeleteTopicTagResp, error) {
+func AdminDeleteTopicTag(ctx context.Context, db *gorm.DB, in *moe.AdminDeleteTopicTagReq) (*moe.AdminDeleteTopicTagResp, error) {
 	if err := db.Delete(&model.TopicTag{}, in.GetTagId()).Error; err != nil {
 		return nil, errInternal("删除失败")
 	}
-	return &super.AdminDeleteTopicTagResp{}, nil
+	return &moe.AdminDeleteTopicTagResp{}, nil
 }
 
 // —— 标签字典 ——
 
-func AdminListTagDictionary(ctx context.Context, db *gorm.DB, in *super.AdminListTagDictionaryReq) (*super.AdminListTagDictionaryResp, error) {
+func AdminListTagDictionary(ctx context.Context, db *gorm.DB, in *moe.AdminListTagDictionaryReq) (*moe.AdminListTagDictionaryResp, error) {
 	if db == nil {
 		return nil, ErrInsightsDB
 	}
@@ -338,14 +338,14 @@ func AdminListTagDictionary(ctx context.Context, db *gorm.DB, in *super.AdminLis
 	if err := q.Order("sort_order ASC, id DESC").Offset(offset).Limit(int(pageSize)).Find(&rows).Error; err != nil {
 		return nil, errInternal("查询标签字典失败")
 	}
-	out := &super.AdminListTagDictionaryResp{Total: int32(total)}
+	out := &moe.AdminListTagDictionaryResp{Total: int32(total)}
 	for _, row := range rows {
 		out.Items = append(out.Items, tagDictToProto(row))
 	}
 	return out, nil
 }
 
-func AdminCreateTagDictionary(ctx context.Context, db *gorm.DB, in *super.AdminCreateTagDictionaryReq) (*super.AdminCreateTagDictionaryResp, error) {
+func AdminCreateTagDictionary(ctx context.Context, db *gorm.DB, in *moe.AdminCreateTagDictionaryReq) (*moe.AdminCreateTagDictionaryResp, error) {
 	if db == nil {
 		return nil, ErrInsightsDB
 	}
@@ -365,10 +365,10 @@ func AdminCreateTagDictionary(ctx context.Context, db *gorm.DB, in *super.AdminC
 	if err := db.Create(&row).Error; err != nil {
 		return nil, errInvalid("创建失败，可能重复")
 	}
-	return &super.AdminCreateTagDictionaryResp{Item: tagDictToProto(row)}, nil
+	return &moe.AdminCreateTagDictionaryResp{Item: tagDictToProto(row)}, nil
 }
 
-func AdminUpdateTagDictionary(ctx context.Context, db *gorm.DB, in *super.AdminUpdateTagDictionaryReq) (*super.AdminUpdateTagDictionaryResp, error) {
+func AdminUpdateTagDictionary(ctx context.Context, db *gorm.DB, in *moe.AdminUpdateTagDictionaryReq) (*moe.AdminUpdateTagDictionaryResp, error) {
 	var row model.TagDictionaryEntry
 	if err := db.First(&row, in.GetEntryId()).Error; err != nil {
 		return nil, errNotFound("条目不存在")
@@ -398,19 +398,19 @@ func AdminUpdateTagDictionary(ctx context.Context, db *gorm.DB, in *super.AdminU
 		}
 		_ = db.First(&row, row.ID).Error
 	}
-	return &super.AdminUpdateTagDictionaryResp{Item: tagDictToProto(row)}, nil
+	return &moe.AdminUpdateTagDictionaryResp{Item: tagDictToProto(row)}, nil
 }
 
-func AdminDeleteTagDictionary(ctx context.Context, db *gorm.DB, in *super.AdminDeleteTagDictionaryReq) (*super.AdminDeleteTagDictionaryResp, error) {
+func AdminDeleteTagDictionary(ctx context.Context, db *gorm.DB, in *moe.AdminDeleteTagDictionaryReq) (*moe.AdminDeleteTagDictionaryResp, error) {
 	if err := db.Delete(&model.TagDictionaryEntry{}, in.GetEntryId()).Error; err != nil {
 		return nil, errInternal("删除失败")
 	}
-	return &super.AdminDeleteTagDictionaryResp{}, nil
+	return &moe.AdminDeleteTagDictionaryResp{}, nil
 }
 
 // —— helpers ——
 
-func applyAiChatMessageFilters(db *gorm.DB, in *super.AdminListAiChatMessagesReq) *gorm.DB {
+func applyAiChatMessageFilters(db *gorm.DB, in *moe.AdminListAiChatMessagesReq) *gorm.DB {
 	q := db
 	if uid := parseUintID(in.GetUserId()); uid > 0 {
 		q = q.Where("user_id = ?", uid)
@@ -434,8 +434,8 @@ func applyAiChatMessageFilters(db *gorm.DB, in *super.AdminListAiChatMessagesReq
 	return q
 }
 
-func aiChatMessageToProto(row model.AiChatMessage, username string) *super.AdminAiChatMessageItem {
-	return &super.AdminAiChatMessageItem{
+func aiChatMessageToProto(row model.AiChatMessage, username string) *moe.AdminAiChatMessageItem {
+	return &moe.AdminAiChatMessageItem{
 		Id:          strconv.FormatUint(uint64(row.ID), 10),
 		UserId:      strconv.FormatUint(uint64(row.UserID), 10),
 		Username:    username,
@@ -448,8 +448,8 @@ func aiChatMessageToProto(row model.AiChatMessage, username string) *super.Admin
 	}
 }
 
-func topicTagToProto(row model.TopicTag) *super.TopicTag {
-	return &super.TopicTag{
+func topicTagToProto(row model.TopicTag) *moe.TopicTag {
+	return &moe.TopicTag{
 		Id:        strconv.FormatUint(uint64(row.ID), 10),
 		Name:      row.Name,
 		Color:     row.Color,
@@ -457,8 +457,8 @@ func topicTagToProto(row model.TopicTag) *super.TopicTag {
 	}
 }
 
-func tagDictToProto(row model.TagDictionaryEntry) *super.AdminTagDictionaryItem {
-	return &super.AdminTagDictionaryItem{
+func tagDictToProto(row model.TagDictionaryEntry) *moe.AdminTagDictionaryItem {
+	return &moe.AdminTagDictionaryItem{
 		Id:        strconv.FormatUint(uint64(row.ID), 10),
 		Category:  row.Category,
 		Tag:       row.Tag,
@@ -554,7 +554,7 @@ func loadUsernames(db *gorm.DB, userIDs []uint) map[uint]string {
 	return out
 }
 
-func countByDay(db *gorm.DB, modelPtr any, column string, days int) []*super.AdminDayStat {
+func countByDay(db *gorm.DB, modelPtr any, column string, days int) []*moe.AdminDayStat {
 	if db == nil || days <= 0 {
 		return nil
 	}
@@ -573,15 +573,15 @@ func countByDay(db *gorm.DB, modelPtr any, column string, days int) []*super.Adm
 	for _, r := range rows {
 		byDay[r.Day] = r.Count
 	}
-	out := make([]*super.AdminDayStat, 0, days)
+	out := make([]*moe.AdminDayStat, 0, days)
 	for i := 0; i < days; i++ {
 		d := start.AddDate(0, 0, i).Format(time.DateOnly)
-		out = append(out, &super.AdminDayStat{Date: d, Count: int32(byDay[d])})
+		out = append(out, &moe.AdminDayStat{Date: d, Count: int32(byDay[d])})
 	}
 	return out
 }
 
-func memoryTypeStats(db *gorm.DB) []*super.AdminMemoryTypeStat {
+func memoryTypeStats(db *gorm.DB) []*moe.AdminMemoryTypeStat {
 	if db == nil {
 		return nil
 	}
@@ -595,13 +595,13 @@ func memoryTypeStats(db *gorm.DB) []*super.AdminMemoryTypeStat {
 		Group("memory_type").
 		Order("count DESC").
 		Scan(&rows).Error
-	out := make([]*super.AdminMemoryTypeStat, len(rows))
+	out := make([]*moe.AdminMemoryTypeStat, len(rows))
 	for i, r := range rows {
 		mt := r.MemoryType
 		if mt == "" {
 			mt = "unknown"
 		}
-		out[i] = &super.AdminMemoryTypeStat{MemoryType: mt, Count: int32(r.Count)}
+		out[i] = &moe.AdminMemoryTypeStat{MemoryType: mt, Count: int32(r.Count)}
 	}
 	return out
 }

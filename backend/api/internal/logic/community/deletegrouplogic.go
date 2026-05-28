@@ -5,7 +5,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewDeleteGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Delet
 }
 
 func (l *DeleteGroupLogic) DeleteGroup(req *types.DeleteGroupReq) (resp *types.BaseResp, err error) {
-	rpcResp, err := l.svcCtx.CommunityGW.DeleteGroup(l.ctx, &super.DeleteGroupReq{
+	rpcResp, err := l.svcCtx.CommunityGW.DeleteGroup(l.ctx, &moe.DeleteGroupReq{
 		GroupId: req.GroupId,
 		UserId:  req.UserId,
 	})

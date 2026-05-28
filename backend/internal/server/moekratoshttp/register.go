@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	moepb "backend/api/moe/v1"
+	"backend/internal/platform/kratosprogress"
 	moegrpcserver "backend/internal/server/moegrpc"
 	moeadmin "backend/internal/service/moe"
 
@@ -31,14 +32,8 @@ func healthHandler(ctx khttp.Context) error {
 }
 
 func migrationHandler(ctx khttp.Context) error {
-	// 避免 import cycle（kratosprogress → moekratospilot → moekratoshttp）；完整报告见 moe-social :8888/migration
-	payload := map[string]any{
-		"phase":    "moe-kratos-pilot",
-		"service":  "moe-kratos",
-		"docs":     "docs/dev/kratos-directory-layout.md",
-		"note":     "full metrics on moe-social :8888/migration",
-	}
-	b, err := json.Marshal(payload)
+	rep := kratosprogress.Current()
+	b, err := json.Marshal(rep)
 	if err != nil {
 		return err
 	}

@@ -5,7 +5,7 @@ import (
 	"context"
 
 	behaviorbiz "backend/internal/biz/behavior"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -21,10 +21,10 @@ func New(db *gorm.DB) *AppService {
 }
 
 // TrackEvents 批量上报行为事件。
-func (s *AppService) TrackEvents(ctx context.Context, in *super.TrackUserBehaviorEventsReq) (*super.TrackUserBehaviorEventsResp, error) {
+func (s *AppService) TrackEvents(ctx context.Context, in *moe.TrackUserBehaviorEventsReq) (*moe.TrackUserBehaviorEventsResp, error) {
 	events := in.GetEvents()
 	if len(events) == 0 {
-		return &super.TrackUserBehaviorEventsResp{Accepted: 0}, nil
+		return &moe.TrackUserBehaviorEventsResp{Accepted: 0}, nil
 	}
 	userID := in.GetUserId()
 	if userID == 0 {
@@ -45,5 +45,5 @@ func (s *AppService) TrackEvents(ctx context.Context, in *super.TrackUserBehavio
 	if err != nil {
 		return nil, err
 	}
-	return &super.TrackUserBehaviorEventsResp{Accepted: accepted}, nil
+	return &moe.TrackUserBehaviorEventsResp{Accepted: accepted}, nil
 }

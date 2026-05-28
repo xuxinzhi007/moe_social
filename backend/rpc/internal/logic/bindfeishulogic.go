@@ -5,7 +5,7 @@ import (
 
 	userapp "backend/internal/service/user"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,7 +20,7 @@ func NewBindFeishuLogic(ctx context.Context, svcCtx *svc.ServiceContext) *BindFe
 	return &BindFeishuLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *BindFeishuLogic) BindFeishu(in *super.BindFeishuReq) (*super.BindFeishuResp, error) {
+func (l *BindFeishuLogic) BindFeishu(in *moe.BindFeishuReq) (*moe.BindFeishuResp, error) {
 	resp, err := userapp.New(l.svcCtx.DB).BindFeishu(l.ctx, in)
 	return resp, mapUserBizErr(err)
 }

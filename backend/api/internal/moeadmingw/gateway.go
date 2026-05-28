@@ -13,7 +13,7 @@ import (
 	"backend/model"
 	"backend/pkg/moe/brain"
 	"backend/pkg/moe/runtime"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 var errNoBackend = errors.New("Moe Admin 后端未配置")
@@ -23,11 +23,11 @@ type Gateway struct {
 	kratos  *KratosHTTPClient
 	local   *moeadmin.AdminService
 	moeGRPC moepb.MoeAdminClient
-	super   super.SuperClient
+	super   moe.SuperClient
 }
 
 // New 构造网关；kratos 非 nil 且配置启用时，ListRuntimes/GetBrainPipeline 走纯 Kratos HTTP。
-func New(local *moeadmin.AdminService, moeGRPC moepb.MoeAdminClient, legacy super.SuperClient, kratos *KratosHTTPClient) *Gateway {
+func New(local *moeadmin.AdminService, moeGRPC moepb.MoeAdminClient, legacy moe.SuperClient, kratos *KratosHTTPClient) *Gateway {
 	return &Gateway{local: local, moeGRPC: moeGRPC, super: legacy, kratos: kratos}
 }
 
@@ -82,7 +82,7 @@ func (g *Gateway) ListRuntimes(ctx context.Context) ([]model.MoeAgentRuntime, er
 		return out, nil
 	}
 	if g.super != nil {
-		rep, err := g.super.AdminListMoeRuntimes(ctx, &super.AdminListMoeRuntimesReq{})
+		rep, err := g.super.AdminListMoeRuntimes(ctx, &moe.AdminListMoeRuntimesReq{})
 		if err != nil {
 			return nil, err
 		}
@@ -124,7 +124,7 @@ func (g *Gateway) UpsertRuntime(ctx context.Context, p moebiz.UpsertRuntimeParam
 		return runtimeModelFromProto(rep.GetItem()), nil
 	}
 	if g.super != nil {
-		rep, err := g.super.AdminUpsertMoeRuntime(ctx, &super.AdminUpsertMoeRuntimeReq{
+		rep, err := g.super.AdminUpsertMoeRuntime(ctx, &moe.AdminUpsertMoeRuntimeReq{
 			AgentKey: p.AgentKey, DisplayName: p.DisplayName,
 			BotUserId: fmt.Sprintf("%d", p.BotUserID), CapabilityTier: p.CapabilityTier,
 			ModelName: p.ModelName, ProviderProfileId: p.ProviderProfileID,
@@ -161,7 +161,7 @@ func (g *Gateway) GetBrainPipeline(ctx context.Context, agentKey string) (moebiz
 		return pipelineFromProto(rep), nil
 	}
 	if g.super != nil {
-		rep, err := g.super.AdminGetMoeBrainPipeline(ctx, &super.AdminGetMoeBrainPipelineReq{AgentKey: agentKey})
+		rep, err := g.super.AdminGetMoeBrainPipeline(ctx, &moe.AdminGetMoeBrainPipelineReq{AgentKey: agentKey})
 		if err != nil {
 			return moebiz.PipelineSnapshot{}, err
 		}
@@ -188,7 +188,7 @@ func (g *Gateway) RunAgentOnce(ctx context.Context, agentKey string, async bool)
 		}, nil
 	}
 	if g.super != nil {
-		rep, err := g.super.AdminRunMoeAgentOnce(ctx, &super.AdminRunMoeAgentOnceReq{AgentKey: agentKey, Async: async})
+		rep, err := g.super.AdminRunMoeAgentOnce(ctx, &moe.AdminRunMoeAgentOnceReq{AgentKey: agentKey, Async: async})
 		if err != nil {
 			return moeadmin.RunOnceInvokeResult{}, err
 		}
@@ -220,7 +220,7 @@ func (g *Gateway) GetBrainSnapshot(ctx context.Context, agentKey string) (*brain
 		return moebridge.BrainSnapshotFromProto(rep), nil
 	}
 	if g.super != nil {
-		rep, err := g.super.AdminGetMoeBrain(ctx, &super.AdminGetMoeBrainReq{AgentKey: agentKey})
+		rep, err := g.super.AdminGetMoeBrain(ctx, &moe.AdminGetMoeBrainReq{AgentKey: agentKey})
 		if err != nil {
 			return nil, err
 		}
@@ -246,7 +246,7 @@ func (g *Gateway) UpdateBrainPolicy(ctx context.Context, agentKey string, forbid
 		return moebridge.BrainSnapshotFromProto(rep), nil
 	}
 	if g.super != nil {
-		rep, err := g.super.AdminUpdateMoeBrainPolicy(ctx, &super.AdminUpdateMoeBrainPolicyReq{
+		rep, err := g.super.AdminUpdateMoeBrainPolicy(ctx, &moe.AdminUpdateMoeBrainPolicyReq{
 			AgentKey: agentKey, ForbiddenTags: forbidden, PreferredTags: preferred,
 		})
 		if err != nil {
@@ -269,7 +269,7 @@ func (g *Gateway) DeleteBrainEpisode(ctx context.Context, id uint) error {
 		return err
 	}
 	if g.super != nil {
-		_, err := g.super.AdminDeleteMoeBrainEpisode(ctx, &super.AdminDeleteMoeBrainEpisodeReq{Id: uint64(id)})
+		_, err := g.super.AdminDeleteMoeBrainEpisode(ctx, &moe.AdminDeleteMoeBrainEpisodeReq{Id: uint64(id)})
 		return err
 	}
 	return errNoBackend
@@ -297,7 +297,7 @@ func (g *Gateway) RefineBrainEpisode(ctx context.Context, id uint, opt brain.Ref
 		}, nil
 	}
 	if g.super != nil {
-		rep, err := g.super.AdminRefineMoeBrainEpisode(ctx, &super.AdminRefineMoeBrainEpisodeReq{
+		rep, err := g.super.AdminRefineMoeBrainEpisode(ctx, &moe.AdminRefineMoeBrainEpisodeReq{
 			Id: uint64(id), MaxAttempts: int32(opt.MaxAttempts),
 		})
 		if err != nil {
@@ -331,7 +331,7 @@ func (g *Gateway) CurateBrain(ctx context.Context, agentKey string, opt brain.Cu
 		return curateResultsFromProto(rep), nil
 	}
 	if g.super != nil {
-		rep, err := g.super.AdminCurateMoeBrain(ctx, &super.AdminCurateMoeBrainReq{
+		rep, err := g.super.AdminCurateMoeBrain(ctx, &moe.AdminCurateMoeBrainReq{
 			AgentKey: agentKey, MaxEpisodes: int32(opt.MaxEpisodes),
 			MaxAttempts: int32(opt.MaxAttemptsPerEpisode), MinQuality: int32(opt.MinQuality), Force: opt.Force,
 		})
@@ -382,7 +382,7 @@ func (g *Gateway) QueryToolStats(ctx context.Context, f moebiz.ToolStatsFilter) 
 		return toolStatsToBiz(moebridge.ToolStatsFromProto(rep)), nil
 	}
 	if g.super != nil {
-		rep, err := g.super.AdminGetMoeToolStats(ctx, &super.AdminGetMoeToolStatsReq{
+		rep, err := g.super.AdminGetMoeToolStats(ctx, &moe.AdminGetMoeToolStatsReq{
 			From: timeFilterStr(f.From), To: timeFilterStr(f.To),
 			AgentKey: f.AgentKey, Tool: f.Tool,
 		})
@@ -419,7 +419,7 @@ func (g *Gateway) ListToolCalls(ctx context.Context, f moebiz.ToolCallsFilter) (
 		return toolCallsToBiz(d), d.Total, nil
 	}
 	if g.super != nil {
-		rep, err := g.super.AdminListMoeToolCalls(ctx, &super.AdminListMoeToolCallsReq{
+		rep, err := g.super.AdminListMoeToolCalls(ctx, &moe.AdminListMoeToolCallsReq{
 			From: timeFilterStr(f.From), To: timeFilterStr(f.To),
 			AgentKey: f.AgentKey, Tool: f.Tool, Source: f.Source,
 			ActorUserId: actorStr, OkOnly: f.OkOnly, FailedOnly: f.FailedOnly,

@@ -3,12 +3,12 @@ package admingw
 import (
 	"context"
 
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"google.golang.org/grpc"
 )
 
-func (g *Gateway) AdminLogin(ctx context.Context, in *super.AdminLoginReq, opts ...grpc.CallOption) (*super.AdminLoginResp, error) {
+func (g *Gateway) AdminLogin(ctx context.Context, in *moe.AdminLoginReq, opts ...grpc.CallOption) (*moe.AdminLoginResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.AdminLogin(ctx, in)
 	}
@@ -18,7 +18,7 @@ func (g *Gateway) AdminLogin(ctx context.Context, in *super.AdminLoginReq, opts 
 	return g.super.AdminLogin(ctx, in, opts...)
 }
 
-func (g *Gateway) AdminBootstrapAccount(ctx context.Context, in *super.AdminBootstrapAccountReq, opts ...grpc.CallOption) (*super.AdminBootstrapAccountResp, error) {
+func (g *Gateway) AdminBootstrapAccount(ctx context.Context, in *moe.AdminBootstrapAccountReq, opts ...grpc.CallOption) (*moe.AdminBootstrapAccountResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.AdminBootstrapAccount(ctx, in)
 	}

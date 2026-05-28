@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
@@ -32,13 +32,13 @@ func parseActorID(raw string) (uint, error) {
 	return parseUserIDString(raw)
 }
 
-func friendRequestView(ctx context.Context, db *gorm.DB, fr model.FriendRequest) *super.FriendRequestView {
+func friendRequestView(ctx context.Context, db *gorm.DB, fr model.FriendRequest) *moe.FriendRequestView {
 	_, _ = utils.EnsureUserMoeNo(db, fr.FromUserID)
 	_, _ = utils.EnsureUserMoeNo(db, fr.ToUserID)
 	var fromU, toU model.User
 	_ = db.WithContext(ctx).First(&fromU, fr.FromUserID).Error
 	_ = db.WithContext(ctx).First(&toU, fr.ToUserID).Error
-	return &super.FriendRequestView{
+	return &moe.FriendRequestView{
 		Id:        strconv.Itoa(int(fr.ID)),
 		FromUser:  ModelToProto(&fromU),
 		ToUser:    ModelToProto(&toU),
@@ -53,7 +53,7 @@ func ensureMutualFollow(ctx context.Context, db *gorm.DB, a, b uint) {
 }
 
 // SendFriendRequest 发起好友申请。
-func SendFriendRequest(ctx context.Context, db *gorm.DB, actorID uint, toUserID, toMoeNo string) (*super.FriendRequestView, error) {
+func SendFriendRequest(ctx context.Context, db *gorm.DB, actorID uint, toUserID, toMoeNo string) (*moe.FriendRequestView, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -131,7 +131,7 @@ func SendFriendRequest(ctx context.Context, db *gorm.DB, actorID uint, toUserID,
 }
 
 // ListIncomingFriendRequests 收到的待处理申请。
-func ListIncomingFriendRequests(ctx context.Context, db *gorm.DB, actorID uint) ([]*super.FriendRequestView, error) {
+func ListIncomingFriendRequests(ctx context.Context, db *gorm.DB, actorID uint) ([]*moe.FriendRequestView, error) {
 	if actorID == 0 {
 		return nil, ErrUnauthorized
 	}
@@ -140,7 +140,7 @@ func ListIncomingFriendRequests(ctx context.Context, db *gorm.DB, actorID uint) 
 		Order("id desc").Find(&list).Error; err != nil {
 		return nil, err
 	}
-	out := make([]*super.FriendRequestView, 0, len(list))
+	out := make([]*moe.FriendRequestView, 0, len(list))
 	for i := range list {
 		out = append(out, friendRequestView(ctx, db, list[i]))
 	}
@@ -148,7 +148,7 @@ func ListIncomingFriendRequests(ctx context.Context, db *gorm.DB, actorID uint) 
 }
 
 // ListOutgoingFriendRequests 发出的待处理申请。
-func ListOutgoingFriendRequests(ctx context.Context, db *gorm.DB, actorID uint) ([]*super.FriendRequestView, error) {
+func ListOutgoingFriendRequests(ctx context.Context, db *gorm.DB, actorID uint) ([]*moe.FriendRequestView, error) {
 	if actorID == 0 {
 		return nil, ErrUnauthorized
 	}
@@ -157,7 +157,7 @@ func ListOutgoingFriendRequests(ctx context.Context, db *gorm.DB, actorID uint) 
 		Order("id desc").Find(&list).Error; err != nil {
 		return nil, err
 	}
-	out := make([]*super.FriendRequestView, 0, len(list))
+	out := make([]*moe.FriendRequestView, 0, len(list))
 	for i := range list {
 		out = append(out, friendRequestView(ctx, db, list[i]))
 	}
@@ -216,7 +216,7 @@ func RejectFriendRequest(ctx context.Context, db *gorm.DB, actorID uint, request
 }
 
 // ListFriends 好友列表。
-func ListFriends(ctx context.Context, db *gorm.DB, actorID uint) ([]*super.User, error) {
+func ListFriends(ctx context.Context, db *gorm.DB, actorID uint) ([]*moe.User, error) {
 	if actorID == 0 {
 		return nil, ErrUnauthorized
 	}
@@ -241,7 +241,7 @@ func ListFriends(ctx context.Context, db *gorm.DB, actorID uint) ([]*super.User,
 		ids = append(ids, other)
 	}
 
-	out := make([]*super.User, 0, len(ids))
+	out := make([]*moe.User, 0, len(ids))
 	for _, id := range ids {
 		var u model.User
 		if err := db.WithContext(ctx).First(&u, id).Error; err != nil {

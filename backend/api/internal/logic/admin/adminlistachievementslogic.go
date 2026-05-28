@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewAdminListAchievementsLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *AdminListAchievementsLogic) AdminListAchievements(req *types.AdminListAchievementsReq) (*types.AdminListAchievementsResp, error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminListAchievements(l.ctx, &super.AdminListAchievementsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListAchievements(l.ctx, &moe.AdminListAchievementsReq{
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
 		Keyword:  req.Keyword,

@@ -2,10 +2,10 @@ package achievement
 
 import (
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
-func badgesFromRPC(items []*super.AchievementBadgeItem) []types.AchievementBadgeItem {
+func badgesFromRPC(items []*moe.AchievementBadgeItem) []types.AchievementBadgeItem {
 	if len(items) == 0 {
 		return []types.AchievementBadgeItem{}
 	}
@@ -29,11 +29,11 @@ func badgesFromRPC(items []*super.AchievementBadgeItem) []types.AchievementBadge
 }
 
 // UnlocksFromRPC exports unlock conversion for other API logic packages.
-func UnlocksFromRPC(items []*super.AchievementUnlock) []types.AchievementUnlock {
+func UnlocksFromRPC(items []*moe.AchievementUnlock) []types.AchievementUnlock {
 	return unlocksFromRPC(items)
 }
 
-func unlocksFromRPC(items []*super.AchievementUnlock) []types.AchievementUnlock {
+func unlocksFromRPC(items []*moe.AchievementUnlock) []types.AchievementUnlock {
 	if len(items) == 0 {
 		return nil
 	}

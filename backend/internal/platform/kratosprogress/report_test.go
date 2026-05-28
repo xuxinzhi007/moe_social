@@ -18,6 +18,16 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestRolloutPercentAtLeast80(t *testing.T) {
+	if !moewiring.KratosPureEnabled() {
+		t.Fatal("set moe.kratos_pure_enabled: true in backend/config/config.yaml")
+	}
+	rep := Current()
+	if rep.RolloutPercent < 80 {
+		t.Fatalf("expected rollout_percent >= 80, got %d", rep.RolloutPercent)
+	}
+}
+
 func TestRolloutPercentAtLeast100WhenPure(t *testing.T) {
 	if !moewiring.KratosPureEnabled() {
 		t.Fatal("set moe.kratos_pure_enabled: true in backend/config/config.yaml")
@@ -30,9 +40,20 @@ func TestRolloutPercentAtLeast100WhenPure(t *testing.T) {
 
 func TestCompletePureKratosBelowRollout(t *testing.T) {
 	rep := Current()
-	if rep.RolloutPercent >= 100 && rep.Percent >= rep.RolloutPercent {
-		t.Fatalf("complete pure (%d) should be below transport rollout (%d) until native handlers/grpc",
+	if rep.RolloutPercent >= 100 && rep.Percent > rep.RolloutPercent {
+		t.Fatalf("complete pure (%d) should not exceed transport rollout (%d)",
 			rep.Percent, rep.RolloutPercent)
+	}
+}
+
+func TestCompletePureKratosAtLeast80(t *testing.T) {
+	rep := Current()
+	if rep.Percent < 80 {
+		t.Fatalf("expected complete pure kratos percent >= 80, got %d breakdown=%v",
+			rep.Percent, rep.Breakdown)
+	}
+	if rep.PPercent != rep.Percent {
+		t.Fatalf("p_percent should match percent, got %d vs %d", rep.PPercent, rep.Percent)
 	}
 }
 
@@ -41,9 +62,6 @@ func TestCompletePureKratosAtLeast50(t *testing.T) {
 	if rep.Percent < 50 {
 		t.Fatalf("expected complete pure kratos percent >= 50, got %d breakdown=%v",
 			rep.Percent, rep.Breakdown)
-	}
-	if rep.PPercent != rep.Percent {
-		t.Fatalf("p_percent should match percent, got %d vs %d", rep.PPercent, rep.Percent)
 	}
 }
 
@@ -59,6 +77,42 @@ func TestCompletePureKratosAtLeast90(t *testing.T) {
 	}
 }
 
+func TestCompletePureKratosAtLeast100(t *testing.T) {
+	if !moewiring.KratosPureEnabled() {
+		t.Fatal("set moe.kratos_pure_enabled: true in backend/config/config.yaml")
+	}
+	rep := Current()
+	if rep.Percent < 100 {
+		t.Fatalf("expected complete pure kratos percent == 100, got %d breakdown=%v",
+			rep.Percent, rep.Breakdown)
+	}
+	if rep.RolloutPercent < 100 {
+		t.Fatalf("expected rollout_percent == 100, got %d", rep.RolloutPercent)
+	}
+	if rep.MigrationType != "kratos-pure" {
+		t.Fatalf("expected migration_type kratos-pure, got %q", rep.MigrationType)
+	}
+}
+
+func TestCompletePureBreakdown100WhenPure(t *testing.T) {
+	if !moewiring.KratosPureEnabled() {
+		t.Fatal("set moe.kratos_pure_enabled: true")
+	}
+	rep := Current()
+	for _, k := range []string{
+		"http_native_handler_pct",
+		"http_transport_kratos_pct",
+		"grpc_service_native_pct",
+		"grpc_transport_kratos_pct",
+		"grpc_lifecycle_managed_pct",
+		"kratos_pure_production",
+	} {
+		if rep.Breakdown[k] != 100 {
+			t.Fatalf("PK-12: %s want 100, got %d", k, rep.Breakdown[k])
+		}
+	}
+}
+
 func TestCompletePureBreakdownKeys(t *testing.T) {
 	rep := Current()
 	for _, k := range []string{
@@ -71,7 +125,11 @@ func TestCompletePureBreakdownKeys(t *testing.T) {
 			t.Fatalf("missing breakdown key %q", k)
 		}
 	}
-	if rep.Breakdown["grpc_transport_kratos_pct"] != 0 {
-		t.Fatal("Super still on zrpc: grpc_transport_kratos_pct should be 0")
+	if !moewiring.KratosSuperGRPCNative() {
+		t.Fatal("set moe.kratos_super_grpc_native: true for PK-11")
+	}
+	if rep.Breakdown["grpc_transport_kratos_pct"] != 100 {
+		t.Fatalf("PK-11: grpc_transport_kratos_pct want 100, got %d",
+			rep.Breakdown["grpc_transport_kratos_pct"])
 	}
 }

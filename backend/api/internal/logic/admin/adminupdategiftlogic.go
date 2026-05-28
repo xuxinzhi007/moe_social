@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewAdminUpdateGiftLogic(ctx context.Context, svcCtx *svc.ServiceContext) *A
 }
 
 func (l *AdminUpdateGiftLogic) AdminUpdateGift(req *types.AdminUpdateGiftReq) (resp *types.AdminUpdateGiftResp, err error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminUpdateGift(l.ctx, &super.AdminUpdateGiftReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminUpdateGift(l.ctx, &moe.AdminUpdateGiftReq{
 		GiftId:            req.GiftId,
 		Name:              req.Name,
 		Price:             int32(req.Price),

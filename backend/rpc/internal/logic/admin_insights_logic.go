@@ -5,7 +5,7 @@ import (
 
 	adminapp "backend/internal/service/admin"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,7 +20,7 @@ func NewAdminListAiChatSessionsLogic(ctx context.Context, svcCtx *svc.ServiceCon
 	return &AdminListAiChatSessionsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminListAiChatSessionsLogic) AdminListAiChatSessions(in *super.AdminListAiChatSessionsReq) (*super.AdminListAiChatSessionsResp, error) {
+func (l *AdminListAiChatSessionsLogic) AdminListAiChatSessions(in *moe.AdminListAiChatSessionsReq) (*moe.AdminListAiChatSessionsResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).ListAiChatSessions(l.ctx, in)
 	return resp, mapAdminInsightsErr(err)
 }
@@ -35,7 +35,7 @@ func NewAdminListAiChatMessagesLogic(ctx context.Context, svcCtx *svc.ServiceCon
 	return &AdminListAiChatMessagesLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminListAiChatMessagesLogic) AdminListAiChatMessages(in *super.AdminListAiChatMessagesReq) (*super.AdminListAiChatMessagesResp, error) {
+func (l *AdminListAiChatMessagesLogic) AdminListAiChatMessages(in *moe.AdminListAiChatMessagesReq) (*moe.AdminListAiChatMessagesResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).ListAiChatMessages(l.ctx, in)
 	return resp, mapAdminInsightsErr(err)
 }
@@ -50,7 +50,7 @@ func NewAdminExportAiChatMessagesLogic(ctx context.Context, svcCtx *svc.ServiceC
 	return &AdminExportAiChatMessagesLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminExportAiChatMessagesLogic) AdminExportAiChatMessages(in *super.AdminExportAiChatMessagesReq) (*super.AdminExportAiChatMessagesResp, error) {
+func (l *AdminExportAiChatMessagesLogic) AdminExportAiChatMessages(in *moe.AdminExportAiChatMessagesReq) (*moe.AdminExportAiChatMessagesResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).ExportAiChatMessages(l.ctx, in)
 	return resp, mapAdminInsightsErr(err)
 }
@@ -65,7 +65,7 @@ func NewAdminAnalyticsOverviewLogic(ctx context.Context, svcCtx *svc.ServiceCont
 	return &AdminAnalyticsOverviewLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminAnalyticsOverviewLogic) AdminAnalyticsOverview(in *super.AdminGetMemoryStatsReq) (*super.AdminAnalyticsOverviewResp, error) {
+func (l *AdminAnalyticsOverviewLogic) AdminAnalyticsOverview(in *moe.AdminGetMemoryStatsReq) (*moe.AdminAnalyticsOverviewResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).AnalyticsOverview(l.ctx, in)
 	return resp, mapAdminInsightsErr(err)
 }
@@ -80,7 +80,7 @@ func NewAdminListTopicTagsLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	return &AdminListTopicTagsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminListTopicTagsLogic) AdminListTopicTags(in *super.AdminListTopicTagsReq) (*super.AdminListTopicTagsResp, error) {
+func (l *AdminListTopicTagsLogic) AdminListTopicTags(in *moe.AdminListTopicTagsReq) (*moe.AdminListTopicTagsResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).ListTopicTags(l.ctx, in)
 	return resp, mapAdminInsightsErr(err)
 }
@@ -95,7 +95,7 @@ func NewAdminCreateTopicTagLogic(ctx context.Context, svcCtx *svc.ServiceContext
 	return &AdminCreateTopicTagLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminCreateTopicTagLogic) AdminCreateTopicTag(in *super.AdminCreateTopicTagReq) (*super.AdminCreateTopicTagResp, error) {
+func (l *AdminCreateTopicTagLogic) AdminCreateTopicTag(in *moe.AdminCreateTopicTagReq) (*moe.AdminCreateTopicTagResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).CreateTopicTag(l.ctx, in)
 	return resp, mapAdminInsightsErr(err)
 }
@@ -110,7 +110,7 @@ func NewAdminUpdateTopicTagLogic(ctx context.Context, svcCtx *svc.ServiceContext
 	return &AdminUpdateTopicTagLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminUpdateTopicTagLogic) AdminUpdateTopicTag(in *super.AdminUpdateTopicTagReq) (*super.AdminUpdateTopicTagResp, error) {
+func (l *AdminUpdateTopicTagLogic) AdminUpdateTopicTag(in *moe.AdminUpdateTopicTagReq) (*moe.AdminUpdateTopicTagResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).UpdateTopicTag(l.ctx, in)
 	return resp, mapAdminInsightsErr(err)
 }
@@ -125,7 +125,7 @@ func NewAdminDeleteTopicTagLogic(ctx context.Context, svcCtx *svc.ServiceContext
 	return &AdminDeleteTopicTagLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminDeleteTopicTagLogic) AdminDeleteTopicTag(in *super.AdminDeleteTopicTagReq) (*super.AdminDeleteTopicTagResp, error) {
+func (l *AdminDeleteTopicTagLogic) AdminDeleteTopicTag(in *moe.AdminDeleteTopicTagReq) (*moe.AdminDeleteTopicTagResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).DeleteTopicTag(l.ctx, in)
 	return resp, mapAdminInsightsErr(err)
 }
@@ -140,7 +140,7 @@ func NewAdminListTagDictionaryLogic(ctx context.Context, svcCtx *svc.ServiceCont
 	return &AdminListTagDictionaryLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminListTagDictionaryLogic) AdminListTagDictionary(in *super.AdminListTagDictionaryReq) (*super.AdminListTagDictionaryResp, error) {
+func (l *AdminListTagDictionaryLogic) AdminListTagDictionary(in *moe.AdminListTagDictionaryReq) (*moe.AdminListTagDictionaryResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).ListTagDictionary(l.ctx, in)
 	return resp, mapAdminInsightsErr(err)
 }
@@ -155,7 +155,7 @@ func NewAdminCreateTagDictionaryLogic(ctx context.Context, svcCtx *svc.ServiceCo
 	return &AdminCreateTagDictionaryLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminCreateTagDictionaryLogic) AdminCreateTagDictionary(in *super.AdminCreateTagDictionaryReq) (*super.AdminCreateTagDictionaryResp, error) {
+func (l *AdminCreateTagDictionaryLogic) AdminCreateTagDictionary(in *moe.AdminCreateTagDictionaryReq) (*moe.AdminCreateTagDictionaryResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).CreateTagDictionary(l.ctx, in)
 	return resp, mapAdminInsightsErr(err)
 }
@@ -170,7 +170,7 @@ func NewAdminUpdateTagDictionaryLogic(ctx context.Context, svcCtx *svc.ServiceCo
 	return &AdminUpdateTagDictionaryLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminUpdateTagDictionaryLogic) AdminUpdateTagDictionary(in *super.AdminUpdateTagDictionaryReq) (*super.AdminUpdateTagDictionaryResp, error) {
+func (l *AdminUpdateTagDictionaryLogic) AdminUpdateTagDictionary(in *moe.AdminUpdateTagDictionaryReq) (*moe.AdminUpdateTagDictionaryResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).UpdateTagDictionary(l.ctx, in)
 	return resp, mapAdminInsightsErr(err)
 }
@@ -185,7 +185,7 @@ func NewAdminDeleteTagDictionaryLogic(ctx context.Context, svcCtx *svc.ServiceCo
 	return &AdminDeleteTagDictionaryLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminDeleteTagDictionaryLogic) AdminDeleteTagDictionary(in *super.AdminDeleteTagDictionaryReq) (*super.AdminDeleteTagDictionaryResp, error) {
+func (l *AdminDeleteTagDictionaryLogic) AdminDeleteTagDictionary(in *moe.AdminDeleteTagDictionaryReq) (*moe.AdminDeleteTagDictionaryResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).DeleteTagDictionary(l.ctx, in)
 	return resp, mapAdminInsightsErr(err)
 }

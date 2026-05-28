@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewLikeCommentLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LikeC
 }
 
 func (l *LikeCommentLogic) LikeComment(req *types.LikeCommentReq) (resp *types.LikeCommentResp, err error) {
-	rpcResp, err := l.svcCtx.CommentGW.LikeComment(l.ctx, &super.LikeCommentReq{
+	rpcResp, err := l.svcCtx.CommentGW.LikeComment(l.ctx, &moe.LikeCommentReq{
 		CommentId: req.CommentId,
 		UserId:    req.UserId,
 	})

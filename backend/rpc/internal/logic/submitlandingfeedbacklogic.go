@@ -8,7 +8,7 @@ import (
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/logutil"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -28,7 +28,7 @@ func NewSubmitLandingFeedbackLogic(ctx context.Context, svcCtx *svc.ServiceConte
 	}
 }
 
-func (l *SubmitLandingFeedbackLogic) SubmitLandingFeedback(in *super.SubmitLandingFeedbackReq) (*super.SubmitLandingFeedbackResp, error) {
+func (l *SubmitLandingFeedbackLogic) SubmitLandingFeedback(in *moe.SubmitLandingFeedbackReq) (*moe.SubmitLandingFeedbackResp, error) {
 	id, err := landingbiz.Submit(l.ctx, l.svcCtx.DB, landingbiz.SubmitInput{
 		Email:     in.GetEmail(),
 		Category:  in.GetCategory(),
@@ -56,5 +56,5 @@ func (l *SubmitLandingFeedbackLogic) SubmitLandingFeedback(in *super.SubmitLandi
 	email, _ := utils.NormalizeFeishuEmail(in.GetEmail())
 	l.Infof("[landing] feedback saved id=%d email=%s", id, logutil.MaskEmail(email))
 
-	return &super.SubmitLandingFeedbackResp{Id: id}, nil
+	return &moe.SubmitLandingFeedbackResp{Id: id}, nil
 }

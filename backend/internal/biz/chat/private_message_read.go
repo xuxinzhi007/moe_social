@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // ListPrivateMessages 分页拉取两人私信历史（viewer 视角）。
-func ListPrivateMessages(ctx context.Context, db *gorm.DB, in *super.ListPrivateMessagesReq) (*super.ListPrivateMessagesResp, error) {
+func ListPrivateMessages(ctx context.Context, db *gorm.DB, in *moe.ListPrivateMessagesReq) (*moe.ListPrivateMessagesResp, error) {
 	if db == nil {
 		return nil, errors.New("db not ready")
 	}
@@ -72,16 +72,16 @@ func ListPrivateMessages(ctx context.Context, db *gorm.DB, in *super.ListPrivate
 	}
 	moeBy := loadMoeNoByUserID(db.WithContext(ctx), ids...)
 
-	out := make([]*super.PrivateMessage, 0, len(rows))
+	out := make([]*moe.PrivateMessage, 0, len(rows))
 	for i := len(rows) - 1; i >= 0; i-- {
 		out = append(out, privateMessageModelToProto(&rows[i], moeBy))
 	}
 
-	return &super.ListPrivateMessagesResp{Messages: out, HasMore: hasMore}, nil
+	return &moe.ListPrivateMessagesResp{Messages: out, HasMore: hasMore}, nil
 }
 
 // ListPrivateConversations 列出 viewer 的私信会话摘要。
-func ListPrivateConversations(ctx context.Context, db *gorm.DB, in *super.ListPrivateConversationsReq) (*super.ListPrivateConversationsResp, error) {
+func ListPrivateConversations(ctx context.Context, db *gorm.DB, in *moe.ListPrivateConversationsReq) (*moe.ListPrivateConversationsResp, error) {
 	if db == nil {
 		return nil, errors.New("db not ready")
 	}
@@ -189,7 +189,7 @@ LIMIT ? OFFSET ?`
 	}
 
 	moeBy := loadMoeNoByUserID(dbCtx, append(peerIDs, uint(viewerID))...)
-	out := make([]*super.PrivateConversation, 0, len(rows))
+	out := make([]*moe.PrivateConversation, 0, len(rows))
 	for _, row := range rows {
 		msg, ok := msgByID[row.LastID]
 		if !ok {
@@ -204,7 +204,7 @@ LIMIT ? OFFSET ?`
 		if strings.TrimSpace(lastMsg.GetBody()) == "" && len(lastMsg.GetImagePaths()) > 0 {
 			lastMsg.Body = "[IMG]"
 		}
-		out = append(out, &super.PrivateConversation{
+		out = append(out, &moe.PrivateConversation{
 			PeerId:            strconv.FormatUint(uint64(row.PeerID), 10),
 			PeerName:          peerName,
 			PeerAvatar:        strings.TrimSpace(peer.Avatar),
@@ -216,7 +216,7 @@ LIMIT ? OFFSET ?`
 	}
 
 	hasMore := int64(offset+len(out)) < totalRow.Total
-	return &super.ListPrivateConversationsResp{
+	return &moe.ListPrivateConversationsResp{
 		Conversations: out,
 		Total:         int32(totalRow.Total),
 		Limit:         int32(limit),

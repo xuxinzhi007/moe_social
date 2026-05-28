@@ -34,7 +34,7 @@ import (
 	postapp "backend/internal/service/post"
 	userapp "backend/internal/service/user"
 	vipadmin "backend/internal/service/vip"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"github.com/zeromicro/go-zero/zrpc"
@@ -42,7 +42,7 @@ import (
 
 type ServiceContext struct {
 	Config         config.Config
-	SuperRpcClient super.SuperClient
+	SuperRpcClient moe.SuperClient
 	MoeAdmin       *moeadmin.AdminService
 	MoeGRPC        moepb.MoeAdminClient
 	MoeGW          *moeadmingw.Gateway
@@ -80,7 +80,7 @@ type ServiceContext struct {
 func NewServiceContext(c config.Config) *ServiceContext {
 	rpcClient := zrpc.MustNewClient(c.SuperRpc)
 	conn := rpcClient.Conn()
-	superClient := super.NewSuperClient(conn)
+	superClient := moe.NewSuperClient(conn)
 
 	var moeGRPC moepb.MoeAdminClient
 	if moewiring.UseMoeGRPCEnabled() {

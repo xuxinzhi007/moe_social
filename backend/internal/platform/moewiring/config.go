@@ -127,12 +127,20 @@ func KratosHTTPFrontEnabled() bool {
 	return boolOr(moeViper(), []string{"moe.kratos_http_front_enabled"}, false)
 }
 
-// KratosGRPCManaged PK-7：zrpc 由 kratos.App 统一启停（与 co transport/grpc 对齐）。
+// KratosGRPCManaged PK-7：gRPC 由 kratos.App 统一启停（与 co transport/grpc 对齐）。
 func KratosGRPCManaged() bool {
 	if KratosPureEnabled() {
 		return true
 	}
 	return boolOr(moeViper(), []string{"moe.kratos_grpc_managed"}, false)
+}
+
+// KratosSuperGRPCNative PK-11：Super 使用 kratos/transport/grpc（非 zrpc）。
+func KratosSuperGRPCNative() bool {
+	if KratosPureEnabled() {
+		return true
+	}
+	return boolOr(moeViper(), []string{"moe.kratos_super_grpc_native"}, false)
 }
 
 // KratosPureHTTPWithoutLegacy 纯 Kratos 且不启动 go-zero rest（仅 Wire Svc）。

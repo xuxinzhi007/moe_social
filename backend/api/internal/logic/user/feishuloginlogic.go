@@ -10,7 +10,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -30,7 +30,7 @@ func NewFeishuLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Feish
 }
 
 func (l *FeishuLoginLogic) FeishuLogin(req *types.FeishuLoginReq) (resp *types.FeishuLoginResp, err error) {
-	rpcResp, rpcErr := l.svcCtx.UserGW.FeishuLogin(l.ctx, &super.FeishuLoginReq{
+	rpcResp, rpcErr := l.svcCtx.UserGW.FeishuLogin(l.ctx, &moe.FeishuLoginReq{
 		Code: strings.TrimSpace(req.Code),
 	})
 	if rpcErr != nil {

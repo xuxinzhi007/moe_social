@@ -212,9 +212,11 @@ moe:
   # PK-4（kratos_pure=false 时）：Kratos 前置 + go-zero 内网回退
   kratos_http_front_enabled: false
   kratos_internal_http_port: 18888
-  # PK-7（kratos_pure=true 时自动开启）
-  kratos_grpc_managed: false
-  kratos_admin_base_url: "http://127.0.0.1:19032"
+  # PK-7（kratos_pure=true 时自动开启；显式 true 便于运维识别）
+  kratos_grpc_managed: true
+  # PK-11（kratos_pure=true 时自动开启）：Super 使用 kratos/transport/grpc，非 zrpc
+  kratos_super_grpc_native: true
+  kratos_admin_base_url: "http://127.0.0.1:8888"
   # Phase 4 试点进程默认值（cmd/moe-kratos；CLI 参数可覆盖）
   # 生产对外端口不变：Flutter / moe-admin 仍 :8888（由 moe-social / go-zero API 提供）
   production:

@@ -4,15 +4,15 @@ import (
 	"context"
 
 	aibiz "backend/internal/biz/ai"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 // GetAiUserConfig 用户 AI 配置读。
-func (s *AppService) GetAiUserConfig(ctx context.Context, in *super.GetAiUserConfigReq) (*super.GetAiUserConfigResp, error) {
+func (s *AppService) GetAiUserConfig(ctx context.Context, in *moe.GetAiUserConfigReq) (*moe.GetAiUserConfigResp, error) {
 	return aibiz.GetAiUserConfig(ctx, s.db, in)
 }
 
 // UpsertAiUserConfig 用户 AI 配置写。
-func (s *AppService) UpsertAiUserConfig(ctx context.Context, in *super.UpsertAiUserConfigReq) (*super.UpsertAiUserConfigResp, error) {
+func (s *AppService) UpsertAiUserConfig(ctx context.Context, in *moe.UpsertAiUserConfigReq) (*moe.UpsertAiUserConfigResp, error) {
 	return aibiz.UpsertAiUserConfig(ctx, s.db, in)
 }

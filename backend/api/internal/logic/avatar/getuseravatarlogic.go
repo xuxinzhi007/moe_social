@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -29,7 +29,7 @@ func (l *GetUserAvatarLogic) GetUserAvatar(req *types.GetUserAvatarReq) (resp *t
 	logx.Infof("API: 获取用户虚拟形象: UserID=%s", req.UserId)
 
 	// 调用RPC服务获取用户虚拟形象
-	rpcResp, err := l.svcCtx.UserGW.GetUserAvatar(l.ctx, &super.GetUserAvatarReq{
+	rpcResp, err := l.svcCtx.UserGW.GetUserAvatar(l.ctx, &moe.GetUserAvatarReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

@@ -5,7 +5,7 @@ import (
 
 	userapp "backend/internal/service/user"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,7 +20,7 @@ func NewGetUserCountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetU
 	return &GetUserCountLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *GetUserCountLogic) GetUserCount(in *super.GetUserCountReq) (*super.GetUserCountResp, error) {
+func (l *GetUserCountLogic) GetUserCount(in *moe.GetUserCountReq) (*moe.GetUserCountResp, error) {
 	resp, err := userapp.New(l.svcCtx.DB).GetUserCount(l.ctx, in)
 	return resp, mapUserBizErr(err)
 }

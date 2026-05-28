@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,7 +19,7 @@ func NewAdminCreateAccountLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	return &AdminCreateAccountLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminCreateAccountLogic) AdminCreateAccount(in *super.AdminCreateAccountReq) (*super.AdminCreateAccountResp, error) {
+func (l *AdminCreateAccountLogic) AdminCreateAccount(in *moe.AdminCreateAccountReq) (*moe.AdminCreateAccountResp, error) {
 	resp, err := newAdminApp(l.svcCtx.DB).CreateAccount(l.ctx, in)
 	if err != nil {
 		return nil, mapAdminAccountErr(err)

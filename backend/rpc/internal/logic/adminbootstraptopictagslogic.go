@@ -5,7 +5,7 @@ import (
 
 	adminapp "backend/internal/service/admin"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -24,7 +24,7 @@ func NewAdminBootstrapTopicTagsLogic(ctx context.Context, svcCtx *svc.ServiceCon
 	}
 }
 
-func (l *AdminBootstrapTopicTagsLogic) AdminBootstrapTopicTags(in *super.AdminBootstrapTopicTagsReq) (*super.AdminBootstrapTopicTagsResp, error) {
+func (l *AdminBootstrapTopicTagsLogic) AdminBootstrapTopicTags(in *moe.AdminBootstrapTopicTagsReq) (*moe.AdminBootstrapTopicTagsResp, error) {
 	_ = in
 	return adminapp.New(l.svcCtx.DB).AdminBootstrapTopicTags(l.ctx, in)
 }

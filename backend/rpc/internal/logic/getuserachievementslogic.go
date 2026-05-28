@@ -8,7 +8,7 @@ import (
 	achievementapp "backend/internal/service/achievement"
 	achievementbiz "backend/internal/biz/achievement"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewGetUserAchievementsLogic(ctx context.Context, svcCtx *svc.ServiceContext
 	return &GetUserAchievementsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *GetUserAchievementsLogic) GetUserAchievements(in *super.GetUserAchievementsReq) (*super.GetUserAchievementsResp, error) {
+func (l *GetUserAchievementsLogic) GetUserAchievements(in *moe.GetUserAchievementsReq) (*moe.GetUserAchievementsResp, error) {
 	app := achievementapp.New(l.svcCtx.DB)
 	resp, err := app.GetUserAchievements(l.ctx, in)
 	if err != nil {

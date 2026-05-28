@@ -7,7 +7,7 @@ import (
 	adminbiz "backend/internal/biz/admin"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewAdminGetAnnouncementLogic(ctx context.Context, svcCtx *svc.ServiceContex
 	return &AdminGetAnnouncementLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminGetAnnouncementLogic) AdminGetAnnouncement(in *super.AdminGetAnnouncementReq) (*super.AdminGetAnnouncementResp, error) {
+func (l *AdminGetAnnouncementLogic) AdminGetAnnouncement(in *moe.AdminGetAnnouncementReq) (*moe.AdminGetAnnouncementResp, error) {
 	item, err := adminbiz.GetAnnouncement(l.ctx, l.svcCtx.DB, in.GetAnnouncementId())
 	if err != nil {
 		switch {
@@ -34,5 +34,5 @@ func (l *AdminGetAnnouncementLogic) AdminGetAnnouncement(in *super.AdminGetAnnou
 			return nil, errorx.Internal("查询公告失败")
 		}
 	}
-	return &super.AdminGetAnnouncementResp{Announcement: item}, nil
+	return &moe.AdminGetAnnouncementResp{Announcement: item}, nil
 }

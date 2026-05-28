@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 // KratosHTTPClient 调用纯 Kratos 试点 Admin HTTP（:19032）。
@@ -38,9 +38,9 @@ func (c *KratosHTTPClient) enabled() bool {
 	return c != nil && c.baseURL != ""
 }
 
-func (c *KratosHTTPClient) AdminListAiChatSessions(ctx context.Context, in *super.AdminListAiChatSessionsReq) (*super.AdminListAiChatSessionsResp, error) {
+func (c *KratosHTTPClient) AdminListAiChatSessions(ctx context.Context, in *moe.AdminListAiChatSessionsReq) (*moe.AdminListAiChatSessionsResp, error) {
 	if in == nil {
-		in = &super.AdminListAiChatSessionsReq{}
+		in = &moe.AdminListAiChatSessionsReq{}
 	}
 	q := url.Values{}
 	if in.GetPage() > 0 {
@@ -63,9 +63,9 @@ func (c *KratosHTTPClient) AdminListAiChatSessions(ctx context.Context, in *supe
 	return typesAiChatSessionsToSuper(resp.Data), nil
 }
 
-func (c *KratosHTTPClient) AdminListAiChatMessages(ctx context.Context, in *super.AdminListAiChatMessagesReq) (*super.AdminListAiChatMessagesResp, error) {
+func (c *KratosHTTPClient) AdminListAiChatMessages(ctx context.Context, in *moe.AdminListAiChatMessagesReq) (*moe.AdminListAiChatMessagesResp, error) {
 	if in == nil {
-		in = &super.AdminListAiChatMessagesReq{}
+		in = &moe.AdminListAiChatMessagesReq{}
 	}
 	q := url.Values{}
 	if in.GetPage() > 0 {
@@ -90,9 +90,9 @@ func (c *KratosHTTPClient) AdminListAiChatMessages(ctx context.Context, in *supe
 	return typesAiChatMessagesToSuper(resp.Data), nil
 }
 
-func (c *KratosHTTPClient) AdminExportAiChatMessages(ctx context.Context, in *super.AdminExportAiChatMessagesReq) (*super.AdminExportAiChatMessagesResp, error) {
+func (c *KratosHTTPClient) AdminExportAiChatMessages(ctx context.Context, in *moe.AdminExportAiChatMessagesReq) (*moe.AdminExportAiChatMessagesResp, error) {
 	if in == nil {
-		in = &super.AdminExportAiChatMessagesReq{}
+		in = &moe.AdminExportAiChatMessagesReq{}
 	}
 	q := url.Values{}
 	setQuery(q, "user_id", in.GetUserId())
@@ -111,12 +111,12 @@ func (c *KratosHTTPClient) AdminExportAiChatMessages(ctx context.Context, in *su
 	if resp.Code != 0 || !resp.Success {
 		return nil, fmt.Errorf("kratos http export ai chat: %s", resp.Message)
 	}
-	return &super.AdminExportAiChatMessagesResp{
+	return &moe.AdminExportAiChatMessagesResp{
 		Csv: resp.Data.Csv, RowCount: int32(resp.Data.RowCount), Truncated: resp.Data.Truncated,
 	}, nil
 }
 
-func (c *KratosHTTPClient) AdminAnalyticsOverview(ctx context.Context, _ *super.AdminGetMemoryStatsReq) (*super.AdminAnalyticsOverviewResp, error) {
+func (c *KratosHTTPClient) AdminAnalyticsOverview(ctx context.Context, _ *moe.AdminGetMemoryStatsReq) (*moe.AdminAnalyticsOverviewResp, error) {
 	var resp types.AdminAnalyticsOverviewResp
 	if err := c.getJSON(ctx, c.baseURL+"/api/admin/analytics/overview", &resp); err != nil {
 		return nil, err
@@ -127,9 +127,9 @@ func (c *KratosHTTPClient) AdminAnalyticsOverview(ctx context.Context, _ *super.
 	return typesAnalyticsOverviewToSuper(resp.Data), nil
 }
 
-func (c *KratosHTTPClient) AdminListTopicTags(ctx context.Context, in *super.AdminListTopicTagsReq) (*super.AdminListTopicTagsResp, error) {
+func (c *KratosHTTPClient) AdminListTopicTags(ctx context.Context, in *moe.AdminListTopicTagsReq) (*moe.AdminListTopicTagsResp, error) {
 	if in == nil {
-		in = &super.AdminListTopicTagsReq{}
+		in = &moe.AdminListTopicTagsReq{}
 	}
 	q := url.Values{}
 	if in.GetPage() > 0 {

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	landingapp "backend/internal/service/landing"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"google.golang.org/grpc"
 )
@@ -12,11 +12,11 @@ import (
 // Gateway Landing HTTP → biz 或 super RPC 回退。
 type Gateway struct {
 	local *landingapp.AppService
-	super super.SuperClient
+	super moe.SuperClient
 }
 
 // New 构造网关。
-func New(local *landingapp.AppService, legacy super.SuperClient) *Gateway {
+func New(local *landingapp.AppService, legacy moe.SuperClient) *Gateway {
 	return &Gateway{local: local, super: legacy}
 }
 
@@ -34,14 +34,14 @@ func (g *Gateway) Route() string {
 	return "none"
 }
 
-func (g *Gateway) SubmitLandingFeedback(ctx context.Context, in *super.SubmitLandingFeedbackReq, opts ...grpc.CallOption) (*super.SubmitLandingFeedbackResp, error) {
+func (g *Gateway) SubmitLandingFeedback(ctx context.Context, in *moe.SubmitLandingFeedbackReq, opts ...grpc.CallOption) (*moe.SubmitLandingFeedbackResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.Submit(ctx, in)
 	}
 	return g.super.SubmitLandingFeedback(ctx, in, opts...)
 }
 
-func (g *Gateway) ListLandingFeedback(ctx context.Context, in *super.ListLandingFeedbackReq, opts ...grpc.CallOption) (*super.ListLandingFeedbackResp, error) {
+func (g *Gateway) ListLandingFeedback(ctx context.Context, in *moe.ListLandingFeedbackReq, opts ...grpc.CallOption) (*moe.ListLandingFeedbackResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.List(ctx, in)
 	}

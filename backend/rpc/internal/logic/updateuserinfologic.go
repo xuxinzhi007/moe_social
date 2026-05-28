@@ -5,7 +5,7 @@ import (
 
 	userapp "backend/internal/service/user"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,7 +20,7 @@ func NewUpdateUserInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Up
 	return &UpdateUserInfoLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *UpdateUserInfoLogic) UpdateUserInfo(in *super.UpdateUserInfoReq) (*super.UpdateUserInfoResp, error) {
+func (l *UpdateUserInfoLogic) UpdateUserInfo(in *moe.UpdateUserInfoReq) (*moe.UpdateUserInfoResp, error) {
 	resp, err := userapp.New(l.svcCtx.DB).UpdateUserInfo(l.ctx, in)
 	return resp, mapUserBizErr(err)
 }

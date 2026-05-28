@@ -7,7 +7,7 @@ import (
 	"backend/api/internal/logic/chat"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewAdminSendNotificationLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *AdminSendNotificationLogic) AdminSendNotification(req *types.AdminSendNotificationReq) (*types.AdminSendNotificationResp, error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminSendNotification(l.ctx, &super.AdminSendNotificationReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminSendNotification(l.ctx, &moe.AdminSendNotificationReq{
 		UserId:  req.UserId,
 		Title:   req.Title,
 		Content: req.Content,

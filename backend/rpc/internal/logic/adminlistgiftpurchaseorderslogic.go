@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,7 +19,7 @@ func NewAdminListGiftPurchaseOrdersLogic(ctx context.Context, svcCtx *svc.Servic
 	return &AdminListGiftPurchaseOrdersLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminListGiftPurchaseOrdersLogic) AdminListGiftPurchaseOrders(in *super.AdminListGiftPurchaseOrdersReq) (*super.AdminListGiftPurchaseOrdersResp, error) {
+func (l *AdminListGiftPurchaseOrdersLogic) AdminListGiftPurchaseOrders(in *moe.AdminListGiftPurchaseOrdersReq) (*moe.AdminListGiftPurchaseOrdersResp, error) {
 	resp, err := newAdminApp(l.svcCtx.DB).ListGiftPurchaseOrders(l.ctx, in)
 	if err != nil {
 		return nil, mapAdminOrdersErr(err)

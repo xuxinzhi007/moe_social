@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,6 +23,6 @@ func NewListIncomingFriendRequestsLogic(ctx context.Context, svcCtx *svc.Service
 	}
 }
 
-func (l *ListIncomingFriendRequestsLogic) ListIncomingFriendRequests(in *super.ListIncomingFriendRequestsReq) (*super.ListIncomingFriendRequestsResp, error) {
+func (l *ListIncomingFriendRequestsLogic) ListIncomingFriendRequests(in *moe.ListIncomingFriendRequestsReq) (*moe.ListIncomingFriendRequestsResp, error) {
 	return NewFriendRelationLogic(l.ctx, l.svcCtx).ListIncomingFriendRequests(in)
 }

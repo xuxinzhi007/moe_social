@@ -5,7 +5,7 @@ import (
 
 	vipbiz "backend/internal/biz/vip"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -24,7 +24,7 @@ func NewGetVipPlanLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetVip
 	}
 }
 
-func (l *GetVipPlanLogic) GetVipPlan(in *super.GetVipPlanReq) (*super.GetVipPlanResp, error) {
+func (l *GetVipPlanLogic) GetVipPlan(in *moe.GetVipPlanReq) (*moe.GetVipPlanResp, error) {
 	planID, err := parseVipPlanID(in.GetPlanId())
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func (l *GetVipPlanLogic) GetVipPlan(in *super.GetVipPlanReq) (*super.GetVipPlan
 		l.Errorf("get vip plan: %v", err)
 		return nil, mapVipBizErr(err)
 	}
-	return &super.GetVipPlanResp{
+	return &moe.GetVipPlanResp{
 		Plan: vipPlanModelToProto(plan),
 	}, nil
 }

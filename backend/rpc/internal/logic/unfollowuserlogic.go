@@ -5,7 +5,7 @@ import (
 
 	userbiz "backend/internal/biz/user"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -24,7 +24,7 @@ func NewUnfollowUserLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Unfo
 	}
 }
 
-func (l *UnfollowUserLogic) UnfollowUser(in *super.UnfollowUserReq) (*super.FollowUserResp, error) {
+func (l *UnfollowUserLogic) UnfollowUser(in *moe.UnfollowUserReq) (*moe.FollowUserResp, error) {
 	followerID, followingID, err := userbiz.ParseFollowPair(in.GetUserId(), in.GetFollowingId())
 	if err != nil {
 		l.Error("解析关注 ID 失败:", err)
@@ -34,5 +34,5 @@ func (l *UnfollowUserLogic) UnfollowUser(in *super.UnfollowUserReq) (*super.Foll
 		l.Error("取消关注失败:", err)
 		return nil, err
 	}
-	return &super.FollowUserResp{Success: true}, nil
+	return &moe.FollowUserResp{Success: true}, nil
 }

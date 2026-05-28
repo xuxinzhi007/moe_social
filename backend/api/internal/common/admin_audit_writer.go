@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"backend/api/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func TryRecordAdminAudit(ctx context.Context, svcCtx *svc.ServiceContext, action
 		return
 	}
 
-	req := &super.RecordAdminAuditLogReq{
+	req := &moe.RecordAdminAuditLogReq{
 		AdminId:    uint64(actor.AdminID),
 		AdminName:  actor.AdminName,
 		Action:     action,

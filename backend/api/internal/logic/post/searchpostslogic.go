@@ -8,7 +8,7 @@ import (
 	"backend/api/internal/moebridge"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -47,7 +47,7 @@ func (l *SearchPostsLogic) SearchPosts(req *types.SearchPostsReq) (*types.Search
 			topicID = v
 		}
 	}
-	rpcResp, err := l.svcCtx.PostGW.MoeSearchPosts(l.ctx, &super.MoeSearchPostsReq{
+	rpcResp, err := l.svcCtx.PostGW.MoeSearchPosts(l.ctx, &moe.MoeSearchPostsReq{
 		Query:        req.Q,
 		Limit:        int32(limit),
 		ViewerUserId: viewerUID,

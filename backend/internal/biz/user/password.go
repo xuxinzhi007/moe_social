@@ -6,14 +6,14 @@ import (
 	"strings"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
 )
 
 // UpdateUserPassword 校验旧密码后更新。
-func UpdateUserPassword(ctx context.Context, db *gorm.DB, in *super.UpdateUserPasswordReq) (*super.UpdateUserPasswordResp, error) {
+func UpdateUserPassword(ctx context.Context, db *gorm.DB, in *moe.UpdateUserPasswordReq) (*moe.UpdateUserPasswordResp, error) {
 	var user model.User
 	if err := db.WithContext(ctx).First(&user, in.GetUserId()).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -28,11 +28,11 @@ func UpdateUserPassword(ctx context.Context, db *gorm.DB, in *super.UpdateUserPa
 	if err := db.WithContext(ctx).Save(&user).Error; err != nil {
 		return nil, err
 	}
-	return &super.UpdateUserPasswordResp{}, nil
+	return &moe.UpdateUserPasswordResp{}, nil
 }
 
 // ResetPassword 按邮箱重置密码。
-func ResetPassword(ctx context.Context, db *gorm.DB, in *super.ResetPasswordReq) (*super.ResetPasswordResp, error) {
+func ResetPassword(ctx context.Context, db *gorm.DB, in *moe.ResetPasswordReq) (*moe.ResetPasswordResp, error) {
 	var user model.User
 	err := db.WithContext(ctx).Where("email = ?", in.GetEmail()).First(&user).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -45,11 +45,11 @@ func ResetPassword(ctx context.Context, db *gorm.DB, in *super.ResetPasswordReq)
 	if err := db.WithContext(ctx).Save(&user).Error; err != nil {
 		return nil, err
 	}
-	return &super.ResetPasswordResp{}, nil
+	return &moe.ResetPasswordResp{}, nil
 }
 
 // GetUserByEmail 按邮箱查询用户。
-func GetUserByEmail(ctx context.Context, db *gorm.DB, in *super.GetUserByEmailReq) (*super.GetUserByEmailResp, error) {
+func GetUserByEmail(ctx context.Context, db *gorm.DB, in *moe.GetUserByEmailReq) (*moe.GetUserByEmailResp, error) {
 	email := strings.TrimSpace(in.GetEmail())
 	var user model.User
 	if err := db.WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
@@ -62,5 +62,5 @@ func GetUserByEmail(ctx context.Context, db *gorm.DB, in *super.GetUserByEmailRe
 		return nil, err
 	}
 	_ = db.WithContext(ctx).First(&user, user.ID).Error
-	return &super.GetUserByEmailResp{User: ModelToProto(&user)}, nil
+	return &moe.GetUserByEmailResp{User: ModelToProto(&user)}, nil
 }

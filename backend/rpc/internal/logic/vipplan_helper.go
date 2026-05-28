@@ -4,7 +4,7 @@ import (
 	vipbiz "backend/internal/biz/vip"
 	"backend/model"
 	"backend/rpc/internal/errorx"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 func parseVipPlanID(raw string) (uint, error) {
@@ -15,6 +15,6 @@ func parseVipPlanID(raw string) (uint, error) {
 	return id, nil
 }
 
-func vipPlanModelToProto(plan model.VipPlan) *super.VipPlan {
+func vipPlanModelToProto(plan model.VipPlan) *moe.VipPlan {
 	return vipbiz.PlanModelToProto(plan)
 }

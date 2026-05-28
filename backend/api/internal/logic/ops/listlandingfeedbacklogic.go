@@ -10,7 +10,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -39,7 +39,7 @@ func (l *ListLandingFeedbackLogic) ListLandingFeedback(req *types.ListLandingFee
 		pageSize = 20
 	}
 
-	rpcResp, err := l.svcCtx.LandingGW.ListLandingFeedback(l.ctx, &super.ListLandingFeedbackReq{
+	rpcResp, err := l.svcCtx.LandingGW.ListLandingFeedback(l.ctx, &moe.ListLandingFeedbackReq{
 		Page:     int32(page),
 		PageSize: int32(pageSize),
 		Category: strings.TrimSpace(req.Category),

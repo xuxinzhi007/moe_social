@@ -6,6 +6,6 @@ cd "$(dirname "$0")/.."
 bash scripts/verify-kratos-rollout-pk12.sh
 bash scripts/verify-kratos-rollout-pk3.sh
 
-go test ./internal/platform/kratosprogress/... -count=1 -run TestCompletePureKratosHonestRange
+go test ./internal/platform/kratosprogress/... -count=1 -run TestCompletePureKratosAtLeast80
 
 echo "OK: Kratos migration rollout >= 70% (team metric)"

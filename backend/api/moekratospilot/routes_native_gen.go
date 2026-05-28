@@ -20,11 +20,9 @@ import (
 	hemoji "backend/api/internal/handler/emoji"
 	hgift "backend/api/internal/handler/gift"
 	himage "backend/api/internal/handler/image"
-	hlanding "backend/api/internal/handler/landing"
 	hllm "backend/api/internal/handler/llm"
 	hmoe "backend/api/internal/handler/moe"
 	hnotification "backend/api/internal/handler/notification"
-	hops "backend/api/internal/handler/ops"
 	hpost "backend/api/internal/handler/post"
 	hprivatemsg "backend/api/internal/handler/privatemsg"
 	huser "backend/api/internal/handler/user"
@@ -34,7 +32,7 @@ import (
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
-const nativeDomainRouteCount = 250
+const nativeDomainRouteCount = 247
 
 // RegisterNativeDomainHTTPHandlers 全站原生 Kratos 路由（wrapNativeHTTP）。
 func RegisterNativeDomainHTTPHandlers(srv *khttp.Server, svc *svc.ServiceContext) {
@@ -79,7 +77,6 @@ func RegisterNativeDomainHTTPHandlers(srv *khttp.Server, svc *svc.ServiceContext
 	r.GET("/api/admin/growth/levels", wrapNativeHTTP(hadmin.AdminListLevelConfigsHandler(svc)))
 	r.PUT("/api/admin/growth/levels/:level_id", wrapNativeHTTP(hadmin.AdminUpdateLevelConfigHandler(svc)))
 	r.POST("/api/admin/growth/levels/bootstrap", wrapNativeHTTP(hadmin.AdminBootstrapLevelsHandler(svc)))
-	r.GET("/api/admin/landing/feedback", wrapNativeHTTP(hadmin.AdminListLandingFeedbackHandler(svc)))
 	r.GET("/api/admin/me", wrapNativeHTTP(hadmin.AdminMeHandler(svc)))
 	r.GET("/api/admin/media/images", wrapNativeHTTP(hadmin.AdminListMediaImagesHandler(svc)))
 	r.DELETE("/api/admin/media/images/:filename", wrapNativeHTTP(hadmin.AdminDeleteMediaImageHandler(svc)))
@@ -196,7 +193,6 @@ func RegisterNativeDomainHTTPHandlers(srv *khttp.Server, svc *svc.ServiceContext
 	r.DELETE("/api/images/:filename", wrapNativeHTTP(himage.DeleteImageHandler(svc)))
 	r.GET("/api/images/:filename", wrapNativeHTTP(himage.GetImageHandler(svc)))
 	r.POST("/api/upload", wrapNativeHTTP(himage.UploadImageHandler(svc)))
-	r.POST("/api/landing/feedback", wrapNativeHTTP(hlanding.SubmitLandingFeedbackHandler(svc)))
 	r.POST("/api/llm/agents", wrapNativeHTTP(hllm.CreateAgentHandler(svc)))
 	r.POST("/api/llm/chat", wrapNativeHTTP(hllm.ChatHandler(svc)))
 	r.POST("/api/llm/chat/raw", wrapNativeHTTP(hllm.ChatRawHandler(svc)))
@@ -214,7 +210,6 @@ func RegisterNativeDomainHTTPHandlers(srv *khttp.Server, svc *svc.ServiceContext
 	r.POST("/api/notifications/:id/read", wrapNativeHTTP(hnotification.ReadNotificationHandler(svc)))
 	r.POST("/api/notifications/read-all", wrapNativeHTTP(hnotification.ReadAllNotificationsHandler(svc)))
 	r.GET("/api/notifications/unread", wrapNativeHTTP(hnotification.GetUnreadCountHandler(svc)))
-	r.GET("/api/ops/landing/feedback", wrapNativeHTTP(hops.ListLandingFeedbackHandler(svc)))
 	r.GET("/api/posts", wrapNativeHTTP(hpost.GetPostsHandler(svc)))
 	r.POST("/api/posts", wrapNativeHTTP(hpost.CreatePostHandler(svc)))
 	r.GET("/api/posts/:post_id", wrapNativeHTTP(hpost.GetPostHandler(svc)))

@@ -7,7 +7,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 // persistChatTurnsAfterReply 将本轮 user/assistant 写入 RPC 会话表（需 session_id）。
@@ -45,7 +45,7 @@ func recordChatTurnAsync(svcCtx *svc.ServiceContext, userID, sessionID, sourceMs
 	}
 	go func() {
 		ctx := context.Background()
-		_, _ = svcCtx.LLMGW.RecordLlmChatTurn(ctx, &super.RecordLlmChatTurnReq{
+		_, _ = svcCtx.LLMGW.RecordLlmChatTurn(ctx, &moe.RecordLlmChatTurnReq{
 			UserId:      uid,
 			SessionId:   sessionID,
 			SourceMsgId: sourceMsgID,

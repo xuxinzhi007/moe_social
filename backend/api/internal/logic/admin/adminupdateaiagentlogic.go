@@ -8,7 +8,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -42,7 +42,7 @@ func (l *AdminUpdateAiAgentLogic) AdminUpdateAiAgent(req *types.AdminUpdateAiAge
 			BaseResp: types.BaseResp{Success: false, Message: "AI 网关未就绪"},
 		}, nil
 	}
-	_, err := l.svcCtx.AIGW.UpsertAiAgent(l.ctx, &super.UpsertAiResourceReq{
+	_, err := l.svcCtx.AIGW.UpsertAiAgent(l.ctx, &moe.UpsertAiResourceReq{
 		UserId:      uid,
 		Id:          aid,
 		PayloadJson: payload,

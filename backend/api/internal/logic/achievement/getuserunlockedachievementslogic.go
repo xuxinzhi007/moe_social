@@ -5,7 +5,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewGetUserUnlockedAchievementsLogic(ctx context.Context, svcCtx *svc.Servic
 }
 
 func (l *GetUserUnlockedAchievementsLogic) GetUserUnlockedAchievements(req *types.GetUserUnlockedAchievementsReq) (*types.GetUserUnlockedAchievementsResp, error) {
-	rpcResp, err := l.svcCtx.AchievementGW.GetUserUnlockedAchievements(l.ctx, &super.GetUserUnlockedAchievementsReq{
+	rpcResp, err := l.svcCtx.AchievementGW.GetUserUnlockedAchievements(l.ctx, &moe.GetUserUnlockedAchievementsReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

@@ -5,7 +5,7 @@ import (
 
 	communityapp "backend/internal/service/community"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,6 +20,6 @@ func NewCreateGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Creat
 	return &CreateGroupLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *CreateGroupLogic) CreateGroup(in *super.CreateGroupReq) (*super.CreateGroupResp, error) {
+func (l *CreateGroupLogic) CreateGroup(in *moe.CreateGroupReq) (*moe.CreateGroupResp, error) {
 	return communityapp.New(l.svcCtx.DB).CreateGroup(l.ctx, in)
 }

@@ -6,7 +6,7 @@ import (
 
 	"backend/pkg/memory"
 	"backend/pkg/moe/core"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 type memorySearchArgs struct {
@@ -33,7 +33,7 @@ func (e *Executor) execMemorySearch(ctx context.Context, req core.ExecuteRequest
 		return fail(err.Error())
 	}
 	uid := strconv.FormatUint(uint64(req.ActorUserID), 10)
-	memResp, err := e.deps.RPC.GetUserMemories(ctx, &super.GetUserMemoriesReq{UserId: uid})
+	memResp, err := e.deps.RPC.GetUserMemories(ctx, &moe.GetUserMemoriesReq{UserId: uid})
 	if err != nil {
 		return fail("拉取记忆失败")
 	}
@@ -63,7 +63,7 @@ func (e *Executor) execMemoryGet(ctx context.Context, req core.ExecuteRequest) c
 		return fail(err.Error())
 	}
 	uid := strconv.FormatUint(uint64(req.ActorUserID), 10)
-	memResp, err := e.deps.RPC.GetUserMemories(ctx, &super.GetUserMemoriesReq{UserId: uid})
+	memResp, err := e.deps.RPC.GetUserMemories(ctx, &moe.GetUserMemoriesReq{UserId: uid})
 	if err != nil {
 		return fail("拉取记忆失败")
 	}
@@ -88,7 +88,7 @@ func (e *Executor) execMemorySave(ctx context.Context, req core.ExecuteRequest) 
 	if mt == "" {
 		mt = "fact"
 	}
-	_, err := e.deps.RPC.UpsertUserMemory(ctx, &super.UpsertUserMemoryReq{
+	_, err := e.deps.RPC.UpsertUserMemory(ctx, &moe.UpsertUserMemoryReq{
 		UserId:     uid,
 		Key:        args.Key,
 		Value:      args.Value,

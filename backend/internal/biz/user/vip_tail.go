@@ -8,13 +8,13 @@ import (
 
 	"backend/model"
 	"backend/pkg/achievement"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // CreateVipOrder 钱包购买 VIP 套餐。
-func CreateVipOrder(ctx context.Context, db *gorm.DB, in *super.CreateVipOrderReq) (*super.CreateVipOrderResp, error) {
+func CreateVipOrder(ctx context.Context, db *gorm.DB, in *moe.CreateVipOrderReq) (*moe.CreateVipOrderResp, error) {
 	var order model.VipOrder
 	var paidUserID uint
 	err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -97,9 +97,9 @@ func CreateVipOrder(ctx context.Context, db *gorm.DB, in *super.CreateVipOrderRe
 		}
 	}
 
-	return &super.CreateVipOrderResp{
+	return &moe.CreateVipOrderResp{
 		NewAchievements: achievement.UnlocksToProto(achUnlocks),
-		Order: &super.VipOrder{
+		Order: &moe.VipOrder{
 			Id:        strconv.FormatUint(uint64(order.ID), 10),
 			UserId:    in.GetUserId(),
 			PlanId:    strconv.FormatUint(uint64(order.PlanID), 10),
@@ -114,7 +114,7 @@ func CreateVipOrder(ctx context.Context, db *gorm.DB, in *super.CreateVipOrderRe
 }
 
 // UpdateUserVip 管理端设置 VIP 状态。
-func UpdateUserVip(ctx context.Context, db *gorm.DB, in *super.UpdateUserVipReq) (*super.UpdateUserVipResp, error) {
+func UpdateUserVip(ctx context.Context, db *gorm.DB, in *moe.UpdateUserVipReq) (*moe.UpdateUserVipResp, error) {
 	var user model.User
 	if err := db.WithContext(ctx).First(&user, in.GetUserId()).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -158,11 +158,11 @@ func UpdateUserVip(ctx context.Context, db *gorm.DB, in *super.UpdateUserVipReq)
 	if err := db.WithContext(ctx).Save(&user).Error; err != nil {
 		return nil, err
 	}
-	return &super.UpdateUserVipResp{User: ModelToProto(&user)}, nil
+	return &moe.UpdateUserVipResp{User: ModelToProto(&user)}, nil
 }
 
 // SyncUserVipStatus 按过期时间同步 VIP 标记。
-func SyncUserVipStatus(ctx context.Context, db *gorm.DB, in *super.SyncUserVipStatusReq) (*super.SyncUserVipStatusResp, error) {
+func SyncUserVipStatus(ctx context.Context, db *gorm.DB, in *moe.SyncUserVipStatusReq) (*moe.SyncUserVipStatusResp, error) {
 	var user model.User
 	if err := db.WithContext(ctx).First(&user, in.GetUserId()).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -180,11 +180,11 @@ func SyncUserVipStatus(ctx context.Context, db *gorm.DB, in *super.SyncUserVipSt
 			_ = db.WithContext(ctx).Save(&user)
 		}
 	}
-	return &super.SyncUserVipStatusResp{IsVip: isVip, ExpiresAt: vipEndAt}, nil
+	return &moe.SyncUserVipStatusResp{IsVip: isVip, ExpiresAt: vipEndAt}, nil
 }
 
 // UpdateAutoRenew 占位（模型暂无字段）。
-func UpdateAutoRenew(ctx context.Context, db *gorm.DB, in *super.UpdateAutoRenewReq) (*super.UpdateAutoRenewResp, error) {
+func UpdateAutoRenew(ctx context.Context, db *gorm.DB, in *moe.UpdateAutoRenewReq) (*moe.UpdateAutoRenewResp, error) {
 	var user model.User
 	if err := db.WithContext(ctx).First(&user, in.GetUserId()).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -192,11 +192,11 @@ func UpdateAutoRenew(ctx context.Context, db *gorm.DB, in *super.UpdateAutoRenew
 		}
 		return nil, err
 	}
-	return &super.UpdateAutoRenewResp{}, nil
+	return &moe.UpdateAutoRenewResp{}, nil
 }
 
 // GetVipRecords 分页 VIP 订单记录。
-func GetVipRecords(ctx context.Context, db *gorm.DB, in *super.GetVipRecordsReq) (*super.GetVipRecordsResp, error) {
+func GetVipRecords(ctx context.Context, db *gorm.DB, in *moe.GetVipRecordsReq) (*moe.GetVipRecordsResp, error) {
 	page := in.GetPage()
 	if page <= 0 {
 		page = 1
@@ -217,7 +217,7 @@ func GetVipRecords(ctx context.Context, db *gorm.DB, in *super.GetVipRecordsReq)
 		return nil, err
 	}
 
-	respRecords := make([]*super.VipRecord, len(orders))
+	respRecords := make([]*moe.VipRecord, len(orders))
 	for i, order := range orders {
 		status := "inactive"
 		if order.IsActive {
@@ -230,7 +230,7 @@ func GetVipRecords(ctx context.Context, db *gorm.DB, in *super.GetVipRecordsReq)
 		if order.EndAt != nil {
 			endAt = order.EndAt.Format("2006-01-02 15:04:05")
 		}
-		respRecords[i] = &super.VipRecord{
+		respRecords[i] = &moe.VipRecord{
 			Id:        strconv.Itoa(int(order.ID)),
 			UserId:    in.GetUserId(),
 			PlanId:    strconv.Itoa(int(order.PlanID)),
@@ -241,11 +241,11 @@ func GetVipRecords(ctx context.Context, db *gorm.DB, in *super.GetVipRecordsReq)
 			CreatedAt: order.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 	}
-	return &super.GetVipRecordsResp{Records: respRecords, Total: int32(total)}, nil
+	return &moe.GetVipRecordsResp{Records: respRecords, Total: int32(total)}, nil
 }
 
 // GetUserActiveVipRecord 当前有效 VIP 订单。
-func GetUserActiveVipRecord(ctx context.Context, db *gorm.DB, in *super.GetUserActiveVipRecordReq) (*super.GetUserActiveVipRecordResp, error) {
+func GetUserActiveVipRecord(ctx context.Context, db *gorm.DB, in *moe.GetUserActiveVipRecordReq) (*moe.GetUserActiveVipRecordResp, error) {
 	var order model.VipOrder
 	err := db.WithContext(ctx).Where("user_id = ? AND is_active = ? AND end_at > ? AND status = ?",
 		in.GetUserId(), true, time.Now(), "paid").First(&order).Error
@@ -257,8 +257,8 @@ func GetUserActiveVipRecord(ctx context.Context, db *gorm.DB, in *super.GetUserA
 	}
 	var plan model.VipPlan
 	_ = db.WithContext(ctx).First(&plan, order.PlanID).Error
-	return &super.GetUserActiveVipRecordResp{
-		Record: &super.VipRecord{
+	return &moe.GetUserActiveVipRecordResp{
+		Record: &moe.VipRecord{
 			Id:        strconv.Itoa(int(order.ID)),
 			UserId:    strconv.Itoa(int(order.UserID)),
 			PlanId:    strconv.Itoa(int(order.PlanID)),

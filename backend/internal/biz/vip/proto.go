@@ -4,12 +4,12 @@ import (
 	"strconv"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 // PlanModelToProto 将 VIP 套餐模型转为 super 消息。
-func PlanModelToProto(plan model.VipPlan) *super.VipPlan {
-	return &super.VipPlan{
+func PlanModelToProto(plan model.VipPlan) *moe.VipPlan {
+	return &moe.VipPlan{
 		Id:           strconv.FormatUint(uint64(plan.ID), 10),
 		Name:         plan.Name,
 		Description:  plan.Features,

@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewAdminDeleteAnnouncementLogic(ctx context.Context, svcCtx *svc.ServiceCon
 }
 
 func (l *AdminDeleteAnnouncementLogic) AdminDeleteAnnouncement(req *types.AdminDeleteAnnouncementReq) (*types.AdminDeleteAnnouncementResp, error) {
-	_, err := l.svcCtx.AdminGW.AdminDeleteAnnouncement(l.ctx, &super.AdminDeleteAnnouncementReq{
+	_, err := l.svcCtx.AdminGW.AdminDeleteAnnouncement(l.ctx, &moe.AdminDeleteAnnouncementReq{
 		AnnouncementId: req.AnnouncementId,
 	})
 	if err != nil {

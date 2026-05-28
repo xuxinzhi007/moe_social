@@ -6,7 +6,7 @@ import (
 
 	userbiz "backend/internal/biz/user"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewGetUserInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetUs
 	}
 }
 
-func (l *GetUserInfoLogic) GetUserInfo(in *super.GetUserInfoReq) (*super.GetUserInfoResp, error) {
+func (l *GetUserInfoLogic) GetUserInfo(in *moe.GetUserInfoReq) (*moe.GetUserInfoResp, error) {
 	uid, err := strconv.ParseUint(in.GetUserId(), 10, 64)
 	if err != nil || uid == 0 {
 		return nil, mapUserBizErr(userbiz.ErrInvalidArgument)
@@ -35,5 +35,5 @@ func (l *GetUserInfoLogic) GetUserInfo(in *super.GetUserInfoReq) (*super.GetUser
 		l.Errorf("get user info: %v", err)
 		return nil, mapUserBizErr(err)
 	}
-	return &super.GetUserInfoResp{User: modelUserToProto(&user)}, nil
+	return &moe.GetUserInfoResp{User: modelUserToProto(&user)}, nil
 }

@@ -5,7 +5,7 @@ import (
 
 	"backend/api/internal/types"
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 // VipPlanModelToTypes 将 model 转为 API types。
@@ -21,7 +21,7 @@ func VipPlanModelToTypes(p model.VipPlan) types.VipPlan {
 	}
 }
 
-func RpcVipPlanToTypes(p *super.VipPlan) types.VipPlan {
+func RpcVipPlanToTypes(p *moe.VipPlan) types.VipPlan {
 	if p == nil {
 		return types.VipPlan{}
 	}

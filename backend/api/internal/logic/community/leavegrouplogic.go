@@ -5,7 +5,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewLeaveGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LeaveG
 }
 
 func (l *LeaveGroupLogic) LeaveGroup(req *types.LeaveGroupReq) (resp *types.BaseResp, err error) {
-	rpcResp, err := l.svcCtx.CommunityGW.LeaveGroup(l.ctx, &super.LeaveGroupReq{
+	rpcResp, err := l.svcCtx.CommunityGW.LeaveGroup(l.ctx, &moe.LeaveGroupReq{
 		GroupId: req.GroupId,
 		UserId:  req.UserId,
 	})

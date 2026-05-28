@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewAdminDeletePostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *A
 }
 
 func (l *AdminDeletePostLogic) AdminDeletePost(req *types.AdminDeletePostReq) (resp *types.AdminDeletePostResp, err error) {
-	_, err = l.svcCtx.AdminGW.AdminDeletePost(l.ctx, &super.AdminDeletePostReq{
+	_, err = l.svcCtx.AdminGW.AdminDeletePost(l.ctx, &moe.AdminDeletePostReq{
 		PostId: req.PostId,
 	})
 	if err != nil {

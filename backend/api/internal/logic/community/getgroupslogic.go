@@ -6,7 +6,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewGetGroupsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetGrou
 }
 
 func (l *GetGroupsLogic) GetGroups(req *types.GetGroupsReq) (resp *types.GetGroupsResp, err error) {
-	rpcResp, err := l.svcCtx.CommunityGW.GetGroups(l.ctx, &super.GetGroupsReq{
+	rpcResp, err := l.svcCtx.CommunityGW.GetGroups(l.ctx, &moe.GetGroupsReq{
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
 		Keyword:  req.Keyword,

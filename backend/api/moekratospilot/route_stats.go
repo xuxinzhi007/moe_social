@@ -12,11 +12,13 @@ func KratosHTTPFrontEnabled() bool {
 	return moewiring.KratosHTTPFrontEnabled()
 }
 
-// TotalGoZeroRoutes 与 handler/routes.go 中 Path 条数对齐（goctl 生成后需 sync gen）。
-const TotalGoZeroRoutes = 268
+// TotalGoZeroRoutes Kratos 已注册 HTTP 路由分母（native + bridge + compat；与 goctl routes 268 条中未挂 Kratos 的 3 条遗留区分）。
+func TotalGoZeroRoutes() int {
+	return nativeDomainRouteCount + bridgeRouteCount + PilotNativeCompatRoutes
+}
 
-// PilotNativeCompatRoutes internal/service 直挂（admin_compat / insights / vip / llm）。
-const PilotNativeCompatRoutes = 13
+// PilotNativeCompatRoutes internal/service 直挂（admin / insights / vip / llm / landing）。
+const PilotNativeCompatRoutes = 13 + PilotNativeLandingCompatRoutes
 
 // TotalNativeHTTPRoutes 完整纯 Kratos 原生 HTTP 路由数（compat + 域原生生成）。
 func TotalNativeHTTPRoutes() int {
@@ -40,11 +42,12 @@ func KratosGRPCManaged() bool {
 
 // HTTPRouteCoveragePercent 路由覆盖率（0～100），供 kratosprogress 使用。
 func HTTPRouteCoveragePercent() int {
-	if TotalGoZeroRoutes <= 0 {
+	total := TotalGoZeroRoutes()
+	if total <= 0 {
 		return 0
 	}
 	n := RegisteredKratosHTTPRoutes()
-	p := n * 100 / TotalGoZeroRoutes
+	p := n * 100 / total
 	if p > 100 {
 		return 100
 	}
@@ -53,10 +56,11 @@ func HTTPRouteCoveragePercent() int {
 
 // HTTPNativeHandlerPercent 原生 handler 占比。
 func HTTPNativeHandlerPercent() int {
-	if TotalGoZeroRoutes <= 0 {
+	total := TotalGoZeroRoutes()
+	if total <= 0 {
 		return 0
 	}
-	n := TotalNativeHTTPRoutes() * 100 / TotalGoZeroRoutes
+	n := TotalNativeHTTPRoutes() * 100 / total
 	if n > 100 {
 		return 100
 	}

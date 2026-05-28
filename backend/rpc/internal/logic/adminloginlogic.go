@@ -7,7 +7,7 @@ import (
 	adminbiz "backend/internal/biz/admin"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewAdminLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AdminL
 	return &AdminLoginLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminLoginLogic) AdminLogin(in *super.AdminLoginReq) (*super.AdminLoginResp, error) {
+func (l *AdminLoginLogic) AdminLogin(in *moe.AdminLoginReq) (*moe.AdminLoginResp, error) {
 	resp, err := adminbiz.AdminLogin(l.ctx, l.svcCtx.DB, in)
 	if err != nil {
 		if errors.Is(err, adminbiz.ErrAdminLoginEmpty) {

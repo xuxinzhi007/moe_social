@@ -5,7 +5,7 @@ import (
 
 	chatbiz "backend/internal/biz/chat"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -24,7 +24,7 @@ func NewSendPrivateMessageLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
-func (l *SendPrivateMessageLogic) SendPrivateMessage(in *super.SendPrivateMessageReq) (*super.SendPrivateMessageResp, error) {
+func (l *SendPrivateMessageLogic) SendPrivateMessage(in *moe.SendPrivateMessageReq) (*moe.SendPrivateMessageResp, error) {
 	resp, err := chatbiz.SendPrivateMessage(l.ctx, l.svcCtx.DB, in)
 	if err != nil {
 		l.Errorf("SendPrivateMessage: %v", err)

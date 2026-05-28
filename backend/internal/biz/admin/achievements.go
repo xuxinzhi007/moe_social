@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -20,7 +20,7 @@ type AchievementPage struct {
 }
 
 // ListAchievements Admin 成就定义列表。
-func ListAchievements(ctx context.Context, db *gorm.DB, in AchievementPage) ([]*super.AdminAchievementItem, int32, error) {
+func ListAchievements(ctx context.Context, db *gorm.DB, in AchievementPage) ([]*moe.AdminAchievementItem, int32, error) {
 	if db == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -46,7 +46,7 @@ func ListAchievements(ctx context.Context, db *gorm.DB, in AchievementPage) ([]*
 		return nil, 0, err
 	}
 
-	items := make([]*super.AdminAchievementItem, len(rows))
+	items := make([]*moe.AdminAchievementItem, len(rows))
 	for i, row := range rows {
 		items[i] = achievementItemToProto(row)
 	}
@@ -66,8 +66,8 @@ func adminListPageParams(page, pageSize int32) (int32, int32) {
 	return page, pageSize
 }
 
-func achievementItemToProto(row model.AchievementDefinition) *super.AdminAchievementItem {
-	return &super.AdminAchievementItem{
+func achievementItemToProto(row model.AchievementDefinition) *moe.AdminAchievementItem {
+	return &moe.AdminAchievementItem{
 		Id:            row.ID,
 		Name:          row.Name,
 		Description:   row.Description,
@@ -84,8 +84,8 @@ func achievementItemToProto(row model.AchievementDefinition) *super.AdminAchieve
 	}
 }
 
-func menuItemToProto(row model.AdminMenu) *super.AdminMenuItem {
-	return &super.AdminMenuItem{
+func menuItemToProto(row model.AdminMenu) *moe.AdminMenuItem {
+	return &moe.AdminMenuItem{
 		Id:           strconv.FormatUint(uint64(row.ID), 10),
 		Key:          row.Key,
 		Kind:         row.Kind,

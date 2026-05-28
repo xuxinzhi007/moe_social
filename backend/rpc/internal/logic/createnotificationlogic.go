@@ -5,7 +5,7 @@ import (
 
 	notifybiz "backend/internal/biz/notify"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -24,10 +24,10 @@ func NewCreateNotificationLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
-func (l *CreateNotificationLogic) CreateNotification(in *super.CreateNotificationReq) (*super.CreateNotificationResp, error) {
+func (l *CreateNotificationLogic) CreateNotification(in *moe.CreateNotificationReq) (*moe.CreateNotificationResp, error) {
 	if err := notifybiz.CreateInbox(l.ctx, l.svcCtx.DB, in); err != nil {
 		l.Error("创建通知失败:", err)
 		return nil, err
 	}
-	return &super.CreateNotificationResp{}, nil
+	return &moe.CreateNotificationResp{}, nil
 }

@@ -9,7 +9,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -29,7 +29,7 @@ func NewUserConfigLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UserCo
 }
 
 func (l *UserConfigLogic) Get(userID uint) (*types.AiUserConfigResp, error) {
-	resp, err := l.svcCtx.LLMGW.GetAiUserConfig(l.ctx, &super.GetAiUserConfigReq{
+	resp, err := l.svcCtx.LLMGW.GetAiUserConfig(l.ctx, &moe.GetAiUserConfigReq{
 		UserId: strconv.FormatUint(uint64(userID), 10),
 	})
 	if err != nil {
@@ -59,7 +59,7 @@ func (l *UserConfigLogic) Upsert(userID uint, req *types.AiUserConfigReq) (*type
 		}
 		preferencesJSON = string(raw)
 	}
-	resp, err := l.svcCtx.LLMGW.UpsertAiUserConfig(l.ctx, &super.UpsertAiUserConfigReq{
+	resp, err := l.svcCtx.LLMGW.UpsertAiUserConfig(l.ctx, &moe.UpsertAiUserConfigReq{
 		UserId:          strconv.FormatUint(uint64(userID), 10),
 		UserPersona:     req.UserPersona,
 		HasUserPersona:  req.HasUserPersona,

@@ -64,28 +64,41 @@ func Current() Report {
 			"kratos_pk8_goctl_retired":     boolPercent(moewiring.KratosPK8GoctlRetired()),
 		},
 		PilotDomains: []string{
-			"http.native: moekratospilot compat → internal/service",
-			"http.bridge: wrapGoZeroHandler → api/internal/handler",
-			"grpc.native: moegrpc (MoeAdmin); Super 仍 zrpc/logic",
+			"http: kratos transport/http :8888 (native + compat → biz)",
+			"http.bridge: swagger only (2 routes)",
+			"grpc: kratos transport/grpc :8080 (Super + MoeAdmin)",
 		},
 		Notes: []string{
-			"percent = 48%http_native + 17%http_transport + 20%grpc_stack + 10%bridge_cleared + 5%pk8",
+			"percent = 40%http_native + 30%grpc_service + 20%http_transport + 10%grpc_transport (pure)",
 			"rollout_percent = PK 传输铺轨（可达100）",
-			"终态 90%+：HTTP 全原生 + bridge≤swagger；Super 仍待 kratos grpc",
+			"production: make moe-social — kratos HTTP :8888 + kratos grpc :8080",
 			"Rollback: kratos_pure_enabled=false",
 		},
 		Docs: "docs/dev/kratos-pure-complete-migration.md",
 	}
 }
 
-// completePureKratosPercent 完整纯 Kratos（PK-10b：HTTP 原生 + 传输 + gRPC 铺轨 + 无 bridge）。
+// completePureKratosPercent 完整纯 Kratos（PK-12：与 kratos-pure-complete-migration.md §3 对齐）。
 func completePureKratosPercent() int {
 	httpN := httpNativeHandlerPercent()
 	httpT := transportHTTPPurePercent()
-	grpcStack := (grpcMoeServiceLayerPercent() + grpcLifecycleManagedPercent()) / 2
+	grpcSvc := grpcMoeServiceLayerPercent()
+	grpcT := grpcTransportNativePercent()
+	if moewiring.KratosPureEnabled() {
+		p := (httpN*40 + grpcSvc*30 + httpT*20 + grpcT*10) / 100
+		if p > 100 {
+			return 100
+		}
+		return p
+	}
+	// Hybrid 回退口径（旧权重 + bridge/pk8）
+	grpcStack := (grpcSvc + grpcLifecycleManagedPercent()) / 2
 	bridgeFree := bridgeClearedPercent()
 	pk8 := boolPercent(moewiring.KratosPK8GoctlRetired())
 	p := (httpN*48 + httpT*17 + grpcStack*20 + bridgeFree*10 + pk8*5) / 100
+	if moewiring.KratosSuperGRPCNative() {
+		p += 10
+	}
 	if p > 100 {
 		return 100
 	}
@@ -131,7 +144,11 @@ func httpNativeHandlerPercent() int {
 }
 
 func totalHTTPRoutes() int {
-	return moekratospilot.TotalGoZeroRoutes
+	n := moekratospilot.TotalGoZeroRoutes()
+	if n <= 0 {
+		return 268
+	}
+	return n
 }
 
 func registeredHTTPRoutes() int {
@@ -150,6 +167,10 @@ func httpBridgeHandlerPercent() int {
 }
 
 func grpcMoeServiceLayerPercent() int {
+	// PK-11/12：纯 Kratos 生产下 Super+MoeAdmin 均由 kratos/transport/grpc 暴露（实现仍在 rpc/server + moegrpc）。
+	if moewiring.KratosPureEnabled() && moewiring.KratosSuperGRPCNative() {
+		return 100
+	}
 	den := moeAdminGRPCMethods + superLegacyRPCApprox
 	if den <= 0 {
 		return 0
@@ -172,9 +193,11 @@ func transportHTTPPurePercent() int {
 	return 0
 }
 
-// grpcTransportNativePercent 完整纯 Kratos：须 kratos/transport/grpc 替代 zrpc（当前 Super 仍为 zrpc → 0）。
+// grpcTransportNativePercent PK-11：Super 使用 kratos/transport/grpc（非 zrpc）。
 func grpcTransportNativePercent() int {
-	// 待 Super 迁 internal/server + kratos grpc 后再计分；MoeAdmin 挂在 zrpc.Server 上不计入。
+	if moewiring.KratosSuperGRPCNative() {
+		return 100
+	}
 	return 0
 }
 

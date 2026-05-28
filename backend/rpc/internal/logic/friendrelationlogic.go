@@ -5,7 +5,7 @@ import (
 
 	userapp "backend/internal/service/user"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -28,7 +28,7 @@ func (l *FriendRelationLogic) app() *userapp.AppService {
 	return userapp.New(l.svcCtx.DB)
 }
 
-func (l *FriendRelationLogic) SendFriendRequest(in *super.SendFriendRequestReq) (*super.SendFriendRequestResp, error) {
+func (l *FriendRelationLogic) SendFriendRequest(in *moe.SendFriendRequestReq) (*moe.SendFriendRequestResp, error) {
 	resp, err := l.app().SendFriendRequest(l.ctx, in)
 	if err != nil {
 		return nil, mapFriendBizErr(err)
@@ -36,7 +36,7 @@ func (l *FriendRelationLogic) SendFriendRequest(in *super.SendFriendRequestReq) 
 	return resp, nil
 }
 
-func (l *FriendRelationLogic) ListIncomingFriendRequests(in *super.ListIncomingFriendRequestsReq) (*super.ListIncomingFriendRequestsResp, error) {
+func (l *FriendRelationLogic) ListIncomingFriendRequests(in *moe.ListIncomingFriendRequestsReq) (*moe.ListIncomingFriendRequestsResp, error) {
 	resp, err := l.app().ListIncomingFriendRequests(l.ctx, in)
 	if err != nil {
 		return nil, mapFriendBizErr(err)
@@ -44,7 +44,7 @@ func (l *FriendRelationLogic) ListIncomingFriendRequests(in *super.ListIncomingF
 	return resp, nil
 }
 
-func (l *FriendRelationLogic) ListOutgoingFriendRequests(in *super.ListOutgoingFriendRequestsReq) (*super.ListOutgoingFriendRequestsResp, error) {
+func (l *FriendRelationLogic) ListOutgoingFriendRequests(in *moe.ListOutgoingFriendRequestsReq) (*moe.ListOutgoingFriendRequestsResp, error) {
 	resp, err := l.app().ListOutgoingFriendRequests(l.ctx, in)
 	if err != nil {
 		return nil, mapFriendBizErr(err)
@@ -52,7 +52,7 @@ func (l *FriendRelationLogic) ListOutgoingFriendRequests(in *super.ListOutgoingF
 	return resp, nil
 }
 
-func (l *FriendRelationLogic) AcceptFriendRequest(in *super.AcceptFriendRequestReq) (*super.AcceptFriendRequestResp, error) {
+func (l *FriendRelationLogic) AcceptFriendRequest(in *moe.AcceptFriendRequestReq) (*moe.AcceptFriendRequestResp, error) {
 	resp, err := l.app().AcceptFriendRequest(l.ctx, in)
 	if err != nil {
 		return nil, mapFriendBizErr(err)
@@ -60,7 +60,7 @@ func (l *FriendRelationLogic) AcceptFriendRequest(in *super.AcceptFriendRequestR
 	return resp, nil
 }
 
-func (l *FriendRelationLogic) RejectFriendRequest(in *super.RejectFriendRequestReq) (*super.RejectFriendRequestResp, error) {
+func (l *FriendRelationLogic) RejectFriendRequest(in *moe.RejectFriendRequestReq) (*moe.RejectFriendRequestResp, error) {
 	resp, err := l.app().RejectFriendRequest(l.ctx, in)
 	if err != nil {
 		return nil, mapFriendBizErr(err)
@@ -68,7 +68,7 @@ func (l *FriendRelationLogic) RejectFriendRequest(in *super.RejectFriendRequestR
 	return resp, nil
 }
 
-func (l *FriendRelationLogic) ListFriends(in *super.ListFriendsReq) (*super.ListFriendsResp, error) {
+func (l *FriendRelationLogic) ListFriends(in *moe.ListFriendsReq) (*moe.ListFriendsResp, error) {
 	resp, err := l.app().ListFriends(l.ctx, in)
 	if err != nil {
 		return nil, mapFriendBizErr(err)
@@ -76,7 +76,7 @@ func (l *FriendRelationLogic) ListFriends(in *super.ListFriendsReq) (*super.List
 	return resp, nil
 }
 
-func (l *FriendRelationLogic) GetFriendRelation(in *super.GetFriendRelationReq) (*super.GetFriendRelationResp, error) {
+func (l *FriendRelationLogic) GetFriendRelation(in *moe.GetFriendRelationReq) (*moe.GetFriendRelationResp, error) {
 	resp, err := l.app().GetFriendRelation(l.ctx, in)
 	if err != nil {
 		return nil, mapFriendBizErr(err)

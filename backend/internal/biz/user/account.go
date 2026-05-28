@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // DeleteUser 注销账号（脱敏后软删）。
-func DeleteUser(ctx context.Context, db *gorm.DB, in *super.DeleteUserReq) (*super.DeleteUserResp, error) {
+func DeleteUser(ctx context.Context, db *gorm.DB, in *moe.DeleteUserReq) (*moe.DeleteUserResp, error) {
 	var user model.User
 	if err := db.WithContext(ctx).First(&user, in.GetUserId()).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -32,7 +32,7 @@ func DeleteUser(ctx context.Context, db *gorm.DB, in *super.DeleteUserReq) (*sup
 	if err := db.WithContext(ctx).Delete(&user).Error; err != nil {
 		return nil, err
 	}
-	return &super.DeleteUserResp{}, nil
+	return &moe.DeleteUserResp{}, nil
 }
 
 func scrubUserBeforeDelete(user *model.User) error {

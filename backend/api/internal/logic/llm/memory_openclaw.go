@@ -7,7 +7,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/types"
 	"backend/pkg/memory"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -16,8 +16,8 @@ const sourcePreCompactFlush = "pre_compact_flush"
 
 // buildOpenClawMemoryBlock 按 OpenClaw 分层注入：精选画像 → 今日/昨日日记 → 检索命中。
 func buildOpenClawMemoryBlock(
-	memories []*super.UserMemory,
-	profiles []*super.UserMemoryProfile,
+	memories []*moe.UserMemory,
+	profiles []*moe.UserMemoryProfile,
 	messages []types.LlmMessage,
 ) string {
 	records := memory.RecordsFromSuper(memories)
@@ -73,7 +73,7 @@ func (l *ChatLogic) memoryFlushBeforeCompact(
 			continue
 		}
 		for _, item := range memory.HeuristicExtractFromUserMessage(m.Content) {
-			_, err := l.svcCtx.LLMGW.UpsertUserMemory(l.ctx, &super.UpsertUserMemoryReq{
+			_, err := l.svcCtx.LLMGW.UpsertUserMemory(l.ctx, &moe.UpsertUserMemoryReq{
 				UserId:      userID,
 				Key:         item.Key,
 				Value:       item.Value,
@@ -128,7 +128,7 @@ func (l *ChatLogic) appendDailyObservation(userID, sessionID, sourceMsgID string
 
 	key := memory.DailyNoteKey(time.Now().UTC())
 	existing := ""
-	if resp, err := l.svcCtx.LLMGW.GetUserMemories(l.ctx, &super.GetUserMemoriesReq{
+	if resp, err := l.svcCtx.LLMGW.GetUserMemories(l.ctx, &moe.GetUserMemoriesReq{
 		UserId: userID,
 		Limit:  200,
 	}); err == nil {
@@ -140,7 +140,7 @@ func (l *ChatLogic) appendDailyObservation(userID, sessionID, sourceMsgID string
 		}
 	}
 	merged := memory.MergeDailyNoteContent(existing, line)
-	_, _ = l.svcCtx.LLMGW.UpsertUserMemory(l.ctx, &super.UpsertUserMemoryReq{
+	_, _ = l.svcCtx.LLMGW.UpsertUserMemory(l.ctx, &moe.UpsertUserMemoryReq{
 		UserId:      userID,
 		Key:         key,
 		Value:       merged,

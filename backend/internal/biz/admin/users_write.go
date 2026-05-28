@@ -7,7 +7,7 @@ import (
 
 	userbiz "backend/internal/biz/user"
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -31,7 +31,7 @@ type UpdateUserInput struct {
 }
 
 // UpdateUser 更新 App 用户字段。
-func UpdateUser(ctx context.Context, db *gorm.DB, in UpdateUserInput) (*super.User, error) {
+func UpdateUser(ctx context.Context, db *gorm.DB, in UpdateUserInput) (*moe.User, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}

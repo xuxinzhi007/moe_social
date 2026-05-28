@@ -6,7 +6,7 @@ import (
 
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -21,13 +21,13 @@ func NewAdminDeleteAiAgentLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	return &AdminDeleteAiAgentLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminDeleteAiAgentLogic) AdminDeleteAiAgent(in *super.AdminDeleteAiAgentReq) (*super.AdminDeleteAiAgentResp, error) {
+func (l *AdminDeleteAiAgentLogic) AdminDeleteAiAgent(in *moe.AdminDeleteAiAgentReq) (*moe.AdminDeleteAiAgentResp, error) {
 	userID := strings.TrimSpace(in.GetUserId())
 	agentID := strings.TrimSpace(in.GetAgentId())
 	if userID == "" || agentID == "" {
 		return nil, errorx.InvalidArgument("用户 ID 与角色 ID 不能为空")
 	}
-	_, err := aiApp(l.svcCtx).DeleteAiAgent(l.ctx, &super.DeleteAiResourceReq{
+	_, err := aiApp(l.svcCtx).DeleteAiAgent(l.ctx, &moe.DeleteAiResourceReq{
 		UserId: userID,
 		Id:     agentID,
 	})
@@ -38,5 +38,5 @@ func (l *AdminDeleteAiAgentLogic) AdminDeleteAiAgent(in *super.AdminDeleteAiAgen
 		l.Errorf("[admin] delete ai agent: %v", err)
 		return nil, mapAIResourceErr(err)
 	}
-	return &super.AdminDeleteAiAgentResp{}, nil
+	return &moe.AdminDeleteAiAgentResp{}, nil
 }

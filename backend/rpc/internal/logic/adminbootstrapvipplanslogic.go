@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewAdminBootstrapVipPlansLogic(ctx context.Context, svcCtx *svc.ServiceCont
 	}
 }
 
-func (l *AdminBootstrapVipPlansLogic) AdminBootstrapVipPlans(in *super.AdminBootstrapVipPlansReq) (*super.AdminBootstrapVipPlansResp, error) {
+func (l *AdminBootstrapVipPlansLogic) AdminBootstrapVipPlans(in *moe.AdminBootstrapVipPlansReq) (*moe.AdminBootstrapVipPlansResp, error) {
 	resp, err := newVipAdminApp(l.svcCtx.DB).AdminBootstrapVipPlans(l.ctx, in)
 	if err != nil {
 		l.Errorf("[admin] bootstrap vip plans: %v", err)

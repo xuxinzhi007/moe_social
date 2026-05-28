@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewAdminBootstrapGiftsLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *AdminBootstrapGiftsLogic) AdminBootstrapGifts(_ *types.EmptyReq) (resp *types.AdminBootstrapGiftsResp, err error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminBootstrapGifts(l.ctx, &super.AdminBootstrapGiftsReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminBootstrapGifts(l.ctx, &moe.AdminBootstrapGiftsReq{})
 	if err != nil {
 		return &types.AdminBootstrapGiftsResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

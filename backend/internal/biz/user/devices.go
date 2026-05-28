@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // ListUserDevices 分页列出用户设备。
-func ListUserDevices(ctx context.Context, db *gorm.DB, in *super.ListUserDevicesReq) (*super.ListUserDevicesResp, error) {
+func ListUserDevices(ctx context.Context, db *gorm.DB, in *moe.ListUserDevicesReq) (*moe.ListUserDevicesResp, error) {
 	if in.GetUserId() == "" {
 		return nil, ErrInvalidArgument
 	}
@@ -45,11 +45,11 @@ func ListUserDevices(ctx context.Context, db *gorm.DB, in *super.ListUserDevices
 		return nil, err
 	}
 
-	out := make([]*super.UserDeviceRecord, 0, len(devices))
+	out := make([]*moe.UserDeviceRecord, 0, len(devices))
 	for i := range devices {
 		out = append(out, userDeviceToRecord(&devices[i], in.GetUserId()))
 	}
-	return &super.ListUserDevicesResp{
+	return &moe.ListUserDevicesResp{
 		Devices: out,
 		Total:   total,
 		Limit:   int32(limit),
@@ -59,7 +59,7 @@ func ListUserDevices(ctx context.Context, db *gorm.DB, in *super.ListUserDevices
 }
 
 // SyncUserDevice 同步/更新设备信息。
-func SyncUserDevice(ctx context.Context, db *gorm.DB, in *super.SyncUserDeviceReq) (*super.SyncUserDeviceResp, error) {
+func SyncUserDevice(ctx context.Context, db *gorm.DB, in *moe.SyncUserDeviceReq) (*moe.SyncUserDeviceResp, error) {
 	if in.GetUserId() == "" {
 		return nil, ErrInvalidArgument
 	}
@@ -137,11 +137,11 @@ func SyncUserDevice(ctx context.Context, db *gorm.DB, in *super.SyncUserDeviceRe
 		uint(userID), "device_info:%", "device_sync",
 	).Delete(&model.UserMemory{}).Error
 
-	return &super.SyncUserDeviceResp{Device: userDeviceToRecord(&dev, in.GetUserId())}, nil
+	return &moe.SyncUserDeviceResp{Device: userDeviceToRecord(&dev, in.GetUserId())}, nil
 }
 
-func userDeviceToRecord(d *model.UserDevice, userID string) *super.UserDeviceRecord {
-	return &super.UserDeviceRecord{
+func userDeviceToRecord(d *model.UserDevice, userID string) *moe.UserDeviceRecord {
+	return &moe.UserDeviceRecord{
 		Id:          strconv.Itoa(int(d.ID)),
 		UserId:      userID,
 		DeviceId:    d.DeviceID,

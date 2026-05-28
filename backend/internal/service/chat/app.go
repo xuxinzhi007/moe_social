@@ -5,7 +5,7 @@ import (
 	"context"
 
 	chatbiz "backend/internal/biz/chat"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -21,16 +21,16 @@ func New(db *gorm.DB) *AppService {
 }
 
 // SendPrivateMessage 发送私信。
-func (s *AppService) SendPrivateMessage(ctx context.Context, in *super.SendPrivateMessageReq) (*super.SendPrivateMessageResp, error) {
+func (s *AppService) SendPrivateMessage(ctx context.Context, in *moe.SendPrivateMessageReq) (*moe.SendPrivateMessageResp, error) {
 	return chatbiz.SendPrivateMessage(ctx, s.db, in)
 }
 
 // ListPrivateMessages 私信历史。
-func (s *AppService) ListPrivateMessages(ctx context.Context, in *super.ListPrivateMessagesReq) (*super.ListPrivateMessagesResp, error) {
+func (s *AppService) ListPrivateMessages(ctx context.Context, in *moe.ListPrivateMessagesReq) (*moe.ListPrivateMessagesResp, error) {
 	return chatbiz.ListPrivateMessages(ctx, s.db, in)
 }
 
 // ListPrivateConversations 会话列表。
-func (s *AppService) ListPrivateConversations(ctx context.Context, in *super.ListPrivateConversationsReq) (*super.ListPrivateConversationsResp, error) {
+func (s *AppService) ListPrivateConversations(ctx context.Context, in *moe.ListPrivateConversationsReq) (*moe.ListPrivateConversationsResp, error) {
 	return chatbiz.ListPrivateConversations(ctx, s.db, in)
 }

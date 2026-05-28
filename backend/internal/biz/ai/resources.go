@@ -6,14 +6,14 @@ import (
 	"fmt"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // UpsertOutcome upsert 结果（供 service 层发通知）。
 type UpsertOutcome struct {
-	Resp     *super.UpsertAiResourceResp
+	Resp     *moe.UpsertAiResourceResp
 	Replaced bool
 	UserID   uint
 	Field    string
@@ -22,14 +22,14 @@ type UpsertOutcome struct {
 
 // DeleteOutcome delete 结果（供 service 层发通知）。
 type DeleteOutcome struct {
-	Resp        *super.DeleteAiResourceResp
+	Resp        *moe.DeleteAiResourceResp
 	UserID      uint
 	Field       string
 	DeletedItem map[string]interface{}
 }
 
 // List 列出用户 AI 资源。
-func List(ctx context.Context, db *gorm.DB, field string, in *super.ListAiResourceReq) (*super.ListAiResourceResp, error) {
+func List(ctx context.Context, db *gorm.DB, field string, in *moe.ListAiResourceReq) (*moe.ListAiResourceResp, error) {
 	userID, err := ParseUserID(in.GetUserId())
 	if err != nil {
 		return nil, err
@@ -50,13 +50,13 @@ func List(ctx context.Context, db *gorm.DB, field string, in *super.ListAiResour
 		return nil, ErrUnknownResourceKind
 	}
 	items := DecodeJSONArray(raw)
-	resp := &super.ListAiResourceResp{Items: make([]*super.AiJsonResourceItem, 0, len(items))}
+	resp := &moe.ListAiResourceResp{Items: make([]*moe.AiJsonResourceItem, 0, len(items))}
 	for _, item := range items {
 		payload, err := mustJSON(item)
 		if err != nil {
 			return nil, err
 		}
-		resp.Items = append(resp.Items, &super.AiJsonResourceItem{
+		resp.Items = append(resp.Items, &moe.AiJsonResourceItem{
 			Id:          fmt.Sprint(item["id"]),
 			PayloadJson: payload,
 		})
@@ -65,7 +65,7 @@ func List(ctx context.Context, db *gorm.DB, field string, in *super.ListAiResour
 }
 
 // ListPublicAgents 列出公开 AI 角色。
-func ListPublicAgents(ctx context.Context, db *gorm.DB, in *super.ListPublicAiAgentsReq) (*super.ListAiResourceResp, error) {
+func ListPublicAgents(ctx context.Context, db *gorm.DB, in *moe.ListPublicAiAgentsReq) (*moe.ListAiResourceResp, error) {
 	limit := int(in.GetLimit())
 	if limit <= 0 {
 		limit = 50
@@ -79,7 +79,7 @@ func ListPublicAgents(ctx context.Context, db *gorm.DB, in *super.ListPublicAiAg
 		return nil, fmt.Errorf("%w: %v", ErrListPublicAgents, err)
 	}
 
-	resp := &super.ListAiResourceResp{Items: make([]*super.AiJsonResourceItem, 0)}
+	resp := &moe.ListAiResourceResp{Items: make([]*moe.AiJsonResourceItem, 0)}
 	for _, cfg := range configs {
 		if len(resp.Items) >= limit {
 			break
@@ -102,7 +102,7 @@ func ListPublicAgents(ctx context.Context, db *gorm.DB, in *super.ListPublicAiAg
 			if err != nil {
 				return nil, err
 			}
-			resp.Items = append(resp.Items, &super.AiJsonResourceItem{
+			resp.Items = append(resp.Items, &moe.AiJsonResourceItem{
 				Id:          fmt.Sprint(item["id"]),
 				PayloadJson: payload,
 			})
@@ -112,7 +112,7 @@ func ListPublicAgents(ctx context.Context, db *gorm.DB, in *super.ListPublicAiAg
 }
 
 // Upsert 写入或更新 AI 资源。
-func Upsert(ctx context.Context, db *gorm.DB, field string, in *super.UpsertAiResourceReq) (*UpsertOutcome, error) {
+func Upsert(ctx context.Context, db *gorm.DB, field string, in *moe.UpsertAiResourceReq) (*UpsertOutcome, error) {
 	userID, err := ParseUserID(in.GetUserId())
 	if err != nil {
 		return nil, err
@@ -147,8 +147,8 @@ func Upsert(ctx context.Context, db *gorm.DB, field string, in *super.UpsertAiRe
 		return nil, err
 	}
 	return &UpsertOutcome{
-		Resp: &super.UpsertAiResourceResp{
-			Item: &super.AiJsonResourceItem{
+		Resp: &moe.UpsertAiResourceResp{
+			Item: &moe.AiJsonResourceItem{
 				Id:          id,
 				PayloadJson: in.GetPayloadJson(),
 			},
@@ -161,7 +161,7 @@ func Upsert(ctx context.Context, db *gorm.DB, field string, in *super.UpsertAiRe
 }
 
 // Delete 删除 AI 资源。
-func Delete(ctx context.Context, db *gorm.DB, field string, in *super.DeleteAiResourceReq) (*DeleteOutcome, error) {
+func Delete(ctx context.Context, db *gorm.DB, field string, in *moe.DeleteAiResourceReq) (*DeleteOutcome, error) {
 	userID, err := ParseUserID(in.GetUserId())
 	if err != nil {
 		return nil, err
@@ -189,7 +189,7 @@ func Delete(ctx context.Context, db *gorm.DB, field string, in *super.DeleteAiRe
 		return nil, err
 	}
 	return &DeleteOutcome{
-		Resp:        &super.DeleteAiResourceResp{Ok: true},
+		Resp:        &moe.DeleteAiResourceResp{Ok: true},
 		UserID:      userID,
 		Field:       field,
 		DeletedItem: deletedItem,

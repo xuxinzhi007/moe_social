@@ -6,7 +6,7 @@ import (
 	"backend/internal/adapter/moeconfig"
 	llmbiz "backend/internal/biz/llm"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -21,7 +21,7 @@ func NewUpsertUserMemoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	return &UpsertUserMemoryLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *UpsertUserMemoryLogic) UpsertUserMemory(in *super.UpsertUserMemoryReq) (*super.UpsertUserMemoryResp, error) {
+func (l *UpsertUserMemoryLogic) UpsertUserMemory(in *moe.UpsertUserMemoryReq) (*moe.UpsertUserMemoryResp, error) {
 	resp, err := llmbiz.UpsertUserMemory(l.ctx, l.svcCtx.DB, in, llmbiz.MemoryWriteOptions{
 		InferenceBaseURL: moeconfig.InferenceFromViper().BaseURL,
 	})

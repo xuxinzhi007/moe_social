@@ -4,10 +4,10 @@ import (
 	"strconv"
 
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
-func rpcPostToTypes(p *super.Post) types.Post {
+func rpcPostToTypes(p *moe.Post) types.Post {
 	if p == nil {
 		return types.Post{}
 	}
@@ -38,7 +38,7 @@ func rpcPostToTypes(p *super.Post) types.Post {
 	}
 }
 
-func rpcGroupPostToTypes(gp *super.GroupPost) types.GroupPost {
+func rpcGroupPostToTypes(gp *moe.GroupPost) types.GroupPost {
 	if gp == nil {
 		return types.GroupPost{}
 	}

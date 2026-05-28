@@ -5,7 +5,7 @@ import (
 	"context"
 
 	aibiz "backend/internal/biz/ai"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -20,23 +20,23 @@ func New(db *gorm.DB) *AppService {
 	return &AppService{db: db}
 }
 
-func (s *AppService) ListAiProviders(ctx context.Context, in *super.ListAiResourceReq) (*super.ListAiResourceResp, error) {
+func (s *AppService) ListAiProviders(ctx context.Context, in *moe.ListAiResourceReq) (*moe.ListAiResourceResp, error) {
 	return aibiz.List(ctx, s.db, "providers", in)
 }
 
-func (s *AppService) ListAiAgents(ctx context.Context, in *super.ListAiResourceReq) (*super.ListAiResourceResp, error) {
+func (s *AppService) ListAiAgents(ctx context.Context, in *moe.ListAiResourceReq) (*moe.ListAiResourceResp, error) {
 	return aibiz.List(ctx, s.db, "agents", in)
 }
 
-func (s *AppService) ListAiLorebooks(ctx context.Context, in *super.ListAiResourceReq) (*super.ListAiResourceResp, error) {
+func (s *AppService) ListAiLorebooks(ctx context.Context, in *moe.ListAiResourceReq) (*moe.ListAiResourceResp, error) {
 	return aibiz.List(ctx, s.db, "lorebooks", in)
 }
 
-func (s *AppService) ListPublicAiAgents(ctx context.Context, in *super.ListPublicAiAgentsReq) (*super.ListAiResourceResp, error) {
+func (s *AppService) ListPublicAiAgents(ctx context.Context, in *moe.ListPublicAiAgentsReq) (*moe.ListAiResourceResp, error) {
 	return aibiz.ListPublicAgents(ctx, s.db, in)
 }
 
-func (s *AppService) UpsertAiProvider(ctx context.Context, in *super.UpsertAiResourceReq) (*super.UpsertAiResourceResp, error) {
+func (s *AppService) UpsertAiProvider(ctx context.Context, in *moe.UpsertAiResourceReq) (*moe.UpsertAiResourceResp, error) {
 	out, err := aibiz.Upsert(ctx, s.db, "providers", in)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (s *AppService) UpsertAiProvider(ctx context.Context, in *super.UpsertAiRes
 	return out.Resp, nil
 }
 
-func (s *AppService) UpsertAiAgent(ctx context.Context, in *super.UpsertAiResourceReq) (*super.UpsertAiResourceResp, error) {
+func (s *AppService) UpsertAiAgent(ctx context.Context, in *moe.UpsertAiResourceReq) (*moe.UpsertAiResourceResp, error) {
 	out, err := aibiz.Upsert(ctx, s.db, "agents", in)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (s *AppService) UpsertAiAgent(ctx context.Context, in *super.UpsertAiResour
 	return out.Resp, nil
 }
 
-func (s *AppService) UpsertAiLorebook(ctx context.Context, in *super.UpsertAiResourceReq) (*super.UpsertAiResourceResp, error) {
+func (s *AppService) UpsertAiLorebook(ctx context.Context, in *moe.UpsertAiResourceReq) (*moe.UpsertAiResourceResp, error) {
 	out, err := aibiz.Upsert(ctx, s.db, "lorebooks", in)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (s *AppService) UpsertAiLorebook(ctx context.Context, in *super.UpsertAiRes
 	return out.Resp, nil
 }
 
-func (s *AppService) DeleteAiProvider(ctx context.Context, in *super.DeleteAiResourceReq) (*super.DeleteAiResourceResp, error) {
+func (s *AppService) DeleteAiProvider(ctx context.Context, in *moe.DeleteAiResourceReq) (*moe.DeleteAiResourceResp, error) {
 	out, err := aibiz.Delete(ctx, s.db, "providers", in)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func (s *AppService) DeleteAiProvider(ctx context.Context, in *super.DeleteAiRes
 	return out.Resp, nil
 }
 
-func (s *AppService) DeleteAiAgent(ctx context.Context, in *super.DeleteAiResourceReq) (*super.DeleteAiResourceResp, error) {
+func (s *AppService) DeleteAiAgent(ctx context.Context, in *moe.DeleteAiResourceReq) (*moe.DeleteAiResourceResp, error) {
 	out, err := aibiz.Delete(ctx, s.db, "agents", in)
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (s *AppService) DeleteAiAgent(ctx context.Context, in *super.DeleteAiResour
 	return out.Resp, nil
 }
 
-func (s *AppService) DeleteAiLorebook(ctx context.Context, in *super.DeleteAiResourceReq) (*super.DeleteAiResourceResp, error) {
+func (s *AppService) DeleteAiLorebook(ctx context.Context, in *moe.DeleteAiResourceReq) (*moe.DeleteAiResourceResp, error) {
 	out, err := aibiz.Delete(ctx, s.db, "lorebooks", in)
 	if err != nil {
 		return nil, err

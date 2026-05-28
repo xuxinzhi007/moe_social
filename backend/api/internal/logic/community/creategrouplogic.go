@@ -6,7 +6,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewCreateGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Creat
 }
 
 func (l *CreateGroupLogic) CreateGroup(req *types.CreateGroupReq) (resp *types.CreateGroupResp, err error) {
-	rpcResp, err := l.svcCtx.CommunityGW.CreateGroup(l.ctx, &super.CreateGroupReq{
+	rpcResp, err := l.svcCtx.CommunityGW.CreateGroup(l.ctx, &moe.CreateGroupReq{
 		Name:        req.Name,
 		Description: req.Description,
 		Avatar:      req.Avatar,

@@ -4,11 +4,11 @@ import (
 	"strings"
 	"time"
 
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 // RecordFromSuper 将 RPC 记忆转为域模型。
-func RecordFromSuper(m *super.UserMemory) Record {
+func RecordFromSuper(m *moe.UserMemory) Record {
 	if m == nil {
 		return Record{}
 	}
@@ -31,7 +31,7 @@ func RecordFromSuper(m *super.UserMemory) Record {
 }
 
 // RecordsFromSuper 批量转换。
-func RecordsFromSuper(list []*super.UserMemory) []Record {
+func RecordsFromSuper(list []*moe.UserMemory) []Record {
 	out := make([]Record, 0, len(list))
 	for _, m := range list {
 		if m == nil {

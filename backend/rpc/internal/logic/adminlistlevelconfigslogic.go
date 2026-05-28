@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,7 +19,7 @@ func NewAdminListLevelConfigsLogic(ctx context.Context, svcCtx *svc.ServiceConte
 	return &AdminListLevelConfigsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminListLevelConfigsLogic) AdminListLevelConfigs(in *super.AdminListLevelConfigsReq) (*super.AdminListLevelConfigsResp, error) {
+func (l *AdminListLevelConfigsLogic) AdminListLevelConfigs(in *moe.AdminListLevelConfigsReq) (*moe.AdminListLevelConfigsResp, error) {
 	resp, err := newAdminApp(l.svcCtx.DB).ListLevelConfigs(l.ctx, in)
 	if err != nil {
 		return nil, mapAdminGrowthErr(err)

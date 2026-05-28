@@ -7,7 +7,7 @@ import (
 	llmbiz "backend/internal/biz/llm"
 	"backend/pkg/localmodels"
 	"backend/pkg/llminference"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -55,7 +55,7 @@ func (s *AppService) ConfigSnapshot() llmbiz.ConfigSnapshot {
 	}
 }
 
-func (s *AppService) RecordLlmChatTurn(ctx context.Context, in *super.RecordLlmChatTurnReq) (*super.RecordLlmChatTurnResp, error) {
+func (s *AppService) RecordLlmChatTurn(ctx context.Context, in *moe.RecordLlmChatTurnReq) (*moe.RecordLlmChatTurnResp, error) {
 	return llmbiz.RecordChatTurn(ctx, s.db, in)
 }
 
@@ -75,7 +75,7 @@ func (s *AppService) PostChatCompletion(
 }
 
 // UpsertUserMemory 写入用户记忆（含异步索引）。
-func (s *AppService) UpsertUserMemory(ctx context.Context, in *super.UpsertUserMemoryReq) (*super.UpsertUserMemoryResp, error) {
+func (s *AppService) UpsertUserMemory(ctx context.Context, in *moe.UpsertUserMemoryReq) (*moe.UpsertUserMemoryResp, error) {
 	return llmbiz.UpsertUserMemory(ctx, s.db, in, llmbiz.MemoryWriteOptions{
 		InferenceBaseURL: s.deps.Inference.BaseURL,
 	})

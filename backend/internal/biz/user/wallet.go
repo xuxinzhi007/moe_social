@@ -6,13 +6,13 @@ import (
 	"strconv"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // GetTransactions 分页查询用户交易记录。
-func GetTransactions(ctx context.Context, db *gorm.DB, in *super.GetTransactionsReq) (*super.GetTransactionsResp, error) {
+func GetTransactions(ctx context.Context, db *gorm.DB, in *moe.GetTransactionsReq) (*moe.GetTransactionsResp, error) {
 	userID, err := strconv.Atoi(in.GetUserId())
 	if err != nil {
 		return nil, ErrInvalidArgument
@@ -46,15 +46,15 @@ func GetTransactions(ctx context.Context, db *gorm.DB, in *super.GetTransactions
 		return nil, err
 	}
 
-	rpcTx := make([]*super.Transaction, len(transactions))
+	rpcTx := make([]*moe.Transaction, len(transactions))
 	for i, t := range transactions {
 		rpcTx[i] = transactionToProto(&t)
 	}
-	return &super.GetTransactionsResp{Transactions: rpcTx, Total: int32(total)}, nil
+	return &moe.GetTransactionsResp{Transactions: rpcTx, Total: int32(total)}, nil
 }
 
 // GetTransaction 按 ID 查询单笔交易。
-func GetTransaction(ctx context.Context, db *gorm.DB, in *super.GetTransactionReq) (*super.GetTransactionResp, error) {
+func GetTransaction(ctx context.Context, db *gorm.DB, in *moe.GetTransactionReq) (*moe.GetTransactionResp, error) {
 	id, err := strconv.Atoi(in.GetId())
 	if err != nil {
 		return nil, ErrInvalidArgument
@@ -66,11 +66,11 @@ func GetTransaction(ctx context.Context, db *gorm.DB, in *super.GetTransactionRe
 		}
 		return nil, err
 	}
-	return &super.GetTransactionResp{Transaction: transactionToProto(&transaction)}, nil
+	return &moe.GetTransactionResp{Transaction: transactionToProto(&transaction)}, nil
 }
 
 // Recharge 钱包充值（事务）。
-func Recharge(ctx context.Context, db *gorm.DB, in *super.RechargeReq) (*super.RechargeResp, error) {
+func Recharge(ctx context.Context, db *gorm.DB, in *moe.RechargeReq) (*moe.RechargeResp, error) {
 	if in.GetUserId() == "" {
 		return nil, ErrInvalidArgument
 	}
@@ -111,14 +111,14 @@ func Recharge(ctx context.Context, db *gorm.DB, in *super.RechargeReq) (*super.R
 	if err != nil {
 		return nil, err
 	}
-	return &super.RechargeResp{Message: "充值成功", NewBalance: float32(newBalance)}, nil
+	return &moe.RechargeResp{Message: "充值成功", NewBalance: float32(newBalance)}, nil
 }
 
-func transactionToProto(t *model.Transaction) *super.Transaction {
+func transactionToProto(t *model.Transaction) *moe.Transaction {
 	if t == nil {
 		return nil
 	}
-	return &super.Transaction{
+	return &moe.Transaction{
 		Id:          strconv.Itoa(int(t.ID)),
 		UserId:      strconv.Itoa(int(t.UserID)),
 		Amount:      float32(t.Amount),

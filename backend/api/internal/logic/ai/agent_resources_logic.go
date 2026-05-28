@@ -3,7 +3,7 @@ package ai
 import (
 	"backend/api/internal/common"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 func (l *ResourceLogic) ListAgents(userID uint) (*types.AiAgentsResp, error) {
@@ -31,7 +31,7 @@ func (l *ResourceLogic) DeleteAgent(userID uint, id string) (*types.AiAgentsResp
 }
 
 func (l *ResourceLogic) ListPublicAgents(limit int32) (*types.AiAgentsResp, error) {
-	resp, err := l.svcCtx.AIGW.ListPublicAiAgents(l.ctx, &super.ListPublicAiAgentsReq{
+	resp, err := l.svcCtx.AIGW.ListPublicAiAgents(l.ctx, &moe.ListPublicAiAgentsReq{
 		Limit: limit,
 	})
 	if err != nil {

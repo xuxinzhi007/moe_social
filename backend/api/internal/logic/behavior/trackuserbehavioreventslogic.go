@@ -7,7 +7,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -34,7 +34,7 @@ func (l *TrackUserBehaviorEventsLogic) TrackUserBehaviorEvents(req *types.TrackU
 		}, nil
 	}
 
-	events := make([]*super.UserBehaviorEventInput, 0, len(req.Events))
+	events := make([]*moe.UserBehaviorEventInput, 0, len(req.Events))
 	for _, item := range req.Events {
 		paramsJSON := ""
 		if len(item.Params) > 0 {
@@ -42,7 +42,7 @@ func (l *TrackUserBehaviorEventsLogic) TrackUserBehaviorEvents(req *types.TrackU
 				paramsJSON = string(b)
 			}
 		}
-		events = append(events, &super.UserBehaviorEventInput{
+		events = append(events, &moe.UserBehaviorEventInput{
 			Event:      item.Event,
 			Screen:     item.Screen,
 			ParamsJson: paramsJSON,
@@ -52,7 +52,7 @@ func (l *TrackUserBehaviorEventsLogic) TrackUserBehaviorEvents(req *types.TrackU
 		})
 	}
 
-	rpcResp, err := l.svcCtx.BehaviorGW.TrackUserBehaviorEvents(l.ctx, &super.TrackUserBehaviorEventsReq{
+	rpcResp, err := l.svcCtx.BehaviorGW.TrackUserBehaviorEvents(l.ctx, &moe.TrackUserBehaviorEventsReq{
 		UserId: userID,
 		Events: events,
 	})

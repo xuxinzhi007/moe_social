@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewAdminBootstrapTopicTagsLogic(ctx context.Context, svcCtx *svc.ServiceCon
 }
 
 func (l *AdminBootstrapTopicTagsLogic) AdminBootstrapTopicTags(_ *types.EmptyReq) (resp *types.AdminBootstrapTopicTagsResp, err error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminBootstrapTopicTags(l.ctx, &super.AdminBootstrapTopicTagsReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminBootstrapTopicTags(l.ctx, &moe.AdminBootstrapTopicTagsReq{})
 	if err != nil {
 		return &types.AdminBootstrapTopicTagsResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

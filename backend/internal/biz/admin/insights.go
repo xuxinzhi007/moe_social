@@ -6,18 +6,18 @@ import (
 
 	"backend/model"
 	"backend/pkg/calendar"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
 )
 
 // GrowthStats 管理台成长统计。
-func GrowthStats(ctx context.Context, db *gorm.DB) (*super.AdminGrowthStats, error) {
+func GrowthStats(ctx context.Context, db *gorm.DB) (*moe.AdminGrowthStats, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
-	stats := &super.AdminGrowthStats{}
+	stats := &moe.AdminGrowthStats{}
 
 	count := func(model any, dest *int32) error {
 		var n int64
@@ -63,13 +63,13 @@ func GrowthStats(ctx context.Context, db *gorm.DB) (*super.AdminGrowthStats, err
 }
 
 // SchemaCatalog 数据目录与行数统计。
-func SchemaCatalog(ctx context.Context, db *gorm.DB) (*super.AdminGetSchemaCatalogResp, error) {
+func SchemaCatalog(ctx context.Context, db *gorm.DB) (*moe.AdminGetSchemaCatalogResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	catalog := utils.AdminSchemaCatalog()
-	items := make([]*super.AdminSchemaTableItem, 0, len(catalog))
-	summary := &super.AdminSchemaCatalogSummary{TotalTables: int32(len(catalog))}
+	items := make([]*moe.AdminSchemaTableItem, 0, len(catalog))
+	summary := &moe.AdminSchemaCatalogSummary{TotalTables: int32(len(catalog))}
 
 	for _, entry := range catalog {
 		tableName := schemaTableName(db, entry.Model)
@@ -86,7 +86,7 @@ func SchemaCatalog(ctx context.Context, db *gorm.DB) (*super.AdminGetSchemaCatal
 		default:
 			summary.Unmanaged++
 		}
-		items = append(items, &super.AdminSchemaTableItem{
+		items = append(items, &moe.AdminSchemaTableItem{
 			Key:          entry.Key,
 			TableName:    tableName,
 			Label:        entry.Label,
@@ -99,7 +99,7 @@ func SchemaCatalog(ctx context.Context, db *gorm.DB) (*super.AdminGetSchemaCatal
 			Note:         entry.Note,
 		})
 	}
-	return &super.AdminGetSchemaCatalogResp{Summary: summary, Items: items}, nil
+	return &moe.AdminGetSchemaCatalogResp{Summary: summary, Items: items}, nil
 }
 
 func schemaTableName(db *gorm.DB, model interface{}) string {

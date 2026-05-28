@@ -2,10 +2,8 @@ package moesocial
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"strings"
 
 	apirun "backend/api/runserver"
@@ -38,8 +36,6 @@ func newKratosPureHTTPServer(apiRes *apirun.StartResult, publicHost string, publ
 	deps := pilotDepsFromAPI(apiRes)
 	moekratoshttp.Register(httpSrv, deps.MoeAdmin)
 	moekratospilot.RegisterAll(httpSrv, deps)
-	r := httpSrv.Route("/")
-	r.GET("/migration", pureMigrationHandler)
 
 	return &kratosPureHTTPServer{addr: addr, khttp: httpSrv}, nil
 }
@@ -71,14 +67,3 @@ func (s *kratosPureHTTPServer) Stop(ctx context.Context) error {
 	return nil
 }
 
-func pureMigrationHandler(ctx khttp.Context) error {
-	rep := kratosprogress.Current()
-	b, err := json.Marshal(rep)
-	if err != nil {
-		return err
-	}
-	ctx.Response().Header().Set("Content-Type", "application/json")
-	ctx.Response().WriteHeader(http.StatusOK)
-	_, err = ctx.Response().Write(b)
-	return err
-}

@@ -7,7 +7,7 @@ import (
 	aibiz "backend/internal/biz/ai"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewAiUserConfigLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AiUs
 	}
 }
 
-func (l *AiUserConfigLogic) Get(in *super.GetAiUserConfigReq) (*super.GetAiUserConfigResp, error) {
+func (l *AiUserConfigLogic) Get(in *moe.GetAiUserConfigReq) (*moe.GetAiUserConfigResp, error) {
 	resp, err := aibiz.GetAiUserConfig(l.ctx, l.svcCtx.DB, in)
 	if err != nil {
 		if mapped := mapAIResourceErr(err); mapped != nil {
@@ -37,7 +37,7 @@ func (l *AiUserConfigLogic) Get(in *super.GetAiUserConfigReq) (*super.GetAiUserC
 	return resp, nil
 }
 
-func (l *AiUserConfigLogic) Upsert(in *super.UpsertAiUserConfigReq) (*super.UpsertAiUserConfigResp, error) {
+func (l *AiUserConfigLogic) Upsert(in *moe.UpsertAiUserConfigReq) (*moe.UpsertAiUserConfigResp, error) {
 	resp, err := aibiz.UpsertAiUserConfig(l.ctx, l.svcCtx.DB, in)
 	if err != nil {
 		if mapped := mapAIResourceErr(err); mapped != nil {

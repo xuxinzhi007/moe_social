@@ -8,7 +8,7 @@ import (
 
 	moebiz "backend/internal/biz/moe"
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -23,7 +23,7 @@ type SearchInput struct {
 }
 
 // Search 关键词检索帖子。
-func Search(ctx context.Context, db *gorm.DB, in SearchInput) (*super.MoeSearchPostsResp, error) {
+func Search(ctx context.Context, db *gorm.DB, in SearchInput) (*moe.MoeSearchPostsResp, error) {
 	hits, err := moebiz.SearchPosts(ctx, db, moebiz.SearchPostsInput{
 		Query:        in.Query,
 		ViewerUserID: uint(in.ViewerUserID),
@@ -34,9 +34,9 @@ func Search(ctx context.Context, db *gorm.DB, in SearchInput) (*super.MoeSearchP
 	if err != nil {
 		return nil, err
 	}
-	out := &super.MoeSearchPostsResp{Total: int32(len(hits))}
+	out := &moe.MoeSearchPostsResp{Total: int32(len(hits))}
 	for _, h := range hits {
-		out.Items = append(out.Items, &super.MoeSearchPostHit{
+		out.Items = append(out.Items, &moe.MoeSearchPostHit{
 			PostId: h.PostID, UserId: h.UserID, UserName: h.UserName,
 			Content: h.Content, Snippet: h.Snippet, MoodTag: h.MoodTag,
 			Likes: int32(h.Likes), Comments: int32(h.Comments), CreatedAt: h.CreatedAt,
@@ -47,7 +47,7 @@ func Search(ctx context.Context, db *gorm.DB, in SearchInput) (*super.MoeSearchP
 }
 
 // GetByID 单帖详情。
-func GetByID(ctx context.Context, db *gorm.DB, postIDRaw, viewerUserIDRaw string) (*super.Post, error) {
+func GetByID(ctx context.Context, db *gorm.DB, postIDRaw, viewerUserIDRaw string) (*moe.Post, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -98,7 +98,7 @@ type ListFilter struct {
 }
 
 // List 帖子 feed 列表。
-func List(ctx context.Context, db *gorm.DB, f ListFilter) ([]*super.Post, int32, error) {
+func List(ctx context.Context, db *gorm.DB, f ListFilter) ([]*moe.Post, int32, error) {
 	if db == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -182,7 +182,7 @@ func List(ctx context.Context, db *gorm.DB, f ListFilter) ([]*super.Post, int32,
 		postIDs = append(postIDs, p.ID)
 	}
 	likedPosts := LikedTargetIDSet(db, viewerUID, "post", postIDs)
-	out := make([]*super.Post, 0, len(posts))
+	out := make([]*moe.Post, 0, len(posts))
 	for _, post := range posts {
 		out = append(out, BuildProtoPost(post, userMap[post.UserID], likedPosts[post.ID]))
 	}

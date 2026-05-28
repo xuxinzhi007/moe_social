@@ -5,7 +5,7 @@ import (
 
 	giftapp "backend/internal/service/gift"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,6 +20,6 @@ func NewGetGiftRecordsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 	return &GetGiftRecordsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *GetGiftRecordsLogic) GetGiftRecords(in *super.GetGiftRecordsReq) (*super.GetGiftRecordsResp, error) {
+func (l *GetGiftRecordsLogic) GetGiftRecords(in *moe.GetGiftRecordsReq) (*moe.GetGiftRecordsResp, error) {
 	return giftapp.New(l.svcCtx.DB).GetGiftRecords(l.ctx, in)
 }

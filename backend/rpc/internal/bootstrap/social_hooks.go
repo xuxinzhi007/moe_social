@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"backend/internal/platform/socialhook"
 	"backend/pkg/achievement"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
@@ -11,7 +11,7 @@ import (
 
 // RegisterSocialAchievementHooks 将成就引擎挂到 socialhook，供 internal/service 进程内调用。
 func RegisterSocialAchievementHooks() {
-	socialhook.RegisterPostCreatedAchievementHook(func(db *gorm.DB, meta socialhook.PostCreatedMeta) []*super.AchievementUnlock {
+	socialhook.RegisterPostCreatedAchievementHook(func(db *gorm.DB, meta socialhook.PostCreatedMeta) []*moe.AchievementUnlock {
 		unlocks, err := achievement.ApplyEventAfterCommit(db, meta.UserID, achievement.Event{
 			Type:             achievement.EventPostCreated,
 			ImageCount:       meta.ImageCount,
@@ -29,7 +29,7 @@ func RegisterSocialAchievementHooks() {
 		return achievement.UnlocksToProto(unlocks)
 	})
 
-	socialhook.RegisterCommentCreatedAchievementHook(func(db *gorm.DB, userID uint) []*super.AchievementUnlock {
+	socialhook.RegisterCommentCreatedAchievementHook(func(db *gorm.DB, userID uint) []*moe.AchievementUnlock {
 		unlocks, err := achievement.ApplyEventAfterCommit(db, userID, achievement.Event{
 			Type: achievement.EventCommentCreated,
 		})
@@ -49,7 +49,7 @@ func RegisterSocialAchievementHooks() {
 		}
 	})
 
-	socialhook.RegisterGiftSentAchievementHook(func(db *gorm.DB, meta socialhook.GiftSentMeta) []*super.AchievementUnlock {
+	socialhook.RegisterGiftSentAchievementHook(func(db *gorm.DB, meta socialhook.GiftSentMeta) []*moe.AchievementUnlock {
 		unlocks, err := achievement.ApplyEventAfterCommit(db, meta.UserID, achievement.Event{
 			Type: achievement.EventGiftSent, GiftCount: meta.GiftCount, GiftValue: meta.GiftValue,
 		})

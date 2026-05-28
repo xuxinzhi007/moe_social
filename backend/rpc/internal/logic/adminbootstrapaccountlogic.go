@@ -5,7 +5,7 @@ import (
 
 	adminbiz "backend/internal/biz/admin"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -24,6 +24,6 @@ func NewAdminBootstrapAccountLogic(ctx context.Context, svcCtx *svc.ServiceConte
 	}
 }
 
-func (l *AdminBootstrapAccountLogic) AdminBootstrapAccount(in *super.AdminBootstrapAccountReq) (*super.AdminBootstrapAccountResp, error) {
+func (l *AdminBootstrapAccountLogic) AdminBootstrapAccount(in *moe.AdminBootstrapAccountReq) (*moe.AdminBootstrapAccountResp, error) {
 	return adminbiz.BootstrapAdminAccount(l.ctx, l.svcCtx.DB, in)
 }

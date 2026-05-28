@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewAdminDeleteAccountLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *AdminDeleteAccountLogic) AdminDeleteAccount(req *types.AdminDeleteAccountReq) (*types.AdminDeleteAccountResp, error) {
-	_, err := l.svcCtx.AdminGW.AdminDeleteAccount(l.ctx, &super.AdminDeleteAccountReq{
+	_, err := l.svcCtx.AdminGW.AdminDeleteAccount(l.ctx, &moe.AdminDeleteAccountReq{
 		AccountId: req.AccountId,
 	})
 	if err != nil {

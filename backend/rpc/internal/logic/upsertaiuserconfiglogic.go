@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,6 +23,6 @@ func NewUpsertAiUserConfigLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
-func (l *UpsertAiUserConfigLogic) UpsertAiUserConfig(in *super.UpsertAiUserConfigReq) (*super.UpsertAiUserConfigResp, error) {
+func (l *UpsertAiUserConfigLogic) UpsertAiUserConfig(in *moe.UpsertAiUserConfigReq) (*moe.UpsertAiUserConfigResp, error) {
 	return NewAiUserConfigLogic(l.ctx, l.svcCtx).Upsert(in)
 }

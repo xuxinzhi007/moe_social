@@ -2,11 +2,11 @@ package common
 
 import (
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 // RpcUserToTypes 将 RPC User 转为 API User（含管理字段 role）。
-func RpcUserToTypes(u *super.User) types.User {
+func RpcUserToTypes(u *moe.User) types.User {
 	if u == nil {
 		return types.User{}
 	}

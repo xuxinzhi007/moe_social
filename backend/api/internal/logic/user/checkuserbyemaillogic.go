@@ -7,7 +7,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -34,7 +34,7 @@ func (l *CheckUserByEmailLogic) CheckUserByEmail(req *types.GetUserByEmailReq) (
 	}
 
 	// 调用 RPC 服务查找用户
-	rpcResp, err := l.svcCtx.UserGW.GetUserByEmail(l.ctx, &super.GetUserByEmailReq{
+	rpcResp, err := l.svcCtx.UserGW.GetUserByEmail(l.ctx, &moe.GetUserByEmailReq{
 		Email: req.Email,
 	})
 

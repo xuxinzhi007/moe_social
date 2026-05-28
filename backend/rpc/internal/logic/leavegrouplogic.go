@@ -5,7 +5,7 @@ import (
 
 	communityapp "backend/internal/service/community"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,6 +20,6 @@ func NewLeaveGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LeaveG
 	return &LeaveGroupLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *LeaveGroupLogic) LeaveGroup(in *super.LeaveGroupReq) (*super.LeaveGroupResp, error) {
+func (l *LeaveGroupLogic) LeaveGroup(in *moe.LeaveGroupReq) (*moe.LeaveGroupResp, error) {
 	return communityapp.New(l.svcCtx.DB).LeaveGroup(l.ctx, in)
 }

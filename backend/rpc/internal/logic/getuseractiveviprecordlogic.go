@@ -5,7 +5,7 @@ import (
 
 	userapp "backend/internal/service/user"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,7 +20,7 @@ func NewGetUserActiveVipRecordLogic(ctx context.Context, svcCtx *svc.ServiceCont
 	return &GetUserActiveVipRecordLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *GetUserActiveVipRecordLogic) GetUserActiveVipRecord(in *super.GetUserActiveVipRecordReq) (*super.GetUserActiveVipRecordResp, error) {
+func (l *GetUserActiveVipRecordLogic) GetUserActiveVipRecord(in *moe.GetUserActiveVipRecordReq) (*moe.GetUserActiveVipRecordResp, error) {
 	resp, err := userapp.New(l.svcCtx.DB).GetUserActiveVipRecord(l.ctx, in)
 	return resp, mapUserBizErr(err)
 }

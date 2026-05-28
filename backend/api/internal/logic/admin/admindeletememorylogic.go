@@ -7,7 +7,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewAdminDeleteMemoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *AdminDeleteMemoryLogic) AdminDeleteMemory(req *types.AdminDeleteMemoryReq) (*types.AdminDeleteMemoryResp, error) {
-	_, err := l.svcCtx.AdminGW.AdminDeleteMemory(l.ctx, &super.AdminDeleteMemoryReq{
+	_, err := l.svcCtx.AdminGW.AdminDeleteMemory(l.ctx, &moe.AdminDeleteMemoryReq{
 		MemoryId: req.MemoryId,
 	})
 	if err != nil {

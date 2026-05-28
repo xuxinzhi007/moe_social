@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,7 +19,7 @@ func NewListAiProvidersLogic(ctx context.Context, svcCtx *svc.ServiceContext) *L
 	return &ListAiProvidersLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *ListAiProvidersLogic) ListAiProviders(in *super.ListAiResourceReq) (*super.ListAiResourceResp, error) {
+func (l *ListAiProvidersLogic) ListAiProviders(in *moe.ListAiResourceReq) (*moe.ListAiResourceResp, error) {
 	resp, err := aiApp(l.svcCtx).ListAiProviders(l.ctx, in)
 	if err != nil {
 		if mapped := mapAIResourceErr(err); mapped != nil {

@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewAdminUpsertMenuLogic(ctx context.Context, svcCtx *svc.ServiceContext) *A
 }
 
 func (l *AdminUpsertMenuLogic) AdminUpsertMenu(req *types.AdminUpsertMenuReq) (*types.AdminUpsertMenuResp, error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminUpsertMenu(l.ctx, &super.AdminUpsertMenuReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminUpsertMenu(l.ctx, &moe.AdminUpsertMenuReq{
 		Key:          req.Key,
 		Kind:         req.Kind,
 		ParentKey:    req.ParentKey,

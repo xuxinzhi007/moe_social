@@ -6,7 +6,7 @@ import (
 
 	notifybiz "backend/internal/biz/notify"
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -26,8 +26,8 @@ func adminPageParams(page, pageSize int32) (int32, int32) {
 	return page, pageSize
 }
 
-func achievementToProto(row model.AchievementDefinition) *super.AdminAchievementItem {
-	return &super.AdminAchievementItem{
+func achievementToProto(row model.AchievementDefinition) *moe.AdminAchievementItem {
+	return &moe.AdminAchievementItem{
 		Id:            row.ID,
 		Name:          row.Name,
 		Description:   row.Description,
@@ -44,8 +44,8 @@ func achievementToProto(row model.AchievementDefinition) *super.AdminAchievement
 	}
 }
 
-func levelConfigToProto(row model.LevelConfig) *super.AdminLevelConfigItem {
-	return &super.AdminLevelConfigItem{
+func levelConfigToProto(row model.LevelConfig) *moe.AdminLevelConfigItem {
+	return &moe.AdminLevelConfigItem{
 		Id:         strconv.FormatUint(uint64(row.ID), 10),
 		Level:      int32(row.Level),
 		Title:      row.Title,
@@ -56,8 +56,8 @@ func levelConfigToProto(row model.LevelConfig) *super.AdminLevelConfigItem {
 	}
 }
 
-func checkInRewardToProto(row model.CheckInReward) *super.AdminCheckInRewardItem {
-	return &super.AdminCheckInRewardItem{
+func checkInRewardToProto(row model.CheckInReward) *moe.AdminCheckInRewardItem {
+	return &moe.AdminCheckInRewardItem{
 		Id:              strconv.FormatUint(uint64(row.ID), 10),
 		ConsecutiveDays: int32(row.ConsecutiveDays),
 		ExpReward:       int32(row.ExpReward),
@@ -74,8 +74,8 @@ func countWhere(db *gorm.DB, model interface{}, column string, uid uint) int32 {
 	return int32(n)
 }
 
-func announcementToProto(row model.AdminAnnouncement) *super.AdminAnnouncementItem {
-	item := &super.AdminAnnouncementItem{
+func announcementToProto(row model.AdminAnnouncement) *moe.AdminAnnouncementItem {
+	item := &moe.AdminAnnouncementItem{
 		Id:        strconv.FormatUint(uint64(row.ID), 10),
 		Title:     row.Title,
 		Content:   row.Content,
@@ -90,8 +90,8 @@ func announcementToProto(row model.AdminAnnouncement) *super.AdminAnnouncementIt
 	return item
 }
 
-func adminAccountToProto(row model.AdminAccount) *super.AdminAccountItem {
-	item := &super.AdminAccountItem{
+func adminAccountToProto(row model.AdminAccount) *moe.AdminAccountItem {
+	item := &moe.AdminAccountItem{
 		Id:        strconv.FormatUint(uint64(row.ID), 10),
 		Username:  row.Username,
 		Role:      row.Role,
@@ -103,8 +103,8 @@ func adminAccountToProto(row model.AdminAccount) *super.AdminAccountItem {
 	return item
 }
 
-func adminMenuToProto(row model.AdminMenu) *super.AdminMenuItem {
-	return &super.AdminMenuItem{
+func adminMenuToProto(row model.AdminMenu) *moe.AdminMenuItem {
+	return &moe.AdminMenuItem{
 		Id:           strconv.FormatUint(uint64(row.ID), 10),
 		Key:          row.Key,
 		Kind:         row.Kind,
@@ -123,8 +123,8 @@ func adminMenuToProto(row model.AdminMenu) *super.AdminMenuItem {
 	}
 }
 
-func adminAuditLogToProto(row model.AdminAuditLog) *super.AdminAuditLogItem {
-	return &super.AdminAuditLogItem{
+func adminAuditLogToProto(row model.AdminAuditLog) *moe.AdminAuditLogItem {
+	return &moe.AdminAuditLogItem{
 		Id:         strconv.FormatUint(uint64(row.ID), 10),
 		AdminId:    strconv.FormatUint(uint64(row.AdminID), 10),
 		AdminName:  row.AdminName,

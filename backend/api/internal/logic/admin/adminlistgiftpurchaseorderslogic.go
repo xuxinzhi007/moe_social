@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -35,7 +35,7 @@ func (l *AdminListGiftPurchaseOrdersLogic) AdminListGiftPurchaseOrders(req *type
 		pageSize = 50
 	}
 
-	rpcResp, err := l.svcCtx.AdminGW.AdminListGiftPurchaseOrders(l.ctx, &super.AdminListGiftPurchaseOrdersReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListGiftPurchaseOrders(l.ctx, &moe.AdminListGiftPurchaseOrdersReq{
 		Page:     int32(page),
 		PageSize: int32(pageSize),
 		UserId:   req.UserId,

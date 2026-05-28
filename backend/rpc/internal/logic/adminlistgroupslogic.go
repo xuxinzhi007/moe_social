@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,7 +19,7 @@ func NewAdminListGroupsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *A
 	return &AdminListGroupsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminListGroupsLogic) AdminListGroups(in *super.AdminListGroupsReq) (*super.AdminListGroupsResp, error) {
+func (l *AdminListGroupsLogic) AdminListGroups(in *moe.AdminListGroupsReq) (*moe.AdminListGroupsResp, error) {
 	resp, err := newAdminApp(l.svcCtx.DB).ListGroups(l.ctx, in)
 	if err != nil {
 		return nil, mapAdminModerationErr(err)

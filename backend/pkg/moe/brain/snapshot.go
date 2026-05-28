@@ -10,7 +10,7 @@ import (
 	"backend/model"
 	"backend/pkg/memory"
 	"backend/pkg/moe/port"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -107,7 +107,7 @@ func LoadSnapshot(ctx context.Context, db *gorm.DB, rpc port.SuperPort, agentKey
 	memories := []MemoryItem{}
 	if rpc != nil && rt.BotUserID > 0 {
 		uid := strconv.FormatUint(uint64(rt.BotUserID), 10)
-		resp, err := rpc.GetUserMemories(ctx, &super.GetUserMemoriesReq{UserId: uid})
+		resp, err := rpc.GetUserMemories(ctx, &moe.GetUserMemoriesReq{UserId: uid})
 		if err == nil && resp != nil {
 			records := memory.RecordsFromSuper(resp.Memories)
 			for _, rec := range records {

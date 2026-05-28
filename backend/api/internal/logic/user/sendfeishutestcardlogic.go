@@ -9,7 +9,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -33,7 +33,7 @@ func (l *SendFeishuTestCardLogic) SendFeishuTestCard(req *types.EmptyReq) (resp 
 	if err != nil {
 		return nil, err
 	}
-	_, rpcErr := l.svcCtx.UserGW.SendFeishuTestCard(l.ctx, &super.SendFeishuTestCardReq{
+	_, rpcErr := l.svcCtx.UserGW.SendFeishuTestCard(l.ctx, &moe.SendFeishuTestCardReq{
 		UserId: userID,
 	})
 	if rpcErr != nil {

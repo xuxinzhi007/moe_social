@@ -7,7 +7,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewAdminUpdateAccountLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *AdminUpdateAccountLogic) AdminUpdateAccount(req *types.AdminUpdateAccountReq) (*types.AdminUpdateAccountResp, error) {
-	rpcReq := &super.AdminUpdateAccountReq{AccountId: req.AccountId}
+	rpcReq := &moe.AdminUpdateAccountReq{AccountId: req.AccountId}
 	if username := strings.TrimSpace(req.Username); username != "" {
 		rpcReq.Username = username
 		rpcReq.UpdateUsername = true

@@ -9,7 +9,7 @@ import (
 	"backend/rpc/internal/debug"
 	"backend/rpc/internal/server"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"github.com/zeromicro/go-zero/core/conf"
@@ -34,7 +34,7 @@ func Start(opts Options) (*zrpc.RpcServer, *svc.ServiceContext, *debug.Monitor, 
 	bootstrap.RegisterSocialAchievementHooks()
 
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
-		super.RegisterSuperServer(grpcServer, server.NewSuperServer(ctx))
+		moe.RegisterSuperServer(grpcServer, server.NewSuperServer(ctx))
 		bootstrap.RegisterMoeGRPC(grpcServer, ctx)
 		if c.Mode == service.DevMode || c.Mode == service.TestMode {
 			reflection.Register(grpcServer)

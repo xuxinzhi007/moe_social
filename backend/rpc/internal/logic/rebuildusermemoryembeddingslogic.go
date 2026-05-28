@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,7 +19,7 @@ func NewRebuildUserMemoryEmbeddingsLogic(ctx context.Context, svcCtx *svc.Servic
 	return &RebuildUserMemoryEmbeddingsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *RebuildUserMemoryEmbeddingsLogic) RebuildUserMemoryEmbeddings(in *super.RebuildUserMemoryEmbeddingsReq) (*super.RebuildUserMemoryEmbeddingsResp, error) {
+func (l *RebuildUserMemoryEmbeddingsLogic) RebuildUserMemoryEmbeddings(in *moe.RebuildUserMemoryEmbeddingsReq) (*moe.RebuildUserMemoryEmbeddingsResp, error) {
 	resp, err := newLLMApp(l.svcCtx.DB).RebuildUserMemoryEmbeddings(l.ctx, in)
 	return resp, mapMemoryWriteErr(err)
 }

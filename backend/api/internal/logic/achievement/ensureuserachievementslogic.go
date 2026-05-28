@@ -5,7 +5,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewEnsureUserAchievementsLogic(ctx context.Context, svcCtx *svc.ServiceCont
 }
 
 func (l *EnsureUserAchievementsLogic) EnsureUserAchievements(req *types.EnsureUserAchievementsReq) (*types.EnsureUserAchievementsResp, error) {
-	rpcResp, err := l.svcCtx.AchievementGW.EnsureUserAchievements(l.ctx, &super.EnsureUserAchievementsReq{
+	rpcResp, err := l.svcCtx.AchievementGW.EnsureUserAchievements(l.ctx, &moe.EnsureUserAchievementsReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

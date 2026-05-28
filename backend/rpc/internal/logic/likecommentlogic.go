@@ -7,7 +7,7 @@ import (
 	commentapp "backend/internal/service/comment"
 	commentbiz "backend/internal/biz/comment"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewLikeCommentLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LikeC
 	return &LikeCommentLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *LikeCommentLogic) LikeComment(in *super.LikeCommentReq) (*super.LikeCommentResp, error) {
+func (l *LikeCommentLogic) LikeComment(in *moe.LikeCommentReq) (*moe.LikeCommentResp, error) {
 	app := commentapp.New(l.svcCtx.DB)
 	resp, err := app.LikeComment(l.ctx, in)
 	if err != nil {

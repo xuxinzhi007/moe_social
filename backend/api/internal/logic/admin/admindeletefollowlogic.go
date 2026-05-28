@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewAdminDeleteFollowLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *AdminDeleteFollowLogic) AdminDeleteFollow(req *types.AdminDeleteFollowReq) (*types.AdminDeleteFollowResp, error) {
-	_, err := l.svcCtx.AdminGW.AdminDeleteFollow(l.ctx, &super.AdminDeleteFollowReq{
+	_, err := l.svcCtx.AdminGW.AdminDeleteFollow(l.ctx, &moe.AdminDeleteFollowReq{
 		FollowId: req.FollowId,
 	})
 	if err != nil {

@@ -8,7 +8,7 @@ import (
 	postbiz "backend/internal/biz/post"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewLikePostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LikePost
 	return &LikePostLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *LikePostLogic) LikePost(in *super.LikePostReq) (*super.LikePostResp, error) {
+func (l *LikePostLogic) LikePost(in *moe.LikePostReq) (*moe.LikePostResp, error) {
 	app := postapp.New(l.svcCtx.DB, l.svcCtx.Config.HandDrawRequireModeration)
 	resp, err := app.LikePost(l.ctx, in)
 	if err != nil {

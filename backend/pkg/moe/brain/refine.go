@@ -11,7 +11,7 @@ import (
 	"backend/model"
 	"backend/pkg/llminference"
 	"backend/pkg/moe/port"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
@@ -225,7 +225,7 @@ func applyEpisodeRefinement(
 
 	if deps.RPC != nil && ep.BotUserID > 0 && ep.MemoryKey != "" {
 		val := fmt.Sprintf("%s\n标签: %s\n质量: %d", truncate(content, 200), strings.Join(tags, ", "), quality)
-		_, _ = deps.RPC.UpsertUserMemory(ctx, &super.UpsertUserMemoryReq{
+		_, _ = deps.RPC.UpsertUserMemory(ctx, &moe.UpsertUserMemoryReq{
 			UserId:     strconv.FormatUint(uint64(ep.BotUserID), 10),
 			Key:        ep.MemoryKey,
 			Value:      val,
@@ -235,7 +235,7 @@ func applyEpisodeRefinement(
 		})
 	}
 	if deps.RPC != nil && ep.PostID != "" && ep.BotUserID > 0 {
-		_, _ = deps.RPC.UpdatePost(ctx, &super.UpdatePostReq{
+		_, _ = deps.RPC.UpdatePost(ctx, &moe.UpdatePostReq{
 			PostId:  ep.PostID,
 			UserId:  strconv.FormatUint(uint64(ep.BotUserID), 10),
 			Content: content,

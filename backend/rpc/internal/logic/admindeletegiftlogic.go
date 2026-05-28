@@ -9,7 +9,7 @@ import (
 	adminapp "backend/internal/service/admin"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -24,7 +24,7 @@ func NewAdminDeleteGiftLogic(ctx context.Context, svcCtx *svc.ServiceContext) *A
 	return &AdminDeleteGiftLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminDeleteGiftLogic) AdminDeleteGift(in *super.AdminDeleteGiftReq) (*super.AdminDeleteGiftResp, error) {
+func (l *AdminDeleteGiftLogic) AdminDeleteGift(in *moe.AdminDeleteGiftReq) (*moe.AdminDeleteGiftResp, error) {
 	_, err := adminapp.New(l.svcCtx.DB).AdminDeleteGift(l.ctx, in)
 	if err != nil {
 		if errors.Is(err, adminbiz.ErrGiftNotFound) {
@@ -36,5 +36,5 @@ func (l *AdminDeleteGiftLogic) AdminDeleteGift(in *super.AdminDeleteGiftReq) (*s
 		l.Errorf("[admin] delete gift: %v", err)
 		return nil, errorx.Internal("删除礼物失败")
 	}
-	return &super.AdminDeleteGiftResp{}, nil
+	return &moe.AdminDeleteGiftResp{}, nil
 }

@@ -5,7 +5,7 @@ import (
 
 	adminapp "backend/internal/service/admin"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,6 +20,6 @@ func NewAdminListAchievementsLogic(ctx context.Context, svcCtx *svc.ServiceConte
 	return &AdminListAchievementsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminListAchievementsLogic) AdminListAchievements(in *super.AdminListAchievementsReq) (*super.AdminListAchievementsResp, error) {
+func (l *AdminListAchievementsLogic) AdminListAchievements(in *moe.AdminListAchievementsReq) (*moe.AdminListAchievementsResp, error) {
 	return adminapp.New(l.svcCtx.DB).ListAchievements(l.ctx, in)
 }

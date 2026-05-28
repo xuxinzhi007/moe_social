@@ -6,7 +6,7 @@ import (
 	adminapp "backend/internal/service/admin"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -21,7 +21,7 @@ func NewAdminBootstrapAchievementsLogic(ctx context.Context, svcCtx *svc.Service
 	return &AdminBootstrapAchievementsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminBootstrapAchievementsLogic) AdminBootstrapAchievements(in *super.AdminBootstrapAchievementsReq) (*super.AdminBootstrapAchievementsResp, error) {
+func (l *AdminBootstrapAchievementsLogic) AdminBootstrapAchievements(in *moe.AdminBootstrapAchievementsReq) (*moe.AdminBootstrapAchievementsResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).BootstrapAchievements(l.ctx, in)
 	if err != nil {
 		l.Errorf("[admin] bootstrap achievements: %v", err)

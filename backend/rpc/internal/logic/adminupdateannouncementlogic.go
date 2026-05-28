@@ -8,7 +8,7 @@ import (
 	adminbiz "backend/internal/biz/admin"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewAdminUpdateAnnouncementLogic(ctx context.Context, svcCtx *svc.ServiceCon
 	return &AdminUpdateAnnouncementLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminUpdateAnnouncementLogic) AdminUpdateAnnouncement(in *super.AdminUpdateAnnouncementReq) (*super.AdminUpdateAnnouncementResp, error) {
+func (l *AdminUpdateAnnouncementLogic) AdminUpdateAnnouncement(in *moe.AdminUpdateAnnouncementReq) (*moe.AdminUpdateAnnouncementResp, error) {
 	app := adminapp.New(l.svcCtx.DB)
 	resp, err := app.UpdateAnnouncement(l.ctx, in)
 	if err != nil {

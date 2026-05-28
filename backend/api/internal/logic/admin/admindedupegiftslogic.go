@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewAdminDedupeGiftsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *AdminDedupeGiftsLogic) AdminDedupeGifts(_ *types.EmptyReq) (resp *types.AdminDedupeGiftsResp, err error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminDedupeGifts(l.ctx, &super.AdminDedupeGiftsReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminDedupeGifts(l.ctx, &moe.AdminDedupeGiftsReq{})
 	if err != nil {
 		return &types.AdminDedupeGiftsResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

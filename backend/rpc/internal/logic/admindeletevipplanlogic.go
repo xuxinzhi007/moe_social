@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewAdminDeleteVipPlanLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
-func (l *AdminDeleteVipPlanLogic) AdminDeleteVipPlan(in *super.AdminDeleteVipPlanReq) (*super.AdminDeleteVipPlanResp, error) {
+func (l *AdminDeleteVipPlanLogic) AdminDeleteVipPlan(in *moe.AdminDeleteVipPlanReq) (*moe.AdminDeleteVipPlanResp, error) {
 	resp, err := newVipAdminApp(l.svcCtx.DB).AdminDeleteVipPlan(l.ctx, in)
 	if err != nil {
 		l.Errorf("[admin] delete vip plan: %v", err)

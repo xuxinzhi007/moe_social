@@ -8,13 +8,13 @@ import (
 	"strings"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // ListExpLogs 经验日志分页。
-func ListExpLogs(ctx context.Context, db *gorm.DB, userIDRaw string, page, pageSize int32) ([]*super.ExpLogRecord, int32, error) {
+func ListExpLogs(ctx context.Context, db *gorm.DB, userIDRaw string, page, pageSize int32) ([]*moe.ExpLogRecord, int32, error) {
 	if db == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -48,9 +48,9 @@ func ListExpLogs(ctx context.Context, db *gorm.DB, userIDRaw string, page, pageS
 		Order("created_at DESC").Limit(int(pageSize)).Offset(offset).Find(&rows).Error; err != nil {
 		return nil, 0, err
 	}
-	out := make([]*super.ExpLogRecord, 0, len(rows))
+	out := make([]*moe.ExpLogRecord, 0, len(rows))
 	for _, log := range rows {
-		out = append(out, &super.ExpLogRecord{
+		out = append(out, &moe.ExpLogRecord{
 			Id:          fmt.Sprintf("%d", log.ID),
 			ExpChange:   int32(log.ExpChange),
 			Source:      log.Source,

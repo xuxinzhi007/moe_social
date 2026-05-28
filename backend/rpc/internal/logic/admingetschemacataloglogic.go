@@ -6,7 +6,7 @@ import (
 	adminbiz "backend/internal/biz/admin"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -21,7 +21,7 @@ func NewAdminGetSchemaCatalogLogic(ctx context.Context, svcCtx *svc.ServiceConte
 	return &AdminGetSchemaCatalogLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminGetSchemaCatalogLogic) AdminGetSchemaCatalog(_ *super.AdminGetSchemaCatalogReq) (*super.AdminGetSchemaCatalogResp, error) {
+func (l *AdminGetSchemaCatalogLogic) AdminGetSchemaCatalog(_ *moe.AdminGetSchemaCatalogReq) (*moe.AdminGetSchemaCatalogResp, error) {
 	if l.svcCtx.DB == nil {
 		return nil, errorx.Internal("数据库未就绪")
 	}

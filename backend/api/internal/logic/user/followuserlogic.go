@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -29,7 +29,7 @@ func (l *FollowUserLogic) FollowUser(req *types.FollowUserReq) (resp *types.Foll
 	l.Debug("关注用户请求:", req)
 
 	// 调用RPC服务
-	rpcResp, err := l.svcCtx.UserGW.FollowUser(l.ctx, &super.FollowUserReq{
+	rpcResp, err := l.svcCtx.UserGW.FollowUser(l.ctx, &moe.FollowUserReq{
 		UserId:      req.UserId,
 		FollowingId: req.FollowingId,
 	})

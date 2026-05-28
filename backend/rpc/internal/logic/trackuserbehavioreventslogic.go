@@ -6,7 +6,7 @@ import (
 
 	behaviorbiz "backend/internal/biz/behavior"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,10 +25,10 @@ func NewTrackUserBehaviorEventsLogic(ctx context.Context, svcCtx *svc.ServiceCon
 	}
 }
 
-func (l *TrackUserBehaviorEventsLogic) TrackUserBehaviorEvents(in *super.TrackUserBehaviorEventsReq) (*super.TrackUserBehaviorEventsResp, error) {
+func (l *TrackUserBehaviorEventsLogic) TrackUserBehaviorEvents(in *moe.TrackUserBehaviorEventsReq) (*moe.TrackUserBehaviorEventsResp, error) {
 	events := in.GetEvents()
 	if len(events) == 0 {
-		return &super.TrackUserBehaviorEventsResp{Accepted: 0}, nil
+		return &moe.TrackUserBehaviorEventsResp{Accepted: 0}, nil
 	}
 
 	inputs := make([]behaviorbiz.EventInput, 0, len(events))
@@ -55,5 +55,5 @@ func (l *TrackUserBehaviorEventsLogic) TrackUserBehaviorEvents(in *super.TrackUs
 		}
 	}
 
-	return &super.TrackUserBehaviorEventsResp{Accepted: accepted}, nil
+	return &moe.TrackUserBehaviorEventsResp{Accepted: accepted}, nil
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	behaviorapp "backend/internal/service/behavior"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"google.golang.org/grpc"
 )
@@ -12,11 +12,11 @@ import (
 // Gateway Behavior HTTP → biz 或 super RPC 回退。
 type Gateway struct {
 	local *behaviorapp.AppService
-	super super.SuperClient
+	super moe.SuperClient
 }
 
 // New 构造网关。
-func New(local *behaviorapp.AppService, legacy super.SuperClient) *Gateway {
+func New(local *behaviorapp.AppService, legacy moe.SuperClient) *Gateway {
 	return &Gateway{local: local, super: legacy}
 }
 
@@ -34,7 +34,7 @@ func (g *Gateway) Route() string {
 	return "none"
 }
 
-func (g *Gateway) TrackUserBehaviorEvents(ctx context.Context, in *super.TrackUserBehaviorEventsReq, opts ...grpc.CallOption) (*super.TrackUserBehaviorEventsResp, error) {
+func (g *Gateway) TrackUserBehaviorEvents(ctx context.Context, in *moe.TrackUserBehaviorEventsReq, opts ...grpc.CallOption) (*moe.TrackUserBehaviorEventsResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.TrackEvents(ctx, in)
 	}

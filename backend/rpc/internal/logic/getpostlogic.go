@@ -7,7 +7,7 @@ import (
 	postbiz "backend/internal/biz/post"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewGetPostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPostLo
 	return &GetPostLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *GetPostLogic) GetPost(in *super.GetPostReq) (*super.GetPostResp, error) {
+func (l *GetPostLogic) GetPost(in *moe.GetPostReq) (*moe.GetPostResp, error) {
 	if in.GetPostId() == "" {
 		return nil, errorx.New(400, "帖子ID不能为空")
 	}
@@ -38,5 +38,5 @@ func (l *GetPostLogic) GetPost(in *super.GetPostReq) (*super.GetPostResp, error)
 			return nil, errorx.New(500, "服务器内部错误")
 		}
 	}
-	return &super.GetPostResp{Post: post}, nil
+	return &moe.GetPostResp{Post: post}, nil
 }

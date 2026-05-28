@@ -7,7 +7,7 @@ import (
 
 	commentbiz "backend/internal/biz/comment"
 	"backend/internal/platform/socialhook"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
@@ -23,7 +23,7 @@ func New(db *gorm.DB) *AppService {
 	return &AppService{db: db}
 }
 
-func (s *AppService) GetPostComments(ctx context.Context, in *super.GetPostCommentsReq) (*super.GetPostCommentsResp, error) {
+func (s *AppService) GetPostComments(ctx context.Context, in *moe.GetPostCommentsReq) (*moe.GetPostCommentsResp, error) {
 	items, total, err := commentbiz.ListByPost(ctx, s.db, commentbiz.ListFilter{
 		PostID: in.GetPostId(), Page: in.GetPage(), PageSize: in.GetPageSize(),
 		ViewerUserID: in.GetViewerUserId(),
@@ -31,10 +31,10 @@ func (s *AppService) GetPostComments(ctx context.Context, in *super.GetPostComme
 	if err != nil {
 		return nil, err
 	}
-	return &super.GetPostCommentsResp{Comments: items, Total: total}, nil
+	return &moe.GetPostCommentsResp{Comments: items, Total: total}, nil
 }
 
-func (s *AppService) CreateComment(ctx context.Context, in *super.CreateCommentReq) (*super.CreateCommentResp, error) {
+func (s *AppService) CreateComment(ctx context.Context, in *moe.CreateCommentReq) (*moe.CreateCommentResp, error) {
 	result, err := commentbiz.Create(ctx, s.db, commentbiz.CreateInput{
 		PostID: in.GetPostId(), UserID: in.GetUserId(),
 		Content: in.GetContent(), ParentID: in.GetParentId(),
@@ -58,8 +58,8 @@ func (s *AppService) CreateComment(ctx context.Context, in *super.CreateCommentR
 			avatar = c.User.Avatar
 		}
 	}
-	return &super.CreateCommentResp{
-		Comment: &super.Comment{
+	return &moe.CreateCommentResp{
+		Comment: &moe.Comment{
 			Id: strconv.FormatUint(uint64(c.ID), 10),
 			PostId: strconv.FormatUint(uint64(c.PostID), 10),
 			UserId: strconv.FormatUint(uint64(c.UserID), 10),
@@ -73,12 +73,12 @@ func (s *AppService) CreateComment(ctx context.Context, in *super.CreateCommentR
 	}, nil
 }
 
-func (s *AppService) LikeComment(ctx context.Context, in *super.LikeCommentReq) (*super.LikeCommentResp, error) {
+func (s *AppService) LikeComment(ctx context.Context, in *moe.LikeCommentReq) (*moe.LikeCommentResp, error) {
 	result, err := commentbiz.Like(ctx, s.db, in.GetCommentId(), in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
-	return &super.LikeCommentResp{
+	return &moe.LikeCommentResp{
 		Comment: commentbiz.BuildProtoComment(result.Comment, result.User, result.IsLiked, ""),
 	}, nil
 }

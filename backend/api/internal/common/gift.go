@@ -4,10 +4,10 @@ import (
 	"strconv"
 
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
-func RpcGiftToTypes(g *super.Gift) types.Gift {
+func RpcGiftToTypes(g *moe.Gift) types.Gift {
 	if g == nil {
 		return types.Gift{}
 	}

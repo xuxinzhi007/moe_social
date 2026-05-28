@@ -10,7 +10,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -30,7 +30,7 @@ func NewWechatLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Wecha
 }
 
 func (l *WechatLoginLogic) WechatLogin(req *types.WechatLoginReq) (resp *types.WechatLoginResp, err error) {
-	rpcResp, rpcErr := l.svcCtx.UserGW.WechatLogin(l.ctx, &super.WechatLoginReq{
+	rpcResp, rpcErr := l.svcCtx.UserGW.WechatLogin(l.ctx, &moe.WechatLoginReq{
 		Code: strings.TrimSpace(req.Code),
 		Flow: strings.TrimSpace(req.Flow),
 	})

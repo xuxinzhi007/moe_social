@@ -9,13 +9,13 @@ import (
 
 	communitybiz "backend/internal/biz/community"
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // DeleteFollow Admin 删除关注关系。
-func DeleteFollow(ctx context.Context, db *gorm.DB, in *super.AdminDeleteFollowReq) (*super.AdminDeleteFollowResp, error) {
+func DeleteFollow(ctx context.Context, db *gorm.DB, in *moe.AdminDeleteFollowReq) (*moe.AdminDeleteFollowResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -26,11 +26,11 @@ func DeleteFollow(ctx context.Context, db *gorm.DB, in *super.AdminDeleteFollowR
 	if err := db.WithContext(ctx).Delete(&model.Follow{}, id).Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDeleteFollow, err)
 	}
-	return &super.AdminDeleteFollowResp{}, nil
+	return &moe.AdminDeleteFollowResp{}, nil
 }
 
 // DeletePost Admin 删除动态。
-func DeletePost(ctx context.Context, db *gorm.DB, in *super.AdminDeletePostReq) (*super.AdminDeletePostResp, error) {
+func DeletePost(ctx context.Context, db *gorm.DB, in *moe.AdminDeletePostReq) (*moe.AdminDeletePostResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -55,11 +55,11 @@ func DeletePost(ctx context.Context, db *gorm.DB, in *super.AdminDeletePostReq) 
 	if err := db.WithContext(ctx).Delete(&p).Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDeletePost, err)
 	}
-	return &super.AdminDeletePostResp{}, nil
+	return &moe.AdminDeletePostResp{}, nil
 }
 
 // DeleteComment Admin 删除评论。
-func DeleteComment(ctx context.Context, db *gorm.DB, in *super.AdminDeleteCommentReq) (*super.AdminDeleteCommentResp, error) {
+func DeleteComment(ctx context.Context, db *gorm.DB, in *moe.AdminDeleteCommentReq) (*moe.AdminDeleteCommentResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -82,20 +82,20 @@ func DeleteComment(ctx context.Context, db *gorm.DB, in *super.AdminDeleteCommen
 	if err := db.WithContext(ctx).Delete(&c).Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDeleteComment, err)
 	}
-	return &super.AdminDeleteCommentResp{}, nil
+	return &moe.AdminDeleteCommentResp{}, nil
 }
 
 // DeleteGroup Admin 删除社区。
-func DeleteGroup(ctx context.Context, db *gorm.DB, in *super.AdminDeleteGroupReq) (*super.AdminDeleteGroupResp, error) {
+func DeleteGroup(ctx context.Context, db *gorm.DB, in *moe.AdminDeleteGroupReq) (*moe.AdminDeleteGroupResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
-	_, err := communitybiz.DeleteGroup(ctx, db, &super.DeleteGroupReq{GroupId: in.GetGroupId()})
-	return &super.AdminDeleteGroupResp{}, err
+	_, err := communitybiz.DeleteGroup(ctx, db, &moe.DeleteGroupReq{GroupId: in.GetGroupId()})
+	return &moe.AdminDeleteGroupResp{}, err
 }
 
 // DeleteMemory Admin 删除记忆。
-func DeleteMemory(ctx context.Context, db *gorm.DB, in *super.AdminDeleteMemoryReq) (*super.AdminDeleteMemoryResp, error) {
+func DeleteMemory(ctx context.Context, db *gorm.DB, in *moe.AdminDeleteMemoryReq) (*moe.AdminDeleteMemoryResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -113,5 +113,5 @@ func DeleteMemory(ctx context.Context, db *gorm.DB, in *super.AdminDeleteMemoryR
 	if result.RowsAffected == 0 {
 		return nil, ErrMemoryNotFound
 	}
-	return &super.AdminDeleteMemoryResp{}, nil
+	return &moe.AdminDeleteMemoryResp{}, nil
 }

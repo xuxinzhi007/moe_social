@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -29,16 +29,16 @@ func (l *UpdateUserAvatarLogic) UpdateUserAvatar(req *types.UpdateUserAvatarReq)
 	logx.Infof("API: 更新用户虚拟形象: UserID=%s", req.UserId)
 
 	// 调用RPC服务更新用户虚拟形象
-	rpcResp, err := l.svcCtx.UserGW.UpdateUserAvatar(l.ctx, &super.UpdateUserAvatarReq{
+	rpcResp, err := l.svcCtx.UserGW.UpdateUserAvatar(l.ctx, &moe.UpdateUserAvatarReq{
 		UserId: req.UserId,
-		BaseConfig: &super.AvatarBaseConfig{
+		BaseConfig: &moe.AvatarBaseConfig{
 			FaceShape: req.BaseConfig.FaceShape,
 			SkinColor: req.BaseConfig.SkinColor,
 			EyeType:   req.BaseConfig.EyeType,
 			HairStyle: req.BaseConfig.HairStyle,
 			HairColor: req.BaseConfig.HairColor,
 		},
-		CurrentOutfit: &super.AvatarOutfitConfig{
+		CurrentOutfit: &moe.AvatarOutfitConfig{
 			Clothes:     req.CurrentOutfit.Clothes,
 			Accessories: req.CurrentOutfit.Accessories,
 			Background:  req.CurrentOutfit.Background,

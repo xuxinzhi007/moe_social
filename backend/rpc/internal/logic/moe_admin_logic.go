@@ -12,7 +12,7 @@ import (
 	"backend/pkg/moe/brain"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,12 +27,12 @@ func NewAdminListMoeRuntimesLogic(ctx context.Context, svcCtx *svc.ServiceContex
 	return &AdminListMoeRuntimesLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminListMoeRuntimesLogic) AdminListMoeRuntimes(_ *super.AdminListMoeRuntimesReq) (*super.AdminListMoeRuntimesResp, error) {
+func (l *AdminListMoeRuntimesLogic) AdminListMoeRuntimes(_ *moe.AdminListMoeRuntimesReq) (*moe.AdminListMoeRuntimesResp, error) {
 	rows, err := l.svcCtx.MoeAdmin.ListRuntimes(l.ctx)
 	if err != nil {
 		return nil, errorx.Internal(err.Error())
 	}
-	out := &super.AdminListMoeRuntimesResp{Items: make([]*super.MoeAgentRuntimeItem, 0, len(rows))}
+	out := &moe.AdminListMoeRuntimesResp{Items: make([]*moe.MoeAgentRuntimeItem, 0, len(rows))}
 	for _, rt := range rows {
 		out.Items = append(out.Items, moeRuntimeItemProto(rt))
 	}
@@ -49,7 +49,7 @@ func NewAdminUpsertMoeRuntimeLogic(ctx context.Context, svcCtx *svc.ServiceConte
 	return &AdminUpsertMoeRuntimeLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminUpsertMoeRuntimeLogic) AdminUpsertMoeRuntime(in *super.AdminUpsertMoeRuntimeReq) (*super.AdminUpsertMoeRuntimeResp, error) {
+func (l *AdminUpsertMoeRuntimeLogic) AdminUpsertMoeRuntime(in *moe.AdminUpsertMoeRuntimeReq) (*moe.AdminUpsertMoeRuntimeResp, error) {
 	botUID, err := moebiz.ParseBotUserID(in.BotUserId)
 	if err != nil {
 		return nil, errorx.InvalidArgument(err.Error())
@@ -74,7 +74,7 @@ func (l *AdminUpsertMoeRuntimeLogic) AdminUpsertMoeRuntime(in *super.AdminUpsert
 	if err != nil {
 		return nil, errorx.InvalidArgument(err.Error())
 	}
-	return &super.AdminUpsertMoeRuntimeResp{Item: moeRuntimeItemProto(saved)}, nil
+	return &moe.AdminUpsertMoeRuntimeResp{Item: moeRuntimeItemProto(saved)}, nil
 }
 
 type AdminRunMoeAgentOnceLogic struct {
@@ -87,12 +87,12 @@ func NewAdminRunMoeAgentOnceLogic(ctx context.Context, svcCtx *svc.ServiceContex
 	return &AdminRunMoeAgentOnceLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminRunMoeAgentOnceLogic) AdminRunMoeAgentOnce(in *super.AdminRunMoeAgentOnceReq) (*super.AdminRunMoeAgentOnceResp, error) {
+func (l *AdminRunMoeAgentOnceLogic) AdminRunMoeAgentOnce(in *moe.AdminRunMoeAgentOnceReq) (*moe.AdminRunMoeAgentOnceResp, error) {
 	out, err := l.svcCtx.MoeAdmin.RunAgentOnce(l.ctx, strings.TrimSpace(in.AgentKey), in.GetAsync())
 	if err != nil {
 		return nil, errorx.Internal(err.Error())
 	}
-	rep := &super.AdminRunMoeAgentOnceResp{
+	rep := &moe.AdminRunMoeAgentOnceResp{
 		AgentKey:       strings.TrimSpace(in.AgentKey),
 		Accepted:       out.Accepted,
 		AlreadyRunning: out.AlreadyRunning,
@@ -120,7 +120,7 @@ func NewAdminGetMoeBrainLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	return &AdminGetMoeBrainLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminGetMoeBrainLogic) AdminGetMoeBrain(in *super.AdminGetMoeBrainReq) (*super.AdminGetMoeBrainResp, error) {
+func (l *AdminGetMoeBrainLogic) AdminGetMoeBrain(in *moe.AdminGetMoeBrainReq) (*moe.AdminGetMoeBrainResp, error) {
 	snap, err := l.svcCtx.MoeAdmin.GetBrainSnapshot(l.ctx, strings.TrimSpace(in.AgentKey))
 	if err != nil {
 		return nil, errorx.NotFound(err.Error())
@@ -138,7 +138,7 @@ func NewAdminUpdateMoeBrainPolicyLogic(ctx context.Context, svcCtx *svc.ServiceC
 	return &AdminUpdateMoeBrainPolicyLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminUpdateMoeBrainPolicyLogic) AdminUpdateMoeBrainPolicy(in *super.AdminUpdateMoeBrainPolicyReq) (*super.AdminGetMoeBrainResp, error) {
+func (l *AdminUpdateMoeBrainPolicyLogic) AdminUpdateMoeBrainPolicy(in *moe.AdminUpdateMoeBrainPolicyReq) (*moe.AdminGetMoeBrainResp, error) {
 	snap, err := l.svcCtx.MoeAdmin.UpdateBrainPolicy(l.ctx, strings.TrimSpace(in.AgentKey), in.ForbiddenTags, in.PreferredTags)
 	if err != nil {
 		return nil, errorx.Internal(err.Error())
@@ -156,11 +156,11 @@ func NewAdminDeleteMoeBrainEpisodeLogic(ctx context.Context, svcCtx *svc.Service
 	return &AdminDeleteMoeBrainEpisodeLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminDeleteMoeBrainEpisodeLogic) AdminDeleteMoeBrainEpisode(in *super.AdminDeleteMoeBrainEpisodeReq) (*super.AdminDeleteMoeBrainEpisodeResp, error) {
+func (l *AdminDeleteMoeBrainEpisodeLogic) AdminDeleteMoeBrainEpisode(in *moe.AdminDeleteMoeBrainEpisodeReq) (*moe.AdminDeleteMoeBrainEpisodeResp, error) {
 	if err := l.svcCtx.MoeAdmin.DeleteBrainEpisode(l.ctx, uint(in.Id)); err != nil {
 		return nil, errorx.NotFound(err.Error())
 	}
-	return &super.AdminDeleteMoeBrainEpisodeResp{}, nil
+	return &moe.AdminDeleteMoeBrainEpisodeResp{}, nil
 }
 
 type AdminRefineMoeBrainEpisodeLogic struct {
@@ -173,7 +173,7 @@ func NewAdminRefineMoeBrainEpisodeLogic(ctx context.Context, svcCtx *svc.Service
 	return &AdminRefineMoeBrainEpisodeLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminRefineMoeBrainEpisodeLogic) AdminRefineMoeBrainEpisode(in *super.AdminRefineMoeBrainEpisodeReq) (*super.AdminRefineMoeBrainEpisodeResp, error) {
+func (l *AdminRefineMoeBrainEpisodeLogic) AdminRefineMoeBrainEpisode(in *moe.AdminRefineMoeBrainEpisodeReq) (*moe.AdminRefineMoeBrainEpisodeResp, error) {
 	res, err := l.svcCtx.MoeAdmin.RefineBrainEpisode(l.ctx, uint(in.Id), brain.RefineOptions{
 		MaxAttempts: int(in.MaxAttempts),
 	})
@@ -193,7 +193,7 @@ func NewAdminCurateMoeBrainLogic(ctx context.Context, svcCtx *svc.ServiceContext
 	return &AdminCurateMoeBrainLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminCurateMoeBrainLogic) AdminCurateMoeBrain(in *super.AdminCurateMoeBrainReq) (*super.AdminCurateMoeBrainResp, error) {
+func (l *AdminCurateMoeBrainLogic) AdminCurateMoeBrain(in *moe.AdminCurateMoeBrainReq) (*moe.AdminCurateMoeBrainResp, error) {
 	results, err := l.svcCtx.MoeAdmin.CurateBrain(l.ctx, strings.TrimSpace(in.AgentKey), brain.CurateOptions{
 		MaxEpisodes:           int(in.MaxEpisodes),
 		MaxAttemptsPerEpisode: int(in.MaxAttempts),
@@ -203,7 +203,7 @@ func (l *AdminCurateMoeBrainLogic) AdminCurateMoeBrain(in *super.AdminCurateMoeB
 	if err != nil {
 		return nil, errorx.Internal(err.Error())
 	}
-	out := &super.AdminCurateMoeBrainResp{
+	out := &moe.AdminCurateMoeBrainResp{
 		AgentKey: in.AgentKey,
 		Total:    int32(len(results)),
 	}
@@ -226,7 +226,7 @@ func NewAdminGetMoeToolStatsLogic(ctx context.Context, svcCtx *svc.ServiceContex
 	return &AdminGetMoeToolStatsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminGetMoeToolStatsLogic) AdminGetMoeToolStats(in *super.AdminGetMoeToolStatsReq) (*super.AdminGetMoeToolStatsResp, error) {
+func (l *AdminGetMoeToolStatsLogic) AdminGetMoeToolStats(in *moe.AdminGetMoeToolStatsReq) (*moe.AdminGetMoeToolStatsResp, error) {
 	stats, err := l.svcCtx.MoeAdmin.QueryToolStats(l.ctx, moebiz.ToolStatsFilter{
 		From:     moeadmin.ParseTimeFilter(in.From, false),
 		To:       moeadmin.ParseTimeFilter(in.To, true),
@@ -236,13 +236,13 @@ func (l *AdminGetMoeToolStatsLogic) AdminGetMoeToolStats(in *super.AdminGetMoeTo
 	if err != nil {
 		return nil, errorx.Internal(err.Error())
 	}
-	out := &super.AdminGetMoeToolStatsResp{
+	out := &moe.AdminGetMoeToolStatsResp{
 		TotalCalls:   stats.TotalCalls,
 		SuccessCalls: stats.SuccessCalls,
 		FailedCalls:  stats.FailedCalls,
 	}
 	for _, row := range stats.ByTool {
-		out.ByTool = append(out.ByTool, &super.AdminMoeToolStatRow{
+		out.ByTool = append(out.ByTool, &moe.AdminMoeToolStatRow{
 			Tool:         row.Tool,
 			TotalCalls:   row.TotalCalls,
 			SuccessCalls: row.SuccessCalls,
@@ -250,7 +250,7 @@ func (l *AdminGetMoeToolStatsLogic) AdminGetMoeToolStats(in *super.AdminGetMoeTo
 		})
 	}
 	for _, row := range stats.ByDay {
-		out.ByDay = append(out.ByDay, &super.AdminMoeToolDayStat{
+		out.ByDay = append(out.ByDay, &moe.AdminMoeToolDayStat{
 			Date:         row.Date,
 			TotalCalls:   row.TotalCalls,
 			SuccessCalls: row.SuccessCalls,
@@ -269,7 +269,7 @@ func NewAdminListMoeToolCallsLogic(ctx context.Context, svcCtx *svc.ServiceConte
 	return &AdminListMoeToolCallsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminListMoeToolCallsLogic) AdminListMoeToolCalls(in *super.AdminListMoeToolCallsReq) (*super.AdminListMoeToolCallsResp, error) {
+func (l *AdminListMoeToolCallsLogic) AdminListMoeToolCalls(in *moe.AdminListMoeToolCallsReq) (*moe.AdminListMoeToolCallsResp, error) {
 	rows, total, err := l.svcCtx.MoeAdmin.ListToolCalls(l.ctx, moebiz.ToolCallsFilter{
 		From:        moeadmin.ParseTimeFilter(in.From, false),
 		To:          moeadmin.ParseTimeFilter(in.To, true),
@@ -285,9 +285,9 @@ func (l *AdminListMoeToolCallsLogic) AdminListMoeToolCalls(in *super.AdminListMo
 	if err != nil {
 		return nil, errorx.Internal(err.Error())
 	}
-	out := &super.AdminListMoeToolCallsResp{Total: total}
+	out := &moe.AdminListMoeToolCallsResp{Total: total}
 	for _, row := range rows {
-		out.Items = append(out.Items, &super.AdminMoeToolCallItem{
+		out.Items = append(out.Items, &moe.AdminMoeToolCallItem{
 			Id:               strconv.FormatUint(uint64(row.ID), 10),
 			Tool:             row.Tool,
 			ActorUserId:      strconv.FormatUint(uint64(row.ActorUserID), 10),
@@ -313,7 +313,7 @@ func NewMoeExecuteToolLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Mo
 	return &MoeExecuteToolLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *MoeExecuteToolLogic) MoeExecuteTool(in *super.MoeExecuteToolReq) (*super.MoeExecuteToolResp, error) {
+func (l *MoeExecuteToolLogic) MoeExecuteTool(in *moe.MoeExecuteToolReq) (*moe.MoeExecuteToolResp, error) {
 	res, err := l.svcCtx.MoeAdmin.ExecuteTool(l.ctx, moebiz.ExecuteToolInput{
 		Tool:           in.Tool,
 		ArgumentsJSON:  in.ArgumentsJson,
@@ -325,7 +325,7 @@ func (l *MoeExecuteToolLogic) MoeExecuteTool(in *super.MoeExecuteToolReq) (*supe
 	if err != nil {
 		return nil, errorx.Internal(err.Error())
 	}
-	return &super.MoeExecuteToolResp{Ok: res.OK, Result: res.Result, Error: res.Error}, nil
+	return &moe.MoeExecuteToolResp{Ok: res.OK, Result: res.Result, Error: res.Error}, nil
 }
 
 type MoeSearchPostsLogic struct {
@@ -338,7 +338,7 @@ func NewMoeSearchPostsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Mo
 	return &MoeSearchPostsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *MoeSearchPostsLogic) MoeSearchPosts(in *super.MoeSearchPostsReq) (*super.MoeSearchPostsResp, error) {
+func (l *MoeSearchPostsLogic) MoeSearchPosts(in *moe.MoeSearchPostsReq) (*moe.MoeSearchPostsResp, error) {
 	out, err := postbiz.Search(l.ctx, l.svcCtx.DB, postbiz.SearchInput{
 		Query: in.GetQuery(), Limit: in.GetLimit(), ViewerUserID: in.GetViewerUserId(),
 		MoodTag: in.GetMoodTag(), TopicTagID: in.GetTopicTagId(),

@@ -5,7 +5,7 @@ import (
 
 	userapp "backend/internal/service/user"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,7 +20,7 @@ func NewSendFeishuTestCardLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	return &SendFeishuTestCardLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *SendFeishuTestCardLogic) SendFeishuTestCard(in *super.SendFeishuTestCardReq) (*super.SendFeishuTestCardResp, error) {
+func (l *SendFeishuTestCardLogic) SendFeishuTestCard(in *moe.SendFeishuTestCardReq) (*moe.SendFeishuTestCardResp, error) {
 	resp, err := userapp.New(l.svcCtx.DB).SendFeishuTestCard(l.ctx, in)
 	return resp, mapUserBizErr(err)
 }

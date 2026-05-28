@@ -6,19 +6,19 @@ import (
 	"time"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // RecordChatTurn 持久化 LLM 会话轮次。
-func RecordChatTurn(ctx context.Context, db *gorm.DB, in *super.RecordLlmChatTurnReq) (*super.RecordLlmChatTurnResp, error) {
+func RecordChatTurn(ctx context.Context, db *gorm.DB, in *moe.RecordLlmChatTurnReq) (*moe.RecordLlmChatTurnResp, error) {
 	if db == nil || in.GetUserId() == 0 {
-		return &super.RecordLlmChatTurnResp{Ok: false}, nil
+		return &moe.RecordLlmChatTurnResp{Ok: false}, nil
 	}
 	sessionID := strings.TrimSpace(in.GetSessionId())
 	if sessionID == "" {
-		return &super.RecordLlmChatTurnResp{Ok: false}, nil
+		return &moe.RecordLlmChatTurnResp{Ok: false}, nil
 	}
 	role := strings.TrimSpace(in.GetRole())
 	if role == "" {
@@ -37,10 +37,10 @@ func RecordChatTurn(ctx context.Context, db *gorm.DB, in *super.RecordLlmChatTur
 				UpdatedAt: now,
 			}
 			if createErr := db.WithContext(ctx).Create(&sess).Error; createErr != nil {
-				return &super.RecordLlmChatTurnResp{Ok: false}, nil
+				return &moe.RecordLlmChatTurnResp{Ok: false}, nil
 			}
 		} else {
-			return &super.RecordLlmChatTurnResp{Ok: false}, nil
+			return &moe.RecordLlmChatTurnResp{Ok: false}, nil
 		}
 	} else {
 		_ = db.WithContext(ctx).Model(&sess).Updates(map[string]any{
@@ -58,7 +58,7 @@ func RecordChatTurn(ctx context.Context, db *gorm.DB, in *super.RecordLlmChatTur
 		CreatedAt:   now,
 	}
 	if err := db.WithContext(ctx).Create(&msg).Error; err != nil {
-		return &super.RecordLlmChatTurnResp{Ok: false}, nil
+		return &moe.RecordLlmChatTurnResp{Ok: false}, nil
 	}
-	return &super.RecordLlmChatTurnResp{Ok: true}, nil
+	return &moe.RecordLlmChatTurnResp{Ok: true}, nil
 }

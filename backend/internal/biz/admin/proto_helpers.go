@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
-func adminAccountToProto(row model.AdminAccount) *super.AdminAccountItem {
-	item := &super.AdminAccountItem{
+func adminAccountToProto(row model.AdminAccount) *moe.AdminAccountItem {
+	item := &moe.AdminAccountItem{
 		Id:        strconv.FormatUint(uint64(row.ID), 10),
 		Username:  row.Username,
 		Role:      row.Role,
@@ -24,8 +24,8 @@ func adminAccountToProto(row model.AdminAccount) *super.AdminAccountItem {
 	return item
 }
 
-func levelConfigToProto(row model.LevelConfig) *super.AdminLevelConfigItem {
-	return &super.AdminLevelConfigItem{
+func levelConfigToProto(row model.LevelConfig) *moe.AdminLevelConfigItem {
+	return &moe.AdminLevelConfigItem{
 		Id:         strconv.FormatUint(uint64(row.ID), 10),
 		Level:      int32(row.Level),
 		Title:      row.Title,
@@ -36,8 +36,8 @@ func levelConfigToProto(row model.LevelConfig) *super.AdminLevelConfigItem {
 	}
 }
 
-func checkInRewardToProto(row model.CheckInReward) *super.AdminCheckInRewardItem {
-	return &super.AdminCheckInRewardItem{
+func checkInRewardToProto(row model.CheckInReward) *moe.AdminCheckInRewardItem {
+	return &moe.AdminCheckInRewardItem{
 		Id:              strconv.FormatUint(uint64(row.ID), 10),
 		ConsecutiveDays: int32(row.ConsecutiveDays),
 		ExpReward:       int32(row.ExpReward),
@@ -54,8 +54,8 @@ func countWhere(db *gorm.DB, model interface{}, column string, uid uint) int32 {
 	return int32(n)
 }
 
-func memoryToAdminProto(row model.UserMemory, username string) *super.AdminMemoryItem {
-	return &super.AdminMemoryItem{
+func memoryToAdminProto(row model.UserMemory, username string) *moe.AdminMemoryItem {
+	return &moe.AdminMemoryItem{
 		Id:         strconv.FormatUint(uint64(row.ID), 10),
 		UserId:     strconv.FormatUint(uint64(row.UserID), 10),
 		Username:   username,

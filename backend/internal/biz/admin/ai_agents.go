@@ -8,13 +8,13 @@ import (
 
 	aibiz "backend/internal/biz/ai"
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // ListAiAgents Admin 公开 AI 角色列表。
-func ListAiAgents(ctx context.Context, db *gorm.DB, in *super.AdminListAiAgentsReq) (*super.AdminListAiAgentsResp, error) {
+func ListAiAgents(ctx context.Context, db *gorm.DB, in *moe.AdminListAiAgentsReq) (*moe.AdminListAiAgentsResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -67,27 +67,27 @@ func ListAiAgents(ctx context.Context, db *gorm.DB, in *super.AdminListAiAgentsR
 	total := int32(len(all))
 	start := int((page - 1) * pageSize)
 	if start >= len(all) {
-		return &super.AdminListAiAgentsResp{Items: []*super.AdminAiAgentItem{}, Total: total}, nil
+		return &moe.AdminListAiAgentsResp{Items: []*moe.AdminAiAgentItem{}, Total: total}, nil
 	}
 	end := start + int(pageSize)
 	if end > len(all) {
 		end = len(all)
 	}
 	slice := all[start:end]
-	items := make([]*super.AdminAiAgentItem, len(slice))
+	items := make([]*moe.AdminAiAgentItem, len(slice))
 	for i, row := range slice {
-		items[i] = &super.AdminAiAgentItem{
+		items[i] = &moe.AdminAiAgentItem{
 			Id:          row.id,
 			OwnerUserId: fmt.Sprint(row.ownerID),
 			OwnerName:   row.ownerName,
 			PayloadJson: row.payload,
 		}
 	}
-	return &super.AdminListAiAgentsResp{Items: items, Total: total}, nil
+	return &moe.AdminListAiAgentsResp{Items: items, Total: total}, nil
 }
 
 // DeleteAiAgent Admin 删除公开 AI 角色。
-func DeleteAiAgent(ctx context.Context, db *gorm.DB, in *super.AdminDeleteAiAgentReq) (*super.AdminDeleteAiAgentResp, error) {
+func DeleteAiAgent(ctx context.Context, db *gorm.DB, in *moe.AdminDeleteAiAgentReq) (*moe.AdminDeleteAiAgentResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -96,14 +96,14 @@ func DeleteAiAgent(ctx context.Context, db *gorm.DB, in *super.AdminDeleteAiAgen
 	if userID == "" || agentID == "" {
 		return nil, aibiz.ErrEmptyUserID
 	}
-	_, err := aibiz.Delete(ctx, db, "agents", &super.DeleteAiResourceReq{
+	_, err := aibiz.Delete(ctx, db, "agents", &moe.DeleteAiResourceReq{
 		UserId: userID,
 		Id:     agentID,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &super.AdminDeleteAiAgentResp{}, nil
+	return &moe.AdminDeleteAiAgentResp{}, nil
 }
 
 func resolveAdminOwnerName(db *gorm.DB, userID uint) string {

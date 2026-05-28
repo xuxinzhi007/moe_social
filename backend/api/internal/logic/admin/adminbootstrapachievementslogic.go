@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewAdminBootstrapAchievementsLogic(ctx context.Context, svcCtx *svc.Service
 }
 
 func (l *AdminBootstrapAchievementsLogic) AdminBootstrapAchievements(_ *types.EmptyReq) (resp *types.AdminBootstrapAchievementsResp, err error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminBootstrapAchievements(l.ctx, &super.AdminBootstrapAchievementsReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminBootstrapAchievements(l.ctx, &moe.AdminBootstrapAchievementsReq{})
 	if err != nil {
 		return &types.AdminBootstrapAchievementsResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

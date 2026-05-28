@@ -6,12 +6,12 @@ import (
 	"backend/model"
 	"backend/pkg/moe/brain"
 	"backend/pkg/moe/runtime"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
-func moeRuntimeItemProto(rt model.MoeAgentRuntime) *super.MoeAgentRuntimeItem {
+func moeRuntimeItemProto(rt model.MoeAgentRuntime) *moe.MoeAgentRuntimeItem {
 	item := runtime.ItemFromModel(rt)
-	return &super.MoeAgentRuntimeItem{
+	return &moe.MoeAgentRuntimeItem{
 		AgentKey:          item.AgentKey,
 		DisplayName:       item.DisplayName,
 		BotUserId:         item.BotUserId,
@@ -34,11 +34,11 @@ func moeRuntimeItemProto(rt model.MoeAgentRuntime) *super.MoeAgentRuntimeItem {
 	}
 }
 
-func moeBrainSnapshotProto(s *brain.Snapshot) *super.AdminGetMoeBrainResp {
+func moeBrainSnapshotProto(s *brain.Snapshot) *moe.AdminGetMoeBrainResp {
 	if s == nil {
-		return &super.AdminGetMoeBrainResp{}
+		return &moe.AdminGetMoeBrainResp{}
 	}
-	out := &super.AdminGetMoeBrainResp{
+	out := &moe.AdminGetMoeBrainResp{
 		AgentKey:      s.AgentKey,
 		DisplayName:   s.DisplayName,
 		BotUserId:     strconv.FormatUint(uint64(s.BotUserID), 10),
@@ -46,10 +46,10 @@ func moeBrainSnapshotProto(s *brain.Snapshot) *super.AdminGetMoeBrainResp {
 		PreferredTags: s.PreferredTags,
 	}
 	for _, t := range s.TagStats {
-		out.TagStats = append(out.TagStats, &super.MoeBrainTagStat{Tag: t.Tag, Count: int32(t.Count)})
+		out.TagStats = append(out.TagStats, &moe.MoeBrainTagStat{Tag: t.Tag, Count: int32(t.Count)})
 	}
 	for _, e := range s.Episodes {
-		out.Episodes = append(out.Episodes, &super.MoeBrainEpisodeItem{
+		out.Episodes = append(out.Episodes, &moe.MoeBrainEpisodeItem{
 			Id:            uint64(e.ID),
 			PostId:        e.PostID,
 			Content:       e.Content,
@@ -65,7 +65,7 @@ func moeBrainSnapshotProto(s *brain.Snapshot) *super.AdminGetMoeBrainResp {
 		})
 	}
 	for _, m := range s.Memories {
-		out.Memories = append(out.Memories, &super.MoeBrainMemoryItem{
+		out.Memories = append(out.Memories, &moe.MoeBrainMemoryItem{
 			Key:        m.Key,
 			Value:      m.Value,
 			MemoryType: m.MemoryType,
@@ -73,7 +73,7 @@ func moeBrainSnapshotProto(s *brain.Snapshot) *super.AdminGetMoeBrainResp {
 		})
 	}
 	gm := s.GenerationMeta
-	out.GenerationMeta = &super.MoeBrainGenerationMeta{
+	out.GenerationMeta = &moe.MoeBrainGenerationMeta{
 		PostUsesToolMemory: gm.PostUsesToolMemory,
 		MemoriesSynced:     int32(gm.MemoriesSynced),
 		EpisodesInPrompt:   int32(gm.EpisodesInPrompt),
@@ -96,8 +96,8 @@ func moeBrainSnapshotProto(s *brain.Snapshot) *super.AdminGetMoeBrainResp {
 	return out
 }
 
-func moeRefineResultProto(r brain.RefineResult) *super.AdminRefineMoeBrainEpisodeResp {
-	return &super.AdminRefineMoeBrainEpisodeResp{
+func moeRefineResultProto(r brain.RefineResult) *moe.AdminRefineMoeBrainEpisodeResp {
+	return &moe.AdminRefineMoeBrainEpisodeResp{
 		EpisodeId:     uint64(r.EpisodeID),
 		Ok:            r.OK,
 		Approved:      r.Approved,

@@ -8,7 +8,7 @@ import (
 	postbiz "backend/internal/biz/post"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewUpdatePostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Update
 	return &UpdatePostLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *UpdatePostLogic) UpdatePost(in *super.UpdatePostReq) (*super.UpdatePostResp, error) {
+func (l *UpdatePostLogic) UpdatePost(in *moe.UpdatePostReq) (*moe.UpdatePostResp, error) {
 	if in.GetPostId() == "" || in.GetUserId() == "" {
 		return nil, errorx.New(400, "post_id 和 user_id 不能为空")
 	}

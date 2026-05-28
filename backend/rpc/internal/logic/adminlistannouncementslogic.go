@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,7 +19,7 @@ func NewAdminListAnnouncementsLogic(ctx context.Context, svcCtx *svc.ServiceCont
 	return &AdminListAnnouncementsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminListAnnouncementsLogic) AdminListAnnouncements(in *super.AdminListAnnouncementsReq) (*super.AdminListAnnouncementsResp, error) {
+func (l *AdminListAnnouncementsLogic) AdminListAnnouncements(in *moe.AdminListAnnouncementsReq) (*moe.AdminListAnnouncementsResp, error) {
 	resp, err := newAdminApp(l.svcCtx.DB).ListAnnouncements(l.ctx, in)
 	if err != nil {
 		l.Errorf("[admin] list announcements: %v", err)

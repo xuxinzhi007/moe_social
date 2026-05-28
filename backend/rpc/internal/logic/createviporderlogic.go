@@ -5,7 +5,7 @@ import (
 
 	userapp "backend/internal/service/user"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,7 +20,7 @@ func NewCreateVipOrderLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cr
 	return &CreateVipOrderLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *CreateVipOrderLogic) CreateVipOrder(in *super.CreateVipOrderReq) (*super.CreateVipOrderResp, error) {
+func (l *CreateVipOrderLogic) CreateVipOrder(in *moe.CreateVipOrderReq) (*moe.CreateVipOrderResp, error) {
 	resp, err := userapp.New(l.svcCtx.DB).CreateVipOrder(l.ctx, in)
 	return resp, mapUserBizErr(err)
 }

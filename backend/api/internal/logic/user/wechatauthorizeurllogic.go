@@ -10,7 +10,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -30,7 +30,7 @@ func NewWechatAuthorizeURLLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *WechatAuthorizeURLLogic) WechatAuthorizeURL(req *types.WechatAuthorizeURLReq) (resp *types.WechatAuthorizeURLResp, err error) {
-	rpcResp, rpcErr := l.svcCtx.UserGW.WechatAuthorizeURL(l.ctx, &super.WechatAuthorizeURLReq{
+	rpcResp, rpcErr := l.svcCtx.UserGW.WechatAuthorizeURL(l.ctx, &moe.WechatAuthorizeURLReq{
 		State: strings.TrimSpace(req.State),
 		Flow:  strings.TrimSpace(req.Flow),
 	})

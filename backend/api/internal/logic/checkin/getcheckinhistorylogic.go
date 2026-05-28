@@ -5,7 +5,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewGetCheckInHistoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 
 func (l *GetCheckInHistoryLogic) GetCheckInHistory(req *types.GetCheckInHistoryReq) (resp *types.GetCheckInHistoryResp, err error) {
 	// 调用RPC服务获取签到历史
-	rpcResp, err := l.svcCtx.CheckInGW.GetCheckInHistory(l.ctx, &super.GetCheckInHistoryReq{
+	rpcResp, err := l.svcCtx.CheckInGW.GetCheckInHistory(l.ctx, &moe.GetCheckInHistoryReq{
 		UserId:   req.UserId,
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),

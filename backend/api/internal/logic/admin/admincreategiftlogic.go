@@ -7,7 +7,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -38,7 +38,7 @@ func (l *AdminCreateGiftLogic) AdminCreateGift(req *types.AdminCreateGiftReq) (r
 		}, nil
 	}
 
-	rpcResp, err := l.svcCtx.AdminGW.AdminCreateGift(l.ctx, &super.AdminCreateGiftReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminCreateGift(l.ctx, &moe.AdminCreateGiftReq{
 		Name:        strings.TrimSpace(req.Name),
 		Price:       int32(req.Price),
 		Icon:        req.Icon,

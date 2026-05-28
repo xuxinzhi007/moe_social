@@ -6,10 +6,10 @@ import (
 
 	"backend/api/internal/types"
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
-func vipPlanProtoToModel(p *super.VipPlan) model.VipPlan {
+func vipPlanProtoToModel(p *moe.VipPlan) model.VipPlan {
 	if p == nil {
 		return model.VipPlan{}
 	}

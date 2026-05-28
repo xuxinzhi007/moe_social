@@ -9,23 +9,23 @@ import (
 	"time"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // Purchase 购买礼物入库。
-func Purchase(ctx context.Context, db *gorm.DB, userRaw, giftRaw string, qty int32) (*super.PurchaseGiftResp, error) {
+func Purchase(ctx context.Context, db *gorm.DB, userRaw, giftRaw string, qty int32) (*moe.PurchaseGiftResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	userID, err := strconv.ParseUint(strings.TrimSpace(userRaw), 10, 64)
 	if err != nil || userID == 0 {
-		return &super.PurchaseGiftResp{Success: false, Message: "invalid user id"}, nil
+		return &moe.PurchaseGiftResp{Success: false, Message: "invalid user id"}, nil
 	}
 	giftID, err := strconv.ParseUint(strings.TrimSpace(giftRaw), 10, 64)
 	if err != nil || giftID == 0 {
-		return &super.PurchaseGiftResp{Success: false, Message: "invalid gift id"}, nil
+		return &moe.PurchaseGiftResp{Success: false, Message: "invalid gift id"}, nil
 	}
 	if qty <= 0 {
 		qty = 1
@@ -33,7 +33,7 @@ func Purchase(ctx context.Context, db *gorm.DB, userRaw, giftRaw string, qty int
 
 	var gift model.Gift
 	if err := db.WithContext(ctx).First(&gift, giftID).Error; err != nil {
-		return &super.PurchaseGiftResp{Success: false, Message: "gift not found"}, nil
+		return &moe.PurchaseGiftResp{Success: false, Message: "gift not found"}, nil
 	}
 
 	cost := float64(gift.Price) * float64(qty)
@@ -91,12 +91,12 @@ func Purchase(ctx context.Context, db *gorm.DB, userRaw, giftRaw string, qty int
 
 	if err != nil {
 		if errors.Is(err, ErrInsufficientBal) {
-			return &super.PurchaseGiftResp{Success: false, Message: "insufficient balance"}, nil
+			return &moe.PurchaseGiftResp{Success: false, Message: "insufficient balance"}, nil
 		}
-		return &super.PurchaseGiftResp{Success: false, Message: "purchase failed: " + err.Error()}, nil
+		return &moe.PurchaseGiftResp{Success: false, Message: "purchase failed: " + err.Error()}, nil
 	}
 
-	return &super.PurchaseGiftResp{
+	return &moe.PurchaseGiftResp{
 		Success: true, Message: "ok", NewBalance: newBal, OwnedQuantity: owned, OrderNo: orderNo,
 	}, nil
 }

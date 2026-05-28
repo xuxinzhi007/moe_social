@@ -7,7 +7,7 @@ import (
 	notifybiz "backend/internal/biz/notify"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewGetNotificationsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	return &GetNotificationsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *GetNotificationsLogic) GetNotifications(in *super.GetNotificationsReq) (*super.GetNotificationsResp, error) {
+func (l *GetNotificationsLogic) GetNotifications(in *moe.GetNotificationsReq) (*moe.GetNotificationsResp, error) {
 	items, total, err := notifybiz.ListInbox(l.ctx, l.svcCtx.DB, in.GetUserId(), notifybiz.InboxPage{
 		Page:     in.GetPage(),
 		PageSize: in.GetPageSize(),
@@ -34,5 +34,5 @@ func (l *GetNotificationsLogic) GetNotifications(in *super.GetNotificationsReq) 
 		l.Error("查询通知列表失败:", err)
 		return nil, errorx.Internal("查询通知列表失败")
 	}
-	return &super.GetNotificationsResp{Notifications: items, Total: total}, nil
+	return &moe.GetNotificationsResp{Notifications: items, Total: total}, nil
 }

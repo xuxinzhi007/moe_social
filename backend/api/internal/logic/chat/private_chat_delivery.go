@@ -10,7 +10,7 @@ import (
 
 	"backend/api/internal/svc"
 	notifybiz "backend/internal/biz/notify"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/gorilla/websocket"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -106,14 +106,14 @@ func ResolvePrivateMessageSenderProfile(
 	ctx context.Context,
 	svc *svc.ServiceContext,
 	senderID string,
-	protoMsg *super.PrivateMessage,
+	protoMsg *moe.PrivateMessage,
 	clientAvatar string,
 ) (senderName string, senderAvatar string) {
 	senderAvatar = strings.TrimSpace(clientAvatar)
 	senderName = ""
 	var username string
 	if svc != nil && svc.UserGW != nil {
-		rpcResp, err := svc.UserGW.GetUser(ctx, &super.GetUserReq{UserId: senderID})
+		rpcResp, err := svc.UserGW.GetUser(ctx, &moe.GetUserReq{UserId: senderID})
 		if err == nil && rpcResp != nil && rpcResp.User != nil {
 			u := rpcResp.User
 			username = strings.TrimSpace(u.Username)
@@ -152,7 +152,7 @@ func PersistOfflinePrivateChatNotification(ctx context.Context, svc *svc.Service
 			body = body[:200]
 		}
 	}
-	req := &super.CreateNotificationReq{
+	req := &moe.CreateNotificationReq{
 		UserId:   targetUserID,
 		SenderId: fromUserID,
 		Type:     NotificationTypePrivateChat,
@@ -173,7 +173,7 @@ func PersistOfflinePrivateChatNotification(ctx context.Context, svc *svc.Service
 }
 
 // DeliverPrivateMessageRealTime 在私信已成功写入 RPC/DB 后：尝试 WS 推给接收方；失败则写通知兜底。
-func DeliverPrivateMessageRealTime(ctx context.Context, svc *svc.ServiceContext, senderID, receiverID, content, senderName, senderAvatar string, protoMsg *super.PrivateMessage) {
+func DeliverPrivateMessageRealTime(ctx context.Context, svc *svc.ServiceContext, senderID, receiverID, content, senderName, senderAvatar string, protoMsg *moe.PrivateMessage) {
 	senderKey := NormalizeChatUserIDKey(senderID)
 	recvKey := NormalizeChatUserIDKey(receiverID)
 	now := time.Now()

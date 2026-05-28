@@ -10,7 +10,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -38,7 +38,7 @@ func (l *SubmitLandingFeedbackLogic) SubmitLandingFeedback(
 		source = "official-site"
 	}
 
-	_, err = l.svcCtx.LandingGW.SubmitLandingFeedback(l.ctx, &super.SubmitLandingFeedbackReq{
+	_, err = l.svcCtx.LandingGW.SubmitLandingFeedback(l.ctx, &moe.SubmitLandingFeedbackReq{
 		Email:     strings.TrimSpace(req.Email),
 		Category:  strings.TrimSpace(req.Category),
 		Content:   req.Content,

@@ -6,7 +6,7 @@ import (
 	adminapp "backend/internal/service/admin"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -21,7 +21,7 @@ func NewAdminBootstrapMenusLogic(ctx context.Context, svcCtx *svc.ServiceContext
 	return &AdminBootstrapMenusLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminBootstrapMenusLogic) AdminBootstrapMenus(in *super.AdminBootstrapMenusReq) (*super.AdminBootstrapMenusResp, error) {
+func (l *AdminBootstrapMenusLogic) AdminBootstrapMenus(in *moe.AdminBootstrapMenusReq) (*moe.AdminBootstrapMenusResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).BootstrapMenus(l.ctx, in)
 	if err != nil {
 		l.Errorf("[admin] bootstrap menus: %v", err)

@@ -2,7 +2,7 @@
 
 
 
-.PHONY: all gen gen-legacy-goctl gen-moe-proto gen-moe-conf gen-moekratospilot-get gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto verify-moe-migration verify-moe-grpc verify-moe-gateway verify-moe-complete verify-domain-vip verify-domain-user verify-domain-misc verify-platform verify-full-site-50 verify-kratos-pilot verify-kratos-50 verify-kratos-60 verify-kratos-80 verify-kratos-100 verify-kratos-pure-50 verify-kratos-pure-90 verify-kratos-rollout-pk0 verify-kratos-rollout-pk1 verify-kratos-rollout-pk2 verify-kratos-rollout-pk12 verify-kratos-rollout-pk3 verify-kratos-rollout-pk4 verify-kratos-rollout-pk6 verify-kratos-rollout-pk7 verify-kratos-rollout-pk34 verify-kratos-rollout-pk8 verify-kratos-rollout-85 verify-kratos-rollout-70 verify-kratos-rollout-regression verify-kratos-rollout-regression-full moe-social moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
+.PHONY: all gen gen-legacy-goctl gen-moe-proto gen-moe-conf gen-moekratospilot-get gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto verify-moe-migration verify-moe-grpc verify-moe-gateway verify-moe-complete verify-domain-vip verify-domain-user verify-domain-misc verify-platform verify-full-site-50 verify-kratos-pilot verify-kratos-50 verify-kratos-60 verify-kratos-80 verify-kratos-100 verify-kratos-pure-50 verify-kratos-pure-80 verify-kratos-pure-90 verify-kratos-pure-100 verify-kratos-rollout-pk0 verify-kratos-rollout-pk1 verify-kratos-rollout-pk2 verify-kratos-rollout-pk12 verify-kratos-rollout-pk3 verify-kratos-rollout-pk4 verify-kratos-rollout-pk6 verify-kratos-rollout-pk7 verify-kratos-rollout-pk11 verify-kratos-rollout-pk34 verify-kratos-rollout-pk8 verify-kratos-rollout-85 verify-kratos-rollout-70 verify-kratos-rollout-regression verify-kratos-rollout-regression-full moe-social moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
 
 	deploy-agent deploy-agent-stop moe-social-stop admin \
 
@@ -32,8 +32,7 @@ gen-moe-proto:
 gen-moe-conf:
 	bash scripts/gen-moe-conf.sh
 
-# PK-6：从 api/internal/handler/routes.go 生成 moekratospilot/get_handlers_gen.go（Kratos HTTP 注册全部 GET）
-# 在 make gen-api 之后执行（routes 变更时必跑）
+# PK-10b：从 routes.go 生成 routes_native_gen.go + routes_bridge_gen.go（swagger bridge）
 gen-moekratospilot-get:
 	cd scripts/gen-moekratospilot-get && go run ./
 
@@ -472,6 +471,14 @@ verify-kratos-rollout-pk7:
 
 	bash scripts/verify-kratos-rollout-pk7.sh
 
+verify-kratos-rollout-pk11:
+
+	bash scripts/verify-kratos-rollout-pk11.sh
+
+fs9b-rewrite-imports:
+
+	cd scripts/fs9b-rewrite-imports && go run ./
+
 verify-kratos-rollout-pk8:
 
 	bash scripts/verify-kratos-rollout-pk8.sh
@@ -480,9 +487,17 @@ verify-kratos-pure-50:
 
 	bash scripts/verify-kratos-pure-50.sh
 
+verify-kratos-pure-80:
+
+	bash scripts/verify-kratos-pure-80.sh
+
 verify-kratos-pure-90:
 
 	bash scripts/verify-kratos-pure-90.sh
+
+verify-kratos-pure-100:
+
+	bash scripts/verify-kratos-pure-100.sh
 
 verify-sprint-fs9b:
 
@@ -509,8 +524,9 @@ verify-kratos-rollout-regression-full:
 	bash scripts/verify-kratos-rollout-regression-full.sh
 
 moe-kratos:
-	@echo "DEPRECATED: use make moe-social (:8888 pure Kratos). Continuing moe-kratos pilot..."
-	go run ./cmd/moe-kratos
+	@echo "DEPRECATED: use make moe-social (Kratos HTTP :8888 + gRPC :8080)."
+	@echo "  Pilot :1903x removed (moe.pilot_process_deprecated=true). Exiting."
+	@exit 1
 
 
 

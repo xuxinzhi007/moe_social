@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,7 +19,7 @@ func NewUpsertAiLorebookLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	return &UpsertAiLorebookLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *UpsertAiLorebookLogic) UpsertAiLorebook(in *super.UpsertAiResourceReq) (*super.UpsertAiResourceResp, error) {
+func (l *UpsertAiLorebookLogic) UpsertAiLorebook(in *moe.UpsertAiResourceReq) (*moe.UpsertAiResourceResp, error) {
 	resp, err := aiApp(l.svcCtx).UpsertAiLorebook(l.ctx, in)
 	if err != nil {
 		if mapped := mapAIResourceErr(err); mapped != nil {

@@ -6,23 +6,23 @@ import (
 	"errors"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func defaultUserAvatarData(userID string) *super.UserAvatarData {
-	return &super.UserAvatarData{
+func defaultUserAvatarData(userID string) *moe.UserAvatarData {
+	return &moe.UserAvatarData{
 		UserId: userID,
-		BaseConfig: &super.AvatarBaseConfig{
+		BaseConfig: &moe.AvatarBaseConfig{
 			FaceShape: "face_1",
 			SkinColor: "#FDBCB4",
 			EyeType:   "eyes_1",
 			HairStyle: "hair_1",
 			HairColor: "#8B4513",
 		},
-		CurrentOutfit: &super.AvatarOutfitConfig{
+		CurrentOutfit: &moe.AvatarOutfitConfig{
 			Clothes:     "clothes_1",
 			Accessories: []string{},
 			Background:  "default",
@@ -32,7 +32,7 @@ func defaultUserAvatarData(userID string) *super.UserAvatarData {
 }
 
 // GetUserAvatar 获取用户虚拟形象；无记录时返回默认形象。
-func GetUserAvatar(ctx context.Context, db *gorm.DB, in *super.GetUserAvatarReq) (*super.GetUserAvatarResp, error) {
+func GetUserAvatar(ctx context.Context, db *gorm.DB, in *moe.GetUserAvatarReq) (*moe.GetUserAvatarResp, error) {
 	if db == nil || in == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -41,15 +41,15 @@ func GetUserAvatar(ctx context.Context, db *gorm.DB, in *super.GetUserAvatarReq)
 	result := db.Where("user_id = ?", in.GetUserId()).First(&userAvatar)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return &super.GetUserAvatarResp{Avatar: defaultUserAvatarData(in.GetUserId())}, nil
+			return &moe.GetUserAvatarResp{Avatar: defaultUserAvatarData(in.GetUserId())}, nil
 		}
 		return nil, result.Error
 	}
-	var baseConfig super.AvatarBaseConfig
+	var baseConfig moe.AvatarBaseConfig
 	if err := json.Unmarshal([]byte(userAvatar.BaseConfig), &baseConfig); err != nil {
 		return nil, err
 	}
-	var currentOutfit super.AvatarOutfitConfig
+	var currentOutfit moe.AvatarOutfitConfig
 	if err := json.Unmarshal([]byte(userAvatar.CurrentOutfit), &currentOutfit); err != nil {
 		return nil, err
 	}
@@ -57,8 +57,8 @@ func GetUserAvatar(ctx context.Context, db *gorm.DB, in *super.GetUserAvatarReq)
 	if err := json.Unmarshal([]byte(userAvatar.OwnedOutfits), &ownedOutfits); err != nil {
 		ownedOutfits = []string{}
 	}
-	return &super.GetUserAvatarResp{
-		Avatar: &super.UserAvatarData{
+	return &moe.GetUserAvatarResp{
+		Avatar: &moe.UserAvatarData{
 			UserId:        in.GetUserId(),
 			BaseConfig:    &baseConfig,
 			CurrentOutfit: &currentOutfit,
@@ -68,7 +68,7 @@ func GetUserAvatar(ctx context.Context, db *gorm.DB, in *super.GetUserAvatarReq)
 }
 
 // UpdateUserAvatar 创建或更新用户虚拟形象。
-func UpdateUserAvatar(ctx context.Context, db *gorm.DB, in *super.UpdateUserAvatarReq) (*super.UpdateUserAvatarResp, error) {
+func UpdateUserAvatar(ctx context.Context, db *gorm.DB, in *moe.UpdateUserAvatarReq) (*moe.UpdateUserAvatarResp, error) {
 	if db == nil || in == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -108,8 +108,8 @@ func UpdateUserAvatar(ctx context.Context, db *gorm.DB, in *super.UpdateUserAvat
 	}
 	var ownedOutfits []string
 	_ = json.Unmarshal([]byte(avatarData.OwnedOutfits), &ownedOutfits)
-	return &super.UpdateUserAvatarResp{
-		Avatar: &super.UserAvatarData{
+	return &moe.UpdateUserAvatarResp{
+		Avatar: &moe.UserAvatarData{
 			UserId:        in.GetUserId(),
 			BaseConfig:    in.GetBaseConfig(),
 			CurrentOutfit: in.GetCurrentOutfit(),

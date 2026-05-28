@@ -8,7 +8,7 @@ import (
 	checkinapp "backend/internal/service/checkin"
 	checkinbiz "backend/internal/biz/checkin"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewGetCheckInHistoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	return &GetCheckInHistoryLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *GetCheckInHistoryLogic) GetCheckInHistory(in *super.GetCheckInHistoryReq) (*super.GetCheckInHistoryResp, error) {
+func (l *GetCheckInHistoryLogic) GetCheckInHistory(in *moe.GetCheckInHistoryReq) (*moe.GetCheckInHistoryResp, error) {
 	app := checkinapp.New(l.svcCtx.DB)
 	resp, err := app.GetCheckInHistory(l.ctx, in)
 	if err != nil {

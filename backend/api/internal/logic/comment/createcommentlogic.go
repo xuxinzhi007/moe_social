@@ -7,7 +7,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -28,7 +28,7 @@ func NewCreateCommentLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cre
 
 func (l *CreateCommentLogic) CreateComment(req *types.CreateCommentReq) (resp *types.CreateCommentResp, err error) {
 	// 调用RPC服务创建评论
-	rpcResp, err := l.svcCtx.CommentGW.CreateComment(l.ctx, &super.CreateCommentReq{
+	rpcResp, err := l.svcCtx.CommentGW.CreateComment(l.ctx, &moe.CreateCommentReq{
 		PostId:   req.PostId,
 		UserId:   req.UserId,
 		Content:  req.Content,

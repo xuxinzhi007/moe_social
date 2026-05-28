@@ -11,7 +11,7 @@ import (
 	"unicode/utf8"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
@@ -20,7 +20,7 @@ import (
 var safePrivateImageToken = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
 
 // SendPrivateMessage 持久化一条私信并返回 proto 视图。
-func SendPrivateMessage(ctx context.Context, db *gorm.DB, in *super.SendPrivateMessageReq) (*super.SendPrivateMessageResp, error) {
+func SendPrivateMessage(ctx context.Context, db *gorm.DB, in *moe.SendPrivateMessageReq) (*moe.SendPrivateMessageResp, error) {
 	if db == nil {
 		return nil, errors.New("db not ready")
 	}
@@ -82,7 +82,7 @@ func SendPrivateMessage(ctx context.Context, db *gorm.DB, in *super.SendPrivateM
 	}
 
 	moeBy := loadMoeNoByUserID(db.WithContext(ctx), row.SenderID, row.ReceiverID)
-	return &super.SendPrivateMessageResp{Message: privateMessageModelToProto(&row, moeBy)}, nil
+	return &moe.SendPrivateMessageResp{Message: privateMessageModelToProto(&row, moeBy)}, nil
 }
 
 // NormalizePrivateImagePaths 校验并规范化私信图片 token 列表。
@@ -111,7 +111,7 @@ func NormalizePrivateImagePaths(in []string) ([]string, error) {
 	return out, nil
 }
 
-func privateMessageModelToProto(m *model.PrivateMessage, moeByUID map[uint]string) *super.PrivateMessage {
+func privateMessageModelToProto(m *model.PrivateMessage, moeByUID map[uint]string) *moe.PrivateMessage {
 	if m == nil {
 		return nil
 	}
@@ -124,7 +124,7 @@ func privateMessageModelToProto(m *model.PrivateMessage, moeByUID map[uint]strin
 		sMoe = moeByUID[m.SenderID]
 		rMoe = moeByUID[m.ReceiverID]
 	}
-	return &super.PrivateMessage{
+	return &moe.PrivateMessage{
 		Id:            strconv.FormatUint(uint64(m.ID), 10),
 		SenderId:      strconv.FormatUint(uint64(m.SenderID), 10),
 		ReceiverId:    strconv.FormatUint(uint64(m.ReceiverID), 10),
@@ -179,7 +179,7 @@ func retentionDaysToUint8(days int) uint8 {
 }
 
 // PrivateMessageModelToProto 导出 proto 映射（list/conversation RPC 复用）。
-func PrivateMessageModelToProto(m *model.PrivateMessage, moeByUID map[uint]string) *super.PrivateMessage {
+func PrivateMessageModelToProto(m *model.PrivateMessage, moeByUID map[uint]string) *moe.PrivateMessage {
 	return privateMessageModelToProto(m, moeByUID)
 }
 

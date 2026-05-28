@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,7 +19,7 @@ func NewAdminBroadcastNotificationLogic(ctx context.Context, svcCtx *svc.Service
 	return &AdminBroadcastNotificationLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminBroadcastNotificationLogic) AdminBroadcastNotification(in *super.AdminBroadcastNotificationReq) (*super.AdminBroadcastNotificationResp, error) {
+func (l *AdminBroadcastNotificationLogic) AdminBroadcastNotification(in *moe.AdminBroadcastNotificationReq) (*moe.AdminBroadcastNotificationResp, error) {
 	resp, err := newAdminApp(l.svcCtx.DB).BroadcastNotification(l.ctx, in)
 	if err != nil {
 		return nil, mapAdminNotifyErr(err)

@@ -10,7 +10,7 @@ import (
 
 	userbiz "backend/internal/biz/user"
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"github.com/spf13/viper"
@@ -18,7 +18,7 @@ import (
 )
 
 // Dashboard Admin 仪表盘统计。
-func Dashboard(ctx context.Context, db *gorm.DB, _ *super.AdminDashboardReq) (*super.AdminDashboardResp, error) {
+func Dashboard(ctx context.Context, db *gorm.DB, _ *moe.AdminDashboardReq) (*moe.AdminDashboardResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -30,7 +30,7 @@ func Dashboard(ctx context.Context, db *gorm.DB, _ *super.AdminDashboardReq) (*s
 	if err := db.WithContext(ctx).Model(&model.User{}).Count(&userTotal).Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDashboard, err)
 	}
-	return &super.AdminDashboardResp{
+	return &moe.AdminDashboardResp{
 		LandingFeedbackTotal: int32(feedbackTotal),
 		UserTotal:            int32(userTotal),
 		ServerTime:           time.Now().Format(time.RFC3339),
@@ -39,7 +39,7 @@ func Dashboard(ctx context.Context, db *gorm.DB, _ *super.AdminDashboardReq) (*s
 }
 
 // GetUser Admin 单用户详情。
-func GetUser(ctx context.Context, db *gorm.DB, in *super.AdminGetUserReq) (*super.AdminGetUserResp, error) {
+func GetUser(ctx context.Context, db *gorm.DB, in *moe.AdminGetUserReq) (*moe.AdminGetUserResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -53,11 +53,11 @@ func GetUser(ctx context.Context, db *gorm.DB, in *super.AdminGetUserReq) (*supe
 		}
 		return nil, fmt.Errorf("%w: %v", ErrDashboard, err)
 	}
-	return &super.AdminGetUserResp{User: userbiz.ModelToProto(&user)}, nil
+	return &moe.AdminGetUserResp{User: userbiz.ModelToProto(&user)}, nil
 }
 
 // GetUserProfile Admin 用户画像与关联统计。
-func GetUserProfile(ctx context.Context, db *gorm.DB, in *super.AdminGetUserProfileReq) (*super.AdminGetUserProfileResp, error) {
+func GetUserProfile(ctx context.Context, db *gorm.DB, in *moe.AdminGetUserProfileReq) (*moe.AdminGetUserProfileResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -81,7 +81,7 @@ func GetUserProfile(ctx context.Context, db *gorm.DB, in *super.AdminGetUserProf
 	var aiAgentCount int64
 	_ = db.WithContext(ctx).Model(&model.AiUserConfig{}).Where("user_id = ?", uid).Count(&aiAgentCount).Error
 
-	levelSnap := &super.AdminUserLevelSnapshot{}
+	levelSnap := &moe.AdminUserLevelSnapshot{}
 	var levelRow model.UserLevel
 	if err := db.WithContext(ctx).Where("user_id = ?", uid).First(&levelRow).Error; err == nil {
 		title := ""
@@ -89,7 +89,7 @@ func GetUserProfile(ctx context.Context, db *gorm.DB, in *super.AdminGetUserProf
 		if err := db.WithContext(ctx).Where("level = ?", levelRow.Level).First(&cfg).Error; err == nil {
 			title = cfg.Title
 		}
-		levelSnap = &super.AdminUserLevelSnapshot{
+		levelSnap = &moe.AdminUserLevelSnapshot{
 			Level:      int32(levelRow.Level),
 			Experience: int32(levelRow.Experience),
 			TotalExp:   int32(levelRow.TotalExp),
@@ -98,10 +98,10 @@ func GetUserProfile(ctx context.Context, db *gorm.DB, in *super.AdminGetUserProf
 	}
 
 	uidStr := strconv.FormatUint(uint64(uid), 10)
-	return &super.AdminGetUserProfileResp{
-		Data: &super.AdminUserProfileData{
+	return &moe.AdminGetUserProfileResp{
+		Data: &moe.AdminUserProfileData{
 			User: userbiz.ModelToProto(&user),
-			Counts: &super.AdminUserRelationCounts{
+			Counts: &moe.AdminUserRelationCounts{
 				Posts:                countWhere(db, &model.Post{}, "user_id", uid),
 				Comments:             countWhere(db, &model.Comment{}, "user_id", uid),
 				Following:            countWhere(db, &model.Follow{}, "follower_id", uid),
@@ -124,11 +124,11 @@ func GetUserProfile(ctx context.Context, db *gorm.DB, in *super.AdminGetUserProf
 }
 
 // GetMemoryStats Admin 记忆统计。
-func GetMemoryStats(ctx context.Context, db *gorm.DB, _ *super.AdminGetMemoryStatsReq) (*super.AdminGetMemoryStatsResp, error) {
+func GetMemoryStats(ctx context.Context, db *gorm.DB, _ *moe.AdminGetMemoryStatsReq) (*moe.AdminGetMemoryStatsResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
-	stats := &super.AdminMemoryStats{}
+	stats := &moe.AdminMemoryStats{}
 
 	var totalMemories int64
 	if err := db.WithContext(ctx).Model(&model.UserMemory{}).Count(&totalMemories).Error; err != nil {
@@ -166,18 +166,18 @@ func GetMemoryStats(ctx context.Context, db *gorm.DB, _ *super.AdminGetMemorySta
 		Scan(&typeRows).Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrMemoryStats, err)
 	}
-	stats.ByType = make([]*super.AdminMemoryTypeStat, len(typeRows))
+	stats.ByType = make([]*moe.AdminMemoryTypeStat, len(typeRows))
 	for i, row := range typeRows {
-		stats.ByType[i] = &super.AdminMemoryTypeStat{
+		stats.ByType[i] = &moe.AdminMemoryTypeStat{
 			MemoryType: row.MemoryType,
 			Count:      int32(row.Count),
 		}
 	}
-	return &super.AdminGetMemoryStatsResp{Stats: stats}, nil
+	return &moe.AdminGetMemoryStatsResp{Stats: stats}, nil
 }
 
-func buildUserProfileLinks(userID string) []*super.AdminUserRelationLink {
-	return []*super.AdminUserRelationLink{
+func buildUserProfileLinks(userID string) []*moe.AdminUserRelationLink {
+	return []*moe.AdminUserRelationLink{
 		{Label: "动态", AdminRoute: "/content/posts?user_id=" + userID, Hint: "posts.user_id"},
 		{Label: "评论", AdminRoute: "/content/comments?user_id=" + userID, Hint: "comments.user_id"},
 		{Label: "粉丝", AdminRoute: "/social/follows?following_id=" + userID, Hint: "follows.following_id"},
@@ -192,7 +192,7 @@ func buildUserProfileLinks(userID string) []*super.AdminUserRelationLink {
 	}
 }
 
-func loadUserBehaviorSummary(db *gorm.DB, uid uint) *super.AdminUserBehaviorSummary {
+func loadUserBehaviorSummary(db *gorm.DB, uid uint) *moe.AdminUserBehaviorSummary {
 	if db == nil || uid == 0 {
 		return nil
 	}
@@ -238,9 +238,9 @@ func loadUserBehaviorSummary(db *gorm.DB, uid uint) *super.AdminUserBehaviorSumm
 		rankedList = rankedList[:8]
 	}
 
-	topScreens := make([]*super.AdminUserBehaviorScreenStat, 0, len(rankedList))
+	topScreens := make([]*moe.AdminUserBehaviorScreenStat, 0, len(rankedList))
 	for _, item := range rankedList {
-		topScreens = append(topScreens, &super.AdminUserBehaviorScreenStat{
+		topScreens = append(topScreens, &moe.AdminUserBehaviorScreenStat{
 			Screen:          item.screen,
 			Label:           utils.BehaviorScreenLabel(item.screen),
 			VisitCount:      int32(item.visits),
@@ -259,7 +259,7 @@ func loadUserBehaviorSummary(db *gorm.DB, uid uint) *super.AdminUserBehaviorSumm
 		lastActiveAt = lastEvent.CreatedAt.UTC().Format(time.RFC3339)
 	}
 
-	return &super.AdminUserBehaviorSummary{
+	return &moe.AdminUserBehaviorSummary{
 		TopScreens:     topScreens,
 		Tags:           utils.BuildBehaviorTags(dailyRows),
 		LastActiveAt:   lastActiveAt,

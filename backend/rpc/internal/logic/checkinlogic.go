@@ -8,7 +8,7 @@ import (
 	checkinapp "backend/internal/service/checkin"
 	checkinbiz "backend/internal/biz/checkin"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewCheckInLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CheckInLo
 	return &CheckInLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *CheckInLogic) CheckIn(in *super.CheckInReq) (*super.CheckInResp, error) {
+func (l *CheckInLogic) CheckIn(in *moe.CheckInReq) (*moe.CheckInResp, error) {
 	app := checkinapp.New(l.svcCtx.DB)
 	resp, err := app.CheckIn(l.ctx, in)
 	if err != nil {

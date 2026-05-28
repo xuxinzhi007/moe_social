@@ -8,7 +8,7 @@ import (
 	postbiz "backend/internal/biz/post"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewDeletePostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Delete
 	return &DeletePostLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *DeletePostLogic) DeletePost(in *super.DeletePostReq) (*super.DeletePostResp, error) {
+func (l *DeletePostLogic) DeletePost(in *moe.DeletePostReq) (*moe.DeletePostResp, error) {
 	if in.GetPostId() == "" || in.GetUserId() == "" {
 		return nil, errorx.New(400, "post_id 和 user_id 不能为空")
 	}

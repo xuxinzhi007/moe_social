@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,7 +19,7 @@ func NewAdminUpdateAccountLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	return &AdminUpdateAccountLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminUpdateAccountLogic) AdminUpdateAccount(in *super.AdminUpdateAccountReq) (*super.AdminUpdateAccountResp, error) {
+func (l *AdminUpdateAccountLogic) AdminUpdateAccount(in *moe.AdminUpdateAccountReq) (*moe.AdminUpdateAccountResp, error) {
 	resp, err := newAdminApp(l.svcCtx.DB).UpdateAccount(l.ctx, in)
 	if err != nil {
 		return nil, mapAdminAccountErr(err)

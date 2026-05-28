@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -35,7 +35,7 @@ func (l *AdminListGroupsLogic) AdminListGroups(req *types.AdminListGroupsReq) (r
 		pageSize = 50
 	}
 
-	rpcResp, err := l.svcCtx.AdminGW.AdminListGroups(l.ctx, &super.AdminListGroupsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListGroups(l.ctx, &moe.AdminListGroupsReq{
 		Page:     int32(page),
 		PageSize: int32(pageSize),
 		Keyword:  req.Keyword,

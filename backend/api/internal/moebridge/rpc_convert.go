@@ -2,10 +2,10 @@ package moebridge
 
 import (
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
-func RuntimeItemFromRPC(item *super.MoeAgentRuntimeItem) types.MoeAgentRuntimeItem {
+func RuntimeItemFromRPC(item *moe.MoeAgentRuntimeItem) types.MoeAgentRuntimeItem {
 	if item == nil {
 		return types.MoeAgentRuntimeItem{}
 	}
@@ -32,7 +32,7 @@ func RuntimeItemFromRPC(item *super.MoeAgentRuntimeItem) types.MoeAgentRuntimeIt
 	}
 }
 
-func BrainDataFromRPC(d *super.AdminGetMoeBrainResp) types.AdminGetMoeBrainData {
+func BrainDataFromRPC(d *moe.AdminGetMoeBrainResp) types.AdminGetMoeBrainData {
 	if d == nil {
 		return types.AdminGetMoeBrainData{}
 	}
@@ -89,7 +89,7 @@ func BrainDataFromRPC(d *super.AdminGetMoeBrainResp) types.AdminGetMoeBrainData 
 	return out
 }
 
-func RefineResultFromRPC(d *super.AdminRefineMoeBrainEpisodeResp) types.AdminRefineMoeBrainEpisodeData {
+func RefineResultFromRPC(d *moe.AdminRefineMoeBrainEpisodeResp) types.AdminRefineMoeBrainEpisodeData {
 	if d == nil {
 		return types.AdminRefineMoeBrainEpisodeData{}
 	}
@@ -105,7 +105,7 @@ func RefineResultFromRPC(d *super.AdminRefineMoeBrainEpisodeResp) types.AdminRef
 	}
 }
 
-func ToolStatsFromRPC(d *super.AdminGetMoeToolStatsResp) types.AdminMoeToolStatsData {
+func ToolStatsFromRPC(d *moe.AdminGetMoeToolStatsResp) types.AdminMoeToolStatsData {
 	if d == nil {
 		return types.AdminMoeToolStatsData{}
 	}
@@ -132,7 +132,7 @@ func ToolStatsFromRPC(d *super.AdminGetMoeToolStatsResp) types.AdminMoeToolStats
 	return out
 }
 
-func ToolCallsFromRPC(d *super.AdminListMoeToolCallsResp) types.AdminListMoeToolCallsData {
+func ToolCallsFromRPC(d *moe.AdminListMoeToolCallsResp) types.AdminListMoeToolCallsData {
 	if d == nil {
 		return types.AdminListMoeToolCallsData{}
 	}
@@ -154,7 +154,7 @@ func ToolCallsFromRPC(d *super.AdminListMoeToolCallsResp) types.AdminListMoeTool
 	return out
 }
 
-func PipelineDataFromSuper(d *super.AdminGetMoeBrainPipelineResp) types.AdminGetMoeBrainPipelineData {
+func PipelineDataFromSuper(d *moe.AdminGetMoeBrainPipelineResp) types.AdminGetMoeBrainPipelineData {
 	if d == nil {
 		return types.AdminGetMoeBrainPipelineData{Steps: DefaultPipelineStepTypes()}
 	}
@@ -201,7 +201,7 @@ func PipelineDataFromSuper(d *super.AdminGetMoeBrainPipelineResp) types.AdminGet
 	return data
 }
 
-func SearchPostsFromRPC(d *super.MoeSearchPostsResp) types.SearchPostsData {
+func SearchPostsFromRPC(d *moe.MoeSearchPostsResp) types.SearchPostsData {
 	if d == nil {
 		return types.SearchPostsData{}
 	}

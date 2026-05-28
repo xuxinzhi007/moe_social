@@ -4,7 +4,7 @@ import (
 	"context"
 
 	checkinapp "backend/internal/service/checkin"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"google.golang.org/grpc"
 )
@@ -12,11 +12,11 @@ import (
 // Gateway CheckIn HTTP → biz 或 super RPC 回退。
 type Gateway struct {
 	local *checkinapp.AppService
-	super super.SuperClient
+	super moe.SuperClient
 }
 
 // New 构造网关。
-func New(local *checkinapp.AppService, legacy super.SuperClient) *Gateway {
+func New(local *checkinapp.AppService, legacy moe.SuperClient) *Gateway {
 	return &Gateway{local: local, super: legacy}
 }
 
@@ -33,35 +33,35 @@ func (g *Gateway) Route() string {
 	return "none"
 }
 
-func (g *Gateway) GetCheckInStatus(ctx context.Context, in *super.GetCheckInStatusReq, opts ...grpc.CallOption) (*super.GetCheckInStatusResp, error) {
+func (g *Gateway) GetCheckInStatus(ctx context.Context, in *moe.GetCheckInStatusReq, opts ...grpc.CallOption) (*moe.GetCheckInStatusResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.GetCheckInStatus(ctx, in)
 	}
 	return g.super.GetCheckInStatus(ctx, in, opts...)
 }
 
-func (g *Gateway) CheckIn(ctx context.Context, in *super.CheckInReq, opts ...grpc.CallOption) (*super.CheckInResp, error) {
+func (g *Gateway) CheckIn(ctx context.Context, in *moe.CheckInReq, opts ...grpc.CallOption) (*moe.CheckInResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.CheckIn(ctx, in)
 	}
 	return g.super.CheckIn(ctx, in, opts...)
 }
 
-func (g *Gateway) GetCheckInHistory(ctx context.Context, in *super.GetCheckInHistoryReq, opts ...grpc.CallOption) (*super.GetCheckInHistoryResp, error) {
+func (g *Gateway) GetCheckInHistory(ctx context.Context, in *moe.GetCheckInHistoryReq, opts ...grpc.CallOption) (*moe.GetCheckInHistoryResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.GetCheckInHistory(ctx, in)
 	}
 	return g.super.GetCheckInHistory(ctx, in, opts...)
 }
 
-func (g *Gateway) GetExpLogs(ctx context.Context, in *super.GetExpLogsReq, opts ...grpc.CallOption) (*super.GetExpLogsResp, error) {
+func (g *Gateway) GetExpLogs(ctx context.Context, in *moe.GetExpLogsReq, opts ...grpc.CallOption) (*moe.GetExpLogsResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.GetExpLogs(ctx, in)
 	}
 	return g.super.GetExpLogs(ctx, in, opts...)
 }
 
-func (g *Gateway) GetUserLevel(ctx context.Context, in *super.GetUserLevelReq, opts ...grpc.CallOption) (*super.GetUserLevelResp, error) {
+func (g *Gateway) GetUserLevel(ctx context.Context, in *moe.GetUserLevelReq, opts ...grpc.CallOption) (*moe.GetUserLevelResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.GetUserLevel(ctx, in)
 	}

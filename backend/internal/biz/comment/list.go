@@ -7,7 +7,7 @@ import (
 
 	postbiz "backend/internal/biz/post"
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
@@ -22,7 +22,7 @@ type ListFilter struct {
 }
 
 // ListByPost 帖子评论列表。
-func ListByPost(ctx context.Context, db *gorm.DB, f ListFilter) ([]*super.Comment, int32, error) {
+func ListByPost(ctx context.Context, db *gorm.DB, f ListFilter) ([]*moe.Comment, int32, error) {
 	if db == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -97,7 +97,7 @@ func ListByPost(ctx context.Context, db *gorm.DB, f ListFilter) ([]*super.Commen
 		}
 	}
 
-	out := make([]*super.Comment, 0, len(comments))
+	out := make([]*moe.Comment, 0, len(comments))
 	for _, comment := range comments {
 		username := "未知用户"
 		avatar := "https://picsum.photos/150"
@@ -111,7 +111,7 @@ func ListByPost(ctx context.Context, db *gorm.DB, f ListFilter) ([]*super.Commen
 				avatar = user.Avatar
 			}
 		}
-		out = append(out, &super.Comment{
+		out = append(out, &moe.Comment{
 			Id:              strconv.FormatUint(uint64(comment.ID), 10),
 			PostId:          strconv.FormatUint(uint64(comment.PostID), 10),
 			UserId:          strconv.FormatUint(uint64(comment.UserID), 10),

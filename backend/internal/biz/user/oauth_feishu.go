@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"github.com/spf13/viper"
@@ -18,7 +18,7 @@ import (
 )
 
 // FeishuLogin OAuth 登录或注册。
-func FeishuLogin(ctx context.Context, db *gorm.DB, in *super.FeishuLoginReq) (*super.FeishuLoginResp, error) {
+func FeishuLogin(ctx context.Context, db *gorm.DB, in *moe.FeishuLoginReq) (*moe.FeishuLoginResp, error) {
 	if !viper.GetBool("feishu.enabled") {
 		return nil, ErrOAuthDisabled
 	}
@@ -41,7 +41,7 @@ func FeishuLogin(ctx context.Context, db *gorm.DB, in *super.FeishuLoginReq) (*s
 	if err != nil {
 		return nil, err
 	}
-	return &super.FeishuLoginResp{
+	return &moe.FeishuLoginResp{
 		User:      ModelToProto(&user),
 		Token:     token,
 		IsNewUser: isNew,
@@ -49,7 +49,7 @@ func FeishuLogin(ctx context.Context, db *gorm.DB, in *super.FeishuLoginReq) (*s
 }
 
 // FeishuAuthorizeURL 生成飞书授权链接。
-func FeishuAuthorizeURL(_ context.Context, in *super.FeishuAuthorizeURLReq) (*super.FeishuAuthorizeURLResp, error) {
+func FeishuAuthorizeURL(_ context.Context, in *moe.FeishuAuthorizeURLReq) (*moe.FeishuAuthorizeURLResp, error) {
 	if !viper.GetBool("feishu.enabled") {
 		return nil, ErrOAuthDisabled
 	}
@@ -57,11 +57,11 @@ func FeishuAuthorizeURL(_ context.Context, in *super.FeishuAuthorizeURLReq) (*su
 	if err != nil {
 		return nil, ErrInvalidArgument
 	}
-	return &super.FeishuAuthorizeURLResp{AuthorizeUrl: url}, nil
+	return &moe.FeishuAuthorizeURLResp{AuthorizeUrl: url}, nil
 }
 
 // BindFeishu 绑定飞书邮箱。
-func BindFeishu(ctx context.Context, db *gorm.DB, in *super.BindFeishuReq) (*super.BindFeishuResp, error) {
+func BindFeishu(ctx context.Context, db *gorm.DB, in *moe.BindFeishuReq) (*moe.BindFeishuResp, error) {
 	userID, err := strconv.ParseUint(in.GetUserId(), 10, 64)
 	if err != nil || userID == 0 {
 		return nil, ErrInvalidArgument
@@ -81,11 +81,11 @@ func BindFeishu(ctx context.Context, db *gorm.DB, in *super.BindFeishuReq) (*sup
 	if err := db.WithContext(ctx).Save(&user).Error; err != nil {
 		return nil, err
 	}
-	return &super.BindFeishuResp{User: ModelToProto(&user)}, nil
+	return &moe.BindFeishuResp{User: ModelToProto(&user)}, nil
 }
 
 // UnbindFeishu 解绑飞书邮箱。
-func UnbindFeishu(ctx context.Context, db *gorm.DB, in *super.UnbindFeishuReq) (*super.UnbindFeishuResp, error) {
+func UnbindFeishu(ctx context.Context, db *gorm.DB, in *moe.UnbindFeishuReq) (*moe.UnbindFeishuResp, error) {
 	userID, err := strconv.ParseUint(in.GetUserId(), 10, 64)
 	if err != nil || userID == 0 {
 		return nil, ErrInvalidArgument
@@ -101,11 +101,11 @@ func UnbindFeishu(ctx context.Context, db *gorm.DB, in *super.UnbindFeishuReq) (
 	if err := db.WithContext(ctx).Save(&user).Error; err != nil {
 		return nil, err
 	}
-	return &super.UnbindFeishuResp{User: ModelToProto(&user)}, nil
+	return &moe.UnbindFeishuResp{User: ModelToProto(&user)}, nil
 }
 
 // SendFeishuTestCard 发送飞书测试卡片。
-func SendFeishuTestCard(ctx context.Context, db *gorm.DB, in *super.SendFeishuTestCardReq) (*super.SendFeishuTestCardResp, error) {
+func SendFeishuTestCard(ctx context.Context, db *gorm.DB, in *moe.SendFeishuTestCardReq) (*moe.SendFeishuTestCardResp, error) {
 	userID, err := strconv.ParseUint(in.GetUserId(), 10, 64)
 	if err != nil || userID == 0 {
 		return nil, ErrInvalidArgument
@@ -124,7 +124,7 @@ func SendFeishuTestCard(ctx context.Context, db *gorm.DB, in *super.SendFeishuTe
 	if err := utils.SendFeishuTestCard(ctx, target); err != nil {
 		return nil, err
 	}
-	return &super.SendFeishuTestCardResp{}, nil
+	return &moe.SendFeishuTestCardResp{}, nil
 }
 
 func findOrCreateFeishuUser(ctx context.Context, db *gorm.DB, info utils.FeishuOAuthUserInfo) (model.User, bool, error) {

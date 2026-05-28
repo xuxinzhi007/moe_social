@@ -7,7 +7,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -28,7 +28,7 @@ func NewCreateVipOrderLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cr
 
 func (l *CreateVipOrderLogic) CreateVipOrder(req *types.CreateVipOrderReq) (resp *types.CreateVipOrderResp, err error) {
 	// 调用RPC服务创建VIP订单
-	rpcResp, err := l.svcCtx.UserGW.CreateVipOrder(l.ctx, &super.CreateVipOrderReq{
+	rpcResp, err := l.svcCtx.UserGW.CreateVipOrder(l.ctx, &moe.CreateVipOrderReq{
 		UserId: req.UserId,
 		PlanId: req.PlanId,
 	})

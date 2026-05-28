@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewDeleteUserLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Delete
 
 func (l *DeleteUserLogic) DeleteUser(req *types.DeleteUserReq) (resp *types.DeleteUserResp, err error) {
 	// 调用RPC服务删除用户
-	_, err = l.svcCtx.UserGW.DeleteUser(l.ctx, &super.DeleteUserReq{
+	_, err = l.svcCtx.UserGW.DeleteUser(l.ctx, &moe.DeleteUserReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

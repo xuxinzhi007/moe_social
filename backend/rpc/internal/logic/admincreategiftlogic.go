@@ -8,7 +8,7 @@ import (
 	adminapp "backend/internal/service/admin"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewAdminCreateGiftLogic(ctx context.Context, svcCtx *svc.ServiceContext) *A
 	return &AdminCreateGiftLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminCreateGiftLogic) AdminCreateGift(in *super.AdminCreateGiftReq) (*super.AdminCreateGiftResp, error) {
+func (l *AdminCreateGiftLogic) AdminCreateGift(in *moe.AdminCreateGiftReq) (*moe.AdminCreateGiftResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).AdminCreateGift(l.ctx, in)
 	if err != nil {
 		if errors.Is(err, adminbiz.ErrEmptyGiftName) {

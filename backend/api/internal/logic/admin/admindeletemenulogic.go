@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewAdminDeleteMenuLogic(ctx context.Context, svcCtx *svc.ServiceContext) *A
 }
 
 func (l *AdminDeleteMenuLogic) AdminDeleteMenu(req *types.AdminDeleteMenuReq) (*types.AdminDeleteMenuResp, error) {
-	_, err := l.svcCtx.AdminGW.AdminDeleteMenu(l.ctx, &super.AdminDeleteMenuReq{
+	_, err := l.svcCtx.AdminGW.AdminDeleteMenu(l.ctx, &moe.AdminDeleteMenuReq{
 		MenuKey: req.MenuKey,
 	})
 	if err != nil {

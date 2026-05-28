@@ -15,6 +15,6 @@ grep -q 'RegisterBridgeHTTPHandlers' api/moekratospilot/register_all.go
 
 go test ./api/moekratospilot/... -count=1 -run 'TestHTTPRouteCoverageAtLeast95'
 
-go build -o /dev/null ./cmd/moe-kratos ./cmd/moe-social-stack
+go build -o /dev/null ./cmd/moe-social-stack/...
 
 echo "OK: PK-6 all HTTP routes on Kratos (>=95% route coverage)"

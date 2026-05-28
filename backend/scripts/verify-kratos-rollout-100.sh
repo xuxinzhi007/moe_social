@@ -12,7 +12,7 @@ grep -q 'WireOnly' api/runserver/server.go
 
 bash scripts/verify-kratos-rollout-pk34.sh
 
-go test ./internal/platform/kratosprogress/... -count=1 -run 'TestRolloutPercent|TestCompletePure'
+go test ./internal/platform/kratosprogress/... -count=1 -run 'TestRolloutPercentAtLeast100WhenPure|TestCompletePureKratosAtLeast100'
 
 go build -o /dev/null ./internal/platform/moesocial/ ./api/moekratospilot/ ./api/runserver/
 

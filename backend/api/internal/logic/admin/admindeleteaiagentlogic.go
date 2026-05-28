@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewAdminDeleteAiAgentLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *AdminDeleteAiAgentLogic) AdminDeleteAiAgent(req *types.AdminDeleteAiAgentReq) (*types.AdminDeleteAiAgentResp, error) {
-	_, err := l.svcCtx.AdminGW.AdminDeleteAiAgent(l.ctx, &super.AdminDeleteAiAgentReq{
+	_, err := l.svcCtx.AdminGW.AdminDeleteAiAgent(l.ctx, &moe.AdminDeleteAiAgentReq{
 		UserId:  req.UserId,
 		AgentId: req.AgentId,
 	})

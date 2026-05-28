@@ -7,13 +7,13 @@ import (
 	"strings"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // ListHistory 签到历史分页。
-func ListHistory(ctx context.Context, db *gorm.DB, userIDRaw string, page, pageSize int32) ([]*super.CheckInRecord, int32, error) {
+func ListHistory(ctx context.Context, db *gorm.DB, userIDRaw string, page, pageSize int32) ([]*moe.CheckInRecord, int32, error) {
 	if db == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -47,9 +47,9 @@ func ListHistory(ctx context.Context, db *gorm.DB, userIDRaw string, page, pageS
 		Order("check_in_date DESC").Limit(int(pageSize)).Offset(offset).Find(&rows).Error; err != nil {
 		return nil, 0, err
 	}
-	out := make([]*super.CheckInRecord, 0, len(rows))
+	out := make([]*moe.CheckInRecord, 0, len(rows))
 	for _, record := range rows {
-		out = append(out, &super.CheckInRecord{
+		out = append(out, &moe.CheckInRecord{
 			CheckInDate:       record.CheckInDate.Format("2006-01-02"),
 			ConsecutiveDays:   int32(record.ConsecutiveDays),
 			ExpReward:         int32(record.ExpReward),

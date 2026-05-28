@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewAdminCreateAccountLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *AdminCreateAccountLogic) AdminCreateAccount(req *types.AdminCreateAccountReq) (*types.AdminCreateAccountResp, error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminCreateAccount(l.ctx, &super.AdminCreateAccountReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminCreateAccount(l.ctx, &moe.AdminCreateAccountReq{
 		Username: req.Username,
 		Password: req.Password,
 		Role:     req.Role,

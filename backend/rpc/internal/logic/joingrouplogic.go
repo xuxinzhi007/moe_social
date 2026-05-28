@@ -5,7 +5,7 @@ import (
 
 	communityapp "backend/internal/service/community"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,6 +20,6 @@ func NewJoinGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *JoinGro
 	return &JoinGroupLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *JoinGroupLogic) JoinGroup(in *super.JoinGroupReq) (*super.JoinGroupResp, error) {
+func (l *JoinGroupLogic) JoinGroup(in *moe.JoinGroupReq) (*moe.JoinGroupResp, error) {
 	return communityapp.New(l.svcCtx.DB).JoinGroup(l.ctx, in)
 }

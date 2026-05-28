@@ -4,15 +4,15 @@ import (
 	"time"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 // FeedbackItemsToProto 列表转 proto。
-func FeedbackItemsToProto(rows []model.LandingFeedback) []*super.LandingFeedbackItem {
-	items := make([]*super.LandingFeedbackItem, 0, len(rows))
+func FeedbackItemsToProto(rows []model.LandingFeedback) []*moe.LandingFeedbackItem {
+	items := make([]*moe.LandingFeedbackItem, 0, len(rows))
 	for i := range rows {
 		row := rows[i]
-		items = append(items, &super.LandingFeedbackItem{
+		items = append(items, &moe.LandingFeedbackItem{
 			Id:        uint64(row.ID),
 			Email:     row.Email,
 			Category:  row.Category,

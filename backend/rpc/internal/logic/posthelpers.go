@@ -3,7 +3,7 @@ package logic
 import (
 	"backend/model"
 	postbiz "backend/internal/biz/post"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -20,6 +20,6 @@ func moderationStatusOrDefault(s string) string {
 	return postbiz.ModerationStatusOrDefault(s)
 }
 
-func buildSuperPost(post model.Post, user model.User, isLiked bool) *super.Post {
+func buildSuperPost(post model.Post, user model.User, isLiked bool) *moe.Post {
 	return postbiz.BuildProtoPost(post, user, isLiked)
 }

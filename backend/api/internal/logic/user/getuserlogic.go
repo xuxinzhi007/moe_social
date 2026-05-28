@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewGetUserLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetUserLo
 
 func (l *GetUserLogic) GetUser(req *types.GetUserReq) (resp *types.GetUserResp, err error) {
 	// 调用RPC服务
-	rpcResp, err := l.svcCtx.UserGW.GetUser(l.ctx, &super.GetUserReq{
+	rpcResp, err := l.svcCtx.UserGW.GetUser(l.ctx, &moe.GetUserReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

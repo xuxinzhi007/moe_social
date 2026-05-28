@@ -5,7 +5,7 @@ import (
 
 	userapp "backend/internal/service/user"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -24,7 +24,7 @@ func NewGetFollowersLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetF
 	}
 }
 
-func (l *GetFollowersLogic) GetFollowers(in *super.GetFollowersReq) (*super.GetFollowersResp, error) {
+func (l *GetFollowersLogic) GetFollowers(in *moe.GetFollowersReq) (*moe.GetFollowersResp, error) {
 	app := userapp.New(l.svcCtx.DB)
 	return app.GetFollowers(l.ctx, in)
 }

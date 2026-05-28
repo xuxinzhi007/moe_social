@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewAdminListMemoriesLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *AdminListMemoriesLogic) AdminListMemories(req *types.AdminListMemoriesReq) (*types.AdminListMemoriesResp, error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminListMemories(l.ctx, &super.AdminListMemoriesReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListMemories(l.ctx, &moe.AdminListMemoriesReq{
 		Page:       int32(req.Page),
 		PageSize:   int32(req.PageSize),
 		UserId:     req.UserId,

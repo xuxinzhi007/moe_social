@@ -9,7 +9,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -29,7 +29,7 @@ func NewGetUserMemoryProfilesLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *GetUserMemoryProfilesLogic) GetUserMemoryProfiles(req *types.GetUserMemoryProfilesReq) (resp *types.GetUserMemoryProfilesResp, err error) {
-	rpcResp, err := l.svcCtx.LLMGW.GetUserMemoryProfiles(l.ctx, &super.GetUserMemoryProfilesReq{
+	rpcResp, err := l.svcCtx.LLMGW.GetUserMemoryProfiles(l.ctx, &moe.GetUserMemoryProfilesReq{
 		UserId: req.UserId,
 		Limit:  int32(req.Limit),
 	})
