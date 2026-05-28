@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package comment.v1;
+
+option go_package = "backend/api/comment/v1;commentv1";
+
+// CommentApp — 域 SSOT。
+// POST /api/comments
+// POST /api/comments/:comment_id/like
+
+message PingRequest {}
+message PingReply {}
+
+service CommentApp {
+  rpc Ping(PingRequest) returns (PingReply);
+}

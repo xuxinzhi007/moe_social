@@ -1,6 +1,7 @@
-# goctl 会再生成的已知孤儿文件（handler 已改用手写/合并 Logic）。
-# prune-api-logic-shells.sh 在 make gen-api 后删除；勿在此列仍被 handler 引用的文件。
+# goctl 会再生成的已知孤儿（合并 Logic 在其它文件；handler 不引用下列 ctor）。
+# make gen-api 后由 prune-api-logic-shells.sh 删除。
 
+# user — FriendLogic（handler 用 NewFriendLogic）
 api/internal/logic/user/sendfriendrequestlogic.go
 api/internal/logic/user/acceptfriendrequestlogic.go
 api/internal/logic/user/rejectfriendrequestlogic.go
@@ -8,7 +9,25 @@ api/internal/logic/user/listfriendslogic.go
 api/internal/logic/user/listincomingfriendrequestslogic.go
 api/internal/logic/user/listoutgoingfriendrequestslogic.go
 api/internal/logic/user/getfriendstatuslogic.go
+
+# llm — handler 直调 LLMApp
 api/internal/logic/llm/configlogic.go
+
+# admin — admin_insights_logic.go
+api/internal/logic/admin/admincreatetopictaglogic.go
+api/internal/logic/admin/adminlisttopictagslogic.go
+api/internal/logic/admin/adminupdatetopictaglogic.go
+api/internal/logic/admin/admindeletetopictaglogic.go
+api/internal/logic/admin/adminlistaichatsessionslogic.go
+api/internal/logic/admin/adminlistaichatmessageslogic.go
+api/internal/logic/admin/adminexportaichatmessageslogic.go
+api/internal/logic/admin/adminanalyticsoverviewlogic.go
+api/internal/logic/admin/adminlisttagdictionarylogic.go
+api/internal/logic/admin/admincreatetagdictionarylogic.go
+api/internal/logic/admin/adminupdatetagdictionarylogic.go
+api/internal/logic/admin/admindeletetagdictionarylogic.go
+
+# admin — admin_moe_flow_logic.go
 api/internal/logic/admin/admingetmoebotflowlogic.go
 api/internal/logic/admin/adminupsertmoebotflowlogic.go
 api/internal/logic/admin/admindeletemoebotflowlogic.go

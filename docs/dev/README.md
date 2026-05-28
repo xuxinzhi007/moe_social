@@ -23,6 +23,7 @@
 | [new-api-kratos.md](./new-api-kratos.md) | **新接口开发**（域 proto，勿扩 defs） |
 | [kratos-migration-status.md](./kratos-migration-status.md) | 进度勾选 |
 | [moe-social-runtime.md](./moe-social-runtime.md) | `make moe-social` 运行时 |
+| [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md) | **存量接口迁移评估与波次** |
 | [kratos-pure-rollout.md](./kratos-pure-rollout.md) | PK 摘要（详情已归档） |
 | [../../backend/LAYOUT.md](../../backend/LAYOUT.md) | 仓库目录 |
 

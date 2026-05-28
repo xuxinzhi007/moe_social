@@ -8,6 +8,7 @@
 | 本文 | 架构、目录、命令 |
 | [kratos-migration-status.md](./kratos-migration-status.md) | 进度勾选 |
 | [new-api-kratos.md](./new-api-kratos.md) | **新接口开发**（必读） |
+| [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md) | **存量接口按域迁移** |
 | [moe-social-runtime.md](./moe-social-runtime.md) | 启动与配置 |
 | [../../backend/LAYOUT.md](../../backend/LAYOUT.md) | 仓库目录 |
 | [../../backend/scripts/README.md](../../backend/scripts/README.md) | `make gen` / `gen-api` |

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 删除 goctl rpc 与合并 logic 冲突的空壳（兼容 macOS bash 3.2）。
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 LOGIC_DIR="$ROOT/rpc/internal/logic"
 removed=0
 

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package behavior.v1;
+
+option go_package = "backend/api/behavior/v1;behaviorv1";
+
+// BehaviorApp — 域 SSOT。
+// POST /api/user/:user_id/behavior/events
+
+message PingRequest {}
+message PingReply {}
+
+service BehaviorApp {
+  rpc Ping(PingRequest) returns (PingReply);
+}

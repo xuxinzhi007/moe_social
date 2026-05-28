@@ -5,6 +5,11 @@ import (
 	"backend/rpc/pb/moe"
 )
 
+// BadgesFromRPC 成就徽章列表 proto → API types。
+func BadgesFromRPC(items []*moe.AchievementBadgeItem) []types.AchievementBadgeItem {
+	return badgesFromRPC(items)
+}
+
 func badgesFromRPC(items []*moe.AchievementBadgeItem) []types.AchievementBadgeItem {
 	if len(items) == 0 {
 		return []types.AchievementBadgeItem{}

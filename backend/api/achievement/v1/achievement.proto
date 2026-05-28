@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package achievement.v1;
+
+option go_package = "backend/api/achievement/v1;achievementv1";
+
+// AchievementApp — 域 SSOT。
+// GET  /api/user/:user_id/achievements
+// GET  /api/user/:user_id/achievements/unlocked
+// GET  /api/user/:user_id/achievements/summary
+// POST /api/user/:user_id/achievements/ensure
+
+message PingRequest {}
+message PingReply {}
+
+service AchievementApp {
+  rpc Ping(PingRequest) returns (PingReply);
+}

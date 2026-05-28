@@ -24,6 +24,28 @@
 - [x] RPC logic 薄层 + `internal/biz`（FS-10）
 - [x] 域 proto 试点：moe / vip / admin_insights / llm / ai / chat
 
+## 老接口「实现层」迁移（可开工）
+
+> `/migration` 的 **100%** 指传输/PK 铺轨，**不等于** 247 条路由已脱离 `api/internal/logic`。
+
+| 层级 | 进度 | 说明 |
+|------|------|------|
+| 传输 Kratos :8888 | **100%** | 268 路由均在 Kratos 注册 |
+| 业务 `internal/biz` + `*gw` in_process | **~100%** | logic 内已无 `SuperRpcClient` |
+| **HTTP 实现** `internal/service` + `*_compat.go` | **~13%** | **36** 条直挂 service；**227** 条仍 `wrapNativeHTTP`→goctl logic |
+| 契约域 proto | **6 个域** | moe / vip / admin_insights / llm / ai / chat |
+| goctl logic 文件 | **252** | 待按域收口 |
+
+**建议波次**（每波：域 proto 补全 → `internal/service` → `moehttp` compat → 从 `skipExactPaths` 剔除 → `make gen-http-routes`）：
+
+1. **小域** ✅：`checkin`(7) · `achievement`(4) · `behavior`(1) · `gift`(6) · `comment`(2) — 已迁 `api/moehttp/*_compat.go`
+2. **社交读**：post(9) · community(11) — 流量高、service 已有
+3. **LLM/AI**：llm(9) 已 2 条 compat，补写/推理路由
+4. **User App**：user(51) — 体量大，按子域拆（profile / vip / oauth）
+5. **Admin**：admin(86) — 已部分 compat，剩余 CRUD/审核
+
+详见 [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md)。
+
 ## 进行中
 
 - [ ] 新接口 **禁止** 扩 `api/defs`（团队纪律）

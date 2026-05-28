@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package gift.v1;
+
+option go_package = "backend/api/gift/v1;giftv1";
+
+// GiftApp — 域 SSOT。
+// GET  /api/gifts
+// GET  /api/gifts/:gift_id
+// POST /api/user/:user_id/gifts/send
+// GET  /api/user/:user_id/gifts/records
+// GET  /api/user/:user_id/gifts/purchase-orders
+// POST /api/user/:user_id/gifts/purchase
+
+message PingRequest {}
+message PingReply {}
+
+service GiftApp {
+  rpc Ping(PingRequest) returns (PingReply);
+}

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package checkin.v1;
+
+option go_package = "backend/api/checkin/v1;checkinv1";
+
+// CheckinApp — 域 SSOT（HTTP 路径与 api/defs/platform.api + admin.api 一致）。
+// POST /api/user/:user_id/check-in
+// GET  /api/user/:user_id/level
+// GET  /api/user/:user_id/check-in/status
+// GET  /api/user/:user_id/check-in/history
+// GET  /api/user/:user_id/exp/logs
+// GET  /api/admin/growth/check-in-rewards
+// PUT  /api/admin/growth/check-in-rewards/:reward_id
+
+message PingRequest {}
+message PingReply {}
+
+service CheckinApp {
+  rpc Ping(PingRequest) returns (PingReply);
+}

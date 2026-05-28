@@ -74,7 +74,7 @@ func Current() Report {
 			"production: make moe-social — kratos HTTP :8888 + kratos grpc :8080",
 			"Rollback: kratos_pure_enabled=false",
 		},
-		Docs: "docs/dev/kratos-pure-complete-migration.md",
+		Docs: "docs/dev/kratos-legacy-api-migration.md",
 	}
 }
 

@@ -13,7 +13,7 @@
 | 命令 | 用途 |
 |------|------|
 | `make gen` | 安全：域 proto pb + conf + 同步 `routes_*_gen`（**不**跑 goctl api/rpc） |
-| `make gen-api` | **仅存量**：改了 `api/defs/*.api` |
+| `make gen-api` | 改 `api/defs` 后；**自动 prune** 删除与 `admin_insights_logic.go` 等合并文件重复的空壳 |
 | `make gen-rpc` | 改了 `rpc` 契约 |
 | `make gen-all` | defs + rpc + proto 一起改 |
 | `make check` | 编译 + 核心单测 |
@@ -23,7 +23,9 @@
 | 命令 | 会覆盖 | 不会动 |
 |------|--------|--------|
 | `make gen` | `api/**/v1/*.pb.go`、`api/moehttp/routes_*_gen.go` | `internal/service`、`internal/biz`、`*_compat.go`、logic |
-| `make gen-api` | handler、types、routes.go | 已有 `*logic.go` 实现（通常） |
+| `make gen-api` | handler、types、routes.go；删 todo 重复壳 | **合并 `*_logic.go`** 中的手写实现 |
+
+合并 Logic 说明：[docs/dev/goctl-generation-hygiene.md](../docs/dev/goctl-generation-hygiene.md)
 
 若 `api/defs` 比 `routes.go` 新，`stale-api-hint` 会提示执行 `make gen-api`。
 
