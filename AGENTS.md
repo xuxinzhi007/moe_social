@@ -17,9 +17,13 @@ Frontend code is in `lib/`, organized by feature under `lib/pages/<domain>/` wit
 ## Coding Rules
 Match existing structure before adding new abstractions. Use `snake_case.dart` filenames, `PascalCase` types, `camelCase` members, and 2-space Dart indentation. Keep UI logic in pages/widgets, shared state in providers, and network or persistence code in services. For Go, keep logic in `internal/logic`, format with `gofmt`, and avoid editing generated files by hand.
 
+## Kratos migration status
+
+**Current / next snapshot**: [docs/dev/kratos-migration-status.md](docs/dev/kratos-migration-status.md) · detail: [docs/dev/kratos-legacy-api-migration.md](docs/dev/kratos-legacy-api-migration.md) §0.
+
 ## Large tasks (multi-agent)
 
-For **large, multi-domain** work (e.g. Kratos compat migration across `user` / `admin` / `platform`), do **not** run everything in one serial session. Split by domain, use **parallel subagents** (`Task` tool), and isolate branches with **git worktree**. Rules: [.cursor/rules/parallel-agent-workflow.mdc](.cursor/rules/parallel-agent-workflow.mdc).
+For **large, multi-domain** work (e.g. Kratos compat migration across `user` / `admin` / `platform`), do **not** run everything in one serial session. Split by domain, use **parallel subagents** (`Task` tool), and isolate branches with **git worktree**. Rules: [.cursor/rules/parallel-agent-workflow.mdc](.cursor/rules/parallel-agent-workflow.mdc). After merge, update the status doc numbers.
 
 ## Agent Long-term Memory
 Cross-session knowledge uses layered docs (do not bloat this file):

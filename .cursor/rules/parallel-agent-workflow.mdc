@@ -5,7 +5,8 @@ alwaysApply: true
 
 # 多 Agent 并行工作流（长期适用）
 
-> 参考：Claude Code [parallel sessions with git worktrees](https://code.claude.com/docs/en/common-workflows#run-parallel-claude-code-sessions-with-git-worktrees)
+> 参考：Claude Code [parallel sessions with git worktrees](https://code.claude.com/docs/en/common-workflows#run-parallel-claude-code-sessions-with-git-worktrees)  
+> **迁移状态（Current/Next）**：`docs/dev/kratos-migration-status.md` · 完成后更新该文件 §0 数字
 
 ## 何时必须并行
 
@@ -50,14 +51,16 @@ cd ../moe_social-feat-user  && # 仅改 user_* compat 等
 
 ## 与本仓库结合的拆分示例（Kratos compat 迁移）
 
-| 子代理 | 范围 | 避免触碰 |
-|--------|------|----------|
-| A | `admin_service_compat` → `AdminApp` | `user_*`、`platform_*` |
-| B | `user_compat` / `user_memory_compat` → App | `admin_*` |
-| C | `ai_compat` / `chat_compat` | `admin_service_compat.go` |
-| D | `platform_compat` + `docs/dev/kratos-*` | 其它 `*_compat.go` |
+**文档 SSOT**：`docs/dev/kratos-legacy-api-migration.md` §0（当前 56/263 直挂 App → 目标 263/263）。
 
-共享文件（`register_all.go`、`route_stats.go`）由 **父代理最后单点修改**，不要多个子代理同时改。
+| 子代理 | 范围 | 路由约计 | 避免触碰 |
+|--------|------|----------|----------|
+| A | `admin_service_compat` → `AdminApp` | 55 | `user_*`、`platform_*` |
+| B | `user_compat` / `user_memory_compat` → App | 57 | `admin_service_*` |
+| C | `ai_compat` / `chat_compat`（私信） | 23 | `admin_*`、B 轨文件 |
+| D | `platform_compat` → `LLMApp` 写路径 | 17 | A/B 轨文件 |
+
+共享文件（`register_all.go`、`route_stats.go`、§0 状态快照）由 **父代理最后单点修改**。
 
 ## 纪律
 

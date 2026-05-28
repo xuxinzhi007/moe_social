@@ -6,9 +6,10 @@
 | 文档 | 用途 |
 |------|------|
 | 本文 | 架构、目录、命令 |
-| [kratos-migration-status.md](./kratos-migration-status.md) | 进度勾选 |
+| [kratos-migration-status.md](./kratos-migration-status.md) | **当前 / 下一步** 勾选 |
+| [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md) | **存量迁移 SSOT**（§0 状态快照） |
+| [parallel-agent-workflow.md](../guidelines/parallel-agent-workflow.md) | 大任务多 Agent + worktree |
 | [new-api-kratos.md](./new-api-kratos.md) | **新接口开发**（必读） |
-| [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md) | **存量接口按域迁移** |
 | [moe-social-runtime.md](./moe-social-runtime.md) | 启动与配置 |
 | [../../backend/LAYOUT.md](../../backend/LAYOUT.md) | 仓库目录 |
 | [../../backend/scripts/README.md](../../backend/scripts/README.md) | `make gen` / `gen-api` |
