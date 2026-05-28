@@ -2,7 +2,7 @@
 
 
 
-.PHONY: all gen gen-legacy-goctl gen-moe-proto gen-moe-conf gen-moekratospilot-get gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto verify-moe-migration verify-moe-grpc verify-moe-gateway verify-moe-complete verify-domain-vip verify-domain-user verify-domain-misc verify-platform verify-full-site-50 verify-kratos-pilot verify-kratos-50 verify-kratos-60 verify-kratos-80 verify-kratos-100 verify-kratos-pure-50 verify-kratos-pure-80 verify-kratos-pure-90 verify-kratos-pure-100 verify-kratos-rollout-pk0 verify-kratos-rollout-pk1 verify-kratos-rollout-pk2 verify-kratos-rollout-pk12 verify-kratos-rollout-pk3 verify-kratos-rollout-pk4 verify-kratos-rollout-pk6 verify-kratos-rollout-pk7 verify-kratos-rollout-pk11 verify-kratos-rollout-pk34 verify-kratos-rollout-pk8 verify-kratos-rollout-85 verify-kratos-rollout-70 verify-kratos-rollout-regression verify-kratos-rollout-regression-full moe-social moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
+.PHONY: all gen gen-legacy-goctl gen-moe-proto gen-moe-conf gen-moekratospilot-get gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto verify-moe-migration verify-moe-grpc verify-moe-gateway verify-moe-complete verify-domain-vip verify-domain-user verify-domain-misc verify-platform verify-full-site-50 verify-kratos-pilot verify-kratos-50 verify-kratos-60 verify-kratos-80 verify-kratos-100 verify-kratos-pure-50 verify-kratos-pure-80 verify-kratos-pure-90 verify-kratos-pure-100 verify-kratos-rollout-pk0 moe-social-dev verify-kratos-rollout-pk1 verify-kratos-rollout-pk2 verify-kratos-rollout-pk12 verify-kratos-rollout-pk3 verify-kratos-rollout-pk4 verify-kratos-rollout-pk6 verify-kratos-rollout-pk7 verify-kratos-rollout-pk11 verify-kratos-rollout-pk34 verify-kratos-rollout-pk8 verify-kratos-rollout-85 verify-kratos-rollout-70 verify-kratos-rollout-regression verify-kratos-rollout-regression-full moe-social moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
 
 	deploy-agent deploy-agent-stop moe-social-stop admin \
 
@@ -82,179 +82,74 @@ api-moe-proto:
 
 	bash scripts/gen-moe-proto.sh
 
-# Kratos 混合迁移验收（编译 + 单测 + RPC 注册检查）
+# 验收门禁（目录 scripts/verify/，说明 scripts/README.md）
+verify:
+
+	bash scripts/verify/kratos-pure-100.sh
+
+verify-kratos-pure-100: verify
+
+verify-kratos-regression:
+
+	bash scripts/verify/kratos-regression.sh
+
+verify-kratos-regression-full:
+
+	bash scripts/verify/kratos-regression-full.sh
+
+verify-kratos-100: verify-kratos-regression-full
+
 verify-moe-migration:
 
-	bash scripts/verify-moe-migration.sh
+	bash scripts/verify/domain/verify-moe-migration.sh
 
 verify-moe-grpc:
 
-	bash scripts/verify-moe-grpc.sh
+	bash scripts/verify/domain/verify-moe-grpc.sh
 
 verify-moe-gateway:
 
-	bash scripts/verify-moe-gateway.sh
+	bash scripts/verify/domain/verify-moe-gateway.sh
 
 verify-moe-complete:
 
-	bash scripts/verify-moe-complete.sh
+	bash scripts/verify/domain/verify-moe-complete.sh
 
 verify-domain-vip:
 
-	bash scripts/verify-domain-vip.sh
+	bash scripts/verify/domain/verify-domain-vip.sh
 
 verify-domain-user:
 
-	bash scripts/verify-domain-user.sh
+	bash scripts/verify/domain/verify-domain-user.sh
 
 verify-domain-misc:
 
-	bash scripts/verify-domain-misc.sh
+	bash scripts/verify/domain/verify-domain-misc.sh
 
 verify-platform:
 
-	bash scripts/verify-platform.sh
+	bash scripts/verify/domain/verify-platform.sh
 
 verify-full-site-50:
 
-	bash scripts/verify-full-site-50.sh
+	bash scripts/verify/domain/verify-full-site-50.sh
 
-verify-sprint-s1-landing:
+verify-sprint-regression:
 
-	bash scripts/verify-sprint-s1-landing.sh
+	bash scripts/verify/sprint/regression.sh
 
-verify-sprint-s2-user-vip:
+verify-sprint-f100-structure:
 
-	bash scripts/verify-sprint-s2-user-vip.sh
-
-verify-sprint-s3-admin-ro:
-
-	bash scripts/verify-sprint-s3-admin-ro.sh
-
-verify-sprint-s4-misc:
-
-	bash scripts/verify-sprint-s4-misc.sh
-
-verify-sprint-s5-notify:
-
-	bash scripts/verify-sprint-s5-notify.sh
-
-verify-sprint-f70:
-
-	bash scripts/verify-sprint-f70.sh
-
-verify-sprint-f80-u1:
-
-	bash scripts/verify-sprint-f80-u1.sh
-
-verify-sprint-f80-a1:
-
-	bash scripts/verify-sprint-f80-a1.sh
-
-verify-sprint-f80-p1:
-
-	bash scripts/verify-sprint-f80-p1.sh
-
-verify-sprint-f80:
-
-	bash scripts/verify-sprint-f80.sh
-
-verify-sprint-f90:
-
-	bash scripts/verify-sprint-f90.sh
-
-verify-sprint-f92-social-write:
-
-	bash scripts/verify-sprint-f92-social-write.sh
-
-verify-sprint-f94-social-like:
-
-	bash scripts/verify-sprint-f94-social-like.sh
-
-verify-sprint-f96-social-mutate:
-
-	bash scripts/verify-sprint-f96-social-mutate.sh
-
-verify-sprint-f97-admin-announcements-write:
-
-	bash scripts/verify-sprint-f97-admin-announcements-write.sh
-
-verify-sprint-f98-achievement-pkg:
-
-	bash scripts/verify-sprint-f98-achievement-pkg.sh
-
-verify-sprint-f99-community-checkin:
-
-	bash scripts/verify-sprint-f99-community-checkin.sh
-
-verify-sprint-f100a-gift:
-
-	bash scripts/verify-sprint-f100a-gift.sh
-
-verify-sprint-f100b-llm:
-
-	bash scripts/verify-sprint-f100b-llm.sh
-
-verify-sprint-f100c-admin-gifts-ro:
-
-	bash scripts/verify-sprint-f100c-admin-gifts-ro.sh
-
-verify-sprint-f100c-admin-gifts-write:
-
-	bash scripts/verify-sprint-f100c-admin-gifts-write.sh
-
-verify-sprint-f100d-community:
-
-	bash scripts/verify-sprint-f100d-community.sh
-
-verify-sprint-f101-admin:
-
-	bash scripts/verify-sprint-f101-admin.sh
-
-verify-sprint-f103-llm-inference:
-
-	bash scripts/verify-sprint-f103-llm-inference.sh
+	bash scripts/verify/sprint/f100-structure.sh
 
 verify-sprint-f102-admin-memory:
 
 ifeq ($(OS),Windows_NT)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f102-admin-memory.ps1
 else
-	bash scripts/verify-sprint-f102-admin-memory.sh
+	bash scripts/verify/sprint/f102-admin-memory.sh
 endif
-
-verify-sprint-f101-f103:
-
-ifeq ($(OS),Windows_NT)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f101-f103.ps1
-else
-	bash scripts/verify-sprint-f101-admin.sh
-	bash scripts/verify-sprint-f103-llm-inference.sh
-endif
-
-verify-sprint-regression:
-
-	bash scripts/verify-sprint-f102-admin-memory.sh
-	bash scripts/verify-sprint-f101-admin.sh
-	bash scripts/verify-sprint-f103-llm-inference.sh
-	bash scripts/verify-sprint-f100d-community.sh
-	bash scripts/verify-sprint-f100c-admin-gifts-write.sh
-	bash scripts/verify-sprint-f100c-admin-gifts-ro.sh
-	bash scripts/verify-sprint-f100b-llm.sh
-	bash scripts/verify-sprint-f100a-gift.sh
-	bash scripts/verify-sprint-f99-community-checkin.sh
-	bash scripts/verify-sprint-f98-achievement-pkg.sh
-	bash scripts/verify-sprint-f97-admin-announcements-write.sh
-	bash scripts/verify-sprint-f96-social-mutate.sh
-	bash scripts/verify-sprint-f94-social-like.sh
-	bash scripts/verify-sprint-f92-social-write.sh
-	bash scripts/verify-sprint-f90.sh
-	bash scripts/verify-sprint-f80.sh
-	bash scripts/verify-sprint-f70.sh
-
-verify-sprint-f100-structure:
-
-	bash scripts/verify-sprint-f100-structure.sh
 
 verify-sprint-f104-admin-insights:
 
@@ -295,13 +190,12 @@ verify-gen-hygiene:
 	bash scripts/verify-gen-hygiene.sh
 
 verify-sprint-fs10-admin-rpc:
-	bash scripts/verify-sprint-fs10-admin-rpc.sh
+	bash scripts/verify/sprint/fs10-admin-rpc.sh
 	@grep -q 'newAdminApp' rpc/internal/logic/adminlistmemorieslogic.go
 	@grep -q 'newAdminApp' rpc/internal/logic/admindashboardlogic.go
 
 verify-sprint-fs10:
-	bash scripts/verify-sprint-fs10-admin-rpc.sh
-	bash scripts/verify-sprint-fs10-rpc-thin.sh
+	bash scripts/verify/sprint/fs10.sh
 	@grep -q 'newLLMApp' rpc/internal/logic/upsertusermemoryembeddinglogic.go
 	@grep -q 'newVipAdminApp' rpc/internal/logic/adminupdatevipplanlogic.go
 	@go build ./api ./rpc
@@ -311,13 +205,16 @@ fs8-split-api:
 	python3 scripts/fs8-split-super-api.py
 
 verify-sprint-fs8:
-	bash scripts/verify-sprint-fs8.sh
+	bash scripts/verify/sprint/fs8.sh
 
 verify-sprint-fs8b:
-	bash scripts/verify-sprint-fs8b.sh
+	bash scripts/verify/sprint/fs8b.sh
 
 verify-sprint-fs9:
-	bash scripts/verify-sprint-fs9.sh
+	bash scripts/verify/fs9.sh
+
+verify-sprint-fs9b:
+	bash scripts/verify/fs9b.sh
 
 verify-sprint-f113-rpc-notify:
 	@grep -q 'notifybiz.CreateInbox' rpc/internal/logic/createnotificationlogic.go
@@ -400,7 +297,12 @@ endif
 
 moe-social:
 
-	go run ./cmd/moe-social-stack -f-api api/etc/moe.yaml -f-rpc rpc/etc/moe.yaml
+	go run ./cmd/moe-social
+
+# 开发：附带 deploy-agent (:19010) + RPC debug (:19011)
+moe-social-dev:
+
+	go run ./cmd/moe-social-stack
 
 # 释放 8080/8888/19010/19011/19012（Ctrl+C 未完全退出时用）
 moe-social-stop:
@@ -415,113 +317,14 @@ moe-platform:
 
 	go run ./cmd/moe-platform
 
-verify-kratos-pilot:
-
-	bash scripts/verify-kratos-pilot.sh
-
-verify-kratos-50:
-
-	bash scripts/verify-kratos-50.sh
-
-verify-kratos-60:
-
-	bash scripts/verify-kratos-60.sh
-
-verify-kratos-80:
-
-	bash scripts/verify-kratos-80.sh
-
-verify-kratos-100:
-
-	bash scripts/verify-kratos-100.sh
-
-verify-kratos-rollout-pk0:
-
-	bash scripts/verify-kratos-rollout-pk0.sh
-
-verify-kratos-rollout-pk1:
-
-	bash scripts/verify-kratos-rollout-pk1.sh
-
-verify-kratos-rollout-pk2:
-
-	bash scripts/verify-kratos-rollout-pk2.sh
-
-verify-kratos-rollout-pk12:
-
-	bash scripts/verify-kratos-rollout-pk12.sh
-
-verify-kratos-rollout-pk3:
-
-	bash scripts/verify-kratos-rollout-pk3.sh
-
-verify-kratos-rollout-70:
-
-	bash scripts/verify-kratos-rollout-70.sh
-
-verify-kratos-rollout-pk4:
-
-	bash scripts/verify-kratos-rollout-pk4.sh
-
-verify-kratos-rollout-pk6:
-
-	bash scripts/verify-kratos-rollout-pk6.sh
-
-verify-kratos-rollout-pk7:
-
-	bash scripts/verify-kratos-rollout-pk7.sh
-
-verify-kratos-rollout-pk11:
-
-	bash scripts/verify-kratos-rollout-pk11.sh
-
 fs9b-rewrite-imports:
 
 	cd scripts/fs9b-rewrite-imports && go run ./
 
-verify-kratos-rollout-pk8:
+# 兼容旧文档中的 target 名
+verify-kratos-rollout-regression: verify-kratos-regression
 
-	bash scripts/verify-kratos-rollout-pk8.sh
-
-verify-kratos-pure-50:
-
-	bash scripts/verify-kratos-pure-50.sh
-
-verify-kratos-pure-80:
-
-	bash scripts/verify-kratos-pure-80.sh
-
-verify-kratos-pure-90:
-
-	bash scripts/verify-kratos-pure-90.sh
-
-verify-kratos-pure-100:
-
-	bash scripts/verify-kratos-pure-100.sh
-
-verify-sprint-fs9b:
-
-	bash scripts/verify-sprint-fs9b.sh
-
-verify-kratos-rollout-pk34:
-
-	bash scripts/verify-kratos-rollout-pk34.sh
-
-verify-kratos-rollout-85:
-
-	bash scripts/verify-kratos-rollout-pk34.sh
-
-verify-kratos-rollout-100:
-
-	bash scripts/verify-kratos-rollout-100.sh
-
-verify-kratos-rollout-regression:
-
-	bash scripts/verify-kratos-rollout-regression.sh
-
-verify-kratos-rollout-regression-full:
-
-	bash scripts/verify-kratos-rollout-regression-full.sh
+verify-kratos-rollout-regression-full: verify-kratos-regression-full
 
 moe-kratos:
 	@echo "DEPRECATED: use make moe-social (Kratos HTTP :8888 + gRPC :8080)."
@@ -751,7 +554,8 @@ help:
 
 	@echo --- Kratos 迁移 ---
 
-	@echo make moe-social          - Hybrid 单进程 (:8888+:8080) + deploy-agent (:19010)
+	@echo make moe-social          - 纯 Kratos 单进程 (:8888 HTTP + :8080 gRPC)，-f config/config.yaml
+	@echo make moe-social-dev      - 同上 + deploy-agent (:19010) + RPC debug (:19011)
 
 	@echo make moe-social-stop     - 释放开发端口（叠跑/Ctrl+C 残留时用）
 
@@ -761,12 +565,10 @@ help:
 	@echo make verify-kratos-rollout-pk0  - 纯 Kratos PK-0 基线
 	@echo make verify-kratos-rollout-pk1  - PK-1 域 proto 纪律
 	@echo make verify-kratos-rollout-pk2  - PK-2 Moe/VIP kratos_http 灰度
-	@echo make verify-kratos-100     - 纯 Kratos 100%% + Hybrid 回归（推荐）
-	@echo make verify-kratos-80      - 纯 Kratos 80%% 验收（Phase 0-4）
-	@echo make build-moe-social      - 生产推荐单二进制（:8888+:8080）
-	@echo make verify-kratos-60      - 纯 Kratos 60%% 验收（Phase 0-3）
-	@echo make verify-kratos-50      - 纯 Kratos 50%% 验收（Phase 0-2）
-	@echo make verify-kratos-pilot   - 同 verify-kratos-50 子集（兼容）
+	@echo make verify                - 纯 Kratos 100%% 门禁（推荐）
+	@echo make verify-kratos-regression - PK/Kratos PR 轻量回归
+	@echo make verify-kratos-regression-full - 发版：Kratos + F 全量
+	@echo make build-moe-social      - 生产单二进制（:8888+:8080）
 
 	@echo make moe-platform          - 迁移观测 (:19020)
 

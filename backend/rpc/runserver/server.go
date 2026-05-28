@@ -30,6 +30,7 @@ type Options struct {
 func Start(opts Options) (*zrpc.RpcServer, *svc.ServiceContext, *debug.Monitor, error) {
 	var c config.Config
 	conf.MustLoad(opts.ConfigFile, &c)
+	ApplyUnifiedConfigOverrides(&c)
 	ctx := svc.NewServiceContext(c, opts.Migrate)
 	bootstrap.RegisterSocialAchievementHooks()
 

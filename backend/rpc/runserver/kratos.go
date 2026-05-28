@@ -34,6 +34,7 @@ type KratosStartResult struct {
 func StartKratos(opts Options) (*KratosStartResult, *debug.Monitor, error) {
 	var c config.Config
 	conf.MustLoad(opts.ConfigFile, &c)
+	ApplyUnifiedConfigOverrides(&c)
 	svcCtx := svc.NewServiceContext(c, opts.Migrate)
 	bootstrap.RegisterSocialAchievementHooks()
 

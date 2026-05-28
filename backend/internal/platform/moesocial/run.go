@@ -19,16 +19,18 @@ import (
 	"github.com/zeromicro/go-zero/zrpc"
 )
 
-// Options 单进程启动参数。
+// Options 单进程启动参数（PK-13：UnifiedConfigFile 为 SSOT，API/RPC 片段自动解析）。
 type Options struct {
-	APIConfigFile    string
-	RPCConfigFile    string
-	Migrate          utils.MigrateOptions
-	EnableRPCMonitor bool // 本地 :19011 debug API（moe-admin RPC 监控经 Agent 转发）
+	UnifiedConfigFile string // 默认 config/config.yaml
+	APIConfigFile     string // 可选覆盖；默认 runtime.api_config_fragment
+	RPCConfigFile     string // 可选覆盖；默认 runtime.rpc_config_fragment
+	Migrate           utils.MigrateOptions
+	EnableRPCMonitor  bool // 本地 :19011 debug API（moe-admin RPC 监控经 Agent 转发）
 }
 
-// Run 在单个 OS 进程内启动 RPC + HTTP（Kratos 编排 API；RPC 先起），替代分离的 make rpc + make api。
+// Run 在单个 OS 进程内启动 RPC + HTTP（Kratos 编排；RPC 先起），生产入口 make moe-social。
 func Run(opts Options) error {
+	opts.NormalizeOptions()
 	if moewiring.KratosSuperGRPCNative() {
 		return runWithKratosGRPC(opts)
 	}
@@ -49,7 +51,7 @@ func runWithZRPC(opts Options) error {
 	// 无论是否 kratos 托管，都先启动 zrpc 再 wait（PK-7 前 wait 时 RPC 必须已监听）。
 	go func() { rpcSrv.Start() }()
 
-	if err := waitRPCListen(opts.RPCConfigFile, 15*time.Second); err != nil {
+	if err := waitRPCListen(opts.UnifiedConfigFile, opts.RPCConfigFile, 15*time.Second); err != nil {
 		rpcSrv.Stop()
 		return err
 	}
@@ -75,7 +77,7 @@ func runWithZRPC(opts Options) error {
 			rpcSrv.Stop()
 			return fmt.Errorf("api wire: %w", err)
 		}
-		port := externalHTTPPort(opts.APIConfigFile)
+		port := externalHTTPPort(opts.UnifiedConfigFile, opts.APIConfigFile)
 		pure, err := newKratosPureHTTPServer(apiRes, "0.0.0.0", port)
 		if err != nil {
 			if rpcMonitor != nil {
@@ -99,7 +101,7 @@ func runWithZRPC(opts Options) error {
 			rpcSrv.Stop()
 			return fmt.Errorf("api start: %w", err)
 		}
-		front, err := newKratosFrontServer(apiRes, "0.0.0.0", externalHTTPPort(opts.APIConfigFile))
+		front, err := newKratosFrontServer(apiRes, "0.0.0.0", externalHTTPPort(opts.UnifiedConfigFile, opts.APIConfigFile))
 		if err != nil {
 			if apiRes.Server != nil {
 				apiRes.Server.Stop()
@@ -111,7 +113,7 @@ func runWithZRPC(opts Options) error {
 			return fmt.Errorf("kratos front: %w", err)
 		}
 		httpSrv = front
-		apiAddr = fmt.Sprintf("0.0.0.0:%d", externalHTTPPort(opts.APIConfigFile))
+		apiAddr = fmt.Sprintf("0.0.0.0:%d", externalHTTPPort(opts.UnifiedConfigFile, opts.APIConfigFile))
 		log.Printf("moe-social: PK-4 enabled — Kratos HTTP %s, go-zero 127.0.0.1:%d (fallback)", apiAddr, internalPort)
 	} else if moewiring.KratosHybridHTTPFallback() {
 		apiSrv, err := apirun.Start(apiOpts)
@@ -151,13 +153,13 @@ func runWithZRPC(opts Options) error {
 		kratosOpts = append(kratosOpts, kratos.Server(httpSrv))
 	}
 	app := kratos.New(kratosOpts...)
-	rpcAddr, _ := rpcListenAddr(opts.RPCConfigFile)
+	rpcAddr, _ := rpcListenAddr(opts.UnifiedConfigFile, opts.RPCConfigFile)
 	logStartup(rpcAddr, apiAddr, false)
 	return app.Run()
 }
 
-func waitRPCListen(configFile string, timeout time.Duration) error {
-	addr, err := rpcListenAddr(configFile)
+func waitRPCListen(unified, rpcFragment string, timeout time.Duration) error {
+	addr, err := rpcListenAddr(unified, rpcFragment)
 	if err != nil {
 		return err
 	}
@@ -173,17 +175,23 @@ func waitRPCListen(configFile string, timeout time.Duration) error {
 	return fmt.Errorf("rpc not ready on %s within %s", addr, timeout)
 }
 
-func rpcListenAddr(configFile string) (string, error) {
+func rpcListenAddr(unified, rpcFragment string) (string, error) {
+	if addr := grpcListenFromUnified(unified); addr != "" {
+		return normalizeListenAddr(addr, "8080"), nil
+	}
 	var c zrpc.RpcServerConf
-	conf.MustLoad(configFile, &c)
+	conf.MustLoad(rpcFragment, &c)
 	return normalizeListenAddr(c.ListenOn, "8080"), nil
 }
 
-func externalHTTPPort(configFile string) int {
+func externalHTTPPort(unified, apiFragment string) int {
+	if p := httpPortFromUnified(unified); p > 0 {
+		return p
+	}
 	var c struct {
 		Port int `json:",optional"`
 	}
-	conf.MustLoad(configFile, &c)
+	conf.MustLoad(apiFragment, &c)
 	if c.Port <= 0 {
 		return 8888
 	}

@@ -1,3 +1,4 @@
+# PK-13 结构片段（SSOT：config/config.yaml）。改端口/鉴权/LLM 请改 config.yaml。
 Name: Super
 Host: 0.0.0.0
 Port: 8888

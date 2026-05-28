@@ -10,3 +10,5 @@ cd backend && make gen-moe-conf
 ```
 
 加载：`internal/platform/moeconf.LoadBootstrap()`（映射 `config/config.yaml`）。
+
+PK-13：`make moe-social` 默认 `-f config/config.yaml`；`runtime.*` 为 HTTP/gRPC 端口 SSOT；`api/etc/moe.yaml` 与 `rpc/etc/moe.yaml` 为结构片段。

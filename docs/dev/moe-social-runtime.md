@@ -22,7 +22,8 @@
 
 ```bash
 cd backend
-make moe-social    # 入口：cmd/moe-social-stack
+make moe-social    # 入口：cmd/moe-social（-f config/config.yaml）
+make moe-social-dev  # 开发：cmd/moe-social-stack（+ deploy-agent）
 ```
 
 等价于（简化）：
