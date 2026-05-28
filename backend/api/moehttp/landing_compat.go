@@ -7,8 +7,8 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	landingv1 "backend/api/landing/v1"
 	landingapp "backend/internal/service/landing"
-	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
@@ -44,7 +44,7 @@ func landingSubmit(app *landingapp.AppService) func(khttp.Context) error {
 			source = "official-site"
 		}
 		clientIP := common.ClientIPFromRequest(ctx.Request())
-		_, err := app.Submit(ctx, &moe.SubmitLandingFeedbackReq{
+		_, err := app.Submit(ctx, &landingv1.SubmitLandingFeedbackRequest{
 			Email:     strings.TrimSpace(req.Email),
 			Category:  strings.TrimSpace(req.Category),
 			Content:   req.Content,
@@ -84,7 +84,7 @@ func landingList(app *landingapp.AppService, requireAdmin bool) func(khttp.Conte
 		if pageSize <= 0 {
 			pageSize = 20
 		}
-		rpcResp, err := app.List(ctx, &moe.ListLandingFeedbackReq{
+		rpcResp, err := app.List(ctx, &landingv1.ListLandingFeedbackRequest{
 			Page:     int32(page),
 			PageSize: int32(pageSize),
 			Category: strings.TrimSpace(req.Category),

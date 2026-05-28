@@ -12,6 +12,8 @@ import (
 	llmbiz "backend/internal/biz/llm"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	aiv1 "backend/api/ai/v1"
+	llmv1 "backend/api/llm/v1"
 	aiapp "backend/internal/service/ai"
 	llmapp "backend/internal/service/llm"
 	"backend/rpc/pb/moe"
@@ -119,7 +121,7 @@ func aiListPublicAgents(app *aiapp.AppService) func(khttp.Context) error {
 		if limit <= 0 {
 			limit = 50
 		}
-		resp, err := app.ListPublicAiAgents(ctx, &moe.ListPublicAiAgentsReq{Limit: limit})
+		resp, err := app.ListPublicAiAgents(ctx, aiv1.ListPublicAiAgentsReqFromMoe(&moe.ListPublicAiAgentsReq{Limit: limit}))
 		if err != nil {
 			return err
 		}
@@ -270,9 +272,8 @@ func aiGetUserConfig(app *llmapp.AppService) func(khttp.Context) error {
 		if err != nil {
 			return err
 		}
-		resp, err := app.GetAiUserConfig(ctx, &moe.GetAiUserConfigReq{
-			UserId: strconv.FormatUint(uint64(userID), 10),
-		})
+		cfgReq := llmv1.GetAiUserConfigReqFromMoe(&moe.GetAiUserConfigReq{UserId: strconv.FormatUint(uint64(userID), 10)})
+		resp, err := app.GetAiUserConfig(ctx, cfgReq)
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AiUserConfigResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -311,12 +312,13 @@ func aiUpsertUserConfig(app *llmapp.AppService) func(khttp.Context) error {
 			}
 			preferencesJSON = string(raw)
 		}
-		resp, rpcErr := app.UpsertAiUserConfig(ctx, &moe.UpsertAiUserConfigReq{
+		upsertCfg := llmv1.UpsertAiUserConfigReqFromMoe(&moe.UpsertAiUserConfigReq{
 			UserId:          strconv.FormatUint(uint64(userID), 10),
 			UserPersona:     req.UserPersona,
 			HasUserPersona:  req.HasUserPersona,
 			PreferencesJson: preferencesJSON,
 		})
+		resp, rpcErr := app.UpsertAiUserConfig(ctx, upsertCfg)
 		if rpcErr != nil {
 			return ctx.JSON(http.StatusOK, types.AiUserConfigResp{BaseResp: common.HandleRPCError(rpcErr, "")})
 		}
@@ -368,14 +370,16 @@ func aiPutAiMemorySettings(app *llmapp.AppService) func(khttp.Context) error {
 		}
 		uid := strconv.FormatUint(uint64(userID), 10)
 		existing := map[string]interface{}{}
-		if cur, getErr := app.GetAiUserConfig(ctx, &moe.GetAiUserConfigReq{UserId: uid}); getErr == nil && cur != nil {
+		cfgReq := llmv1.GetAiUserConfigReqFromMoe(&moe.GetAiUserConfigReq{UserId: uid})
+		if cur, getErr := app.GetAiUserConfig(ctx, cfgReq); getErr == nil && cur != nil {
 			existing = llmbiz.DecodePreferencesJSON(cur.GetPreferencesJson())
 		}
 		prefsJSON := llmbiz.MergeMemoryAutoLearnPref(existing, req.AutoLearn)
-		if _, rpcErr := app.UpsertAiUserConfig(ctx, &moe.UpsertAiUserConfigReq{
+		upsertReq := llmv1.UpsertAiUserConfigReqFromMoe(&moe.UpsertAiUserConfigReq{
 			UserId:          uid,
 			PreferencesJson: prefsJSON,
-		}); rpcErr != nil {
+		})
+		if _, rpcErr := app.UpsertAiUserConfig(ctx, upsertReq); rpcErr != nil {
 			return ctx.JSON(http.StatusOK, types.AiMemorySettingsResp{
 				BaseResp: common.HandleRPCError(rpcErr, ""),
 			})
@@ -388,9 +392,9 @@ func aiPutAiMemorySettings(app *llmapp.AppService) func(khttp.Context) error {
 }
 
 func aiListResource(ctx khttp.Context, app *aiapp.AppService, userID uint, kind string) ([]map[string]interface{}, types.BaseResp) {
-	req := &moe.ListAiResourceReq{UserId: strconv.FormatUint(uint64(userID), 10)}
+	req := aiv1.ListAiResourceReqFromMoe(&moe.ListAiResourceReq{UserId: strconv.FormatUint(uint64(userID), 10)})
 	var (
-		resp *moe.ListAiResourceResp
+		resp *aiv1.ListAiResourceResp
 		err  error
 	)
 	switch kind {
@@ -428,11 +432,11 @@ func aiUpsertResource(
 	if err != nil {
 		return types.AiAgentsResp{BaseResp: common.HandleError(fmt.Errorf("marshal resource payload: %w", err))}, nil
 	}
-	req := &moe.UpsertAiResourceReq{
+	req := aiv1.UpsertAiResourceReqFromMoe(&moe.UpsertAiResourceReq{
 		UserId:      strconv.FormatUint(uint64(userID), 10),
 		Id:          id,
 		PayloadJson: string(raw),
-	}
+	})
 	var rpcErr error
 	switch kind {
 	case "providers":
@@ -457,10 +461,10 @@ func aiDeleteResource(
 	userID uint,
 	kind, id string,
 ) (types.AiAgentsResp, error) {
-	req := &moe.DeleteAiResourceReq{
+	req := aiv1.DeleteAiResourceReqFromMoe(&moe.DeleteAiResourceReq{
 		UserId: strconv.FormatUint(uint64(userID), 10),
 		Id:     id,
-	}
+	})
 	var err error
 	switch kind {
 	case "providers":
@@ -501,7 +505,8 @@ func aiUserMemoryAutoLearnEnabled(ctx khttp.Context, app *llmapp.AppService, use
 	if app == nil || userID == "" {
 		return true
 	}
-	resp, err := app.GetAiUserConfig(ctx, &moe.GetAiUserConfigReq{UserId: userID})
+	cfgReq := llmv1.GetAiUserConfigReqFromMoe(&moe.GetAiUserConfigReq{UserId: userID})
+	resp, err := app.GetAiUserConfig(ctx, cfgReq)
 	if err != nil || resp == nil {
 		return true
 	}

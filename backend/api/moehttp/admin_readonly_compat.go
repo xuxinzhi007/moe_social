@@ -5,6 +5,7 @@ import (
 
 	"backend/api/internal/common"
 	"backend/api/internal/types"
+	adminv1 "backend/api/admin/v1"
 	adminapp "backend/internal/service/admin"
 	"backend/rpc/pb/moe"
 
@@ -24,7 +25,7 @@ func RegisterAdminReadonlyCompat(srv *khttp.Server, app *adminapp.AppService) {
 
 func adminDashboard(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
-		rpcResp, err := app.Dashboard(ctx, &moe.AdminDashboardReq{})
+		rpcResp, err := app.Dashboard(ctx, adminv1.AdminDashboardReqFromMoe(&moe.AdminDashboardReq{}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminDashboardResp{BaseResp: common.HandleError(err)})
 		}
@@ -48,7 +49,7 @@ func adminGrowthStats(app *adminapp.AppService) func(khttp.Context) error {
 		}
 		return ctx.JSON(http.StatusOK, types.AdminGetGrowthStatsResp{
 			BaseResp: common.HandleError(nil),
-			Data:     common.RpcAdminGrowthStatsToTypes(rpcResp.GetStats()),
+			Data:     common.RpcAdminGrowthStatsToTypes(adminv1.AdminGrowthStatsToMoe(rpcResp.GetStats())),
 		})
 	}
 }

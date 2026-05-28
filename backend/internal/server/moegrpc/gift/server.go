@@ -5,7 +5,6 @@ import (
 
 	giftv1 "backend/api/gift/v1"
 	giftapp "backend/internal/service/gift"
-	moerpc "backend/rpc/pb/moe"
 )
 
 // Server 实现 gift.v1.GiftService gRPC（P4-C；与 Super 并存）。
@@ -31,13 +30,7 @@ func (s *Server) GetGifts(ctx context.Context, in *giftv1.GetGiftsRequest) (*gif
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.GetGifts(ctx, &moerpc.GetGiftsReq{
-		Page: in.GetPage(), PageSize: in.GetPageSize(), ViewerUserId: in.GetViewerUserId(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &giftv1.GetGiftsReply{Gifts: giftsToProto(resp.GetGifts()), Total: resp.GetTotal()}, nil
+	return app.GetGifts(ctx, in)
 }
 
 func (s *Server) GetGift(ctx context.Context, in *giftv1.GetGiftRequest) (*giftv1.GetGiftReply, error) {
@@ -45,13 +38,7 @@ func (s *Server) GetGift(ctx context.Context, in *giftv1.GetGiftRequest) (*giftv
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.GetGift(ctx, &moerpc.GetGiftReq{GiftId: in.GetGiftId()})
-	if err != nil {
-		return nil, err
-	}
-	return &giftv1.GetGiftReply{
-		Success: resp.GetSuccess(), Message: resp.GetMessage(), Gift: giftToProto(resp.GetGift()),
-	}, nil
+	return app.GetGift(ctx, in)
 }
 
 func (s *Server) SendGift(ctx context.Context, in *giftv1.SendGiftRequest) (*giftv1.SendGiftReply, error) {
@@ -59,18 +46,7 @@ func (s *Server) SendGift(ctx context.Context, in *giftv1.SendGiftRequest) (*gif
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.SendGift(ctx, &moerpc.SendGiftReq{
-		FromUserId: in.GetFromUserId(), ToUserId: in.GetToUserId(),
-		GiftId: in.GetGiftId(), Quantity: in.GetQuantity(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &giftv1.SendGiftReply{
-		Success: resp.GetSuccess(), Message: resp.GetMessage(),
-		Record:          giftRecordToProto(resp.GetRecord()),
-		NewAchievements: achievementUnlocksToProto(resp.GetNewAchievements()),
-	}, nil
+	return app.SendGift(ctx, in)
 }
 
 func (s *Server) PurchaseGift(ctx context.Context, in *giftv1.PurchaseGiftRequest) (*giftv1.PurchaseGiftReply, error) {
@@ -78,16 +54,7 @@ func (s *Server) PurchaseGift(ctx context.Context, in *giftv1.PurchaseGiftReques
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.PurchaseGift(ctx, &moerpc.PurchaseGiftReq{
-		UserId: in.GetUserId(), GiftId: in.GetGiftId(), Quantity: in.GetQuantity(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &giftv1.PurchaseGiftReply{
-		Success: resp.GetSuccess(), Message: resp.GetMessage(), NewBalance: resp.GetNewBalance(),
-		OwnedQuantity: resp.GetOwnedQuantity(), OrderNo: resp.GetOrderNo(),
-	}, nil
+	return app.PurchaseGift(ctx, in)
 }
 
 func (s *Server) GetGiftRecords(ctx context.Context, in *giftv1.GetGiftRecordsRequest) (*giftv1.GetGiftRecordsReply, error) {
@@ -95,13 +62,13 @@ func (s *Server) GetGiftRecords(ctx context.Context, in *giftv1.GetGiftRecordsRe
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.GetGiftRecords(ctx, &moerpc.GetGiftRecordsReq{
-		UserId: in.GetUserId(), Page: in.GetPage(), PageSize: in.GetPageSize(),
-	})
+	return app.GetGiftRecords(ctx, in)
+}
+
+func (s *Server) GetGiftPurchaseOrders(ctx context.Context, in *giftv1.GetGiftPurchaseOrdersRequest) (*giftv1.GetGiftPurchaseOrdersReply, error) {
+	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
 	}
-	return &giftv1.GetGiftRecordsReply{
-		Records: giftRecordsToProto(resp.GetRecords()), Total: resp.GetTotal(),
-	}, nil
+	return app.GetGiftPurchaseOrders(ctx, in)
 }

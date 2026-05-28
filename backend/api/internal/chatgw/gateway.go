@@ -4,6 +4,7 @@ import (
 	"backend/api/internal/gwutil"
 	"context"
 
+	chatv1 "backend/api/chat/v1"
 	chatapp "backend/internal/service/chat"
 	"backend/rpc/pb/moe"
 
@@ -34,7 +35,11 @@ func (g *Gateway) Route() string {
 // SendPrivateMessage 发送私信。
 func (g *Gateway) SendPrivateMessage(ctx context.Context, in *moe.SendPrivateMessageReq, opts ...grpc.CallOption) (*moe.SendPrivateMessageResp, error) {
 	if g != nil && g.local != nil {
-		return g.local.SendPrivateMessage(ctx, in)
+		out, err := g.local.SendPrivateMessage(ctx, chatv1.SendPrivateMessageRequestFromMoe(in))
+		if err != nil {
+			return nil, err
+		}
+		return chatv1.SendPrivateMessageReplyToMoe(out), nil
 	}
 	return nil, gwutil.ErrUnavailable
 }
@@ -42,7 +47,11 @@ func (g *Gateway) SendPrivateMessage(ctx context.Context, in *moe.SendPrivateMes
 // ListPrivateMessages 私信历史。
 func (g *Gateway) ListPrivateMessages(ctx context.Context, in *moe.ListPrivateMessagesReq, opts ...grpc.CallOption) (*moe.ListPrivateMessagesResp, error) {
 	if g != nil && g.local != nil {
-		return g.local.ListPrivateMessages(ctx, in)
+		out, err := g.local.ListPrivateMessages(ctx, chatv1.ListPrivateMessagesRequestFromMoe(in))
+		if err != nil {
+			return nil, err
+		}
+		return chatv1.ListPrivateMessagesReplyToMoe(out), nil
 	}
 	return nil, gwutil.ErrUnavailable
 }
@@ -50,7 +59,11 @@ func (g *Gateway) ListPrivateMessages(ctx context.Context, in *moe.ListPrivateMe
 // ListPrivateConversations 会话列表。
 func (g *Gateway) ListPrivateConversations(ctx context.Context, in *moe.ListPrivateConversationsReq, opts ...grpc.CallOption) (*moe.ListPrivateConversationsResp, error) {
 	if g != nil && g.local != nil {
-		return g.local.ListPrivateConversations(ctx, in)
+		out, err := g.local.ListPrivateConversations(ctx, chatv1.ListPrivateConversationsRequestFromMoe(in))
+		if err != nil {
+			return nil, err
+		}
+		return chatv1.ListPrivateConversationsReplyToMoe(out), nil
 	}
 	return nil, gwutil.ErrUnavailable
 }

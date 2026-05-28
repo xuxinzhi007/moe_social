@@ -5,7 +5,6 @@ import (
 
 	notifyv1 "backend/api/notify/v1"
 	notifyapp "backend/internal/service/notify"
-	moerpc "backend/rpc/pb/moe"
 )
 
 // Server 实现 notify.v1.NotifyService gRPC（P4-C；与 Super 并存）。
@@ -31,16 +30,7 @@ func (s *Server) GetNotifications(ctx context.Context, in *notifyv1.GetNotificat
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.GetNotifications(ctx, &moerpc.GetNotificationsReq{
-		UserId: in.GetUserId(), Page: in.GetPage(), PageSize: in.GetPageSize(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &notifyv1.GetNotificationsReply{
-		Notifications: notificationsToProto(resp.GetNotifications()),
-		Total:         resp.GetTotal(),
-	}, nil
+	return app.GetNotifications(ctx, in)
 }
 
 func (s *Server) GetUnreadCount(ctx context.Context, in *notifyv1.GetUnreadCountRequest) (*notifyv1.GetUnreadCountReply, error) {
@@ -48,11 +38,7 @@ func (s *Server) GetUnreadCount(ctx context.Context, in *notifyv1.GetUnreadCount
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.GetUnreadCount(ctx, &moerpc.GetUnreadCountReq{UserId: in.GetUserId()})
-	if err != nil {
-		return nil, err
-	}
-	return &notifyv1.GetUnreadCountReply{Count: resp.GetCount()}, nil
+	return app.GetUnreadCount(ctx, in)
 }
 
 func (s *Server) ReadNotification(ctx context.Context, in *notifyv1.ReadNotificationRequest) (*notifyv1.ReadNotificationReply, error) {
@@ -60,11 +46,7 @@ func (s *Server) ReadNotification(ctx context.Context, in *notifyv1.ReadNotifica
 	if err != nil {
 		return nil, err
 	}
-	_, err = app.ReadNotification(ctx, &moerpc.ReadNotificationReq{Id: in.GetId(), UserId: in.GetUserId()})
-	if err != nil {
-		return nil, err
-	}
-	return &notifyv1.ReadNotificationReply{}, nil
+	return app.ReadNotification(ctx, in)
 }
 
 func (s *Server) ReadAllNotifications(ctx context.Context, in *notifyv1.ReadAllNotificationsRequest) (*notifyv1.ReadAllNotificationsReply, error) {
@@ -72,9 +54,5 @@ func (s *Server) ReadAllNotifications(ctx context.Context, in *notifyv1.ReadAllN
 	if err != nil {
 		return nil, err
 	}
-	_, err = app.ReadAllNotifications(ctx, &moerpc.ReadAllNotificationsReq{UserId: in.GetUserId()})
-	if err != nil {
-		return nil, err
-	}
-	return &notifyv1.ReadAllNotificationsReply{}, nil
+	return app.ReadAllNotifications(ctx, in)
 }

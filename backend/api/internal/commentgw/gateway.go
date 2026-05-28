@@ -4,6 +4,7 @@ import (
 	"backend/api/internal/gwutil"
 	"context"
 
+	commentv1 "backend/api/comment/v1"
 	commentapp "backend/internal/service/comment"
 	"backend/rpc/pb/moe"
 
@@ -32,21 +33,33 @@ func (g *Gateway) Route() string {
 
 func (g *Gateway) GetPostComments(ctx context.Context, in *moe.GetPostCommentsReq, opts ...grpc.CallOption) (*moe.GetPostCommentsResp, error) {
 	if g != nil && g.local != nil {
-		return g.local.GetPostComments(ctx, in)
+		out, err := g.local.GetPostComments(ctx, commentv1.GetPostCommentsRequestFromMoe(in))
+		if err != nil {
+			return nil, err
+		}
+		return commentv1.GetPostCommentsReplyToMoe(out), nil
 	}
 	return nil, gwutil.ErrUnavailable
 }
 
 func (g *Gateway) CreateComment(ctx context.Context, in *moe.CreateCommentReq, opts ...grpc.CallOption) (*moe.CreateCommentResp, error) {
 	if g != nil && g.local != nil {
-		return g.local.CreateComment(ctx, in)
+		out, err := g.local.CreateComment(ctx, commentv1.CreateCommentRequestFromMoe(in))
+		if err != nil {
+			return nil, err
+		}
+		return commentv1.CreateCommentReplyToMoe(out), nil
 	}
 	return nil, gwutil.ErrUnavailable
 }
 
 func (g *Gateway) LikeComment(ctx context.Context, in *moe.LikeCommentReq, opts ...grpc.CallOption) (*moe.LikeCommentResp, error) {
 	if g != nil && g.local != nil {
-		return g.local.LikeComment(ctx, in)
+		out, err := g.local.LikeComment(ctx, commentv1.LikeCommentRequestFromMoe(in))
+		if err != nil {
+			return nil, err
+		}
+		return commentv1.LikeCommentReplyToMoe(out), nil
 	}
 	return nil, gwutil.ErrUnavailable
 }

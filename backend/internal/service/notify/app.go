@@ -4,6 +4,7 @@ package notifyapp
 import (
 	"context"
 
+	notifyv1 "backend/api/notify/v1"
 	notifybiz "backend/internal/biz/notify"
 	notifydata "backend/internal/data/notify"
 	"backend/rpc/pb/moe"
@@ -22,7 +23,7 @@ func New(db *gorm.DB) *AppService {
 }
 
 // GetNotifications 通知列表。
-func (s *AppService) GetNotifications(ctx context.Context, in *moe.GetNotificationsReq) (*moe.GetNotificationsResp, error) {
+func (s *AppService) GetNotifications(ctx context.Context, in *notifyv1.GetNotificationsRequest) (*notifyv1.GetNotificationsReply, error) {
 	items, total, err := notifybiz.ListInbox(ctx, s.store, in.GetUserId(), notifybiz.InboxPage{
 		Page:     in.GetPage(),
 		PageSize: in.GetPageSize(),
@@ -30,35 +31,35 @@ func (s *AppService) GetNotifications(ctx context.Context, in *moe.GetNotificati
 	if err != nil {
 		return nil, err
 	}
-	return &moe.GetNotificationsResp{Notifications: items, Total: total}, nil
+	return &notifyv1.GetNotificationsReply{Notifications: notifyv1.NotificationsFromMoe(items), Total: total}, nil
 }
 
 // GetUnreadCount 未读数。
-func (s *AppService) GetUnreadCount(ctx context.Context, in *moe.GetUnreadCountReq) (*moe.GetUnreadCountResp, error) {
+func (s *AppService) GetUnreadCount(ctx context.Context, in *notifyv1.GetUnreadCountRequest) (*notifyv1.GetUnreadCountReply, error) {
 	count, err := notifybiz.UnreadCount(ctx, s.store, in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
-	return &moe.GetUnreadCountResp{Count: count}, nil
+	return &notifyv1.GetUnreadCountReply{Count: count}, nil
 }
 
 // ReadNotification 标记已读。
-func (s *AppService) ReadNotification(ctx context.Context, in *moe.ReadNotificationReq) (*moe.ReadNotificationResp, error) {
+func (s *AppService) ReadNotification(ctx context.Context, in *notifyv1.ReadNotificationRequest) (*notifyv1.ReadNotificationReply, error) {
 	if err := notifybiz.MarkRead(ctx, s.store, in.GetUserId(), in.GetId()); err != nil {
 		return nil, err
 	}
-	return &moe.ReadNotificationResp{}, nil
+	return &notifyv1.ReadNotificationReply{}, nil
 }
 
 // ReadAllNotifications 全部已读。
-func (s *AppService) ReadAllNotifications(ctx context.Context, in *moe.ReadAllNotificationsReq) (*moe.ReadAllNotificationsResp, error) {
+func (s *AppService) ReadAllNotifications(ctx context.Context, in *notifyv1.ReadAllNotificationsRequest) (*notifyv1.ReadAllNotificationsReply, error) {
 	if err := notifybiz.MarkAllRead(ctx, s.store, in.GetUserId()); err != nil {
 		return nil, err
 	}
-	return &moe.ReadAllNotificationsResp{}, nil
+	return &notifyv1.ReadAllNotificationsReply{}, nil
 }
 
-// CreateNotification 写入通知。
+// CreateNotification 写入通知（管理/内部；暂保留 moe 入参）。
 func (s *AppService) CreateNotification(ctx context.Context, in *moe.CreateNotificationReq) (*moe.CreateNotificationResp, error) {
 	if err := notifybiz.CreateInbox(ctx, s.store, in); err != nil {
 		return nil, err

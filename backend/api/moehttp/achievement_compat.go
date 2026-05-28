@@ -3,10 +3,10 @@ package moehttp
 import (
 	"net/http"
 
+	achievementv1 "backend/api/achievement/v1"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 	achievementapp "backend/internal/service/achievement"
-	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
@@ -35,7 +35,7 @@ func getUserAchievements(app *achievementapp.AppService) func(khttp.Context) err
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetUserAchievements(ctx, &moe.GetUserAchievementsReq{UserId: req.UserId})
+		rpcResp, err := app.GetUserAchievements(ctx, &achievementv1.GetUserAchievementsRequest{UserId: req.UserId})
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetUserAchievementsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
@@ -43,7 +43,7 @@ func getUserAchievements(app *achievementapp.AppService) func(khttp.Context) err
 		}
 		return ctx.JSON(http.StatusOK, types.GetUserAchievementsResp{
 			BaseResp: types.BaseResp{Code: 0, Message: "获取成就列表成功", Success: true},
-			Data:     achievementBadgesFromRPC(rpcResp.GetBadges()),
+			Data:     achievementBadgesFromRPC(achievementv1.BadgesToMoe(rpcResp.GetBadges())),
 		})
 	}
 }
@@ -56,7 +56,7 @@ func getUserUnlockedAchievements(app *achievementapp.AppService) func(khttp.Cont
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetUserUnlockedAchievements(ctx, &moe.GetUserUnlockedAchievementsReq{UserId: req.UserId})
+		rpcResp, err := app.GetUserUnlockedAchievements(ctx, &achievementv1.GetUserUnlockedAchievementsRequest{UserId: req.UserId})
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetUserUnlockedAchievementsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
@@ -64,7 +64,7 @@ func getUserUnlockedAchievements(app *achievementapp.AppService) func(khttp.Cont
 		}
 		return ctx.JSON(http.StatusOK, types.GetUserUnlockedAchievementsResp{
 			BaseResp: types.BaseResp{Code: 0, Message: "获取已解锁成就成功", Success: true},
-			Data:     achievementBadgesFromRPC(rpcResp.GetBadges()),
+			Data:     achievementBadgesFromRPC(achievementv1.BadgesToMoe(rpcResp.GetBadges())),
 		})
 	}
 }
@@ -77,7 +77,7 @@ func getUserAchievementSummary(app *achievementapp.AppService) func(khttp.Contex
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetUserAchievementSummary(ctx, &moe.GetUserAchievementSummaryReq{UserId: req.UserId})
+		rpcResp, err := app.GetUserAchievementSummary(ctx, &achievementv1.GetUserAchievementSummaryRequest{UserId: req.UserId})
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetUserAchievementSummaryResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
@@ -103,7 +103,7 @@ func ensureUserAchievements(app *achievementapp.AppService) func(khttp.Context) 
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.EnsureUserAchievements(ctx, &moe.EnsureUserAchievementsReq{UserId: req.UserId})
+		rpcResp, err := app.EnsureUserAchievements(ctx, &achievementv1.EnsureUserAchievementsRequest{UserId: req.UserId})
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.EnsureUserAchievementsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
@@ -112,7 +112,7 @@ func ensureUserAchievements(app *achievementapp.AppService) func(khttp.Context) 
 		return ctx.JSON(http.StatusOK, types.EnsureUserAchievementsResp{
 			BaseResp: types.BaseResp{Code: 0, Message: "成就初始化成功", Success: true},
 			Data: types.EnsureUserAchievementsData{
-				NewAchievements: achievementUnlocksFromRPC(rpcResp.GetNewAchievements()),
+				NewAchievements: achievementUnlocksFromRPC(achievementv1.UnlocksToMoe(rpcResp.GetNewAchievements())),
 			},
 		})
 	}

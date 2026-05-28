@@ -1,0 +1,175 @@
+syntax = "proto3";
+package llm.v1;
+option go_package = "backend/api/llm/v1;llmv1";
+
+// P6: extracted from rpc/defs/common.proto (28 messages)
+
+message DeleteUserMemoryReq {
+  string user_id = 1;
+  string key = 2;
+}
+
+message DeleteUserMemoryResp {
+}
+
+message GetAiUserConfigReq {
+  string user_id = 1;
+}
+
+message GetAiUserConfigResp {
+  string user_persona = 1;
+  string preferences_json = 2;
+}
+
+message GetUserMemoriesReq {
+  string user_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message GetUserMemoriesResp {
+  repeated UserMemory memories = 1;
+  int64 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  bool has_more = 5;
+}
+
+message GetUserMemoryProfilesReq {
+  string user_id = 1;
+  int32 limit = 2;
+}
+
+message GetUserMemoryProfilesResp {
+  repeated UserMemoryProfile profiles = 1;
+}
+
+message ListUserMemoryEmbeddingsReq {
+  string user_id = 1;
+}
+
+message ListUserMemoryEmbeddingsResp {
+  repeated UserMemoryEmbeddingItem items = 1;
+}
+
+message ListUserMemoryRelationsReq {
+  string user_id = 1;
+}
+
+message ListUserMemoryRelationsResp {
+  repeated UserMemoryRelationItem items = 1;
+}
+
+message RebuildUserMemoryEmbeddingsReq {
+  string user_id = 1;
+}
+
+message RebuildUserMemoryEmbeddingsResp {
+  int32 indexed = 1;
+  string provider = 2;
+  string model = 3;
+}
+
+message RecordLlmChatTurnReq {
+  uint64 user_id = 1;
+  string session_id = 2;
+  string source_msg_id = 3;
+  string model = 4;
+  string role = 5;
+  string content = 6;
+}
+
+message RecordLlmChatTurnResp {
+  bool ok = 1;
+}
+
+message SubmitUserMemoryFeedbackReq {
+  string user_id = 1;
+  string key = 2;
+  // accept | reject | correct
+  string feedback_type = 3;
+  string corrected_value = 4;
+  string reason = 5;
+}
+
+message SubmitUserMemoryFeedbackResp {
+  UserMemory memory = 1;
+}
+
+message UpsertAiUserConfigReq {
+  string user_id = 1;
+  string user_persona = 2;
+  bool has_user_persona = 3;
+  string preferences_json = 4;
+}
+
+message UpsertAiUserConfigResp {
+  string user_persona = 1;
+  string preferences_json = 2;
+}
+
+message UpsertUserMemoryEmbeddingReq {
+  string user_id = 1;
+  string memory_key = 2;
+  repeated float values = 3;
+  string provider = 4;
+  string model = 5;
+  string chunk_text = 6;
+}
+
+message UpsertUserMemoryEmbeddingResp {
+}
+
+message UpsertUserMemoryReq {
+  string user_id = 1;
+  string key = 2;
+  string value = 3;
+  string memory_type = 4;
+  double confidence = 5;
+  string source = 6;
+  string source_msg_id = 7;
+  string session_id = 8;
+}
+
+message UpsertUserMemoryResp {
+  UserMemory memory = 1;
+}
+
+message UserMemory {
+  string id = 1;
+  string user_id = 2;
+  string key = 3;
+  string value = 4;
+  string memory_type = 5;
+  double confidence = 6;
+  string source = 7;
+  string created_at = 8;
+  string updated_at = 9;
+  string source_msg_id = 10;
+  string session_id = 11;
+}
+
+message UserMemoryEmbeddingItem {
+  string memory_key = 1;
+  repeated float values = 2;
+  string provider = 3;
+  string model = 4;
+}
+
+message UserMemoryProfile {
+  string memory_type = 1;
+  string summary = 2;
+  int32 item_count = 3;
+  double confidence = 4;
+}
+
+message UserMemoryRelationItem {
+  string from_key = 1;
+  string to_key = 2;
+  string relation = 3;
+  double weight = 4;
+}
+
+service LlmChat {
+  rpc RecordLlmChatTurn(RecordLlmChatTurnReq) returns (RecordLlmChatTurnResp);
+}

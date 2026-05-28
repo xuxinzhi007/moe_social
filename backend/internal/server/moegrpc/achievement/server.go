@@ -5,7 +5,6 @@ import (
 
 	achievementv1 "backend/api/achievement/v1"
 	achievementapp "backend/internal/service/achievement"
-	moerpc "backend/rpc/pb/moe"
 )
 
 // Server 实现 achievement.v1.Achievement gRPC（P4-C；与 Super 并存）。
@@ -31,11 +30,7 @@ func (s *Server) GetUserAchievements(ctx context.Context, in *achievementv1.GetU
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.GetUserAchievements(ctx, &moerpc.GetUserAchievementsReq{UserId: in.GetUserId()})
-	if err != nil {
-		return nil, err
-	}
-	return &achievementv1.GetUserAchievementsReply{Badges: badgesToProto(resp.GetBadges())}, nil
+	return app.GetUserAchievements(ctx, in)
 }
 
 func (s *Server) GetUserUnlockedAchievements(ctx context.Context, in *achievementv1.GetUserUnlockedAchievementsRequest) (*achievementv1.GetUserUnlockedAchievementsReply, error) {
@@ -43,11 +38,7 @@ func (s *Server) GetUserUnlockedAchievements(ctx context.Context, in *achievemen
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.GetUserUnlockedAchievements(ctx, &moerpc.GetUserUnlockedAchievementsReq{UserId: in.GetUserId()})
-	if err != nil {
-		return nil, err
-	}
-	return &achievementv1.GetUserUnlockedAchievementsReply{Badges: badgesToProto(resp.GetBadges())}, nil
+	return app.GetUserUnlockedAchievements(ctx, in)
 }
 
 func (s *Server) GetUserAchievementSummary(ctx context.Context, in *achievementv1.GetUserAchievementSummaryRequest) (*achievementv1.GetUserAchievementSummaryReply, error) {
@@ -55,11 +46,7 @@ func (s *Server) GetUserAchievementSummary(ctx context.Context, in *achievementv
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.GetUserAchievementSummary(ctx, &moerpc.GetUserAchievementSummaryReq{UserId: in.GetUserId()})
-	if err != nil {
-		return nil, err
-	}
-	return &achievementv1.GetUserAchievementSummaryReply{Summary: summaryToProto(resp.GetSummary())}, nil
+	return app.GetUserAchievementSummary(ctx, in)
 }
 
 func (s *Server) EnsureUserAchievements(ctx context.Context, in *achievementv1.EnsureUserAchievementsRequest) (*achievementv1.EnsureUserAchievementsReply, error) {
@@ -67,11 +54,5 @@ func (s *Server) EnsureUserAchievements(ctx context.Context, in *achievementv1.E
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.EnsureUserAchievements(ctx, &moerpc.EnsureUserAchievementsReq{UserId: in.GetUserId()})
-	if err != nil {
-		return nil, err
-	}
-	return &achievementv1.EnsureUserAchievementsReply{
-		NewAchievements: achievementUnlocksToProto(resp.GetNewAchievements()),
-	}, nil
+	return app.EnsureUserAchievements(ctx, in)
 }

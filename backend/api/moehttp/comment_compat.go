@@ -3,11 +3,11 @@ package moehttp
 import (
 	"net/http"
 
+	commentv1 "backend/api/comment/v1"
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 	commentapp "backend/internal/service/comment"
-	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
@@ -34,7 +34,7 @@ func createComment(app *commentapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.CreateComment(ctx, &moe.CreateCommentReq{
+		rpcResp, err := app.CreateComment(ctx, &commentv1.CreateCommentRequest{
 			PostId: req.PostId, UserId: req.UserId, Content: req.Content, ParentId: req.ParentId,
 		})
 		if err != nil {
@@ -43,7 +43,7 @@ func createComment(app *commentapp.AppService) func(khttp.Context) error {
 		c := rpcResp.GetComment()
 		return ctx.JSON(http.StatusOK, types.CreateCommentResp{
 			BaseResp:        common.HandleRPCError(nil, "创建评论成功"),
-			NewAchievements: achievementUnlocksFromRPC(rpcResp.GetNewAchievements()),
+			NewAchievements: achievementUnlocksFromRPC(commentv1.AchievementUnlocksToMoe(rpcResp.GetNewAchievements())),
 			Data: types.Comment{
 				Id: c.GetId(), PostId: c.GetPostId(), UserId: c.GetUserId(),
 				UserName: c.GetUserName(), UserAvatar: c.GetUserAvatar(), Content: c.GetContent(),
@@ -62,7 +62,7 @@ func likeComment(app *commentapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.LikeComment(ctx, &moe.LikeCommentReq{
+		rpcResp, err := app.LikeComment(ctx, &commentv1.LikeCommentRequest{
 			CommentId: req.CommentId, UserId: req.UserId,
 		})
 		if err != nil {

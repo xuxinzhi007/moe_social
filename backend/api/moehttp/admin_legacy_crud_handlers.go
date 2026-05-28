@@ -11,6 +11,8 @@ import (
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 	adminbiz "backend/internal/biz/admin"
+	adminv1 "backend/api/admin/v1"
+	aiv1 "backend/api/ai/v1"
 	adminapp "backend/internal/service/admin"
 	"backend/rpc/pb/moe"
 	"backend/utils"
@@ -56,11 +58,11 @@ func adminLegacyUpdateAiAgent(svcCtx *svc.ServiceContext) func(khttp.Context) er
 				BaseResp: types.BaseResp{Success: false, Message: "AI 网关未就绪"},
 			})
 		}
-		_, err := svcCtx.AIApp.UpsertAiAgent(actx, &moe.UpsertAiResourceReq{
+		_, err := svcCtx.AIApp.UpsertAiAgent(actx, aiv1.UpsertAiResourceReqFromMoe(&moe.UpsertAiResourceReq{
 			UserId:      uid,
 			Id:          aid,
 			PayloadJson: payload,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminUpdateAiAgentResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -186,19 +188,19 @@ func adminLegacyListMemories(app *adminapp.AppService) func(khttp.Context) error
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := app.ListMemories(ctx, &moe.AdminListMemoriesReq{
+		rpcResp, err := app.ListMemories(ctx, adminv1.AdminListMemoriesReqFromMoe(&moe.AdminListMemoriesReq{
 			Page:       int32(req.Page),
 			PageSize:   int32(req.PageSize),
 			UserId:     req.UserId,
 			Keyword:    req.Keyword,
 			MemoryType: req.MemoryType,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListMemoriesResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.AdminMemoryItem, len(rpcResp.GetItems()))
 		for i, item := range rpcResp.GetItems() {
-			items[i] = common.RpcAdminMemoryToTypes(item)
+			items[i] = common.RpcAdminMemoryToTypes(adminv1.AdminMemoryItemToMoe(item))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListMemoriesResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -219,7 +221,7 @@ func adminLegacyDeleteMemory(app *adminapp.AppService, svcCtx *svc.ServiceContex
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		_, err := app.DeleteMemory(actx, &moe.AdminDeleteMemoryReq{MemoryId: req.MemoryId})
+		_, err := app.DeleteMemory(actx, adminv1.AdminDeleteMemoryReqFromMoe(&moe.AdminDeleteMemoryReq{MemoryId: req.MemoryId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminDeleteMemoryResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -236,13 +238,13 @@ func adminLegacyGetMemoryStats(app *adminapp.AppService) func(khttp.Context) err
 		if _, br := legacyAdminActx(ctx); br != nil {
 			return ctx.JSON(http.StatusOK, types.AdminGetMemoryStatsResp{BaseResp: *br})
 		}
-		rpcResp, err := app.GetMemoryStats(ctx, &moe.AdminGetMemoryStatsReq{})
+		rpcResp, err := app.GetMemoryStats(ctx, adminv1.AdminGetMemoryStatsReqFromMoe(&moe.AdminGetMemoryStatsReq{}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminGetMemoryStatsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.AdminGetMemoryStatsResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
-			Data:     common.RpcAdminMemoryStatsToTypes(rpcResp.GetStats()),
+			Data:     common.RpcAdminMemoryStatsToTypes(adminv1.AdminMemoryStatsToMoe(rpcResp.GetStats())),
 		})
 	}
 }
@@ -252,13 +254,13 @@ func adminLegacyListMenus(app *adminapp.AppService) func(khttp.Context) error {
 		if _, br := legacyAdminActx(ctx); br != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListMenusResp{BaseResp: *br})
 		}
-		rpcResp, err := app.ListMenus(ctx, &moe.AdminListMenusReq{})
+		rpcResp, err := app.ListMenus(ctx, adminv1.AdminListMenusReqFromMoe(&moe.AdminListMenusReq{}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminListMenusResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		items := make([]types.AdminMenuItem, len(rpcResp.GetItems()))
 		for i, item := range rpcResp.GetItems() {
-			items[i] = common.RpcAdminMenuToTypes(item)
+			items[i] = common.RpcAdminMenuToTypes(adminv1.AdminMenuItemToMoe(item))
 		}
 		return ctx.JSON(http.StatusOK, types.AdminListMenusResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
@@ -279,7 +281,7 @@ func adminLegacyUpsertMenu(app *adminapp.AppService, svcCtx *svc.ServiceContext)
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		rpcResp, err := app.UpsertMenu(actx, &moe.AdminUpsertMenuReq{
+		rpcResp, err := app.UpsertMenu(actx, adminv1.AdminUpsertMenuReqFromMoe(&moe.AdminUpsertMenuReq{
 			Key:          req.Key,
 			Kind:         req.Kind,
 			ParentKey:    req.ParentKey,
@@ -294,13 +296,13 @@ func adminLegacyUpsertMenu(app *adminapp.AppService, svcCtx *svc.ServiceContext)
 			End:          req.End,
 			ExternalHref: req.ExternalHref,
 			Enabled:      req.Enabled,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminUpsertMenuResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		resp := types.AdminUpsertMenuResp{
 			BaseResp: common.HandleRPCError(nil, "保存成功"),
-			Data:     common.RpcAdminMenuToTypes(rpcResp.GetMenu()),
+			Data:     common.RpcAdminMenuToTypes(adminv1.AdminMenuItemToMoe(rpcResp.GetMenu())),
 		}
 		if resp.BaseResp.Success {
 			common.TryRecordAdminAudit(actx, svcCtx, "upsert", "admin_menu", req.Key, "保存侧栏菜单")
@@ -321,7 +323,7 @@ func adminLegacyDeleteMenu(app *adminapp.AppService, svcCtx *svc.ServiceContext)
 				Code: -1, Message: err.Error(), Success: false,
 			})
 		}
-		_, err := app.DeleteMenu(actx, &moe.AdminDeleteMenuReq{MenuKey: req.MenuKey})
+		_, err := app.DeleteMenu(actx, adminv1.AdminDeleteMenuReqFromMoe(&moe.AdminDeleteMenuReq{MenuKey: req.MenuKey}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminDeleteMenuResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -339,7 +341,7 @@ func adminLegacyBootstrapMenus(app *adminapp.AppService, svcCtx *svc.ServiceCont
 		if br != nil {
 			return ctx.JSON(http.StatusOK, types.AdminBootstrapMenusResp{BaseResp: *br})
 		}
-		rpcResp, err := app.BootstrapMenus(actx, &moe.AdminBootstrapMenusReq{})
+		rpcResp, err := app.BootstrapMenus(actx, adminv1.AdminBootstrapMenusReqFromMoe(&moe.AdminBootstrapMenusReq{}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminBootstrapMenusResp{BaseResp: common.HandleRPCError(err, "")})
 		}

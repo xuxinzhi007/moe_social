@@ -4,7 +4,7 @@ package comment.v1;
 
 option go_package = "backend/api/comment/v1;commentv1";
 
-// Comment — 域 gRPC SSOT（P4-C；与 Super 并存）。
+// Comment — 域 HTTP/gRPC 契约 SSOT（P6-0）。
 // HTTP: GET /api/posts/:post_id/comments, POST /api/comments, POST like
 
 message Comment {

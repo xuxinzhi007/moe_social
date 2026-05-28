@@ -1,14 +1,13 @@
 package moehttp
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 
+	behaviorv1 "backend/api/behavior/v1"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 	behaviorapp "backend/internal/service/behavior"
-	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
@@ -34,33 +33,13 @@ func trackBehavior(app *behaviorapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		userID, err := strconv.ParseUint(req.UserId, 10, 64)
-		if err != nil || userID == 0 {
+		protoReq, err := behaviorHTTPToProto(&req)
+		if err != nil {
 			return ctx.JSON(http.StatusOK, types.TrackUserBehaviorEventsResp{
-				BaseResp: types.BaseResp{Code: -1, Message: "invalid user_id", Success: false},
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		events := make([]*moe.UserBehaviorEventInput, 0, len(req.Events))
-		for _, item := range req.Events {
-			paramsJSON := ""
-			if len(item.Params) > 0 {
-				if b, marshalErr := json.Marshal(item.Params); marshalErr == nil {
-					paramsJSON = string(b)
-				}
-			}
-			events = append(events, &moe.UserBehaviorEventInput{
-				Event:      item.Event,
-				Screen:     item.Screen,
-				ParamsJson: paramsJSON,
-				DurationMs: item.DurationMs,
-				SessionId:  item.SessionId,
-				ClientTsMs: item.ClientTs,
-			})
-		}
-		rpcResp, err := app.TrackEvents(ctx, &moe.TrackUserBehaviorEventsReq{
-			UserId: userID,
-			Events: events,
-		})
+		rpcResp, err := app.TrackEvents(ctx, protoReq)
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.TrackUserBehaviorEventsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
@@ -72,3 +51,36 @@ func trackBehavior(app *behaviorapp.AppService) func(khttp.Context) error {
 		})
 	}
 }
+
+func behaviorHTTPToProto(req *types.TrackUserBehaviorEventsReq) (*behaviorv1.TrackUserBehaviorEventsRequest, error) {
+	userID, err := strconv.ParseUint(req.UserId, 10, 64)
+	if err != nil || userID == 0 {
+		return nil, errInvalidUserID
+	}
+	events := make([]*behaviorv1.UserBehaviorEventItem, 0, len(req.Events))
+	for _, item := range req.Events {
+		params := item.Params
+		if params == nil {
+			params = map[string]string{}
+		}
+		events = append(events, &behaviorv1.UserBehaviorEventItem{
+			Event:      item.Event,
+			Screen:     item.Screen,
+			Params:     params,
+			DurationMs: item.DurationMs,
+			SessionId:  item.SessionId,
+			ClientTs:   item.ClientTs,
+		})
+	}
+	return &behaviorv1.TrackUserBehaviorEventsRequest{
+		UserId: userID,
+		Events: events,
+	}, nil
+}
+
+// errInvalidUserID 与历史 handler 文案一致。
+var errInvalidUserID = &behaviorInvalidUserID{}
+
+type behaviorInvalidUserID struct{}
+
+func (e *behaviorInvalidUserID) Error() string { return "invalid user_id" }

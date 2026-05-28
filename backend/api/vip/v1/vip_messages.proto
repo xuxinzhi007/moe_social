@@ -1,0 +1,203 @@
+syntax = "proto3";
+package vip.v1;
+option go_package = "backend/api/vip/v1;vipv1";
+
+// P6: extracted from rpc/defs/common.proto (29 messages)
+
+message AchievementUnlock {
+  string badge_id = 1;
+  string name = 2;
+  int32 exp_granted = 3;
+  bool level_up = 4;
+  int32 new_level = 5;
+}
+
+message CheckUserVipReq {
+  string user_id = 1;
+}
+
+message CheckUserVipResp {
+  bool is_vip = 1;
+}
+
+message CreateVipOrderReq {
+  string user_id = 1;
+  string plan_id = 2;
+}
+
+message CreateVipOrderResp {
+  VipOrder order = 1;
+  repeated AchievementUnlock new_achievements = 2;
+}
+
+message CreateVipPlanReq {
+  string name = 1;
+  string description = 2;
+  float price = 3;
+  int32 duration_days = 4;
+}
+
+message CreateVipPlanResp {
+  VipPlan plan = 1;
+}
+
+message GetUserActiveVipRecordReq {
+  string user_id = 1;
+}
+
+message GetUserActiveVipRecordResp {
+  VipRecord record = 1;
+}
+
+message GetUserVipStatusReq {
+  string user_id = 1;
+}
+
+message GetUserVipStatusResp {
+  bool is_vip = 1;
+  string expires_at = 2;
+  bool auto_renew = 3;
+}
+
+message GetVipOrdersReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetVipOrdersResp {
+  repeated VipOrder orders = 1;
+  int32 total = 2;
+}
+
+message GetVipPlanReq {
+  string plan_id = 1;
+}
+
+message GetVipPlanResp {
+  VipPlan plan = 1;
+}
+
+message GetVipPlansReq {
+}
+
+message GetVipPlansResp {
+  repeated VipPlan plans = 1;
+}
+
+message GetVipRecordsReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetVipRecordsResp {
+  repeated VipRecord records = 1;
+  int32 total = 2;
+}
+
+message SyncUserVipStatusReq {
+  string user_id = 1;
+}
+
+message SyncUserVipStatusResp {
+  bool is_vip = 1;
+  string expires_at = 2;
+}
+
+message UpdateAutoRenewReq {
+  string user_id = 1;
+  bool auto_renew = 2;
+}
+
+message UpdateAutoRenewResp {
+}
+
+message UpdateUserVipReq {
+  string user_id = 1;
+  bool is_vip = 2;
+  string vip_expires = 3;
+}
+
+message UpdateUserVipResp {
+  User user = 1;
+}
+
+message User {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string avatar = 4;
+  string signature = 5;   // 个性签名
+  string gender = 6;      // 性别
+  string birthday = 7;    // 生日
+  string created_at = 8;
+  string updated_at = 9;
+  bool is_vip = 10;
+  string vip_expires_at = 11;
+  bool auto_renew = 12;
+  float balance = 13; // 钱包余额
+  string inventory = 14;
+  string equipped_frame_id = 15;
+  string moe_no = 16;
+  // 收到他人赠送礼物累计：魅力点（与礼物标价挂钩）与面值总和（展示用）
+  int32 gift_charm = 17;
+  double received_gift_value = 18;
+  // 与 moe_no 相同，个人中心等「对外展示账号」请用本字段或 moe_no；业务主键仍为 id
+  string display_user_id = 19;
+  // 0=自动（YAML+VIP）；7 或 30 为用户在设置里自选的私信保留天数（仅影响新消息）
+  int32 message_retention_choice = 20;
+  // 绑定的企业飞书邮箱（receive_id_type=email）
+  string feishu_email = 21;
+  // 飞书 OAuth 显示名（通知卡片「操作者」会附带）
+  string feishu_name = 22;
+  // 是否已通过飞书 OAuth 绑定
+  bool feishu_bound = 23;
+  string role = 24; // App 用户角色 user | admin | super_admin
+  // 微信 OAuth 昵称
+  string wechat_nickname = 25;
+  // 是否已通过微信 OAuth 绑定
+  bool wechat_bound = 26;
+  // 社区 AI Bot 账号（由 moe_agent_runtimes 绑定）
+  bool is_bot = 27;
+  string bot_agent_key = 28;
+}
+
+message VipOrder {
+  string id = 1;
+  string user_id = 2;
+  string plan_id = 3;
+  string plan_name = 4;
+  float amount = 5;
+  string status = 6;
+  string created_at = 7;
+  string paid_at = 8;
+  string order_no = 9;
+}
+
+message VipPlan {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  float price = 4;
+  int32 duration_days = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+message VipRecord {
+  string id = 1;
+  string user_id = 2;
+  string plan_id = 3;
+  string plan_name = 4;
+  string start_at = 5;
+  string end_at = 6;
+  string status = 7;
+  string created_at = 8;
+}
+
+service VipService {
+  rpc GetVipRecords(GetVipRecordsReq) returns (GetVipRecordsResp);
+  rpc GetUserActiveVipRecord(GetUserActiveVipRecordReq) returns (GetUserActiveVipRecordResp);
+  rpc CreateVipOrder(CreateVipOrderReq) returns (CreateVipOrderResp);
+}

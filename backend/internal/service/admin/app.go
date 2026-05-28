@@ -10,6 +10,7 @@ import (
 	admindata "backend/internal/data/admin"
 	communitydata "backend/internal/data/community"
 	notifydata "backend/internal/data/notify"
+	adminv1 "backend/api/admin/v1"
 	"backend/rpc/pb/moe"
 	"backend/utils"
 
@@ -33,17 +34,21 @@ func New(db *gorm.DB) *AppService {
 }
 
 // GrowthStats 成长统计。
-func (s *AppService) GrowthStats(ctx context.Context) (*moe.AdminGetGrowthStatsResp, error) {
+func (s *AppService) GrowthStats(ctx context.Context) (*adminv1.AdminGetGrowthStatsResp, error) {
 	stats, err := adminbiz.GrowthStats(ctx, s.store)
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminGetGrowthStatsResp{Stats: stats}, nil
+	return adminv1.AdminGetGrowthStatsRespFromMoe(&moe.AdminGetGrowthStatsResp{Stats: stats}), nil
 }
 
 // SchemaCatalog 数据目录。
-func (s *AppService) SchemaCatalog(ctx context.Context) (*moe.AdminGetSchemaCatalogResp, error) {
-	return adminbiz.SchemaCatalog(ctx, s.store)
+func (s *AppService) SchemaCatalog(ctx context.Context) (*adminv1.AdminGetSchemaCatalogResp, error) {
+	out, err := adminbiz.SchemaCatalog(ctx, s.store)
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminGetSchemaCatalogRespFromMoe(out), nil
 }
 
 // ReadRuntimeConfig 运行时配置视图。
@@ -57,42 +62,42 @@ func (s *AppService) RuntimeOverview(ctx context.Context) (*adminbiz.RuntimeOver
 }
 
 // BroadcastNotification 广播系统通知。
-func (s *AppService) BroadcastNotification(ctx context.Context, in *moe.AdminBroadcastNotificationReq) (*moe.AdminBroadcastNotificationResp, error) {
+func (s *AppService) BroadcastNotification(ctx context.Context, in *adminv1.AdminBroadcastNotificationReq) (*adminv1.AdminBroadcastNotificationResp, error) {
 	created, err := notifybiz.Broadcast(ctx, s.notify, in.GetTitle(), in.GetContent())
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminBroadcastNotificationResp{NotificationsCreated: created}, nil
+	return adminv1.AdminBroadcastNotificationRespFromMoe(&moe.AdminBroadcastNotificationResp{NotificationsCreated: created}), nil
 }
 
 // SendNotification 向单用户发送系统通知。
-func (s *AppService) SendNotification(ctx context.Context, in *moe.AdminSendNotificationReq) (*moe.AdminSendNotificationResp, error) {
+func (s *AppService) SendNotification(ctx context.Context, in *adminv1.AdminSendNotificationReq) (*adminv1.AdminSendNotificationResp, error) {
 	id, err := notifybiz.SendToUser(ctx, s.notify, in.GetUserId(), in.GetTitle(), in.GetContent())
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminSendNotificationResp{NotificationId: strconv.FormatUint(uint64(id), 10)}, nil
+	return adminv1.AdminSendNotificationRespFromMoe(&moe.AdminSendNotificationResp{NotificationId: strconv.FormatUint(uint64(id), 10)}), nil
 }
 
-func (s *AppService) ListAnnouncements(ctx context.Context, in *moe.AdminListAnnouncementsReq) (*moe.AdminListAnnouncementsResp, error) {
+func (s *AppService) ListAnnouncements(ctx context.Context, in *adminv1.AdminListAnnouncementsReq) (*adminv1.AdminListAnnouncementsResp, error) {
 	items, total, err := adminbiz.ListAnnouncements(ctx, s.store, adminbiz.AnnouncementPage{
 		Page: in.GetPage(), PageSize: in.GetPageSize(), Keyword: in.GetKeyword(), Status: in.GetStatus(),
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminListAnnouncementsResp{Items: items, Total: total}, nil
+	return adminv1.AdminListAnnouncementsRespFromMoe(&moe.AdminListAnnouncementsResp{Items: items, Total: total}), nil
 }
 
-func (s *AppService) GetAnnouncement(ctx context.Context, in *moe.AdminGetAnnouncementReq) (*moe.AdminGetAnnouncementResp, error) {
+func (s *AppService) GetAnnouncement(ctx context.Context, in *adminv1.AdminGetAnnouncementReq) (*adminv1.AdminGetAnnouncementResp, error) {
 	item, err := adminbiz.GetAnnouncement(ctx, s.store, in.GetAnnouncementId())
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminGetAnnouncementResp{Announcement: item}, nil
+	return adminv1.AdminGetAnnouncementRespFromMoe(&moe.AdminGetAnnouncementResp{Announcement: item}), nil
 }
 
-func (s *AppService) ListAuditLogs(ctx context.Context, in *moe.AdminListAuditLogsReq) (*moe.AdminListAuditLogsResp, error) {
+func (s *AppService) ListAuditLogs(ctx context.Context, in *adminv1.AdminListAuditLogsReq) (*adminv1.AdminListAuditLogsResp, error) {
 	items, total, err := adminbiz.ListAuditLogs(ctx, s.store, adminbiz.AuditLogFilter{
 		Page: in.GetPage(), PageSize: in.GetPageSize(), Action: in.GetAction(),
 		Resource: in.GetResource(), AdminID: in.GetAdminId(),
@@ -100,18 +105,18 @@ func (s *AppService) ListAuditLogs(ctx context.Context, in *moe.AdminListAuditLo
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminListAuditLogsResp{Items: items, Total: total}, nil
+	return adminv1.AdminListAuditLogsRespFromMoe(&moe.AdminListAuditLogsResp{Items: items, Total: total}), nil
 }
 
-func (s *AppService) CreateAnnouncement(ctx context.Context, in *moe.AdminCreateAnnouncementReq) (*moe.AdminCreateAnnouncementResp, error) {
+func (s *AppService) CreateAnnouncement(ctx context.Context, in *adminv1.AdminCreateAnnouncementReq) (*adminv1.AdminCreateAnnouncementResp, error) {
 	item, err := adminbiz.CreateAnnouncement(ctx, s.store, in.GetTitle(), in.GetContent(), in.GetCreatedBy())
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminCreateAnnouncementResp{Announcement: item}, nil
+	return adminv1.AdminCreateAnnouncementRespFromMoe(&moe.AdminCreateAnnouncementResp{Announcement: item}), nil
 }
 
-func (s *AppService) UpdateAnnouncement(ctx context.Context, in *moe.AdminUpdateAnnouncementReq) (*moe.AdminUpdateAnnouncementResp, error) {
+func (s *AppService) UpdateAnnouncement(ctx context.Context, in *adminv1.AdminUpdateAnnouncementReq) (*adminv1.AdminUpdateAnnouncementResp, error) {
 	item, err := adminbiz.UpdateAnnouncement(ctx, s.store, adminbiz.UpdateAnnouncementInput{
 		AnnouncementID: in.GetAnnouncementId(),
 		Title:          in.GetTitle(),
@@ -122,25 +127,25 @@ func (s *AppService) UpdateAnnouncement(ctx context.Context, in *moe.AdminUpdate
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminUpdateAnnouncementResp{Announcement: item}, nil
+	return adminv1.AdminUpdateAnnouncementRespFromMoe(&moe.AdminUpdateAnnouncementResp{Announcement: item}), nil
 }
 
-func (s *AppService) PublishAnnouncement(ctx context.Context, in *moe.AdminPublishAnnouncementReq) (*moe.AdminPublishAnnouncementResp, error) {
+func (s *AppService) PublishAnnouncement(ctx context.Context, in *adminv1.AdminPublishAnnouncementReq) (*adminv1.AdminPublishAnnouncementResp, error) {
 	item, err := adminbiz.PublishAnnouncement(ctx, s.store, in.GetAnnouncementId())
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminPublishAnnouncementResp{Announcement: item}, nil
+	return adminv1.AdminPublishAnnouncementRespFromMoe(&moe.AdminPublishAnnouncementResp{Announcement: item}), nil
 }
 
-func (s *AppService) DeleteAnnouncement(ctx context.Context, in *moe.AdminDeleteAnnouncementReq) (*moe.AdminDeleteAnnouncementResp, error) {
+func (s *AppService) DeleteAnnouncement(ctx context.Context, in *adminv1.AdminDeleteAnnouncementReq) (*adminv1.AdminDeleteAnnouncementResp, error) {
 	if err := adminbiz.DeleteAnnouncement(ctx, s.store, in.GetAnnouncementId()); err != nil {
 		return nil, err
 	}
-	return &moe.AdminDeleteAnnouncementResp{}, nil
+	return adminv1.AdminDeleteAnnouncementRespFromMoe(&moe.AdminDeleteAnnouncementResp{}), nil
 }
 
-func (s *AppService) AdminListGifts(ctx context.Context, in *moe.AdminListGiftsReq) (*moe.AdminListGiftsResp, error) {
+func (s *AppService) AdminListGifts(ctx context.Context, in *adminv1.AdminListGiftsReq) (*adminv1.AdminListGiftsResp, error) {
 	gifts, total, err := adminbiz.ListGifts(ctx, s.db, adminbiz.GiftPage{
 		Page: in.GetPage(), PageSize: in.GetPageSize(),
 		Keyword: in.GetKeyword(), Category: in.GetCategory(),
@@ -148,26 +153,26 @@ func (s *AppService) AdminListGifts(ctx context.Context, in *moe.AdminListGiftsR
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminListGiftsResp{Gifts: gifts, Total: total}, nil
+	return adminv1.AdminListGiftsRespFromMoe(&moe.AdminListGiftsResp{Gifts: gifts, Total: total}), nil
 }
 
-func (s *AppService) AdminGetGift(ctx context.Context, in *moe.AdminGetGiftReq) (*moe.AdminGetGiftResp, error) {
+func (s *AppService) AdminGetGift(ctx context.Context, in *adminv1.AdminGetGiftReq) (*adminv1.AdminGetGiftResp, error) {
 	gift, err := adminbiz.GetGift(ctx, s.db, in.GetGiftId())
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminGetGiftResp{Gift: gift}, nil
+	return adminv1.AdminGetGiftRespFromMoe(&moe.AdminGetGiftResp{Gift: gift}), nil
 }
 
-func (s *AppService) AdminCreateGift(ctx context.Context, in *moe.AdminCreateGiftReq) (*moe.AdminCreateGiftResp, error) {
-	gift, err := adminbiz.CreateGift(ctx, s.db, in)
+func (s *AppService) AdminCreateGift(ctx context.Context, in *adminv1.AdminCreateGiftReq) (*adminv1.AdminCreateGiftResp, error) {
+	gift, err := adminbiz.CreateGift(ctx, s.db, adminv1.AdminCreateGiftReqToMoe(in))
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminCreateGiftResp{Gift: gift}, nil
+	return adminv1.AdminCreateGiftRespFromMoe(&moe.AdminCreateGiftResp{Gift: gift}), nil
 }
 
-func (s *AppService) AdminUpdateGift(ctx context.Context, in *moe.AdminUpdateGiftReq) (*moe.AdminUpdateGiftResp, error) {
+func (s *AppService) AdminUpdateGift(ctx context.Context, in *adminv1.AdminUpdateGiftReq) (*adminv1.AdminUpdateGiftResp, error) {
 	gift, err := adminbiz.UpdateGift(ctx, s.db, adminbiz.UpdateGiftInput{
 		GiftIDRaw:         in.GetGiftId(),
 		Name:              in.GetName(),
@@ -186,54 +191,54 @@ func (s *AppService) AdminUpdateGift(ctx context.Context, in *moe.AdminUpdateGif
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminUpdateGiftResp{Gift: gift}, nil
+	return adminv1.AdminUpdateGiftRespFromMoe(&moe.AdminUpdateGiftResp{Gift: gift}), nil
 }
 
-func (s *AppService) AdminDeleteGift(ctx context.Context, in *moe.AdminDeleteGiftReq) (*moe.AdminDeleteGiftResp, error) {
+func (s *AppService) AdminDeleteGift(ctx context.Context, in *adminv1.AdminDeleteGiftReq) (*adminv1.AdminDeleteGiftResp, error) {
 	if err := adminbiz.DeleteGift(ctx, s.db, in.GetGiftId()); err != nil {
 		return nil, err
 	}
-	return &moe.AdminDeleteGiftResp{}, nil
+	return adminv1.AdminDeleteGiftRespFromMoe(&moe.AdminDeleteGiftResp{}), nil
 }
 
-func (s *AppService) AdminBootstrapGifts(ctx context.Context, in *moe.AdminBootstrapGiftsReq) (*moe.AdminBootstrapGiftsResp, error) {
+func (s *AppService) AdminBootstrapGifts(ctx context.Context, in *adminv1.AdminBootstrapGiftsReq) (*adminv1.AdminBootstrapGiftsResp, error) {
 	_ = in
 	created, err := adminbiz.BootstrapGifts(ctx, s.db)
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminBootstrapGiftsResp{Created: created}, nil
+	return adminv1.AdminBootstrapGiftsRespFromMoe(&moe.AdminBootstrapGiftsResp{Created: created}), nil
 }
 
-func (s *AppService) AdminDedupeGifts(ctx context.Context, in *moe.AdminDedupeGiftsReq) (*moe.AdminDedupeGiftsResp, error) {
+func (s *AppService) AdminDedupeGifts(ctx context.Context, in *adminv1.AdminDedupeGiftsReq) (*adminv1.AdminDedupeGiftsResp, error) {
 	_ = in
 	removed, err := adminbiz.DeduplicateGiftsByName(ctx, s.db)
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminDedupeGiftsResp{Removed: removed}, nil
+	return adminv1.AdminDedupeGiftsRespFromMoe(&moe.AdminDedupeGiftsResp{Removed: removed}), nil
 }
 
-func (s *AppService) AdminBootstrapTopicTags(ctx context.Context, in *moe.AdminBootstrapTopicTagsReq) (*moe.AdminBootstrapTopicTagsResp, error) {
+func (s *AppService) AdminBootstrapTopicTags(ctx context.Context, in *adminv1.AdminBootstrapTopicTagsReq) (*adminv1.AdminBootstrapTopicTagsResp, error) {
 	_ = in
 	created, err := adminbiz.BootstrapTopicTags(ctx, s.db)
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminBootstrapTopicTagsResp{Created: created}, nil
+	return adminv1.AdminBootstrapTopicTagsRespFromMoe(&moe.AdminBootstrapTopicTagsResp{Created: created}), nil
 }
 
-func (s *AppService) ListUsers(ctx context.Context, in *moe.AdminListUsersReq) (*moe.AdminListUsersResp, error) {
+func (s *AppService) ListUsers(ctx context.Context, in *adminv1.AdminListUsersReq) (*adminv1.AdminListUsersResp, error) {
 	users, total, err := adminbiz.ListUsers(ctx, s.store, adminbiz.UserPage{
 		Page: in.GetPage(), PageSize: in.GetPageSize(), Keyword: in.GetKeyword(),
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminListUsersResp{Users: users, Total: total}, nil
+	return adminv1.AdminListUsersRespFromMoe(&moe.AdminListUsersResp{Users: users, Total: total}), nil
 }
 
-func (s *AppService) ListAchievements(ctx context.Context, in *moe.AdminListAchievementsReq) (*moe.AdminListAchievementsResp, error) {
+func (s *AppService) ListAchievements(ctx context.Context, in *adminv1.AdminListAchievementsReq) (*adminv1.AdminListAchievementsResp, error) {
 	items, total, err := adminbiz.ListAchievements(ctx, s.db, adminbiz.AchievementPage{
 		Page: in.GetPage(), PageSize: in.GetPageSize(),
 		Keyword: in.GetKeyword(), Category: in.GetCategory(),
@@ -241,19 +246,19 @@ func (s *AppService) ListAchievements(ctx context.Context, in *moe.AdminListAchi
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminListAchievementsResp{Items: items, Total: total}, nil
+	return adminv1.AdminListAchievementsRespFromMoe(&moe.AdminListAchievementsResp{Items: items, Total: total}), nil
 }
 
-func (s *AppService) ListMenus(ctx context.Context, in *moe.AdminListMenusReq) (*moe.AdminListMenusResp, error) {
+func (s *AppService) ListMenus(ctx context.Context, in *adminv1.AdminListMenusReq) (*adminv1.AdminListMenusResp, error) {
 	_ = in
 	items, err := adminbiz.ListMenus(ctx, s.store)
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminListMenusResp{Items: items}, nil
+	return adminv1.AdminListMenusRespFromMoe(&moe.AdminListMenusResp{Items: items}), nil
 }
 
-func (s *AppService) UpdateUser(ctx context.Context, in *moe.AdminUpdateUserReq) (*moe.AdminUpdateUserResp, error) {
+func (s *AppService) UpdateUser(ctx context.Context, in *adminv1.AdminUpdateUserReq) (*adminv1.AdminUpdateUserResp, error) {
 	user, err := adminbiz.UpdateUser(ctx, s.store, adminbiz.UpdateUserInput{
 		UserID:          uint(in.GetUserId()),
 		Role:            in.GetRole(),
@@ -267,10 +272,10 @@ func (s *AppService) UpdateUser(ctx context.Context, in *moe.AdminUpdateUserReq)
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminUpdateUserResp{User: user}, nil
+	return adminv1.AdminUpdateUserRespFromMoe(&moe.AdminUpdateUserResp{User: user}), nil
 }
 
-func (s *AppService) UpdateAchievement(ctx context.Context, in *moe.AdminUpdateAchievementReq) (*moe.AdminUpdateAchievementResp, error) {
+func (s *AppService) UpdateAchievement(ctx context.Context, in *adminv1.AdminUpdateAchievementReq) (*adminv1.AdminUpdateAchievementResp, error) {
 	item, err := adminbiz.UpdateAchievement(ctx, s.db, adminbiz.UpdateAchievementInput{
 		ID: in.GetId(), Name: in.GetName(), Description: in.GetDescription(),
 		Enabled: in.GetEnabled(), ExpReward: in.GetExpReward(), SortOrder: in.GetSortOrder(),
@@ -281,10 +286,10 @@ func (s *AppService) UpdateAchievement(ctx context.Context, in *moe.AdminUpdateA
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminUpdateAchievementResp{Item: item}, nil
+	return adminv1.AdminUpdateAchievementRespFromMoe(&moe.AdminUpdateAchievementResp{Item: item}), nil
 }
 
-func (s *AppService) UpsertMenu(ctx context.Context, in *moe.AdminUpsertMenuReq) (*moe.AdminUpsertMenuResp, error) {
+func (s *AppService) UpsertMenu(ctx context.Context, in *adminv1.AdminUpsertMenuReq) (*adminv1.AdminUpsertMenuResp, error) {
 	item, err := adminbiz.UpsertMenu(ctx, s.store, adminbiz.UpsertMenuInput{
 		Key: in.GetKey(), Kind: in.GetKind(), ParentKey: in.GetParentKey(), Path: in.GetPath(),
 		Label: in.GetLabel(), Icon: in.GetIcon(), Caption: in.GetCaption(), Status: in.GetStatus(),
@@ -294,212 +299,384 @@ func (s *AppService) UpsertMenu(ctx context.Context, in *moe.AdminUpsertMenuReq)
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminUpsertMenuResp{Menu: item}, nil
+	return adminv1.AdminUpsertMenuRespFromMoe(&moe.AdminUpsertMenuResp{Menu: item}), nil
 }
 
-func (s *AppService) DeleteMenu(ctx context.Context, in *moe.AdminDeleteMenuReq) (*moe.AdminDeleteMenuResp, error) {
+func (s *AppService) DeleteMenu(ctx context.Context, in *adminv1.AdminDeleteMenuReq) (*adminv1.AdminDeleteMenuResp, error) {
 	if err := adminbiz.DeleteMenu(ctx, s.store, in.GetMenuKey()); err != nil {
 		return nil, err
 	}
-	return &moe.AdminDeleteMenuResp{}, nil
+	return adminv1.AdminDeleteMenuRespFromMoe(&moe.AdminDeleteMenuResp{}), nil
 }
 
-func (s *AppService) BootstrapAchievements(ctx context.Context, in *moe.AdminBootstrapAchievementsReq) (*moe.AdminBootstrapAchievementsResp, error) {
+func (s *AppService) BootstrapAchievements(ctx context.Context, in *adminv1.AdminBootstrapAchievementsReq) (*adminv1.AdminBootstrapAchievementsResp, error) {
 	_ = in
 	created, err := adminbiz.BootstrapAchievements(ctx, s.db)
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminBootstrapAchievementsResp{Created: created}, nil
+	return adminv1.AdminBootstrapAchievementsRespFromMoe(&moe.AdminBootstrapAchievementsResp{Created: created}), nil
 }
 
-func (s *AppService) BootstrapMenus(ctx context.Context, in *moe.AdminBootstrapMenusReq) (*moe.AdminBootstrapMenusResp, error) {
+func (s *AppService) BootstrapMenus(ctx context.Context, in *adminv1.AdminBootstrapMenusReq) (*adminv1.AdminBootstrapMenusResp, error) {
 	_ = in
 	created, err := adminbiz.BootstrapMenus(ctx, s.store)
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminBootstrapMenusResp{Created: created}, nil
+	return adminv1.AdminBootstrapMenusRespFromMoe(&moe.AdminBootstrapMenusResp{Created: created}), nil
 }
 
-func (s *AppService) ListAiChatSessions(ctx context.Context, in *moe.AdminListAiChatSessionsReq) (*moe.AdminListAiChatSessionsResp, error) {
-	return adminbiz.AdminListAiChatSessions(ctx, s.store, in)
+func (s *AppService) ListAiChatSessions(ctx context.Context, in *adminv1.AdminListAiChatSessionsReq) (*adminv1.AdminListAiChatSessionsResp, error) {
+	out, err := adminbiz.AdminListAiChatSessions(ctx, s.store, adminv1.AdminListAiChatSessionsReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminListAiChatSessionsRespFromMoe(out), nil
 }
 
-func (s *AppService) ListAiChatMessages(ctx context.Context, in *moe.AdminListAiChatMessagesReq) (*moe.AdminListAiChatMessagesResp, error) {
-	return adminbiz.AdminListAiChatMessages(ctx, s.store, in)
+func (s *AppService) ListAiChatMessages(ctx context.Context, in *adminv1.AdminListAiChatMessagesReq) (*adminv1.AdminListAiChatMessagesResp, error) {
+	out, err := adminbiz.AdminListAiChatMessages(ctx, s.store, adminv1.AdminListAiChatMessagesReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminListAiChatMessagesRespFromMoe(out), nil
 }
 
-func (s *AppService) ExportAiChatMessages(ctx context.Context, in *moe.AdminExportAiChatMessagesReq) (*moe.AdminExportAiChatMessagesResp, error) {
-	return adminbiz.AdminExportAiChatMessages(ctx, s.store, in)
+func (s *AppService) ExportAiChatMessages(ctx context.Context, in *adminv1.AdminExportAiChatMessagesReq) (*adminv1.AdminExportAiChatMessagesResp, error) {
+	out, err := adminbiz.AdminExportAiChatMessages(ctx, s.store, adminv1.AdminExportAiChatMessagesReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminExportAiChatMessagesRespFromMoe(out), nil
 }
 
-func (s *AppService) AnalyticsOverview(ctx context.Context, in *moe.AdminGetMemoryStatsReq) (*moe.AdminAnalyticsOverviewResp, error) {
-	return adminbiz.AdminAnalyticsOverview(ctx, s.store, in)
+func (s *AppService) AnalyticsOverview(ctx context.Context, in *adminv1.AdminGetMemoryStatsReq) (*adminv1.AdminAnalyticsOverviewResp, error) {
+	out, err := adminbiz.AdminAnalyticsOverview(ctx, s.store, adminv1.AdminGetMemoryStatsReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminAnalyticsOverviewRespFromMoe(out), nil
 }
 
-func (s *AppService) ListTopicTags(ctx context.Context, in *moe.AdminListTopicTagsReq) (*moe.AdminListTopicTagsResp, error) {
-	return adminbiz.AdminListTopicTags(ctx, s.store, in)
+func (s *AppService) ListTopicTags(ctx context.Context, in *adminv1.AdminListTopicTagsReq) (*adminv1.AdminListTopicTagsResp, error) {
+	out, err := adminbiz.AdminListTopicTags(ctx, s.store, adminv1.AdminListTopicTagsReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminListTopicTagsRespFromMoe(out), nil
 }
 
-func (s *AppService) CreateTopicTag(ctx context.Context, in *moe.AdminCreateTopicTagReq) (*moe.AdminCreateTopicTagResp, error) {
-	return adminbiz.AdminCreateTopicTag(ctx, s.store, in)
+func (s *AppService) CreateTopicTag(ctx context.Context, in *adminv1.AdminCreateTopicTagReq) (*adminv1.AdminCreateTopicTagResp, error) {
+	out, err := adminbiz.AdminCreateTopicTag(ctx, s.store, adminv1.AdminCreateTopicTagReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminCreateTopicTagRespFromMoe(out), nil
 }
 
-func (s *AppService) UpdateTopicTag(ctx context.Context, in *moe.AdminUpdateTopicTagReq) (*moe.AdminUpdateTopicTagResp, error) {
-	return adminbiz.AdminUpdateTopicTag(ctx, s.store, in)
+func (s *AppService) UpdateTopicTag(ctx context.Context, in *adminv1.AdminUpdateTopicTagReq) (*adminv1.AdminUpdateTopicTagResp, error) {
+	out, err := adminbiz.AdminUpdateTopicTag(ctx, s.store, adminv1.AdminUpdateTopicTagReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminUpdateTopicTagRespFromMoe(out), nil
 }
 
-func (s *AppService) DeleteTopicTag(ctx context.Context, in *moe.AdminDeleteTopicTagReq) (*moe.AdminDeleteTopicTagResp, error) {
-	return adminbiz.AdminDeleteTopicTag(ctx, s.store, in)
+func (s *AppService) DeleteTopicTag(ctx context.Context, in *adminv1.AdminDeleteTopicTagReq) (*adminv1.AdminDeleteTopicTagResp, error) {
+	out, err := adminbiz.AdminDeleteTopicTag(ctx, s.store, adminv1.AdminDeleteTopicTagReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminDeleteTopicTagRespFromMoe(out), nil
 }
 
-func (s *AppService) ListTagDictionary(ctx context.Context, in *moe.AdminListTagDictionaryReq) (*moe.AdminListTagDictionaryResp, error) {
-	return adminbiz.AdminListTagDictionary(ctx, s.store, in)
+func (s *AppService) ListTagDictionary(ctx context.Context, in *adminv1.AdminListTagDictionaryReq) (*adminv1.AdminListTagDictionaryResp, error) {
+	out, err := adminbiz.AdminListTagDictionary(ctx, s.store, adminv1.AdminListTagDictionaryReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminListTagDictionaryRespFromMoe(out), nil
 }
 
-func (s *AppService) CreateTagDictionary(ctx context.Context, in *moe.AdminCreateTagDictionaryReq) (*moe.AdminCreateTagDictionaryResp, error) {
-	return adminbiz.AdminCreateTagDictionary(ctx, s.store, in)
+func (s *AppService) CreateTagDictionary(ctx context.Context, in *adminv1.AdminCreateTagDictionaryReq) (*adminv1.AdminCreateTagDictionaryResp, error) {
+	out, err := adminbiz.AdminCreateTagDictionary(ctx, s.store, adminv1.AdminCreateTagDictionaryReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminCreateTagDictionaryRespFromMoe(out), nil
 }
 
-func (s *AppService) UpdateTagDictionary(ctx context.Context, in *moe.AdminUpdateTagDictionaryReq) (*moe.AdminUpdateTagDictionaryResp, error) {
-	return adminbiz.AdminUpdateTagDictionary(ctx, s.store, in)
+func (s *AppService) UpdateTagDictionary(ctx context.Context, in *adminv1.AdminUpdateTagDictionaryReq) (*adminv1.AdminUpdateTagDictionaryResp, error) {
+	out, err := adminbiz.AdminUpdateTagDictionary(ctx, s.store, adminv1.AdminUpdateTagDictionaryReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminUpdateTagDictionaryRespFromMoe(out), nil
 }
 
-func (s *AppService) DeleteTagDictionary(ctx context.Context, in *moe.AdminDeleteTagDictionaryReq) (*moe.AdminDeleteTagDictionaryResp, error) {
-	return adminbiz.AdminDeleteTagDictionary(ctx, s.store, in)
+func (s *AppService) DeleteTagDictionary(ctx context.Context, in *adminv1.AdminDeleteTagDictionaryReq) (*adminv1.AdminDeleteTagDictionaryResp, error) {
+	out, err := adminbiz.AdminDeleteTagDictionary(ctx, s.store, adminv1.AdminDeleteTagDictionaryReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminDeleteTagDictionaryRespFromMoe(out), nil
 }
 
-func (s *AppService) ListAiAgents(ctx context.Context, in *moe.AdminListAiAgentsReq) (*moe.AdminListAiAgentsResp, error) {
-	return adminbiz.ListAiAgents(ctx, s.db, in)
+func (s *AppService) ListAiAgents(ctx context.Context, in *adminv1.AdminListAiAgentsReq) (*adminv1.AdminListAiAgentsResp, error) {
+	out, err := adminbiz.ListAiAgents(ctx, s.db, adminv1.AdminListAiAgentsReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminListAiAgentsRespFromMoe(out), nil
 }
 
-func (s *AppService) DeleteAiAgent(ctx context.Context, in *moe.AdminDeleteAiAgentReq) (*moe.AdminDeleteAiAgentResp, error) {
-	return adminbiz.DeleteAiAgent(ctx, s.db, in)
+func (s *AppService) DeleteAiAgent(ctx context.Context, in *adminv1.AdminDeleteAiAgentReq) (*adminv1.AdminDeleteAiAgentResp, error) {
+	out, err := adminbiz.DeleteAiAgent(ctx, s.db, adminv1.AdminDeleteAiAgentReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminDeleteAiAgentRespFromMoe(out), nil
 }
 
-func (s *AppService) ListFollows(ctx context.Context, in *moe.AdminListFollowsReq) (*moe.AdminListFollowsResp, error) {
-	return adminbiz.ListFollows(ctx, s.db, in)
+func (s *AppService) ListFollows(ctx context.Context, in *adminv1.AdminListFollowsReq) (*adminv1.AdminListFollowsResp, error) {
+	out, err := adminbiz.ListFollows(ctx, s.db, adminv1.AdminListFollowsReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminListFollowsRespFromMoe(out), nil
 }
 
-func (s *AppService) DeleteFollow(ctx context.Context, in *moe.AdminDeleteFollowReq) (*moe.AdminDeleteFollowResp, error) {
-	return adminbiz.DeleteFollow(ctx, s.db, in)
+func (s *AppService) DeleteFollow(ctx context.Context, in *adminv1.AdminDeleteFollowReq) (*adminv1.AdminDeleteFollowResp, error) {
+	out, err := adminbiz.DeleteFollow(ctx, s.db, adminv1.AdminDeleteFollowReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminDeleteFollowRespFromMoe(out), nil
 }
 
-func (s *AppService) ListPosts(ctx context.Context, in *moe.AdminListPostsReq) (*moe.AdminListPostsResp, error) {
-	return adminbiz.ListPosts(ctx, s.db, in)
+func (s *AppService) ListPosts(ctx context.Context, in *adminv1.AdminListPostsReq) (*adminv1.AdminListPostsResp, error) {
+	out, err := adminbiz.ListPosts(ctx, s.db, adminv1.AdminListPostsReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminListPostsRespFromMoe(out), nil
 }
 
-func (s *AppService) DeletePost(ctx context.Context, in *moe.AdminDeletePostReq) (*moe.AdminDeletePostResp, error) {
-	return adminbiz.DeletePost(ctx, s.db, in)
+func (s *AppService) DeletePost(ctx context.Context, in *adminv1.AdminDeletePostReq) (*adminv1.AdminDeletePostResp, error) {
+	out, err := adminbiz.DeletePost(ctx, s.db, adminv1.AdminDeletePostReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminDeletePostRespFromMoe(out), nil
 }
 
-func (s *AppService) ListComments(ctx context.Context, in *moe.AdminListCommentsReq) (*moe.AdminListCommentsResp, error) {
-	return adminbiz.ListComments(ctx, s.db, in)
+func (s *AppService) ListComments(ctx context.Context, in *adminv1.AdminListCommentsReq) (*adminv1.AdminListCommentsResp, error) {
+	out, err := adminbiz.ListComments(ctx, s.db, adminv1.AdminListCommentsReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminListCommentsRespFromMoe(out), nil
 }
 
-func (s *AppService) DeleteComment(ctx context.Context, in *moe.AdminDeleteCommentReq) (*moe.AdminDeleteCommentResp, error) {
-	return adminbiz.DeleteComment(ctx, s.db, in)
+func (s *AppService) DeleteComment(ctx context.Context, in *adminv1.AdminDeleteCommentReq) (*adminv1.AdminDeleteCommentResp, error) {
+	out, err := adminbiz.DeleteComment(ctx, s.db, adminv1.AdminDeleteCommentReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminDeleteCommentRespFromMoe(out), nil
 }
 
-func (s *AppService) ListGroups(ctx context.Context, in *moe.AdminListGroupsReq) (*moe.AdminListGroupsResp, error) {
-	return adminbiz.ListGroups(ctx, s.db, in)
+func (s *AppService) ListGroups(ctx context.Context, in *adminv1.AdminListGroupsReq) (*adminv1.AdminListGroupsResp, error) {
+	out, err := adminbiz.ListGroups(ctx, s.db, adminv1.AdminListGroupsReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminListGroupsRespFromMoe(out), nil
 }
 
-func (s *AppService) DeleteGroup(ctx context.Context, in *moe.AdminDeleteGroupReq) (*moe.AdminDeleteGroupResp, error) {
-	return adminbiz.DeleteGroup(ctx, communitydata.NewStore(s.db), in)
+func (s *AppService) DeleteGroup(ctx context.Context, in *adminv1.AdminDeleteGroupReq) (*adminv1.AdminDeleteGroupResp, error) {
+	out, err := adminbiz.DeleteGroup(ctx, communitydata.NewStore(s.db), adminv1.AdminDeleteGroupReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminDeleteGroupRespFromMoe(out), nil
 }
 
-func (s *AppService) ListFriendRequests(ctx context.Context, in *moe.AdminListFriendRequestsReq) (*moe.AdminListFriendRequestsResp, error) {
-	return adminbiz.ListFriendRequests(ctx, s.db, in)
+func (s *AppService) ListFriendRequests(ctx context.Context, in *adminv1.AdminListFriendRequestsReq) (*adminv1.AdminListFriendRequestsResp, error) {
+	out, err := adminbiz.ListFriendRequests(ctx, s.db, adminv1.AdminListFriendRequestsReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminListFriendRequestsRespFromMoe(out), nil
 }
 
-func (s *AppService) ListPostReports(ctx context.Context, in *moe.AdminListPostReportsReq) (*moe.AdminListPostReportsResp, error) {
-	return adminbiz.ListPostReports(ctx, s.db, in)
+func (s *AppService) ListPostReports(ctx context.Context, in *adminv1.AdminListPostReportsReq) (*adminv1.AdminListPostReportsResp, error) {
+	out, err := adminbiz.ListPostReports(ctx, s.db, adminv1.AdminListPostReportsReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminListPostReportsRespFromMoe(out), nil
 }
 
-func (s *AppService) ListMemories(ctx context.Context, in *moe.AdminListMemoriesReq) (*moe.AdminListMemoriesResp, error) {
-	return adminbiz.ListMemories(ctx, s.db, in)
+func (s *AppService) ListMemories(ctx context.Context, in *adminv1.AdminListMemoriesReq) (*adminv1.AdminListMemoriesResp, error) {
+	out, err := adminbiz.ListMemories(ctx, s.db, adminv1.AdminListMemoriesReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminListMemoriesRespFromMoe(out), nil
 }
 
-func (s *AppService) DeleteMemory(ctx context.Context, in *moe.AdminDeleteMemoryReq) (*moe.AdminDeleteMemoryResp, error) {
-	return adminbiz.DeleteMemory(ctx, s.db, in)
+func (s *AppService) DeleteMemory(ctx context.Context, in *adminv1.AdminDeleteMemoryReq) (*adminv1.AdminDeleteMemoryResp, error) {
+	out, err := adminbiz.DeleteMemory(ctx, s.db, adminv1.AdminDeleteMemoryReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminDeleteMemoryRespFromMoe(out), nil
 }
 
-func (s *AppService) GetMemoryStats(ctx context.Context, in *moe.AdminGetMemoryStatsReq) (*moe.AdminGetMemoryStatsResp, error) {
-	return adminbiz.GetMemoryStats(ctx, s.store, in)
+func (s *AppService) GetMemoryStats(ctx context.Context, in *adminv1.AdminGetMemoryStatsReq) (*adminv1.AdminGetMemoryStatsResp, error) {
+	out, err := adminbiz.GetMemoryStats(ctx, s.store, adminv1.AdminGetMemoryStatsReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminGetMemoryStatsRespFromMoe(out), nil
 }
 
-func (s *AppService) ListAccounts(ctx context.Context, in *moe.AdminListAccountsReq) (*moe.AdminListAccountsResp, error) {
-	return adminbiz.ListAccounts(ctx, s.db, in)
+func (s *AppService) ListAccounts(ctx context.Context, in *adminv1.AdminListAccountsReq) (*adminv1.AdminListAccountsResp, error) {
+	out, err := adminbiz.ListAccounts(ctx, s.db, adminv1.AdminListAccountsReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminListAccountsRespFromMoe(out), nil
 }
 
-func (s *AppService) CreateAccount(ctx context.Context, in *moe.AdminCreateAccountReq) (*moe.AdminCreateAccountResp, error) {
-	return adminbiz.CreateAccount(ctx, s.db, in)
+func (s *AppService) CreateAccount(ctx context.Context, in *adminv1.AdminCreateAccountReq) (*adminv1.AdminCreateAccountResp, error) {
+	out, err := adminbiz.CreateAccount(ctx, s.db, adminv1.AdminCreateAccountReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminCreateAccountRespFromMoe(out), nil
 }
 
-func (s *AppService) UpdateAccount(ctx context.Context, in *moe.AdminUpdateAccountReq) (*moe.AdminUpdateAccountResp, error) {
-	return adminbiz.UpdateAccount(ctx, s.db, in)
+func (s *AppService) UpdateAccount(ctx context.Context, in *adminv1.AdminUpdateAccountReq) (*adminv1.AdminUpdateAccountResp, error) {
+	out, err := adminbiz.UpdateAccount(ctx, s.db, adminv1.AdminUpdateAccountReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminUpdateAccountRespFromMoe(out), nil
 }
 
-func (s *AppService) DeleteAccount(ctx context.Context, in *moe.AdminDeleteAccountReq) (*moe.AdminDeleteAccountResp, error) {
-	return adminbiz.DeleteAccount(ctx, s.db, in)
+func (s *AppService) DeleteAccount(ctx context.Context, in *adminv1.AdminDeleteAccountReq) (*adminv1.AdminDeleteAccountResp, error) {
+	out, err := adminbiz.DeleteAccount(ctx, s.db, adminv1.AdminDeleteAccountReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminDeleteAccountRespFromMoe(out), nil
 }
 
-func (s *AppService) GetUser(ctx context.Context, in *moe.AdminGetUserReq) (*moe.AdminGetUserResp, error) {
-	return adminbiz.GetUser(ctx, s.store, in)
+func (s *AppService) GetUser(ctx context.Context, in *adminv1.AdminGetUserReq) (*adminv1.AdminGetUserResp, error) {
+	out, err := adminbiz.GetUser(ctx, s.store, adminv1.AdminGetUserReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminGetUserRespFromMoe(out), nil
 }
 
-func (s *AppService) GetUserProfile(ctx context.Context, in *moe.AdminGetUserProfileReq) (*moe.AdminGetUserProfileResp, error) {
-	return adminbiz.GetUserProfile(ctx, s.store, in)
+func (s *AppService) GetUserProfile(ctx context.Context, in *adminv1.AdminGetUserProfileReq) (*adminv1.AdminGetUserProfileResp, error) {
+	out, err := adminbiz.GetUserProfile(ctx, s.store, adminv1.AdminGetUserProfileReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminGetUserProfileRespFromMoe(out), nil
 }
 
-func (s *AppService) Dashboard(ctx context.Context, in *moe.AdminDashboardReq) (*moe.AdminDashboardResp, error) {
-	return adminbiz.Dashboard(ctx, s.store, in)
+func (s *AppService) Dashboard(ctx context.Context, in *adminv1.AdminDashboardReq) (*adminv1.AdminDashboardResp, error) {
+	out, err := adminbiz.Dashboard(ctx, s.store, adminv1.AdminDashboardReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminDashboardRespFromMoe(out), nil
 }
 
-func (s *AppService) ListLevelConfigs(ctx context.Context, in *moe.AdminListLevelConfigsReq) (*moe.AdminListLevelConfigsResp, error) {
-	return adminbiz.ListLevelConfigs(ctx, s.db, in)
+func (s *AppService) ListLevelConfigs(ctx context.Context, in *adminv1.AdminListLevelConfigsReq) (*adminv1.AdminListLevelConfigsResp, error) {
+	out, err := adminbiz.ListLevelConfigs(ctx, s.db, adminv1.AdminListLevelConfigsReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminListLevelConfigsRespFromMoe(out), nil
 }
 
-func (s *AppService) UpdateLevelConfig(ctx context.Context, in *moe.AdminUpdateLevelConfigReq) (*moe.AdminUpdateLevelConfigResp, error) {
-	return adminbiz.UpdateLevelConfig(ctx, s.db, in)
+func (s *AppService) UpdateLevelConfig(ctx context.Context, in *adminv1.AdminUpdateLevelConfigReq) (*adminv1.AdminUpdateLevelConfigResp, error) {
+	out, err := adminbiz.UpdateLevelConfig(ctx, s.db, adminv1.AdminUpdateLevelConfigReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminUpdateLevelConfigRespFromMoe(out), nil
 }
 
-func (s *AppService) BootstrapLevels(ctx context.Context, in *moe.AdminBootstrapLevelsReq) (*moe.AdminBootstrapLevelsResp, error) {
-	return adminbiz.BootstrapLevels(ctx, s.db, in)
+func (s *AppService) BootstrapLevels(ctx context.Context, in *adminv1.AdminBootstrapLevelsReq) (*adminv1.AdminBootstrapLevelsResp, error) {
+	out, err := adminbiz.BootstrapLevels(ctx, s.db, adminv1.AdminBootstrapLevelsReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminBootstrapLevelsRespFromMoe(out), nil
 }
 
-func (s *AppService) ListCheckInRewards(ctx context.Context, in *moe.AdminListCheckInRewardsReq) (*moe.AdminListCheckInRewardsResp, error) {
-	return adminbiz.ListCheckInRewards(ctx, s.db, in)
+func (s *AppService) ListCheckInRewards(ctx context.Context, in *adminv1.AdminListCheckInRewardsReq) (*adminv1.AdminListCheckInRewardsResp, error) {
+	out, err := adminbiz.ListCheckInRewards(ctx, s.db, adminv1.AdminListCheckInRewardsReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminListCheckInRewardsRespFromMoe(out), nil
 }
 
-func (s *AppService) UpdateCheckInReward(ctx context.Context, in *moe.AdminUpdateCheckInRewardReq) (*moe.AdminUpdateCheckInRewardResp, error) {
-	return adminbiz.UpdateCheckInReward(ctx, s.db, in)
+func (s *AppService) UpdateCheckInReward(ctx context.Context, in *adminv1.AdminUpdateCheckInRewardReq) (*adminv1.AdminUpdateCheckInRewardResp, error) {
+	out, err := adminbiz.UpdateCheckInReward(ctx, s.db, adminv1.AdminUpdateCheckInRewardReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminUpdateCheckInRewardRespFromMoe(out), nil
 }
 
-func (s *AppService) ListVipOrders(ctx context.Context, in *moe.AdminListVipOrdersReq) (*moe.AdminListVipOrdersResp, error) {
-	return adminbiz.ListVipOrders(ctx, s.db, in)
+func (s *AppService) ListVipOrders(ctx context.Context, in *adminv1.AdminListVipOrdersReq) (*adminv1.AdminListVipOrdersResp, error) {
+	out, err := adminbiz.ListVipOrders(ctx, s.db, adminv1.AdminListVipOrdersReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminListVipOrdersRespFromMoe(out), nil
 }
 
-func (s *AppService) ListGiftPurchaseOrders(ctx context.Context, in *moe.AdminListGiftPurchaseOrdersReq) (*moe.AdminListGiftPurchaseOrdersResp, error) {
-	return adminbiz.ListGiftPurchaseOrders(ctx, s.db, in)
+func (s *AppService) ListGiftPurchaseOrders(ctx context.Context, in *adminv1.AdminListGiftPurchaseOrdersReq) (*adminv1.AdminListGiftPurchaseOrdersResp, error) {
+	out, err := adminbiz.ListGiftPurchaseOrders(ctx, s.db, adminv1.AdminListGiftPurchaseOrdersReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminListGiftPurchaseOrdersRespFromMoe(out), nil
 }
 
 // RecordAuditLog 写入管理端操作审计。
-func (s *AppService) RecordAuditLog(ctx context.Context, in *moe.RecordAdminAuditLogReq) (*moe.RecordAdminAuditLogResp, error) {
-	if err := adminbiz.RecordAuditLog(ctx, s.store, in); err != nil {
+func (s *AppService) RecordAuditLog(ctx context.Context, in *adminv1.RecordAdminAuditLogReq) (*adminv1.RecordAdminAuditLogResp, error) {
+	if err := adminbiz.RecordAuditLog(ctx, s.store, adminv1.RecordAdminAuditLogReqToMoe(in)); err != nil {
 		return nil, err
 	}
-	return &moe.RecordAdminAuditLogResp{}, nil
+	return adminv1.RecordAdminAuditLogRespFromMoe(&moe.RecordAdminAuditLogResp{}), nil
 }
 
 // AdminLogin 管理端登录。
-func (s *AppService) AdminLogin(ctx context.Context, in *moe.AdminLoginReq) (*moe.AdminLoginResp, error) {
-	return adminbiz.AdminLogin(ctx, s.store, in)
+func (s *AppService) AdminLogin(ctx context.Context, in *adminv1.AdminLoginReq) (*adminv1.AdminLoginResp, error) {
+	out, err := adminbiz.AdminLogin(ctx, s.store, adminv1.AdminLoginReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminLoginRespFromMoe(out), nil
 }
 
 // AdminBootstrapAccount 引导默认超管。
-func (s *AppService) AdminBootstrapAccount(ctx context.Context, in *moe.AdminBootstrapAccountReq) (*moe.AdminBootstrapAccountResp, error) {
-	return adminbiz.BootstrapAdminAccount(ctx, s.store, in)
+func (s *AppService) AdminBootstrapAccount(ctx context.Context, in *adminv1.AdminBootstrapAccountReq) (*adminv1.AdminBootstrapAccountResp, error) {
+	out, err := adminbiz.BootstrapAdminAccount(ctx, s.store, adminv1.AdminBootstrapAccountReqToMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return adminv1.AdminBootstrapAccountRespFromMoe(out), nil
 }

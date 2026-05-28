@@ -4,6 +4,7 @@ import (
 	"backend/api/internal/gwutil"
 	"context"
 
+	landingv1 "backend/api/landing/v1"
 	landingapp "backend/internal/service/landing"
 	"backend/rpc/pb/moe"
 
@@ -33,14 +34,22 @@ func (g *Gateway) Route() string {
 
 func (g *Gateway) SubmitLandingFeedback(ctx context.Context, in *moe.SubmitLandingFeedbackReq, opts ...grpc.CallOption) (*moe.SubmitLandingFeedbackResp, error) {
 	if g != nil && g.local != nil {
-		return g.local.Submit(ctx, in)
+		out, err := g.local.Submit(ctx, landingv1.SubmitRequestFromMoe(in))
+		if err != nil {
+			return nil, err
+		}
+		return landingv1.SubmitReplyToMoe(out), nil
 	}
 	return nil, gwutil.ErrUnavailable
 }
 
 func (g *Gateway) ListLandingFeedback(ctx context.Context, in *moe.ListLandingFeedbackReq, opts ...grpc.CallOption) (*moe.ListLandingFeedbackResp, error) {
 	if g != nil && g.local != nil {
-		return g.local.List(ctx, in)
+		out, err := g.local.List(ctx, landingv1.ListRequestFromMoe(in))
+		if err != nil {
+			return nil, err
+		}
+		return landingv1.ListReplyToMoe(out), nil
 	}
 	return nil, gwutil.ErrUnavailable
 }

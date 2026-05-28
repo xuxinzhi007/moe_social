@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v3.19.4
-// source: api/vip/v1/vip.proto
+// source: api/vip/v1/vip_messages.proto
 
 package vipv1
 
@@ -28,9 +28,9 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type VipServiceClient interface {
-	GetVipRecords(ctx context.Context, in *GetVipRecordsRequest, opts ...grpc.CallOption) (*GetVipRecordsReply, error)
-	GetUserActiveVipRecord(ctx context.Context, in *GetUserActiveVipRecordRequest, opts ...grpc.CallOption) (*GetUserActiveVipRecordReply, error)
-	CreateVipOrder(ctx context.Context, in *CreateVipOrderRequest, opts ...grpc.CallOption) (*CreateVipOrderReply, error)
+	GetVipRecords(ctx context.Context, in *GetVipRecordsReq, opts ...grpc.CallOption) (*GetVipRecordsResp, error)
+	GetUserActiveVipRecord(ctx context.Context, in *GetUserActiveVipRecordReq, opts ...grpc.CallOption) (*GetUserActiveVipRecordResp, error)
+	CreateVipOrder(ctx context.Context, in *CreateVipOrderReq, opts ...grpc.CallOption) (*CreateVipOrderResp, error)
 }
 
 type vipServiceClient struct {
@@ -41,9 +41,9 @@ func NewVipServiceClient(cc grpc.ClientConnInterface) VipServiceClient {
 	return &vipServiceClient{cc}
 }
 
-func (c *vipServiceClient) GetVipRecords(ctx context.Context, in *GetVipRecordsRequest, opts ...grpc.CallOption) (*GetVipRecordsReply, error) {
+func (c *vipServiceClient) GetVipRecords(ctx context.Context, in *GetVipRecordsReq, opts ...grpc.CallOption) (*GetVipRecordsResp, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetVipRecordsReply)
+	out := new(GetVipRecordsResp)
 	err := c.cc.Invoke(ctx, VipService_GetVipRecords_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -51,9 +51,9 @@ func (c *vipServiceClient) GetVipRecords(ctx context.Context, in *GetVipRecordsR
 	return out, nil
 }
 
-func (c *vipServiceClient) GetUserActiveVipRecord(ctx context.Context, in *GetUserActiveVipRecordRequest, opts ...grpc.CallOption) (*GetUserActiveVipRecordReply, error) {
+func (c *vipServiceClient) GetUserActiveVipRecord(ctx context.Context, in *GetUserActiveVipRecordReq, opts ...grpc.CallOption) (*GetUserActiveVipRecordResp, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetUserActiveVipRecordReply)
+	out := new(GetUserActiveVipRecordResp)
 	err := c.cc.Invoke(ctx, VipService_GetUserActiveVipRecord_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -61,9 +61,9 @@ func (c *vipServiceClient) GetUserActiveVipRecord(ctx context.Context, in *GetUs
 	return out, nil
 }
 
-func (c *vipServiceClient) CreateVipOrder(ctx context.Context, in *CreateVipOrderRequest, opts ...grpc.CallOption) (*CreateVipOrderReply, error) {
+func (c *vipServiceClient) CreateVipOrder(ctx context.Context, in *CreateVipOrderReq, opts ...grpc.CallOption) (*CreateVipOrderResp, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CreateVipOrderReply)
+	out := new(CreateVipOrderResp)
 	err := c.cc.Invoke(ctx, VipService_CreateVipOrder_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -75,9 +75,9 @@ func (c *vipServiceClient) CreateVipOrder(ctx context.Context, in *CreateVipOrde
 // All implementations must embed UnimplementedVipServiceServer
 // for forward compatibility.
 type VipServiceServer interface {
-	GetVipRecords(context.Context, *GetVipRecordsRequest) (*GetVipRecordsReply, error)
-	GetUserActiveVipRecord(context.Context, *GetUserActiveVipRecordRequest) (*GetUserActiveVipRecordReply, error)
-	CreateVipOrder(context.Context, *CreateVipOrderRequest) (*CreateVipOrderReply, error)
+	GetVipRecords(context.Context, *GetVipRecordsReq) (*GetVipRecordsResp, error)
+	GetUserActiveVipRecord(context.Context, *GetUserActiveVipRecordReq) (*GetUserActiveVipRecordResp, error)
+	CreateVipOrder(context.Context, *CreateVipOrderReq) (*CreateVipOrderResp, error)
 	mustEmbedUnimplementedVipServiceServer()
 }
 
@@ -88,13 +88,13 @@ type VipServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedVipServiceServer struct{}
 
-func (UnimplementedVipServiceServer) GetVipRecords(context.Context, *GetVipRecordsRequest) (*GetVipRecordsReply, error) {
+func (UnimplementedVipServiceServer) GetVipRecords(context.Context, *GetVipRecordsReq) (*GetVipRecordsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetVipRecords not implemented")
 }
-func (UnimplementedVipServiceServer) GetUserActiveVipRecord(context.Context, *GetUserActiveVipRecordRequest) (*GetUserActiveVipRecordReply, error) {
+func (UnimplementedVipServiceServer) GetUserActiveVipRecord(context.Context, *GetUserActiveVipRecordReq) (*GetUserActiveVipRecordResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUserActiveVipRecord not implemented")
 }
-func (UnimplementedVipServiceServer) CreateVipOrder(context.Context, *CreateVipOrderRequest) (*CreateVipOrderReply, error) {
+func (UnimplementedVipServiceServer) CreateVipOrder(context.Context, *CreateVipOrderReq) (*CreateVipOrderResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateVipOrder not implemented")
 }
 func (UnimplementedVipServiceServer) mustEmbedUnimplementedVipServiceServer() {}
@@ -119,7 +119,7 @@ func RegisterVipServiceServer(s grpc.ServiceRegistrar, srv VipServiceServer) {
 }
 
 func _VipService_GetVipRecords_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetVipRecordsRequest)
+	in := new(GetVipRecordsReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -131,13 +131,13 @@ func _VipService_GetVipRecords_Handler(srv interface{}, ctx context.Context, dec
 		FullMethod: VipService_GetVipRecords_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(VipServiceServer).GetVipRecords(ctx, req.(*GetVipRecordsRequest))
+		return srv.(VipServiceServer).GetVipRecords(ctx, req.(*GetVipRecordsReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _VipService_GetUserActiveVipRecord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetUserActiveVipRecordRequest)
+	in := new(GetUserActiveVipRecordReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -149,13 +149,13 @@ func _VipService_GetUserActiveVipRecord_Handler(srv interface{}, ctx context.Con
 		FullMethod: VipService_GetUserActiveVipRecord_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(VipServiceServer).GetUserActiveVipRecord(ctx, req.(*GetUserActiveVipRecordRequest))
+		return srv.(VipServiceServer).GetUserActiveVipRecord(ctx, req.(*GetUserActiveVipRecordReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _VipService_CreateVipOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateVipOrderRequest)
+	in := new(CreateVipOrderReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func _VipService_CreateVipOrder_Handler(srv interface{}, ctx context.Context, de
 		FullMethod: VipService_CreateVipOrder_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(VipServiceServer).CreateVipOrder(ctx, req.(*CreateVipOrderRequest))
+		return srv.(VipServiceServer).CreateVipOrder(ctx, req.(*CreateVipOrderReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -193,5 +193,5 @@ var VipService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/vip/v1/vip.proto",
+	Metadata: "api/vip/v1/vip_messages.proto",
 }

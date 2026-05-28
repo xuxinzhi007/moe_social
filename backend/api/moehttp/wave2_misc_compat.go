@@ -17,6 +17,8 @@ import (
 	contentapp "backend/internal/service/content"
 	chatapp "backend/internal/service/chat"
 	mediaapp "backend/internal/service/media"
+	adminv1 "backend/api/admin/v1"
+	userv1 "backend/api/user/v1"
 	adminapp "backend/internal/service/admin"
 	userapp "backend/internal/service/user"
 	vipadmin "backend/internal/service/vip"
@@ -85,7 +87,7 @@ func RegisterWave2MiscCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 
 func adminBootstrapAccount(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
-		rpcResp, err := app.AdminBootstrapAccount(ctx, &moe.AdminBootstrapAccountReq{})
+		rpcResp, err := app.AdminBootstrapAccount(ctx, adminv1.AdminBootstrapAccountReqFromMoe(&moe.AdminBootstrapAccountReq{}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminBootstrapAccountResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -108,10 +110,10 @@ func adminLogin(app *adminapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.AdminLogin(ctx, &moe.AdminLoginReq{
+		rpcResp, err := app.AdminLogin(ctx, adminv1.AdminLoginReqFromMoe(&moe.AdminLoginReq{
 			Username: req.Username,
 			Password: req.Password,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminLoginResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -136,7 +138,7 @@ func getUserAvatar(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetUserAvatar(ctx, &moe.GetUserAvatarReq{UserId: req.UserId})
+		rpcResp, err := app.GetUserAvatar(ctx, userv1.GetUserAvatarReqFromMoe(&moe.GetUserAvatarReq{UserId: req.UserId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetUserAvatarResp{BaseResp: common.HandleUserGWError(err, "")})
 		}
@@ -148,7 +150,7 @@ func getUserAvatar(app *userapp.AppService) func(khttp.Context) error {
 		}
 		return ctx.JSON(http.StatusOK, types.GetUserAvatarResp{
 			BaseResp: common.HandleError(nil),
-			Data:     userAvatarFromRPC(rpcResp.Avatar),
+			Data:     userAvatarFromUserV1(rpcResp.Avatar),
 		})
 	}
 }
@@ -161,7 +163,7 @@ func updateUserAvatar(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.UpdateUserAvatar(ctx, &moe.UpdateUserAvatarReq{
+		rpcResp, err := app.UpdateUserAvatar(ctx, userv1.UpdateUserAvatarReqFromMoe(&moe.UpdateUserAvatarReq{
 			UserId: req.UserId,
 			BaseConfig: &moe.AvatarBaseConfig{
 				FaceShape: req.BaseConfig.FaceShape,
@@ -175,7 +177,7 @@ func updateUserAvatar(app *userapp.AppService) func(khttp.Context) error {
 				Accessories: req.CurrentOutfit.Accessories,
 				Background:  req.CurrentOutfit.Background,
 			},
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.UpdateUserAvatarResp{BaseResp: common.HandleUserGWError(err, "")})
 		}
@@ -184,7 +186,7 @@ func updateUserAvatar(app *userapp.AppService) func(khttp.Context) error {
 		}
 		return ctx.JSON(http.StatusOK, types.UpdateUserAvatarResp{
 			BaseResp: common.HandleError(nil),
-			Data:     userAvatarFromRPC(rpcResp.Avatar),
+			Data:     userAvatarFromUserV1(rpcResp.Avatar),
 		})
 	}
 }
@@ -197,17 +199,17 @@ func getNotifications(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetNotifications(ctx, &moe.GetNotificationsReq{
+		rpcResp, err := app.GetNotifications(ctx, userv1.GetNotificationsReqFromMoe(&moe.GetNotificationsReq{
 			UserId:   req.UserId,
 			Page:     int32(req.Page),
 			PageSize: int32(req.PageSize),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetNotificationsResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.GetNotificationsResp{
 			BaseResp: common.HandleRPCError(nil, "获取通知列表成功"),
-			Data:     notificationsFromRPC(rpcResp.GetNotifications()),
+			Data:     notificationsFromUserV1(rpcResp.GetNotifications()),
 			Total:    int(rpcResp.GetTotal()),
 		})
 	}
@@ -219,10 +221,10 @@ func readNotification(app *userapp.AppService) func(khttp.Context) error {
 		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{Code: -1, Message: err.Error(), Success: false})
 		}
-		_, err := app.ReadNotification(ctx, &moe.ReadNotificationReq{
+		_, err := app.ReadNotification(ctx, userv1.ReadNotificationReqFromMoe(&moe.ReadNotificationReq{
 			Id:     req.Id,
 			UserId: req.UserId,
-		})
+		}))
 		if err != nil {
 			result := common.HandleRPCError(err, "")
 			return ctx.JSON(http.StatusOK, result)
@@ -238,7 +240,7 @@ func readAllNotifications(app *userapp.AppService) func(khttp.Context) error {
 		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{Code: -1, Message: err.Error(), Success: false})
 		}
-		_, err := app.ReadAllNotifications(ctx, &moe.ReadAllNotificationsReq{UserId: req.UserId})
+		_, err := app.ReadAllNotifications(ctx, userv1.ReadAllNotificationsReqFromMoe(&moe.ReadAllNotificationsReq{UserId: req.UserId}))
 		if err != nil {
 			result := common.HandleRPCError(err, "")
 			return ctx.JSON(http.StatusOK, result)
@@ -256,7 +258,7 @@ func getUnreadCount(app *userapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetUnreadCount(ctx, &moe.GetUnreadCountReq{UserId: req.UserId})
+		rpcResp, err := app.GetUnreadCount(ctx, userv1.GetUnreadCountReqFromMoe(&moe.GetUnreadCountReq{UserId: req.UserId}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetUnreadCountResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -710,6 +712,10 @@ func defaultUserAvatar(userID string) types.UserAvatar {
 	}
 }
 
+func userAvatarFromUserV1(a *userv1.UserAvatarData) types.UserAvatar {
+	return userAvatarFromRPC(userv1.UserAvatarDataToMoe(a))
+}
+
 func userAvatarFromRPC(a *moe.UserAvatarData) types.UserAvatar {
 	avatar := types.UserAvatar{
 		UserId:       a.GetUserId(),
@@ -732,6 +738,17 @@ func userAvatarFromRPC(a *moe.UserAvatarData) types.UserAvatar {
 		}
 	}
 	return avatar
+}
+
+func notificationsFromUserV1(items []*userv1.Notification) []types.Notification {
+	if len(items) == 0 {
+		return nil
+	}
+	moeItems := make([]*moe.Notification, len(items))
+	for i, n := range items {
+		moeItems[i] = userv1.NotificationToMoe(n)
+	}
+	return notificationsFromRPC(moeItems)
 }
 
 func notificationsFromRPC(items []*moe.Notification) []types.Notification {

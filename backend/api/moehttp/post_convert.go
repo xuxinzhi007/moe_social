@@ -3,9 +3,21 @@ package moehttp
 import (
 	"strconv"
 
+	commentv1 "backend/api/comment/v1"
+	postv1 "backend/api/post/v1"
 	"backend/api/internal/types"
 	"backend/rpc/pb/moe"
 )
+
+func topicTagsToProto(tags []types.TopicTag) []*postv1.TopicTag {
+	out := make([]*postv1.TopicTag, 0, len(tags))
+	for _, tag := range tags {
+		out = append(out, &postv1.TopicTag{
+			Id: tag.Id, Name: tag.Name, Color: tag.Color, CreatedAt: tag.CreatedAt,
+		})
+	}
+	return out
+}
 
 func topicTagsToRPC(tags []types.TopicTag) []*moe.TopicTag {
 	out := make([]*moe.TopicTag, 0, len(tags))
@@ -15,6 +27,13 @@ func topicTagsToRPC(tags []types.TopicTag) []*moe.TopicTag {
 		})
 	}
 	return out
+}
+
+func postFromProto(p *postv1.Post) types.Post {
+	if p == nil {
+		return types.Post{}
+	}
+	return postFromRPC(postv1.PostToMoe(p))
 }
 
 func postFromRPC(p *moe.Post) types.Post {
@@ -37,10 +56,34 @@ func postFromRPC(p *moe.Post) types.Post {
 	}
 }
 
+func postsFromProto(posts []*postv1.Post) []types.Post {
+	out := make([]types.Post, 0, len(posts))
+	for _, p := range posts {
+		out = append(out, postFromProto(p))
+	}
+	return out
+}
+
 func postsFromRPC(posts []*moe.Post) []types.Post {
 	out := make([]types.Post, 0, len(posts))
 	for _, p := range posts {
 		out = append(out, postFromRPC(p))
+	}
+	return out
+}
+
+func commentsFromProto(comments []*commentv1.Comment) []types.Comment {
+	out := make([]types.Comment, 0, len(comments))
+	for _, c := range comments {
+		if c == nil {
+			continue
+		}
+		out = append(out, types.Comment{
+			Id: c.GetId(), PostId: c.GetPostId(), UserId: c.GetUserId(),
+			UserName: c.GetUserName(), UserAvatar: c.GetUserAvatar(), Content: c.GetContent(),
+			Likes: int(c.GetLikes()), IsLiked: c.GetIsLiked(), CreatedAt: c.GetCreatedAt(),
+			ParentId: c.GetParentId(), ReplyToUserName: c.GetReplyToUserName(),
+		})
 	}
 	return out
 }

@@ -3,13 +3,11 @@ package commentapp
 
 import (
 	"context"
-	"strconv"
 
+	commentv1 "backend/api/comment/v1"
 	commentbiz "backend/internal/biz/comment"
 	commentdata "backend/internal/data/comment"
 	"backend/internal/platform/socialhook"
-	"backend/rpc/pb/moe"
-	"backend/utils"
 
 	"gorm.io/gorm"
 )
@@ -24,7 +22,7 @@ func New(db *gorm.DB) *AppService {
 	return &AppService{store: commentdata.NewStore(db)}
 }
 
-func (s *AppService) GetPostComments(ctx context.Context, in *moe.GetPostCommentsReq) (*moe.GetPostCommentsResp, error) {
+func (s *AppService) GetPostComments(ctx context.Context, in *commentv1.GetPostCommentsRequest) (*commentv1.GetPostCommentsReply, error) {
 	items, total, err := commentbiz.ListByPost(ctx, s.store, commentbiz.ListFilter{
 		PostID: in.GetPostId(), Page: in.GetPage(), PageSize: in.GetPageSize(),
 		ViewerUserID: in.GetViewerUserId(),
@@ -32,10 +30,10 @@ func (s *AppService) GetPostComments(ctx context.Context, in *moe.GetPostComment
 	if err != nil {
 		return nil, err
 	}
-	return &moe.GetPostCommentsResp{Comments: items, Total: total}, nil
+	return &commentv1.GetPostCommentsReply{Comments: commentv1.CommentsFromMoe(items), Total: total}, nil
 }
 
-func (s *AppService) CreateComment(ctx context.Context, in *moe.CreateCommentReq) (*moe.CreateCommentResp, error) {
+func (s *AppService) CreateComment(ctx context.Context, in *commentv1.CreateCommentRequest) (*commentv1.CreateCommentReply, error) {
 	result, err := commentbiz.Create(ctx, s.store, commentbiz.CreateInput{
 		PostID: in.GetPostId(), UserID: in.GetUserId(),
 		Content: in.GetContent(), ParentID: in.GetParentId(),
@@ -46,40 +44,22 @@ func (s *AppService) CreateComment(ctx context.Context, in *moe.CreateCommentReq
 
 	achUnlocks := socialhook.ApplyCommentCreatedAchievements(s.store.Raw(), result.Comment.UserID)
 
-	c := result.Comment
-	username := "未知用户"
-	avatar := "https://picsum.photos/150"
-	if c.User.ID > 0 {
-		if c.User.Username != "" {
-			username = c.User.Username
-		} else if c.User.Email != "" {
-			username = c.User.Email
-		}
-		if c.User.Avatar != "" {
-			avatar = c.User.Avatar
-		}
-	}
-	return &moe.CreateCommentResp{
-		Comment: &moe.Comment{
-			Id:       strconv.FormatUint(uint64(c.ID), 10),
-			PostId:   strconv.FormatUint(uint64(c.PostID), 10),
-			UserId:   strconv.FormatUint(uint64(c.UserID), 10),
-			UserName: username, UserAvatar: avatar, Content: c.Content,
-			Likes: int32(c.Likes), IsLiked: false,
-			CreatedAt:       utils.FormatAPIDateTime(c.CreatedAt),
-			ParentId:        strconv.FormatUint(uint64(c.ParentID), 10),
-			ReplyToUserName: result.ReplyToUserName,
-		},
-		NewAchievements: achUnlocks,
+	return &commentv1.CreateCommentReply{
+		Comment: commentv1.CommentFromMoe(
+			commentbiz.BuildProtoComment(result.Comment, result.Comment.User, false, result.ReplyToUserName),
+		),
+		NewAchievements: commentv1.AchievementUnlocksFromMoe(achUnlocks),
 	}, nil
 }
 
-func (s *AppService) LikeComment(ctx context.Context, in *moe.LikeCommentReq) (*moe.LikeCommentResp, error) {
+func (s *AppService) LikeComment(ctx context.Context, in *commentv1.LikeCommentRequest) (*commentv1.LikeCommentReply, error) {
 	result, err := commentbiz.Like(ctx, s.store, in.GetCommentId(), in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
-	return &moe.LikeCommentResp{
-		Comment: commentbiz.BuildProtoComment(result.Comment, result.User, result.IsLiked, ""),
+	return &commentv1.LikeCommentReply{
+		Comment: commentv1.CommentFromMoe(
+			commentbiz.BuildProtoComment(result.Comment, result.User, result.IsLiked, ""),
+		),
 	}, nil
 }

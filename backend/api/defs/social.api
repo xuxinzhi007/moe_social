@@ -2,6 +2,7 @@
 syntax = "v1"
 
 import "common.api"
+// P6: HTTP 契约 SSOT → api/post/v1/post.proto、api/comment/v1/comment.proto（生产走 post_compat.go）
 @server (
 	group: post
 )
@@ -34,6 +35,7 @@ service Super {
 	get /api/posts/:post_id/comments (GetPostCommentsReq) returns (GetPostCommentsResp)
 }
 
+// P6: HTTP 契约 SSOT → api/comment/v1/comment.proto（生产走 comment_compat.go）
 @server (
 	group: comment
 )
@@ -58,6 +60,7 @@ service Super {
 	get /api/user/:user_id/content (ContentListReq) returns (ContentListResp)
 }
 
+// P6: HTTP 契约 SSOT → api/gift/v1/gift.proto（生产走 gift_compat.go）
 @server (
 	group: gift
 )

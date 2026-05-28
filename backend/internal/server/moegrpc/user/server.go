@@ -5,7 +5,6 @@ import (
 
 	userv1 "backend/api/user/v1"
 	userapp "backend/internal/service/user"
-	moerpc "backend/rpc/pb/moe"
 )
 
 // Server 实现 user.v1.UserService gRPC（P4-C；与 Super 并存）。
@@ -26,72 +25,42 @@ func (s *Server) requireApp() (*userapp.AppService, error) {
 	return s.app, nil
 }
 
-func (s *Server) Login(ctx context.Context, in *userv1.LoginRequest) (*userv1.LoginReply, error) {
+func (s *Server) Login(ctx context.Context, in *userv1.LoginReq) (*userv1.LoginResp, error) {
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.Login(ctx, &moerpc.LoginReq{
-		Username: in.GetUsername(), Email: in.GetEmail(), Password: in.GetPassword(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &userv1.LoginReply{User: userToProto(resp.GetUser()), Token: resp.GetToken()}, nil
+	return app.Login(ctx, in)
 }
 
-func (s *Server) Register(ctx context.Context, in *userv1.RegisterRequest) (*userv1.RegisterReply, error) {
+func (s *Server) Register(ctx context.Context, in *userv1.RegisterReq) (*userv1.RegisterResp, error) {
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.Register(ctx, &moerpc.RegisterReq{
-		Username: in.GetUsername(), Password: in.GetPassword(), Email: in.GetEmail(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &userv1.RegisterReply{User: userToProto(resp.GetUser()), Token: resp.GetToken()}, nil
+	return app.Register(ctx, in)
 }
 
-func (s *Server) GetUserInfo(ctx context.Context, in *userv1.GetUserInfoRequest) (*userv1.GetUserInfoReply, error) {
+func (s *Server) GetUserInfo(ctx context.Context, in *userv1.GetUserInfoReq) (*userv1.GetUserInfoResp, error) {
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.GetUserInfo(ctx, &moerpc.GetUserInfoReq{UserId: in.GetUserId()})
-	if err != nil {
-		return nil, err
-	}
-	return &userv1.GetUserInfoReply{User: userToProto(resp.GetUser())}, nil
+	return app.GetUserInfo(ctx, in)
 }
 
-func (s *Server) GetUser(ctx context.Context, in *userv1.GetUserRequest) (*userv1.GetUserReply, error) {
+func (s *Server) GetUser(ctx context.Context, in *userv1.GetUserReq) (*userv1.GetUserResp, error) {
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.GetUser(ctx, &moerpc.GetUserReq{UserId: in.GetUserId()})
-	if err != nil {
-		return nil, err
-	}
-	return &userv1.GetUserReply{User: userToProto(resp.GetUser())}, nil
+	return app.GetUser(ctx, in)
 }
 
-func (s *Server) UpdateUserInfo(ctx context.Context, in *userv1.UpdateUserInfoRequest) (*userv1.UpdateUserInfoReply, error) {
+func (s *Server) UpdateUserInfo(ctx context.Context, in *userv1.UpdateUserInfoReq) (*userv1.UpdateUserInfoResp, error) {
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
 	}
-	resp, err := app.UpdateUserInfo(ctx, &moerpc.UpdateUserInfoReq{
-		UserId: in.GetUserId(), Username: in.GetUsername(), Email: in.GetEmail(),
-		Avatar: in.GetAvatar(), Signature: in.GetSignature(), Gender: in.GetGender(),
-		Birthday: in.GetBirthday(), Inventory: in.GetInventory(),
-		EquippedFrameId: in.GetEquippedFrameId(), ClearEquippedFrame: in.GetClearEquippedFrame(),
-		MessageRetention: in.GetMessageRetention(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &userv1.UpdateUserInfoReply{User: userToProto(resp.GetUser())}, nil
+	return app.UpdateUserInfo(ctx, in)
 }

@@ -9,6 +9,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	llmv1 "backend/api/llm/v1"
 	llmapp "backend/internal/service/llm"
 	"backend/rpc/pb/moe"
 	"backend/utils"
@@ -43,16 +44,16 @@ func upsertUserMemory(app *llmapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.UpsertUserMemory(ctx, &moe.UpsertUserMemoryReq{
+		rpcResp, err := app.UpsertUserMemory(ctx, llmv1.UpsertUserMemoryReqFromMoe(&moe.UpsertUserMemoryReq{
 			UserId: req.UserId, Key: req.Key, Value: req.Value, MemoryType: req.MemoryType,
 			Confidence: req.Confidence, Source: req.Source, SourceMsgId: req.SourceMsgId, SessionId: req.SessionId,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.UpsertUserMemoryResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.UpsertUserMemoryResp{
 			BaseResp: common.HandleRPCError(nil, "更新用户记忆成功"),
-			Data:     userMemoryFromRPC(rpcResp.Memory),
+			Data:     userMemoryFromLLMV1(rpcResp.Memory),
 		})
 	}
 }
@@ -65,15 +66,15 @@ func getUserMemories(app *llmapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetUserMemories(ctx, &moe.GetUserMemoriesReq{
+		rpcResp, err := app.GetUserMemories(ctx, llmv1.GetUserMemoriesReqFromMoe(&moe.GetUserMemoriesReq{
 			UserId: req.UserId, Limit: int32(req.Limit), Offset: int32(req.Offset),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetUserMemoriesResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		memories := make([]types.UserMemory, 0, len(rpcResp.Memories))
 		for _, m := range rpcResp.Memories {
-			memories = append(memories, userMemoryFromRPC(m))
+			memories = append(memories, userMemoryFromLLMV1(m))
 		}
 		return ctx.JSON(http.StatusOK, types.GetUserMemoriesResp{
 			BaseResp: common.HandleRPCError(nil, "获取用户记忆成功"),
@@ -91,7 +92,7 @@ func deleteUserMemory(app *llmapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		_, err := app.DeleteUserMemory(ctx, &moe.DeleteUserMemoryReq{UserId: req.UserId, Key: req.Key})
+		_, err := app.DeleteUserMemory(ctx, llmv1.DeleteUserMemoryReqFromMoe(&moe.DeleteUserMemoryReq{UserId: req.UserId, Key: req.Key}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.DeleteUserMemoryResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -113,25 +114,25 @@ func getUserMemoriesDisplay(app *llmapp.AppService) func(khttp.Context) error {
 		}
 		req.UserId = userID
 
-		memResp, err := app.GetUserMemories(ctx, &moe.GetUserMemoriesReq{
+		memResp, err := app.GetUserMemories(ctx, llmv1.GetUserMemoriesReqFromMoe(&moe.GetUserMemoriesReq{
 			UserId: req.UserId, Limit: 200, Offset: 0,
-		})
+		}))
 		if err != nil {
 			base := common.HandleRPCError(err, "")
 			return ctx.JSON(http.StatusOK, map[string]interface{}{
 				"code": base.Code, "message": base.Message, "success": false,
 			})
 		}
-		profResp, err := app.GetUserMemoryProfiles(ctx, &moe.GetUserMemoryProfilesReq{
+		profResp, err := app.GetUserMemoryProfiles(ctx, llmv1.GetUserMemoryProfilesReqFromMoe(&moe.GetUserMemoryProfilesReq{
 			UserId: req.UserId, Limit: 12,
-		})
+		}))
 		if err != nil {
 			base := common.HandleRPCError(err, "")
 			return ctx.JSON(http.StatusOK, map[string]interface{}{
 				"code": base.Code, "message": base.Message, "success": false,
 			})
 		}
-		data := userbiz.BuildUserMemoryDisplay(memResp.Memories, profResp.Profiles)
+		data := userbiz.BuildUserMemoryDisplay(userMemoriesToMoe(memResp.Memories), userMemoryProfilesToMoe(profResp.Profiles))
 		base := common.HandleRPCError(nil, "获取记忆展示数据成功")
 		return ctx.JSON(http.StatusOK, map[string]interface{}{
 			"code": base.Code, "message": base.Message, "success": base.Success, "data": data,
@@ -147,16 +148,16 @@ func submitUserMemoryFeedback(app *llmapp.AppService) func(khttp.Context) error 
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.SubmitUserMemoryFeedback(ctx, &moe.SubmitUserMemoryFeedbackReq{
+		rpcResp, err := app.SubmitUserMemoryFeedback(ctx, llmv1.SubmitUserMemoryFeedbackReqFromMoe(&moe.SubmitUserMemoryFeedbackReq{
 			UserId: req.UserId, Key: req.Key, FeedbackType: req.FeedbackType,
 			CorrectedValue: req.CorrectedValue, Reason: req.Reason,
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.SubmitUserMemoryFeedbackResp{BaseResp: common.HandleRPCError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.SubmitUserMemoryFeedbackResp{
 			BaseResp: common.HandleRPCError(nil, "提交记忆反馈成功"),
-			Data:     userMemoryFromRPC(rpcResp.Memory),
+			Data:     userMemoryFromLLMV1(rpcResp.Memory),
 		})
 	}
 }
@@ -169,9 +170,9 @@ func getUserMemoryProfiles(app *llmapp.AppService) func(khttp.Context) error {
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
 		}
-		rpcResp, err := app.GetUserMemoryProfiles(ctx, &moe.GetUserMemoryProfilesReq{
+		rpcResp, err := app.GetUserMemoryProfiles(ctx, llmv1.GetUserMemoryProfilesReqFromMoe(&moe.GetUserMemoryProfilesReq{
 			UserId: req.UserId, Limit: int32(req.Limit),
-		})
+		}))
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.GetUserMemoryProfilesResp{BaseResp: common.HandleRPCError(err, "")})
 		}
@@ -194,7 +195,7 @@ func rebuildUserMemoryEmbeddings(app *llmapp.AppService) func(khttp.Context) err
 		if err != nil {
 			return err
 		}
-		resp, err := app.RebuildUserMemoryEmbeddings(ctx, &moe.RebuildUserMemoryEmbeddingsReq{UserId: userID})
+		resp, err := app.RebuildUserMemoryEmbeddings(ctx, llmv1.RebuildUserMemoryEmbeddingsReqFromMoe(&moe.RebuildUserMemoryEmbeddingsReq{UserId: userID}))
 		if err != nil {
 			return err
 		}
@@ -215,9 +216,9 @@ func searchUserMemories(svcCtx *svc.ServiceContext, app *llmapp.AppService) func
 		if limit <= 0 {
 			limit = 8
 		}
-		memResp, err := app.GetUserMemories(ctx, &moe.GetUserMemoriesReq{
+		memResp, err := app.GetUserMemories(ctx, llmv1.GetUserMemoriesReqFromMoe(&moe.GetUserMemoriesReq{
 			UserId: req.UserId, Limit: listLimit, Offset: 0,
-		})
+		}))
 		if err != nil {
 			base := common.HandleRPCError(err, "")
 			return ctx.JSON(http.StatusOK, map[string]interface{}{
@@ -228,7 +229,7 @@ func searchUserMemories(svcCtx *svc.ServiceContext, app *llmapp.AppService) func
 			Gateway:          svcCtx.LLMGW,
 			InferenceBaseURL: svcCtx.Config.LLMInference.BaseUrl,
 			UserID:           req.UserId,
-			Memories:         memResp.Memories,
+			Memories:         userMemoriesToMoe(memResp.Memories),
 			Query:            req.Q,
 			Limit:            limit,
 		})

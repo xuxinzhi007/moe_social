@@ -4,7 +4,7 @@ package gift.v1;
 
 option go_package = "backend/api/gift/v1;giftv1";
 
-// Gift — 域 gRPC SSOT（P4-C；与 Super 并存）。
+// Gift — 域 HTTP/gRPC 契约 SSOT（P6-0）。
 // HTTP: GET /api/gifts, GET /api/gifts/:gift_id
 // HTTP: POST /api/user/:user_id/gifts/send|purchase, GET records
 
@@ -101,10 +101,36 @@ message PurchaseGiftReply {
   string order_no = 5;
 }
 
+message GiftPurchaseOrder {
+  string id = 1;
+  string user_id = 2;
+  string order_no = 3;
+  string gift_id = 4;
+  string gift_name = 5;
+  int32 quantity = 6;
+  double unit_price = 7;
+  double total_amount = 8;
+  string pay_method = 9;
+  string status = 10;
+  string created_at = 11;
+}
+
+message GetGiftPurchaseOrdersRequest {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetGiftPurchaseOrdersReply {
+  repeated GiftPurchaseOrder orders = 1;
+  int32 total = 2;
+}
+
 service GiftService {
   rpc GetGifts(GetGiftsRequest) returns (GetGiftsReply);
   rpc GetGift(GetGiftRequest) returns (GetGiftReply);
   rpc SendGift(SendGiftRequest) returns (SendGiftReply);
   rpc PurchaseGift(PurchaseGiftRequest) returns (PurchaseGiftReply);
   rpc GetGiftRecords(GetGiftRecordsRequest) returns (GetGiftRecordsReply);
+  rpc GetGiftPurchaseOrders(GetGiftPurchaseOrdersRequest) returns (GetGiftPurchaseOrdersReply);
 }

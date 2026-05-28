@@ -19,7 +19,7 @@ Match existing structure before adding new abstractions. Use `snake_case.dart` f
 
 ## Kratos migration status
 
-**Current / next snapshot**: [docs/dev/kratos-migration-status.md](docs/dev/kratos-migration-status.md) · detail: [docs/dev/kratos-legacy-api-migration.md](docs/dev/kratos-legacy-api-migration.md) §0.
+**Current / next snapshot**: [docs/dev/kratos-migration-status.md](docs/dev/kratos-migration-status.md) · P3 routes: [docs/dev/kratos-legacy-api-migration.md](docs/dev/kratos-legacy-api-migration.md) §0 · **P6 契约 (~80%)**: [docs/dev/kratos-p6-defs-to-proto.md](docs/dev/kratos-p6-defs-to-proto.md).
 
 ## Large tasks (multi-agent)
 

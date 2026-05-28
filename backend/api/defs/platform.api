@@ -79,6 +79,7 @@ service Super {
 	post /api/user/:user_id/achievements/ensure (EnsureUserAchievementsReq) returns (EnsureUserAchievementsResp)
 }
 
+// P6: HTTP 契约 SSOT → api/behavior/v1/behavior.proto（生产走 behavior_compat.go）
 @server (
 	group: behavior
 )

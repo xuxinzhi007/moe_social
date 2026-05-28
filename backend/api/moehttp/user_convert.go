@@ -8,6 +8,9 @@ import (
 
 	"backend/api/internal/common"
 	"backend/api/internal/types"
+	llmv1 "backend/api/llm/v1"
+	userv1 "backend/api/user/v1"
+	vipv1 "backend/api/vip/v1"
 	"backend/rpc/pb/moe"
 	"backend/utils"
 
@@ -16,6 +19,13 @@ import (
 
 func userFromRPC(u *moe.User) types.User {
 	return common.RpcUserToTypes(u)
+}
+
+func userFromUserV1(u *userv1.User) types.User {
+	if u == nil {
+		return types.User{}
+	}
+	return userFromRPC(userv1.UserToMoe(u))
 }
 
 func friendViewFromRPC(v *moe.FriendRequestView) types.FriendRequestView {
@@ -29,6 +39,17 @@ func friendViewFromRPC(v *moe.FriendRequestView) types.FriendRequestView {
 		Status:    v.Status,
 		CreatedAt: v.CreatedAt,
 	}
+}
+
+func friendViewFromUserV1(v *userv1.FriendRequestView) types.FriendRequestView {
+	return friendViewFromRPC(userv1.FriendRequestViewToMoe(v))
+}
+
+func userFromVipV1(u *vipv1.User) types.User {
+	if u == nil {
+		return types.User{}
+	}
+	return userFromRPC(vipv1.UserToMoe(u))
 }
 
 func vipOrderFromRPC(o *moe.VipOrder) types.VipOrder {
@@ -48,6 +69,10 @@ func vipOrderFromRPC(o *moe.VipOrder) types.VipOrder {
 	}
 }
 
+func vipOrderFromVipV1(o *vipv1.VipOrder) types.VipOrder {
+	return vipOrderFromRPC(vipv1.VipOrderToMoe(o))
+}
+
 func vipRecordFromRPC(r *moe.VipRecord) types.VipRecord {
 	if r == nil {
 		return types.VipRecord{}
@@ -64,6 +89,10 @@ func vipRecordFromRPC(r *moe.VipRecord) types.VipRecord {
 	}
 }
 
+func vipRecordFromVipV1(r *vipv1.VipRecord) types.VipRecord {
+	return vipRecordFromRPC(vipv1.VipRecordToMoe(r))
+}
+
 func transactionFromRPC(t *moe.Transaction) types.Transaction {
 	if t == nil {
 		return types.Transaction{}
@@ -77,6 +106,32 @@ func transactionFromRPC(t *moe.Transaction) types.Transaction {
 		Status:      t.Status,
 		CreatedAt:   t.CreatedAt,
 	}
+}
+
+func userMemoryFromLLMV1(m *llmv1.UserMemory) types.UserMemory {
+	return userMemoryFromRPC(llmv1.UserMemoryToMoe(m))
+}
+
+func userMemoriesToMoe(items []*llmv1.UserMemory) []*moe.UserMemory {
+	if len(items) == 0 {
+		return nil
+	}
+	out := make([]*moe.UserMemory, len(items))
+	for i, item := range items {
+		out[i] = llmv1.UserMemoryToMoe(item)
+	}
+	return out
+}
+
+func userMemoryProfilesToMoe(items []*llmv1.UserMemoryProfile) []*moe.UserMemoryProfile {
+	if len(items) == 0 {
+		return nil
+	}
+	out := make([]*moe.UserMemoryProfile, len(items))
+	for i, item := range items {
+		out[i] = llmv1.UserMemoryProfileToMoe(item)
+	}
+	return out
 }
 
 func userMemoryFromRPC(m *moe.UserMemory) types.UserMemory {
@@ -98,6 +153,14 @@ func userMemoryFromRPC(m *moe.UserMemory) types.UserMemory {
 	}
 }
 
+func transactionFromUserV1(t *userv1.Transaction) types.Transaction {
+	return transactionFromRPC(userv1.TransactionToMoe(t))
+}
+
+func userDeviceFromUserV1(d *userv1.UserDeviceRecord) types.UserDeviceRecord {
+	return userDeviceFromRPC(userv1.UserDeviceRecordToMoe(d))
+}
+
 func userDeviceFromRPC(d *moe.UserDeviceRecord) types.UserDeviceRecord {
 	if d == nil {
 		return types.UserDeviceRecord{}
@@ -115,6 +178,17 @@ func userDeviceFromRPC(d *moe.UserDeviceRecord) types.UserDeviceRecord {
 		CreatedAt:   d.CreatedAt,
 		UpdatedAt:   d.UpdatedAt,
 	}
+}
+
+func achievementUnlocksFromVipV1(items []*vipv1.AchievementUnlock) []types.AchievementUnlock {
+	if len(items) == 0 {
+		return nil
+	}
+	moeItems := make([]*moe.AchievementUnlock, len(items))
+	for i, item := range items {
+		moeItems[i] = vipv1.AchievementUnlockToMoe(item)
+	}
+	return achievementUnlocksFromRPC(moeItems)
 }
 
 func bearerUserID(r *http.Request) (uint, error) {

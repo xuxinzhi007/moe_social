@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	llmv1 "backend/api/llm/v1"
+	postv1 "backend/api/post/v1"
 	llmapp "backend/internal/service/llm"
 	postapp "backend/internal/service/post"
 	"backend/pkg/moe/port"
@@ -27,40 +29,64 @@ func (a appAdapter) GetUserMemories(ctx context.Context, in *moe.GetUserMemories
 	if a.llm == nil {
 		return nil, errAppPortUnavailable
 	}
-	return a.llm.GetUserMemories(ctx, in)
+	out, err := a.llm.GetUserMemories(ctx, llmv1.GetUserMemoriesReqFromMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return llmv1.GetUserMemoriesRespToMoe(out), nil
 }
 
 func (a appAdapter) UpsertUserMemory(ctx context.Context, in *moe.UpsertUserMemoryReq) (*moe.UpsertUserMemoryResp, error) {
 	if a.llm == nil {
 		return nil, errAppPortUnavailable
 	}
-	return a.llm.UpsertUserMemory(ctx, in)
+	out, err := a.llm.UpsertUserMemory(ctx, llmv1.UpsertUserMemoryReqFromMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return llmv1.UpsertUserMemoryRespToMoe(out), nil
 }
 
 func (a appAdapter) DeleteUserMemory(ctx context.Context, in *moe.DeleteUserMemoryReq) (*moe.DeleteUserMemoryResp, error) {
 	if a.llm == nil {
 		return nil, errAppPortUnavailable
 	}
-	return a.llm.DeleteUserMemory(ctx, in)
+	out, err := a.llm.DeleteUserMemory(ctx, llmv1.DeleteUserMemoryReqFromMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return llmv1.DeleteUserMemoryRespToMoe(out), nil
 }
 
 func (a appAdapter) CreatePost(ctx context.Context, in *moe.CreatePostReq) (*moe.CreatePostResp, error) {
 	if a.post == nil {
 		return nil, errAppPortUnavailable
 	}
-	return a.post.CreatePost(ctx, in)
+	out, err := a.post.CreatePost(ctx, postv1.CreatePostRequestFromMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return postv1.CreatePostReplyToMoe(out), nil
 }
 
 func (a appAdapter) UpdatePost(ctx context.Context, in *moe.UpdatePostReq) (*moe.UpdatePostResp, error) {
 	if a.post == nil {
 		return nil, errAppPortUnavailable
 	}
-	return a.post.UpdatePost(ctx, in)
+	out, err := a.post.UpdatePost(ctx, postv1.UpdatePostRequestFromMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return postv1.UpdatePostReplyToMoe(out), nil
 }
 
 func (a appAdapter) GetPost(ctx context.Context, in *moe.GetPostReq) (*moe.GetPostResp, error) {
 	if a.post == nil {
 		return nil, errAppPortUnavailable
 	}
-	return a.post.GetPost(ctx, in)
+	out, err := a.post.GetPost(ctx, postv1.GetPostRequestFromMoe(in))
+	if err != nil {
+		return nil, err
+	}
+	return postv1.GetPostReplyToMoe(out), nil
 }

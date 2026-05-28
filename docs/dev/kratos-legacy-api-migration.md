@@ -1,7 +1,8 @@
 # 存量 HTTP 接口迁移评估
 
-> **状态快照更新：2026-05-28**（P3 + P5 完成）  
+> **状态快照更新：2026-05-29**（P3 + P5 完成；P6 契约迁移 ~80%）  
 > **状态板（勾选 / 汇报用）**：[kratos-migration-status.md](./kratos-migration-status.md)  
+> **P6 契约 SSOT**：[kratos-p6-defs-to-proto.md](./kratos-p6-defs-to-proto.md)  
 > SSOT 架构：[kratos-migration.md](./kratos-migration.md) · 新接口：[new-api-kratos.md](./new-api-kratos.md) · P5-D：[kratos-p5d-zero-gozero.md](./kratos-p5d-zero-gozero.md)  
 > §0 与状态板数字不一致时，**以 `route_stats.go` + `make check` 为准**，并同步两处文档。
 
@@ -9,9 +10,9 @@
 
 ## 0. 状态快照（Now → Next）
 
-### 0.1 当前状态（Latest · 2026-05-28）
+### 0.1 当前状态（Latest · 2026-05-29）
 
-**阶段名：P3 + P4 + P5 完成 — 存量 HTTP 迁移已收口**
+**阶段名：P3 + P4 + P5 完成 — 存量 HTTP 运行时迁移已收口；P6 契约 SSOT 进行中**
 
 | 维度 | 状态 | 说明 |
 |------|------|------|
@@ -35,15 +36,28 @@ backend/api/internal/logic/            # .gitkeep（已退役）
 
 ### 0.2 下一步（维护向）
 
-HTTP 存量迁移**不再**是主轨道。见 [kratos-migration-status.md §下一步](./kratos-migration-status.md#下一步next)：
+HTTP **运行时**迁移已收口；主轨道为 **P6 契约**（defs → 域 proto）。见 [kratos-migration-status.md §下一步](./kratos-migration-status.md#下一步next)：
 
 | 优先级 | 任务 |
 |--------|------|
+| **0** | P6 收尾：`platform_compat` GW bridge · `vip/admin_rpc` · defs 注释/删除 |
 | 1 | grpc 冒烟 notify / chat / vip |
 | 2 | 分体 api/rpc 联调（若需要） |
 | 3 | 可选：从 `go.mod` 移除 go-zero（需废弃 hybrid 或拆 module） |
 
 新能力：**只**走 [new-api-kratos.md](./new-api-kratos.md)（域 proto + `internal/service`）。
+
+### 0.4 P6 契约快照（2026-05-29）
+
+| 项 | 状态 |
+|----|------|
+| `go build ./...` | ✅ |
+| `moehttp` 直调 `App(..., &moe.*)` | ✅ 已清零（经 `*v1.FromMoe`） |
+| 大域 `*_messages.proto` + `moe_bridge_gen.go` | admin · user · ai · llm · vip（5 套） |
+| 社交/平台域 `moe_bridge.go` | behavior · landing · achievement · checkin · comment · gift · post · community · notify · chat（10 套） |
+| 未收尾 | `platform_compat` 经 GW 的 `moe.*`；`service/vip/admin_rpc.go`；P6-C 删 defs |
+
+详情表：[kratos-p6-defs-to-proto.md §3](./kratos-p6-defs-to-proto.md#3-推荐批次一域一-pr)。
 
 ---
 
