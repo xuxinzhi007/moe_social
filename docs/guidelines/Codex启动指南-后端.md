@@ -1,28 +1,37 @@
 # Codex Startup Guide（后端）
 
-本项目后端位于 `backend/`，基于 **go-zero + goctl**。默认沿用现有目录分层与生成链路，不自行发明新结构。
+> **更新：2026-05-28**  
+> 生产运行时：**纯 Kratos 单进程**（`make moe-social`）。go-zero/goctl 仅用于**存量契约维护**与 `-tags hybrid` 紧急回滚。
 
-## 项目结构（后端）
+**必读 SSOT**：[kratos-migration.md](../dev/kratos-migration.md) · [kratos-migration-status.md](../dev/kratos-migration-status.md) · [new-api-kratos.md](../dev/new-api-kratos.md)
 
-- `backend/api/super.api`：HTTP API 定义单一事实来源
-- `backend/api/internal/handler`：HTTP handler（其中 `routes.go` 为生成文件）
-- `backend/api/internal/logic`：API 业务逻辑
-- `backend/api/internal/svc`：ServiceContext
-- `backend/api/super.go`：API 服务入口（含手工注册补充路由）
-- `backend/rpc/super.proto`：RPC 协议定义
-- `backend/rpc/internal/logic`：RPC 业务逻辑
-- `backend/rpc/internal/server`：RPC server（含生成文件）
-- `backend/model`：GORM 数据模型
-- `backend/utils`：基础工具与基础设施封装
-- `backend/Makefile`：代码生成、构建、Swagger 生成入口
+## 项目结构（后端 · 当前有效）
+
+| 路径 | 角色 |
+|------|------|
+| `cmd/moe-social/` | **生产入口** |
+| `config/config.yaml` | 运行时配置 SSOT |
+| `api/<domain>/v1/*.proto` | **新** HTTP/gRPC 契约 |
+| `internal/biz/<domain>/` | 业务逻辑 |
+| `internal/service/<domain>/` | 应用服务（HTTP/gRPC 调用） |
+| `api/moehttp/*_compat.go` | 存量 HTTP Kratos 路由（263） |
+| `internal/server/moekratoshttp/` | `/health`、`/migration` |
+| `internal/server/moegrpc/` | Kratos gRPC（12 域 + MoeAdmin） |
+| `api/defs/*.api` | **存量** goctl HTTP（慎改；`make gen-api`） |
+| `api/internal/handler/` | goctl 生成；**仅 hybrid 构建** |
+| `api/internal/logic/` | **已退役**（`.gitkeep`） |
+| `rpc/moe.proto` | message-only（**无** `service Super`） |
+| `rpc/internal/bootstrap/` | MoeAdmin / Bot 装配 |
+| `backend/Makefile` | `gen` / `moe-social` / `check` |
 
 ## 默认工作规则
 
-1. 修改 HTTP 接口，先改 `backend/api/super.api`，再执行 `cd backend && make gen-api`。
-2. 修改 RPC 接口，先改 `backend/rpc/super.proto`，再执行 `cd backend && make gen-rpc`。
-3. 同时涉及 API/RPC 时，执行 `cd backend && make gen`（会跑 `gen-rpc + gen-api + gen-swagger`）。
-4. Swagger 生成走 `make gen-swagger`，不要手写接口文档替代生成链路。
+1. **新接口**：改 `api/<domain>/v1/*.proto` → `internal/service` + `api/moehttp` 注册 → `cd backend && make gen`（见 [new-api-kratos.md](../dev/new-api-kratos.md)）。
+2. **存量 HTTP**：改 `api/defs/*.api` → `make gen-api`（handler 仅 hybrid；生产走 compat）。
+3. **存量 RPC message**：改 `rpc/` 域 proto 或 `moe.proto` import → `make gen-rpc`。
+4. 日常契约同步：`make gen`（域 pb + HTTP 路由表；**不**默认跑 goctl api）。
 5. 除非明确需求，不重构无关模块，不跨层搬运逻辑。
+6. 生产验收：`make check` + `go build ./api ./rpc ./cmd/moe-social`；P5-D：`go list -deps ./cmd/moe-social` 无 go-zero。
 
 ## 技能使用顺序（后端规范化）
 
@@ -41,18 +50,19 @@
 
 ## 生成文件约定（不要手改）
 
-- `backend/api/internal/handler/routes.go`
 - `backend/api/internal/types/types.go`
-- `backend/rpc/internal/server/superserver.go`
-- `backend/rpc/superclient/super.go`
-- `backend/rpc/pb/super/*.pb.go`
+- `backend/api/<domain>/v1/*.pb.go`
+- `backend/rpc/pb/**/*.pb.go`
+- `backend/api/moehttp/routes_*_gen.go`（由 `make gen-http-routes` 生成）
 
-说明：本项目存在手工扩展路由文件 `backend/api/internal/handler/routes_llm_raw.go`，用于补充生成路由之外的能力；新增此类能力请放在独立手工文件，并在 `backend/api/super.go` 中显式注册。
+存量 hybrid：`api/internal/handler/routes.go` 等（默认构建不编译）。
+
+新能力：在 `api/moehttp/<domain>_compat.go` 手维护 Kratos 路由，勿扩 goctl handler 生产路径。
 
 ## Go 开发约定（结合项目现状）
 
 - 当前 Go 版本以 `backend/go.mod` 为准（`go 1.25.5`）。
-- 保持 go-zero 分层职责：`handler` 做请求/响应适配，核心业务放 `logic` 或下游 RPC。
+- 生产分层：`moehttp` 适配 → `internal/service` → `internal/biz` → `internal/data`（按需）。
 - 跨边界调用显式透传 `context.Context`，保持 `ctx` 为首参。
 - 错误处理优先返回可读业务错误，避免把底层细节直接透出到接口层。
 - 复用现有命名风格与目录组织，不引入 `common/helper/util` 式兜底目录。
@@ -67,13 +77,13 @@ make migrate-moe    # 仅 Moe / AI 聊天相关表
 # 或全量：make db-migrate
 ```
 
-迁移完成后重启 `make rpc` / `make dev`，再在管理台「试跑并刷新」。
+迁移完成后重启 `make moe-social`（或 `make moe-social-dev`），再在管理台「试跑并刷新」。
 
 ## 修改前优先检查
 
 - `backend/Makefile`
-- 目标模块的 `backend/api/super.api` 或 `backend/rpc/super.proto`
-- 相关 `backend/api/internal/handler/*`、`backend/api/internal/logic/*`
+- 目标域 `api/<domain>/v1/*.proto` 或存量 `api/defs/*.api`
+- 相关 `api/moehttp/*_compat.go`、`internal/service/<domain>/`
 - 若涉及 LLM/raw 路由，检查 `backend/api/internal/handler/routes_llm_raw.go`
 - 若改动 `moe-admin/`（React 管理台），另读 `docs/guidelines/Codex启动指南-前端.md`（路径为 `moe-admin/src/`，非 `lib/`）
 
@@ -98,10 +108,10 @@ make migrate-moe    # 仅 Moe / AI 聊天相关表
 3. RPC 侧 Moe Brain 系列优先只维护 `moe_admin_logic.go`，删除重复的 `admin*moebrain*logic.go` 单文件。
 4. `super.api` 中每个路由必须带 `@handler`，且与现有 handler 命名一致，避免半生成状态。
 5. **推荐**：改 Moe/Admin 相关接口后执行 `cd backend && make gen-moe-admin`（`scripts/gen-moe-admin.sh` 会跑 gen 并自动删已知空壳再编译）。
-6. **Kratos（2026-05-27）**：**必读** [kratos-migration.md](../dev/kratos-migration.md)、新接口 [new-api-kratos.md](../dev/new-api-kratos.md)。**开发**：`make moe-social`（纯 Kratos :8888+:8080）。**验收**：`make check` + `curl /migration`。
-7. **生成**：`make gen` = proto + conf + HTTP 路由同步（**不**跑 goctl api/rpc）；改 `api/defs` 用 `make gen-api`；新接口用域 proto + `internal/service`。
-8. **配置**（`moe`）：`api_in_process`、`vip_api_in_process`、`user_api_in_process`、`register_moe_grpc`、`use_moe_grpc`。**对外 :8888**；8080 仅后端 gRPC。开发启动 / RPC 监控 / 内存展示见 [docs/dev/admin-rpc-runtime-guide.md](../dev/admin-rpc-runtime-guide.md)。
-9. **部署**：开发可单进程；`make build` 默认仍产出 api+rpc 两个二进制，见迁移文档 §2.5。
+6. **Kratos（2026-05-28）**：P0–P5 完成；状态板 [kratos-migration-status.md](../dev/kratos-migration-status.md)。**开发**：`make moe-social`。**P5-D**：`go list -deps ./cmd/moe-social` 无 go-zero。
+7. **生成**：`make gen` = 域 proto pb + HTTP 路由同步；改 `api/defs` 用 `make gen-api`；新接口用域 proto + `internal/service`。
+8. **配置**（`moe`）：`kratos_pure_enabled`、`super_grpc_retired`、`single_process` 等见 `config/config.yaml`。对外 **:8888** HTTP、**:8080** gRPC。
+9. **部署**：生产默认单进程 `moe-social`；分体见 [kratos-p5-split-deploy.md](../dev/kratos-p5-split-deploy.md)。hybrid 回滚：`go build -tags hybrid`。
 10. **推理模型**：发帖从 `/v1/models` 自动匹配；管理台显示 `effective_model` / `auto_discovered`。
 
 **是否拆分 `super.api` / `super.proto`？**
@@ -114,15 +124,17 @@ make migrate-moe    # 仅 Moe / AI 聊天相关表
 ## 交付前检查（最少）
 
 ```bash
-cd backend && make gen
+cd backend && make gen    # 若改了 proto/defs
 gofmt -w $(git diff --name-only -- '*.go')
-cd backend && go build ./api ./rpc
+cd backend && go build ./api ./rpc ./cmd/moe-social
+go list -deps ./cmd/moe-social | grep go-zero   # 应无输出（改生产路径时）
+make check
 ```
 
 如本次改动较集中，可补充针对性 `go test`（仅跑受影响包）。
 
 ## 重要提醒
 
-- 这是 go-zero 项目，优先复用现有写法和生成流程。
+- **生产路径**按 Kratos 分层；goctl 仅维护存量与 hybrid。
 - 生成文件应与源定义同步提交。
 - 先对齐现有模块写法，再扩展新能力。

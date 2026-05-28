@@ -23,7 +23,6 @@ import (
 	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 const PilotNativeWave2MiscCompatRoutes = 27
@@ -104,7 +103,7 @@ func adminBootstrapAccount(app *adminapp.AppService) func(khttp.Context) error {
 func adminLogin(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminLoginReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.AdminLoginResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -132,7 +131,7 @@ func adminLogin(app *adminapp.AppService) func(khttp.Context) error {
 func getUserAvatar(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetUserAvatarReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetUserAvatarResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -157,7 +156,7 @@ func getUserAvatar(app *userapp.AppService) func(khttp.Context) error {
 func updateUserAvatar(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.UpdateUserAvatarReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.UpdateUserAvatarResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -193,7 +192,7 @@ func updateUserAvatar(app *userapp.AppService) func(khttp.Context) error {
 func getNotifications(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetNotificationsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetNotificationsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -217,7 +216,7 @@ func getNotifications(app *userapp.AppService) func(khttp.Context) error {
 func readNotification(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.ReadNotificationReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{Code: -1, Message: err.Error(), Success: false})
 		}
 		_, err := app.ReadNotification(ctx, &moe.ReadNotificationReq{
@@ -236,7 +235,7 @@ func readNotification(app *userapp.AppService) func(khttp.Context) error {
 func readAllNotifications(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.ReadAllNotificationsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{Code: -1, Message: err.Error(), Success: false})
 		}
 		_, err := app.ReadAllNotifications(ctx, &moe.ReadAllNotificationsReq{UserId: req.UserId})
@@ -252,7 +251,7 @@ func readAllNotifications(app *userapp.AppService) func(khttp.Context) error {
 func getUnreadCount(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetUnreadCountReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetUnreadCountResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -271,7 +270,7 @@ func getUnreadCount(app *userapp.AppService) func(khttp.Context) error {
 func createVipPlan(vip *vipadmin.AdminService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.CreateVipPlanReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.CreateVipPlanResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -295,7 +294,7 @@ func createVipPlan(vip *vipadmin.AdminService) func(khttp.Context) error {
 func getVipPlan(vip *vipadmin.AdminService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetVipPlanReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetVipPlanResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -335,7 +334,7 @@ func listVipPlans(vip *vipadmin.AdminService) func(khttp.Context) error {
 func getAvatarOutfits(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetAvatarOutfitsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetAvatarOutfitsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -364,7 +363,7 @@ func getAvatarOutfits(app *userapp.AppService) func(khttp.Context) error {
 func getAvatarOutfit(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetAvatarOutfitReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetAvatarOutfitResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -383,7 +382,7 @@ func getAvatarOutfit(app *userapp.AppService) func(khttp.Context) error {
 func purchaseAvatarOutfit(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.PurchaseAvatarOutfitReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.PurchaseAvatarOutfitResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -402,7 +401,7 @@ func purchaseAvatarOutfit(app *userapp.AppService) func(khttp.Context) error {
 func getEmojiPacks(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetEmojiPacksReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetEmojiPacksResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -430,7 +429,7 @@ func getEmojiPacks(app *userapp.AppService) func(khttp.Context) error {
 func getEmojiPack(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetEmojiPackReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetEmojiPackResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -449,7 +448,7 @@ func getEmojiPack(app *userapp.AppService) func(khttp.Context) error {
 func favoriteEmojiPack(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.FavoriteEmojiPackReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.FavoriteEmojiPackResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -464,7 +463,7 @@ func favoriteEmojiPack(app *userapp.AppService) func(khttp.Context) error {
 func purchaseEmojiPack(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.PurchaseEmojiPackReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.PurchaseEmojiPackResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -483,7 +482,7 @@ func purchaseEmojiPack(app *userapp.AppService) func(khttp.Context) error {
 func getUserEmojiPacks(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetUserEmojiPacksReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetUserEmojiPacksResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -506,7 +505,7 @@ func getUserEmojiPacks(app *userapp.AppService) func(khttp.Context) error {
 func generateContent(app *contentapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.ContentGenerationReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.ContentGenerationResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -545,7 +544,7 @@ func getImageList(app *mediaapp.AppService) func(khttp.Context) error {
 			return ctx.JSON(http.StatusUnauthorized, types.BaseResp{Code: 401, Message: "unauthorized", Success: false})
 		}
 		var req types.GetImageListReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetImageListResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -578,7 +577,7 @@ func deleteImage(app *mediaapp.AppService) func(khttp.Context) error {
 			return ctx.JSON(http.StatusUnauthorized, types.BaseResp{Code: 401, Message: "unauthorized", Success: false})
 		}
 		var req types.DeleteImageReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.DeleteImageResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -599,7 +598,7 @@ func deleteImage(app *mediaapp.AppService) func(khttp.Context) error {
 func serveImage(app *mediaapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.DeleteImageReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{Code: -1, Message: err.Error(), Success: false})
 		}
 		file, err := app.OpenImage(ctx, req.Filename)
@@ -660,7 +659,7 @@ func uploadImage(app *mediaapp.AppService) func(khttp.Context) error {
 func broadcastNotification(app *chatapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.BroadcastNotificationReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{Code: -1, Message: err.Error(), Success: false})
 		}
 		_ = app.BroadcastPushNotification(ctx, req.Type, req.Data)
@@ -671,7 +670,7 @@ func broadcastNotification(app *chatapp.AppService) func(khttp.Context) error {
 func sendNotification(app *chatapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.SendNotificationReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{Code: -1, Message: err.Error(), Success: false})
 		}
 		if app.PushNotification(ctx, req.UserId, req.Type, req.Data) {
@@ -684,7 +683,7 @@ func sendNotification(app *chatapp.AppService) func(khttp.Context) error {
 func sendBatchNotification(app *chatapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.SendBatchNotificationReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{Code: -1, Message: err.Error(), Success: false})
 		}
 		_ = app.PushBatchNotification(ctx, req.UserIDs, req.Type, req.Data)

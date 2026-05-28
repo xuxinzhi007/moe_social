@@ -12,7 +12,6 @@ import (
 	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 // PilotNativeCheckinCompatRoutes 签到域 Kratos HTTP（internal/service）。
@@ -43,7 +42,7 @@ func RegisterCheckinCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 func checkIn(app *checkinapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.CheckInReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.CheckInResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -71,7 +70,7 @@ func checkIn(app *checkinapp.AppService) func(khttp.Context) error {
 func getCheckInStatus(app *checkinapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetCheckInStatusReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetCheckInStatusResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -99,7 +98,7 @@ func getCheckInStatus(app *checkinapp.AppService) func(khttp.Context) error {
 func getCheckInHistory(app *checkinapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetCheckInHistoryReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetCheckInHistoryResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -133,7 +132,7 @@ func getCheckInHistory(app *checkinapp.AppService) func(khttp.Context) error {
 func getExpLogs(app *checkinapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetExpLogsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetExpLogsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -167,7 +166,7 @@ func getExpLogs(app *checkinapp.AppService) func(khttp.Context) error {
 func getUserLevel(app *checkinapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetUserLevelReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetUserLevelResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -222,7 +221,7 @@ func adminUpdateCheckInReward(app *adminapp.AppService, svcCtx *svc.ServiceConte
 			return ctx.JSON(http.StatusOK, types.AdminUpdateCheckInRewardResp{BaseResp: *br})
 		}
 		var req types.AdminUpdateCheckInRewardReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.AdminUpdateCheckInRewardResp{
 				BaseResp: common.HandleError(err),
 			})

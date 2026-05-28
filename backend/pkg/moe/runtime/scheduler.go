@@ -7,7 +7,7 @@ import (
 
 	"backend/model"
 
-	"github.com/zeromicro/go-zero/core/logx"
+	"backend/internal/platform/moelog"
 	"gorm.io/gorm"
 )
 
@@ -25,11 +25,11 @@ var (
 // StartScheduler 在 RPC 进程内启动定时扫描（cron + smart）。
 func StartScheduler(parent context.Context, deps Deps, opts SchedulerOpts, smart SmartOpts) {
 	if !opts.Enabled {
-		logx.Info("moe bot scheduler disabled")
+		moelog.Info("moe bot scheduler disabled")
 		return
 	}
 	if deps.DB == nil {
-		logx.Error("moe bot scheduler: db nil")
+		moelog.Error("moe bot scheduler: db nil")
 		return
 	}
 	tick := opts.TickInterval
@@ -45,7 +45,7 @@ func StartScheduler(parent context.Context, deps Deps, opts SchedulerOpts, smart
 	schedulerCancel = cancel
 	schedulerMu.Unlock()
 
-	logx.Infof("moe bot scheduler started tick=%s", tick)
+	moelog.Infof("moe bot scheduler started tick=%s", tick)
 
 	go func() {
 		// 启动后稍等 DB 就绪
@@ -55,7 +55,7 @@ func StartScheduler(parent context.Context, deps Deps, opts SchedulerOpts, smart
 		for {
 			select {
 			case <-ctx.Done():
-				logx.Info("moe bot scheduler stopped")
+				moelog.Info("moe bot scheduler stopped")
 				return
 			case <-ticker.C:
 				runDueScheduled(ctx, deps, smart)
@@ -72,25 +72,25 @@ func runDueScheduled(ctx context.Context, deps Deps, smart SmartOpts) {
 		true, ScheduleCron, now,
 	).Find(&rows).Error
 	if err != nil {
-		logx.Errorf("moe scheduler list: %v", err)
+		moelog.Errorf("moe scheduler list: %v", err)
 		return
 	}
 	for i := range rows {
 		rt := rows[i]
-		logx.Infof("moe scheduler run agent=%s bot_user=%d", rt.AgentKey, rt.BotUserID)
+		moelog.Infof("moe scheduler run agent=%s bot_user=%d", rt.AgentKey, rt.BotUserID)
 		result, runErr := RunAgentForAgent(ctx, deps, rt.AgentKey, TriggerCron)
 		if runErr != nil {
-			logx.Errorf("moe scheduler run-once %s: %v", rt.AgentKey, runErr)
+			moelog.Errorf("moe scheduler run-once %s: %v", rt.AgentKey, runErr)
 			continue
 		}
 		if !result.OK {
-			logx.Errorf("moe scheduler run-once %s failed: %s", rt.AgentKey, result.Detail)
+			moelog.Errorf("moe scheduler run-once %s failed: %s", rt.AgentKey, result.Detail)
 		} else {
-			logx.Infof("moe scheduler posted agent=%s post_id=%s", rt.AgentKey, result.PostID)
+			moelog.Infof("moe scheduler posted agent=%s post_id=%s", rt.AgentKey, result.PostID)
 		}
 		next, nerr := NextCronRun(rt.ScheduleCron, now)
 		if nerr != nil {
-			logx.Errorf("moe scheduler next run %s: %v", rt.AgentKey, nerr)
+			moelog.Errorf("moe scheduler next run %s: %v", rt.AgentKey, nerr)
 			continue
 		}
 		_ = deps.DB.Model(&model.MoeAgentRuntime{}).Where("id = ?", rt.ID).
@@ -107,21 +107,21 @@ func runDueSmart(ctx context.Context, deps Deps, smart SmartOpts, now time.Time)
 		true, ScheduleSmart, now,
 	).Find(&rows).Error
 	if err != nil {
-		logx.Errorf("moe smart scheduler list: %v", err)
+		moelog.Errorf("moe smart scheduler list: %v", err)
 		return
 	}
 	for i := range rows {
 		rt := rows[i]
 		should, reason, evalErr := evaluateSmartPost(ctx, deps, rt, smart)
 		if evalErr != nil {
-			logx.Errorf("moe smart evaluate %s: %v", rt.AgentKey, evalErr)
+			moelog.Errorf("moe smart evaluate %s: %v", rt.AgentKey, evalErr)
 			retry := smartRetryAt(now, smart)
 			_ = deps.DB.Model(&model.MoeAgentRuntime{}).Where("id = ?", rt.ID).
 				Update("next_run_at", retry).Error
 			continue
 		}
 		if !should {
-			logx.Infof("moe smart skip agent=%s reason=%s", rt.AgentKey, reason)
+			moelog.Infof("moe smart skip agent=%s reason=%s", rt.AgentKey, reason)
 			retry := smartRetryAt(now, smart)
 			if rt.ScheduleCron != "" {
 				if next, nerr := NextCronRun(rt.ScheduleCron, now); nerr == nil {
@@ -134,16 +134,16 @@ func runDueSmart(ctx context.Context, deps Deps, smart SmartOpts, now time.Time)
 				Update("next_run_at", retry).Error
 			continue
 		}
-		logx.Infof("moe smart post agent=%s reason=%s", rt.AgentKey, reason)
+		moelog.Infof("moe smart post agent=%s reason=%s", rt.AgentKey, reason)
 		result, runErr := RunAgentForAgent(ctx, deps, rt.AgentKey, TriggerCron)
 		if runErr != nil {
-			logx.Errorf("moe smart run-once %s: %v", rt.AgentKey, runErr)
+			moelog.Errorf("moe smart run-once %s: %v", rt.AgentKey, runErr)
 			continue
 		}
 		if !result.OK {
-			logx.Errorf("moe smart run-once %s failed: %s", rt.AgentKey, result.Detail)
+			moelog.Errorf("moe smart run-once %s failed: %s", rt.AgentKey, result.Detail)
 		} else {
-			logx.Infof("moe smart posted agent=%s post_id=%s", rt.AgentKey, result.PostID)
+			moelog.Infof("moe smart posted agent=%s post_id=%s", rt.AgentKey, result.PostID)
 		}
 		retry := smartRetryAt(now, smart)
 		if rt.ScheduleCron != "" {

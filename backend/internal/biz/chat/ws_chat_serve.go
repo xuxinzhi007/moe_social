@@ -12,7 +12,7 @@ import (
 	"backend/utils"
 
 	"github.com/gorilla/websocket"
-	"github.com/zeromicro/go-zero/core/logx"
+	"backend/internal/platform/moelog"
 	"google.golang.org/grpc"
 )
 
@@ -43,12 +43,12 @@ func ServeChatWS(w http.ResponseWriter, r *http.Request, ctx context.Context, de
 
 	conn, err := wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
-		logx.Errorf("chat ws upgrade: %v", err)
+		moelog.Errorf("chat ws upgrade: %v", err)
 		return
 	}
 
 	RegisterChatWSConnection(userID, conn)
-	logx.Infof("Chat user %s connected", userID)
+	moelog.Infof("Chat user %s connected", userID)
 	go handleChatWSLoop(ctx, userID, conn, deps)
 }
 
@@ -57,7 +57,7 @@ func handleChatWSLoop(ctx context.Context, userID string, conn *websocket.Conn, 
 		TryMatchCancel(userID)
 		UnregisterChatWSConnection(userID)
 		_ = conn.Close()
-		logx.Infof("Chat user %s disconnected", userID)
+		moelog.Infof("Chat user %s disconnected", userID)
 	}()
 
 	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
@@ -70,11 +70,11 @@ func handleChatWSLoop(ctx context.Context, userID string, conn *websocket.Conn, 
 		_, message, err := conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				logx.Errorf("chat ws error: %v", err)
+				moelog.Errorf("chat ws error: %v", err)
 			}
 			break
 		}
-		logx.WithContext(ctx).Debugf("chat ws raw from %s len=%d", userID, len(message))
+		moelog.WithContext(ctx).Debugf("chat ws raw from %s len=%d", userID, len(message))
 		handleChatWSMessage(ctx, userID, message, deps)
 	}
 }
@@ -82,15 +82,15 @@ func handleChatWSLoop(ctx context.Context, userID string, conn *websocket.Conn, 
 func handleChatWSMessage(ctx context.Context, userID string, message []byte, deps ChatWSDeps) {
 	var msg map[string]interface{}
 	if err := json.Unmarshal(message, &msg); err != nil {
-		logx.Errorf("chat ws unmarshal: %v", err)
+		moelog.Errorf("chat ws unmarshal: %v", err)
 		return
 	}
 	msgType, ok := msg["type"].(string)
 	if !ok {
-		logx.Errorf("chat ws invalid message type")
+		moelog.Errorf("chat ws invalid message type")
 		return
 	}
-	logx.WithContext(ctx).Debugf("chat ws message from %s type=%s", userID, msgType)
+	moelog.WithContext(ctx).Debugf("chat ws message from %s type=%s", userID, msgType)
 
 	send := func(uid string, data interface{}) bool {
 		return PushJSONToChatUser(uid, data)
@@ -107,7 +107,7 @@ func handleChatWSMessage(ctx context.Context, userID string, message []byte, dep
 	case "message":
 		handleChatWSPrivateMessage(ctx, userID, msg, deps, send)
 	default:
-		logx.WithContext(ctx).Debugf("chat ws unknown type from %s: %s", userID, msgType)
+		moelog.WithContext(ctx).Debugf("chat ws unknown type from %s: %s", userID, msgType)
 	}
 }
 
@@ -120,12 +120,12 @@ func handleChatWSPrivateMessage(
 ) {
 	content, ok := msg["content"].(string)
 	if !ok {
-		logx.Errorf("chat ws invalid message content")
+		moelog.Errorf("chat ws invalid message content")
 		return
 	}
 	targetID, ok := PeerUserIDFromChatMessage(msg)
 	if !ok {
-		logx.Errorf("chat ws invalid target id")
+		moelog.Errorf("chat ws invalid target id")
 		return
 	}
 
@@ -136,7 +136,7 @@ func handleChatWSPrivateMessage(
 		senderAvatar = avatar
 	}
 
-	logx.WithContext(ctx).Debugf("chat ws send from=%s to=%s", userID, targetID)
+	moelog.WithContext(ctx).Debugf("chat ws send from=%s to=%s", userID, targetID)
 
 	if deps.PM == nil {
 		_ = send(userID, map[string]interface{}{
@@ -153,7 +153,7 @@ func handleChatWSPrivateMessage(
 		ImagePaths: extractImagePathsFromWSMsg(msg),
 	})
 	if rpcErr != nil {
-		logx.Errorf("SendPrivateMessage (ws path): %v", rpcErr)
+		moelog.Errorf("SendPrivateMessage (ws path): %v", rpcErr)
 	}
 	if rpcErr != nil || rpcResp == nil || rpcResp.Message == nil || strings.TrimSpace(rpcResp.Message.Id) == "" {
 		_ = send(userID, map[string]interface{}{

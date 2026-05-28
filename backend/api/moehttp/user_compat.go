@@ -12,7 +12,6 @@ import (
 	"backend/utils"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 // PilotNativeUserCompatRoutes 用户 / 鉴权 / 社交 / VIP（UserApp tier-A）。
@@ -84,7 +83,7 @@ func RegisterUserCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 func feishuAuthorizeURL(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.FeishuAuthorizeURLReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.FeishuAuthorizeURLResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -105,7 +104,7 @@ func feishuAuthorizeURL(app *userapp.AppService) func(khttp.Context) error {
 func feishuLogin(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.FeishuLoginReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.FeishuLoginResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -139,7 +138,7 @@ func feishuPublicConfig() func(khttp.Context) error {
 func wechatAuthorizeURL(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.WechatAuthorizeURLReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.WechatAuthorizeURLResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -160,7 +159,7 @@ func wechatAuthorizeURL(app *userapp.AppService) func(khttp.Context) error {
 func wechatLogin(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.WechatLoginReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.WechatLoginResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -184,7 +183,7 @@ func wechatLogin(app *userapp.AppService) func(khttp.Context) error {
 func login(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.LoginReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.LoginResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -206,7 +205,7 @@ func login(app *userapp.AppService) func(khttp.Context) error {
 func register(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.RegisterReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.RegisterResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -228,7 +227,7 @@ func register(app *userapp.AppService) func(khttp.Context) error {
 func resetPassword(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.ResetPasswordReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.ResetPasswordResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -258,7 +257,7 @@ func resetPassword(app *userapp.AppService) func(khttp.Context) error {
 func checkUserByEmail(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetUserByEmailReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetUserByEmailResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -282,7 +281,7 @@ func checkUserByEmail(app *userapp.AppService) func(khttp.Context) error {
 func getUsers(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetUsersReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetUsersResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -320,7 +319,7 @@ func getUserCount(app *userapp.AppService) func(khttp.Context) error {
 func getUserInfo(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetUserInfoReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetUserInfoResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -338,7 +337,7 @@ func getUserInfo(app *userapp.AppService) func(khttp.Context) error {
 func getUser(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetUserReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetUserResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -356,7 +355,7 @@ func getUser(app *userapp.AppService) func(khttp.Context) error {
 func updateUserInfo(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.UpdateUserInfoReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.UpdateUserInfoResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -379,7 +378,7 @@ func updateUserInfo(app *userapp.AppService) func(khttp.Context) error {
 func updateUserPassword(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.UpdateUserPasswordReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.UpdateUserPasswordResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -399,7 +398,7 @@ func updateUserPassword(app *userapp.AppService) func(khttp.Context) error {
 func deleteUser(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.DeleteUserReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.DeleteUserResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -435,7 +434,7 @@ func deleteMyAccount(app *userapp.AppService) func(khttp.Context) error {
 func bindFeishu(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.BindFeishuReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BindFeishuResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -495,7 +494,7 @@ func sendFeishuTestCard(app *userapp.AppService) func(khttp.Context) error {
 func followUser(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.FollowUserReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.FollowUserResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -513,7 +512,7 @@ func followUser(app *userapp.AppService) func(khttp.Context) error {
 func unfollowUser(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.UnfollowUserReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.FollowUserResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -531,7 +530,7 @@ func unfollowUser(app *userapp.AppService) func(khttp.Context) error {
 func checkFollow(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.CheckFollowReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.CheckFollowResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -551,7 +550,7 @@ func checkFollow(app *userapp.AppService) func(khttp.Context) error {
 func getFollowers(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetFollowersReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetFollowersResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -577,7 +576,7 @@ func getFollowers(app *userapp.AppService) func(khttp.Context) error {
 func getFollowings(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetFollowingsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetFollowingsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -603,7 +602,7 @@ func getFollowings(app *userapp.AppService) func(khttp.Context) error {
 func sendFriendRequest(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.SendFriendRequestReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.SendFriendRequestResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -643,7 +642,7 @@ func listOutgoingFriendRequests(app *userapp.AppService) func(khttp.Context) err
 func friendRequestList(app *userapp.AppService, incoming bool) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.FriendUserPathReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.ListFriendRequestsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -695,7 +694,7 @@ func rejectFriendRequest(app *userapp.AppService) func(khttp.Context) error {
 func friendRequestAction(app *userapp.AppService, accept bool) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.FriendRequestActionReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.FriendRequestActionResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -738,7 +737,7 @@ func friendRequestAction(app *userapp.AppService, accept bool) func(khttp.Contex
 func listFriends(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.FriendUserPathReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.ListFriendsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -772,7 +771,7 @@ func listFriends(app *userapp.AppService) func(khttp.Context) error {
 func getFriendStatus(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.FriendStatusPathReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.FriendStatusResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -805,7 +804,7 @@ func getFriendStatus(app *userapp.AppService) func(khttp.Context) error {
 func listUserDevices(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.ListUserDevicesReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.ListUserDevicesResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -830,7 +829,7 @@ func listUserDevices(app *userapp.AppService) func(khttp.Context) error {
 func syncUserDevice(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.SyncUserDeviceReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.SyncUserDeviceResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -852,7 +851,7 @@ func syncUserDevice(app *userapp.AppService) func(khttp.Context) error {
 func getTransactions(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetTransactionsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetTransactionsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -877,7 +876,7 @@ func getTransactions(app *userapp.AppService) func(khttp.Context) error {
 func getTransaction(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetTransactionReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetTransactionResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -896,7 +895,7 @@ func getTransaction(app *userapp.AppService) func(khttp.Context) error {
 func recharge(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.RechargeReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.RechargeResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -920,7 +919,7 @@ func recharge(app *userapp.AppService) func(khttp.Context) error {
 func getUserVipStatus(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetUserActiveVipRecordReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetUserVipStatusResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -941,7 +940,7 @@ func getUserVipStatus(app *userapp.AppService) func(khttp.Context) error {
 func checkUserVip(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.CheckUserVipReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.CheckUserVipResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -961,7 +960,7 @@ func checkUserVip(app *userapp.AppService) func(khttp.Context) error {
 func updateUserVip(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.UpdateUserVipReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.UpdateUserVipResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -981,7 +980,7 @@ func updateUserVip(app *userapp.AppService) func(khttp.Context) error {
 func syncUserVipStatus(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.SyncUserVipStatusReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.SyncUserVipStatusResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -1000,7 +999,7 @@ func syncUserVipStatus(app *userapp.AppService) func(khttp.Context) error {
 func updateAutoRenew(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.UpdateAutoRenewReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return err
 		}
 		_, err := app.UpdateAutoRenew(ctx, &moe.UpdateAutoRenewReq{UserId: req.UserId, AutoRenew: req.AutoRenew})
@@ -1014,7 +1013,7 @@ func updateAutoRenew(app *userapp.AppService) func(khttp.Context) error {
 func getUserActiveVipRecord(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetUserActiveVipRecordReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetUserActiveVipRecordResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -1033,7 +1032,7 @@ func getUserActiveVipRecord(app *userapp.AppService) func(khttp.Context) error {
 func getVipOrders(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetVipOrdersReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetVipOrdersResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -1059,7 +1058,7 @@ func getVipOrders(app *userapp.AppService) func(khttp.Context) error {
 func createVipOrder(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.CreateVipOrderReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.CreateVipOrderResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -1079,7 +1078,7 @@ func createVipOrder(app *userapp.AppService) func(khttp.Context) error {
 func getVipHistory(app *userapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetVipHistoryReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetVipHistoryResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})

@@ -20,11 +20,13 @@ make moe-social-dev
 - **布局**：[LAYOUT.md](LAYOUT.md) · **新接口**：[docs/dev/new-api-kratos.md](../docs/dev/new-api-kratos.md)
 - **脚本**：见 [scripts/README.md](scripts/README.md)
 
-历史 `make api` / `make rpc` 分离启动仅用于紧急回滚或调试，日常不必使用。
+历史 `make api` / `make rpc` 或 `go build -tags hybrid` 仅用于紧急回滚，日常不必使用。
+
+**迁移状态（2026-05-28）**：P0–P5 完成 · 生产依赖树零 go-zero · 详见 [docs/dev/kratos-migration-status.md](../docs/dev/kratos-migration-status.md)。
 
 ---
 
-基于 go-zero 生成链 + Kratos 传输层的用户管理与 VIP 会员系统。
+以下为历史简介（技术栈段落仍含 go-zero 供 hybrid/存量维护参考；**生产运行时以 Kratos 为准**）。
 
 ## 📋 项目简介
 

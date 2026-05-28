@@ -1,12 +1,15 @@
-# Backend 布局（Kratos 生产 · PK-13+）
+# Backend 布局（Kratos 生产 · P5 完成）
+
+> **更新：2026-05-28**  
+> 状态：[docs/dev/kratos-migration-status.md](../docs/dev/kratos-migration-status.md) · P5-D：[docs/dev/kratos-p5d-zero-gozero.md](../docs/dev/kratos-p5d-zero-gozero.md)
 
 ## 运行
 
 ```bash
-make moe-social    # 单进程 Kratos HTTP :8888 + gRPC :8080
+make moe-social    # 单进程 Kratos HTTP :8888 + gRPC :8080（依赖树零 go-zero）
 ```
 
-配置 SSOT：`config/config.yaml`。
+配置 SSOT：`config/config.yaml`（`kratos_pure_enabled: true`、`super_grpc_retired: true`）。
 
 ---
 
@@ -17,62 +20,64 @@ cmd/moe-social/                 # 入口
 config/config.yaml              # 运行时
 
 api/<domain>/v1/*.proto         # 契约 SSOT（新能力）
-api/<domain>/v1/*.pb.go         # make gen-moe-proto
+api/<domain>/v1/*.pb.go         # make gen
 
 internal/biz/<domain>/          # 业务
-internal/data/<domain>/         # 持久化（P4-D；landing 试点）
+internal/data/<domain>/         # 持久化（P4-D；20/21 域）
 internal/service/<domain>/      # 应用服务
 api/moehttp/                    # Kratos HTTP（*_compat.go 手维护）
 internal/server/moekratoshttp/  # /health、/migration
-internal/server/moegrpc/        # Kratos gRPC（按需）
+internal/server/moegrpc/        # 12 域 gRPC + MoeAdmin
 internal/platform/moesocial/    # 启动编排
 ```
 
-**新接口开发手册**：[docs/dev/new-api-kratos.md](../docs/dev/new-api-kratos.md)  
+**新接口**：[docs/dev/new-api-kratos.md](../docs/dev/new-api-kratos.md)  
 **存量 compat 清单**：[docs/dev/kratos-legacy-api-migration.md](../docs/dev/kratos-legacy-api-migration.md)
 
 ---
 
-## `api/moehttp`（2026-05-27）
+## `api/moehttp`
 
 | 文件模式 | 作用 |
 |----------|------|
-| `*_compat.go` | 按域 Kratos 路由；直挂 App/biz |
-| `compat_invoke.go` | `invokeLogicJSON` 共享 |
+| `*_compat.go` | 按域 Kratos 路由 → `internal/service/*App` |
+| `compat_invoke.go` | 共享 JSON 绑定辅助 |
 | `register_all.go` | 统一注册入口 |
-| `routes_native_gen.go` | **`nativeDomainRouteCount = 0`**（空操作） |
+| `routes_native_gen.go` | **`nativeDomainRouteCount = 0`** |
 | `routes_bridge_gen.go` | swagger 等 **2** 条 bridge |
 | `route_stats.go` | `/migration` 进度口径 |
 
-已删除：`user_logic_compat.go`、`wave2_logic_compat.go`、`platform_logic_compat.go`。
-
 ---
 
-## 存量目录（维护老接口，勿扩展新路由）
+## 存量 / 回滚（默认构建不编译）
 
 | 目录 | 角色 |
 |------|------|
-| `api/defs/*.api` + `api/moe.api` | goctl HTTP 契约（FS-8 分片） |
-| `api/internal/handler`、`types` | goctl 生成；**Hybrid 回滚壳**（生产不注册） |
+| `api/defs/*.api` | goctl HTTP 契约（慎改；`make gen-api`） |
+| `api/internal/handler/**` | `//go:build hybrid` |
 | `api/internal/logic/` | **已退役**（`.gitkeep`） |
-| `rpc/` | Super / MoeAdmin goctl gRPC |
-| `api/etc/moe.yaml`、`rpc/etc/moe.yaml` | goctl 结构片段，**不是**运行时端口 SSOT |
+| `api/internal/types` | goctl 请求/响应类型（compat 仍用） |
+| `rpc/moe.proto` | message-only（**无** `service Super`） |
+| `rpc/internal/bootstrap/` | MoeAdmin / Bot |
+| `api/etc/moe.yaml`、`rpc/etc/moe.yaml` | goctl 结构片段，**非**端口 SSOT |
 
 ---
 
 ## 数据流
 
 ```text
-生产:
+HTTP 生产:
   Client → :8888 api/moehttp/<domain>_compat.go
          → internal/service/<domain>
          → internal/biz/<domain>
-         → internal/data/<domain>（P4 起逐步接入）
+         → internal/data/<domain>（按需）
 
-gRPC:
-  Client → :8080 internal/server/moegrpc 或 rpc/server
-         → rpc/logic 或 service → biz
+gRPC 生产:
+  Client → :8080 internal/server/moegrpc/<domain>
+         → internal/service/<domain> → biz → data
 ```
+
+**不再经过**：go-zero `rest` 对外监听、`Super` gRPC、`api/internal/logic`。
 
 ---
 

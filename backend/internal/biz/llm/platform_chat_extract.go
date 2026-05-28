@@ -8,7 +8,7 @@ import (
 
 	"backend/rpc/pb/moe"
 
-	"github.com/zeromicro/go-zero/core/logx"
+	"backend/internal/platform/moelog"
 )
 
 // persistChatTurnsAfterReply 将本轮 user/assistant 写入 RPC 会话表（需 session_id）。
@@ -99,7 +99,7 @@ func extractAndSaveMemoriesWithSource(
 		return
 	}
 
-	logger := logx.WithContext(ctx)
+	logger := moelog.WithContext(ctx)
 
 	var sb strings.Builder
 	for _, m := range history {

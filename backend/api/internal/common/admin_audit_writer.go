@@ -7,7 +7,7 @@ import (
 	"backend/api/internal/svc"
 	"backend/rpc/pb/moe"
 
-	"github.com/zeromicro/go-zero/core/logx"
+	"backend/internal/platform/moelog"
 )
 
 // TryRecordAdminAudit 在管理写操作成功后异步写入审计日志（失败不影响主流程）。
@@ -36,7 +36,7 @@ func TryRecordAdminAudit(ctx context.Context, svcCtx *svc.ServiceContext, action
 	}
 	go func() {
 		if _, err := svcCtx.AdminGW.RecordAdminAuditLog(context.Background(), req); err != nil {
-			logx.Errorf("record admin audit action=%s resource=%s: %v", action, resource, err)
+			moelog.Error("record admin audit", "action", action, "resource", resource, "err", err)
 		}
 	}()
 }

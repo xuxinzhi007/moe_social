@@ -11,7 +11,7 @@ import (
 	"backend/utils"
 
 	"github.com/gorilla/websocket"
-	"github.com/zeromicro/go-zero/core/logx"
+	"backend/internal/platform/moelog"
 )
 
 var (
@@ -87,7 +87,7 @@ func ServePresenceWS(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
-		logx.Errorf("presence ws upgrade: %v", err)
+		moelog.Errorf("presence ws upgrade: %v", err)
 		return
 	}
 
@@ -101,7 +101,7 @@ func ServePresenceWS(w http.ResponseWriter, r *http.Request) {
 	presenceConnectionsMutex.Unlock()
 
 	becameOnline := presence.DefaultState.Add(userID)
-	logx.Infof("Presence user %s connected", userID)
+	moelog.Infof("Presence user %s connected", userID)
 
 	sendPresenceSnapshot(userID)
 
@@ -123,7 +123,7 @@ func handlePresenceWSLoop(userID string, member *presenceConn) {
 		presenceConnectionsMutex.Unlock()
 
 		member.close()
-		logx.Infof("Presence user %s disconnected", userID)
+		moelog.Infof("Presence user %s disconnected", userID)
 
 		if becameOffline {
 			broadcastPresence(userID, false)
@@ -149,7 +149,7 @@ func handlePresenceWSLoop(userID string, member *presenceConn) {
 		_, message, err := member.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				logx.Errorf("presence ws error: %v", err)
+				moelog.Errorf("presence ws error: %v", err)
 			}
 			break
 		}
@@ -160,7 +160,7 @@ func handlePresenceWSLoop(userID string, member *presenceConn) {
 func handlePresenceWSMessage(userID string, message []byte) {
 	var msg map[string]interface{}
 	if err := json.Unmarshal(message, &msg); err != nil {
-		logx.Errorf("presence ws unmarshal: %v", err)
+		moelog.Errorf("presence ws unmarshal: %v", err)
 		return
 	}
 	msgType, ok := msg["type"].(string)
@@ -192,7 +192,7 @@ func broadcastPresence(userID string, online bool) {
 	}
 	msgData, err := json.Marshal(message)
 	if err != nil {
-		logx.Errorf("presence broadcast marshal: %v", err)
+		moelog.Errorf("presence broadcast marshal: %v", err)
 		return
 	}
 
@@ -208,7 +208,7 @@ func broadcastPresence(userID string, online bool) {
 
 	for _, pc := range recipients {
 		if !pc.writeText(msgData) {
-			logx.Errorf("presence broadcast write failed")
+			moelog.Errorf("presence broadcast write failed")
 		}
 	}
 }

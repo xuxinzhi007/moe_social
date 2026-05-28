@@ -33,13 +33,10 @@ import (
 	"backend/rpc/internal/bootstrap"
 	"backend/rpc/internal/config"
 	"backend/rpc/internal/debug"
-	"backend/rpc/internal/server"
 	"backend/rpc/internal/svc"
-	moerpc "backend/rpc/pb/moe"
 
 	"github.com/go-kratos/kratos/v2/transport/grpc"
-	"github.com/zeromicro/go-zero/core/conf"
-	"github.com/zeromicro/go-zero/core/service"
+	"backend/internal/platform/yamlconf"
 	googlegrpc "google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -55,14 +52,14 @@ type KratosStartResult struct {
 // StartKratos 使用 kratos/transport/grpc 监听（Super + MoeAdmin）。
 func StartKratos(opts Options) (*KratosStartResult, *debug.Monitor, error) {
 	var c config.Config
-	conf.MustLoad(opts.ConfigFile, &c)
+	yamlconf.MustLoad(opts.ConfigFile, &c)
 	ApplyUnifiedConfigOverrides(&c)
 	svcCtx := svc.NewServiceContext(c, opts.Migrate)
 	bootstrap.RegisterSocialAchievementHooks()
 
 	addr := normalizeListenAddr(c.ListenOn, "8080")
 	grpcSrv := grpc.NewServer(grpc.Address(addr))
-	registerKratosGRPCServices(grpcSrv, svcCtx, c.Mode)
+	registerKratosGRPCServices(grpcSrv, svcCtx, c)
 	bootstrap.WireMoeAdmin(svcCtx)
 	bootstrap.StartMoeBotScheduler(context.Background(), svcCtx)
 
@@ -94,11 +91,10 @@ func normalizeListenAddr(host, defaultPort string) string {
 	return host + ":" + defaultPort
 }
 
-func registerKratosGRPCServices(grpcSrv *grpc.Server, svcCtx *svc.ServiceContext, mode string) {
+func registerKratosGRPCServices(grpcSrv *grpc.Server, svcCtx *svc.ServiceContext, c config.Config) {
 	if grpcSrv == nil || svcCtx == nil {
 		return
 	}
-	moerpc.RegisterSuperServer(grpcSrv, server.NewSuperServer(svcCtx))
 	if svcCtx.LandingApp != nil {
 		landingv1.RegisterLandingServer(grpcSrv, landinggrpc.New(svcCtx.LandingApp))
 	}
@@ -135,7 +131,7 @@ func registerKratosGRPCServices(grpcSrv *grpc.Server, svcCtx *svc.ServiceContext
 	if moewiring.RegisterMoeGRPCEnabled() && svcCtx.MoeAdmin != nil {
 		moepb.RegisterMoeAdminServer(grpcSrv, moegrpcserver.New(svcCtx.MoeAdmin))
 	}
-	if mode == service.DevMode || mode == service.TestMode {
+	if c.DevOrTest() {
 		if underlying := kratosUnderlyingGRPC(grpcSrv); underlying != nil {
 			reflection.Register(underlying)
 		}

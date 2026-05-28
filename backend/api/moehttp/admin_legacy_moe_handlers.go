@@ -23,7 +23,6 @@ import (
 	"backend/utils"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func moeAdminUnavailable() types.BaseResp {
@@ -36,7 +35,7 @@ func adminDeleteMoeBrainEpisode(admin *moeadmin.AdminService) func(khttp.Context
 			return ctx.JSON(http.StatusOK, moeAdminUnavailable())
 		}
 		var req types.AdminDeleteMoeBrainEpisodeReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -54,7 +53,7 @@ func adminRefineMoeBrainEpisode(admin *moeadmin.AdminService) func(khttp.Context
 			return ctx.JSON(http.StatusOK, types.AdminRefineMoeBrainEpisodeResp{BaseResp: moeAdminUnavailable()})
 		}
 		var req types.AdminRefineMoeBrainEpisodeReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -76,7 +75,7 @@ func adminStreamMoeBrainPipeline(admin *moeadmin.AdminService) func(khttp.Contex
 		w := ctx.Response()
 		r := ctx.Request()
 		var req types.AdminGetMoeBrainPipelineReq
-		if err := httpx.Parse(r, &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return err
 		}
 		agentKey := req.AgentKey
@@ -148,7 +147,7 @@ func adminStreamMoeBrainPipeline(admin *moeadmin.AdminService) func(khttp.Contex
 func adminGetMoeInferenceStatus(admin *moeadmin.AdminService, svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminGetMoeInferenceStatusReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -239,7 +238,7 @@ func adminGetMoeBrain(admin *moeadmin.AdminService) func(khttp.Context) error {
 			return ctx.JSON(http.StatusOK, types.AdminGetMoeBrainResp{BaseResp: moeAdminUnavailable()})
 		}
 		var req types.AdminGetMoeBrainReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -262,7 +261,7 @@ func adminCurateMoeBrain(admin *moeadmin.AdminService) func(khttp.Context) error
 			return ctx.JSON(http.StatusOK, types.AdminCurateMoeBrainResp{BaseResp: moeAdminUnavailable()})
 		}
 		var req types.AdminCurateMoeBrainReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -297,7 +296,7 @@ func adminUpdateMoeBrainPolicy(admin *moeadmin.AdminService) func(khttp.Context)
 			return ctx.JSON(http.StatusOK, types.AdminGetMoeBrainResp{BaseResp: moeAdminUnavailable()})
 		}
 		var req types.AdminUpdateMoeBrainPolicyReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -320,7 +319,7 @@ func adminGetMoeBotFlow(admin *moeadmin.AdminService) func(khttp.Context) error 
 			return ctx.JSON(http.StatusOK, types.AdminGetMoeBotFlowResp{BaseResp: moeAdminUnavailable()})
 		}
 		var req types.AdminGetMoeBotFlowReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -344,7 +343,7 @@ func adminUpsertMoeBotFlow(admin *moeadmin.AdminService) func(khttp.Context) err
 			return ctx.JSON(http.StatusOK, types.AdminUpsertMoeBotFlowResp{BaseResp: moeAdminUnavailable()})
 		}
 		var req types.AdminUpsertMoeBotFlowReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -369,7 +368,7 @@ func adminDeleteMoeBotFlow(admin *moeadmin.AdminService) func(khttp.Context) err
 			return ctx.JSON(http.StatusOK, types.AdminDeleteMoeBotFlowResp{BaseResp: moeAdminUnavailable()})
 		}
 		var req types.AdminDeleteMoeBotFlowReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -393,7 +392,7 @@ func adminRunMoeAgentOnce(admin *moeadmin.AdminService) func(khttp.Context) erro
 			return ctx.JSON(http.StatusOK, types.AdminRunMoeAgentResp{BaseResp: moeAdminUnavailable()})
 		}
 		var req types.AdminRunMoeAgentReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -429,7 +428,7 @@ func adminListMoeToolCalls(admin *moeadmin.AdminService) func(khttp.Context) err
 			return ctx.JSON(http.StatusOK, types.AdminListMoeToolCallsResp{BaseResp: moeAdminUnavailable()})
 		}
 		var req types.AdminListMoeToolCallsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -489,7 +488,7 @@ func adminGetMoeToolStats(admin *moeadmin.AdminService) func(khttp.Context) erro
 			return ctx.JSON(http.StatusOK, types.AdminGetMoeToolStatsResp{BaseResp: moeAdminUnavailable()})
 		}
 		var req types.AdminGetMoeToolStatsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})

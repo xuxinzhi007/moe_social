@@ -8,7 +8,6 @@ import (
 	"backend/api/internal/types"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 // invokeLogicJSON 解析 types 请求并调用 legacy logic，返回可 JSON 序列化的响应。
@@ -18,7 +17,7 @@ func invokeLogicJSON[Req any](
 ) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req Req
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})

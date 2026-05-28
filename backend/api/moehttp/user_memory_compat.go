@@ -14,7 +14,6 @@ import (
 	"backend/utils"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 // PilotNativeUserMemoryCompatRoutes 用户记忆（LLMApp tier-A）。
@@ -39,7 +38,7 @@ func RegisterUserMemoryCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 func upsertUserMemory(app *llmapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.UpsertUserMemoryReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.UpsertUserMemoryResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -61,7 +60,7 @@ func upsertUserMemory(app *llmapp.AppService) func(khttp.Context) error {
 func getUserMemories(app *llmapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetUserMemoriesReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetUserMemoriesResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -87,7 +86,7 @@ func getUserMemories(app *llmapp.AppService) func(khttp.Context) error {
 func deleteUserMemory(app *llmapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.DeleteUserMemoryReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.DeleteUserMemoryResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -105,7 +104,7 @@ func deleteUserMemory(app *llmapp.AppService) func(khttp.Context) error {
 func getUserMemoriesDisplay(app *llmapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetUserMemoriesReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return err
 		}
 		userID, err := authUserIDFromBearer(ctx)
@@ -143,7 +142,7 @@ func getUserMemoriesDisplay(app *llmapp.AppService) func(khttp.Context) error {
 func submitUserMemoryFeedback(app *llmapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.SubmitUserMemoryFeedbackReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.SubmitUserMemoryFeedbackResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -165,7 +164,7 @@ func submitUserMemoryFeedback(app *llmapp.AppService) func(khttp.Context) error 
 func getUserMemoryProfiles(app *llmapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetUserMemoryProfilesReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetUserMemoryProfilesResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -208,7 +207,7 @@ func rebuildUserMemoryEmbeddings(app *llmapp.AppService) func(khttp.Context) err
 func searchUserMemories(svcCtx *svc.ServiceContext, app *llmapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.SearchUserMemoriesReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return err
 		}
 		const listLimit = 200

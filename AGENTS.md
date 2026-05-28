@@ -15,7 +15,7 @@ Frontend code is in `lib/`, organized by feature under `lib/pages/<domain>/` wit
 - `cd backend && go test ./...`: run backend tests.
 
 ## Coding Rules
-Match existing structure before adding new abstractions. Use `snake_case.dart` filenames, `PascalCase` types, `camelCase` members, and 2-space Dart indentation. Keep UI logic in pages/widgets, shared state in providers, and network or persistence code in services. For Go, keep logic in `internal/logic`, format with `gofmt`, and avoid editing generated files by hand.
+Match existing structure before adding new abstractions. Use `snake_case.dart` filenames, `PascalCase` types, `camelCase` members, and 2-space Dart indentation. Keep UI logic in pages/widgets, shared state in providers, and network or persistence code in services. For Go, keep business logic in `internal/biz` (and `internal/service` for orchestration), format with `gofmt`, and avoid editing generated files by hand. Production entry: `cd backend && make moe-social`; see `docs/dev/kratos-migration-status.md`.
 
 ## Kratos migration status
 

@@ -8,31 +8,31 @@ import (
 	notifybiz "backend/internal/biz/notify"
 	"backend/rpc/pb/moe"
 
-	"github.com/zeromicro/go-zero/core/logx"
+	"backend/internal/platform/moelog"
 	"google.golang.org/grpc"
 )
 
-// NotificationTypePrivateChat 与 model.Notification.Type 一致：6=私信。
+// NotificationTypePrivateChat ?? model.Notification.Type ???????6=?????
 const NotificationTypePrivateChat = 6
 
-// UserProfileReader 查询用户展示资料。
+// UserProfileReader ?????????????????????
 type UserProfileReader interface {
 	GetUser(ctx context.Context, in *moe.GetUserReq, opts ...grpc.CallOption) (*moe.GetUserResp, error)
 }
 
-// NotificationWriter 离线通知写入（RPC 兜底）。
+// NotificationWriter ????????????????RPC ??????????
 type NotificationWriter interface {
 	CreateNotification(ctx context.Context, in *moe.CreateNotificationReq, opts ...grpc.CallOption) (*moe.CreateNotificationResp, error)
 }
 
-// DeliveryDeps 私信实时投递依赖。
+// DeliveryDeps ???????????????????
 type DeliveryDeps struct {
 	UserReader  UserProfileReader
 	NotifyStore notifybiz.NotifyStore
 	NotifyRPC   NotificationWriter
 }
 
-// ResolvePrivateMessageSenderProfile 私信投递时的展示名与头像。
+// ResolvePrivateMessageSenderProfile ???????????????????????????
 func ResolvePrivateMessageSenderProfile(
 	ctx context.Context,
 	deps DeliveryDeps,
@@ -63,12 +63,12 @@ func ResolvePrivateMessageSenderProfile(
 		}
 	}
 	if senderName == "" {
-		senderName = "用户"
+		senderName = "??????"
 	}
 	return senderName, senderAvatar
 }
 
-// PersistOfflinePrivateChatNotification 对端无 WS 时写入通知中心。
+// PersistOfflinePrivateChatNotification ????? WS ?????????????????????
 func PersistOfflinePrivateChatNotification(ctx context.Context, deps DeliveryDeps, targetUserID, fromUserID, content, senderName string) {
 	body := strings.TrimSpace(content)
 	if body == "" || targetUserID == fromUserID {
@@ -77,7 +77,7 @@ func PersistOfflinePrivateChatNotification(ctx context.Context, deps DeliveryDep
 	if len(body) > 200 {
 		body = body[:200]
 	}
-	if senderName != "" && senderName != "用户" {
+	if senderName != "" && senderName != "??????" {
 		body = senderName + ": " + body
 		if len(body) > 200 {
 			body = body[:200]
@@ -97,13 +97,13 @@ func PersistOfflinePrivateChatNotification(ctx context.Context, deps DeliveryDep
 		_, err = deps.NotifyRPC.CreateNotification(ctx, req)
 	}
 	if err != nil {
-		logx.WithContext(ctx).Errorf("offline private chat notify to=%s from=%s: %v", targetUserID, fromUserID, err)
+		moelog.Errorf("offline private chat notify to=%s from=%s: %v", targetUserID, fromUserID, err)
 		return
 	}
-	logx.WithContext(ctx).Debugf("offline private chat notification to=%s from=%s", targetUserID, fromUserID)
+	moelog.Infof("offline private chat notification to=%s from=%s", targetUserID, fromUserID)
 }
 
-// DeliverPrivateMessageRealTime 私信写入 DB 后 WS 推送接收方，失败则通知兜底。
+// DeliverPrivateMessageRealTime ???????? DB ?? WS ????????????????????????????????????
 func DeliverPrivateMessageRealTime(
 	ctx context.Context,
 	deps DeliveryDeps,

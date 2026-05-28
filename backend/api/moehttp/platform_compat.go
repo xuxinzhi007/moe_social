@@ -23,7 +23,6 @@ import (
 	"backend/utils"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 // PilotNativePlatformCompatRoutes LLM 读/写 / voice / moe / appcfg（全部 tier-A）。
@@ -81,7 +80,7 @@ func platMoeToolsSchema(app *moeadmin.PlatformApp) func(khttp.Context) error {
 func platMoeExecuteTool(app *moeadmin.PlatformApp) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.MoeToolExecuteReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			http.Error(ctx.Response(), err.Error(), http.StatusBadRequest)
 			return nil
 		}
@@ -117,7 +116,7 @@ func platMoeExecuteTool(app *moeadmin.PlatformApp) func(khttp.Context) error {
 func platVoiceCall(app *voiceapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.VoiceCallReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			http.Error(ctx.Response(), err.Error(), http.StatusBadRequest)
 			return nil
 		}
@@ -144,7 +143,7 @@ func platVoiceCall(app *voiceapp.AppService) func(khttp.Context) error {
 func platVoiceAnswer(app *voiceapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.VoiceAnswerReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			http.Error(ctx.Response(), err.Error(), http.StatusBadRequest)
 			return nil
 		}
@@ -168,7 +167,7 @@ func platVoiceAnswer(app *voiceapp.AppService) func(khttp.Context) error {
 func platVoiceCancel(app *voiceapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.VoiceCancelReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			http.Error(ctx.Response(), err.Error(), http.StatusBadRequest)
 			return nil
 		}
@@ -188,7 +187,7 @@ func platVoiceCancel(app *voiceapp.AppService) func(khttp.Context) error {
 func platVoiceReject(app *voiceapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.VoiceRejectReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			http.Error(ctx.Response(), err.Error(), http.StatusBadRequest)
 			return nil
 		}
@@ -208,7 +207,7 @@ func platVoiceReject(app *voiceapp.AppService) func(khttp.Context) error {
 func platVoiceToken(app *voiceapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetRtcTokenReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			http.Error(ctx.Response(), err.Error(), http.StatusBadRequest)
 			return nil
 		}
@@ -326,7 +325,7 @@ func platPublicClientConfig(svcCtx *svc.ServiceContext) func(khttp.Context) erro
 func platGetContentList(app *contentapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.ContentListReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -429,7 +428,7 @@ func platformConfigSnapshotFromSvc(svcCtx *svc.ServiceContext) llmbiz.ConfigSnap
 func platCreateAgent(app *llmapp.AppService, svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.LlmCreateAgentReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -444,7 +443,7 @@ func platCreateAgent(app *llmapp.AppService, svcCtx *svc.ServiceContext) func(kh
 func platChat(app *llmapp.AppService, svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.LlmChatReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -465,7 +464,7 @@ func platChat(app *llmapp.AppService, svcCtx *svc.ServiceContext) func(khttp.Con
 func platDeleteModel(app *llmapp.AppService, svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.LlmDeleteModelReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -478,7 +477,7 @@ func platDeleteModel(app *llmapp.AppService, svcCtx *svc.ServiceContext) func(kh
 func platDownloadModel(app *llmapp.AppService, svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.LlmDownloadModelReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})

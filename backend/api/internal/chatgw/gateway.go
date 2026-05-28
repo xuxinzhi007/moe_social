@@ -1,6 +1,7 @@
 package chatgw
 
 import (
+	"backend/api/internal/gwutil"
 	"context"
 
 	chatapp "backend/internal/service/chat"
@@ -12,12 +13,11 @@ import (
 // Gateway Chat HTTP → biz 或 super RPC 回退。
 type Gateway struct {
 	local *chatapp.AppService
-	super moe.SuperClient
 }
 
 // New 构造网关。
-func New(local *chatapp.AppService, legacy moe.SuperClient) *Gateway {
-	return &Gateway{local: local, super: legacy}
+func New(local *chatapp.AppService) *Gateway {
+	return &Gateway{local: local}
 }
 
 // Route 当前路由。
@@ -28,9 +28,6 @@ func (g *Gateway) Route() string {
 	if g.local != nil {
 		return "in_process"
 	}
-	if g.super != nil {
-		return "super"
-	}
 	return "none"
 }
 
@@ -39,7 +36,7 @@ func (g *Gateway) SendPrivateMessage(ctx context.Context, in *moe.SendPrivateMes
 	if g != nil && g.local != nil {
 		return g.local.SendPrivateMessage(ctx, in)
 	}
-	return g.super.SendPrivateMessage(ctx, in, opts...)
+	return nil, gwutil.ErrUnavailable
 }
 
 // ListPrivateMessages 私信历史。
@@ -47,7 +44,7 @@ func (g *Gateway) ListPrivateMessages(ctx context.Context, in *moe.ListPrivateMe
 	if g != nil && g.local != nil {
 		return g.local.ListPrivateMessages(ctx, in)
 	}
-	return g.super.ListPrivateMessages(ctx, in, opts...)
+	return nil, gwutil.ErrUnavailable
 }
 
 // ListPrivateConversations 会话列表。
@@ -55,5 +52,5 @@ func (g *Gateway) ListPrivateConversations(ctx context.Context, in *moe.ListPriv
 	if g != nil && g.local != nil {
 		return g.local.ListPrivateConversations(ctx, in)
 	}
-	return g.super.ListPrivateConversations(ctx, in, opts...)
+	return nil, gwutil.ErrUnavailable
 }

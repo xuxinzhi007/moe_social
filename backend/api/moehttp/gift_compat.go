@@ -10,7 +10,6 @@ import (
 	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 // PilotNativeGiftCompatRoutes 礼物域 Kratos HTTP（internal/service/gift）。
@@ -64,7 +63,7 @@ func giftFromRPC(g *moe.Gift) types.Gift {
 func giftList(app *giftapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetGiftsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetGiftsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -90,7 +89,7 @@ func giftList(app *giftapp.AppService) func(khttp.Context) error {
 func giftGet(app *giftapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetGiftReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetGiftResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -109,7 +108,7 @@ func giftGet(app *giftapp.AppService) func(khttp.Context) error {
 func giftSend(app *giftapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.SendGiftReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.SendGiftResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -135,7 +134,7 @@ func giftSend(app *giftapp.AppService) func(khttp.Context) error {
 func giftRecords(app *giftapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetGiftRecordsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetGiftRecordsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -164,7 +163,7 @@ func giftRecords(app *giftapp.AppService) func(khttp.Context) error {
 func giftPurchaseOrders(app *giftapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetGiftPurchaseOrdersReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetGiftPurchaseOrdersResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -198,7 +197,7 @@ func giftPurchaseOrders(app *giftapp.AppService) func(khttp.Context) error {
 func giftPurchase(app *giftapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.PurchaseGiftReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.PurchaseGiftResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})

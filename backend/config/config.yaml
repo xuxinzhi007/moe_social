@@ -200,7 +200,7 @@ moe:
   # API Admin Moe 在无 api_in_process 时优先走 moe gRPC（否则 super Admin*）
   use_moe_grpc: true
   # 单进程：make moe-social 时为 true；与 api_in_process 搭配，Moe Admin 全走进程内分层
-  single_process: false
+  single_process: true
   # PK-2 纯 Kratos 灰度（需并行 make moe-kratos；对外仍 :8888）
   # Moe Admin 读：ListRuntimes、GetBrainPipeline
   kratos_admin_http_enabled: false
@@ -227,6 +227,8 @@ moe:
   # PK-11（kratos_pure=true 时自动开启）：Super 使用 kratos/transport/grpc，非 zrpc
   kratos_super_grpc_native: true
   kratos_admin_base_url: "http://127.0.0.1:8888"
+  # P5：单进程退役 Super gRPC（域 gRPC 12/12 + 进程内 App）；分体部署 api/rpc 容器时设为 false
+  super_grpc_retired: true
   # Phase 4 试点进程默认值（cmd/moe-kratos；CLI 参数可覆盖）
   # 生产对外端口不变：Flutter / moe-admin 仍 :8888（由 moe-social / go-zero API 提供）
   production:

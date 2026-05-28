@@ -18,12 +18,18 @@ import (
 	"gorm.io/gorm"
 )
 
-// NewAPIAdminService 在 API 进程装配 MoeAdmin（需已配置数据库；Super 走 gRPC 客户端）。
-func NewAPIAdminService(superClient moe.SuperClient) (*moeadmin.AdminService, error) {
-	if superClient == nil {
+// NewAPIAdminService 在 API 进程装配 MoeAdmin（需已配置数据库）。
+// superClient 与 appPort 二选一：P5 单进程用 appPort（Post/LLM App），分体部署用 Super gRPC。
+func NewAPIAdminService(superClient moe.SuperClient, appPort port.SuperPort) (*moeadmin.AdminService, error) {
+	var sp port.SuperPort
+	switch {
+	case appPort != nil:
+		sp = appPort
+	case superClient != nil:
+		sp = port.GRPCAdapter{Client: superClient}
+	default:
 		return nil, nil
 	}
-	// api_in_process 需在 API 进程连库；未配置库时返回 error，由 moe.go 降级为纯 RPC。
 	if err := utils.EnsureDB(); err != nil {
 		return nil, err
 	}
@@ -32,26 +38,25 @@ func NewAPIAdminService(superClient moe.SuperClient) (*moeadmin.AdminService, er
 		return nil, nil
 	}
 	admin := moeadmin.NewAdmin(db)
-	grpcPort := port.GRPCAdapter{Client: superClient}
 	inf := moeconfig.InferenceFromViper()
 
-	admin.AttachSuperPort(func(context.Context) port.SuperPort { return grpcPort })
+	admin.AttachSuperPort(func(context.Context) port.SuperPort { return sp })
 	admin.AttachRuntimeDeps(func(context.Context) runtime.Deps {
 		return runtime.Deps{
-			DB: db, RPC: grpcPort, Inference: inf,
+			DB: db, RPC: sp, Inference: inf,
 			ResolvePostingPlan: func(ctx context.Context, gdb *gorm.DB, agentKey string) (plan flowexec.Plan, err error) {
 				return moebiz.ResolvePostingPlan(ctx, moedata.NewStore(gdb), agentKey)
 			},
 		}
 	})
 	admin.AttachBrainDeps(func(context.Context) brain.Deps {
-		return brain.Deps{DB: db, RPC: grpcPort}
+		return brain.Deps{DB: db, RPC: sp}
 	})
 	admin.AttachBrainRefineDeps(func(context.Context) brain.RefineDeps {
-		return brain.RefineDeps{DB: db, RPC: grpcPort, Inference: inf}
+		return brain.RefineDeps{DB: db, RPC: sp, Inference: inf}
 	})
 	admin.AttachToolsDeps(func(context.Context) tools.Deps {
-		return tools.Deps{DB: db, RPC: grpcPort, Inference: inf}
+		return tools.Deps{DB: db, RPC: sp, Inference: inf}
 	})
 	return admin, nil
 }

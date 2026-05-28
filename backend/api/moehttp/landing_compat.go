@@ -11,7 +11,6 @@ import (
 	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 // PilotNativeLandingCompatRoutes Landing 域 Kratos 原生 HTTP（internal/service，PK-10 首批）。
@@ -35,7 +34,7 @@ func RegisterLandingCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 func landingSubmit(app *landingapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.SubmitLandingFeedbackReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.SubmitLandingFeedbackResp{
 				BaseResp: common.HandleError(err),
 			})
@@ -72,7 +71,7 @@ func landingList(app *landingapp.AppService, requireAdmin bool) func(khttp.Conte
 			}
 		}
 		var req types.ListLandingFeedbackReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.ListLandingFeedbackResp{
 				BaseResp: common.HandleError(err),
 			})

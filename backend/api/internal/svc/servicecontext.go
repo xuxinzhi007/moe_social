@@ -34,15 +34,13 @@ import (
 	postapp "backend/internal/service/post"
 	userapp "backend/internal/service/user"
 	vipadmin "backend/internal/service/vip"
-	"backend/rpc/pb/moe"
 	"backend/utils"
 
-	"github.com/zeromicro/go-zero/zrpc"
+	"backend/internal/platform/grpcclient"
 )
 
 type ServiceContext struct {
 	Config         config.Config
-	SuperRpcClient moe.SuperClient
 	MoeAdmin       *moeadmin.AdminService
 	MoeGRPC        moepb.MoeAdminClient
 	MoeGW          *moeadmingw.Gateway
@@ -78,34 +76,34 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	rpcClient := zrpc.MustNewClient(c.SuperRpc)
-	conn := rpcClient.Conn()
-	superClient := moe.NewSuperClient(conn)
-
 	var moeGRPC moepb.MoeAdminClient
-	if moewiring.UseMoeGRPCEnabled() {
+	// 分体部署：super_grpc_retired=false 时仍可 dial MoeAdmin gRPC（无 Super 单体服务）
+	if !moewiring.SuperGrpcRetired() && moewiring.UseMoeGRPCEnabled() {
+		conn, err := grpcclient.Dial(c.SuperRpc)
+		if err != nil {
+			panic(err)
+		}
 		moeGRPC = moewiring.NewMoeGRPCAdminClient(conn)
 	}
 
 	return &ServiceContext{
 		Config:         c,
-		SuperRpcClient: superClient,
 		MoeGRPC:        moeGRPC,
-		MoeGW:          moeadmingw.NewConfigured(nil, moeGRPC, superClient),
-		LandingGW:      landinggw.New(nil, superClient),
-		AdminGW:        admingw.NewConfigured(nil, superClient),
-		AIGW:           aigw.New(nil, superClient),
-		BehaviorGW:     behaviorgw.New(nil, superClient),
-		PostGW:         postgw.New(nil, superClient),
-		CommentGW:      commentgw.New(nil, superClient),
-		CommunityGW:    communitygw.New(nil, superClient),
-		CheckInGW:      checkinwg.New(nil, superClient),
-		AchievementGW:  achievementgw.New(nil, superClient),
-		GiftGW:         giftgw.New(nil, superClient),
-		LLMGW:          llmgw.New(nil, superClient),
-		ChatGW:         chatgw.New(nil, superClient),
-		UserGW:         usergw.New(nil, superClient),
-		VipGW:          vipadmingw.NewConfigured(nil, superClient),
+		MoeGW:          moeadmingw.NewConfigured(nil, moeGRPC),
+		LandingGW:      landinggw.New(nil),
+		AdminGW:        admingw.NewConfigured(nil),
+		AIGW:           aigw.New(nil),
+		BehaviorGW:     behaviorgw.New(nil),
+		PostGW:         postgw.New(nil),
+		CommentGW:      commentgw.New(nil),
+		CommunityGW:    communitygw.New(nil),
+		CheckInGW:      checkinwg.New(nil),
+		AchievementGW:  achievementgw.New(nil),
+		GiftGW:         giftgw.New(nil),
+		LLMGW:          llmgw.New(nil),
+		ChatGW:         chatgw.New(nil),
+		UserGW:         usergw.New(nil),
+		VipGW:          vipadmingw.NewConfigured(nil),
 		ModelCache:     utils.NewModelCache(),
 	}
 }

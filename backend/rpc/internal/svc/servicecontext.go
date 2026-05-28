@@ -3,6 +3,7 @@ package svc
 import (
 	"fmt"
 
+	"backend/internal/adapter/moeconfig"
 	achievementapp "backend/internal/service/achievement"
 	chatapp "backend/internal/service/chat"
 	checkinapp "backend/internal/service/checkin"
@@ -10,6 +11,7 @@ import (
 	communityapp "backend/internal/service/community"
 	giftapp "backend/internal/service/gift"
 	landingapp "backend/internal/service/landing"
+	llmapp "backend/internal/service/llm"
 	moeadmin "backend/internal/service/moe"
 	notifyapp "backend/internal/service/notify"
 	postapp "backend/internal/service/post"
@@ -17,7 +19,7 @@ import (
 	"backend/rpc/internal/config"
 	"backend/utils"
 
-	"github.com/zeromicro/go-zero/core/logx"
+	"backend/internal/platform/moelog"
 	"gorm.io/gorm"
 )
 
@@ -29,6 +31,7 @@ type ServiceContext struct {
 	CheckinApp     *checkinapp.AppService
 	AchievementApp *achievementapp.AppService
 	PostApp        *postapp.AppService
+	LLMApp         *llmapp.AppService
 	GiftApp        *giftapp.AppService
 	UserApp        *userapp.AppService
 	CommentApp     *commentapp.AppService
@@ -46,7 +49,7 @@ func NewServiceContext(c config.Config, migrateOpts utils.MigrateOptions) *Servi
 		panic(fmt.Sprintf("JWT 配置无效: %v", err))
 	}
 	if err := utils.LoadAdminJWTFromViper(); err != nil {
-		logx.Errorf("Admin JWT 未配置: %v（管理后台登录不可用）", err)
+		moelog.Error("Admin JWT 未配置（管理后台登录不可用）", "err", err)
 	}
 
 	// 初始化数据库连接（-migrate / -migrate-models：见 rpc/super.go）
@@ -63,6 +66,7 @@ func NewServiceContext(c config.Config, migrateOpts utils.MigrateOptions) *Servi
 		CheckinApp:     checkinapp.New(db),
 		AchievementApp: achievementapp.New(db),
 		PostApp:        postapp.New(db, c.HandDrawRequireModeration),
+		LLMApp:         llmapp.New(db, llmapp.Deps{Inference: moeconfig.InferenceFromViper()}),
 		GiftApp:        giftapp.New(db),
 		UserApp:        userapp.New(db),
 		CommentApp:     commentapp.New(db),

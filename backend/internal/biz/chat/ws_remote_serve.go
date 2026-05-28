@@ -10,7 +10,7 @@ import (
 	"backend/utils"
 
 	"github.com/gorilla/websocket"
-	"github.com/zeromicro/go-zero/core/logx"
+	"backend/internal/platform/moelog"
 )
 
 var wsUpgrader = websocket.Upgrader{
@@ -32,11 +32,11 @@ func ServeRemoteWS(w http.ResponseWriter, r *http.Request) {
 	userID := fmt.Sprintf("%d", claims.UserID)
 	conn, err := wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
-		logx.Errorf("remote ws upgrade: %v", err)
+		moelog.Errorf("remote ws upgrade: %v", err)
 		return
 	}
 	RegisterWSConnection(userID, conn)
-	logx.Infof("remote ws user %s connected", userID)
+	moelog.Infof("remote ws user %s connected", userID)
 	go handleRemoteWSLoop(userID, conn)
 }
 
@@ -55,7 +55,7 @@ func handleRemoteWSLoop(userID string, conn *websocket.Conn) {
 	defer func() {
 		UnregisterWSConnection(userID)
 		_ = conn.Close()
-		logx.Infof("remote ws user %s disconnected", userID)
+		moelog.Infof("remote ws user %s disconnected", userID)
 	}()
 	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	conn.SetPongHandler(func(string) error {
@@ -66,7 +66,7 @@ func handleRemoteWSLoop(userID string, conn *websocket.Conn) {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				logx.Errorf("remote ws error: %v", err)
+				moelog.Errorf("remote ws error: %v", err)
 			}
 			break
 		}
@@ -77,7 +77,7 @@ func handleRemoteWSLoop(userID string, conn *websocket.Conn) {
 func handleRemoteWSMessage(userID string, message []byte) {
 	var msg map[string]interface{}
 	if err := json.Unmarshal(message, &msg); err != nil {
-		logx.Errorf("remote ws unmarshal: %v", err)
+		moelog.Errorf("remote ws unmarshal: %v", err)
 		return
 	}
 	msgType, _ := msg["type"].(string)

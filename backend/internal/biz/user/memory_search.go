@@ -10,7 +10,7 @@ import (
 	"backend/pkg/memory/embed"
 	"backend/rpc/pb/moe"
 
-	"github.com/zeromicro/go-zero/core/logx"
+	"backend/internal/platform/moelog"
 )
 
 // SearchUserMemoriesResult 记忆库查询结果。
@@ -52,7 +52,7 @@ func SearchUserFacingMemories(memories []*moe.UserMemory, query string, limit in
 
 // HybridSearchUserFacingMemories Phase 2+3：混合检索 → 图谱扩展 → rerank。
 func HybridSearchUserFacingMemories(ctx context.Context, p MemorySearchParams) SearchUserMemoriesResult {
-	logger := logx.WithContext(ctx)
+	logger := moelog.WithContext(ctx)
 	records := memory.RecordsFromSuper(p.Memories)
 	hcfg, _, _ := embed.LoadEnhanceConfig()
 	if !hcfg.Enabled {

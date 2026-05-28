@@ -148,6 +148,15 @@ func KratosPureHTTPWithoutLegacy() bool {
 	return KratosPureEnabled()
 }
 
+// SuperGrpcRetired P5：单进程生产不再注册 Super gRPC、API 不走 Super 回环（域 gRPC + 进程内 App）。
+func SuperGrpcRetired() bool {
+	if !boolOr(moeViper(), []string{"moe.super_grpc_retired"}, false) {
+		return false
+	}
+	// 分体部署（api/rpc 容器）需 Super 回环，仅单进程允许退役。
+	return SingleProcessEnabled()
+}
+
 // KratosPK8GoctlRetired PK-8：日常 make gen 不跑 goctl api；改 defs 用 make gen-api；HTTP 由 api/moehttp 注册。
 func KratosPK8GoctlRetired() bool {
 	if KratosPureEnabled() {

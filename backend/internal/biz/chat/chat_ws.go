@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/gorilla/websocket"
-	"github.com/zeromicro/go-zero/core/logx"
+	"backend/internal/platform/moelog"
 )
 
 var (
@@ -56,12 +56,12 @@ func PushJSONToChatUser(userID string, data interface{}) bool {
 	}
 	msgData, err := json.Marshal(data)
 	if err != nil {
-		logx.Errorf("chat marshal to user=%s: %v", key, err)
+		moelog.Errorf("chat marshal to user=%s: %v", key, err)
 		return false
 	}
 	err = conn.WriteMessage(websocket.TextMessage, msgData)
 	if err != nil {
-		logx.Errorf("chat write to user=%s: %v", key, err)
+		moelog.Errorf("chat write to user=%s: %v", key, err)
 		chatConnectionsMutex.Lock()
 		delete(chatConnections, key)
 		chatConnectionsMutex.Unlock()

@@ -9,7 +9,6 @@ import (
 	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 // PilotNativeAchievementCompatRoutes 成就域 Kratos HTTP。
@@ -31,7 +30,7 @@ func RegisterAchievementCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 func getUserAchievements(app *achievementapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetUserAchievementsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetUserAchievementsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -52,7 +51,7 @@ func getUserAchievements(app *achievementapp.AppService) func(khttp.Context) err
 func getUserUnlockedAchievements(app *achievementapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetUserUnlockedAchievementsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetUserUnlockedAchievementsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -73,7 +72,7 @@ func getUserUnlockedAchievements(app *achievementapp.AppService) func(khttp.Cont
 func getUserAchievementSummary(app *achievementapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetUserAchievementSummaryReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetUserAchievementSummaryResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -99,7 +98,7 @@ func getUserAchievementSummary(app *achievementapp.AppService) func(khttp.Contex
 func ensureUserAchievements(app *achievementapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.EnsureUserAchievementsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.EnsureUserAchievementsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})

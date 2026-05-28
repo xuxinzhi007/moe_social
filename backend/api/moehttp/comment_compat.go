@@ -10,7 +10,6 @@ import (
 	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 // PilotNativeCommentCompatRoutes 评论写操作 Kratos HTTP（internal/service/comment）。
@@ -30,7 +29,7 @@ func RegisterCommentCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 func createComment(app *commentapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.CreateCommentReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.CreateCommentResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -58,7 +57,7 @@ func createComment(app *commentapp.AppService) func(khttp.Context) error {
 func likeComment(app *commentapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.LikeCommentReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.LikeCommentResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})

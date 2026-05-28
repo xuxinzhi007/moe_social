@@ -17,7 +17,6 @@ import (
 	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 const PilotNativeAiCompatRoutes = 14
@@ -51,7 +50,7 @@ func RegisterAiCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 func aiListAgents(app *aiapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.EmptyReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -68,7 +67,7 @@ func aiListAgents(app *aiapp.AppService) func(khttp.Context) error {
 func aiUpsertAgent(app *aiapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AiResourceUpsertReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -88,7 +87,7 @@ func aiUpsertAgent(app *aiapp.AppService) func(khttp.Context) error {
 func aiDeleteAgent(app *aiapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AiResourceDeleteReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -111,7 +110,7 @@ func aiDeleteAgent(app *aiapp.AppService) func(khttp.Context) error {
 func aiListPublicAgents(app *aiapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.ListPublicAiAgentsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -138,7 +137,7 @@ func aiListPublicAgents(app *aiapp.AppService) func(khttp.Context) error {
 func aiListLorebooks(app *aiapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.EmptyReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -155,7 +154,7 @@ func aiListLorebooks(app *aiapp.AppService) func(khttp.Context) error {
 func aiUpsertLorebook(app *aiapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AiLorebookUpsertReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -179,7 +178,7 @@ func aiUpsertLorebook(app *aiapp.AppService) func(khttp.Context) error {
 func aiDeleteLorebook(app *aiapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AiResourceDeleteReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -202,7 +201,7 @@ func aiDeleteLorebook(app *aiapp.AppService) func(khttp.Context) error {
 func aiListProviders(app *aiapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.EmptyReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -219,7 +218,7 @@ func aiListProviders(app *aiapp.AppService) func(khttp.Context) error {
 func aiUpsertProvider(app *aiapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AiResourceUpsertReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -239,7 +238,7 @@ func aiUpsertProvider(app *aiapp.AppService) func(khttp.Context) error {
 func aiDeleteProvider(app *aiapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AiResourceDeleteReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -262,7 +261,7 @@ func aiDeleteProvider(app *aiapp.AppService) func(khttp.Context) error {
 func aiGetUserConfig(app *llmapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.EmptyReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -293,7 +292,7 @@ func aiGetUserConfig(app *llmapp.AppService) func(khttp.Context) error {
 func aiUpsertUserConfig(app *llmapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AiUserConfigReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -337,7 +336,7 @@ func aiUpsertUserConfig(app *llmapp.AppService) func(khttp.Context) error {
 func aiGetAiMemorySettings(app *llmapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.EmptyReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -358,7 +357,7 @@ func aiGetAiMemorySettings(app *llmapp.AppService) func(khttp.Context) error {
 func aiPutAiMemorySettings(app *llmapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AiMemorySettingsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})

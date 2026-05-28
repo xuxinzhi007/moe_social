@@ -8,7 +8,7 @@ import (
 	"backend/common/errorcode"
 	"backend/rpc/pb/moe"
 
-	"github.com/zeromicro/go-zero/core/logx"
+	"backend/internal/platform/moelog"
 )
 
 func platformOutcomeOK(content string, ratio float64, summarized bool) PlatformChatOutcome {
@@ -47,15 +47,15 @@ func ExecutePlatformChat(ctx context.Context, deps PlatformChatDeps, in Platform
 		var memories []*moe.UserMemory
 		if cached, hit := getCachedUserMemories(userIDForLog); hit {
 			memories = cached
-			logx.WithContext(ctx).Infof("memory cache hit user_id=%s total=%d", userIDForLog, len(cached))
+			moelog.WithContext(ctx).Infof("memory cache hit user_id=%s total=%d", userIDForLog, len(cached))
 		} else {
 			rpcResp, err := deps.Gateway.GetUserMemories(ctx, &moe.GetUserMemoriesReq{UserId: userIDForLog})
 			if err != nil {
-				logx.WithContext(ctx).Errorf("GetUserMemories failed: %v", err)
+				moelog.WithContext(ctx).Errorf("GetUserMemories failed: %v", err)
 			} else if rpcResp != nil {
 				memories = rpcResp.Memories
 				setCachedUserMemories(userIDForLog, memories)
-				logx.WithContext(ctx).Infof("memory cache miss user_id=%s total=%d", userIDForLog, len(memories))
+				moelog.WithContext(ctx).Infof("memory cache miss user_id=%s total=%d", userIDForLog, len(memories))
 			}
 		}
 		var profiles []*moe.UserMemoryProfile
@@ -63,13 +63,13 @@ func ExecutePlatformChat(ctx context.Context, deps PlatformChatDeps, in Platform
 			UserId: userIDForLog,
 			Limit:  8,
 		}); err != nil {
-			logx.WithContext(ctx).Errorf("GetUserMemoryProfiles failed: %v", err)
+			moelog.WithContext(ctx).Errorf("GetUserMemoryProfiles failed: %v", err)
 		} else if profResp != nil {
 			profiles = profResp.Profiles
 		}
 		memoryBlock = buildOpenClawMemoryBlock(memories, profiles, in.Messages)
 	} else if in.ClientMemoryApplied && userIDForLog != "" {
-		logx.WithContext(ctx).Infof("memory inject skipped (client_memory_applied), user_id=%s", userIDForLog)
+		moelog.WithContext(ctx).Infof("memory inject skipped (client_memory_applied), user_id=%s", userIDForLog)
 	}
 
 	var clientSystemPrompt string
@@ -100,10 +100,10 @@ func ExecutePlatformChat(ctx context.Context, deps PlatformChatDeps, in Platform
 	}
 
 	if userIDForLog != "" {
-		logx.WithContext(ctx).Infof("llm chat with memory, user_id=%s, model=%s, messages=%d, memory_block_chars=%d",
+		moelog.WithContext(ctx).Infof("llm chat with memory, user_id=%s, model=%s, messages=%d, memory_block_chars=%d",
 			userIDForLog, in.Model, len(in.Messages), len([]rune(memoryBlock)))
 	} else {
-		logx.WithContext(ctx).Infof("llm chat without memory, model=%s, messages=%d", in.Model, len(in.Messages))
+		moelog.WithContext(ctx).Infof("llm chat without memory, model=%s, messages=%d", in.Model, len(in.Messages))
 	}
 
 	if strings.TrimSpace(deps.Inference.BaseURL) == "" {
@@ -163,7 +163,7 @@ func ExecutePlatformChat(ctx context.Context, deps PlatformChatDeps, in Platform
 
 		summary, sumErr := summarizeMessages(ctx, deps, memoryModel, oldMessages)
 		if sumErr != nil {
-			logx.WithContext(ctx).Errorf("summarizeMessages failed: %v", sumErr)
+			moelog.WithContext(ctx).Errorf("summarizeMessages failed: %v", sumErr)
 		} else if strings.TrimSpace(summary) != "" {
 			systemContent = systemContent + "\n\n之前部分对话的简要总结如下，请在理解用户当前消息时一并参考：\n" + summary
 			newMessages := make([]ChatMessage, 0, budget.KeepRecentMessages+1)
@@ -175,7 +175,7 @@ func ExecutePlatformChat(ctx context.Context, deps PlatformChatDeps, in Platform
 	}
 
 	if in.Stream {
-		logx.WithContext(ctx).Info("llm chat stream requested but only non-stream path is supported; falling back")
+		moelog.WithContext(ctx).Info("llm chat stream requested but only non-stream path is supported; falling back")
 	}
 
 	chatOpts := ChatOptions{
