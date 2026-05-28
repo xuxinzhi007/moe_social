@@ -2,7 +2,7 @@
 
 
 
-.PHONY: all gen gen-legacy-goctl gen-moe-proto gen-moe-conf gen-http-routes gen-moekratospilot-get gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto check fs8-split-api fs8-split-super-proto fs9b-rewrite-imports moe-social moe-social-dev moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
+.PHONY: all gen gen-all gen-legacy-goctl gen-moe-proto gen-moe-conf gen-http-routes gen-moekratospilot-get gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto check fs8-split-api fs8-split-super-proto fs9b-rewrite-imports moe-social moe-social-dev moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
 
 	deploy-agent deploy-agent-stop moe-social-stop admin \
 
@@ -20,10 +20,13 @@ all: gen
 
 
 
-# 生成：域 proto + conf + RPC + Kratos HTTP 路由（PK-8 默认不含 goctl gen-api）
-gen: gen-moe-proto gen-moe-conf gen-rpc gen-http-routes
+# 日常安全生成：不跑 goctl api/rpc，不覆盖 api/internal/logic 与 rpc/internal/logic
+gen: gen-moe-proto gen-moe-conf gen-http-routes
 
-# 紧急/兼容：goctl api + swagger（需 MOE_ALLOW_GOCTL_API=1）
+# 域 proto + conf + goctl API + RPC + Kratos 路由（改 .api / moe.proto 后用）
+gen-all: gen-moe-proto gen-moe-conf gen-api gen-rpc gen-http-routes
+
+# goctl api + swagger（改 api/defs 后）
 gen-legacy-goctl: gen-api gen-swagger
 
 gen-moe-proto:
@@ -34,6 +37,7 @@ gen-moe-conf:
 
 # 从 api/internal/handler/routes.go → api/moehttp/routes_*_gen.go
 gen-http-routes:
+	bash scripts/gen/stale-api-hint.sh
 	cd scripts/gen/http-routes && go run .
 
 # 兼容旧文档 target 名
@@ -344,7 +348,10 @@ help:
 	@echo make moe-social-dev      - 同上 + deploy-agent (:19010) + RPC debug (:19011)
 	@echo make moe-social-stop     - 释放开发端口
 	@echo make check               - 编译 cmd/moe-social + 核心包单测
-	@echo make gen                 - proto + conf + rpc + HTTP 路由（scripts/gen/）
+	@echo make gen                 - 安全：proto + conf + HTTP 路由（不碰 logic）
+	@echo make gen-api             - 改 api/defs 后（goctl handler/types/routes）
+	@echo make gen-rpc             - 改 rpc 契约后
+	@echo make gen-all             - gen-api + gen-rpc + proto + 路由
 	@echo make gen-http-routes     - routes.go → api/moehttp
 	@echo make build-moe-social    - 生产单二进制
 

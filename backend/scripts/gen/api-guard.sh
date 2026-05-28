@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# PK-8: 默认禁止 goctl api 覆盖 handler/routes（除非显式允许）。
+# gen-api 前提示：会覆盖 goctl 产物，不会批量覆盖已有 logic 实现。
 set -euo pipefail
-if [ "${MOE_ALLOW_GOCTL_API:-}" = "1" ]; then
-  echo "gen-api: MOE_ALLOW_GOCTL_API=1 — running goctl api"
+echo "gen-api: goctl 将更新 api/internal/handler、types、routes.go"
+echo "  · 业务逻辑写在 api/internal/logic/<group>/*logic.go（已有文件通常保留）"
+echo "  · 完成后自动 make gen-http-routes → api/moehttp/routes_*_gen.go"
+if [ "${MOE_SKIP_GEN_API_WARN:-}" = "1" ]; then
   exit 0
 fi
-echo "PK-8: gen-api blocked (set MOE_ALLOW_GOCTL_API=1 to override)" >&2
-echo "  · HTTP routes: make gen-http-routes" >&2
-echo "  · API defs SSOT: api/defs/*.api" >&2
-exit 1
+echo "  · 跳过本提示: MOE_SKIP_GEN_API_WARN=1 make gen-api"

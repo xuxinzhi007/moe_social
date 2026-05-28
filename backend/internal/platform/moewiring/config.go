@@ -148,7 +148,7 @@ func KratosPureHTTPWithoutLegacy() bool {
 	return KratosPureEnabled()
 }
 
-// KratosPK8GoctlRetired PK-8：默认不再执行 make gen-api；HTTP 由 api/moehttp 注册。
+// KratosPK8GoctlRetired PK-8：日常 make gen 不跑 goctl api；改 defs 用 make gen-api；HTTP 由 api/moehttp 注册。
 func KratosPK8GoctlRetired() bool {
 	if KratosPureEnabled() {
 		return true

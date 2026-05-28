@@ -10,9 +10,9 @@
 
 | 曲线 | 含义 | 状态 | 验收 |
 |------|------|------|------|
-| **F** | 业务下沉 `biz` + `*gw` in_process | ✅ ~100% | `make verify-sprint-f112` |
-| **FS** | 契约分片 + 退役 `super.api/proto` 文件名 | ✅ FS-9 | `make verify-sprint-fs9` |
-| **PK** | **传输/生成链** 对齐 core-platform 纯 Kratos | 🔄 **本手册** | `make verify-kratos-rollout-pk0` → PK-n |
+| **F** | 业务下沉 `biz` + `*gw` in_process | ✅ ~100% | `make check` |
+| **FS** | 契约分片 + 退役 `super.api/proto` 文件名 | ✅ FS-9 | `make check` |
+| **PK** | **传输/生成链** 对齐 core-platform 纯 Kratos | ✅ 生产 `make moe-social` | `make check` + `/migration` |
 
 **PK 不等于立刻替换 `make moe-social`**。每阶段可停在 Hybrid，Flutter / moe-admin **路径与端口不变**。
 
@@ -42,7 +42,7 @@
 | `internal/server/moegrpc/` | Kratos gRPC `MoeAdmin` |
 | `api/moe/v1/moe.proto` | Moe Admin gRPC 契约 |
 | `api/vip/v1/vip_read.proto` | VIP 套餐只读（试点 HTTP） |
-| `api/moekratospilot/` | 与 go-zero 路径兼容的 HTTP 适配 |
+| `api/moehttp/` | Kratos HTTP 注册（compat + 存量 routes 桥） |
 | `internal/conf/moe/v1/` | `Bootstrap` conf.proto |
 
 **不要新建第二套试点进程**；在 `moekratos` 上扩展域即可。
@@ -51,17 +51,16 @@
 
 ## 3. PK 阶段（执行顺序）
 
-### PK-0 — 基线（每次开工先跑）
+### PK-0 — 基线
 
 ```bash
 cd backend
-make verify-kratos-rollout-70    # ≥70% 团队口径（PK-0～3）
-make verify-kratos-rollout-pk0   # 文档 + 试点 + Hybrid 契约
-make verify-kratos-100           # 试点 B 100% + Hybrid 回归
-make verify-sprint-fs9           # moe.api / moe.proto / 无 super.yaml
+make check
+make moe-social
+curl -s http://127.0.0.1:8888/migration
 ```
 
-**完成标准**：全部 exit 0；本地可 `make moe-social` 与 `make moe-kratos` 并行。
+**新接口**：见 [new-api-kratos.md](./new-api-kratos.md)（勿再扩 `api/defs`）。
 
 ---
 
@@ -111,7 +110,7 @@ moe:
 
 ### PK-3 — 按域扩 Kratos HTTP（✅ 多域试点）
 
-**已落地**（`api/moekratospilot/RegisterAll`）：
+**已落地**（`api/moehttp/RegisterAll`）：
 
 | 域 | 路由示例 | 文件 |
 |----|----------|------|

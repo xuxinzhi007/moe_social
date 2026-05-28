@@ -17,7 +17,7 @@ make moe-social-dev
 - **入口 SSOT**：`cmd/moe-social`（`cmd/moe-social-stack` 仅开发附加 agent/monitor）
 - **迁移进度**：`curl -s http://127.0.0.1:8888/migration`
 - **检查**：`make check`（编译 + 核心包单测）
-- **布局**：见 [LAYOUT.md](LAYOUT.md)（`api/` + `rpc/` 目录 vs 单进程 Kratos）
+- **布局**：[LAYOUT.md](LAYOUT.md) · **新接口**：[docs/dev/new-api-kratos.md](../docs/dev/new-api-kratos.md)
 - **脚本**：见 [scripts/README.md](scripts/README.md)
 
 历史 `make api` / `make rpc` 分离启动仅用于紧急回滚或调试，日常不必使用。
