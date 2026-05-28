@@ -6,7 +6,7 @@
 // 	protoc        v6.33.1
 // source: defs/common.proto
 
-package super
+package moe
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -21429,6 +21429,7 @@ func (x *AdminUpsertMoeRuntimeResp) GetItem() *MoeAgentRuntimeItem {
 type AdminRunMoeAgentOnceReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	Async         bool                   `protobuf:"varint,2,opt,name=async,proto3" json:"async,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -21470,14 +21471,23 @@ func (x *AdminRunMoeAgentOnceReq) GetAgentKey() string {
 	return ""
 }
 
+func (x *AdminRunMoeAgentOnceReq) GetAsync() bool {
+	if x != nil {
+		return x.Async
+	}
+	return false
+}
+
 type AdminRunMoeAgentOnceResp struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
-	Ok            bool                   `protobuf:"varint,2,opt,name=ok,proto3" json:"ok,omitempty"`
-	Detail        string                 `protobuf:"bytes,3,opt,name=detail,proto3" json:"detail,omitempty"`
-	PostId        string                 `protobuf:"bytes,4,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey       string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	Ok             bool                   `protobuf:"varint,2,opt,name=ok,proto3" json:"ok,omitempty"`
+	Detail         string                 `protobuf:"bytes,3,opt,name=detail,proto3" json:"detail,omitempty"`
+	PostId         string                 `protobuf:"bytes,4,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	Accepted       bool                   `protobuf:"varint,5,opt,name=accepted,proto3" json:"accepted,omitempty"`
+	AlreadyRunning bool                   `protobuf:"varint,6,opt,name=already_running,json=alreadyRunning,proto3" json:"already_running,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *AdminRunMoeAgentOnceResp) Reset() {
@@ -21536,6 +21546,20 @@ func (x *AdminRunMoeAgentOnceResp) GetPostId() string {
 		return x.PostId
 	}
 	return ""
+}
+
+func (x *AdminRunMoeAgentOnceResp) GetAccepted() bool {
+	if x != nil {
+		return x.Accepted
+	}
+	return false
+}
+
+func (x *AdminRunMoeAgentOnceResp) GetAlreadyRunning() bool {
+	if x != nil {
+		return x.AlreadyRunning
+	}
+	return false
 }
 
 type MoeBrainTagStat struct {
@@ -22208,6 +22232,10 @@ type AdminGetMoeBrainPipelineResp struct {
 	StabilityScore   int32                  `protobuf:"varint,10,opt,name=stability_score,json=stabilityScore,proto3" json:"stability_score,omitempty"`
 	StabilityDelta   int32                  `protobuf:"varint,11,opt,name=stability_delta,json=stabilityDelta,proto3" json:"stability_delta,omitempty"`
 	RunFeedback      string                 `protobuf:"bytes,12,opt,name=run_feedback,json=runFeedback,proto3" json:"run_feedback,omitempty"`
+	Running          bool                   `protobuf:"varint,13,opt,name=running,proto3" json:"running,omitempty"`
+	CurrentPhase     string                 `protobuf:"bytes,14,opt,name=current_phase,json=currentPhase,proto3" json:"current_phase,omitempty"`
+	RunStartedAt     string                 `protobuf:"bytes,15,opt,name=run_started_at,json=runStartedAt,proto3" json:"run_started_at,omitempty"`
+	ActiveStepKey    string                 `protobuf:"bytes,16,opt,name=active_step_key,json=activeStepKey,proto3" json:"active_step_key,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -22322,6 +22350,34 @@ func (x *AdminGetMoeBrainPipelineResp) GetStabilityDelta() int32 {
 func (x *AdminGetMoeBrainPipelineResp) GetRunFeedback() string {
 	if x != nil {
 		return x.RunFeedback
+	}
+	return ""
+}
+
+func (x *AdminGetMoeBrainPipelineResp) GetRunning() bool {
+	if x != nil {
+		return x.Running
+	}
+	return false
+}
+
+func (x *AdminGetMoeBrainPipelineResp) GetCurrentPhase() string {
+	if x != nil {
+		return x.CurrentPhase
+	}
+	return ""
+}
+
+func (x *AdminGetMoeBrainPipelineResp) GetRunStartedAt() string {
+	if x != nil {
+		return x.RunStartedAt
+	}
+	return ""
+}
+
+func (x *AdminGetMoeBrainPipelineResp) GetActiveStepKey() string {
+	if x != nil {
+		return x.ActiveStepKey
 	}
 	return ""
 }
@@ -30623,14 +30679,17 @@ const file_defs_common_proto_rawDesc = "" +
 	"\x12post_schedule_mode\x18\x0e \x01(\tR\x10postScheduleMode\x12#\n" +
 	"\rschedule_cron\x18\x0f \x01(\tR\fscheduleCron\"K\n" +
 	"\x19AdminUpsertMoeRuntimeResp\x12.\n" +
-	"\x04item\x18\x01 \x01(\v2\x1a.super.MoeAgentRuntimeItemR\x04item\"6\n" +
+	"\x04item\x18\x01 \x01(\v2\x1a.super.MoeAgentRuntimeItemR\x04item\"L\n" +
 	"\x17AdminRunMoeAgentOnceReq\x12\x1b\n" +
-	"\tagent_key\x18\x01 \x01(\tR\bagentKey\"x\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12\x14\n" +
+	"\x05async\x18\x02 \x01(\bR\x05async\"\xbd\x01\n" +
 	"\x18AdminRunMoeAgentOnceResp\x12\x1b\n" +
 	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12\x0e\n" +
 	"\x02ok\x18\x02 \x01(\bR\x02ok\x12\x16\n" +
 	"\x06detail\x18\x03 \x01(\tR\x06detail\x12\x17\n" +
-	"\apost_id\x18\x04 \x01(\tR\x06postId\"9\n" +
+	"\apost_id\x18\x04 \x01(\tR\x06postId\x12\x1a\n" +
+	"\baccepted\x18\x05 \x01(\bR\baccepted\x12'\n" +
+	"\x0falready_running\x18\x06 \x01(\bR\x0ealreadyRunning\"9\n" +
 	"\x0fMoeBrainTagStat\x12\x10\n" +
 	"\x03tag\x18\x01 \x01(\tR\x03tag\x12\x14\n" +
 	"\x05count\x18\x02 \x01(\x05R\x05count\"\xe6\x02\n" +
@@ -30691,7 +30750,7 @@ const file_defs_common_proto_rawDesc = "" +
 	"\asnippet\x18\x03 \x01(\tR\asnippet\x12\x12\n" +
 	"\x04note\x18\x04 \x01(\tR\x04note\":\n" +
 	"\x1bAdminGetMoeBrainPipelineReq\x12\x1b\n" +
-	"\tagent_key\x18\x01 \x01(\tR\bagentKey\"\xe7\x03\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\"\xf4\x04\n" +
 	"\x1cAdminGetMoeBrainPipelineResp\x12\x1b\n" +
 	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12\x0e\n" +
 	"\x02ok\x18\x02 \x01(\bR\x02ok\x12\x16\n" +
@@ -30705,7 +30764,11 @@ const file_defs_common_proto_rawDesc = "" +
 	"\x0fstability_score\x18\n" +
 	" \x01(\x05R\x0estabilityScore\x12'\n" +
 	"\x0fstability_delta\x18\v \x01(\x05R\x0estabilityDelta\x12!\n" +
-	"\frun_feedback\x18\f \x01(\tR\vrunFeedback\"\xb6\x01\n" +
+	"\frun_feedback\x18\f \x01(\tR\vrunFeedback\x12\x18\n" +
+	"\arunning\x18\r \x01(\bR\arunning\x12#\n" +
+	"\rcurrent_phase\x18\x0e \x01(\tR\fcurrentPhase\x12$\n" +
+	"\x0erun_started_at\x18\x0f \x01(\tR\frunStartedAt\x12&\n" +
+	"\x0factive_step_key\x18\x10 \x01(\tR\ractiveStepKey\"\xb6\x01\n" +
 	"\x14RecordLlmChatTurnReq\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x04R\x06userId\x12\x1d\n" +
 	"\n" +
@@ -31240,7 +31303,7 @@ const file_defs_common_proto_rawDesc = "" +
 	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"c\n" +
 	"\x19GetGiftPurchaseOrdersResp\x120\n" +
 	"\x06orders\x18\x01 \x03(\v2\x18.super.GiftPurchaseOrderR\x06orders\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x05R\x05totalB\x16Z\x14backend/rpc/pb/superb\x06proto3"
+	"\x05total\x18\x02 \x01(\x05R\x05totalB\x14Z\x12backend/rpc/pb/moeb\x06proto3"
 
 var (
 	file_defs_common_proto_rawDescOnce sync.Once

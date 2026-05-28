@@ -16,7 +16,8 @@ func InitializeApp(opts Options) (*App, error) {
 		provideSuperRPC,
 		provideGRPCAddr,
 		provideHTTPAddr,
-		provideAdmin,
+		provideMoeAdmin,
+		provideAdminApp,
 		buildApp,
 	)
 	return nil, nil

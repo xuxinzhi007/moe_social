@@ -1,8 +1,6 @@
-// 纯 Kratos 试点进程（Phase 0）：与 Hybrid 并行，不替代 make moe-social。
+// 纯 Kratos 试点进程（Phase 0，PK-10 已弃用）：生产请用 make moe-social（:8888 纯 Kratos）。
 //
-//	go run ./cmd/moe-kratos
-//	curl -s http://127.0.0.1:19032/health
-//	curl -s http://127.0.0.1:19032/kratos/v1/moe/runtimes
+//	go run ./cmd/moe-kratos   # 仅本地对照；默认打印弃用提示
 //
 // 连接已运行的 legacy Super（完整 Moe 能力）：
 //
@@ -14,6 +12,7 @@ import (
 	"log"
 
 	"backend/internal/platform/moekratos"
+	"backend/internal/platform/moewiring"
 	"backend/utils"
 )
 
@@ -26,6 +25,10 @@ var (
 
 func main() {
 	flag.Parse()
+	if moewiring.PilotProcessDeprecated() {
+		log.Print("moe-kratos: DEPRECATED — production uses `make moe-social` (Kratos HTTP :8888).")
+		log.Print("  · Set moe.pilot_process_deprecated=false to silence; see docs/dev/kratos-directory-layout.md")
+	}
 	if err := moekratos.Run(moekratos.Options{
 		GRPCAddr: *grpcAddr,
 		HTTPAddr: *httpAddr,

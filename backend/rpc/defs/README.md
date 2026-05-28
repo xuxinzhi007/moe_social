@@ -33,6 +33,6 @@ make verify-sprint-fs9
 
 ## 保留的 `super` 符号
 
-- `package super`、`go_package backend/rpc/pb/super`、`service Super`：生成代码稳定 import，与 FS-9 文件名退役无关。
+- `package super`、`go_package backend/rpc/pb/moe`、`service Super`：wire 仍为 super；Go import 用 `pb/moe`（FS-9b），`pb/super` 为垫片别名。
 
 Kratos 域 stub：`api/<domain>/v1/*.proto`（文档/试点，非 goctl SSOT）。

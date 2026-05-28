@@ -92,15 +92,16 @@ func (s *Server) RunAgentOnce(ctx context.Context, in *moev1pb.RunAgentOnceReque
 	if err != nil {
 		return nil, err
 	}
-	result, err := admin.RunAgentOnce(ctx, in.GetAgentKey())
+	inv, err := admin.RunAgentOnce(ctx, in.GetAgentKey(), false)
 	if err != nil {
 		return nil, err
 	}
+	r := inv.Result
 	return &moev1pb.RunAgentOnceReply{
-		AgentKey: result.AgentKey,
-		Ok:       result.OK,
-		Detail:   result.Detail,
-		PostId:   result.PostID,
+		AgentKey: r.AgentKey,
+		Ok:       r.OK,
+		Detail:   r.Detail,
+		PostId:   r.PostID,
 	}, nil
 }
 

@@ -170,32 +170,39 @@ func (g *Gateway) GetBrainPipeline(ctx context.Context, agentKey string) (moebiz
 	return moebiz.PipelineSnapshot{}, errNoBackend
 }
 
-func (g *Gateway) RunAgentOnce(ctx context.Context, agentKey string) (runtime.RunOnceResult, error) {
+func (g *Gateway) RunAgentOnce(ctx context.Context, agentKey string, async bool) (moeadmin.RunOnceInvokeResult, error) {
 	if g == nil {
-		return runtime.RunOnceResult{}, errNoBackend
+		return moeadmin.RunOnceInvokeResult{}, errNoBackend
 	}
 	if g.local != nil {
-		return g.local.RunAgentOnce(ctx, agentKey)
+		return g.local.RunAgentOnce(ctx, agentKey, async)
 	}
 	if g.moeGRPC != nil {
 		rep, err := g.moeGRPC.RunAgentOnce(ctx, &moepb.RunAgentOnceRequest{AgentKey: agentKey})
 		if err != nil {
-			return runtime.RunOnceResult{}, err
+			return moeadmin.RunOnceInvokeResult{}, err
 		}
 		r := moebridge.RunResultFromProto(rep)
-		return runtime.RunOnceResult{AgentKey: r.AgentKey, OK: r.OK, Detail: r.Detail, PostID: r.PostID}, nil
-	}
-	if g.super != nil {
-		rep, err := g.super.AdminRunMoeAgentOnce(ctx, &super.AdminRunMoeAgentOnceReq{AgentKey: agentKey})
-		if err != nil {
-			return runtime.RunOnceResult{}, err
-		}
-		return runtime.RunOnceResult{
-			AgentKey: rep.GetAgentKey(), OK: rep.GetOk(),
-			Detail: rep.GetDetail(), PostID: rep.GetPostId(),
+		return moeadmin.RunOnceInvokeResult{
+			Result: runtime.RunOnceResult{AgentKey: r.AgentKey, OK: r.OK, Detail: r.Detail, PostID: r.PostID},
 		}, nil
 	}
-	return runtime.RunOnceResult{}, errNoBackend
+	if g.super != nil {
+		rep, err := g.super.AdminRunMoeAgentOnce(ctx, &super.AdminRunMoeAgentOnceReq{AgentKey: agentKey, Async: async})
+		if err != nil {
+			return moeadmin.RunOnceInvokeResult{}, err
+		}
+		if rep.GetAccepted() || rep.GetAlreadyRunning() {
+			return moeadmin.RunOnceInvokeResult{Accepted: rep.GetAccepted(), AlreadyRunning: rep.GetAlreadyRunning()}, nil
+		}
+		return moeadmin.RunOnceInvokeResult{
+			Result: runtime.RunOnceResult{
+				AgentKey: rep.GetAgentKey(), OK: rep.GetOk(),
+				Detail: rep.GetDetail(), PostID: rep.GetPostId(),
+			},
+		}, nil
+	}
+	return moeadmin.RunOnceInvokeResult{}, errNoBackend
 }
 
 func (g *Gateway) GetBrainSnapshot(ctx context.Context, agentKey string) (*brain.Snapshot, error) {

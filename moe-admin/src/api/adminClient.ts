@@ -151,6 +151,11 @@ export type MoeBrainPipelineData = {
   stability_score?: number
   stability_delta?: number
   run_feedback?: string
+  /** 试跑进行中（后端 live 状态） */
+  running?: boolean
+  current_phase?: string
+  run_started_at?: string
+  active_step_key?: string
 }
 
 export type MoeFlowNodeItem = {
@@ -1483,19 +1488,23 @@ export function createAdminClient(opts: AdminClientOptions) {
         body: JSON.stringify(body),
       }),
 
-    runMoeAgentOnce: (agentKey: string) =>
-      api<
+    runMoeAgentOnce: (agentKey: string, opts?: { async?: boolean }) => {
+      const asyncQ = opts?.async ? '?async=true' : ''
+      return api<
         BaseResp<{
           agent_key: string
           ok: boolean
           detail: string
           post_id?: string
+          accepted?: boolean
+          already_running?: boolean
         }>
-      >(adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/run-once`), {
+      >(adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/run-once${asyncQ}`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
-      }),
+      })
+    },
 
     getMoeInferenceStatus: (agentKey?: string) => {
       const q = agentKey ? `?agent_key=${encodeURIComponent(agentKey)}` : ''
@@ -1508,6 +1517,17 @@ export function createAdminClient(opts: AdminClientOptions) {
       api<BaseResp<MoeBrainPipelineData>>(
         `${adminApiPath('/moe/brain/pipeline')}?agent_key=${encodeURIComponent(agentKey)}`,
       ),
+
+    brainPipelineStreamUrl: (agentKey: string) => {
+      const q = new URLSearchParams({
+        agent_key: agentKey.trim(),
+        admin_token: opts.token,
+      })
+      return resolveAdminRequestUrl(
+        adminApiPath(`/moe/brain/pipeline/stream?${q}`),
+        opts,
+      )
+    },
 
     getMoeBotFlow: (agentKey: string) =>
       api<BaseResp<MoeBotFlowData>>(

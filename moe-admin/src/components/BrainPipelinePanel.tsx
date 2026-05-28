@@ -4,27 +4,38 @@ import type { MoeBrainPipelineData, MoeGenAttemptItem, MoePipelineStepItem } fro
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { DeployApiError } from '../api/deployClient'
 import type { TagTone } from '../lib/adminLabels'
+import {
+  genAttemptsForDisplay,
+  groupPipelinePhases,
+  normStepStatus,
+  phaseLabel,
+  pickDefaultPhase,
+  PIPELINE_PHASE_ORDER,
+  type PhaseId,
+  type PhaseStatus,
+  type PipelinePhase,
+} from '../lib/brainPipelinePhases'
+import { openMoeBrainPipelineSse } from '../lib/moePipelineSse'
 
 type Props = {
   agentKey: string
   refreshKey?: number
+  /** 本页试跑进行中（仅本地状态，不用跨页 session） */
+  running?: boolean
 }
 
-function stepTone(status: string): TagTone {
-  const s = status.trim().toLowerCase()
-  if (s === 'ok') return 'ok'
-  if (s === 'fail' || s === 'error') return 'fail'
-  if (s === 'running') return 'warn'
+function phaseTone(status: PhaseStatus): TagTone {
+  if (status === 'ok') return 'ok'
+  if (status === 'fail' || status === 'error') return 'fail'
+  if (status === 'running') return 'warn'
   return 'neutral'
 }
 
-function stepStatusLabel(status: string): string {
-  const s = status.trim().toLowerCase()
-  if (s === 'ok') return '完成'
-  if (s === 'fail' || s === 'error') return '失败'
-  if (s === 'running') return '进行中'
-  if (s === 'skip') return '待执行'
-  return status || '—'
+function phaseStatusLabel(status: PhaseStatus): string {
+  if (status === 'ok') return '完成'
+  if (status === 'fail' || status === 'error') return '失败'
+  if (status === 'running') return '进行中'
+  return '待执行'
 }
 
 function genOutcomeLabel(outcome: string): string {
@@ -52,68 +63,86 @@ function formatMs(ms?: number): string {
   return `${(ms / 1000).toFixed(2)} s`
 }
 
-function maxStepMs(steps: MoePipelineStepItem[]): number {
-  let max = 1
-  for (const s of steps) {
-    if ((s.duration_ms ?? 0) > max) max = s.duration_ms ?? 0
-  }
-  return max
-}
-
-function PipelineStepRow({
-  step,
-  index,
-  maxMs,
-}: {
-  step: MoePipelineStepItem
-  index: number
-  maxMs: number
-}) {
-  const ms = step.duration_ms ?? 0
-  const widthPct = maxMs > 0 && ms > 0 ? Math.max(8, Math.round((ms / maxMs) * 100)) : 0
-  const status = step.status.trim().toLowerCase() || 'skip'
-
+function CompactSubstep({ step, showKey = false }: { step: MoePipelineStepItem; showKey?: boolean }) {
+  const st = normStepStatus(step.status)
   return (
-    <div className={`brain-pipeline-step brain-pipeline-step--${status}`}>
-      <div className="brain-pipeline-step-rail">
-        <span className="brain-pipeline-step-num">{index + 1}</span>
-        {index > 0 ? <span className="brain-pipeline-connector" aria-hidden /> : null}
+    <li className={`brain-pulse-substep brain-pulse-substep--${st}`}>
+      <span className="brain-pulse-substep-dot" aria-hidden />
+      <div className="brain-pulse-substep-main">
+        <span className="brain-pulse-substep-label">{step.label || step.key}</span>
+        {showKey ? <code className="brain-pulse-substep-key">{step.key}</code> : null}
       </div>
-      <div className="brain-pipeline-step-body">
-        <div className="brain-pipeline-step-head">
-          <div>
-            <strong>{step.label || step.key}</strong>
-            <div className="muted brain-pipeline-step-key">{step.key}</div>
-          </div>
-          <div className="brain-pipeline-step-tags">
-            <AdminTag label={stepStatusLabel(step.status)} tone={stepTone(step.status)} />
-            <span className="brain-pipeline-duration">{formatMs(ms)}</span>
-          </div>
-        </div>
-        {ms > 0 ? (
-          <div className="brain-pipeline-bar-track" title={`耗时 ${formatMs(ms)}`}>
-            <div className="brain-pipeline-bar-fill" style={{ width: `${widthPct}%` }} />
-          </div>
-        ) : null}
-        {step.detail ? (
-          <p
-            className="muted brain-pipeline-step-detail"
-            style={step.detail.includes('\n') ? { whiteSpace: 'pre-wrap' } : undefined}
-          >
-            {step.detail}
-          </p>
-        ) : null}
-      </div>
-    </div>
+      <span className="brain-pulse-substep-meta">
+        <AdminTag label={phaseStatusLabel(st)} tone={phaseTone(st)} />
+        <span className="brain-pulse-substep-ms">{formatMs(step.duration_ms)}</span>
+      </span>
+      {step.detail ? <p className="muted brain-pulse-substep-detail">{step.detail}</p> : null}
+    </li>
   )
 }
 
-/** 展示 Bot 试跑流水线：分步耗时、总耗时、进程与推理环境快照。 */
-export function BrainPipelinePanel({ agentKey, refreshKey = 0 }: Props) {
+function GenAttemptRows({ items }: { items: MoeGenAttemptItem[] }) {
+  return (
+    <ol className="brain-pulse-gen-list">
+      {items.map((item) => (
+        <li
+          key={`${item.attempt}-${item.outcome}-${item.snippet ?? ''}`}
+          className={`brain-pulse-gen-row brain-pulse-gen-row--${item.outcome === 'ok' ? 'ok' : 'fail'}`}
+        >
+          <span className="brain-pulse-gen-idx">#{item.attempt}</span>
+          <span className="brain-pulse-gen-outcome">{genOutcomeLabel(item.outcome)}</span>
+          {item.snippet ? <span className="muted brain-pulse-gen-snippet">「{item.snippet}」</span> : null}
+          {item.note ? <span className="muted brain-pulse-gen-note">{item.note}</span> : null}
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+function PhaseDetail({
+  phase,
+  allSteps,
+  genAttempts,
+  showTechnical,
+}: {
+  phase: PipelinePhase
+  allSteps: MoePipelineStepItem[]
+  genAttempts: MoeGenAttemptItem[]
+  showTechnical: boolean
+}) {
+  if (phase.id === 'generate') {
+    const rows = genAttemptsForDisplay(genAttempts, allSteps)
+    return (
+      <div className="brain-pulse-detail">
+        <p className="brain-pulse-detail-lead">{phase.summary}</p>
+        {rows.length > 0 ? <GenAttemptRows items={rows} /> : (
+          <p className="muted">暂无生成明细</p>
+        )}
+      </div>
+    )
+  }
+
+  if (phase.steps.length === 0) {
+    return <p className="muted brain-pulse-detail-empty">本阶段暂无明细</p>
+  }
+
+  return (
+    <ul className="brain-pulse-substeps">
+      {phase.steps.map((s) => (
+        <CompactSubstep key={s.key} step={s} showKey={showTechnical} />
+      ))}
+    </ul>
+  )
+}
+
+/** Bot 试跑流水线：阶段脉冲时间线 + 折叠重试明细 */
+export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false }: Props) {
   const { client } = useAdminAuth()
   const [data, setData] = useState<MoeBrainPipelineData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [selectedId, setSelectedId] = useState<PhaseId>('load')
+  const [showTechnical, setShowTechnical] = useState(false)
 
   const load = useCallback(async () => {
     if (!agentKey.trim()) {
@@ -142,126 +171,209 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0 }: Props) {
     void load()
   }, [load, refreshKey])
 
-  const steps = data?.steps ?? []
-  const hasRun = Boolean(data?.run_at?.trim())
-  const maxMs = useMemo(() => maxStepMs(steps), [steps])
-  const generateMs = steps.find((s) => s.key === 'generate')?.duration_ms
-  const hm = data?.host_metrics
+  const serverRunning = Boolean(data?.running)
+  const showRunning = running || serverRunning
 
-  const empty = !hasRun && steps.every((s) => s.status === 'skip')
+  useEffect(() => {
+    if (!showRunning || !agentKey.trim()) return
+    const url = client.brainPipelineStreamUrl(agentKey)
+    const handle = openMoeBrainPipelineSse(url, (next) => {
+      setData(next)
+      setError('')
+    })
+    return () => handle.close()
+  }, [showRunning, agentKey, client])
+
+  const steps = useMemo(() => data?.steps ?? [], [data?.steps])
+  const hasRun = Boolean(data?.run_at?.trim()) && !serverRunning
+  const phases = useMemo(
+    () => groupPipelinePhases(steps, data?.generate_attempts),
+    [steps, data?.generate_attempts],
+  )
+
+  useEffect(() => {
+    if (serverRunning && data?.current_phase) {
+      const phase = data.current_phase as PhaseId
+      if (PIPELINE_PHASE_ORDER.includes(phase)) {
+        setSelectedId(phase)
+      }
+      return
+    }
+    if (!data?.run_at) return
+    const next = pickDefaultPhase(phases, hasRun, data.ok)
+    setSelectedId((prev) => (prev === next ? prev : next))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.run_at, data?.ok, data?.current_phase, serverRunning])
+
+  const empty = !showRunning && !hasRun && steps.every((s) => normStepStatus(s.status) === 'skip')
+  const selected = phases.find((p) => p.id === selectedId) ?? phases[0]
+  const hm = data?.host_metrics
   const genAttempts = data?.generate_attempts ?? []
+  const generateMs = steps
+    .filter((s) => s.key.startsWith('gen_attempt') || s.key === 'generate')
+    .reduce((sum, s) => sum + (s.duration_ms ?? 0), 0)
+
+  const runPhaseLabel =
+    serverRunning && data?.current_phase
+      ? phaseLabel(data.current_phase as PhaseId)
+      : ''
+
+  const pulseClass = showRunning
+    ? 'brain-pulse--running'
+    : !hasRun && !data?.run_at
+      ? 'brain-pulse--idle'
+      : data?.ok
+        ? 'brain-pulse--ok'
+        : 'brain-pulse--fail'
 
   return (
-    <section className="panel brain-pipeline-panel">
+    <section className={`panel brain-pipeline-panel brain-pulse-panel ${pulseClass}`}>
       <header className="platform-section-head brain-pipeline-head">
         <div>
           <h3>发帖流水线</h3>
-          <p className="muted">
-            试跑会记录<strong>实际执行步骤</strong>（话题画像、每次 LLM、质检、发帖等）；失败会扣稳定度，成功会加分。使用页头「试跑发帖」触发。
-          </p>
+          <p className="muted">阶段脉冲视图：默认只看 6 步；生成重试折叠在「生成」阶段内。</p>
         </div>
+        {data && hasRun ? (
+          <label className="brain-pulse-tech-toggle">
+            <input
+              type="checkbox"
+              checked={showTechnical}
+              onChange={(e) => setShowTechnical(e.target.checked)}
+            />
+            显示技术 key
+          </label>
+        ) : null}
       </header>
 
       {error ? <p className="text-danger">{error}</p> : null}
-
       {loading && !data ? <p className="muted">加载流水线…</p> : null}
 
-      {data && !loading ? (
+      {(data && !loading) || showRunning ? (
         <>
-          <div className="admin-metrics page-insight-strip brain-pipeline-metrics">
-            {data.stability_score !== undefined && data.stability_score > 0 ? (
-              <div className="metric">
-                <div className="label">稳定度</div>
-                <div className="value" style={{ fontSize: 14 }}>
-                  {data.stability_score}
-                  {data.stability_delta !== undefined && data.stability_delta !== 0 ? (
-                    <AdminTag
-                      label={`${data.stability_delta > 0 ? '+' : ''}${data.stability_delta}`}
-                      tone={data.stability_delta > 0 ? 'ok' : 'fail'}
-                    />
-                  ) : null}
+          <div className="brain-pulse-summary">
+            <div
+              className={`brain-pulse-ring ${showRunning ? 'brain-pulse-ring--run-active' : ''}`}
+              role={showRunning ? 'status' : undefined}
+              aria-label={showRunning ? '试跑进行中' : undefined}
+            >
+              <span className={`brain-pulse-ring-inner ${showRunning ? 'brain-pulse-ring-inner--run' : ''}`}>
+                {showRunning
+                  ? '试跑'
+                  : data && data.stability_score !== undefined && data.stability_score > 0
+                    ? data.stability_score
+                    : '—'}
+              </span>
+              {!showRunning && data && data.stability_delta !== undefined && data.stability_delta !== 0 ? (
+                <span
+                  className={`brain-pulse-delta ${data.stability_delta > 0 ? 'brain-pulse-delta--up' : 'brain-pulse-delta--down'}`}
+                >
+                  {data.stability_delta > 0 ? '+' : ''}
+                  {data.stability_delta}
+                </span>
+              ) : null}
+            </div>
+            <div className="brain-pulse-summary-main">
+              {showRunning ? (
+                <div className="brain-pulse-run-banner">
+                  <span className="brain-pulse-run-dot" aria-hidden />
+                  <span>
+                    试跑进行中
+                    {runPhaseLabel ? ` · ${runPhaseLabel}` : ''}
+                    …
+                  </span>
                 </div>
-              </div>
-            ) : null}
-            <div className="metric">
-              <div className="label">末次结果</div>
-              <div className="value">
+              ) : null}
+              <div className="brain-pulse-summary-row">
                 <AdminTag
-                  label={hasRun ? (data.ok ? '成功' : '失败') : '无记录'}
-                  tone={!hasRun ? 'neutral' : data.ok ? 'ok' : 'fail'}
+                  label={
+                    showRunning
+                      ? '进行中'
+                      : hasRun || data?.run_at
+                        ? data?.ok
+                          ? '试跑成功'
+                          : '试跑失败'
+                        : '无记录'
+                  }
+                  tone={showRunning ? 'warn' : !hasRun && !data?.run_at ? 'neutral' : data?.ok ? 'ok' : 'fail'}
                 />
+                {data ? (
+                  <>
+                    <span className="brain-pulse-stat">总耗时 {formatMs(data.total_duration_ms)}</span>
+                    <span className="brain-pulse-stat">生成 {formatMs(generateMs || undefined)}</span>
+                    {data.run_at ? <span className="muted brain-pulse-run-at">{data.run_at}</span> : null}
+                  </>
+                ) : null}
               </div>
-            </div>
-            <div className="metric">
-              <div className="label">总耗时</div>
-              <div className="value">{formatMs(data.total_duration_ms)}</div>
-            </div>
-            <div className="metric">
-              <div className="label">生成耗时</div>
-              <div className="value">{formatMs(generateMs)}</div>
-            </div>
-            <div className="metric">
-              <div className="label">末次运行</div>
-              <div className="value" style={{ fontSize: 13 }}>
-                {data.run_at || '—'}
-              </div>
+              {!showRunning && data?.run_feedback ? (
+                <p className="brain-pipeline-feedback">{data.run_feedback}</p>
+              ) : null}
+              {!showRunning && data?.post_id ? (
+                <p className="muted brain-pulse-post-id">
+                  帖子 <code>{data.post_id}</code>
+                </p>
+              ) : null}
             </div>
           </div>
 
-          {data.run_feedback ? (
-            <p className="muted brain-pipeline-feedback">{data.run_feedback}</p>
-          ) : null}
-
-          {data.detail || data.post_id ? (
-            <div className="brain-pipeline-meta">
-              {data.post_id ? (
-                <span className="muted">
-                  帖子 <code>{data.post_id}</code>
-                </span>
-              ) : null}
-              {data.detail ? (
-                <span className="muted brain-pipeline-summary" title={data.detail}>
-                  {data.detail}
-                </span>
-              ) : null}
-            </div>
-          ) : null}
-
-          {genAttempts.length > 0 ? (
-            <details className="brain-pipeline-gen-attempts" open={!data.ok}>
-              <summary>
-                本次试跑生成明细（共 {genAttempts.length} 次，仅本请求）
-              </summary>
-              <ol className="brain-gen-attempt-list">
-                {genAttempts.map((item: MoeGenAttemptItem) => (
-                  <li key={`${item.attempt}-${item.outcome}-${item.snippet ?? ''}`}>
-                    <strong>第 {item.attempt} 次</strong> · {genOutcomeLabel(item.outcome)}
-                    {item.snippet ? (
-                      <span className="muted"> — 「{item.snippet}」</span>
-                    ) : null}
-                    {item.note ? <span className="muted">（{item.note}）</span> : null}
-                  </li>
-                ))}
-              </ol>
-            </details>
-          ) : null}
-
-          {empty ? (
+          {empty && !showRunning ? (
             <div className="brain-pipeline-empty">
-              <p>尚无试跑记录。请先在本页点击「试跑发帖」，或到「社区 AI Bot」列表试跑后再查看。</p>
-              <p className="muted">
-                推理服务需已启动（llm-server）；离线时会看到生成步骤失败。
-              </p>
+              <p>尚无试跑记录。请先在本页点击「试跑发帖」。</p>
+              <p className="muted">推理服务需已启动（llm-server）。</p>
             </div>
           ) : (
-            <div className="brain-pipeline-steps">{steps.map((step, i) => (
-                <PipelineStepRow key={step.key || `${i}`} step={step} index={i} maxMs={maxMs} />
-              ))}</div>
+            <>
+              <div className="brain-pulse-rail" role="tablist" aria-label="流水线阶段">
+                {phases.map((phase, i) => {
+                  const active = phase.id === selectedId
+                  const st = phase.status
+                  return (
+                    <div key={phase.id} className="brain-pulse-rail-item-wrap">
+                      {i > 0 ? (
+                        <span
+                          className={`brain-pulse-rail-link brain-pulse-rail-link--${st}`}
+                          aria-hidden
+                        />
+                      ) : null}
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        className={`brain-pulse-node brain-pulse-node--${st} ${active ? 'brain-pulse-node--active' : ''}`}
+                        onClick={() => setSelectedId(phase.id)}
+                      >
+                        <span className="brain-pulse-node-label">{phase.label}</span>
+                        <span className={`brain-pulse-node-dot brain-pulse-node-dot--${st}`} />
+                        <span className="brain-pulse-node-summary">{phase.summary}</span>
+                        {phase.durationMs > 0 ? (
+                          <span className="brain-pulse-node-ms">{formatMs(phase.durationMs)}</span>
+                        ) : null}
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {selected ? (
+                <div className="brain-pulse-detail-panel" role="tabpanel">
+                  <header className="brain-pulse-detail-head">
+                    <strong>{selected.label}</strong>
+                    <AdminTag label={phaseStatusLabel(selected.status)} tone={phaseTone(selected.status)} />
+                    <span className="brain-pulse-detail-ms">{formatMs(selected.durationMs)}</span>
+                  </header>
+                  <PhaseDetail
+                    phase={selected}
+                    allSteps={steps}
+                    genAttempts={genAttempts}
+                    showTechnical={showTechnical}
+                  />
+                </div>
+              ) : null}
+            </>
           )}
 
           {hm ? (
-            <details className="brain-pipeline-host" open>
-              <summary>运行环境快照（RPC 进程 · 推理服务）</summary>
+            <details className="brain-pipeline-host">
+              <summary>运行环境快照（RPC · 推理）</summary>
               <div className="admin-metrics page-insight-strip">
                 <div className="metric">
                   <div className="label">RPC 内存</div>
@@ -284,9 +396,7 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0 }: Props) {
                       tone={hm.inference_online ? 'ok' : 'fail'}
                       dot
                     />
-                    <span className="summary-note">
-                      {hm.inference_models ?? 0} 个模型
-                    </span>
+                    <span className="summary-note">{hm.inference_models ?? 0} 个模型</span>
                   </div>
                 </div>
               </div>

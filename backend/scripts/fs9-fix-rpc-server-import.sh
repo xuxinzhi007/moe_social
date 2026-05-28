@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# goctl 对 moe.proto 可能漏掉 pb/super import；生成后补齐。
+# goctl 对 moe.proto 可能漏掉 pb/moe import；生成后补齐。
 set -euo pipefail
 f="rpc/internal/server/superserver.go"
 [ -f "$f" ] || exit 0
-if grep -q 'backend/rpc/pb/super' "$f"; then
+if grep -q 'backend/rpc/pb/moe' "$f"; then
   exit 0
 fi
 python3 - <<'PY'
 from pathlib import Path
 p = Path("rpc/internal/server/superserver.go")
 text = p.read_text(encoding="utf-8")
-if "backend/rpc/pb/super" in text:
+if "backend/rpc/pb/moe" in text:
     raise SystemExit(0)
 lines = text.splitlines()
 out = []
@@ -26,12 +26,12 @@ while i < len(lines):
                 continue
             out.append(lines[i])
             i += 1
-        out.append('\t"backend/rpc/pb/super"')
+        out.append('\t"backend/rpc/pb/moe"')
         out.append(lines[i])  # closing )
         i += 1
         continue
     out.append(line)
     i += 1
 p.write_text("\n".join(out) + "\n", encoding="utf-8")
-print("fs9-fix-rpc-server-import: added backend/rpc/pb/super")
+print("fs9-fix-rpc-server-import: added backend/rpc/pb/moe")
 PY

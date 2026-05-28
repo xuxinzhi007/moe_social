@@ -7,7 +7,7 @@
 // 	protoc        v6.33.1
 // source: moe.proto
 
-package super
+package moe
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -247,7 +247,7 @@ const file_moe_proto_rawDesc = "" +
 	"\x14AdminGetMoeToolStats\x12\x1e.super.AdminGetMoeToolStatsReq\x1a\x1f.super.AdminGetMoeToolStatsResp\x12Z\n" +
 	"\x15AdminListMoeToolCalls\x12\x1f.super.AdminListMoeToolCallsReq\x1a .super.AdminListMoeToolCallsResp\x12E\n" +
 	"\x0eMoeExecuteTool\x12\x18.super.MoeExecuteToolReq\x1a\x19.super.MoeExecuteToolResp\x12E\n" +
-	"\x0eMoeSearchPosts\x12\x18.super.MoeSearchPostsReq\x1a\x19.super.MoeSearchPostsRespB\x16Z\x14backend/rpc/pb/superb\x06proto3"
+	"\x0eMoeSearchPosts\x12\x18.super.MoeSearchPostsReq\x1a\x19.super.MoeSearchPostsRespB\x14Z\x12backend/rpc/pb/moeb\x06proto3"
 
 var file_moe_proto_goTypes = []any{
 	(*SubmitLandingFeedbackReq)(nil),        // 0: super.SubmitLandingFeedbackReq

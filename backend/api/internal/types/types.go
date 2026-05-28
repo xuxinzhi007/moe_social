@@ -579,6 +579,10 @@ type AdminGetMoeBrainPipelineData struct {
 	StabilityScore   int                         `json:"stability_score,optional"`
 	StabilityDelta   int                         `json:"stability_delta,optional"`
 	RunFeedback      string                      `json:"run_feedback,optional"`
+	Running          bool                        `json:"running,optional"`
+	CurrentPhase     string                      `json:"current_phase,optional"`
+	RunStartedAt     string                      `json:"run_started_at,optional"`
+	ActiveStepKey    string                      `json:"active_step_key,optional"`
 }
 
 type AdminGetMoeBrainPipelineReq struct {
@@ -1291,14 +1295,17 @@ type AdminRefineMoeBrainEpisodeResp struct {
 }
 
 type AdminRunMoeAgentData struct {
-	AgentKey string `json:"agent_key"`
-	Ok       bool   `json:"ok"`
-	Detail   string `json:"detail"`
-	PostId   string `json:"post_id,optional"`
+	AgentKey       string `json:"agent_key"`
+	Ok             bool   `json:"ok"`
+	Detail         string `json:"detail"`
+	PostId         string `json:"post_id,optional"`
+	Accepted       bool   `json:"accepted,optional"`
+	AlreadyRunning bool   `json:"already_running,optional"`
 }
 
 type AdminRunMoeAgentReq struct {
 	AgentKey string `path:"agent_key"`
+	Async    bool   `form:"async,optional"`
 }
 
 type AdminRunMoeAgentResp struct {

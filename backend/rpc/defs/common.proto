@@ -3,7 +3,7 @@ syntax = "proto3";
 
 package super;
 
-option go_package = "backend/rpc/pb/super";
+option go_package = "backend/rpc/pb/moe";
 
 message User {
   string id = 1;
@@ -2127,6 +2127,7 @@ message AdminUpsertMoeRuntimeResp {
 
 message AdminRunMoeAgentOnceReq {
   string agent_key = 1;
+  bool async = 2;
 }
 
 message AdminRunMoeAgentOnceResp {
@@ -2134,6 +2135,8 @@ message AdminRunMoeAgentOnceResp {
   bool ok = 2;
   string detail = 3;
   string post_id = 4;
+  bool accepted = 5;
+  bool already_running = 6;
 }
 
 message MoeBrainTagStat {
@@ -2219,6 +2222,10 @@ message AdminGetMoeBrainPipelineResp {
   int32 stability_score = 10;
   int32 stability_delta = 11;
   string run_feedback = 12;
+  bool running = 13;
+  string current_phase = 14;
+  string run_started_at = 15;
+  string active_step_key = 16;
 }
 
 message RecordLlmChatTurnReq {

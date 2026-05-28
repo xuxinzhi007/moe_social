@@ -128,13 +128,35 @@ func (s *AdminService) DeleteBotFlowConfig(ctx context.Context, agentKey string)
 	return moebiz.DeleteFlowConfig(ctx, s.db, agentKey)
 }
 
-// RunAgentOnce 执行一次 Bot 试跑。
-func (s *AdminService) RunAgentOnce(ctx context.Context, agentKey string) (runtime.RunOnceResult, error) {
+// RunOnceInvokeResult 试跑调用结果（同步完成或异步已接受）。
+type RunOnceInvokeResult struct {
+	Result         runtime.RunOnceResult
+	Accepted       bool
+	AlreadyRunning bool
+}
+
+// RunAgentOnce 执行一次 Bot 试跑；async=true 时立即返回并在后台执行。
+func (s *AdminService) RunAgentOnce(ctx context.Context, agentKey string, async bool) (RunOnceInvokeResult, error) {
+	if async {
+		deps, err := s.requireRuntimeDeps(ctx)
+		if err != nil {
+			return RunOnceInvokeResult{}, err
+		}
+		start, err := moebiz.RunAgentOnceAsync(ctx, deps, agentKey)
+		if err != nil {
+			return RunOnceInvokeResult{}, err
+		}
+		return RunOnceInvokeResult{Accepted: start.Accepted, AlreadyRunning: start.AlreadyRunning}, nil
+	}
 	deps, err := s.requireRuntimeDeps(ctx)
 	if err != nil {
-		return runtime.RunOnceResult{}, err
+		return RunOnceInvokeResult{}, err
 	}
-	return moebiz.RunAgentOnce(ctx, deps, agentKey)
+	res, err := moebiz.RunAgentOnce(ctx, deps, agentKey)
+	if err != nil {
+		return RunOnceInvokeResult{}, err
+	}
+	return RunOnceInvokeResult{Result: res}, nil
 }
 
 // GetBrainSnapshot 加载大脑观测快照。

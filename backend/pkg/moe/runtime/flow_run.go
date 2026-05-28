@@ -35,6 +35,8 @@ func executeFlowPlan(
 	for _, node := range plan.Nodes {
 		kind := flowexec.NodeExecKind(node)
 		stepStart := time.Now()
+		stepKey, stepLabel := flowNodeStepKey(kind, node)
+		rec.BeginStep(stepKey, stepLabel)
 		switch kind {
 		case "load_runtime":
 			if err := deps.DB.Where("agent_key = ? AND enabled = ?", agentKey, true).First(&st.rt).Error; err != nil {
@@ -144,4 +146,33 @@ func executeFlowPlan(
 		}
 	}
 	return out, st, nil
+}
+
+func flowNodeStepKey(kind string, node flowexec.GraphNode) (key, label string) {
+	switch kind {
+	case "load_runtime":
+		return "load_runtime", "加载 Bot 配置"
+	case "gather_memory":
+		return "gather_memory", "检索记忆与社区脉搏"
+	case "prep":
+		key = node.StepKey
+		if key == "" {
+			key = "topic_profile"
+		}
+		return key, flowexec.NodeLabel(node, "编排 Prompt")
+	case "llm_generate":
+		return "generate", "LLM 生成正文"
+	case "qc":
+		return "generate_finalize", flowexec.NodeLabel(node, "质检汇总")
+	case "post_create", "tool":
+		toolName := "post_create"
+		if node.Type == "tool" && node.ToolName != "" {
+			toolName = node.ToolName
+		}
+		return toolName, flowexec.NodeLabel(node, toolName)
+	case "record_episode":
+		return "record_episode", "写入自传与话题标签"
+	default:
+		return kind, flowexec.NodeLabel(node, kind)
+	}
 }

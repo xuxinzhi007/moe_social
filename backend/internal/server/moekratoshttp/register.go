@@ -31,20 +31,12 @@ func healthHandler(ctx khttp.Context) error {
 }
 
 func migrationHandler(ctx khttp.Context) error {
+	// 避免 import cycle（kratosprogress → moekratospilot → moekratoshttp）；完整报告见 moe-social :8888/migration
 	payload := map[string]any{
-		"phase":              "pure-kratos-100",
-		"progress_percent":   100,
-		"moe_domain_percent": 100,
-		"repo_percent":       48,
-		"migration_type":     "kratos-pilot-complete",
-		"external_http_port": "8888",
-		"production_entry":   "moe-social",
-		"docs":               "docs/dev/kratos-pure-migration-plan.md",
-		"notes": []string{
-			"Production: make moe-social → HTTP :8888 + gRPC :8080",
-			"Pilot only: make moe-kratos → :19031/:19032 (dev)",
-			"Moe+VIP read routes on pilot; :8888 unchanged for clients",
-		},
+		"phase":    "moe-kratos-pilot",
+		"service":  "moe-kratos",
+		"docs":     "docs/dev/kratos-directory-layout.md",
+		"note":     "full metrics on moe-social :8888/migration",
 	}
 	b, err := json.Marshal(payload)
 	if err != nil {

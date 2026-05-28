@@ -35,6 +35,7 @@ type StepRecorder struct {
 	steps    []RunStep
 	clock    func() time.Time
 	runStart time.Time
+	live     *liveRunSession
 }
 
 func NewStepRecorder() *StepRecorder {
@@ -42,6 +43,21 @@ func NewStepRecorder() *StepRecorder {
 	return &StepRecorder{
 		clock:    time.Now,
 		runStart: now,
+	}
+}
+
+// BindLive 绑定进行中的试跑会话（管理台轮询用）。
+func (r *StepRecorder) BindLive(sess *liveRunSession) {
+	if r == nil {
+		return
+	}
+	r.live = sess
+}
+
+// BeginStep 标记当前正在执行的步骤。
+func (r *StepRecorder) BeginStep(key, label string) {
+	if r != nil && r.live != nil {
+		r.live.SetActive(key, label)
 	}
 }
 
@@ -61,6 +77,9 @@ func (r *StepRecorder) Add(key, label, status, detail string, stepDur time.Durat
 		Detail: strings.TrimSpace(detail),
 		MS:     ms,
 	})
+	if r.live != nil {
+		r.live.SyncSteps(r.steps)
+	}
 }
 
 func (r *StepRecorder) Steps() []RunStep {

@@ -2,7 +2,7 @@
 
 
 
-.PHONY: all gen gen-moe-proto gen-moe-conf gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto verify-moe-migration verify-moe-grpc verify-moe-gateway verify-moe-complete verify-domain-vip verify-domain-user verify-domain-misc verify-platform verify-full-site-50 verify-kratos-pilot verify-kratos-50 verify-kratos-60 verify-kratos-80 verify-kratos-100 verify-kratos-rollout-pk0 verify-kratos-rollout-pk1 verify-kratos-rollout-pk2 verify-kratos-rollout-pk12 moe-social moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
+.PHONY: all gen gen-legacy-goctl gen-moe-proto gen-moe-conf gen-moekratospilot-get gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto verify-moe-migration verify-moe-grpc verify-moe-gateway verify-moe-complete verify-domain-vip verify-domain-user verify-domain-misc verify-platform verify-full-site-50 verify-kratos-pilot verify-kratos-50 verify-kratos-60 verify-kratos-80 verify-kratos-100 verify-kratos-pure-50 verify-kratos-pure-90 verify-kratos-rollout-pk0 verify-kratos-rollout-pk1 verify-kratos-rollout-pk2 verify-kratos-rollout-pk12 verify-kratos-rollout-pk3 verify-kratos-rollout-pk4 verify-kratos-rollout-pk6 verify-kratos-rollout-pk7 verify-kratos-rollout-pk34 verify-kratos-rollout-pk8 verify-kratos-rollout-85 verify-kratos-rollout-70 verify-kratos-rollout-regression verify-kratos-rollout-regression-full moe-social moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
 
 	deploy-agent deploy-agent-stop moe-social-stop admin \
 
@@ -20,8 +20,11 @@ all: gen
 
 
 
-# 生成：api/**/v1 proto（Kratos 风格目录）+ legacy goctl（moe.api / moe.proto）
-gen: gen-moe-proto gen-moe-conf gen-rpc gen-api gen-swagger
+# 生成：域 proto + RPC + Kratos 路由注册（PK-8 默认不含 goctl gen-api）
+gen: gen-moe-proto gen-moe-conf gen-rpc gen-moekratospilot-get
+
+# 紧急/兼容：goctl api + swagger（需 MOE_ALLOW_GOCTL_API=1）
+gen-legacy-goctl: gen-api gen-swagger
 
 gen-moe-proto:
 	bash scripts/gen-moe-proto.sh
@@ -29,14 +32,18 @@ gen-moe-proto:
 gen-moe-conf:
 	bash scripts/gen-moe-conf.sh
 
-
+# PK-6：从 api/internal/handler/routes.go 生成 moekratospilot/get_handlers_gen.go（Kratos HTTP 注册全部 GET）
+# 在 make gen-api 之后执行（routes 变更时必跑）
+gen-moekratospilot-get:
+	cd scripts/gen-moekratospilot-get && go run ./
 
 # --client=false：避免与 pb 包名冲突、生成坏 client
 
 gen-rpc: fs8-assemble-super-proto
 
 	goctl rpc protoc rpc/moe.proto --go_out=. --go-grpc_out=. --zrpc_out=./rpc -I rpc --go_opt=module=backend --go-grpc_opt=module=backend --client=false
-	@rm -f rpc/pb/super/super.pb.go rpc/pb/super/super_grpc.pb.go
+	@rm -f rpc/pb/super/super.pb.go rpc/pb/super/super_grpc.pb.go rpc/pb/super/common.pb.go rpc/pb/super/moe.pb.go rpc/pb/super/moe_grpc.pb.go
+	bash scripts/fs9b-gen-pb-super-shim.sh
 	bash scripts/fs9-fix-rpc-server-import.sh
 	bash scripts/prune-rpc-logic-shells.sh
 
@@ -51,9 +58,10 @@ fs8-split-super-proto:
 
 
 gen-api:
-
+	bash scripts/gen-api-guard.sh
 	cd api && goctl api go -api moe.api -dir ./
 	bash scripts/prune-api-logic-shells.sh
+	$(MAKE) gen-moekratospilot-get
 
 
 
@@ -444,8 +452,64 @@ verify-kratos-rollout-pk12:
 
 	bash scripts/verify-kratos-rollout-pk12.sh
 
-moe-kratos:
+verify-kratos-rollout-pk3:
 
+	bash scripts/verify-kratos-rollout-pk3.sh
+
+verify-kratos-rollout-70:
+
+	bash scripts/verify-kratos-rollout-70.sh
+
+verify-kratos-rollout-pk4:
+
+	bash scripts/verify-kratos-rollout-pk4.sh
+
+verify-kratos-rollout-pk6:
+
+	bash scripts/verify-kratos-rollout-pk6.sh
+
+verify-kratos-rollout-pk7:
+
+	bash scripts/verify-kratos-rollout-pk7.sh
+
+verify-kratos-rollout-pk8:
+
+	bash scripts/verify-kratos-rollout-pk8.sh
+
+verify-kratos-pure-50:
+
+	bash scripts/verify-kratos-pure-50.sh
+
+verify-kratos-pure-90:
+
+	bash scripts/verify-kratos-pure-90.sh
+
+verify-sprint-fs9b:
+
+	bash scripts/verify-sprint-fs9b.sh
+
+verify-kratos-rollout-pk34:
+
+	bash scripts/verify-kratos-rollout-pk34.sh
+
+verify-kratos-rollout-85:
+
+	bash scripts/verify-kratos-rollout-pk34.sh
+
+verify-kratos-rollout-100:
+
+	bash scripts/verify-kratos-rollout-100.sh
+
+verify-kratos-rollout-regression:
+
+	bash scripts/verify-kratos-rollout-regression.sh
+
+verify-kratos-rollout-regression-full:
+
+	bash scripts/verify-kratos-rollout-regression-full.sh
+
+moe-kratos:
+	@echo "DEPRECATED: use make moe-social (:8888 pure Kratos). Continuing moe-kratos pilot..."
 	go run ./cmd/moe-kratos
 
 

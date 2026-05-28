@@ -12,6 +12,48 @@ import (
 	"gorm.io/gorm"
 )
 
+func pipelineFromLive(ctx context.Context, db *gorm.DB, agentKey string, live runtime.LiveRunSnapshot) PipelineSnapshot {
+	out := PipelineSnapshot{
+		AgentKey:      agentKey,
+		Running:       true,
+		CurrentPhase:  live.CurrentPhase,
+		RunStartedAt:  live.StartedAt,
+		ActiveStepKey: live.ActiveKey,
+		Steps:         defaultPipelineSteps(),
+	}
+	steps := runtime.LiveRuns.PipelineStepsForAgent(agentKey)
+	if len(steps) > 0 {
+		out.Steps = make([]PipelineStep, 0, len(steps))
+		for _, s := range steps {
+			out.Steps = append(out.Steps, PipelineStep{
+				Key: s.Key, Label: s.Label, Status: s.Status, Detail: s.Detail, DurationMS: s.MS,
+			})
+		}
+	}
+	out.TotalDurationMS = time.Since(live.StartedAt).Milliseconds()
+	if len(live.GenerateAttempts) > 0 {
+		out.GenerateAttempts = make([]GenAttemptView, 0, len(live.GenerateAttempts))
+		for _, a := range live.GenerateAttempts {
+			out.GenerateAttempts = append(out.GenerateAttempts, GenAttemptView{
+				Attempt: a.Attempt,
+				Outcome: string(a.Outcome),
+				Snippet: a.Snippet,
+				Note:    a.Note,
+			})
+		}
+	}
+	if db != nil {
+		if invoked, err := toolaudit.ListInvokedSince(db, agentKey, live.StartedAt, 50); err == nil {
+			for _, t := range invoked {
+				out.ToolsInvoked = append(out.ToolsInvoked, ToolInvokeView{
+					Tool: t.Tool, Ok: t.Ok, LatencyMs: t.LatencyMs, CreatedAt: t.CreatedAt,
+				})
+			}
+		}
+	}
+	return out
+}
+
 // PipelineStep 单步流水线视图（与 proto / super 对齐）。
 type PipelineStep struct {
 	Key        string
@@ -65,6 +107,11 @@ type PipelineSnapshot struct {
 	StabilityDelta   int
 	RunFeedback      string
 	HasRun           bool
+	// Running 试跑进行中（进程内 live 状态，供管理台轮询）。
+	Running       bool
+	CurrentPhase  string
+	RunStartedAt  time.Time
+	ActiveStepKey string
 }
 
 func defaultPipelineSteps() []PipelineStep {
@@ -79,13 +126,18 @@ func defaultPipelineSteps() []PipelineStep {
 
 // GetBrainPipeline 返回指定 agent 最近一次试跑流水线；无记录时返回默认占位步骤。
 func GetBrainPipeline(ctx context.Context, db *gorm.DB, agentKey string) (PipelineSnapshot, error) {
-	_ = ctx
 	key := strings.TrimSpace(agentKey)
 	out := PipelineSnapshot{
 		AgentKey: key,
 		Steps:    defaultPipelineSteps(),
 	}
-	if key == "" || db == nil {
+	if key == "" {
+		return out, nil
+	}
+	if liveSnap, ok := runtime.LiveRuns.SnapshotForAgent(key); ok {
+		return pipelineFromLive(ctx, db, key, liveSnap), nil
+	}
+	if db == nil {
 		return out, nil
 	}
 	row, err := moedata.LatestAgentRunLog(db, key)

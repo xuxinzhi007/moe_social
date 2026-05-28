@@ -8,6 +8,7 @@ import { useAdminAuth } from '../context/AdminAuthContext'
 import { DeployApiError } from '../api/deployClient'
 import type { MoeBotFlowData, MoeBrainPipelineData } from '../api/adminClient'
 import { clientDefaultFlow } from '../lib/botFlowTemplate'
+import { openMoeBrainPipelineSse, waitMoeBrainPipelineSse } from '../lib/moePipelineSse'
 import { MonitorPageLayout } from '../ui'
 
 type RuntimeRow = { agent_key: string; display_name: string }
@@ -121,6 +122,16 @@ export function MoeBotFlowPage() {
     return () => window.clearInterval(t)
   }, [])
 
+  const pipelineRunning = Boolean(pipeline?.running)
+  const runActive = runningOnce || pipelineRunning
+
+  useEffect(() => {
+    if (!runActive || !agentKey.trim()) return
+    const url = client.brainPipelineStreamUrl(agentKey)
+    const handle = openMoeBrainPipelineSse(url, (next) => setPipeline(next))
+    return () => handle.close()
+  }, [runActive, agentKey, client])
+
   const saveFlow = useCallback(
     async (payload: {
       nodes: MoeBotFlowData['nodes']
@@ -149,10 +160,19 @@ export function MoeBotFlowPage() {
 
   async function runOnce() {
     setRunningOnce(true)
+    setError('')
     try {
-      const res = await client.runMoeAgentOnce(agentKey)
+      const res = await client.runMoeAgentOnce(agentKey, { async: true })
       if (!res.success) {
         setError(res.message || '试跑失败')
+        return
+      }
+      if (res.data?.already_running) {
+        setError('该 Bot 正在试跑中')
+        return
+      }
+      if (res.data?.accepted) {
+        await waitMoeBrainPipelineSse(client.brainPipelineStreamUrl(agentKey))
       }
       setPollTick((n) => n + 1)
     } catch (e) {
@@ -179,9 +199,25 @@ export function MoeBotFlowPage() {
     }
   }
 
-  const steps = pipeline?.steps ?? []
+  const steps = useMemo(() => pipeline?.steps ?? [], [pipeline?.steps])
+  const toolsInvoked = useMemo(
+    () =>
+      (pipeline?.tools_invoked ?? []).map((t) => ({
+        tool: t.tool,
+        ok: t.ok,
+      })),
+    [pipeline?.tools_invoked],
+  )
   const hasRun = Boolean(pipeline?.run_at?.trim())
-  const runStateLabel = !hasRun ? '待机' : pipeline?.ok ? '成功' : '失败'
+  const runStateLabel = runActive
+    ? pipeline?.current_phase
+      ? `试跑中·${pipeline.current_phase}`
+      : '试跑中'
+    : !hasRun
+      ? '待机'
+      : pipeline?.ok
+        ? '成功'
+        : '失败'
 
   const metrics = [
     { label: '运行态', value: runStateLabel },
@@ -265,12 +301,10 @@ export function MoeBotFlowPage() {
             flow={flow}
             tools={tools}
             steps={steps}
-            toolsInvoked={(pipeline?.tools_invoked ?? []).map((t) => ({
-              tool: t.tool,
-              ok: t.ok,
-            }))}
+            toolsInvoked={toolsInvoked}
             hasRun={hasRun}
             ok={Boolean(pipeline?.ok)}
+            runActive={runActive}
             runFeedback={pipeline?.run_feedback}
             saving={saving}
             onSave={saveFlow}

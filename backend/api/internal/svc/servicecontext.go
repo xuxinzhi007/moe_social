@@ -93,7 +93,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		MoeGRPC:        moeGRPC,
 		MoeGW:          moeadmingw.NewConfigured(nil, moeGRPC, superClient),
 		LandingGW:      landinggw.New(nil, superClient),
-		AdminGW:        admingw.New(nil, superClient),
+		AdminGW:        admingw.NewConfigured(nil, superClient),
 		AIGW:           aigw.New(nil, superClient),
 		BehaviorGW:     behaviorgw.New(nil, superClient),
 		PostGW:         postgw.New(nil, superClient),

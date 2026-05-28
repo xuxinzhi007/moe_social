@@ -332,6 +332,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
+				Path:    "/api/admin/moe/brain/pipeline/stream",
+				Handler: admin.AdminStreamMoeBrainPipelineHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/admin/moe/inference/status",
 				Handler: admin.AdminGetMoeInferenceStatusHandler(serverCtx),
 			},
