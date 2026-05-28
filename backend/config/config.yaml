@@ -213,7 +213,7 @@ moe:
   # PK-9 传输铺轨（rollout_percent=100）：Kratos HTTP :8888 + gRPC 生命周期；完整纯 Kratos percent 见 /migration
   # 回滚 Hybrid：设为 false
   kratos_pure_enabled: true
-  # PK-8：退役 goctl handler 默认生成链（改 api/defs 后只跑 make gen-http-routes）
+  # PK-8：日常 make gen 不跑 goctl api（改 api/defs 后 make gen-api；双端契约 make gen-all）
   kratos_pk8_goctl_retired: true
   # 紧急回滚 go-zero rest（仅 kratos_pure_enabled=false 时生效）
   kratos_hybrid_http_fallback: false

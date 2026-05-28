@@ -1,6 +1,5 @@
 // FS-9 / PK-8: goctl HTTP 入口（仅 import）；契约 SSOT 在 api/defs/*.api
-// PK-8 退役：默认勿 make gen-api；路由注册走 make gen-http-routes → api/moehttp
-// 紧急再生成：MOE_ALLOW_GOCTL_API=1 make gen-api
+// 改 defs 后：make gen-api（logic 写在 api/internal/logic）；日常 make gen 不跑 goctl api
 syntax = "v1"
 
 info (

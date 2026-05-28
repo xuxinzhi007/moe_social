@@ -1,35 +1,36 @@
-# API 契约（PK-1 纪律）
+# API 契约
 
-> **对外 HTTP**：Kratos `:8888`，路由注册在 `api/moehttp`；`api/<domain>/v1/*.proto` 为域 SSOT。
+## 新接口（必读）
 
-## 规则（PK-1 起强制）
+**新 HTTP 能力**：只加 `api/<domain>/v1/*.proto`，**禁止**扩大 `api/defs/*.api`。
 
-1. **新接口** → 只加 `api/<domain>/v1/*.proto`，**禁止**扩大 `api/defs/common.api` 巨石。
-2. **HTTP 路径** 在 proto 顶部用注释写明，须与现有 `moe.api` 路径 **完全一致**。
-3. **实现** → `internal/biz/<domain>` + `internal/service/<domain>`。
-4. **灰度** → `config/config.yaml` 的 `moe.kratos_*_http_enabled`。
-
-## 生成
+→ [docs/dev/new-api-kratos.md](../../docs/dev/new-api-kratos.md)
 
 ```bash
-cd backend
-make gen-moe-proto      # api/**/v1/*.proto → *.pb.go
-make gen-moe-conf       # internal/conf
-make gen-http-routes    # routes.go → api/moehttp
+make gen              # 生成 *.pb.go
+# 实现 internal/service + internal/biz
+# 注册 api/moehttp/*_compat.go
+make check && make moe-social
 ```
 
-改 `moe.api` 后（需 `MOE_ALLOW_GOCTL_API=1`）：`make gen-api`，会自动 `gen-http-routes`。
+## 存量 goctl（维护老接口）
 
-## 域索引
+| 步骤 | 命令 |
+|------|------|
+| 改 `api/defs/*.api` | `make gen-api` |
+| 写逻辑 | `api/internal/logic/<group>/*logic.go` |
+| Kratos 路由同步 | 自动 `gen-http-routes` |
 
-| 域 | Proto | Kratos HTTP 注册 |
-|----|-------|------------------|
-| Moe Admin | [moe/v1/moe.proto](./moe/v1/moe.proto) | `moehttp` AdminCompat |
-| VIP 只读 | [vip/v1/vip_read.proto](./vip/v1/vip_read.proto) | `RegisterVipCompat` |
-| Admin Insights | [admin/v1/admin_insights.proto](./admin/v1/admin_insights.proto) | `admin_insights_compat.go` |
-| LLM | [llm/v1/](./llm/v1/) | 域 proto + 灰度 |
+## 域 proto 索引
 
-## 相关文档
+| 域 | Proto | HTTP 注册 |
+|----|-------|-----------|
+| Moe Admin | [moe/v1/moe.proto](./moe/v1/moe.proto) | `api/moehttp/admin_compat.go` |
+| VIP 只读 | [vip/v1/vip_read.proto](./vip/v1/vip_read.proto) | `api/moehttp/vip_compat.go` |
+| Admin Insights | [admin/v1/admin_insights.proto](./admin/v1/admin_insights.proto) | `api/moehttp/admin_insights_compat.go` |
+| LLM / AI / Chat | [llm/v1/](./llm/v1/) 等 | 灰度 / 存量 logic |
+
+## 相关
 
 - [LAYOUT.md](../LAYOUT.md)
 - [scripts/README.md](../scripts/README.md)
