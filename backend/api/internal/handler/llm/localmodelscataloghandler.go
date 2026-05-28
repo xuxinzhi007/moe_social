@@ -1,14 +1,12 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package llm
 
 import (
 	"net/http"
 
-	"backend/api/internal/logic/llm"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -20,8 +18,7 @@ func LocalModelsCatalogHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := llm.NewLocalModelsCatalogLogic(r.Context(), svcCtx)
-		resp, err := l.LocalModelsCatalog(&req)
+		resp, err := handlerutil.LLMLocalModelsCatalog(r.Context(), svcCtx)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

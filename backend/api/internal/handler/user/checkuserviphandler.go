@@ -3,9 +3,11 @@ package user
 import (
 	"net/http"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -17,12 +19,18 @@ func CheckUserVipHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := user.NewCheckUserVipLogic(r.Context(), svcCtx)
-		resp, err := l.CheckUserVip(&req)
+		rpcResp, err := svcCtx.UserGW.CheckUserVip(r.Context(), &moe.CheckUserVipReq{UserId: req.UserId})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(r.Context(), w, &types.CheckUserVipResp{
+				BaseResp: common.HandleUserGWError(err, ""),
+				Data:     false,
+			})
+			return
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.CheckUserVipResp{
+			BaseResp: common.HandleRPCError(nil, "检查用户VIP状态成功"),
+			Data:     rpcResp.IsVip,
+		})
 	}
 }

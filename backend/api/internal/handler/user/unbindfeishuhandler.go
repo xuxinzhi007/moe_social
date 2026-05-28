@@ -1,14 +1,13 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package user
 
 import (
 	"net/http"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -20,12 +19,23 @@ func UnbindFeishuHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := user.NewUnbindFeishuLogic(r.Context(), svcCtx)
-		resp, err := l.UnbindFeishu(&req)
+		userID, err := common.UserIDString(r.Context())
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			return
 		}
+
+		rpcResp, rpcErr := svcCtx.UserGW.UnbindFeishu(r.Context(), &moe.UnbindFeishuReq{UserId: userID})
+		if rpcErr != nil {
+			httpx.OkJsonCtx(r.Context(), w, &types.UnbindFeishuResp{
+				BaseResp: common.HandleRPCError(rpcErr, ""),
+			})
+			return
+		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.UnbindFeishuResp{
+			BaseResp: common.HandleRPCError(nil, "已解除飞书绑定"),
+			Data:     common.RpcUserToTypes(rpcResp.User),
+		})
 	}
 }

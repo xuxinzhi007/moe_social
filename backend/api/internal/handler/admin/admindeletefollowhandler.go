@@ -1,16 +1,12 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminDeleteFollowHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -21,16 +17,26 @@ func AdminDeleteFollowHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		var req types.AdminDeleteFollowReq
 		if err := httpx.Parse(r, &req); err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 			return
 		}
-
-		l := admin.NewAdminDeleteFollowLogic(ctx, svcCtx)
-		resp, err := l.AdminDeleteFollow(&req)
+		resp, err := func(req *types.AdminDeleteFollowReq) (*types.AdminDeleteFollowResp, error) {
+			_, err := svcCtx.AdminGW.AdminDeleteFollow(ctx, &moe.AdminDeleteFollowReq{
+			FollowId: req.FollowId,
+			})
+			if err != nil {
+			return &types.AdminDeleteFollowResp{BaseResp: common.HandleRPCError(err, "")}, nil
+			}
+			resp := &types.AdminDeleteFollowResp{BaseResp: common.HandleRPCError(nil, "删除成功")}
+			if resp.BaseResp.Success {
+			common.TryRecordAdminAudit(ctx, svcCtx, "delete", "follow", req.FollowId, "删除关注关系")
+			}
+			return resp, nil
+		}(&req)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(ctx, w, resp)
 		}
 	}
 }

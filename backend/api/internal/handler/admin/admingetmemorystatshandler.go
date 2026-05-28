@@ -1,16 +1,12 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminGetMemoryStatsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -21,16 +17,23 @@ func AdminGetMemoryStatsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		var req types.EmptyReq
 		if err := httpx.Parse(r, &req); err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 			return
 		}
-
-		l := admin.NewAdminGetMemoryStatsLogic(ctx, svcCtx)
-		resp, err := l.AdminGetMemoryStats(&req)
+		resp, err := func(req *types.EmptyReq) (*types.AdminGetMemoryStatsResp, error) {
+			rpcResp, err := svcCtx.AdminGW.AdminGetMemoryStats(ctx, &moe.AdminGetMemoryStatsReq{})
+			if err != nil {
+			return &types.AdminGetMemoryStatsResp{BaseResp: common.HandleRPCError(err, "")}, nil
+			}
+			return &types.AdminGetMemoryStatsResp{
+			BaseResp: common.HandleRPCError(nil, "ok"),
+			Data:     common.RpcAdminMemoryStatsToTypes(rpcResp.GetStats()),
+			}, nil
+		}(&req)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(ctx, w, resp)
 		}
 	}
 }

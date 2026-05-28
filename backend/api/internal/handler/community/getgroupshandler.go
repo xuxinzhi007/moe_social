@@ -3,26 +3,38 @@ package community
 import (
 	"net/http"
 
-	"github.com/zeromicro/go-zero/rest/httpx"
-	"backend/api/internal/logic/community"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
+	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func GetGroupsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.GetGroupsReq
 		if err := httpx.Parse(r, &req); err != nil {
-			httpx.Error(w, err)
+			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
 
-		l := community.NewGetGroupsLogic(r.Context(), svcCtx)
-		resp, err := l.GetGroups(&req)
+		rpcResp, err := svcCtx.CommunityGW.GetGroups(r.Context(), &moe.GetGroupsReq{
+			Page:     int32(req.Page),
+			PageSize: int32(req.PageSize),
+			Keyword:  req.Keyword,
+			IsPublic: req.IsPublic,
+			UserId:   req.UserId,
+		})
 		if err != nil {
-			httpx.Error(w, err)
-		} else {
-			httpx.OkJson(w, resp)
+			httpx.ErrorCtx(r.Context(), w, err)
+			return
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.GetGroupsResp{
+			BaseResp: types.BaseResp{Code: 0, Message: "success", Success: true},
+			Data:     handlerutil.GroupsFromRPC(rpcResp.Groups),
+			Total:    int(rpcResp.Total),
+		})
 	}
 }

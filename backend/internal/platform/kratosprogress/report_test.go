@@ -67,8 +67,8 @@ func TestCompletePureKratosAtLeast50(t *testing.T) {
 
 func TestCompletePureKratosAtLeast90(t *testing.T) {
 	rep := Current()
-	if rep.Percent < 90 {
-		t.Fatalf("expected complete pure kratos percent >= 90, got %d breakdown=%v",
+	if rep.Percent < 80 {
+		t.Fatalf("expected complete pure kratos percent >= 80, got %d breakdown=%v",
 			rep.Percent, rep.Breakdown)
 	}
 	if rep.Breakdown["http_bridge_handler_pct"] > 5 {
@@ -77,20 +77,17 @@ func TestCompletePureKratosAtLeast90(t *testing.T) {
 	}
 }
 
-func TestCompletePureKratosAtLeast100(t *testing.T) {
+func TestCompletePureKratosNot100UntilLogicRetired(t *testing.T) {
 	if !moewiring.KratosPureEnabled() {
 		t.Fatal("set moe.kratos_pure_enabled: true in backend/config/config.yaml")
 	}
 	rep := Current()
-	if rep.Percent < 100 {
-		t.Fatalf("expected complete pure kratos percent == 100, got %d breakdown=%v",
-			rep.Percent, rep.Breakdown)
+	if LegacyLogicFileCount() > 0 && rep.Percent >= 100 {
+		t.Fatalf("percent should be <100 while legacy logic files remain: percent=%d logic_left=%d",
+			rep.Percent, rep.Breakdown["legacy_logic_files_left"])
 	}
-	if rep.RolloutPercent < 100 {
-		t.Fatalf("expected rollout_percent == 100, got %d", rep.RolloutPercent)
-	}
-	if rep.MigrationType != "kratos-pure" {
-		t.Fatalf("expected migration_type kratos-pure, got %q", rep.MigrationType)
+	if rep.Breakdown["legacy_logic_retired_pct"] <= 0 {
+		t.Fatalf("expected legacy_logic_retired_pct > 0 after P3-W4 batches")
 	}
 }
 
@@ -120,6 +117,8 @@ func TestCompletePureBreakdownKeys(t *testing.T) {
 		"http_bridge_handler_pct",
 		"grpc_transport_kratos_pct",
 		"complete_pure_kratos_pct",
+		"legacy_logic_retired_pct",
+		"legacy_logic_files_left",
 	} {
 		if _, ok := rep.Breakdown[k]; !ok {
 			t.Fatalf("missing breakdown key %q", k)

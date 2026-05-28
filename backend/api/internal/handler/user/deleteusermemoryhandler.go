@@ -1,15 +1,12 @@
 package user
 
 import (
-	"errors"
 	"net/http"
-	"strconv"
-	"strings"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/utils"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
@@ -22,28 +19,19 @@ func DeleteUserMemoryHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		authHeader := r.Header.Get("Authorization")
-		if !strings.HasPrefix(authHeader, "Bearer ") {
-			httpx.ErrorCtx(r.Context(), w, errors.New("missing or invalid authorization header"))
+		_, err := svcCtx.LLMGW.DeleteUserMemory(r.Context(), &moe.DeleteUserMemoryReq{
+			UserId: req.UserId,
+			Key:    req.Key,
+		})
+		if err != nil {
+			httpx.OkJsonCtx(r.Context(), w, &types.DeleteUserMemoryResp{
+				BaseResp: common.HandleRPCError(err, ""),
+			})
 			return
 		}
 
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		userID, err := utils.GetUserIDFromToken(tokenString)
-		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-			return
-		}
-
-		req.UserId = strconv.Itoa(int(userID))
-
-		l := user.NewDeleteUserMemoryLogic(r.Context(), svcCtx)
-		resp, err := l.DeleteUserMemory(&req)
-		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
-		}
+		httpx.OkJsonCtx(r.Context(), w, &types.DeleteUserMemoryResp{
+			BaseResp: common.HandleRPCError(nil, "删除用户记忆成功"),
+		})
 	}
 }
-

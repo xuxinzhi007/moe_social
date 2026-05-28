@@ -1,16 +1,12 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminListLevelConfigsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -21,16 +17,27 @@ func AdminListLevelConfigsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		var req types.EmptyReq
 		if err := httpx.Parse(r, &req); err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 			return
 		}
-
-		l := admin.NewAdminListLevelConfigsLogic(ctx, svcCtx)
-		resp, err := l.AdminListLevelConfigs(&req)
+		resp, err := func(req *types.EmptyReq) (*types.AdminListLevelConfigsResp, error) {
+			rpcResp, err := svcCtx.AdminGW.AdminListLevelConfigs(ctx, &moe.AdminListLevelConfigsReq{})
+			if err != nil {
+			return &types.AdminListLevelConfigsResp{BaseResp: common.HandleRPCError(err, "")}, nil
+			}
+			items := make([]types.AdminLevelConfigItem, len(rpcResp.GetItems()))
+			for i, item := range rpcResp.GetItems() {
+			items[i] = common.RpcAdminLevelConfigToTypes(item)
+			}
+			return &types.AdminListLevelConfigsResp{
+			BaseResp: common.HandleRPCError(nil, "ok"),
+			Data:     items,
+			}, nil
+		}(&req)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(ctx, w, resp)
 		}
 	}
 }

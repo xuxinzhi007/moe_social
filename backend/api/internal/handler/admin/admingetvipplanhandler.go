@@ -1,17 +1,11 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminGetVipPlanHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -20,15 +14,24 @@ func AdminGetVipPlanHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.OkJsonCtx(r.Context(), w, &types.AdminGetVipPlanResp{BaseResp: *br})
 			return
 		}
-
 		var req types.AdminGetVipPlanReq
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
+		resp, err := func(req *types.AdminGetVipPlanReq) (resp *types.AdminGetVipPlanResp, err error) {
+			plan, err := svcCtx.VipGW.GetPlan(r.Context(), req.PlanId)
+			if err != nil {
+			return &types.AdminGetVipPlanResp{
+			BaseResp: common.HandleVipGWError(err, ""),
+			}, nil
+			}
 
-		l := admin.NewAdminGetVipPlanLogic(r.Context(), svcCtx)
-		resp, err := l.AdminGetVipPlan(&req)
+			return &types.AdminGetVipPlanResp{
+			BaseResp: common.HandleRPCError(nil, "ok"),
+			Data:     common.VipPlanModelToTypes(plan),
+			}, nil
+		}(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

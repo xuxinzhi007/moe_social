@@ -3,9 +3,11 @@ package checkin
 import (
 	"net/http"
 
-	"backend/api/internal/logic/checkin"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -17,12 +19,26 @@ func CheckInHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := checkin.NewCheckInLogic(r.Context(), svcCtx)
-		resp, err := l.CheckIn(&req)
+		rpcResp, err := svcCtx.CheckInGW.CheckIn(r.Context(), &moe.CheckInReq{
+			UserId: req.UserId,
+		})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(r.Context(), w, &types.CheckInResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+			return
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.CheckInResp{
+			BaseResp: types.BaseResp{Code: 0, Message: "签到成功", Success: true},
+			Data: types.CheckInData{
+				ExpGained:       int(rpcResp.ExpGained),
+				NewLevel:        int(rpcResp.NewLevel),
+				ConsecutiveDays: int(rpcResp.ConsecutiveDays),
+				LevelUp:         rpcResp.LevelUp,
+				SpecialReward:   rpcResp.SpecialReward,
+				NewAchievements: handlerutil.UnlocksFromRPC(rpcResp.NewAchievements),
+			},
+		})
 	}
 }

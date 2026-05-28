@@ -1,14 +1,13 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package gift
 
 import (
 	"net/http"
 
-	"backend/api/internal/logic/gift"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -20,12 +19,24 @@ func GetGiftHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := gift.NewGetGiftLogic(r.Context(), svcCtx)
-		resp, err := l.GetGift(&req)
+		rpcResp, err := svcCtx.GiftGW.GetGift(r.Context(), &moe.GetGiftReq{
+			GiftId: req.GiftId,
+		})
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			return
 		}
+
+		if !rpcResp.Success {
+			httpx.OkJsonCtx(r.Context(), w, &types.GetGiftResp{
+				BaseResp: types.BaseResp{Code: 1, Message: rpcResp.Message, Success: false},
+			})
+			return
+		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.GetGiftResp{
+			BaseResp: types.BaseResp{Code: 0, Message: rpcResp.Message, Success: true},
+			Data:     handlerutil.GiftFromRPC(rpcResp.Gift),
+		})
 	}
 }

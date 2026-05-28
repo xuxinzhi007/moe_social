@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"backend/api/internal/common"
-	"backend/api/internal/logic/vip"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	vipbiz "backend/internal/biz/vip"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
@@ -24,12 +24,22 @@ func CreateVipPlanHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := vip.NewCreateVipPlanLogic(r.Context(), svcCtx)
-		resp, err := l.CreateVipPlan(&req)
+		plan, err := svcCtx.VipGW.CreatePlan(r.Context(), vipbiz.CreatePlanInput{
+			Name:         req.Name,
+			Description:  req.Description,
+			Price:        req.Price,
+			DurationDays: req.DurationDays,
+		})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(r.Context(), w, &types.CreateVipPlanResp{
+				BaseResp: common.HandleVipGWError(err, ""),
+			})
+			return
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.CreateVipPlanResp{
+			BaseResp: common.HandleRPCError(nil, "创建VIP套餐成功"),
+			Data:     common.VipPlanModelToTypes(plan),
+		})
 	}
 }

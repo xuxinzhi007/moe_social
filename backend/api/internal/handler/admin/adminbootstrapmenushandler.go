@@ -1,16 +1,12 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminBootstrapMenusHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -21,16 +17,27 @@ func AdminBootstrapMenusHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		var req types.EmptyReq
 		if err := httpx.Parse(r, &req); err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 			return
 		}
-
-		l := admin.NewAdminBootstrapMenusLogic(ctx, svcCtx)
-		resp, err := l.AdminBootstrapMenus(&req)
+		resp, err := func(req *types.EmptyReq) (*types.AdminBootstrapMenusResp, error) {
+			rpcResp, err := svcCtx.AdminGW.AdminBootstrapMenus(ctx, &moe.AdminBootstrapMenusReq{})
+			if err != nil {
+			return &types.AdminBootstrapMenusResp{BaseResp: common.HandleRPCError(err, "")}, nil
+			}
+			resp := &types.AdminBootstrapMenusResp{
+			BaseResp: common.HandleRPCError(nil, "初始化成功"),
+			Data:     types.AdminBootstrapMenusData{Created: int(rpcResp.GetCreated())},
+			}
+			if resp.BaseResp.Success {
+			common.TryRecordAdminAudit(ctx, svcCtx, "bootstrap", "admin_menu", "", "导入默认侧栏菜单")
+			}
+			return resp, nil
+		}(&req)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(ctx, w, resp)
 		}
 	}
 }

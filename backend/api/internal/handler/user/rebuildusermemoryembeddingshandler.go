@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"backend/api/internal/logic/user"
 	"backend/api/internal/svc"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
@@ -28,12 +28,24 @@ func RebuildUserMemoryEmbeddingsHandler(svcCtx *svc.ServiceContext) http.Handler
 			return
 		}
 
-		l := user.NewRebuildUserMemoryEmbeddingsLogic(r.Context(), svcCtx)
-		resp, err := l.RebuildUserMemoryEmbeddings(strconv.Itoa(int(userID)))
+		userIDStr := strconv.Itoa(int(userID))
+		if userIDStr == "" {
+			httpx.ErrorCtx(r.Context(), w, errors.New("user_id 不能为空"))
+			return
+		}
+
+		resp, err := svcCtx.LLMGW.RebuildUserMemoryEmbeddings(r.Context(), &moe.RebuildUserMemoryEmbeddingsReq{
+			UserId: userIDStr,
+		})
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
-		httpx.OkJsonCtx(r.Context(), w, resp)
+
+		httpx.OkJsonCtx(r.Context(), w, map[string]interface{}{
+			"indexed":  resp.Indexed,
+			"provider": resp.Provider,
+			"model":    resp.Model,
+		})
 	}
 }

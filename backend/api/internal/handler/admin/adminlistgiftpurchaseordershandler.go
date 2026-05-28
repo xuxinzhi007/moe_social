@@ -1,17 +1,12 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package admin
 
 import (
-	"net/http"
-
-	"backend/api/internal/logic/admin"
-	"backend/api/internal/svc"
-
 	"backend/api/internal/common"
+	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminListGiftPurchaseOrdersHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -20,15 +15,45 @@ func AdminListGiftPurchaseOrdersHandler(svcCtx *svc.ServiceContext) http.Handler
 			httpx.OkJsonCtx(r.Context(), w, &types.AdminListGiftPurchaseOrdersResp{BaseResp: *br})
 			return
 		}
-
 		var req types.AdminListGiftPurchaseOrdersReq
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
+		resp, err := func(req *types.AdminListGiftPurchaseOrdersReq) (resp *types.AdminListGiftPurchaseOrdersResp, err error) {
+			page := req.Page
+			if page <= 0 {
+			page = 1
+			}
+			pageSize := req.PageSize
+			if pageSize <= 0 {
+			pageSize = 50
+			}
 
-		l := admin.NewAdminListGiftPurchaseOrdersLogic(r.Context(), svcCtx)
-		resp, err := l.AdminListGiftPurchaseOrders(&req)
+			rpcResp, err := svcCtx.AdminGW.AdminListGiftPurchaseOrders(r.Context(), &moe.AdminListGiftPurchaseOrdersReq{
+			Page:     int32(page),
+			PageSize: int32(pageSize),
+			UserId:   req.UserId,
+			Keyword:  req.Keyword,
+			Status:   req.Status,
+			})
+			if err != nil {
+			return &types.AdminListGiftPurchaseOrdersResp{BaseResp: common.HandleRPCError(err, "")}, nil
+			}
+
+			items := make([]types.GiftPurchaseOrder, 0, len(rpcResp.GetOrders()))
+			for _, o := range rpcResp.GetOrders() {
+			items = append(items, common.RpcGiftPurchaseOrderToTypes(o))
+			}
+
+			return &types.AdminListGiftPurchaseOrdersResp{
+			BaseResp: common.HandleRPCError(nil, "ok"),
+			Data: types.AdminListGiftPurchaseOrdersData{
+			Items: items,
+			Total: int(rpcResp.GetTotal()),
+			},
+			}, nil
+		}(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

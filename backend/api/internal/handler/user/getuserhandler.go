@@ -3,9 +3,11 @@ package user
 import (
 	"net/http"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -17,12 +19,17 @@ func GetUserHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := user.NewGetUserLogic(r.Context(), svcCtx)
-		resp, err := l.GetUser(&req)
+		rpcResp, err := svcCtx.UserGW.GetUser(r.Context(), &moe.GetUserReq{UserId: req.UserId})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(r.Context(), w, &types.GetUserResp{
+				BaseResp: common.HandleUserGWError(err, ""),
+			})
+			return
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.GetUserResp{
+			BaseResp: common.HandleRPCError(nil, "获取用户信息成功"),
+			Data:     common.RpcUserToTypes(rpcResp.User),
+		})
 	}
 }

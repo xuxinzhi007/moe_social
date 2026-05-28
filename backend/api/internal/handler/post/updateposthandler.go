@@ -1,54 +1,44 @@
 package post
 
 import (
-	"fmt"
 	"net/http"
-	"strings"
 
-	postlogic "backend/api/internal/logic/post"
+	"backend/api/internal/common"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/utils"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func UpdatePostHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		claims, err := parseJWTClaims(r)
-		if err != nil {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
-
 		var req types.UpdatePostReq
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
-		req.UserId = fmt.Sprintf("%d", claims.UserID)
 
-		l := postlogic.NewUpdatePostLogic(r.Context(), svcCtx)
-		resp, err := l.UpdatePost(&req)
+		rpcResp, err := svcCtx.PostGW.UpdatePost(r.Context(), &moe.UpdatePostReq{
+			PostId:           req.PostId,
+			UserId:           req.UserId,
+			Content:          req.Content,
+			Images:           req.Images,
+			TopicTags:        handlerutil.TopicTagsToRPC(req.TopicTags),
+			HandDrawCard:     req.HandDrawCard,
+			HandDrawThumbUrl: req.HandDrawThumbUrl,
+		})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(r.Context(), w, &types.UpdatePostResp{
+				BaseResp: common.HandleRPCError(err, ""),
+			})
+			return
 		}
-	}
-}
 
-// parseJWTClaims 从 Authorization header 解析 JWT。
-func parseJWTClaims(r *http.Request) (*utils.CustomClaims, error) {
-	auth := strings.TrimSpace(r.Header.Get("Authorization"))
-	token := ""
-	if strings.HasPrefix(auth, "Bearer ") {
-		token = strings.TrimPrefix(auth, "Bearer ")
-	} else {
-		token = r.URL.Query().Get("token")
+		httpx.OkJsonCtx(r.Context(), w, &types.UpdatePostResp{
+			BaseResp: common.HandleRPCError(nil, "更新帖子成功"),
+			Data:     handlerutil.PostFromRPC(rpcResp.Post),
+		})
 	}
-	if token == "" {
-		return nil, fmt.Errorf("unauthorized")
-	}
-	return utils.ParseToken(token)
 }

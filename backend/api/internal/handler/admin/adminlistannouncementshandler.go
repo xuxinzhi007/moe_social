@@ -1,16 +1,12 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminListAnnouncementsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -21,16 +17,32 @@ func AdminListAnnouncementsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc 
 		}
 		var req types.AdminListAnnouncementsReq
 		if err := httpx.Parse(r, &req); err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 			return
 		}
-
-		l := admin.NewAdminListAnnouncementsLogic(ctx, svcCtx)
-		resp, err := l.AdminListAnnouncements(&req)
+		resp, err := func(req *types.AdminListAnnouncementsReq) (*types.AdminListAnnouncementsResp, error) {
+			rpcResp, err := svcCtx.AdminGW.AdminListAnnouncements(ctx, &moe.AdminListAnnouncementsReq{
+			Page:     int32(req.Page),
+			PageSize: int32(req.PageSize),
+			Keyword:  req.Keyword,
+			Status:   req.Status,
+			})
+			if err != nil {
+			return &types.AdminListAnnouncementsResp{BaseResp: common.HandleRPCError(err, "")}, nil
+			}
+			items := make([]types.AdminAnnouncementItem, len(rpcResp.GetItems()))
+			for i, item := range rpcResp.GetItems() {
+			items[i] = common.RpcAdminAnnouncementToTypes(item)
+			}
+			return &types.AdminListAnnouncementsResp{
+			BaseResp: common.HandleRPCError(nil, "ok"),
+			Data:     types.AdminListAnnouncementsData{Items: items, Total: int(rpcResp.GetTotal())},
+			}, nil
+		}(&req)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(ctx, w, resp)
 		}
 	}
 }

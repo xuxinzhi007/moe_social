@@ -6,9 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/common"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
@@ -37,12 +39,29 @@ func SearchUserMemoriesHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		req.UserId = strconv.Itoa(int(userID))
 
-		l := user.NewSearchUserMemoriesLogic(r.Context(), svcCtx)
-		resp, err := l.SearchUserMemories(&req)
+		const listLimit = 200
+		limit := req.Limit
+		if limit <= 0 {
+			limit = 8
+		}
+
+		memResp, err := svcCtx.LLMGW.GetUserMemories(r.Context(), &moe.GetUserMemoriesReq{
+			UserId: req.UserId,
+			Limit:  listLimit,
+			Offset: 0,
+		})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			base := common.HandleRPCError(err, "")
+			httpx.OkJsonCtx(r.Context(), w, map[string]interface{}{
+				"code": base.Code, "message": base.Message, "success": false,
+			})
 			return
 		}
-		httpx.OkJsonCtx(r.Context(), w, resp)
+
+		result := handlerutil.HybridSearchUserFacingMemories(r.Context(), svcCtx, req.UserId, memResp.Memories, req.Q, limit)
+		base := common.HandleRPCError(nil, "记忆检索成功")
+		httpx.OkJsonCtx(r.Context(), w, map[string]interface{}{
+			"code": base.Code, "message": base.Message, "success": base.Success, "data": result,
+		})
 	}
 }

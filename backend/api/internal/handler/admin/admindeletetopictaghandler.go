@@ -1,15 +1,13 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package admin
 
 import (
-	"net/http"
-
-	"backend/api/internal/logic/admin"
+	"backend/api/internal/common"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminDeleteTopicTagHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -19,9 +17,21 @@ func AdminDeleteTopicTagHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
-
-		l := admin.NewAdminDeleteTopicTagLogic(r.Context(), svcCtx)
-		resp, err := l.AdminDeleteTopicTag(&req)
+		resp, err := func(req *types.AdminDeleteTopicTagReq) (*types.AdminDeleteTopicTagResp, error) {
+			tagID, err := handlerutil.ParseAdminPathID(req.TagId)
+			if err != nil {
+			return &types.AdminDeleteTopicTagResp{BaseResp: common.HandleRPCError(err, "标签 ID 无效")}, nil
+			}
+			_, err = svcCtx.AdminGW.AdminDeleteTopicTag(r.Context(), &moe.AdminDeleteTopicTagReq{TagId: tagID})
+			if err != nil {
+			return &types.AdminDeleteTopicTagResp{BaseResp: common.HandleRPCError(err, "")}, nil
+			}
+			resp := &types.AdminDeleteTopicTagResp{BaseResp: common.HandleRPCError(nil, "删除成功")}
+			if resp.BaseResp.Success {
+			common.TryRecordAdminAudit(r.Context(), svcCtx, "delete", "topic_tag", req.TagId, "删除话题标签")
+			}
+			return resp, nil
+		}(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

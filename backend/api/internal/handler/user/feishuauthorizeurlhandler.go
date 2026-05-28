@@ -1,14 +1,14 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package user
 
 import (
 	"net/http"
+	"strings"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -20,12 +20,21 @@ func FeishuAuthorizeURLHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := user.NewFeishuAuthorizeURLLogic(r.Context(), svcCtx)
-		resp, err := l.FeishuAuthorizeURL(&req)
-		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+		rpcResp, rpcErr := svcCtx.UserGW.FeishuAuthorizeURL(r.Context(), &moe.FeishuAuthorizeURLReq{
+			State: strings.TrimSpace(req.State),
+		})
+		if rpcErr != nil {
+			httpx.OkJsonCtx(r.Context(), w, &types.FeishuAuthorizeURLResp{
+				BaseResp: common.HandleRPCError(rpcErr, ""),
+			})
+			return
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.FeishuAuthorizeURLResp{
+			BaseResp: common.HandleRPCError(nil, ""),
+			Data: types.FeishuAuthorizeURLData{
+				AuthorizeURL: rpcResp.GetAuthorizeUrl(),
+			},
+		})
 	}
 }

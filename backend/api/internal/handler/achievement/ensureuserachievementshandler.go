@@ -1,14 +1,13 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package achievement
 
 import (
 	"net/http"
 
-	"backend/api/internal/logic/achievement"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -20,12 +19,21 @@ func EnsureUserAchievementsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc 
 			return
 		}
 
-		l := achievement.NewEnsureUserAchievementsLogic(r.Context(), svcCtx)
-		resp, err := l.EnsureUserAchievements(&req)
+		rpcResp, err := svcCtx.AchievementGW.EnsureUserAchievements(r.Context(), &moe.EnsureUserAchievementsReq{
+			UserId: req.UserId,
+		})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(r.Context(), w, &types.EnsureUserAchievementsResp{
+				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
+			})
+			return
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.EnsureUserAchievementsResp{
+			BaseResp: types.BaseResp{Code: 0, Message: "成就初始化成功", Success: true},
+			Data: types.EnsureUserAchievementsData{
+				NewAchievements: handlerutil.UnlocksFromRPC(rpcResp.NewAchievements),
+			},
+		})
 	}
 }

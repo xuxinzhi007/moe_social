@@ -3,9 +3,11 @@ package notification
 import (
 	"net/http"
 
-	"backend/api/internal/logic/notification"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -17,12 +19,17 @@ func ReadNotificationHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := notification.NewReadNotificationLogic(r.Context(), svcCtx)
-		resp, err := l.ReadNotification(&req)
+		_, err := svcCtx.UserGW.ReadNotification(r.Context(), &moe.ReadNotificationReq{
+			Id:     req.Id,
+			UserId: req.UserId,
+		})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			result := common.HandleRPCError(err, "")
+			httpx.OkJsonCtx(r.Context(), w, &result)
+			return
 		}
+
+		result := common.HandleRPCError(nil, "标记已读成功")
+		httpx.OkJsonCtx(r.Context(), w, &result)
 	}
 }

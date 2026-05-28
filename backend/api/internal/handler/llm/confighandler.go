@@ -3,7 +3,7 @@ package llm
 import (
 	"net/http"
 
-	logic "backend/api/internal/logic/llm"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
@@ -53,7 +53,7 @@ func ConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		budget := logic.CurrentMemoryBudgetConfig()
+		budget := handlerutil.LLMMemoryBudgetMap()
 		inference := map[string]interface{}{
 			"base_url":           svcCtx.Config.LLMInference.BaseUrl,
 			"api_style":          svcCtx.Config.LLMInference.ApiStyle,
@@ -64,7 +64,7 @@ func ConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		data := map[string]interface{}{
 			"llm_inference": inference,
-			"ollama":        inference, // 遗留键，App 仍可读；新代码请用 llm_inference
+			"ollama":        inference,
 			"memory_budget": budget,
 			"local_models": map[string]interface{}{
 				"storage_dir":   svcCtx.Config.LocalModels.StorageDir,

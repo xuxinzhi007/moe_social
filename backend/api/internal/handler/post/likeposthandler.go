@@ -3,9 +3,12 @@ package post
 import (
 	"net/http"
 
-	"backend/api/internal/logic/post"
+	"backend/api/internal/common"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -17,13 +20,20 @@ func LikePostHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := post.NewLikePostLogic(r.Context(), svcCtx)
-		resp, err := l.LikePost(&req)
+		rpcResp, err := svcCtx.PostGW.LikePost(r.Context(), &moe.LikePostReq{
+			PostId: req.PostId,
+			UserId: req.UserId,
+		})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(r.Context(), w, &types.LikePostResp{
+				BaseResp: common.HandleRPCError(err, ""),
+			})
+			return
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.LikePostResp{
+			BaseResp: common.HandleRPCError(nil, "操作成功"),
+			Data:     handlerutil.PostFromRPC(rpcResp.Post),
+		})
 	}
 }
-

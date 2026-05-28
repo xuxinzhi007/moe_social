@@ -7,20 +7,20 @@ import (
 	"context"
 	"net/http"
 
-	"backend/api/internal/logic/chat"
 	"backend/api/internal/svc"
+	chatbiz "backend/internal/biz/chat"
 )
 
 // WebSocket在线状态服务
 func PresenceWsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	_ = svcCtx
 	return func(w http.ResponseWriter, r *http.Request) {
-		// 创建一个新的上下文，包含 HTTP 请求和响应
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, "http.Request", r)
 		ctx = context.WithValue(ctx, "http.ResponseWriter", &w)
 
-		l := chat.NewPresenceWsLogic(ctx, svcCtx)
-		_ = l.PresenceWs()
-		// WebSocket 连接已经升级，不需要返回响应
+		hr, _ := ctx.Value("http.Request").(*http.Request)
+		hw, _ := ctx.Value("http.ResponseWriter").(*http.ResponseWriter)
+		chatbiz.ServePresenceWS(*hw, hr)
 	}
 }

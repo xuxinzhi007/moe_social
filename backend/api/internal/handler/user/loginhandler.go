@@ -5,44 +5,53 @@ import (
 	"fmt"
 	"net/http"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func LoginHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// 自定义解析，允许username或email为空
 		var req types.LoginReq
-
-		// 使用标准库json.Unmarshal解析，绕过go-zero的严格验证
 		decoder := json.NewDecoder(r.Body)
 		decoder.DisallowUnknownFields()
 		if err := decoder.Decode(&req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
-
-		// 验证password必须存在
 		if req.Password == "" {
 			httpx.ErrorCtx(r.Context(), w, fmt.Errorf("password is required"))
 			return
 		}
-
-		// 验证username或email至少存在一个
 		if req.Username == "" && req.Email == "" {
 			httpx.ErrorCtx(r.Context(), w, fmt.Errorf("username or email is required"))
 			return
 		}
 
-		l := user.NewLoginLogic(r.Context(), svcCtx)
-		resp, err := l.Login(&req)
+		rpcResp, err := svcCtx.UserGW.Login(r.Context(), &moe.LoginReq{
+			Username: req.Username,
+			Password: req.Password,
+			Email:    req.Email,
+		})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			logx.WithContext(r.Context()).Errorf("[认证] 登录：调用用户服务失败 错误=%v", err)
+			httpx.OkJsonCtx(r.Context(), w, &types.LoginResp{
+				BaseResp: common.HandleUserGWError(err, ""),
+			})
+			return
 		}
+
+		resp := &types.LoginResp{BaseResp: common.HandleRPCError(nil, "登录成功")}
+		if rpcResp.User != nil {
+			resp.Data = types.LoginData{
+				User:  common.RpcUserToTypes(rpcResp.User),
+				Token: rpcResp.Token,
+			}
+		}
+		httpx.OkJsonCtx(r.Context(), w, resp)
 	}
 }

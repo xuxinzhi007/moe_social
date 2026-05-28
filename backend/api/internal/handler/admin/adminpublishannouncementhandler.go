@@ -1,16 +1,12 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminPublishAnnouncementHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -21,16 +17,29 @@ func AdminPublishAnnouncementHandler(svcCtx *svc.ServiceContext) http.HandlerFun
 		}
 		var req types.AdminPublishAnnouncementReq
 		if err := httpx.Parse(r, &req); err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 			return
 		}
-
-		l := admin.NewAdminPublishAnnouncementLogic(ctx, svcCtx)
-		resp, err := l.AdminPublishAnnouncement(&req)
+		resp, err := func(req *types.AdminPublishAnnouncementReq) (*types.AdminPublishAnnouncementResp, error) {
+			rpcResp, err := svcCtx.AdminGW.AdminPublishAnnouncement(ctx, &moe.AdminPublishAnnouncementReq{
+			AnnouncementId: req.AnnouncementId,
+			})
+			if err != nil {
+			return &types.AdminPublishAnnouncementResp{BaseResp: common.HandleRPCError(err, "")}, nil
+			}
+			resp := &types.AdminPublishAnnouncementResp{
+			BaseResp: common.HandleRPCError(nil, "发布成功"),
+			Data:     common.RpcAdminAnnouncementToTypes(rpcResp.GetAnnouncement()),
+			}
+			if resp.BaseResp.Success {
+			common.TryRecordAdminAudit(ctx, svcCtx, "publish", "announcement", req.AnnouncementId, "发布公告")
+			}
+			return resp, nil
+		}(&req)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(ctx, w, resp)
 		}
 	}
 }

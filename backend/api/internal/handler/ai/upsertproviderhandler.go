@@ -1,14 +1,13 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package ai
 
 import (
 	"net/http"
 
-	"backend/api/internal/logic/ai"
+	"backend/api/internal/common"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -20,12 +19,16 @@ func UpsertProviderHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := ai.NewUpsertProviderLogic(r.Context(), svcCtx)
-		resp, err := l.UpsertProvider(&req)
+		userID, err := common.UserIDUint(r.Context())
+		if err != nil {
+			httpx.ErrorCtx(r.Context(), w, err)
+			return
+		}
+		full, err := handlerutil.AIUpsertProvider(r.Context(), svcCtx, userID, req.Data)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(r.Context(), w, &full.BaseResp)
 		}
 	}
 }

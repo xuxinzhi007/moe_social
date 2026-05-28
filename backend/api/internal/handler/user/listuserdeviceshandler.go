@@ -1,15 +1,12 @@
 package user
 
 import (
-	"errors"
 	"net/http"
-	"strconv"
-	"strings"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/utils"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
@@ -22,27 +19,42 @@ func ListUserDevicesHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		authHeader := r.Header.Get("Authorization")
-		if !strings.HasPrefix(authHeader, "Bearer ") {
-			httpx.ErrorCtx(r.Context(), w, errors.New("missing or invalid authorization header"))
+		rpcResp, err := svcCtx.UserGW.ListUserDevices(r.Context(), &moe.ListUserDevicesReq{
+			UserId: req.UserId,
+			Limit:  int32(req.Limit),
+			Offset: int32(req.Offset),
+		})
+		if err != nil {
+			httpx.OkJsonCtx(r.Context(), w, &types.ListUserDevicesResp{
+				BaseResp: common.HandleRPCError(err, ""),
+			})
 			return
 		}
 
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		userID, err := utils.GetUserIDFromToken(tokenString)
-		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-			return
+		items := make([]types.UserDeviceRecord, 0, len(rpcResp.Devices))
+		for _, d := range rpcResp.Devices {
+			items = append(items, types.UserDeviceRecord{
+				Id:          d.Id,
+				UserId:      d.UserId,
+				DeviceId:    d.DeviceId,
+				Platform:    d.Platform,
+				OSVersion:   d.OsVersion,
+				AppVersion:  d.AppVersion,
+				DeviceName:  d.DeviceName,
+				PayloadJSON: d.PayloadJson,
+				LastSeen:    d.LastSeen,
+				CreatedAt:   d.CreatedAt,
+				UpdatedAt:   d.UpdatedAt,
+			})
 		}
 
-		req.UserId = strconv.Itoa(int(userID))
-
-		l := user.NewListUserDevicesLogic(r.Context(), svcCtx)
-		resp, err := l.ListUserDevices(&req)
-		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
-		}
+		httpx.OkJsonCtx(r.Context(), w, &types.ListUserDevicesResp{
+			BaseResp: common.HandleRPCError(nil, "查询设备列表成功"),
+			Data:     items,
+			Total:    rpcResp.Total,
+			Limit:    int(rpcResp.Limit),
+			Offset:   int(rpcResp.Offset),
+			HasMore:  rpcResp.HasMore,
+		})
 	}
 }

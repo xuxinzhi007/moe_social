@@ -1,15 +1,13 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package admin
 
 import (
-	"net/http"
-
-	"backend/api/internal/logic/admin"
+	"backend/api/internal/common"
+	"backend/api/internal/moebridge"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/pkg/moe/brain"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminRefineMoeBrainEpisodeHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -19,9 +17,16 @@ func AdminRefineMoeBrainEpisodeHandler(svcCtx *svc.ServiceContext) http.HandlerF
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
-
-		l := admin.NewAdminRefineMoeBrainEpisodeLogic(r.Context(), svcCtx)
-		resp, err := l.AdminRefineMoeBrainEpisode(&req)
+		resp, err := func(req *types.AdminRefineMoeBrainEpisodeReq) (*types.AdminRefineMoeBrainEpisodeResp, error) {
+			res, err := svcCtx.MoeGW.RefineBrainEpisode(r.Context(), req.Id, brain.RefineOptions{MaxAttempts: req.MaxAttempts})
+			if err != nil && !res.OK {
+			return &types.AdminRefineMoeBrainEpisodeResp{BaseResp: common.HandleError(err)}, nil
+			}
+			return &types.AdminRefineMoeBrainEpisodeResp{
+			BaseResp: common.HandleError(nil),
+			Data:     moebridge.RefineDataFromBiz(res),
+			}, nil
+		}(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

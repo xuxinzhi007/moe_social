@@ -1,14 +1,13 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package ai
 
 import (
 	"net/http"
 
-	"backend/api/internal/logic/ai"
+	"backend/api/internal/common"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -20,8 +19,12 @@ func GetAiMemorySettingsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := ai.NewGetAiMemorySettingsLogic(r.Context(), svcCtx)
-		resp, err := l.GetAiMemorySettings(&req)
+		userID, err := common.UserIDUint(r.Context())
+		if err != nil {
+			httpx.ErrorCtx(r.Context(), w, err)
+			return
+		}
+		resp, err := handlerutil.AIGetMemorySettings(r.Context(), svcCtx, userID)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

@@ -6,10 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"backend/api/internal/logic/llm"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 	"backend/utils"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
@@ -37,8 +38,7 @@ func ChatHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			logx.Infof("llm chat without jwt, model=%s, messages=%d", req.Model, len(req.Messages))
 		}
 
-		l := llm.NewChatLogic(r.Context(), svcCtx)
-		resp, err := l.Chat(&req)
+		resp, err := handlerutil.LLMChat(r.Context(), svcCtx, &req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

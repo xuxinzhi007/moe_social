@@ -143,3 +143,6 @@ backend/api/.../super.api
 backend/api/.../super.go
 backend/api/.../moe.api
 backend/api/.../README.md
+
+# Compound Engineering (machine-local preferences)
+.compound-engineering/*.local.yaml

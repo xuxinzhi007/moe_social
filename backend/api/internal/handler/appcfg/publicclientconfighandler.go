@@ -4,14 +4,13 @@ import (
 	"errors"
 	"net/http"
 
-	appcfglogic "backend/api/internal/logic/appcfg"
+	appcfgbiz "backend/internal/biz/appcfg"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-// PublicClientConfigHandler 无鉴权；业务在 logic，404 与 JSON 形状与历史实现一致。
 func PublicClientConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.EmptyReq
@@ -20,16 +19,16 @@ func PublicClientConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := appcfglogic.NewPublicClientConfigLogic(r.Context(), svcCtx)
-		resp, err := l.PublicClientConfig(&req)
+		url, err := appcfgbiz.NormalizePublicAPIBaseURL(svcCtx.Config.ClientPublicApiBaseUrl)
 		if err != nil {
-			if errors.Is(err, appcfglogic.ErrNoPublicAPIBaseURL) {
+			if errors.Is(err, appcfgbiz.ErrNoPublicAPIBaseURL) {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
-		httpx.OkJsonCtx(r.Context(), w, resp)
+
+		httpx.OkJsonCtx(r.Context(), w, &types.PublicClientConfigResp{ApiBaseUrl: url})
 	}
 }

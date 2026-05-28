@@ -3,9 +3,10 @@ package vip
 import (
 	"net/http"
 
-	"backend/api/internal/logic/vip"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -17,12 +18,17 @@ func GetVipPlanHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := vip.NewGetVipPlanLogic(r.Context(), svcCtx)
-		resp, err := l.GetVipPlan(&req)
+		plan, err := svcCtx.VipGW.GetPlan(r.Context(), req.PlanId)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(r.Context(), w, &types.GetVipPlanResp{
+				BaseResp: common.HandleVipGWError(err, ""),
+			})
+			return
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.GetVipPlanResp{
+			BaseResp: common.HandleRPCError(nil, "获取VIP套餐成功"),
+			Data:     common.VipPlanModelToTypes(plan),
+		})
 	}
 }

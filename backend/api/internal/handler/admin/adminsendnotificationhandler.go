@@ -1,16 +1,13 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminSendNotificationHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -21,16 +18,40 @@ func AdminSendNotificationHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		var req types.AdminSendNotificationReq
 		if err := httpx.Parse(r, &req); err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 			return
 		}
+		resp, err := func(req *types.AdminSendNotificationReq) (*types.AdminSendNotificationResp, error) {
+			rpcResp, err := svcCtx.AdminGW.AdminSendNotification(ctx, &moe.AdminSendNotificationReq{
+			UserId:  req.UserId,
+			Title:   req.Title,
+			Content: req.Content,
+			})
+			if err != nil {
+			return &types.AdminSendNotificationResp{BaseResp: common.HandleRPCError(err, "")}, nil
+			}
 
-		l := admin.NewAdminSendNotificationLogic(ctx, svcCtx)
-		resp, err := l.AdminSendNotification(&req)
+			wsSent := handlerutil.SendWSNotification(req.UserId, "system_notification", map[string]interface{}{
+				"title":   req.Title,
+				"content": req.Content,
+			})
+
+			resp := &types.AdminSendNotificationResp{
+			BaseResp: common.HandleRPCError(nil, "发送成功"),
+			Data: types.AdminSendNotificationData{
+			NotificationId: rpcResp.GetNotificationId(),
+			WsSent:         wsSent,
+			},
+			}
+			if resp.BaseResp.Success {
+			common.TryRecordAdminAudit(ctx, svcCtx, "send", "notification", req.UserId, "发送用户通知")
+			}
+			return resp, nil
+		}(&req)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(ctx, w, resp)
 		}
 	}
 }

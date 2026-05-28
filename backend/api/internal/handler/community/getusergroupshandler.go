@@ -1,14 +1,13 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package community
 
 import (
 	"net/http"
 
-	"backend/api/internal/logic/community"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -20,12 +19,20 @@ func GetUserGroupsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := community.NewGetUserGroupsLogic(r.Context(), svcCtx)
-		resp, err := l.GetUserGroups(&req)
+		rpcResp, err := svcCtx.CommunityGW.GetUserGroups(r.Context(), &moe.GetUserGroupsReq{
+			UserId:   req.UserId,
+			Page:     int32(req.Page),
+			PageSize: int32(req.PageSize),
+		})
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			return
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.GetUserGroupsResp{
+			BaseResp: types.BaseResp{Code: 0, Message: "success", Success: true},
+			Data:     handlerutil.GroupsFromRPC(rpcResp.Groups),
+			Total:    int(rpcResp.Total),
+		})
 	}
 }

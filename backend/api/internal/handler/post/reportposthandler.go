@@ -1,14 +1,13 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package post
 
 import (
 	"net/http"
 
-	"backend/api/internal/logic/post"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -20,12 +19,20 @@ func ReportPostHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := post.NewReportPostLogic(r.Context(), svcCtx)
-		resp, err := l.ReportPost(&req)
+		_, err := svcCtx.PostGW.ReportPost(r.Context(), &moe.ReportPostReq{
+			PostId:         req.PostId,
+			ReporterUserId: req.ReporterUserId,
+			Reason:         req.Reason,
+		})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(r.Context(), w, &types.ReportPostResp{
+				BaseResp: common.HandleRPCError(err, ""),
+			})
+			return
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.ReportPostResp{
+			BaseResp: common.HandleRPCError(nil, "举报已提交"),
+		})
 	}
 }

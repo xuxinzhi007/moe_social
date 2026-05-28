@@ -6,9 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/common"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
@@ -37,12 +39,36 @@ func GetUserMemoriesDisplayHandler(svcCtx *svc.ServiceContext) http.HandlerFunc 
 		}
 		req.UserId = strconv.Itoa(int(userID))
 
-		l := user.NewGetUserMemoriesDisplayLogic(r.Context(), svcCtx)
-		resp, err := l.GetUserMemoriesDisplayResp(&req)
+		const listLimit = 200
+		memResp, err := svcCtx.LLMGW.GetUserMemories(r.Context(), &moe.GetUserMemoriesReq{
+			UserId: req.UserId,
+			Limit:  listLimit,
+			Offset: 0,
+		})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			base := common.HandleRPCError(err, "")
+			httpx.OkJsonCtx(r.Context(), w, map[string]interface{}{
+				"code": base.Code, "message": base.Message, "success": false,
+			})
 			return
 		}
-		httpx.OkJsonCtx(r.Context(), w, resp)
+
+		profResp, err := svcCtx.LLMGW.GetUserMemoryProfiles(r.Context(), &moe.GetUserMemoryProfilesReq{
+			UserId: req.UserId,
+			Limit:  12,
+		})
+		if err != nil {
+			base := common.HandleRPCError(err, "")
+			httpx.OkJsonCtx(r.Context(), w, map[string]interface{}{
+				"code": base.Code, "message": base.Message, "success": false,
+			})
+			return
+		}
+
+		data := handlerutil.BuildUserMemoryDisplay(memResp.Memories, profResp.Profiles)
+		base := common.HandleRPCError(nil, "获取记忆展示数据成功")
+		httpx.OkJsonCtx(r.Context(), w, map[string]interface{}{
+			"code": base.Code, "message": base.Message, "success": base.Success, "data": data,
+		})
 	}
 }

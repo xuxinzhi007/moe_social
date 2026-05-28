@@ -1,18 +1,13 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package user
 
 import (
-	"errors"
 	"net/http"
-	"strconv"
-	"strings"
 
-	"backend/api/internal/logic/user"
+	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/utils"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -24,25 +19,30 @@ func GetUserMemoryProfilesHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		authHeader := r.Header.Get("Authorization")
-		if !strings.HasPrefix(authHeader, "Bearer ") {
-			httpx.ErrorCtx(r.Context(), w, errors.New("missing or invalid authorization header"))
-			return
-		}
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		userID, err := utils.GetUserIDFromToken(tokenString)
+		rpcResp, err := svcCtx.LLMGW.GetUserMemoryProfiles(r.Context(), &moe.GetUserMemoryProfilesReq{
+			UserId: req.UserId,
+			Limit:  int32(req.Limit),
+		})
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.OkJsonCtx(r.Context(), w, &types.GetUserMemoryProfilesResp{
+				BaseResp: common.HandleRPCError(err, ""),
+			})
 			return
 		}
-		req.UserId = strconv.Itoa(int(userID))
 
-		l := user.NewGetUserMemoryProfilesLogic(r.Context(), svcCtx)
-		resp, err := l.GetUserMemoryProfiles(&req)
-		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+		profiles := make([]types.UserMemoryProfile, 0, len(rpcResp.Profiles))
+		for _, p := range rpcResp.Profiles {
+			profiles = append(profiles, types.UserMemoryProfile{
+				MemoryType: p.MemoryType,
+				Summary:    p.Summary,
+				ItemCount:  int(p.ItemCount),
+				Confidence: p.Confidence,
+			})
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.GetUserMemoryProfilesResp{
+			BaseResp: common.HandleRPCError(nil, "获取用户画像摘要成功"),
+			Data:     profiles,
+		})
 	}
 }

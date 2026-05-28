@@ -1,22 +1,34 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package doc
 
 import (
 	"net/http"
+	"os"
 
-	"backend/api/internal/logic/doc"
 	"backend/api/internal/svc"
-
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func SwaggerDocHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		l := doc.NewSwaggerDocLogic(r.Context(), svcCtx)
-		if err := l.SwaggerDoc(w); err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+		data, err := loadSwaggerJSON()
+		if err != nil {
+			http.Error(w, "swagger json not found", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		_, _ = w.Write(data)
+	}
+}
+
+func loadSwaggerJSON() ([]byte, error) {
+	candidates := []string{
+		"./rest.swagger.json",
+		"../rest.swagger.json",
+		"../../rest.swagger.json",
+	}
+	for _, p := range candidates {
+		if b, err := os.ReadFile(p); err == nil {
+			return b, nil
 		}
 	}
+	return nil, os.ErrNotExist
 }

@@ -1,16 +1,12 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package admin
 
 import (
-	"net/http"
-
 	"backend/api/internal/common"
-	"backend/api/internal/logic/admin"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
 )
 
 func AdminDeleteAccountHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -21,16 +17,26 @@ func AdminDeleteAccountHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		var req types.AdminDeleteAccountReq
 		if err := httpx.Parse(r, &req); err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 			return
 		}
-
-		l := admin.NewAdminDeleteAccountLogic(ctx, svcCtx)
-		resp, err := l.AdminDeleteAccount(&req)
+		resp, err := func(req *types.AdminDeleteAccountReq) (*types.AdminDeleteAccountResp, error) {
+			_, err := svcCtx.AdminGW.AdminDeleteAccount(ctx, &moe.AdminDeleteAccountReq{
+			AccountId: req.AccountId,
+			})
+			if err != nil {
+			return &types.AdminDeleteAccountResp{BaseResp: common.HandleRPCError(err, "")}, nil
+			}
+			resp := &types.AdminDeleteAccountResp{BaseResp: common.HandleRPCError(nil, "删除成功")}
+			if resp.BaseResp.Success {
+			common.TryRecordAdminAudit(ctx, svcCtx, "delete", "admin_account", req.AccountId, "删除管理员账号")
+			}
+			return resp, nil
+		}(&req)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(ctx, w, resp)
 		}
 	}
 }

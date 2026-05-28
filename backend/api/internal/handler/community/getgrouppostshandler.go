@@ -1,14 +1,13 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package community
 
 import (
 	"net/http"
 
-	"backend/api/internal/logic/community"
+	"backend/api/internal/handler/handlerutil"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	"backend/rpc/pb/moe"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
@@ -20,12 +19,21 @@ func GetGroupPostsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := community.NewGetGroupPostsLogic(r.Context(), svcCtx)
-		resp, err := l.GetGroupPosts(&req)
+		rpcResp, err := svcCtx.CommunityGW.GetGroupPosts(r.Context(), &moe.GetGroupPostsReq{
+			GroupId:  req.GroupId,
+			Page:     int32(req.Page),
+			PageSize: int32(req.PageSize),
+			UserId:   req.UserId,
+		})
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
-		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			return
 		}
+
+		httpx.OkJsonCtx(r.Context(), w, &types.GetGroupPostsResp{
+			BaseResp: types.BaseResp{Code: 0, Message: "success", Success: true},
+			Data:     handlerutil.GroupPostsFromRPC(rpcResp.Posts),
+			Total:    int(rpcResp.Total),
+		})
 	}
 }
