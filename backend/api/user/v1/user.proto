@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package user.v1;
+
+option go_package = "backend/api/user/v1;userv1";
+
+// UserApp — 域 SSOT（鉴权 / 资料 / 社交 / VIP 子路径，见 api/defs/user.api）。
+
+message PingRequest {}
+message PingReply {}
+
+service UserApp {
+  rpc Ping(PingRequest) returns (PingReply);
+}

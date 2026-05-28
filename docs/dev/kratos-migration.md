@@ -18,7 +18,7 @@
 ## 1. 当前阶段（一句话）
 
 - **运行时**：Kratos 传输层对外；**一个进程** `cmd/moe-social`，配置 SSOT 为 `backend/config/config.yaml`。
-- **业务**：`internal/biz` + `internal/service`；存量 HTTP 仍经 `api/internal/logic` + `*gw` 桥接。
+- **业务**：`internal/biz` + `internal/service`；存量 HTTP 在 `*_compat.go` 注册，多数仍经 logic/handler 薄转（约 56/263 条已直挂 App）。
 - **契约**：存量 `api/defs/*.api`（goctl）；**新接口**只加 `api/<domain>/v1/*.proto`。
 - **验收**：`make check` + `curl /migration`；**已移除** `scripts/verify/*` 与 Makefile `verify-*`。
 
@@ -36,7 +36,7 @@
         │
         ├─ Kratos HTTP :8888
         │    ├─ internal/server/moekratoshttp   (/health, /migration)
-        │    └─ api/moehttp                     (compat + routes_*_gen → logic)
+        │    └─ api/moehttp                     (*_compat.go；native_gen=0)
         │
         └─ Kratos gRPC :8080
              ├─ internal/server/moegrpc

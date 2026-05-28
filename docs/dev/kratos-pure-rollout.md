@@ -9,7 +9,8 @@
 |----|------|
 | 生产 | `make moe-social` · Kratos HTTP `:8888` + gRPC `:8080` |
 | 配置 | `config/config.yaml` · `kratos_pure_enabled: true` |
-| HTTP 注册 | `api/moehttp/`（非 moekratospilot） |
+| HTTP 注册 | `api/moehttp/*_compat.go` · `native_gen=0` · `bridge=2` |
+| 存量迁移 | [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md) |
 | 新接口 | `api/<domain>/v1/*.proto` → [new-api-kratos.md](./new-api-kratos.md) |
 | 生成 | `make gen`（安全）· 改 defs 用 `make gen-api` |
 | 验收 | `make check` · `GET /migration` |

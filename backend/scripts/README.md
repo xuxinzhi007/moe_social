@@ -12,7 +12,9 @@
 
 | 命令 | 用途 |
 |------|------|
-| `make gen` | 安全：域 proto pb + conf + 同步 `routes_*_gen`（**不**跑 goctl api/rpc） |
+| `make gen` | 安全：域 proto pb + conf + 同步 `routes_*_gen`（**不**跑 goctl api/rpc）；`native_gen` 应为 0 |
+| `make gen-http-routes` | 仅同步 `api/moehttp/routes_*_gen.go` |
+| `make gen-moe-proto` | 仅 `api/*/v1/*.proto` → `*.pb.go` |
 | `make gen-api` | 改 `api/defs` 后；**自动 prune** 删除与 `admin_insights_logic.go` 等合并文件重复的空壳 |
 | `make gen-rpc` | 改了 `rpc` 契约 |
 | `make gen-all` | defs + rpc + proto 一起改 |
