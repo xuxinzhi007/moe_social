@@ -30,7 +30,7 @@ func (l *GetUserVipStatusLogic) GetUserVipStatus(in *moe.GetUserVipStatusReq) (*
 	if err != nil || uid == 0 {
 		return nil, mapUserBizErr(userbiz.ErrInvalidArgument)
 	}
-	st, err := userbiz.GetVipStatus(l.ctx, l.svcCtx.DB, uint(uid))
+	st, err := userbiz.GetVipStatus(l.ctx, l.svcCtx.UserStore(), uint(uid))
 	if err != nil {
 		return nil, mapUserBizErr(err)
 	}

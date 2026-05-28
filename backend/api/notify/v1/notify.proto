@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package notify.v1;
+
+option go_package = "backend/api/notify/v1;notifyv1";
+
+// NotifyService — 通知域 gRPC SSOT（P4-C；与 Super 并存）。
+
+message Notification {
+  string id = 1;
+  string user_id = 2;
+  string sender_id = 3;
+  string sender_name = 4;
+  string sender_avatar = 5;
+  int32 type = 6;
+  string post_id = 7;
+  string content = 8;
+  bool is_read = 9;
+  string created_at = 10;
+}
+
+message GetNotificationsRequest {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetNotificationsReply {
+  repeated Notification notifications = 1;
+  int32 total = 2;
+}
+
+message GetUnreadCountRequest {
+  string user_id = 1;
+}
+
+message GetUnreadCountReply {
+  int32 count = 1;
+}
+
+message ReadNotificationRequest {
+  string id = 1;
+  string user_id = 2;
+}
+
+message ReadNotificationReply {}
+
+message ReadAllNotificationsRequest {
+  string user_id = 1;
+}
+
+message ReadAllNotificationsReply {}
+
+service NotifyService {
+  rpc GetNotifications(GetNotificationsRequest) returns (GetNotificationsReply);
+  rpc GetUnreadCount(GetUnreadCountRequest) returns (GetUnreadCountReply);
+  rpc ReadNotification(ReadNotificationRequest) returns (ReadNotificationReply);
+  rpc ReadAllNotifications(ReadAllNotificationsRequest) returns (ReadAllNotificationsReply);
+}

@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	postbiz "backend/internal/biz/post"
+	postdata "backend/internal/data/post"
 	"backend/internal/platform/socialhook"
 	"backend/model"
 	"backend/rpc/pb/moe"
@@ -14,24 +15,27 @@ import (
 
 // AppService 帖子应用层。
 type AppService struct {
-	db                        *gorm.DB
+	store                     postbiz.PostStore
 	handDrawRequireModeration bool
 }
 
 // New 构造 AppService。
 func New(db *gorm.DB, handDrawRequireModeration bool) *AppService {
-	return &AppService{db: db, handDrawRequireModeration: handDrawRequireModeration}
+	return &AppService{
+		store:                     postdata.NewStore(db),
+		handDrawRequireModeration: handDrawRequireModeration,
+	}
 }
 
 func (s *AppService) MoeSearchPosts(ctx context.Context, in *moe.MoeSearchPostsReq) (*moe.MoeSearchPostsResp, error) {
-	return postbiz.Search(ctx, s.db, postbiz.SearchInput{
+	return postbiz.Search(ctx, s.store, postbiz.SearchInput{
 		Query: in.GetQuery(), Limit: in.GetLimit(),
 		ViewerUserID: in.GetViewerUserId(), MoodTag: in.GetMoodTag(), TopicTagID: in.GetTopicTagId(),
 	})
 }
 
 func (s *AppService) GetPost(ctx context.Context, in *moe.GetPostReq) (*moe.GetPostResp, error) {
-	post, err := postbiz.GetByID(ctx, s.db, in.GetPostId(), in.GetViewerUserId())
+	post, err := postbiz.GetByID(ctx, s.store, in.GetPostId(), in.GetViewerUserId())
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +43,7 @@ func (s *AppService) GetPost(ctx context.Context, in *moe.GetPostReq) (*moe.GetP
 }
 
 func (s *AppService) GetPosts(ctx context.Context, in *moe.GetPostsReq) (*moe.GetPostsResp, error) {
-	posts, total, err := postbiz.List(ctx, s.db, postbiz.ListFilter{
+	posts, total, err := postbiz.List(ctx, s.store, postbiz.ListFilter{
 		Page: in.GetPage(), PageSize: in.GetPageSize(), ViewerUserID: in.GetViewerUserId(),
 		FeedMode: in.GetFeedMode(), TopicTagID: in.GetTopicTagId(), AuthorUserID: in.GetAuthorUserId(),
 	})
@@ -57,7 +61,7 @@ func (s *AppService) CreatePost(ctx context.Context, in *moe.CreatePostReq) (*mo
 		}
 		tagInputs = append(tagInputs, postbiz.TopicTagInput{Name: tag.GetName(), Color: tag.GetColor()})
 	}
-	result, err := postbiz.Create(ctx, s.db, postbiz.CreateInput{
+	result, err := postbiz.Create(ctx, s.store, postbiz.CreateInput{
 		UserID: in.GetUserId(), Content: in.GetContent(), Images: in.GetImages(),
 		TopicTagNames: tagInputs, HandDrawCard: in.GetHandDrawCard(),
 		HandDrawThumbURL: in.GetHandDrawThumbUrl(), MoodTag: in.GetMoodTag(), GroupID: in.GetGroupId(),
@@ -67,7 +71,7 @@ func (s *AppService) CreatePost(ctx context.Context, in *moe.CreatePostReq) (*mo
 		return nil, err
 	}
 
-	achUnlocks := socialhook.ApplyPostCreatedAchievements(s.db, socialhook.PostCreatedMeta{
+	achUnlocks := socialhook.ApplyPostCreatedAchievements(s.store.Raw(), socialhook.PostCreatedMeta{
 		UserID: result.Post.UserID, ImageCount: result.ImageCount,
 		TopicTagCount: result.TopicTagCount, ContentRuneLen: result.ContentRuneLen,
 		MoodTag: result.Post.MoodTag, HasHandDraw: result.Post.HandDrawCard != "",
@@ -84,12 +88,12 @@ func (s *AppService) CreatePost(ctx context.Context, in *moe.CreatePostReq) (*mo
 }
 
 func (s *AppService) LikePost(ctx context.Context, in *moe.LikePostReq) (*moe.LikePostResp, error) {
-	result, err := postbiz.Like(ctx, s.db, in.GetPostId(), in.GetUserId())
+	result, err := postbiz.Like(ctx, s.store, in.GetPostId(), in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
 	if result.DidLike {
-		socialhook.ApplyPostLikedAchievements(s.db, socialhook.PostLikedMeta{
+		socialhook.ApplyPostLikedAchievements(s.store.Raw(), socialhook.PostLikedMeta{
 			PostAuthorUserID: result.Post.UserID,
 			PostLikeCount:    result.LikeCount,
 		})
@@ -99,7 +103,7 @@ func (s *AppService) LikePost(ctx context.Context, in *moe.LikePostReq) (*moe.Li
 }
 
 func (s *AppService) DeletePost(ctx context.Context, in *moe.DeletePostReq) (*moe.DeletePostResp, error) {
-	if err := postbiz.Delete(ctx, s.db, in.GetPostId(), in.GetUserId()); err != nil {
+	if err := postbiz.Delete(ctx, s.store, in.GetPostId(), in.GetUserId()); err != nil {
 		return nil, err
 	}
 	return &moe.DeletePostResp{}, nil
@@ -113,7 +117,7 @@ func (s *AppService) UpdatePost(ctx context.Context, in *moe.UpdatePostReq) (*mo
 		}
 		tagInputs = append(tagInputs, postbiz.TopicTagInput{Name: tag.GetName(), Color: tag.GetColor()})
 	}
-	result, err := postbiz.Update(ctx, s.db, postbiz.UpdateInput{
+	result, err := postbiz.Update(ctx, s.store, postbiz.UpdateInput{
 		PostID: in.GetPostId(), UserID: in.GetUserId(), Content: in.GetContent(),
 		Images: in.GetImages(), TopicTags: tagInputs,
 		HandDrawCard: in.GetHandDrawCard(), HandDrawThumbURL: in.GetHandDrawThumbUrl(),
@@ -128,7 +132,7 @@ func (s *AppService) UpdatePost(ctx context.Context, in *moe.UpdatePostReq) (*mo
 }
 
 func (s *AppService) ReportPost(ctx context.Context, in *moe.ReportPostReq) (*moe.ReportPostResp, error) {
-	if err := postbiz.Report(ctx, s.db, in.GetPostId(), in.GetReporterUserId(), in.GetReason()); err != nil {
+	if err := postbiz.Report(ctx, s.store, in.GetPostId(), in.GetReporterUserId(), in.GetReason()); err != nil {
 		return nil, err
 	}
 	return &moe.ReportPostResp{}, nil

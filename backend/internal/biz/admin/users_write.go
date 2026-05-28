@@ -6,15 +6,14 @@ import (
 	"strings"
 
 	userbiz "backend/internal/biz/user"
-	"backend/model"
 	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 var (
-	ErrInvalidUserID  = errors.New("invalid user id")
-	ErrUserNotFound   = errors.New("user not found")
+	ErrInvalidUserID   = errors.New("invalid user id")
+	ErrUserNotFound    = errors.New("user not found")
 	ErrInvalidUserRole = errors.New("invalid role")
 )
 
@@ -31,16 +30,16 @@ type UpdateUserInput struct {
 }
 
 // UpdateUser 更新 App 用户字段。
-func UpdateUser(ctx context.Context, db *gorm.DB, in UpdateUserInput) (*moe.User, error) {
-	if db == nil {
+func UpdateUser(ctx context.Context, store AdminStore, in UpdateUserInput) (*moe.User, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	if in.UserID == 0 {
 		return nil, ErrInvalidUserID
 	}
 
-	var user model.User
-	if err := db.WithContext(ctx).First(&user, in.UserID).Error; err != nil {
+	user, err := store.GetUserByID(ctx, in.UserID)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrUserNotFound
 		}
@@ -69,10 +68,11 @@ func UpdateUser(ctx context.Context, db *gorm.DB, in UpdateUserInput) (*moe.User
 		return userbiz.ModelToProto(&user), nil
 	}
 
-	if err := db.WithContext(ctx).Model(&user).Updates(updates).Error; err != nil {
+	if err := store.UpdateUserFields(ctx, user.ID, updates); err != nil {
 		return nil, err
 	}
-	if err := db.WithContext(ctx).First(&user, user.ID).Error; err != nil {
+	user, err = store.ReloadUser(ctx, user.ID)
+	if err != nil {
 		return nil, err
 	}
 	return userbiz.ModelToProto(&user), nil

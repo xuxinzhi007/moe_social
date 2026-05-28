@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"backend/model"
 	"backend/rpc/pb/moe"
 	"backend/utils"
 
@@ -21,8 +20,8 @@ var (
 )
 
 // AdminLogin 管理端账号登录。
-func AdminLogin(ctx context.Context, db *gorm.DB, in *moe.AdminLoginReq) (*moe.AdminLoginResp, error) {
-	if db == nil || in == nil {
+func AdminLogin(ctx context.Context, store AdminStore, in *moe.AdminLoginReq) (*moe.AdminLoginResp, error) {
+	if store == nil || in == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	username := strings.TrimSpace(in.GetUsername())
@@ -30,8 +29,7 @@ func AdminLogin(ctx context.Context, db *gorm.DB, in *moe.AdminLoginReq) (*moe.A
 	if username == "" || password == "" {
 		return nil, ErrAdminLoginEmpty
 	}
-	var acc model.AdminAccount
-	err := db.WithContext(ctx).Where("username = ?", username).First(&acc).Error
+	acc, err := store.FindAdminAccountByUsername(ctx, username)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, ErrAdminAuthFailed
 	}
@@ -46,7 +44,7 @@ func AdminLogin(ctx context.Context, db *gorm.DB, in *moe.AdminLoginReq) (*moe.A
 		return nil, err
 	}
 	now := time.Now()
-	_ = db.WithContext(ctx).Model(&acc).Update("last_login_at", now).Error
+	_ = store.UpdateAdminLastLoginAt(ctx, acc.ID, now)
 	return &moe.AdminLoginResp{
 		Token:    token,
 		AdminId:  uint64(acc.ID),
@@ -57,12 +55,12 @@ func AdminLogin(ctx context.Context, db *gorm.DB, in *moe.AdminLoginReq) (*moe.A
 }
 
 // BootstrapAdminAccount 无管理员时创建默认超管。
-func BootstrapAdminAccount(ctx context.Context, db *gorm.DB, in *moe.AdminBootstrapAccountReq) (*moe.AdminBootstrapAccountResp, error) {
+func BootstrapAdminAccount(ctx context.Context, store AdminStore, in *moe.AdminBootstrapAccountReq) (*moe.AdminBootstrapAccountResp, error) {
 	_ = ctx
 	_ = in
-	if db == nil {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
-	created := utils.BootstrapAdminAccount(db)
+	created := utils.BootstrapAdminAccount(store.Raw())
 	return &moe.AdminBootstrapAccountResp{Created: created}, nil
 }

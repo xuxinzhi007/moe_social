@@ -3,7 +3,6 @@ package userbiz
 import (
 	"context"
 	"encoding/json"
-	"errors"
 
 	"backend/model"
 	"backend/rpc/pb/moe"
@@ -32,18 +31,16 @@ func defaultUserAvatarData(userID string) *moe.UserAvatarData {
 }
 
 // GetUserAvatar 获取用户虚拟形象；无记录时返回默认形象。
-func GetUserAvatar(ctx context.Context, db *gorm.DB, in *moe.GetUserAvatarReq) (*moe.GetUserAvatarResp, error) {
-	if db == nil || in == nil {
+func GetUserAvatar(ctx context.Context, store UserStore, in *moe.GetUserAvatarReq) (*moe.GetUserAvatarResp, error) {
+	if store == nil || in == nil {
 		return nil, gorm.ErrInvalidDB
 	}
-	_ = ctx
-	var userAvatar model.UserAvatar
-	result := db.Where("user_id = ?", in.GetUserId()).First(&userAvatar)
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return &moe.GetUserAvatarResp{Avatar: defaultUserAvatarData(in.GetUserId())}, nil
-		}
-		return nil, result.Error
+	userAvatar, found, err := store.GetUserAvatar(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return &moe.GetUserAvatarResp{Avatar: defaultUserAvatarData(in.GetUserId())}, nil
 	}
 	var baseConfig moe.AvatarBaseConfig
 	if err := json.Unmarshal([]byte(userAvatar.BaseConfig), &baseConfig); err != nil {
@@ -68,11 +65,10 @@ func GetUserAvatar(ctx context.Context, db *gorm.DB, in *moe.GetUserAvatarReq) (
 }
 
 // UpdateUserAvatar 创建或更新用户虚拟形象。
-func UpdateUserAvatar(ctx context.Context, db *gorm.DB, in *moe.UpdateUserAvatarReq) (*moe.UpdateUserAvatarResp, error) {
-	if db == nil || in == nil {
+func UpdateUserAvatar(ctx context.Context, store UserStore, in *moe.UpdateUserAvatarReq) (*moe.UpdateUserAvatarResp, error) {
+	if store == nil || in == nil {
 		return nil, gorm.ErrInvalidDB
 	}
-	_ = ctx
 	baseConfigJSON, err := json.Marshal(in.GetBaseConfig())
 	if err != nil {
 		return nil, err
@@ -81,10 +77,9 @@ func UpdateUserAvatar(ctx context.Context, db *gorm.DB, in *moe.UpdateUserAvatar
 	if err != nil {
 		return nil, err
 	}
-	var existingAvatar model.UserAvatar
-	result := db.Where("user_id = ?", in.GetUserId()).First(&existingAvatar)
-	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, result.Error
+	existingAvatar, found, err := store.GetUserAvatar(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
 	}
 	avatarData := model.UserAvatar{
 		UserID:        in.GetUserId(),
@@ -92,17 +87,17 @@ func UpdateUserAvatar(ctx context.Context, db *gorm.DB, in *moe.UpdateUserAvatar
 		CurrentOutfit: string(currentOutfitJSON),
 		OwnedOutfits:  "[]",
 	}
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	if !found {
 		avatarData.ID = uuid.New().String()
-		if err := db.Create(&avatarData).Error; err != nil {
+		if err := store.CreateUserAvatar(ctx, &avatarData); err != nil {
 			return nil, err
 		}
 	} else {
 		avatarData.ID = existingAvatar.ID
-		if err := db.Model(&existingAvatar).Updates(map[string]interface{}{
+		if err := store.UpdateUserAvatarFields(ctx, &existingAvatar, map[string]interface{}{
 			"base_config":    string(baseConfigJSON),
 			"current_outfit": string(currentOutfitJSON),
-		}).Error; err != nil {
+		}); err != nil {
 			return nil, err
 		}
 	}

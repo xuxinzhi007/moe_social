@@ -1,19 +1,15 @@
 package logic
 
 import (
+	"context"
+
 	"backend/model"
 	postbiz "backend/internal/biz/post"
 	"backend/rpc/pb/moe"
-
-	"gorm.io/gorm"
 )
 
-func LikedTargetIDSet(db *gorm.DB, userID uint, targetType string, targetIDs []uint) map[uint]bool {
-	return postbiz.LikedTargetIDSet(db, userID, targetType, targetIDs)
-}
-
-func moderationVisibleScope(viewerUserID uint) func(db *gorm.DB) *gorm.DB {
-	return postbiz.ModerationVisibleScope(viewerUserID)
+func LikedTargetIDSet(ctx context.Context, st postbiz.PostStore, userID uint, targetType string, targetIDs []uint) map[uint]bool {
+	return postbiz.LikedTargetIDSet(ctx, st, userID, targetType, targetIDs)
 }
 
 func moderationStatusOrDefault(s string) string {

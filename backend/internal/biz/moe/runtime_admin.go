@@ -12,6 +12,13 @@ import (
 	"gorm.io/gorm"
 )
 
+func requireStore(store MoeStore) error {
+	if store == nil {
+		return gorm.ErrInvalidDB
+	}
+	return nil
+}
+
 // UpsertRuntimeParams 管理端创建/更新 Bot 运行时参数。
 type UpsertRuntimeParams struct {
 	AgentKey          string
@@ -32,17 +39,19 @@ type UpsertRuntimeParams struct {
 }
 
 // ListRuntimes 列出全部 Bot 运行时。
-func ListRuntimes(ctx context.Context, db *gorm.DB) ([]model.MoeAgentRuntime, error) {
-	_ = ctx
-	return runtime.ListRuntimes(db)
+func ListRuntimes(ctx context.Context, store MoeStore) ([]model.MoeAgentRuntime, error) {
+	if err := requireStore(store); err != nil {
+		return nil, fmt.Errorf("数据库未就绪")
+	}
+	return store.WithContext(ctx).ListRuntimes(ctx)
 }
 
 // UpsertRuntime 创建或更新 Bot 运行时，并标记 bot 用户。
-func UpsertRuntime(ctx context.Context, db *gorm.DB, p UpsertRuntimeParams) (model.MoeAgentRuntime, error) {
-	_ = ctx
-	if db == nil {
+func UpsertRuntime(ctx context.Context, store MoeStore, p UpsertRuntimeParams) (model.MoeAgentRuntime, error) {
+	if err := requireStore(store); err != nil {
 		return model.MoeAgentRuntime{}, fmt.Errorf("数据库未就绪")
 	}
+	st := store.WithContext(ctx)
 	if p.BotUserID == 0 {
 		return model.MoeAgentRuntime{}, fmt.Errorf("无效的 bot_user_id")
 	}
@@ -71,15 +80,11 @@ func UpsertRuntime(ctx context.Context, db *gorm.DB, p UpsertRuntimeParams) (mod
 		PostScheduleMode:  runtime.NormalizeScheduleMode(p.PostScheduleMode),
 		ScheduleCron:      strings.TrimSpace(p.ScheduleCron),
 	}
-	if err := runtime.UpsertRuntime(db, rt); err != nil {
+	if err := st.UpsertRuntime(ctx, rt); err != nil {
 		return model.MoeAgentRuntime{}, err
 	}
-	_ = db.Model(&model.User{}).Where("id = ?", p.BotUserID).Updates(map[string]any{
-		"is_bot":        true,
-		"bot_agent_key": rt.AgentKey,
-	}).Error
-	var saved model.MoeAgentRuntime
-	_ = db.Where("agent_key = ?", rt.AgentKey).First(&saved).Error
+	_ = st.MarkUserAsBot(ctx, p.BotUserID, rt.AgentKey)
+	saved, _ := st.GetRuntimeByAgentKey(ctx, rt.AgentKey)
 	return saved, nil
 }
 

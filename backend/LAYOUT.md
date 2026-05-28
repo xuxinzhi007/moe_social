@@ -20,6 +20,7 @@ api/<domain>/v1/*.proto         # 契约 SSOT（新能力）
 api/<domain>/v1/*.pb.go         # make gen-moe-proto
 
 internal/biz/<domain>/          # 业务
+internal/data/<domain>/         # 持久化（P4-D；landing 试点）
 internal/service/<domain>/      # 应用服务
 api/moehttp/                    # Kratos HTTP（*_compat.go 手维护）
 internal/server/moekratoshttp/  # /health、/migration
@@ -36,7 +37,7 @@ internal/platform/moesocial/    # 启动编排
 
 | 文件模式 | 作用 |
 |----------|------|
-| `*_compat.go` | 按域 Kratos 路由；直挂 App 或 logic/handler 薄转 |
+| `*_compat.go` | 按域 Kratos 路由；直挂 App/biz |
 | `compat_invoke.go` | `invokeLogicJSON` 共享 |
 | `register_all.go` | 统一注册入口 |
 | `routes_native_gen.go` | **`nativeDomainRouteCount = 0`**（空操作） |
@@ -52,7 +53,8 @@ internal/platform/moesocial/    # 启动编排
 | 目录 | 角色 |
 |------|------|
 | `api/defs/*.api` + `api/moe.api` | goctl HTTP 契约（FS-8 分片） |
-| `api/internal/handler`、`logic`、`types` | goctl 生成 + 存量实现（compat 仍可能调用） |
+| `api/internal/handler`、`types` | goctl 生成；**Hybrid 回滚壳**（生产不注册） |
+| `api/internal/logic/` | **已退役**（`.gitkeep`） |
 | `rpc/` | Super / MoeAdmin goctl gRPC |
 | `api/etc/moe.yaml`、`rpc/etc/moe.yaml` | goctl 结构片段，**不是**运行时端口 SSOT |
 
@@ -61,14 +63,11 @@ internal/platform/moesocial/    # 启动编排
 ## 数据流
 
 ```text
-新接口 / 已迁直挂域:
+生产:
   Client → :8888 api/moehttp/<domain>_compat.go
          → internal/service/<domain>
          → internal/biz/<domain>
-
-存量 compat（invokeLogic / wrapNativeHTTP）:
-  Client → :8888 api/moehttp/*_compat.go
-         → api/internal/logic → *gw (in_process) → biz
+         → internal/data/<domain>（P4 起逐步接入）
 
 gRPC:
   Client → :8080 internal/server/moegrpc 或 rpc/server

@@ -12,8 +12,8 @@ import (
 )
 
 // Report 提交帖子举报。
-func Report(ctx context.Context, db *gorm.DB, postIDStr, reporterIDStr, reason string) error {
-	if db == nil {
+func Report(ctx context.Context, st PostStore, postIDStr, reporterIDStr, reason string) error {
+	if st == nil {
 		return gorm.ErrInvalidDB
 	}
 	if strings.TrimSpace(postIDStr) == "" {
@@ -35,8 +35,8 @@ func Report(ctx context.Context, db *gorm.DB, postIDStr, reporterIDStr, reason s
 		return ErrInvalidUserID
 	}
 
-	var post model.Post
-	if err := db.WithContext(ctx).Where("id = ?", postID).First(&post).Error; err != nil {
+	st = st.WithContext(ctx)
+	if _, err := st.GetPost(ctx, uint(postID)); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrPostNotFound
 		}
@@ -48,5 +48,5 @@ func Report(ctx context.Context, db *gorm.DB, postIDStr, reporterIDStr, reason s
 		ReporterUserID: uint(reporterID),
 		Reason:         strings.TrimSpace(reason),
 	}
-	return db.WithContext(ctx).Create(&rep).Error
+	return st.CreatePostReport(ctx, &rep)
 }

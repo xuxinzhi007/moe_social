@@ -25,5 +25,5 @@ func (l *AdminGetSchemaCatalogLogic) AdminGetSchemaCatalog(_ *moe.AdminGetSchema
 	if l.svcCtx.DB == nil {
 		return nil, errorx.Internal("数据库未就绪")
 	}
-	return adminbiz.SchemaCatalog(l.ctx, l.svcCtx.DB)
+	return adminbiz.SchemaCatalog(l.ctx, l.svcCtx.AdminStore())
 }

@@ -6,7 +6,9 @@
 | 文档 | 用途 |
 |------|------|
 | 本文 | 架构、目录、命令 |
-| [kratos-migration-status.md](./kratos-migration-status.md) | **当前 / 下一步** 勾选 |
+| [kratos-migration-status.md](./kratos-migration-status.md) | **当前 / 下一步**（P3✅ P4 进行中） |
+| [kratos-p4-post-migration.md](./kratos-p4-post-migration.md) | **P4 洁癖轨道**（data / FS-9 / Hybrid） |
+| [kratos-architecture-complete.md](./kratos-architecture-complete.md) | DoD + `/migration` 公式 |
 | [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md) | **存量迁移 SSOT**（§0 状态快照） |
 | [parallel-agent-workflow.md](../guidelines/parallel-agent-workflow.md) | 大任务多 Agent + worktree |
 | [new-api-kratos.md](./new-api-kratos.md) | **新接口开发**（必读） |
@@ -95,7 +97,7 @@ curl -s http://127.0.0.1:8888/migration | jq .
 | 场景 | 契约 | 生成 | 实现 |
 |------|------|------|------|
 | **新 HTTP 能力** | `api/<domain>/v1/*.proto` | `make gen` | `internal/service` + `api/moehttp/*_compat.go` |
-| **改老 HTTP** | `api/defs/*.api` | `make gen-api` | `api/internal/logic/*logic.go` |
+| **改老 HTTP** | `api/defs/*.api` | `make gen-api`（慎用） | `api/moehttp` + `internal/service` |
 | **改 gRPC** | `rpc/defs` / `moe.proto` | `make gen-rpc` | `rpc/internal/logic` 或 `internal/service` |
 
 详见 [new-api-kratos.md](./new-api-kratos.md)。

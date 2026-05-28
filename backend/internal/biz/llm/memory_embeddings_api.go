@@ -13,14 +13,18 @@ import (
 )
 
 // RebuildUserMemoryEmbeddings 全量重建用户记忆向量。
-func RebuildUserMemoryEmbeddings(ctx context.Context, db *gorm.DB, in *moe.RebuildUserMemoryEmbeddingsReq, inferenceBaseURL string) (*moe.RebuildUserMemoryEmbeddingsResp, error) {
+func RebuildUserMemoryEmbeddings(ctx context.Context, st MemoryStore, in *moe.RebuildUserMemoryEmbeddingsReq, inferenceBaseURL string) (*moe.RebuildUserMemoryEmbeddingsResp, error) {
+	db := dbFromStore(ctx, st)
+	if db == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	userID, err := parseUserIDUint(in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
 
 	var memories []model.UserMemory
-	if err := db.WithContext(ctx).Where("user_id = ?", userID).Order("updated_at desc").Limit(200).Find(&memories).Error; err != nil {
+	if err := db.Where("user_id = ?", userID).Order("updated_at desc").Limit(200).Find(&memories).Error; err != nil {
 		return nil, err
 	}
 
@@ -66,12 +70,16 @@ func RebuildUserMemoryEmbeddings(ctx context.Context, db *gorm.DB, in *moe.Rebui
 }
 
 // ListUserMemoryEmbeddings 列出用户记忆向量。
-func ListUserMemoryEmbeddings(ctx context.Context, db *gorm.DB, in *moe.ListUserMemoryEmbeddingsReq) (*moe.ListUserMemoryEmbeddingsResp, error) {
+func ListUserMemoryEmbeddings(ctx context.Context, st MemoryStore, in *moe.ListUserMemoryEmbeddingsReq) (*moe.ListUserMemoryEmbeddingsResp, error) {
+	db := dbFromStore(ctx, st)
+	if db == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	userID, err := parseUserIDUint(in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
-	m, err := listMemoryEmbeddings(db.WithContext(ctx), userID)
+	m, err := listMemoryEmbeddings(db, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +96,11 @@ func ListUserMemoryEmbeddings(ctx context.Context, db *gorm.DB, in *moe.ListUser
 }
 
 // UpsertUserMemoryEmbedding 直接写入单条记忆向量（供 RPC/调试）。
-func UpsertUserMemoryEmbedding(ctx context.Context, db *gorm.DB, in *moe.UpsertUserMemoryEmbeddingReq) (*moe.UpsertUserMemoryEmbeddingResp, error) {
+func UpsertUserMemoryEmbedding(ctx context.Context, st MemoryStore, in *moe.UpsertUserMemoryEmbeddingReq) (*moe.UpsertUserMemoryEmbeddingResp, error) {
+	db := dbFromStore(ctx, st)
+	if db == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	userID, err := parseUserIDUint(in.GetUserId())
 	if err != nil {
 		return nil, err
@@ -100,19 +112,23 @@ func UpsertUserMemoryEmbedding(ctx context.Context, db *gorm.DB, in *moe.UpsertU
 	for i, v := range in.GetValues() {
 		vec[i] = v
 	}
-	if err := upsertMemoryEmbedding(db.WithContext(ctx), userID, in.GetMemoryKey(), in.GetChunkText(), in.GetProvider(), in.GetModel(), vec); err != nil {
+	if err := upsertMemoryEmbedding(db, userID, in.GetMemoryKey(), in.GetChunkText(), in.GetProvider(), in.GetModel(), vec); err != nil {
 		return nil, err
 	}
 	return &moe.UpsertUserMemoryEmbeddingResp{}, nil
 }
 
 // ListUserMemoryRelations 列出用户记忆关系边。
-func ListUserMemoryRelations(ctx context.Context, db *gorm.DB, in *moe.ListUserMemoryRelationsReq) (*moe.ListUserMemoryRelationsResp, error) {
+func ListUserMemoryRelations(ctx context.Context, st MemoryStore, in *moe.ListUserMemoryRelationsReq) (*moe.ListUserMemoryRelationsResp, error) {
+	db := dbFromStore(ctx, st)
+	if db == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	userID, err := parseUserIDUint(in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
-	rels, err := listMemoryRelations(db.WithContext(ctx), userID)
+	rels, err := listMemoryRelations(db, userID)
 	if err != nil {
 		return nil, err
 	}

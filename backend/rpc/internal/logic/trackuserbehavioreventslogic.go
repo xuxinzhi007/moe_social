@@ -43,7 +43,7 @@ func (l *TrackUserBehaviorEventsLogic) TrackUserBehaviorEvents(in *moe.TrackUser
 		})
 	}
 
-	accepted, err := behaviorbiz.TrackEvents(l.ctx, l.svcCtx.DB, uint(in.GetUserId()), inputs)
+	accepted, err := behaviorbiz.TrackEvents(l.ctx, l.svcCtx.BehaviorStore(), uint(in.GetUserId()), inputs)
 	if err != nil {
 		switch {
 		case errors.Is(err, behaviorbiz.ErrInvalidUser):

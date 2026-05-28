@@ -3,7 +3,6 @@ package userbiz
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"strconv"
 	"strings"
 	"time"
@@ -15,7 +14,10 @@ import (
 )
 
 // ListUserDevices 分页列出用户设备。
-func ListUserDevices(ctx context.Context, db *gorm.DB, in *moe.ListUserDevicesReq) (*moe.ListUserDevicesResp, error) {
+func ListUserDevices(ctx context.Context, store UserStore, in *moe.ListUserDevicesReq) (*moe.ListUserDevicesResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	if in.GetUserId() == "" {
 		return nil, ErrInvalidArgument
 	}
@@ -35,13 +37,12 @@ func ListUserDevices(ctx context.Context, db *gorm.DB, in *moe.ListUserDevicesRe
 		offset = 0
 	}
 
-	scope := db.WithContext(ctx).Model(&model.UserDevice{}).Where("user_id = ?", uint(userID))
-	var total int64
-	if err := scope.Count(&total).Error; err != nil {
+	total, err := store.CountUserDevices(ctx, uint(userID))
+	if err != nil {
 		return nil, err
 	}
-	var devices []model.UserDevice
-	if err := scope.Order("last_seen_at desc").Offset(offset).Limit(limit).Find(&devices).Error; err != nil {
+	devices, err := store.ListUserDevices(ctx, uint(userID), offset, limit)
+	if err != nil {
 		return nil, err
 	}
 
@@ -59,7 +60,10 @@ func ListUserDevices(ctx context.Context, db *gorm.DB, in *moe.ListUserDevicesRe
 }
 
 // SyncUserDevice 同步/更新设备信息。
-func SyncUserDevice(ctx context.Context, db *gorm.DB, in *moe.SyncUserDeviceReq) (*moe.SyncUserDeviceResp, error) {
+func SyncUserDevice(ctx context.Context, store UserStore, in *moe.SyncUserDeviceReq) (*moe.SyncUserDeviceResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	if in.GetUserId() == "" {
 		return nil, ErrInvalidArgument
 	}
@@ -95,23 +99,20 @@ func SyncUserDevice(ctx context.Context, db *gorm.DB, in *moe.SyncUserDeviceReq)
 		payload = string(b)
 	}
 
-	var dev model.UserDevice
-	q := db.WithContext(ctx).Where("user_id = ? AND device_id = ?", uint(userID), deviceID).First(&dev)
-	if q.Error != nil {
-		if errors.Is(q.Error, gorm.ErrRecordNotFound) {
-			var deleted model.UserDevice
-			if err := db.WithContext(ctx).Unscoped().
-				Where("user_id = ? AND device_id = ?", uint(userID), deviceID).
-				First(&deleted).Error; err == nil {
-				dev = deleted
-				dev.DeletedAt = gorm.DeletedAt{}
-			} else if errors.Is(err, gorm.ErrRecordNotFound) {
-				dev = model.UserDevice{UserID: uint(userID), DeviceID: deviceID}
-			} else {
-				return nil, err
-			}
+	dev, found, err := store.FindUserDevice(ctx, uint(userID), deviceID)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		deleted, deletedFound, err := store.FindUserDeviceUnscoped(ctx, uint(userID), deviceID)
+		if err != nil {
+			return nil, err
+		}
+		if deletedFound {
+			dev = deleted
+			dev.DeletedAt = gorm.DeletedAt{}
 		} else {
-			return nil, q.Error
+			dev = model.UserDevice{UserID: uint(userID), DeviceID: deviceID}
 		}
 	}
 
@@ -123,19 +124,16 @@ func SyncUserDevice(ctx context.Context, db *gorm.DB, in *moe.SyncUserDeviceReq)
 	dev.LastSeenAt = lastSeen
 
 	if dev.ID == 0 {
-		if err := db.WithContext(ctx).Omit("User").Create(&dev).Error; err != nil {
+		if err := store.CreateUserDevice(ctx, &dev); err != nil {
 			return nil, err
 		}
 	} else {
-		if err := db.WithContext(ctx).Unscoped().Save(&dev).Error; err != nil {
+		if err := store.SaveUserDeviceUnscoped(ctx, &dev); err != nil {
 			return nil, err
 		}
 	}
 
-	_ = db.WithContext(ctx).Where(
-		"user_id = ? AND (`key` LIKE ? OR source = ?)",
-		uint(userID), "device_info:%", "device_sync",
-	).Delete(&model.UserMemory{}).Error
+	_ = store.DeleteDeviceSyncMemories(ctx, uint(userID))
 
 	return &moe.SyncUserDeviceResp{Device: userDeviceToRecord(&dev, in.GetUserId())}, nil
 }

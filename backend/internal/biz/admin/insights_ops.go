@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	moebiz "backend/internal/biz/moe"
 	"backend/model"
 	"backend/rpc/pb/moe"
+	"backend/pkg/moe/toolaudit"
 
 	"gorm.io/gorm"
 )
@@ -29,7 +29,8 @@ func errNotFound(msg string) error { return fmt.Errorf("%w: %s", ErrInsightsNotF
 
 // —— AI 对话日志 ——
 
-func AdminListAiChatSessions(ctx context.Context, db *gorm.DB, in *moe.AdminListAiChatSessionsReq) (*moe.AdminListAiChatSessionsResp, error) {
+func AdminListAiChatSessions(ctx context.Context, store AdminStore, in *moe.AdminListAiChatSessionsReq) (*moe.AdminListAiChatSessionsResp, error) {
+	db := dbFromStore(ctx, store)
 	if db == nil {
 		return nil, ErrInsightsDB
 	}
@@ -104,7 +105,8 @@ func AdminListAiChatSessions(ctx context.Context, db *gorm.DB, in *moe.AdminList
 	return out, nil
 }
 
-func AdminListAiChatMessages(ctx context.Context, db *gorm.DB, in *moe.AdminListAiChatMessagesReq) (*moe.AdminListAiChatMessagesResp, error) {
+func AdminListAiChatMessages(ctx context.Context, store AdminStore, in *moe.AdminListAiChatMessagesReq) (*moe.AdminListAiChatMessagesResp, error) {
+	db := dbFromStore(ctx, store)
 	if db == nil {
 		return nil, ErrInsightsDB
 	}
@@ -127,7 +129,8 @@ func AdminListAiChatMessages(ctx context.Context, db *gorm.DB, in *moe.AdminList
 	return out, nil
 }
 
-func AdminExportAiChatMessages(ctx context.Context, db *gorm.DB, in *moe.AdminExportAiChatMessagesReq) (*moe.AdminExportAiChatMessagesResp, error) {
+func AdminExportAiChatMessages(ctx context.Context, store AdminStore, in *moe.AdminExportAiChatMessagesReq) (*moe.AdminExportAiChatMessagesResp, error) {
+	db := dbFromStore(ctx, store)
 	if db == nil {
 		return nil, ErrInsightsDB
 	}
@@ -183,7 +186,8 @@ func AdminExportAiChatMessages(ctx context.Context, db *gorm.DB, in *moe.AdminEx
 
 // —— 数据分析 ——
 
-func AdminAnalyticsOverview(ctx context.Context, db *gorm.DB, _ *moe.AdminGetMemoryStatsReq) (*moe.AdminAnalyticsOverviewResp, error) {
+func AdminAnalyticsOverview(ctx context.Context, store AdminStore, _ *moe.AdminGetMemoryStatsReq) (*moe.AdminAnalyticsOverviewResp, error) {
+	db := dbFromStore(ctx, store)
 	if db == nil {
 		return nil, ErrInsightsDB
 	}
@@ -210,7 +214,7 @@ func AdminAnalyticsOverview(ctx context.Context, db *gorm.DB, _ *moe.AdminGetMem
 	out.MemoryByType = memoryTypeStats(db)
 
 	{
-		stats, err := moebiz.QueryToolStats(ctx, db, moebiz.ToolStatsFilter{
+		stats, err := toolaudit.QueryStats(db, toolaudit.StatsFilter{
 			From: &since7d,
 			To:   &now,
 		})
@@ -241,7 +245,8 @@ func AdminAnalyticsOverview(ctx context.Context, db *gorm.DB, _ *moe.AdminGetMem
 
 // —— 话题标签 ——
 
-func AdminListTopicTags(ctx context.Context, db *gorm.DB, in *moe.AdminListTopicTagsReq) (*moe.AdminListTopicTagsResp, error) {
+func AdminListTopicTags(ctx context.Context, store AdminStore, in *moe.AdminListTopicTagsReq) (*moe.AdminListTopicTagsResp, error) {
+	db := dbFromStore(ctx, store)
 	if db == nil {
 		return nil, ErrInsightsDB
 	}
@@ -267,7 +272,8 @@ func AdminListTopicTags(ctx context.Context, db *gorm.DB, in *moe.AdminListTopic
 	return out, nil
 }
 
-func AdminCreateTopicTag(ctx context.Context, db *gorm.DB, in *moe.AdminCreateTopicTagReq) (*moe.AdminCreateTopicTagResp, error) {
+func AdminCreateTopicTag(ctx context.Context, store AdminStore, in *moe.AdminCreateTopicTagReq) (*moe.AdminCreateTopicTagResp, error) {
+	db := dbFromStore(ctx, store)
 	if db == nil {
 		return nil, ErrInsightsDB
 	}
@@ -286,7 +292,11 @@ func AdminCreateTopicTag(ctx context.Context, db *gorm.DB, in *moe.AdminCreateTo
 	return &moe.AdminCreateTopicTagResp{Item: topicTagToProto(row)}, nil
 }
 
-func AdminUpdateTopicTag(ctx context.Context, db *gorm.DB, in *moe.AdminUpdateTopicTagReq) (*moe.AdminUpdateTopicTagResp, error) {
+func AdminUpdateTopicTag(ctx context.Context, store AdminStore, in *moe.AdminUpdateTopicTagReq) (*moe.AdminUpdateTopicTagResp, error) {
+	db := dbFromStore(ctx, store)
+	if db == nil {
+		return nil, ErrInsightsDB
+	}
 	var row model.TopicTag
 	if err := db.First(&row, in.GetTagId()).Error; err != nil {
 		return nil, errNotFound("标签不存在")
@@ -307,7 +317,11 @@ func AdminUpdateTopicTag(ctx context.Context, db *gorm.DB, in *moe.AdminUpdateTo
 	return &moe.AdminUpdateTopicTagResp{Item: topicTagToProto(row)}, nil
 }
 
-func AdminDeleteTopicTag(ctx context.Context, db *gorm.DB, in *moe.AdminDeleteTopicTagReq) (*moe.AdminDeleteTopicTagResp, error) {
+func AdminDeleteTopicTag(ctx context.Context, store AdminStore, in *moe.AdminDeleteTopicTagReq) (*moe.AdminDeleteTopicTagResp, error) {
+	db := dbFromStore(ctx, store)
+	if db == nil {
+		return nil, ErrInsightsDB
+	}
 	if err := db.Delete(&model.TopicTag{}, in.GetTagId()).Error; err != nil {
 		return nil, errInternal("删除失败")
 	}
@@ -316,7 +330,8 @@ func AdminDeleteTopicTag(ctx context.Context, db *gorm.DB, in *moe.AdminDeleteTo
 
 // —— 标签字典 ——
 
-func AdminListTagDictionary(ctx context.Context, db *gorm.DB, in *moe.AdminListTagDictionaryReq) (*moe.AdminListTagDictionaryResp, error) {
+func AdminListTagDictionary(ctx context.Context, store AdminStore, in *moe.AdminListTagDictionaryReq) (*moe.AdminListTagDictionaryResp, error) {
+	db := dbFromStore(ctx, store)
 	if db == nil {
 		return nil, ErrInsightsDB
 	}
@@ -345,7 +360,8 @@ func AdminListTagDictionary(ctx context.Context, db *gorm.DB, in *moe.AdminListT
 	return out, nil
 }
 
-func AdminCreateTagDictionary(ctx context.Context, db *gorm.DB, in *moe.AdminCreateTagDictionaryReq) (*moe.AdminCreateTagDictionaryResp, error) {
+func AdminCreateTagDictionary(ctx context.Context, store AdminStore, in *moe.AdminCreateTagDictionaryReq) (*moe.AdminCreateTagDictionaryResp, error) {
+	db := dbFromStore(ctx, store)
 	if db == nil {
 		return nil, ErrInsightsDB
 	}
@@ -368,7 +384,11 @@ func AdminCreateTagDictionary(ctx context.Context, db *gorm.DB, in *moe.AdminCre
 	return &moe.AdminCreateTagDictionaryResp{Item: tagDictToProto(row)}, nil
 }
 
-func AdminUpdateTagDictionary(ctx context.Context, db *gorm.DB, in *moe.AdminUpdateTagDictionaryReq) (*moe.AdminUpdateTagDictionaryResp, error) {
+func AdminUpdateTagDictionary(ctx context.Context, store AdminStore, in *moe.AdminUpdateTagDictionaryReq) (*moe.AdminUpdateTagDictionaryResp, error) {
+	db := dbFromStore(ctx, store)
+	if db == nil {
+		return nil, ErrInsightsDB
+	}
 	var row model.TagDictionaryEntry
 	if err := db.First(&row, in.GetEntryId()).Error; err != nil {
 		return nil, errNotFound("条目不存在")
@@ -401,7 +421,11 @@ func AdminUpdateTagDictionary(ctx context.Context, db *gorm.DB, in *moe.AdminUpd
 	return &moe.AdminUpdateTagDictionaryResp{Item: tagDictToProto(row)}, nil
 }
 
-func AdminDeleteTagDictionary(ctx context.Context, db *gorm.DB, in *moe.AdminDeleteTagDictionaryReq) (*moe.AdminDeleteTagDictionaryResp, error) {
+func AdminDeleteTagDictionary(ctx context.Context, store AdminStore, in *moe.AdminDeleteTagDictionaryReq) (*moe.AdminDeleteTagDictionaryResp, error) {
+	db := dbFromStore(ctx, store)
+	if db == nil {
+		return nil, ErrInsightsDB
+	}
 	if err := db.Delete(&model.TagDictionaryEntry{}, in.GetEntryId()).Error; err != nil {
 		return nil, errInternal("删除失败")
 	}

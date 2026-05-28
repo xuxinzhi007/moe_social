@@ -216,10 +216,8 @@ func chatChatOnlineBatch() func(khttp.Context) error {
 
 func chatDeliveryDeps(svcCtx *svc.ServiceContext) chatbiz.DeliveryDeps {
 	deps := chatbiz.DeliveryDeps{UserReader: svcCtx.UserGW, NotifyRPC: svcCtx.UserGW}
-	if svcCtx.ChatApp != nil {
-		deps.DB = svcCtx.ChatApp.DB()
-	} else if svcCtx.UserApp != nil {
-		deps.DB = svcCtx.UserApp.DB()
+	if svcCtx.UserApp != nil {
+		deps.NotifyStore = svcCtx.UserApp.Notify()
 	}
 	return deps
 }

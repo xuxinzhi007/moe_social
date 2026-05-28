@@ -33,8 +33,8 @@ type UpdateResult struct {
 }
 
 // Update 更新帖子（仅作者）。
-func Update(ctx context.Context, db *gorm.DB, in UpdateInput) (UpdateResult, error) {
-	if db == nil {
+func Update(ctx context.Context, st PostStore, in UpdateInput) (UpdateResult, error) {
+	if st == nil {
 		return UpdateResult{}, gorm.ErrInvalidDB
 	}
 	postID, err := strconv.ParseUint(strings.TrimSpace(in.PostID), 10, 64)
@@ -46,8 +46,9 @@ func Update(ctx context.Context, db *gorm.DB, in UpdateInput) (UpdateResult, err
 		return UpdateResult{}, ErrInvalidUserID
 	}
 
-	var p model.Post
-	if err := db.WithContext(ctx).First(&p, postID).Error; err != nil {
+	st = st.WithContext(ctx)
+	p, err := st.GetPost(ctx, uint(postID))
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return UpdateResult{}, ErrPostNotFound
 		}
@@ -77,37 +78,30 @@ func Update(ctx context.Context, db *gorm.DB, in UpdateInput) (UpdateResult, err
 	if in.HandDrawThumbURL != "" {
 		p.HandDrawThumbURL = in.HandDrawThumbURL
 	}
-	if err := db.WithContext(ctx).Save(&p).Error; err != nil {
+	if err := st.SavePost(ctx, &p); err != nil {
 		return UpdateResult{}, err
 	}
 
 	if in.UpdateTopicTags {
-		db.WithContext(ctx).Where("post_id = ?", p.ID).Delete(&model.PostTopic{})
+		st.DeletePostTopics(ctx, p.ID)
 		for _, tag := range in.TopicTags {
-			var tt model.TopicTag
-			db.WithContext(ctx).Where("name = ?", tag.Name).FirstOrCreate(&tt, model.TopicTag{
-				Name: tag.Name, Color: tag.Color,
-			})
-			db.WithContext(ctx).Create(&model.PostTopic{PostID: p.ID, TopicTagID: tt.ID})
+			tt, _ := st.FirstOrCreateTopicTag(ctx, tag.Name, tag.Color)
+			_ = st.CreatePostTopic(ctx, p.ID, tt.ID)
 		}
 	}
 
-	if err := db.WithContext(ctx).Preload("TopicTags").First(&p, p.ID).Error; err != nil {
+	p, err = st.GetPostWithTopicTags(ctx, p.ID)
+	if err != nil {
 		return UpdateResult{}, err
 	}
 
-	var user model.User
-	_ = db.WithContext(ctx).Select("id, username, email, avatar").First(&user, p.UserID).Error
+	user, _ := st.GetUserSelect(ctx, p.UserID, "id, username, email, avatar")
 
-	var likeCount int64
-	db.WithContext(ctx).Model(&model.Like{}).
-		Where("target_type = 'post' AND target_id = ?", p.ID).Count(&likeCount)
-	var commentCount int64
-	db.WithContext(ctx).Model(&model.Comment{}).
-		Where("post_id = ? AND deleted_at IS NULL", p.ID).Count(&commentCount)
+	likeCount, _ := st.CountLikesForPost(ctx, p.ID)
+	commentCount, _ := st.CountCommentsForPost(ctx, p.ID)
 	p.Likes = int(likeCount)
 	p.Comments = int(commentCount)
 
-	likedSet := LikedTargetIDSet(db.WithContext(ctx), uint(userID), "post", []uint{p.ID})
+	likedSet := LikedTargetIDSet(ctx, st, uint(userID), "post", []uint{p.ID})
 	return UpdateResult{Post: p, User: user, IsLiked: likedSet[p.ID]}, nil
 }

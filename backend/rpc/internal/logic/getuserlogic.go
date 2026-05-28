@@ -30,7 +30,7 @@ func (l *GetUserLogic) GetUser(in *moe.GetUserReq) (*moe.GetUserResp, error) {
 	if err != nil || uid == 0 {
 		return nil, mapUserBizErr(userbiz.ErrInvalidArgument)
 	}
-	user, err := userbiz.GetByID(l.ctx, l.svcCtx.DB, uint(uid))
+	user, err := userbiz.GetByID(l.ctx, l.svcCtx.UserStore(), uint(uid))
 	if err != nil {
 		return nil, mapUserBizErr(err)
 	}

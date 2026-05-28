@@ -1,10 +1,10 @@
-// Package landingapp Landing 域应用服务（FS-3c / Sprint S1）。
 package landingapp
 
 import (
 	"context"
 
 	landingbiz "backend/internal/biz/landing"
+	landingdata "backend/internal/data/landing"
 	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
@@ -12,17 +12,17 @@ import (
 
 // AppService Landing HTTP/RPC 应用层。
 type AppService struct {
-	db *gorm.DB
+	feedback landingbiz.FeedbackStore
 }
 
 // New 构造 AppService。
 func New(db *gorm.DB) *AppService {
-	return &AppService{db: db}
+	return &AppService{feedback: landingdata.NewFeedbackStore(db)}
 }
 
 // Submit 提交落地页反馈。
 func (s *AppService) Submit(ctx context.Context, in *moe.SubmitLandingFeedbackReq) (*moe.SubmitLandingFeedbackResp, error) {
-	id, err := landingbiz.Submit(ctx, s.db, landingbiz.SubmitInput{
+	id, err := landingbiz.Submit(ctx, s.feedback, landingbiz.SubmitInput{
 		Email:     in.GetEmail(),
 		Category:  in.GetCategory(),
 		Content:   in.GetContent(),
@@ -38,7 +38,7 @@ func (s *AppService) Submit(ctx context.Context, in *moe.SubmitLandingFeedbackRe
 
 // List 分页列表。
 func (s *AppService) List(ctx context.Context, in *moe.ListLandingFeedbackReq) (*moe.ListLandingFeedbackResp, error) {
-	result, err := landingbiz.List(ctx, s.db, landingbiz.ListFilter{
+	result, err := landingbiz.List(ctx, s.feedback, landingbiz.ListFilter{
 		Page:     in.GetPage(),
 		PageSize: in.GetPageSize(),
 		Category: in.GetCategory(),

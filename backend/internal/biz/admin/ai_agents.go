@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	aibiz "backend/internal/biz/ai"
+	aidata "backend/internal/data/ai"
 	"backend/model"
 	"backend/rpc/pb/moe"
 
@@ -96,7 +97,7 @@ func DeleteAiAgent(ctx context.Context, db *gorm.DB, in *moe.AdminDeleteAiAgentR
 	if userID == "" || agentID == "" {
 		return nil, aibiz.ErrEmptyUserID
 	}
-	_, err := aibiz.Delete(ctx, db, "agents", &moe.DeleteAiResourceReq{
+	_, err := aibiz.Delete(ctx, aidata.NewStore(db), "agents", &moe.DeleteAiResourceReq{
 		UserId: userID,
 		Id:     agentID,
 	})

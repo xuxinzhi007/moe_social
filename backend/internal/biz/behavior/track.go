@@ -25,8 +25,8 @@ type EventInput struct {
 }
 
 // TrackEvents 批量写入行为事件。
-func TrackEvents(ctx context.Context, db *gorm.DB, userID uint, events []EventInput) (int32, error) {
-	if db == nil {
+func TrackEvents(ctx context.Context, store BehaviorStore, userID uint, events []EventInput) (int32, error) {
+	if store == nil {
 		return 0, gorm.ErrInvalidDB
 	}
 	if userID == 0 {
@@ -40,7 +40,7 @@ func TrackEvents(ctx context.Context, db *gorm.DB, userID uint, events []EventIn
 	}
 
 	var accepted int32
-	err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := store.Transaction(ctx, func(tx BehaviorTx) error {
 		for _, ev := range events {
 			screen := utils.NormalizeBehaviorScreen(ev.Screen)
 			eventType := utils.NormalizeBehaviorEvent(ev.Event)
@@ -60,7 +60,7 @@ func TrackEvents(ctx context.Context, db *gorm.DB, userID uint, events []EventIn
 				SessionID:  strings.TrimSpace(ev.SessionID),
 				ClientTs:   clientTs,
 			}
-			if err := tx.Create(&row).Error; err != nil {
+			if err := tx.CreateBehaviorEvent(&row); err != nil {
 				return err
 			}
 			accepted++
@@ -68,9 +68,7 @@ func TrackEvents(ctx context.Context, db *gorm.DB, userID uint, events []EventIn
 				continue
 			}
 			activityDate := utils.BehaviorActivityDate(clientTs)
-			var daily model.UserBehaviorDaily
-			err := tx.Where("user_id = ? AND activity_date = ? AND screen = ?", userID, activityDate, screen).
-				First(&daily).Error
+			daily, err := tx.FindBehaviorDaily(userID, activityDate, screen)
 			switch {
 			case errors.Is(err, gorm.ErrRecordNotFound):
 				daily = model.UserBehaviorDaily{
@@ -80,16 +78,13 @@ func TrackEvents(ctx context.Context, db *gorm.DB, userID uint, events []EventIn
 					VisitCount:      1,
 					TotalDurationMs: ev.DurationMs,
 				}
-				if err := tx.Create(&daily).Error; err != nil {
+				if err := tx.CreateBehaviorDaily(&daily); err != nil {
 					return err
 				}
 			case err != nil:
 				return err
 			default:
-				if err := tx.Model(&daily).Updates(map[string]interface{}{
-					"visit_count":       gorm.Expr("visit_count + ?", 1),
-					"total_duration_ms": gorm.Expr("total_duration_ms + ?", ev.DurationMs),
-				}).Error; err != nil {
+				if err := tx.UpdateBehaviorDaily(&daily, ev.DurationMs); err != nil {
 					return err
 				}
 			}

@@ -25,7 +25,7 @@ func NewSendPrivateMessageLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *SendPrivateMessageLogic) SendPrivateMessage(in *moe.SendPrivateMessageReq) (*moe.SendPrivateMessageResp, error) {
-	resp, err := chatbiz.SendPrivateMessage(l.ctx, l.svcCtx.DB, in)
+	resp, err := chatbiz.SendPrivateMessage(l.ctx, l.svcCtx.ChatStore(), in)
 	if err != nil {
 		l.Errorf("SendPrivateMessage: %v", err)
 	}

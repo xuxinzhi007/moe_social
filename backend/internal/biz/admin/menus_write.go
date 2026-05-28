@@ -5,7 +5,6 @@ import (
 	"errors"
 	"strings"
 
-	"backend/model"
 	"backend/rpc/pb/moe"
 	"backend/utils"
 
@@ -37,8 +36,8 @@ type UpsertMenuInput struct {
 }
 
 // UpsertMenu 创建或更新菜单项。
-func UpsertMenu(ctx context.Context, db *gorm.DB, in UpsertMenuInput) (*moe.AdminMenuItem, error) {
-	if db == nil {
+func UpsertMenu(ctx context.Context, store AdminStore, in UpsertMenuInput) (*moe.AdminMenuItem, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	key := strings.TrimSpace(in.Key)
@@ -54,9 +53,9 @@ func UpsertMenu(ctx context.Context, db *gorm.DB, in UpsertMenuInput) (*moe.Admi
 		return nil, ErrEmptyMenuLabel
 	}
 
-	var row model.AdminMenu
-	err := db.WithContext(ctx).Where("`key` = ?", key).First(&row).Error
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	row, err := store.FindMenuByKey(ctx, key)
+	isNew := errors.Is(err, gorm.ErrRecordNotFound)
+	if err != nil && !isNew {
 		return nil, err
 	}
 
@@ -77,16 +76,16 @@ func UpsertMenu(ctx context.Context, db *gorm.DB, in UpsertMenuInput) (*moe.Admi
 	row.End = in.End
 	row.ExternalHref = strings.TrimSpace(in.ExternalHref)
 	row.Enabled = true
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
+	if !isNew {
 		row.Enabled = in.Enabled
 	}
 
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		if err := db.WithContext(ctx).Create(&row).Error; err != nil {
+	if isNew {
+		if err := store.CreateMenu(ctx, &row); err != nil {
 			return nil, err
 		}
 	} else {
-		if err := db.WithContext(ctx).Save(&row).Error; err != nil {
+		if err := store.SaveMenu(ctx, &row); err != nil {
 			return nil, err
 		}
 	}
@@ -94,24 +93,24 @@ func UpsertMenu(ctx context.Context, db *gorm.DB, in UpsertMenuInput) (*moe.Admi
 }
 
 // DeleteMenu 按 key 删除菜单。
-func DeleteMenu(ctx context.Context, db *gorm.DB, menuKey string) error {
-	if db == nil {
+func DeleteMenu(ctx context.Context, store AdminStore, menuKey string) error {
+	if store == nil {
 		return gorm.ErrInvalidDB
 	}
 	key := strings.TrimSpace(menuKey)
 	if key == "" {
 		return ErrEmptyMenuKey
 	}
-	return db.WithContext(ctx).Where("`key` = ?", key).Delete(&model.AdminMenu{}).Error
+	return store.DeleteMenuByKey(ctx, key)
 }
 
 // BootstrapMenus 空表时导入默认管理台菜单。
-func BootstrapMenus(ctx context.Context, db *gorm.DB) (int32, error) {
-	if db == nil {
+func BootstrapMenus(ctx context.Context, store AdminStore) (int32, error) {
+	if store == nil {
 		return 0, gorm.ErrInvalidDB
 	}
 	_ = ctx
-	created, err := utils.BootstrapAdminMenus(db)
+	created, err := utils.BootstrapAdminMenus(store.Raw())
 	if err != nil {
 		return 0, err
 	}

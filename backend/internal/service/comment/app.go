@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	commentbiz "backend/internal/biz/comment"
+	commentdata "backend/internal/data/comment"
 	"backend/internal/platform/socialhook"
 	"backend/rpc/pb/moe"
 	"backend/utils"
@@ -15,16 +16,16 @@ import (
 
 // AppService 评论应用层。
 type AppService struct {
-	db *gorm.DB
+	store commentbiz.CommentStore
 }
 
 // New 构造 AppService。
 func New(db *gorm.DB) *AppService {
-	return &AppService{db: db}
+	return &AppService{store: commentdata.NewStore(db)}
 }
 
 func (s *AppService) GetPostComments(ctx context.Context, in *moe.GetPostCommentsReq) (*moe.GetPostCommentsResp, error) {
-	items, total, err := commentbiz.ListByPost(ctx, s.db, commentbiz.ListFilter{
+	items, total, err := commentbiz.ListByPost(ctx, s.store, commentbiz.ListFilter{
 		PostID: in.GetPostId(), Page: in.GetPage(), PageSize: in.GetPageSize(),
 		ViewerUserID: in.GetViewerUserId(),
 	})
@@ -35,7 +36,7 @@ func (s *AppService) GetPostComments(ctx context.Context, in *moe.GetPostComment
 }
 
 func (s *AppService) CreateComment(ctx context.Context, in *moe.CreateCommentReq) (*moe.CreateCommentResp, error) {
-	result, err := commentbiz.Create(ctx, s.db, commentbiz.CreateInput{
+	result, err := commentbiz.Create(ctx, s.store, commentbiz.CreateInput{
 		PostID: in.GetPostId(), UserID: in.GetUserId(),
 		Content: in.GetContent(), ParentID: in.GetParentId(),
 	})
@@ -43,7 +44,7 @@ func (s *AppService) CreateComment(ctx context.Context, in *moe.CreateCommentReq
 		return nil, err
 	}
 
-	achUnlocks := socialhook.ApplyCommentCreatedAchievements(s.db, result.Comment.UserID)
+	achUnlocks := socialhook.ApplyCommentCreatedAchievements(s.store.Raw(), result.Comment.UserID)
 
 	c := result.Comment
 	username := "未知用户"
@@ -60,13 +61,13 @@ func (s *AppService) CreateComment(ctx context.Context, in *moe.CreateCommentReq
 	}
 	return &moe.CreateCommentResp{
 		Comment: &moe.Comment{
-			Id: strconv.FormatUint(uint64(c.ID), 10),
-			PostId: strconv.FormatUint(uint64(c.PostID), 10),
-			UserId: strconv.FormatUint(uint64(c.UserID), 10),
+			Id:       strconv.FormatUint(uint64(c.ID), 10),
+			PostId:   strconv.FormatUint(uint64(c.PostID), 10),
+			UserId:   strconv.FormatUint(uint64(c.UserID), 10),
 			UserName: username, UserAvatar: avatar, Content: c.Content,
 			Likes: int32(c.Likes), IsLiked: false,
-			CreatedAt: utils.FormatAPIDateTime(c.CreatedAt),
-			ParentId: strconv.FormatUint(uint64(c.ParentID), 10),
+			CreatedAt:       utils.FormatAPIDateTime(c.CreatedAt),
+			ParentId:        strconv.FormatUint(uint64(c.ParentID), 10),
 			ReplyToUserName: result.ReplyToUserName,
 		},
 		NewAchievements: achUnlocks,
@@ -74,7 +75,7 @@ func (s *AppService) CreateComment(ctx context.Context, in *moe.CreateCommentReq
 }
 
 func (s *AppService) LikeComment(ctx context.Context, in *moe.LikeCommentReq) (*moe.LikeCommentResp, error) {
-	result, err := commentbiz.Like(ctx, s.db, in.GetCommentId(), in.GetUserId())
+	result, err := commentbiz.Like(ctx, s.store, in.GetCommentId(), in.GetUserId())
 	if err != nil {
 		return nil, err
 	}

@@ -14,84 +14,92 @@ import (
 )
 
 // CreateVipOrder 钱包购买 VIP 套餐。
-func CreateVipOrder(ctx context.Context, db *gorm.DB, in *moe.CreateVipOrderReq) (*moe.CreateVipOrderResp, error) {
+func CreateVipOrder(ctx context.Context, store UserStore, in *moe.CreateVipOrderReq) (*moe.CreateVipOrderResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	var order model.VipOrder
 	var paidUserID uint
-	err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var user model.User
-		if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&user, in.GetUserId()).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return ErrNotFound
-			}
-			return err
-		}
-		var plan model.VipPlan
-		if err := tx.First(&plan, in.GetPlanId()).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return ErrVipPlanNotFound
-			}
-			return err
-		}
-		if user.Balance < plan.Price {
-			return ErrInsufficientBalance
-		}
 
-		orderNo := "ORD" + strconv.FormatInt(time.Now().UnixNano(), 10)
-		now := time.Now()
-		vipEnd := now.AddDate(0, 0, plan.Duration)
-
-		if err := tx.Model(&model.VipOrder{}).Where("user_id = ?", user.ID).Update("is_active", false).Error; err != nil {
-			return err
-		}
-
-		order = model.VipOrder{
-			UserID:    user.ID,
-			PlanID:    plan.ID,
-			OrderNo:   orderNo,
-			Amount:    plan.Price,
-			Status:    "paid",
-			PayMethod: "wallet",
-			IsActive:  true,
-			StartAt:   &now,
-			EndAt:     &vipEnd,
-		}
-		if err := tx.Create(&order).Error; err != nil {
-			return err
-		}
-
-		newBalance := user.Balance - plan.Price
-		if err := tx.Model(&user).UpdateColumn("balance", newBalance).Error; err != nil {
-			return err
-		}
-
-		transaction := model.Transaction{
-			UserID:      user.ID,
-			Amount:      plan.Price,
-			Type:        "consume",
-			Status:      "success",
-			Description: "购买VIP套餐：" + plan.Name,
-		}
-		if err := tx.Create(&transaction).Error; err != nil {
-			return err
-		}
-
-		user.IsVip = true
-		user.VipStartAt = &now
-		user.VipEndAt = &vipEnd
-		if err := tx.Save(&user).Error; err != nil {
-			return err
-		}
-		order.Plan = plan
-		paidUserID = user.ID
-		return nil
-	})
+	tx, err := store.Begin(ctx)
 	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	user, err := tx.GetUserForUpdate(in.GetUserId())
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	plan, err := tx.GetVipPlan(in.GetPlanId())
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrVipPlanNotFound
+		}
+		return nil, err
+	}
+	if user.Balance < plan.Price {
+		return nil, ErrInsufficientBalance
+	}
+
+	orderNo := "ORD" + strconv.FormatInt(time.Now().UnixNano(), 10)
+	now := time.Now()
+	vipEnd := now.AddDate(0, 0, plan.Duration)
+
+	if err := tx.DeactivateVipOrders(user.ID); err != nil {
+		return nil, err
+	}
+
+	order = model.VipOrder{
+		UserID:    user.ID,
+		PlanID:    plan.ID,
+		OrderNo:   orderNo,
+		Amount:    plan.Price,
+		Status:    "paid",
+		PayMethod: "wallet",
+		IsActive:  true,
+		StartAt:   &now,
+		EndAt:     &vipEnd,
+	}
+	if err := tx.CreateVipOrder(&order); err != nil {
+		return nil, err
+	}
+
+	newBalance := user.Balance - plan.Price
+	if err := tx.UpdateUserBalance(user.ID, newBalance); err != nil {
+		return nil, err
+	}
+
+	transaction := model.Transaction{
+		UserID:      user.ID,
+		Amount:      plan.Price,
+		Type:        "consume",
+		Status:      "success",
+		Description: "购买VIP套餐：" + plan.Name,
+	}
+	if err := tx.CreateTransaction(&transaction); err != nil {
+		return nil, err
+	}
+
+	user.IsVip = true
+	user.VipStartAt = &now
+	user.VipEndAt = &vipEnd
+	if err := tx.SaveUser(&user); err != nil {
+		return nil, err
+	}
+	order.Plan = plan
+	paidUserID = user.ID
+
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
 	var achUnlocks []achievement.UnlockResult
 	if paidUserID > 0 {
-		unlocks, achErr := achievement.ApplyEventAfterCommit(db, paidUserID, achievement.Event{Type: achievement.EventVipActivated})
+		unlocks, achErr := achievement.ApplyEventAfterCommit(store.Raw(), paidUserID, achievement.Event{Type: achievement.EventVipActivated})
 		if achErr == nil {
 			achUnlocks = unlocks
 		}
@@ -114,9 +122,16 @@ func CreateVipOrder(ctx context.Context, db *gorm.DB, in *moe.CreateVipOrderReq)
 }
 
 // UpdateUserVip 管理端设置 VIP 状态。
-func UpdateUserVip(ctx context.Context, db *gorm.DB, in *moe.UpdateUserVipReq) (*moe.UpdateUserVipResp, error) {
-	var user model.User
-	if err := db.WithContext(ctx).First(&user, in.GetUserId()).Error; err != nil {
+func UpdateUserVip(ctx context.Context, store UserStore, in *moe.UpdateUserVipReq) (*moe.UpdateUserVipResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
+	userID, err := parseUserIDString(in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	user, err := store.GetUserByID(ctx, userID)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotFound
 		}
@@ -128,7 +143,7 @@ func UpdateUserVip(ctx context.Context, db *gorm.DB, in *moe.UpdateUserVipReq) (
 		if err != nil {
 			return nil, ErrInvalidArgument
 		}
-		_ = db.WithContext(ctx).Model(&model.VipOrder{}).Where("user_id = ?", user.ID).Update("is_active", false)
+		_ = store.DeactivateVipOrders(ctx, user.ID)
 		vipStart := time.Now()
 		orderNo := "VIP_" + strconv.FormatInt(time.Now().Unix(), 10) + "_" + strconv.Itoa(int(user.ID))
 		vipOrder := model.VipOrder{
@@ -142,7 +157,7 @@ func UpdateUserVip(ctx context.Context, db *gorm.DB, in *moe.UpdateUserVipReq) (
 			StartAt:   &vipStart,
 			EndAt:     &vipExpires,
 		}
-		if err := db.WithContext(ctx).Create(&vipOrder).Error; err != nil {
+		if err := store.CreateVipOrderRecord(ctx, &vipOrder); err != nil {
 			return nil, err
 		}
 		user.IsVip = true
@@ -152,19 +167,26 @@ func UpdateUserVip(ctx context.Context, db *gorm.DB, in *moe.UpdateUserVipReq) (
 		user.IsVip = false
 		user.VipStartAt = nil
 		user.VipEndAt = nil
-		_ = db.WithContext(ctx).Model(&model.VipOrder{}).Where("user_id = ?", user.ID).Update("is_active", false)
+		_ = store.DeactivateVipOrders(ctx, user.ID)
 	}
 
-	if err := db.WithContext(ctx).Save(&user).Error; err != nil {
+	if err := store.SaveUser(ctx, &user); err != nil {
 		return nil, err
 	}
 	return &moe.UpdateUserVipResp{User: ModelToProto(&user)}, nil
 }
 
 // SyncUserVipStatus 按过期时间同步 VIP 标记。
-func SyncUserVipStatus(ctx context.Context, db *gorm.DB, in *moe.SyncUserVipStatusReq) (*moe.SyncUserVipStatusResp, error) {
-	var user model.User
-	if err := db.WithContext(ctx).First(&user, in.GetUserId()).Error; err != nil {
+func SyncUserVipStatus(ctx context.Context, store UserStore, in *moe.SyncUserVipStatusReq) (*moe.SyncUserVipStatusResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
+	userID, err := parseUserIDString(in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	user, err := store.GetUserByID(ctx, userID)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotFound
 		}
@@ -177,16 +199,22 @@ func SyncUserVipStatus(ctx context.Context, db *gorm.DB, in *moe.SyncUserVipStat
 		if user.VipEndAt.Before(time.Now()) {
 			isVip = false
 			user.IsVip = false
-			_ = db.WithContext(ctx).Save(&user)
+			_ = store.SaveUser(ctx, &user)
 		}
 	}
 	return &moe.SyncUserVipStatusResp{IsVip: isVip, ExpiresAt: vipEndAt}, nil
 }
 
 // UpdateAutoRenew 占位（模型暂无字段）。
-func UpdateAutoRenew(ctx context.Context, db *gorm.DB, in *moe.UpdateAutoRenewReq) (*moe.UpdateAutoRenewResp, error) {
-	var user model.User
-	if err := db.WithContext(ctx).First(&user, in.GetUserId()).Error; err != nil {
+func UpdateAutoRenew(ctx context.Context, store UserStore, in *moe.UpdateAutoRenewReq) (*moe.UpdateAutoRenewResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
+	userID, err := parseUserIDString(in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	if _, err := store.GetUserByID(ctx, userID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotFound
 		}
@@ -196,7 +224,10 @@ func UpdateAutoRenew(ctx context.Context, db *gorm.DB, in *moe.UpdateAutoRenewRe
 }
 
 // GetVipRecords 分页 VIP 订单记录。
-func GetVipRecords(ctx context.Context, db *gorm.DB, in *moe.GetVipRecordsReq) (*moe.GetVipRecordsResp, error) {
+func GetVipRecords(ctx context.Context, store UserStore, in *moe.GetVipRecordsReq) (*moe.GetVipRecordsResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	page := in.GetPage()
 	if page <= 0 {
 		page = 1
@@ -205,15 +236,14 @@ func GetVipRecords(ctx context.Context, db *gorm.DB, in *moe.GetVipRecordsReq) (
 	if pageSize <= 0 {
 		pageSize = 10
 	}
-	offset := (page - 1) * pageSize
+	offset := int((page - 1) * pageSize)
 
-	var orders []model.VipOrder
-	var total int64
-	if err := db.WithContext(ctx).Model(&model.VipOrder{}).Where("user_id = ?", in.GetUserId()).Count(&total).Error; err != nil {
+	total, err := store.CountVipOrdersByUserID(ctx, in.GetUserId())
+	if err != nil {
 		return nil, err
 	}
-	if err := db.WithContext(ctx).Preload("Plan").Where("user_id = ?", in.GetUserId()).
-		Offset(int(offset)).Limit(int(pageSize)).Find(&orders).Error; err != nil {
+	orders, err := store.ListVipOrdersByUserID(ctx, in.GetUserId(), offset, int(pageSize))
+	if err != nil {
 		return nil, err
 	}
 
@@ -245,18 +275,18 @@ func GetVipRecords(ctx context.Context, db *gorm.DB, in *moe.GetVipRecordsReq) (
 }
 
 // GetUserActiveVipRecord 当前有效 VIP 订单。
-func GetUserActiveVipRecord(ctx context.Context, db *gorm.DB, in *moe.GetUserActiveVipRecordReq) (*moe.GetUserActiveVipRecordResp, error) {
-	var order model.VipOrder
-	err := db.WithContext(ctx).Where("user_id = ? AND is_active = ? AND end_at > ? AND status = ?",
-		in.GetUserId(), true, time.Now(), "paid").First(&order).Error
+func GetUserActiveVipRecord(ctx context.Context, store UserStore, in *moe.GetUserActiveVipRecordReq) (*moe.GetUserActiveVipRecordResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
+	order, err := store.GetActiveVipOrder(ctx, in.GetUserId())
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNoActiveVip
 		}
 		return nil, err
 	}
-	var plan model.VipPlan
-	_ = db.WithContext(ctx).First(&plan, order.PlanID).Error
+	plan, _ := store.GetVipPlan(ctx, order.PlanID)
 	return &moe.GetUserActiveVipRecordResp{
 		Record: &moe.VipRecord{
 			Id:        strconv.Itoa(int(order.ID)),

@@ -25,5 +25,5 @@ func NewAdminBootstrapAccountLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *AdminBootstrapAccountLogic) AdminBootstrapAccount(in *moe.AdminBootstrapAccountReq) (*moe.AdminBootstrapAccountResp, error) {
-	return adminbiz.BootstrapAdminAccount(l.ctx, l.svcCtx.DB, in)
+	return adminbiz.BootstrapAdminAccount(l.ctx, l.svcCtx.AdminStore(), in)
 }

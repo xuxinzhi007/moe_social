@@ -29,7 +29,7 @@ func (l *GetVipPlanLogic) GetVipPlan(in *moe.GetVipPlanReq) (*moe.GetVipPlanResp
 	if err != nil {
 		return nil, err
 	}
-	plan, err := vipbiz.GetPlan(l.ctx, l.svcCtx.DB, planID)
+	plan, err := vipbiz.GetPlan(l.ctx, l.svcCtx.VipStore(), planID)
 	if err != nil {
 		l.Errorf("get vip plan: %v", err)
 		return nil, mapVipBizErr(err)

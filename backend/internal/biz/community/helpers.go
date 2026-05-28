@@ -1,14 +1,13 @@
 package communitybiz
 
 import (
+	"context"
 	"strconv"
 	"strings"
 	"time"
 
 	"backend/model"
 	"backend/rpc/pb/moe"
-
-	"gorm.io/gorm"
 )
 
 func parseGroupID(raw string) (uint64, error) {
@@ -58,7 +57,7 @@ func optionalUserID(raw string) uint {
 	return uint(id)
 }
 
-func memberStatus(db *gorm.DB, groupID uint, viewerUserID string) (bool, string) {
+func memberStatus(ctx context.Context, store CommunityStore, groupID uint, viewerUserID string) (bool, string) {
 	if viewerUserID == "" {
 		return false, ""
 	}
@@ -66,20 +65,19 @@ func memberStatus(db *gorm.DB, groupID uint, viewerUserID string) (bool, string)
 	if err != nil {
 		return false, ""
 	}
-	var member model.GroupMember
-	if err := db.Where("group_id = ? AND user_id = ?", groupID, userID).First(&member).Error; err != nil {
+	member, ok, err := store.FindGroupMemberOptional(ctx, groupID, uint(userID))
+	if err != nil || !ok {
 		return false, ""
 	}
 	return true, member.Role
 }
 
-func groupToProto(db *gorm.DB, group model.Group, viewerUserID string, createdAtLayout string) *moe.Group {
+func groupToProto(ctx context.Context, store CommunityStore, group model.Group, viewerUserID string, createdAtLayout string) *moe.Group {
 	if createdAtLayout == "" {
 		createdAtLayout = "2006-01-02 15:04:05"
 	}
-	var creator model.User
-	_ = db.First(&creator, group.CreatorID).Error
-	isJoined, userRole := memberStatus(db, group.ID, viewerUserID)
+	creator, _ := store.GetUser(ctx, group.CreatorID)
+	isJoined, userRole := memberStatus(ctx, store, group.ID, viewerUserID)
 	return &moe.Group{
 		Id:          uint64(group.ID),
 		Name:        group.Name,
@@ -97,9 +95,8 @@ func groupToProto(db *gorm.DB, group model.Group, viewerUserID string, createdAt
 	}
 }
 
-func memberToProto(db *gorm.DB, member model.GroupMember) *moe.GroupMember {
-	var user model.User
-	_ = db.First(&user, member.UserID).Error
+func memberToProto(ctx context.Context, store CommunityStore, member model.GroupMember) *moe.GroupMember {
+	user, _ := store.GetUser(ctx, member.UserID)
 	return &moe.GroupMember{
 		Id:         uint64(member.ID),
 		GroupId:    uint64(member.GroupID),
@@ -112,8 +109,8 @@ func memberToProto(db *gorm.DB, member model.GroupMember) *moe.GroupMember {
 	}
 }
 
-func groupToProtoWithMember(db *gorm.DB, group model.Group, member model.GroupMember) *moe.Group {
-	g := groupToProto(db, group, strconv.FormatUint(uint64(member.UserID), 10), "2006-01-02 15:04:05")
+func groupToProtoWithMember(ctx context.Context, store CommunityStore, group model.Group, member model.GroupMember) *moe.Group {
+	g := groupToProto(ctx, store, group, strconv.FormatUint(uint64(member.UserID), 10), "2006-01-02 15:04:05")
 	g.IsJoined = true
 	g.UserRole = member.Role
 	return g

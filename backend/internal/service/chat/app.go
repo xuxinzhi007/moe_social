@@ -5,6 +5,7 @@ import (
 	"context"
 
 	chatbiz "backend/internal/biz/chat"
+	chatdata "backend/internal/data/chat"
 	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
@@ -12,12 +13,13 @@ import (
 
 // AppService 私信应用层。
 type AppService struct {
+	pm chatbiz.PrivateMessageStore
 	db *gorm.DB
 }
 
 // New 构造 AppService。
 func New(db *gorm.DB) *AppService {
-	return &AppService{db: db}
+	return &AppService{pm: chatdata.NewStore(db), db: db}
 }
 
 // DB 返回私信域数据库连接（离线通知兜底等）。
@@ -28,19 +30,27 @@ func (s *AppService) DB() *gorm.DB {
 	return s.db
 }
 
+// PrivateMessageStore 返回私信持久化接口。
+func (s *AppService) PrivateMessageStore() chatbiz.PrivateMessageStore {
+	if s == nil {
+		return nil
+	}
+	return s.pm
+}
+
 // SendPrivateMessage 发送私信。
 func (s *AppService) SendPrivateMessage(ctx context.Context, in *moe.SendPrivateMessageReq) (*moe.SendPrivateMessageResp, error) {
-	return chatbiz.SendPrivateMessage(ctx, s.db, in)
+	return chatbiz.SendPrivateMessage(ctx, s.pm, in)
 }
 
 // ListPrivateMessages 私信历史。
 func (s *AppService) ListPrivateMessages(ctx context.Context, in *moe.ListPrivateMessagesReq) (*moe.ListPrivateMessagesResp, error) {
-	return chatbiz.ListPrivateMessages(ctx, s.db, in)
+	return chatbiz.ListPrivateMessages(ctx, s.pm, in)
 }
 
 // ListPrivateConversations 会话列表。
 func (s *AppService) ListPrivateConversations(ctx context.Context, in *moe.ListPrivateConversationsReq) (*moe.ListPrivateConversationsResp, error) {
-	return chatbiz.ListPrivateConversations(ctx, s.db, in)
+	return chatbiz.ListPrivateConversations(ctx, s.pm, in)
 }
 
 // PushNotification 向在线用户推送 WS 通知。

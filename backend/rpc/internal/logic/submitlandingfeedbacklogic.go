@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	landingbiz "backend/internal/biz/landing"
+	landingdata "backend/internal/data/landing"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/logutil"
 	"backend/rpc/internal/svc"
@@ -29,7 +30,7 @@ func NewSubmitLandingFeedbackLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *SubmitLandingFeedbackLogic) SubmitLandingFeedback(in *moe.SubmitLandingFeedbackReq) (*moe.SubmitLandingFeedbackResp, error) {
-	id, err := landingbiz.Submit(l.ctx, l.svcCtx.DB, landingbiz.SubmitInput{
+	id, err := landingbiz.Submit(l.ctx, landingdata.NewFeedbackStore(l.svcCtx.DB), landingbiz.SubmitInput{
 		Email:     in.GetEmail(),
 		Category:  in.GetCategory(),
 		Content:   in.GetContent(),

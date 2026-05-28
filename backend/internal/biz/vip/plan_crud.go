@@ -2,7 +2,6 @@ package vipbiz
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"backend/model"
@@ -31,33 +30,24 @@ type UpdatePlanPatch struct {
 }
 
 // ListAllPlans 公开列表（未删除）。
-func ListAllPlans(ctx context.Context, db *gorm.DB) ([]model.VipPlan, error) {
-	if db == nil {
+func ListAllPlans(ctx context.Context, st VipStore) ([]model.VipPlan, error) {
+	if st == nil {
 		return nil, gorm.ErrInvalidDB
 	}
-	var rows []model.VipPlan
-	if err := db.WithContext(ctx).Order("id ASC").Find(&rows).Error; err != nil {
-		return nil, err
-	}
-	return rows, nil
+	return st.WithContext(ctx).ListAllPlans(ctx)
 }
 
 // GetPlan 按 ID 查询（含软删记录）。
-func GetPlan(ctx context.Context, db *gorm.DB, planID uint) (model.VipPlan, error) {
-	if db == nil {
+func GetPlan(ctx context.Context, st VipStore, planID uint) (model.VipPlan, error) {
+	if st == nil {
 		return model.VipPlan{}, gorm.ErrInvalidDB
 	}
-	var plan model.VipPlan
-	err := db.WithContext(ctx).Unscoped().First(&plan, planID).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return model.VipPlan{}, ErrNotFound
-	}
-	return plan, err
+	return st.WithContext(ctx).GetPlan(ctx, planID)
 }
 
 // CreatePlan 创建套餐。
-func CreatePlan(ctx context.Context, db *gorm.DB, in CreatePlanInput) (model.VipPlan, error) {
-	if db == nil {
+func CreatePlan(ctx context.Context, st VipStore, in CreatePlanInput) (model.VipPlan, error) {
+	if st == nil {
 		return model.VipPlan{}, gorm.ErrInvalidDB
 	}
 	name := strings.TrimSpace(in.Name)
@@ -76,15 +66,20 @@ func CreatePlan(ctx context.Context, db *gorm.DB, in CreatePlanInput) (model.Vip
 		Price:    in.Price,
 		Duration: in.DurationDays,
 	}
-	if err := db.WithContext(ctx).Create(&plan).Error; err != nil {
+	st = st.WithContext(ctx)
+	if err := st.CreatePlan(ctx, &plan); err != nil {
 		return model.VipPlan{}, err
 	}
 	return plan, nil
 }
 
 // UpdatePlan 部分更新套餐。
-func UpdatePlan(ctx context.Context, db *gorm.DB, planID uint, patch UpdatePlanPatch) (model.VipPlan, error) {
-	plan, err := GetPlan(ctx, db, planID)
+func UpdatePlan(ctx context.Context, st VipStore, planID uint, patch UpdatePlanPatch) (model.VipPlan, error) {
+	if st == nil {
+		return model.VipPlan{}, gorm.ErrInvalidDB
+	}
+	st = st.WithContext(ctx)
+	plan, err := st.GetPlan(ctx, planID)
 	if err != nil {
 		return model.VipPlan{}, err
 	}
@@ -110,35 +105,32 @@ func UpdatePlan(ctx context.Context, db *gorm.DB, planID uint, patch UpdatePlanP
 		}
 		plan.Duration = patch.DurationDays
 	}
-	if err := db.WithContext(ctx).Save(&plan).Error; err != nil {
+	if err := st.SavePlan(ctx, &plan); err != nil {
 		return model.VipPlan{}, err
 	}
 	return plan, nil
 }
 
 // DeletePlan 软删除套餐。
-func DeletePlan(ctx context.Context, db *gorm.DB, planID uint) error {
-	if db == nil {
+func DeletePlan(ctx context.Context, st VipStore, planID uint) error {
+	if st == nil {
 		return gorm.ErrInvalidDB
 	}
-	var plan model.VipPlan
-	err := db.WithContext(ctx).First(&plan, planID).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return ErrNotFound
-	}
-	if err != nil {
+	st = st.WithContext(ctx)
+	if _, err := st.FindActivePlan(ctx, planID); err != nil {
 		return err
 	}
-	return db.WithContext(ctx).Delete(&plan).Error
+	return st.DeletePlan(ctx, planID)
 }
 
 // BootstrapPlans 空表时写入默认套餐。
-func BootstrapPlans(ctx context.Context, db *gorm.DB) (created int, err error) {
-	if db == nil {
+func BootstrapPlans(ctx context.Context, st VipStore) (created int, err error) {
+	if st == nil {
 		return 0, gorm.ErrInvalidDB
 	}
-	var count int64
-	if err := db.WithContext(ctx).Model(&model.VipPlan{}).Count(&count).Error; err != nil {
+	st = st.WithContext(ctx)
+	count, err := st.CountPlans(ctx)
+	if err != nil {
 		return 0, err
 	}
 	if count > 0 {
@@ -149,7 +141,7 @@ func BootstrapPlans(ctx context.Context, db *gorm.DB) (created int, err error) {
 		{Name: "季度 VIP", Price: 268, Duration: 90, Features: "季度套餐"},
 		{Name: "年度 VIP", Price: 899, Duration: 365, Features: "年度套餐"},
 	}
-	if err := db.WithContext(ctx).Create(&defaults).Error; err != nil {
+	if err := st.CreatePlans(ctx, defaults); err != nil {
 		return 0, err
 	}
 	return len(defaults), nil

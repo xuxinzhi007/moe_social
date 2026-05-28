@@ -31,7 +31,7 @@ func (l *FollowUserLogic) FollowUser(in *moe.FollowUserReq) (*moe.FollowUserResp
 		l.Error("解析关注 ID 失败:", err)
 		return nil, err
 	}
-	if err := userbiz.Follow(l.ctx, l.svcCtx.DB, followerID, followingID); err != nil {
+	if err := userbiz.Follow(l.ctx, l.svcCtx.UserStore(), followerID, followingID); err != nil {
 		l.Error("关注失败:", err)
 		return nil, err
 	}

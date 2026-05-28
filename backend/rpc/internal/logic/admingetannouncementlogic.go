@@ -23,7 +23,7 @@ func NewAdminGetAnnouncementLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *AdminGetAnnouncementLogic) AdminGetAnnouncement(in *moe.AdminGetAnnouncementReq) (*moe.AdminGetAnnouncementResp, error) {
-	item, err := adminbiz.GetAnnouncement(l.ctx, l.svcCtx.DB, in.GetAnnouncementId())
+	item, err := adminbiz.GetAnnouncement(l.ctx, l.svcCtx.AdminStore(), in.GetAnnouncementId())
 	if err != nil {
 		switch {
 		case errors.Is(err, adminbiz.ErrInvalidAnnouncementID):

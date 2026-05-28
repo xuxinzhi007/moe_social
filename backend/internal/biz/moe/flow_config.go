@@ -10,8 +10,6 @@ import (
 
 	"backend/model"
 	"backend/pkg/moe/flowexec"
-
-	"gorm.io/gorm"
 )
 
 const (
@@ -46,17 +44,17 @@ type FlowEdge struct {
 
 // FlowConfig 某 Bot 的完整画布配置。
 type FlowConfig struct {
-	AgentKey         string
-	Version          int
-	EntryNodeID      string
-	Nodes            []FlowNode
-	Edges            []FlowEdge
-	ViewportZoom     float64
-	ViewportX        float64
-	ViewportY        float64
-	UpdatedAt        time.Time
-	IsDefault        bool
-	CompileWarnings  []string
+	AgentKey        string
+	Version         int
+	EntryNodeID     string
+	Nodes           []FlowNode
+	Edges           []FlowEdge
+	ViewportZoom    float64
+	ViewportX       float64
+	ViewportY       float64
+	UpdatedAt       time.Time
+	IsDefault       bool
+	CompileWarnings []string
 }
 
 type flowLayoutPayload struct {
@@ -87,20 +85,22 @@ func DefaultFlowConfig(agentKey string) FlowConfig {
 }
 
 // GetFlowConfig 读取画布；无记录时返回默认模板。
-func GetFlowConfig(ctx context.Context, db *gorm.DB, agentKey string) (FlowConfig, error) {
+func GetFlowConfig(ctx context.Context, store MoeStore, agentKey string) (FlowConfig, error) {
+	if err := requireStore(store); err != nil {
+		return FlowConfig{}, err
+	}
 	agentKey = strings.TrimSpace(agentKey)
 	if agentKey == "" {
 		return FlowConfig{}, errors.New("agent_key 不能为空")
 	}
-	var row model.MoeAgentFlowConfig
-	err := db.WithContext(ctx).Where("agent_key = ?", agentKey).First(&row).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	row, ok, err := store.WithContext(ctx).FindFlowConfigByAgentKey(ctx, agentKey)
+	if err != nil {
+		return FlowConfig{}, err
+	}
+	if !ok {
 		out := DefaultFlowConfig(agentKey)
 		out.AgentKey = agentKey
 		return out, nil
-	}
-	if err != nil {
-		return FlowConfig{}, err
 	}
 	cfg, err := decodeFlowLayout(row.LayoutJSON)
 	if err != nil {
@@ -113,11 +113,15 @@ func GetFlowConfig(ctx context.Context, db *gorm.DB, agentKey string) (FlowConfi
 }
 
 // UpsertFlowConfig 保存画布布局。
-func UpsertFlowConfig(ctx context.Context, db *gorm.DB, agentKey string, in FlowConfig) (FlowConfig, error) {
+func UpsertFlowConfig(ctx context.Context, store MoeStore, agentKey string, in FlowConfig) (FlowConfig, error) {
+	if err := requireStore(store); err != nil {
+		return FlowConfig{}, err
+	}
 	agentKey = strings.TrimSpace(agentKey)
 	if agentKey == "" {
 		return FlowConfig{}, errors.New("agent_key 不能为空")
 	}
+	st := store.WithContext(ctx)
 	if err := validateFlowConfig(in); err != nil {
 		return FlowConfig{}, err
 	}
@@ -135,18 +139,18 @@ func UpsertFlowConfig(ctx context.Context, db *gorm.DB, agentKey string, in Flow
 		return FlowConfig{}, err
 	}
 	var row model.MoeAgentFlowConfig
-	err = db.WithContext(ctx).Where("agent_key = ?", agentKey).First(&row).Error
-	switch {
-	case errors.Is(err, gorm.ErrRecordNotFound):
+	row, exists, findErr := st.FindFlowConfigByAgentKey(ctx, agentKey)
+	if findErr != nil {
+		return FlowConfig{}, findErr
+	}
+	if !exists {
 		row = model.MoeAgentFlowConfig{AgentKey: agentKey, LayoutJSON: raw}
-		if err := db.WithContext(ctx).Create(&row).Error; err != nil {
+		if err := st.CreateFlowConfig(ctx, &row); err != nil {
 			return FlowConfig{}, err
 		}
-	case err != nil:
-		return FlowConfig{}, err
-	default:
+	} else {
 		row.LayoutJSON = raw
-		if err := db.WithContext(ctx).Save(&row).Error; err != nil {
+		if err := st.SaveFlowConfig(ctx, &row); err != nil {
 			return FlowConfig{}, err
 		}
 	}
@@ -161,12 +165,15 @@ func UpsertFlowConfig(ctx context.Context, db *gorm.DB, agentKey string, in Flow
 }
 
 // DeleteFlowConfig 删除已保存画布，后续 GET 回落默认模板。
-func DeleteFlowConfig(ctx context.Context, db *gorm.DB, agentKey string) (FlowConfig, error) {
+func DeleteFlowConfig(ctx context.Context, store MoeStore, agentKey string) (FlowConfig, error) {
+	if err := requireStore(store); err != nil {
+		return FlowConfig{}, err
+	}
 	agentKey = strings.TrimSpace(agentKey)
 	if agentKey == "" {
 		return FlowConfig{}, errors.New("agent_key 不能为空")
 	}
-	if err := db.WithContext(ctx).Where("agent_key = ?", agentKey).Delete(&model.MoeAgentFlowConfig{}).Error; err != nil {
+	if err := store.WithContext(ctx).DeleteFlowConfigByAgentKey(ctx, agentKey); err != nil {
 		return FlowConfig{}, err
 	}
 	out := DefaultFlowConfig(agentKey)
@@ -274,4 +281,3 @@ func decodeFlowLayout(raw string) (FlowConfig, error) {
 		ViewportY:    p.Viewport.Y,
 	}, nil
 }
-

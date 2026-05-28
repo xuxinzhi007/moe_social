@@ -25,7 +25,7 @@ func NewCreateVipPlanLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cre
 }
 
 func (l *CreateVipPlanLogic) CreateVipPlan(in *moe.CreateVipPlanReq) (*moe.CreateVipPlanResp, error) {
-	plan, err := vipbiz.CreatePlan(l.ctx, l.svcCtx.DB, vipbiz.CreatePlanInput{
+	plan, err := vipbiz.CreatePlan(l.ctx, l.svcCtx.VipStore(), vipbiz.CreatePlanInput{
 		Name:         in.GetName(),
 		Description:  in.GetDescription(),
 		Price:        float64(in.GetPrice()),

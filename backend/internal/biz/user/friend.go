@@ -32,12 +32,11 @@ func parseActorID(raw string) (uint, error) {
 	return parseUserIDString(raw)
 }
 
-func friendRequestView(ctx context.Context, db *gorm.DB, fr model.FriendRequest) *moe.FriendRequestView {
-	_, _ = utils.EnsureUserMoeNo(db, fr.FromUserID)
-	_, _ = utils.EnsureUserMoeNo(db, fr.ToUserID)
-	var fromU, toU model.User
-	_ = db.WithContext(ctx).First(&fromU, fr.FromUserID).Error
-	_ = db.WithContext(ctx).First(&toU, fr.ToUserID).Error
+func friendRequestView(ctx context.Context, store UserStore, fr model.FriendRequest) *moe.FriendRequestView {
+	_, _ = utils.EnsureUserMoeNo(store.Raw(), fr.FromUserID)
+	_, _ = utils.EnsureUserMoeNo(store.Raw(), fr.ToUserID)
+	fromU, _ := store.GetUserByID(ctx, fr.FromUserID)
+	toU, _ := store.GetUserByID(ctx, fr.ToUserID)
 	return &moe.FriendRequestView{
 		Id:        strconv.Itoa(int(fr.ID)),
 		FromUser:  ModelToProto(&fromU),
@@ -47,14 +46,14 @@ func friendRequestView(ctx context.Context, db *gorm.DB, fr model.FriendRequest)
 	}
 }
 
-func ensureMutualFollow(ctx context.Context, db *gorm.DB, a, b uint) {
-	_ = Follow(ctx, db, a, b)
-	_ = Follow(ctx, db, b, a)
+func ensureMutualFollow(ctx context.Context, store UserStore, a, b uint) {
+	_ = Follow(ctx, store, a, b)
+	_ = Follow(ctx, store, b, a)
 }
 
 // SendFriendRequest 发起好友申请。
-func SendFriendRequest(ctx context.Context, db *gorm.DB, actorID uint, toUserID, toMoeNo string) (*moe.FriendRequestView, error) {
-	if db == nil {
+func SendFriendRequest(ctx context.Context, store UserStore, actorID uint, toUserID, toMoeNo string) (*moe.FriendRequestView, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	if actorID == 0 {
@@ -69,8 +68,8 @@ func SendFriendRequest(ctx context.Context, db *gorm.DB, actorID uint, toUserID,
 			return nil, ErrInvalidArgument
 		}
 	} else if moe := strings.TrimSpace(toMoeNo); moe != "" {
-		var u model.User
-		if err := db.WithContext(ctx).Where("moe_no = ?", moe).First(&u).Error; err != nil {
+		u, err := store.FindUserByMoeNo(ctx, moe)
+		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, ErrMoeNoNotFound
 			}
@@ -85,20 +84,18 @@ func SendFriendRequest(ctx context.Context, db *gorm.DB, actorID uint, toUserID,
 		return nil, ErrFriendSelf
 	}
 
-	var target model.User
-	if err := db.WithContext(ctx).First(&target, toID).Error; err != nil {
+	if _, err := store.GetUserByID(ctx, toID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotFound
 		}
 		return nil, err
 	}
 
-	var fr model.FriendRequest
-	err = db.WithContext(ctx).Where(
-		"(from_user_id = ? AND to_user_id = ?) OR (from_user_id = ? AND to_user_id = ?)",
-		actorID, toID, toID, actorID,
-	).Order("id desc").First(&fr).Error
-	if err == nil {
+	fr, found, err := store.FindLatestFriendRequestBetween(ctx, actorID, toID)
+	if err != nil {
+		return nil, err
+	}
+	if found {
 		switch fr.Status {
 		case "pending":
 			if fr.FromUserID == actorID {
@@ -110,67 +107,63 @@ func SendFriendRequest(ctx context.Context, db *gorm.DB, actorID uint, toUserID,
 		case "rejected":
 			if fr.FromUserID == actorID && fr.ToUserID == toID {
 				fr.Status = "pending"
-				if err := db.WithContext(ctx).Save(&fr).Error; err != nil {
+				if err := store.SaveFriendRequest(ctx, &fr); err != nil {
 					return nil, err
 				}
-				view := friendRequestView(ctx, db, fr)
+				view := friendRequestView(ctx, store, fr)
 				return view, nil
 			}
 		}
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
 	}
 
 	fr = model.FriendRequest{FromUserID: actorID, ToUserID: toID, Status: "pending"}
-	if err := db.WithContext(ctx).Create(&fr).Error; err != nil {
+	if err := store.CreateFriendRequest(ctx, &fr); err != nil {
 		return nil, err
 	}
-	_ = db.WithContext(ctx).First(&fr, fr.ID).Error
-	view := friendRequestView(ctx, db, fr)
+	fr, _ = store.ReloadFriendRequest(ctx, fr.ID)
+	view := friendRequestView(ctx, store, fr)
 	return view, nil
 }
 
 // ListIncomingFriendRequests 收到的待处理申请。
-func ListIncomingFriendRequests(ctx context.Context, db *gorm.DB, actorID uint) ([]*moe.FriendRequestView, error) {
+func ListIncomingFriendRequests(ctx context.Context, store UserStore, actorID uint) ([]*moe.FriendRequestView, error) {
 	if actorID == 0 {
 		return nil, ErrUnauthorized
 	}
-	var list []model.FriendRequest
-	if err := db.WithContext(ctx).Where("to_user_id = ? AND status = ?", actorID, "pending").
-		Order("id desc").Find(&list).Error; err != nil {
+	list, err := store.ListIncomingFriendRequests(ctx, actorID)
+	if err != nil {
 		return nil, err
 	}
 	out := make([]*moe.FriendRequestView, 0, len(list))
 	for i := range list {
-		out = append(out, friendRequestView(ctx, db, list[i]))
+		out = append(out, friendRequestView(ctx, store, list[i]))
 	}
 	return out, nil
 }
 
 // ListOutgoingFriendRequests 发出的待处理申请。
-func ListOutgoingFriendRequests(ctx context.Context, db *gorm.DB, actorID uint) ([]*moe.FriendRequestView, error) {
+func ListOutgoingFriendRequests(ctx context.Context, store UserStore, actorID uint) ([]*moe.FriendRequestView, error) {
 	if actorID == 0 {
 		return nil, ErrUnauthorized
 	}
-	var list []model.FriendRequest
-	if err := db.WithContext(ctx).Where("from_user_id = ? AND status = ?", actorID, "pending").
-		Order("id desc").Find(&list).Error; err != nil {
+	list, err := store.ListOutgoingFriendRequests(ctx, actorID)
+	if err != nil {
 		return nil, err
 	}
 	out := make([]*moe.FriendRequestView, 0, len(list))
 	for i := range list {
-		out = append(out, friendRequestView(ctx, db, list[i]))
+		out = append(out, friendRequestView(ctx, store, list[i]))
 	}
 	return out, nil
 }
 
-func loadOwnedPendingRequest(ctx context.Context, db *gorm.DB, me uint, requestID string) (*model.FriendRequest, error) {
+func loadOwnedPendingRequest(ctx context.Context, store UserStore, me uint, requestID string) (*model.FriendRequest, error) {
 	rid, err := parseUserIDString(requestID)
 	if err != nil {
 		return nil, ErrInvalidArgument
 	}
-	var fr model.FriendRequest
-	if err := db.WithContext(ctx).First(&fr, rid).Error; err != nil {
+	fr, err := store.GetFriendRequestByID(ctx, rid)
+	if err != nil {
 		return nil, err
 	}
 	if fr.ToUserID != me || fr.Status != "pending" {
@@ -180,11 +173,11 @@ func loadOwnedPendingRequest(ctx context.Context, db *gorm.DB, me uint, requestI
 }
 
 // AcceptFriendRequest 同意申请。
-func AcceptFriendRequest(ctx context.Context, db *gorm.DB, actorID uint, requestID string) error {
+func AcceptFriendRequest(ctx context.Context, store UserStore, actorID uint, requestID string) error {
 	if actorID == 0 {
 		return ErrUnauthorized
 	}
-	fr, err := loadOwnedPendingRequest(ctx, db, actorID, requestID)
+	fr, err := loadOwnedPendingRequest(ctx, store, actorID, requestID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrFriendRequestNotFound
@@ -192,19 +185,19 @@ func AcceptFriendRequest(ctx context.Context, db *gorm.DB, actorID uint, request
 		return err
 	}
 	fr.Status = "accepted"
-	if err := db.WithContext(ctx).Save(fr).Error; err != nil {
+	if err := store.SaveFriendRequest(ctx, fr); err != nil {
 		return err
 	}
-	ensureMutualFollow(ctx, db, fr.FromUserID, fr.ToUserID)
+	ensureMutualFollow(ctx, store, fr.FromUserID, fr.ToUserID)
 	return nil
 }
 
 // RejectFriendRequest 拒绝申请。
-func RejectFriendRequest(ctx context.Context, db *gorm.DB, actorID uint, requestID string) error {
+func RejectFriendRequest(ctx context.Context, store UserStore, actorID uint, requestID string) error {
 	if actorID == 0 {
 		return ErrUnauthorized
 	}
-	fr, err := loadOwnedPendingRequest(ctx, db, actorID, requestID)
+	fr, err := loadOwnedPendingRequest(ctx, store, actorID, requestID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrFriendRequestNotFound
@@ -212,18 +205,16 @@ func RejectFriendRequest(ctx context.Context, db *gorm.DB, actorID uint, request
 		return err
 	}
 	fr.Status = "rejected"
-	return db.WithContext(ctx).Save(fr).Error
+	return store.SaveFriendRequest(ctx, fr)
 }
 
 // ListFriends 好友列表。
-func ListFriends(ctx context.Context, db *gorm.DB, actorID uint) ([]*moe.User, error) {
+func ListFriends(ctx context.Context, store UserStore, actorID uint) ([]*moe.User, error) {
 	if actorID == 0 {
 		return nil, ErrUnauthorized
 	}
-	var list []model.FriendRequest
-	if err := db.WithContext(ctx).
-		Where("status = ? AND (from_user_id = ? OR to_user_id = ?)", "accepted", actorID, actorID).
-		Find(&list).Error; err != nil {
+	list, err := store.ListAcceptedFriendRequests(ctx, actorID)
+	if err != nil {
 		return nil, err
 	}
 
@@ -243,19 +234,19 @@ func ListFriends(ctx context.Context, db *gorm.DB, actorID uint) ([]*moe.User, e
 
 	out := make([]*moe.User, 0, len(ids))
 	for _, id := range ids {
-		var u model.User
-		if err := db.WithContext(ctx).First(&u, id).Error; err != nil {
+		u, err := store.GetUserByID(ctx, id)
+		if err != nil {
 			continue
 		}
-		_, _ = utils.EnsureUserMoeNo(db, u.ID)
-		_ = db.WithContext(ctx).First(&u, u.ID).Error
+		_, _ = utils.EnsureUserMoeNo(store.Raw(), u.ID)
+		u, _ = store.ReloadUser(ctx, u.ID)
 		out = append(out, ModelToProto(&u))
 	}
 	return out, nil
 }
 
 // GetFriendRelation 与另一用户的关系。
-func GetFriendRelation(ctx context.Context, db *gorm.DB, actorID, otherID uint) (string, error) {
+func GetFriendRelation(ctx context.Context, store UserStore, actorID, otherID uint) (string, error) {
 	if actorID == 0 {
 		return "", ErrUnauthorized
 	}
@@ -264,23 +255,21 @@ func GetFriendRelation(ctx context.Context, db *gorm.DB, actorID, otherID uint) 
 	}
 
 	rel := "none"
-	var acc model.FriendRequest
-	q := db.WithContext(ctx).Where(
-		"status = ? AND ((from_user_id = ? AND to_user_id = ?) OR (from_user_id = ? AND to_user_id = ?))",
-		"accepted", actorID, otherID, otherID, actorID,
-	).First(&acc)
-	if q.Error == nil {
+	_, found, err := store.FindAcceptedFriendRelation(ctx, actorID, otherID)
+	if err != nil {
+		return "", err
+	}
+	if found {
 		rel = "friend"
 	} else {
-		var p model.FriendRequest
-		if err := db.WithContext(ctx).
-			Where("from_user_id = ? AND to_user_id = ? AND status = ?", actorID, otherID, "pending").
-			First(&p).Error; err == nil {
+		_, pendingOut, _ := store.FindPendingFriendRequest(ctx, actorID, otherID)
+		if pendingOut {
 			rel = "pending_out"
-		} else if err := db.WithContext(ctx).
-			Where("from_user_id = ? AND to_user_id = ? AND status = ?", otherID, actorID, "pending").
-			First(&p).Error; err == nil {
-			rel = "pending_in"
+		} else {
+			_, pendingIn, _ := store.FindPendingFriendRequest(ctx, otherID, actorID)
+			if pendingIn {
+				rel = "pending_in"
+			}
 		}
 	}
 	return rel, nil

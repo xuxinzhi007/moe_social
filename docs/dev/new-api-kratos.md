@@ -38,7 +38,7 @@ Client → :8888  Kratos HTTP (api/moehttp)
               → internal/biz/<domain>
 ```
 
-存量路由均在 `api/moehttp/*_compat.go` 注册（`routes_native_gen` 已为 **0**）；**已全部**直挂 `internal/service` / `internal/biz`（P2 完成）。Hybrid 回滚路径的 goctl handler 正按 [kratos-architecture-complete.md](./kratos-architecture-complete.md) P3-W4 退役 logic。
+存量路由均在 `api/moehttp/*_compat.go` 注册（`routes_native_gen` 已为 **0**）；**已全部**直挂 `internal/service` / `internal/biz`（P3 完成，logic **0** 文件）。Hybrid 回滚见 [kratos-p4-post-migration.md § P4-H](./kratos-p4-post-migration.md#p4-h--go-zero-壳)。
 
 ---
 
@@ -140,7 +140,7 @@ curl -s "http://127.0.0.1:8888/api/v1/example/items?page=1&page_size=10"
 | 域 | Proto | Service | HTTP 注册 |
 |----|-------|---------|-----------|
 | VIP 读 | `api/vip/v1/vip_read.proto` | DB / biz | `api/moehttp/vip_compat.go` |
-| Landing | （RPC pb 复用） | `internal/service/landing/` | `api/moehttp/landing_compat.go` |
+| Landing | `api/landing/v1/landing.proto` | `internal/service/landing/` | `api/moehttp/landing_compat.go` · **gRPC** `landing.v1.Landing` |
 | LLM 读 | `api/llm/v1/llm_chat.proto` | `internal/service/llm/` | `api/moehttp/llm_read_compat.go` |
 | Moe Admin | `api/moe/v1/moe.proto` | `internal/service/moe/` | `api/moehttp/admin_compat.go` |
 | Admin Insights | `api/admin/v1/admin_insights.proto` | `internal/service/admin/` | `api/moehttp/admin_insights_compat.go` |
@@ -151,6 +151,6 @@ curl -s "http://127.0.0.1:8888/api/v1/example/items?page=1&page_size=10"
 
 ## 6. 存量接口维护
 
-老接口仍在 `api/defs` + `api/internal/logic`：改契约用 **`make gen-api`**，逻辑仍在 `*logic.go` 里改；**不要**与上表新接口流程混在同一 PR 里新增 defs 路由。
+老接口仍在 `api/defs` + `api/internal/handler`（Hybrid）：改契约用 **`make gen-api`**（会跑 `tag-hybrid-routes.sh`）；业务逻辑在 `internal/biz` + `internal/service`。**不要**与上表新接口流程混在同一 PR 里新增 defs 路由。
 
 迁移进度：`GET http://127.0.0.1:8888/migration`。

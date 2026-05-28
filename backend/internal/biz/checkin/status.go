@@ -15,8 +15,8 @@ import (
 )
 
 // GetStatus 返回用户签到状态。
-func GetStatus(ctx context.Context, db *gorm.DB, userIDRaw string) (*moe.CheckInStatus, error) {
-	if db == nil {
+func GetStatus(ctx context.Context, store CheckInStore, userIDRaw string) (*moe.CheckInStatus, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	userID, err := strconv.ParseUint(strings.TrimSpace(userIDRaw), 10, 32)
@@ -24,8 +24,8 @@ func GetStatus(ctx context.Context, db *gorm.DB, userIDRaw string) (*moe.CheckIn
 		return nil, ErrInvalidUserID
 	}
 
-	var user model.User
-	if err := db.WithContext(ctx).Where("id = ?", userID).First(&user).Error; err != nil {
+	user, err := store.GetUser(ctx, uint(userID))
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrUserNotFound
 		}
@@ -34,20 +34,21 @@ func GetStatus(ctx context.Context, db *gorm.DB, userIDRaw string) (*moe.CheckIn
 
 	now := time.Now()
 	dayStart, dayEnd := achievement.ShanghaiDayBounds(now)
-	var todayCheckIn model.UserCheckIn
-	hasCheckedToday := db.WithContext(ctx).Where("user_id = ? AND check_in_date >= ? AND check_in_date < ?",
-		userID, dayStart, dayEnd).First(&todayCheckIn).Error == nil
+	_, hasCheckedToday, err := store.FindTodayCheckIn(ctx, uint(userID), dayStart, dayEnd)
+	if err != nil {
+		return nil, err
+	}
 
-	var lastCheckIn model.UserCheckIn
 	consecutiveDays := 0
-	if err := db.WithContext(ctx).Where("user_id = ?", userID).Order("check_in_date DESC").
-		First(&lastCheckIn).Error; err == nil {
+	if last, ok, err := store.FindLastCheckIn(ctx, uint(userID)); err != nil {
+		return nil, err
+	} else if ok {
 		if hasCheckedToday {
-			consecutiveDays = lastCheckIn.ConsecutiveDays
+			consecutiveDays = last.ConsecutiveDays
 		} else {
 			yesterday := achievement.ShanghaiYesterdayString(now)
-			if achievement.ShanghaiDayStringFrom(lastCheckIn.CheckInDate) == yesterday {
-				consecutiveDays = lastCheckIn.ConsecutiveDays
+			if achievement.ShanghaiDayStringFrom(last.CheckInDate) == yesterday {
+				consecutiveDays = last.ConsecutiveDays
 			}
 		}
 	}
@@ -55,7 +56,7 @@ func GetStatus(ctx context.Context, db *gorm.DB, userIDRaw string) (*moe.CheckIn
 	todayReward := 0
 	nextDayReward := 0
 	if !hasCheckedToday {
-		todayReward = calcCheckInReward(db.WithContext(ctx), user, consecutiveDays+1)
+		todayReward = calcCheckInReward(ctx, store, user, consecutiveDays+1)
 	}
 	nextFuture := consecutiveDays + 1
 	if hasCheckedToday {
@@ -63,7 +64,7 @@ func GetStatus(ctx context.Context, db *gorm.DB, userIDRaw string) (*moe.CheckIn
 	} else {
 		nextFuture = consecutiveDays + 2
 	}
-	nextDayReward = calcCheckInReward(db.WithContext(ctx), user, nextFuture)
+	nextDayReward = calcCheckInReward(ctx, store, user, nextFuture)
 
 	return &moe.CheckInStatus{
 		HasCheckedToday: hasCheckedToday,
@@ -74,12 +75,10 @@ func GetStatus(ctx context.Context, db *gorm.DB, userIDRaw string) (*moe.CheckIn
 	}, nil
 }
 
-func calcCheckInReward(db *gorm.DB, user model.User, consecutiveDays int) int {
+func calcCheckInReward(ctx context.Context, store CheckInStore, user model.User, consecutiveDays int) int {
 	baseExp := 10
-	var reward model.CheckInReward
 	extraExp := 0
-	if err := db.Where("consecutive_days <= ?", consecutiveDays).
-		Order("consecutive_days DESC").First(&reward).Error; err == nil {
+	if reward, ok, err := store.FindCheckInReward(ctx, consecutiveDays); err == nil && ok {
 		extraExp = reward.ExpReward
 	}
 	total := baseExp + extraExp

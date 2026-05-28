@@ -26,7 +26,7 @@ func NewGetVipPlansLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetVi
 
 func (l *GetVipPlansLogic) GetVipPlans(in *moe.GetVipPlansReq) (*moe.GetVipPlansResp, error) {
 	_ = in
-	plans, err := vipbiz.ListAllPlans(l.ctx, l.svcCtx.DB)
+	plans, err := vipbiz.ListAllPlans(l.ctx, l.svcCtx.VipStore())
 	if err != nil {
 		l.Errorf("get vip plans: %v", err)
 		return nil, mapVipBizErr(err)

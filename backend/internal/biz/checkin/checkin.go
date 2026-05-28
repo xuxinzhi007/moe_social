@@ -26,8 +26,8 @@ type CheckInResult struct {
 }
 
 // CheckIn 用户签到。
-func CheckIn(ctx context.Context, db *gorm.DB, userIDRaw string) (CheckInResult, error) {
-	if db == nil {
+func CheckIn(ctx context.Context, store CheckInStore, userIDRaw string) (CheckInResult, error) {
+	if store == nil {
 		return CheckInResult{}, gorm.ErrInvalidDB
 	}
 	userID, err := strconv.ParseUint(strings.TrimSpace(userIDRaw), 10, 32)
@@ -35,14 +35,14 @@ func CheckIn(ctx context.Context, db *gorm.DB, userIDRaw string) (CheckInResult,
 		return CheckInResult{}, ErrInvalidUserID
 	}
 
-	tx := db.WithContext(ctx).Begin()
-	if tx.Error != nil {
-		return CheckInResult{}, tx.Error
+	tx, err := store.Begin(ctx)
+	if err != nil {
+		return CheckInResult{}, err
 	}
 
-	var user model.User
-	if err := tx.Where("id = ?", userID).First(&user).Error; err != nil {
-		tx.Rollback()
+	user, err := tx.GetUser(uint(userID))
+	if err != nil {
+		_ = tx.Rollback()
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return CheckInResult{}, ErrUserNotFound
 		}
@@ -51,28 +51,31 @@ func CheckIn(ctx context.Context, db *gorm.DB, userIDRaw string) (CheckInResult,
 
 	now := time.Now()
 	dayStart, dayEnd := achievement.ShanghaiDayBounds(now)
-	var todayCheckIn model.UserCheckIn
-	if err := tx.Where("user_id = ? AND check_in_date >= ? AND check_in_date < ?",
-		userID, dayStart, dayEnd).First(&todayCheckIn).Error; err == nil {
-		tx.Rollback()
+	if _, ok, err := tx.FindTodayCheckIn(uint(userID), dayStart, dayEnd); err != nil {
+		_ = tx.Rollback()
+		return CheckInResult{}, err
+	} else if ok {
+		_ = tx.Rollback()
 		return CheckInResult{}, ErrAlreadyCheckedIn
 	}
 
-	var lastCheckIn model.UserCheckIn
 	consecutiveDays := 1
-	if err := tx.Where("user_id = ?", userID).Order("check_in_date DESC").
-		First(&lastCheckIn).Error; err == nil {
+	if last, ok, err := tx.FindLastCheckIn(uint(userID)); err != nil {
+		_ = tx.Rollback()
+		return CheckInResult{}, err
+	} else if ok {
 		yesterday := achievement.ShanghaiYesterdayString(now)
-		if achievement.ShanghaiDayStringFrom(lastCheckIn.CheckInDate) == yesterday {
-			consecutiveDays = lastCheckIn.ConsecutiveDays + 1
+		if achievement.ShanghaiDayStringFrom(last.CheckInDate) == yesterday {
+			consecutiveDays = last.ConsecutiveDays + 1
 		}
 	}
 
 	baseExp := 10
-	var reward model.CheckInReward
 	extraExp := 0
-	if err := tx.Where("consecutive_days <= ?", consecutiveDays).
-		Order("consecutive_days DESC").First(&reward).Error; err == nil {
+	if reward, ok, err := tx.FindCheckInReward(consecutiveDays); err != nil {
+		_ = tx.Rollback()
+		return CheckInResult{}, err
+	} else if ok {
 		extraExp = reward.ExpReward
 	}
 	totalExp := baseExp + extraExp
@@ -90,22 +93,22 @@ func CheckIn(ctx context.Context, db *gorm.DB, userIDRaw string) (CheckInResult,
 	if extraExp > 0 {
 		checkInRecord.SpecialRewardDesc = fmt.Sprintf("连续签到%d天额外奖励", consecutiveDays)
 	}
-	if err := tx.Create(&checkInRecord).Error; err != nil {
-		tx.Rollback()
+	if err := tx.CreateCheckIn(&checkInRecord); err != nil {
+		_ = tx.Rollback()
 		return CheckInResult{}, err
 	}
 
-	expRes, err := level.AddExperience(tx, uint(userID), totalExp, "check_in",
+	expRes, err := level.AddExperience(tx.DB(), uint(userID), totalExp, "check_in",
 		fmt.Sprintf("%d", checkInRecord.ID), fmt.Sprintf("每日签到获得%d经验", totalExp))
 	if err != nil {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return CheckInResult{}, err
 	}
-	if err := tx.Commit().Error; err != nil {
+	if err := tx.Commit(); err != nil {
 		return CheckInResult{}, err
 	}
 
-	unlocks, achErr := achievement.ApplyEventAfterCommit(db, uint(userID), achievement.Event{Type: achievement.EventCheckIn})
+	unlocks, achErr := achievement.ApplyEventAfterCommit(store.Raw(), uint(userID), achievement.Event{Type: achievement.EventCheckIn})
 	if achErr != nil {
 		unlocks = nil
 	}

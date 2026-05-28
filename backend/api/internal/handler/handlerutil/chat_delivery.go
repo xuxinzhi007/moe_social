@@ -12,7 +12,7 @@ import (
 func ChatDeliveryDeps(svc *svc.ServiceContext) chatbiz.DeliveryDeps {
 	deps := chatbiz.DeliveryDeps{UserReader: svc.UserGW, NotifyRPC: svc.UserGW}
 	if svc.UserApp != nil {
-		deps.DB = svc.UserApp.DB()
+		deps.NotifyStore = svc.UserApp.Notify()
 	}
 	return deps
 }

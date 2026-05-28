@@ -22,7 +22,7 @@ func NewGetPostCommentsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 }
 
 func (l *GetPostCommentsLogic) GetPostComments(in *moe.GetPostCommentsReq) (*moe.GetPostCommentsResp, error) {
-	items, total, err := commentbiz.ListByPost(l.ctx, l.svcCtx.DB, commentbiz.ListFilter{
+	items, total, err := commentbiz.ListByPost(l.ctx, l.svcCtx.CommentStore(), commentbiz.ListFilter{
 		PostID: in.GetPostId(), Page: in.GetPage(), PageSize: in.GetPageSize(),
 		ViewerUserID: in.GetViewerUserId(),
 	})

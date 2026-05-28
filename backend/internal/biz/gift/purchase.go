@@ -15,8 +15,8 @@ import (
 )
 
 // Purchase 购买礼物入库。
-func Purchase(ctx context.Context, db *gorm.DB, userRaw, giftRaw string, qty int32) (*moe.PurchaseGiftResp, error) {
-	if db == nil {
+func Purchase(ctx context.Context, store GiftStore, userRaw, giftRaw string, qty int32) (*moe.PurchaseGiftResp, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	userID, err := strconv.ParseUint(strings.TrimSpace(userRaw), 10, 64)
@@ -31,8 +31,8 @@ func Purchase(ctx context.Context, db *gorm.DB, userRaw, giftRaw string, qty int
 		qty = 1
 	}
 
-	var gift model.Gift
-	if err := db.WithContext(ctx).First(&gift, giftID).Error; err != nil {
+	gift, err := store.GetGiftByID(ctx, uint(giftID))
+	if err != nil {
 		return &moe.PurchaseGiftResp{Success: false, Message: "gift not found"}, nil
 	}
 
@@ -41,33 +41,27 @@ func Purchase(ctx context.Context, db *gorm.DB, userRaw, giftRaw string, qty int
 	var owned int32
 	var orderNo string
 
-	err = db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		res := tx.Model(&model.User{}).Where("id = ? AND balance >= ?", userID, cost).
-			Update("balance", gorm.Expr("balance - ?", cost))
-		if res.Error != nil {
-			return res.Error
+	err = store.Transaction(ctx, func(tx GiftTx) error {
+		if err := tx.DeductBalance(uint(userID), cost); err != nil {
+			return err
 		}
-		if res.RowsAffected != 1 {
-			return ErrInsufficientBal
-		}
-		var u model.User
-		if err := tx.First(&u, userID).Error; err != nil {
+		u, err := tx.GetUser(uint(userID))
+		if err != nil {
 			return err
 		}
 		newBal = u.Balance
 
-		var st model.UserGiftStock
-		err := tx.Where("user_id = ? AND gift_id = ?", userID, giftID).First(&st).Error
+		st, err := tx.FindUserGiftStock(uint(userID), uint(giftID))
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			st = model.UserGiftStock{UserID: uint(userID), GiftID: uint(giftID), Quantity: int(qty)}
-			if err := tx.Create(&st).Error; err != nil {
+			if err := tx.CreateUserGiftStock(&st); err != nil {
 				return err
 			}
 		} else if err != nil {
 			return err
 		} else {
 			st.Quantity += int(qty)
-			if err := tx.Save(&st).Error; err != nil {
+			if err := tx.SaveUserGiftStock(&st); err != nil {
 				return err
 			}
 		}
@@ -79,14 +73,14 @@ func Purchase(ctx context.Context, db *gorm.DB, userRaw, giftRaw string, qty int
 			Quantity: int(qty), UnitPrice: float64(gift.Price), TotalAmount: cost,
 			PayMethod: "wallet", Status: "paid",
 		}
-		if err := tx.Create(&po).Error; err != nil {
+		if err := tx.CreatePurchaseOrder(&po); err != nil {
 			return err
 		}
 		tr := model.Transaction{
 			UserID: uint(userID), Amount: cost, Type: "consume", Status: "success",
 			Description: fmt.Sprintf("购买礼物「%s」×%d（订单号 %s）", gift.Name, qty, orderNo),
 		}
-		return tx.Create(&tr).Error
+		return tx.CreateTransaction(&tr)
 	})
 
 	if err != nil {

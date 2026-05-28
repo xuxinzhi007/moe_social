@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"backend/model"
 	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
@@ -29,12 +28,16 @@ type DeleteOutcome struct {
 }
 
 // List 列出用户 AI 资源。
-func List(ctx context.Context, db *gorm.DB, field string, in *moe.ListAiResourceReq) (*moe.ListAiResourceResp, error) {
+func List(ctx context.Context, store AiStore, field string, in *moe.ListAiResourceReq) (*moe.ListAiResourceResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
+	store = store.WithContext(ctx)
 	userID, err := ParseUserID(in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := LoadOrCreateConfig(db.WithContext(ctx), userID)
+	cfg, err := store.LoadOrCreateConfig(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +68,11 @@ func List(ctx context.Context, db *gorm.DB, field string, in *moe.ListAiResource
 }
 
 // ListPublicAgents 列出公开 AI 角色。
-func ListPublicAgents(ctx context.Context, db *gorm.DB, in *moe.ListPublicAiAgentsReq) (*moe.ListAiResourceResp, error) {
+func ListPublicAgents(ctx context.Context, store AiStore, in *moe.ListPublicAiAgentsReq) (*moe.ListAiResourceResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
+	store = store.WithContext(ctx)
 	limit := int(in.GetLimit())
 	if limit <= 0 {
 		limit = 50
@@ -74,8 +81,8 @@ func ListPublicAgents(ctx context.Context, db *gorm.DB, in *moe.ListPublicAiAgen
 		limit = 200
 	}
 
-	var configs []model.AiUserConfig
-	if err := db.WithContext(ctx).Find(&configs).Error; err != nil {
+	configs, err := store.FindAllConfigs(ctx)
+	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrListPublicAgents, err)
 	}
 
@@ -95,7 +102,7 @@ func ListPublicAgents(ctx context.Context, db *gorm.DB, in *moe.ListPublicAiAgen
 			if _, ok := item["created_by_user_id"]; !ok {
 				item["created_by_user_id"] = fmt.Sprint(cfg.UserID)
 			}
-			if name := ResolveUserDisplayName(db, cfg.UserID); name != "" {
+			if name := store.GetUserDisplayName(ctx, cfg.UserID); name != "" {
 				item["author_name"] = name
 			}
 			payload, err := mustJSON(item)
@@ -112,12 +119,16 @@ func ListPublicAgents(ctx context.Context, db *gorm.DB, in *moe.ListPublicAiAgen
 }
 
 // Upsert 写入或更新 AI 资源。
-func Upsert(ctx context.Context, db *gorm.DB, field string, in *moe.UpsertAiResourceReq) (*UpsertOutcome, error) {
+func Upsert(ctx context.Context, store AiStore, field string, in *moe.UpsertAiResourceReq) (*UpsertOutcome, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
+	store = store.WithContext(ctx)
 	userID, err := ParseUserID(in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := LoadOrCreateConfig(db.WithContext(ctx), userID)
+	cfg, err := store.LoadOrCreateConfig(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +154,7 @@ func Upsert(ctx context.Context, db *gorm.DB, field string, in *moe.UpsertAiReso
 		return nil, err
 	}
 	setField(cfg, field, encoded)
-	if err := db.WithContext(ctx).Save(cfg).Error; err != nil {
+	if err := store.SaveConfig(ctx, cfg); err != nil {
 		return nil, err
 	}
 	return &UpsertOutcome{
@@ -161,12 +172,16 @@ func Upsert(ctx context.Context, db *gorm.DB, field string, in *moe.UpsertAiReso
 }
 
 // Delete 删除 AI 资源。
-func Delete(ctx context.Context, db *gorm.DB, field string, in *moe.DeleteAiResourceReq) (*DeleteOutcome, error) {
+func Delete(ctx context.Context, store AiStore, field string, in *moe.DeleteAiResourceReq) (*DeleteOutcome, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
+	store = store.WithContext(ctx)
 	userID, err := ParseUserID(in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := LoadOrCreateConfig(db.WithContext(ctx), userID)
+	cfg, err := store.LoadOrCreateConfig(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +200,7 @@ func Delete(ctx context.Context, db *gorm.DB, field string, in *moe.DeleteAiReso
 		return nil, err
 	}
 	setField(cfg, field, encoded)
-	if err := db.WithContext(ctx).Save(cfg).Error; err != nil {
+	if err := store.SaveConfig(ctx, cfg); err != nil {
 		return nil, err
 	}
 	return &DeleteOutcome{

@@ -13,7 +13,11 @@ import (
 )
 
 // SubmitUserMemoryFeedback 处理 accept/reject/correct 反馈。
-func SubmitUserMemoryFeedback(ctx context.Context, db *gorm.DB, in *moe.SubmitUserMemoryFeedbackReq) (*moe.SubmitUserMemoryFeedbackResp, error) {
+func SubmitUserMemoryFeedback(ctx context.Context, st MemoryStore, in *moe.SubmitUserMemoryFeedbackReq) (*moe.SubmitUserMemoryFeedbackResp, error) {
+	db := dbFromStore(ctx, st)
+	if db == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	if strings.TrimSpace(in.GetUserId()) == "" {
 		return nil, ErrMemoryEmptyUserID
 	}
@@ -34,7 +38,7 @@ func SubmitUserMemoryFeedback(ctx context.Context, db *gorm.DB, in *moe.SubmitUs
 	}
 
 	var memory model.UserMemory
-	if err := db.WithContext(ctx).Where("user_id = ? AND `key` = ?", uint(userID), in.GetKey()).First(&memory).Error; err != nil {
+	if err := db.Where("user_id = ? AND `key` = ?", uint(userID), in.GetKey()).First(&memory).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrMemoryNotFound
 		}
@@ -57,7 +61,7 @@ func SubmitUserMemoryFeedback(ctx context.Context, db *gorm.DB, in *moe.SubmitUs
 		memory.Source = "manual_correct"
 	}
 
-	if err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Save(&memory).Error; err != nil {
 			return err
 		}

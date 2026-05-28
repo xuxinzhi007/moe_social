@@ -2,7 +2,6 @@ package checkinbiz
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -14,8 +13,8 @@ import (
 )
 
 // GetUserLevel 用户等级信息。
-func GetUserLevel(ctx context.Context, db *gorm.DB, userIDRaw string) (*moe.UserLevelInfo, error) {
-	if db == nil {
+func GetUserLevel(ctx context.Context, store CheckInStore, userIDRaw string) (*moe.UserLevelInfo, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	userID, err := strconv.ParseUint(strings.TrimSpace(userIDRaw), 10, 32)
@@ -23,20 +22,22 @@ func GetUserLevel(ctx context.Context, db *gorm.DB, userIDRaw string) (*moe.User
 		return nil, ErrInvalidUserID
 	}
 
-	var userLevel model.UserLevel
-	if err := db.WithContext(ctx).Where("user_id = ?", userID).First(&userLevel).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			userLevel = model.UserLevel{UserID: uint(userID), Level: 1}
-			if err := db.WithContext(ctx).Create(&userLevel).Error; err != nil {
-				return nil, err
-			}
-		} else {
+	userLevel, ok, err := store.GetUserLevel(ctx, uint(userID))
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		userLevel = model.UserLevel{UserID: uint(userID), Level: 1}
+		if err := store.CreateUserLevel(ctx, &userLevel); err != nil {
 			return nil, err
 		}
 	}
 
-	var levelConfig model.LevelConfig
-	if err := db.WithContext(ctx).Where("level = ?", userLevel.Level).First(&levelConfig).Error; err != nil {
+	levelConfig, ok, err := store.GetLevelConfig(ctx, userLevel.Level)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
 		levelConfig = model.LevelConfig{
 			Level:    userLevel.Level,
 			Title:    defaultLevelTitle(userLevel.Level),
@@ -44,8 +45,8 @@ func GetUserLevel(ctx context.Context, db *gorm.DB, userIDRaw string) (*moe.User
 		}
 	}
 
-	nextLevelExp := nextLevelMinExp(db.WithContext(ctx), userLevel.Level)
-	currentMin := currentLevelMinExp(db.WithContext(ctx), userLevel.Level)
+	nextLevelExp := nextLevelMinExp(ctx, store, userLevel.Level)
+	currentMin := currentLevelMinExp(ctx, store, userLevel.Level)
 	var progress float64
 	if nextLevelExp > 0 {
 		progress = float64(userLevel.TotalExp-currentMin) / float64(nextLevelExp-currentMin) * 100
@@ -69,42 +70,40 @@ func defaultLevelTitle(level int) string {
 	return fmt.Sprintf("等级%d", level)
 }
 
-func nextLevelMinExp(db *gorm.DB, currentLevel int) int {
-	var nextConfig model.LevelConfig
-	if err := db.Where("level = ?", currentLevel+1).First(&nextConfig).Error; err != nil {
-		switch currentLevel {
-		case 1:
-			return 100
-		case 2:
-			return 500
-		case 3:
-			return 2000
-		case 4:
-			return 5000
-		default:
-			return 999999
-		}
+func nextLevelMinExp(ctx context.Context, store CheckInStore, currentLevel int) int {
+	if cfg, ok, err := store.GetLevelConfig(ctx, currentLevel+1); err == nil && ok {
+		return cfg.MinExp
 	}
-	return nextConfig.MinExp
+	switch currentLevel {
+	case 1:
+		return 100
+	case 2:
+		return 500
+	case 3:
+		return 2000
+	case 4:
+		return 5000
+	default:
+		return 999999
+	}
 }
 
-func currentLevelMinExp(db *gorm.DB, currentLevel int) int {
-	var config model.LevelConfig
-	if err := db.Where("level = ?", currentLevel).First(&config).Error; err != nil {
-		switch currentLevel {
-		case 1:
-			return 0
-		case 2:
-			return 100
-		case 3:
-			return 500
-		case 4:
-			return 2000
-		case 5:
-			return 5000
-		default:
-			return 0
-		}
+func currentLevelMinExp(ctx context.Context, store CheckInStore, currentLevel int) int {
+	if cfg, ok, err := store.GetLevelConfig(ctx, currentLevel); err == nil && ok {
+		return cfg.MinExp
 	}
-	return config.MinExp
+	switch currentLevel {
+	case 1:
+		return 0
+	case 2:
+		return 100
+	case 3:
+		return 500
+	case 4:
+		return 2000
+	case 5:
+		return 5000
+	default:
+		return 0
+	}
 }

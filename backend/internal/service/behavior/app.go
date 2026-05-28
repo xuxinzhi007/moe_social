@@ -5,6 +5,7 @@ import (
 	"context"
 
 	behaviorbiz "backend/internal/biz/behavior"
+	behaviordata "backend/internal/data/behavior"
 	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
@@ -12,12 +13,12 @@ import (
 
 // AppService 行为域应用层。
 type AppService struct {
-	db *gorm.DB
+	store behaviorbiz.BehaviorStore
 }
 
 // New 构造 AppService。
 func New(db *gorm.DB) *AppService {
-	return &AppService{db: db}
+	return &AppService{store: behaviordata.NewStore(db)}
 }
 
 // TrackEvents 批量上报行为事件。
@@ -41,7 +42,7 @@ func (s *AppService) TrackEvents(ctx context.Context, in *moe.TrackUserBehaviorE
 			ClientTsMs: ev.GetClientTsMs(),
 		})
 	}
-	accepted, err := behaviorbiz.TrackEvents(ctx, s.db, uint(userID), inputs)
+	accepted, err := behaviorbiz.TrackEvents(ctx, s.store, uint(userID), inputs)
 	if err != nil {
 		return nil, err
 	}

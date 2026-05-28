@@ -5,6 +5,7 @@ import (
 	"context"
 
 	aibiz "backend/internal/biz/ai"
+	aidata "backend/internal/data/ai"
 	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
@@ -12,32 +13,32 @@ import (
 
 // AppService AI 资源应用层。
 type AppService struct {
-	db *gorm.DB
+	store aibiz.AiStore
 }
 
 // New 构造 AppService。
 func New(db *gorm.DB) *AppService {
-	return &AppService{db: db}
+	return &AppService{store: aidata.NewStore(db)}
 }
 
 func (s *AppService) ListAiProviders(ctx context.Context, in *moe.ListAiResourceReq) (*moe.ListAiResourceResp, error) {
-	return aibiz.List(ctx, s.db, "providers", in)
+	return aibiz.List(ctx, s.store, "providers", in)
 }
 
 func (s *AppService) ListAiAgents(ctx context.Context, in *moe.ListAiResourceReq) (*moe.ListAiResourceResp, error) {
-	return aibiz.List(ctx, s.db, "agents", in)
+	return aibiz.List(ctx, s.store, "agents", in)
 }
 
 func (s *AppService) ListAiLorebooks(ctx context.Context, in *moe.ListAiResourceReq) (*moe.ListAiResourceResp, error) {
-	return aibiz.List(ctx, s.db, "lorebooks", in)
+	return aibiz.List(ctx, s.store, "lorebooks", in)
 }
 
 func (s *AppService) ListPublicAiAgents(ctx context.Context, in *moe.ListPublicAiAgentsReq) (*moe.ListAiResourceResp, error) {
-	return aibiz.ListPublicAgents(ctx, s.db, in)
+	return aibiz.ListPublicAgents(ctx, s.store, in)
 }
 
 func (s *AppService) UpsertAiProvider(ctx context.Context, in *moe.UpsertAiResourceReq) (*moe.UpsertAiResourceResp, error) {
-	out, err := aibiz.Upsert(ctx, s.db, "providers", in)
+	out, err := aibiz.Upsert(ctx, s.store, "providers", in)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +46,7 @@ func (s *AppService) UpsertAiProvider(ctx context.Context, in *moe.UpsertAiResou
 }
 
 func (s *AppService) UpsertAiAgent(ctx context.Context, in *moe.UpsertAiResourceReq) (*moe.UpsertAiResourceResp, error) {
-	out, err := aibiz.Upsert(ctx, s.db, "agents", in)
+	out, err := aibiz.Upsert(ctx, s.store, "agents", in)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +54,7 @@ func (s *AppService) UpsertAiAgent(ctx context.Context, in *moe.UpsertAiResource
 }
 
 func (s *AppService) UpsertAiLorebook(ctx context.Context, in *moe.UpsertAiResourceReq) (*moe.UpsertAiResourceResp, error) {
-	out, err := aibiz.Upsert(ctx, s.db, "lorebooks", in)
+	out, err := aibiz.Upsert(ctx, s.store, "lorebooks", in)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +62,7 @@ func (s *AppService) UpsertAiLorebook(ctx context.Context, in *moe.UpsertAiResou
 }
 
 func (s *AppService) DeleteAiProvider(ctx context.Context, in *moe.DeleteAiResourceReq) (*moe.DeleteAiResourceResp, error) {
-	out, err := aibiz.Delete(ctx, s.db, "providers", in)
+	out, err := aibiz.Delete(ctx, s.store, "providers", in)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +70,7 @@ func (s *AppService) DeleteAiProvider(ctx context.Context, in *moe.DeleteAiResou
 }
 
 func (s *AppService) DeleteAiAgent(ctx context.Context, in *moe.DeleteAiResourceReq) (*moe.DeleteAiResourceResp, error) {
-	out, err := aibiz.Delete(ctx, s.db, "agents", in)
+	out, err := aibiz.Delete(ctx, s.store, "agents", in)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +78,7 @@ func (s *AppService) DeleteAiAgent(ctx context.Context, in *moe.DeleteAiResource
 }
 
 func (s *AppService) DeleteAiLorebook(ctx context.Context, in *moe.DeleteAiResourceReq) (*moe.DeleteAiResourceResp, error) {
-	out, err := aibiz.Delete(ctx, s.db, "lorebooks", in)
+	out, err := aibiz.Delete(ctx, s.store, "lorebooks", in)
 	if err != nil {
 		return nil, err
 	}

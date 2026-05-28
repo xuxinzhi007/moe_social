@@ -21,8 +21,8 @@ type LikeResult struct {
 }
 
 // Like 切换帖子点赞状态。
-func Like(ctx context.Context, db *gorm.DB, postIDStr, userIDStr string) (LikeResult, error) {
-	if db == nil {
+func Like(ctx context.Context, st PostStore, postIDStr, userIDStr string) (LikeResult, error) {
+	if st == nil {
 		return LikeResult{}, gorm.ErrInvalidDB
 	}
 	postID, err := strconv.ParseUint(strings.TrimSpace(postIDStr), 10, 32)
@@ -34,55 +34,57 @@ func Like(ctx context.Context, db *gorm.DB, postIDStr, userIDStr string) (LikeRe
 		return LikeResult{}, ErrInvalidUserID
 	}
 
-	var post model.Post
-	if err := db.WithContext(ctx).First(&post, postID).Error; err != nil {
+	st = st.WithContext(ctx)
+	post, err := st.GetPost(ctx, uint(postID))
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return LikeResult{}, ErrPostNotFound
 		}
 		return LikeResult{}, err
 	}
 
-	var like model.Like
-	hasLiked := db.WithContext(ctx).
-		Where("target_id = ? AND user_id = ? AND target_type = ?", postID, userID, "post").
-		First(&like).Error == nil
+	like, hasLiked, err := st.FindLike(ctx, uint(postID), uint(userID), "post")
+	if err != nil {
+		return LikeResult{}, err
+	}
 
-	tx := db.WithContext(ctx).Begin()
-	if tx.Error != nil {
-		return LikeResult{}, tx.Error
+	tx, err := st.Begin(ctx)
+	if err != nil {
+		return LikeResult{}, err
 	}
 	didLike := !hasLiked
 	if hasLiked {
-		if err := tx.Delete(&like).Error; err != nil {
+		if err := tx.DeleteLike(&like); err != nil {
 			tx.Rollback()
 			return LikeResult{}, err
 		}
-		if err := tx.Model(&post).Update("likes", post.Likes-1).Error; err != nil {
+		if err := tx.UpdatePostLikes(post.ID, post.Likes-1); err != nil {
 			tx.Rollback()
 			return LikeResult{}, err
 		}
 		post.Likes--
 	} else {
 		newLike := model.Like{TargetID: uint(postID), UserID: uint(userID), TargetType: "post"}
-		if err := tx.Create(&newLike).Error; err != nil {
+		if err := tx.CreateLike(&newLike); err != nil {
 			tx.Rollback()
 			return LikeResult{}, err
 		}
-		if err := tx.Model(&post).Update("likes", post.Likes+1).Error; err != nil {
+		if err := tx.UpdatePostLikes(post.ID, post.Likes+1); err != nil {
 			tx.Rollback()
 			return LikeResult{}, err
 		}
 		post.Likes++
 	}
-	if err := tx.Commit().Error; err != nil {
+	if err := tx.Commit(); err != nil {
 		return LikeResult{}, err
 	}
 
-	if err := db.WithContext(ctx).Preload("User").Preload("TopicTags").First(&post, postID).Error; err != nil {
+	post, err = st.GetPostWithUserAndTopicTags(ctx, uint(postID))
+	if err != nil {
 		return LikeResult{}, err
 	}
 
-	likedSet := LikedTargetIDSet(db.WithContext(ctx), uint(userID), "post", []uint{uint(postID)})
+	likedSet := LikedTargetIDSet(ctx, st, uint(userID), "post", []uint{uint(postID)})
 	isLiked := likedSet[uint(postID)]
 	user := post.User
 	return LikeResult{

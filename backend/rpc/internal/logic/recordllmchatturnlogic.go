@@ -25,5 +25,5 @@ func NewRecordLlmChatTurnLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *RecordLlmChatTurnLogic) RecordLlmChatTurn(in *moe.RecordLlmChatTurnReq) (*moe.RecordLlmChatTurnResp, error) {
-	return llmbiz.RecordChatTurn(l.ctx, l.svcCtx.DB, in)
+	return llmbiz.RecordChatTurn(l.ctx, l.svcCtx.MemoryStore(), in)
 }

@@ -1,6 +1,8 @@
 package postbiz
 
 import (
+	"context"
+	"errors"
 	"strconv"
 	"strings"
 
@@ -27,7 +29,7 @@ func ParseGroupID(groupIDStr string) (uint64, error) {
 }
 
 // RequireGroupMember 校验用户已加入群组。
-func RequireGroupMember(db *gorm.DB, groupIDStr string, userID uint) error {
+func RequireGroupMember(ctx context.Context, st PostStore, groupIDStr string, userID uint) error {
 	groupID, err := parseGroupID(groupIDStr)
 	if err != nil {
 		return err
@@ -35,22 +37,20 @@ func RequireGroupMember(db *gorm.DB, groupIDStr string, userID uint) error {
 	if groupID == 0 {
 		return nil
 	}
-	var group model.Group
-	if err := db.First(&group, groupID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+	if _, err := st.GetGroup(ctx, groupID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrGroupNotFound
 		}
 		return err
 	}
-	var member model.GroupMember
-	if err := db.Where("group_id = ? AND user_id = ?", groupID, userID).First(&member).Error; err != nil {
+	if _, err := st.GetGroupMember(ctx, groupID, userID); err != nil {
 		return ErrNotGroupMember
 	}
 	return nil
 }
 
 // LinkPostToGroupTx 在同一事务内将帖子关联到群组。
-func LinkPostToGroupTx(tx *gorm.DB, groupIDStr string, postID, userID uint) error {
+func LinkPostToGroupTx(tx PostTx, groupIDStr string, postID, userID uint) error {
 	groupID, err := parseGroupID(groupIDStr)
 	if err != nil {
 		return err
@@ -58,16 +58,22 @@ func LinkPostToGroupTx(tx *gorm.DB, groupIDStr string, postID, userID uint) erro
 	if groupID == 0 {
 		return nil
 	}
-	if err := RequireGroupMember(tx, groupIDStr, userID); err != nil {
+	if _, err := tx.GetGroup(groupID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrGroupNotFound
+		}
 		return err
 	}
-	var existing model.GroupPost
-	if err := tx.Where("group_id = ? AND post_id = ?", groupID, postID).First(&existing).Error; err == nil {
+	if _, err := tx.GetGroupMember(groupID, userID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrNotGroupMember
+		}
+		return err
+	}
+	if _, ok, err := tx.FindGroupPost(groupID, postID); err != nil {
+		return err
+	} else if ok {
 		return nil
 	}
-	link := model.GroupPost{GroupID: uint(groupID), PostID: postID}
-	if err := tx.Create(&link).Error; err != nil {
-		return err
-	}
-	return nil
+	return tx.CreateGroupPost(&model.GroupPost{GroupID: uint(groupID), PostID: postID})
 }

@@ -1,20 +1,19 @@
 package logic
 
 import (
+	"context"
 	"errors"
 
 	postbiz "backend/internal/biz/post"
 	"backend/rpc/internal/errorx"
-
-	"gorm.io/gorm"
 )
 
 func parseGroupID(groupIDStr string) (uint64, error) {
 	return postbiz.ParseGroupID(groupIDStr)
 }
 
-func requireGroupMember(db *gorm.DB, groupIDStr string, userID uint) error {
-	if err := postbiz.RequireGroupMember(db, groupIDStr, userID); err != nil {
+func requireGroupMember(ctx context.Context, st postbiz.PostStore, groupIDStr string, userID uint) error {
+	if err := postbiz.RequireGroupMember(ctx, st, groupIDStr, userID); err != nil {
 		switch {
 		case errors.Is(err, postbiz.ErrInvalidGroupID):
 			return errorx.New(400, "无效的群组ID")
@@ -29,7 +28,7 @@ func requireGroupMember(db *gorm.DB, groupIDStr string, userID uint) error {
 	return nil
 }
 
-func linkPostToGroupTx(tx *gorm.DB, groupIDStr string, postID, userID uint) error {
+func linkPostToGroupTx(tx postbiz.PostTx, groupIDStr string, postID, userID uint) error {
 	if err := postbiz.LinkPostToGroupTx(tx, groupIDStr, postID, userID); err != nil {
 		switch {
 		case errors.Is(err, postbiz.ErrInvalidGroupID):

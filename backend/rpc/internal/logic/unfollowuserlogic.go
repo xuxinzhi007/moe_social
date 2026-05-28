@@ -30,7 +30,7 @@ func (l *UnfollowUserLogic) UnfollowUser(in *moe.UnfollowUserReq) (*moe.FollowUs
 		l.Error("解析关注 ID 失败:", err)
 		return nil, err
 	}
-	if err := userbiz.Unfollow(l.ctx, l.svcCtx.DB, followerID, followingID); err != nil {
+	if err := userbiz.Unfollow(l.ctx, l.svcCtx.UserStore(), followerID, followingID); err != nil {
 		l.Error("取消关注失败:", err)
 		return nil, err
 	}

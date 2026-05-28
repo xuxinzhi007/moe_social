@@ -18,16 +18,16 @@ import (
 )
 
 // Dashboard Admin 仪表盘统计。
-func Dashboard(ctx context.Context, db *gorm.DB, _ *moe.AdminDashboardReq) (*moe.AdminDashboardResp, error) {
-	if db == nil {
+func Dashboard(ctx context.Context, store AdminStore, _ *moe.AdminDashboardReq) (*moe.AdminDashboardResp, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
-	var feedbackTotal int64
-	if err := db.WithContext(ctx).Model(&model.LandingFeedback{}).Count(&feedbackTotal).Error; err != nil {
+	feedbackTotal, err := store.CountLandingFeedback(ctx)
+	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDashboard, err)
 	}
-	var userTotal int64
-	if err := db.WithContext(ctx).Model(&model.User{}).Count(&userTotal).Error; err != nil {
+	userTotal, err := store.CountUsers(ctx)
+	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDashboard, err)
 	}
 	return &moe.AdminDashboardResp{
@@ -39,15 +39,15 @@ func Dashboard(ctx context.Context, db *gorm.DB, _ *moe.AdminDashboardReq) (*moe
 }
 
 // GetUser Admin 单用户详情。
-func GetUser(ctx context.Context, db *gorm.DB, in *moe.AdminGetUserReq) (*moe.AdminGetUserResp, error) {
-	if db == nil {
+func GetUser(ctx context.Context, store AdminStore, in *moe.AdminGetUserReq) (*moe.AdminGetUserResp, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	if in.GetUserId() == 0 {
 		return nil, ErrInvalidUserID
 	}
-	var user model.User
-	if err := db.WithContext(ctx).First(&user, in.GetUserId()).Error; err != nil {
+	user, err := store.GetUserByID(ctx, uint(in.GetUserId()))
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrUserNotFound
 		}
@@ -57,36 +57,31 @@ func GetUser(ctx context.Context, db *gorm.DB, in *moe.AdminGetUserReq) (*moe.Ad
 }
 
 // GetUserProfile Admin 用户画像与关联统计。
-func GetUserProfile(ctx context.Context, db *gorm.DB, in *moe.AdminGetUserProfileReq) (*moe.AdminGetUserProfileResp, error) {
-	if db == nil {
+func GetUserProfile(ctx context.Context, store AdminStore, in *moe.AdminGetUserProfileReq) (*moe.AdminGetUserProfileResp, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	uid := uint(in.GetUserId())
 	if uid == 0 {
 		return nil, ErrInvalidProfileUserID
 	}
-	var user model.User
-	if err := db.WithContext(ctx).First(&user, uid).Error; err != nil {
+	user, err := store.GetUserByID(ctx, uid)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrProfileUserNotFound
 		}
 		return nil, err
 	}
 
-	var unlockedAchievements int64
-	_ = db.WithContext(ctx).Model(&model.UserAchievementProgress{}).
-		Where("user_id = ? AND unlocked_at IS NOT NULL", uid).
-		Count(&unlockedAchievements).Error
-
-	var aiAgentCount int64
-	_ = db.WithContext(ctx).Model(&model.AiUserConfig{}).Where("user_id = ?", uid).Count(&aiAgentCount).Error
+	unlockedAchievements, _ := store.CountUnlockedAchievements(ctx, uid)
+	aiAgentCount, _ := store.CountAiAgents(ctx, uid)
 
 	levelSnap := &moe.AdminUserLevelSnapshot{}
-	var levelRow model.UserLevel
-	if err := db.WithContext(ctx).Where("user_id = ?", uid).First(&levelRow).Error; err == nil {
+	levelRow, err := store.GetUserLevel(ctx, uid)
+	if err == nil {
 		title := ""
-		var cfg model.LevelConfig
-		if err := db.WithContext(ctx).Where("level = ?", levelRow.Level).First(&cfg).Error; err == nil {
+		cfg, err := store.GetLevelConfigByLevel(ctx, levelRow.Level)
+		if err == nil {
 			title = cfg.Title
 		}
 		levelSnap = &moe.AdminUserLevelSnapshot{
@@ -97,6 +92,8 @@ func GetUserProfile(ctx context.Context, db *gorm.DB, in *moe.AdminGetUserProfil
 		}
 	}
 
+	ctxStore := store.WithContext(ctx)
+	db := ctxStore.Raw()
 	uidStr := strconv.FormatUint(uint64(uid), 10)
 	return &moe.AdminGetUserProfileResp{
 		Data: &moe.AdminUserProfileData{
@@ -118,52 +115,44 @@ func GetUserProfile(ctx context.Context, db *gorm.DB, in *moe.AdminGetUserProfil
 			},
 			Level:    levelSnap,
 			Links:    buildUserProfileLinks(uidStr),
-			Behavior: loadUserBehaviorSummary(db.WithContext(ctx), uid),
+			Behavior: loadUserBehaviorSummary(db, uid),
 		},
 	}, nil
 }
 
 // GetMemoryStats Admin 记忆统计。
-func GetMemoryStats(ctx context.Context, db *gorm.DB, _ *moe.AdminGetMemoryStatsReq) (*moe.AdminGetMemoryStatsResp, error) {
-	if db == nil {
+func GetMemoryStats(ctx context.Context, store AdminStore, _ *moe.AdminGetMemoryStatsReq) (*moe.AdminGetMemoryStatsResp, error) {
+	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	stats := &moe.AdminMemoryStats{}
 
-	var totalMemories int64
-	if err := db.WithContext(ctx).Model(&model.UserMemory{}).Count(&totalMemories).Error; err != nil {
+	totalMemories, err := store.CountMemories(ctx)
+	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrMemoryStats, err)
 	}
 	stats.TotalMemories = int32(totalMemories)
 
-	var usersWith int64
-	if err := db.WithContext(ctx).Model(&model.UserMemory{}).Distinct("user_id").Count(&usersWith).Error; err != nil {
+	usersWith, err := store.CountDistinctUsersWithMemories(ctx)
+	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrMemoryStats, err)
 	}
 	stats.UsersWithMemories = int32(usersWith)
 
-	var totalFeedbacks int64
-	if err := db.WithContext(ctx).Model(&model.UserMemoryFeedback{}).Count(&totalFeedbacks).Error; err != nil {
+	totalFeedbacks, err := store.CountMemoryFeedbacks(ctx)
+	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrMemoryStats, err)
 	}
 	stats.TotalFeedbacks = int32(totalFeedbacks)
 
-	var totalEmbeddings int64
-	if err := db.WithContext(ctx).Model(&model.UserMemoryEmbedding{}).Count(&totalEmbeddings).Error; err != nil {
+	totalEmbeddings, err := store.CountMemoryEmbeddings(ctx)
+	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrMemoryStats, err)
 	}
 	stats.TotalEmbeddings = int32(totalEmbeddings)
 
-	type typeRow struct {
-		MemoryType string
-		Count      int64
-	}
-	var typeRows []typeRow
-	if err := db.WithContext(ctx).Model(&model.UserMemory{}).
-		Select("memory_type, COUNT(*) as count").
-		Group("memory_type").
-		Order("count DESC").
-		Scan(&typeRows).Error; err != nil {
+	typeRows, err := store.GroupMemoriesByType(ctx)
+	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrMemoryStats, err)
 	}
 	stats.ByType = make([]*moe.AdminMemoryTypeStat, len(typeRows))

@@ -24,8 +24,8 @@ func isTenDigitMoe(s string) bool {
 }
 
 // Login 邮箱或用户名登录，返回用户与 JWT。
-func Login(ctx context.Context, db *gorm.DB, email, username, password string) (model.User, string, error) {
-	if db == nil {
+func Login(ctx context.Context, store UserStore, email, username, password string) (model.User, string, error) {
+	if store == nil {
 		return model.User{}, "", gorm.ErrInvalidDB
 	}
 	var user model.User
@@ -36,15 +36,15 @@ func Login(ctx context.Context, db *gorm.DB, email, username, password string) (
 
 	if email != "" {
 		emailNorm := strings.ToLower(email)
-		err = db.WithContext(ctx).Where("LOWER(TRIM(email)) = ?", emailNorm).First(&user).Error
+		user, err = store.FindUserByNormalizedEmail(ctx, emailNorm)
 	} else if username != "" {
 		if isTenDigitMoe(username) {
-			err = db.WithContext(ctx).Where("moe_no = ?", username).First(&user).Error
+			user, err = store.FindUserByMoeNo(ctx, username)
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				err = db.WithContext(ctx).Where("username = ?", username).First(&user).Error
+				user, err = store.FindUserByUsername(ctx, username)
 			}
 		} else {
-			err = db.WithContext(ctx).Where("username = ?", username).First(&user).Error
+			user, err = store.FindUserByUsername(ctx, username)
 		}
 	} else {
 		return model.User{}, "", ErrInvalidArgument
@@ -59,10 +59,10 @@ func Login(ctx context.Context, db *gorm.DB, email, username, password string) (
 	if !user.CheckPassword(password) {
 		return model.User{}, "", ErrUnauthorized
 	}
-	if _, err := utils.EnsureUserMoeNo(db, user.ID); err != nil {
+	if _, err := utils.EnsureUserMoeNo(store.Raw(), user.ID); err != nil {
 		return model.User{}, "", err
 	}
-	_ = db.WithContext(ctx).First(&user, user.ID).Error
+	user, _ = store.ReloadUser(ctx, user.ID)
 	token, err := utils.GenerateToken(user.ID, user.Username)
 	if err != nil {
 		return model.User{}, "", err
@@ -71,8 +71,8 @@ func Login(ctx context.Context, db *gorm.DB, email, username, password string) (
 }
 
 // Register 注册新用户。
-func Register(ctx context.Context, db *gorm.DB, username, email, password string) (model.User, string, error) {
-	if db == nil {
+func Register(ctx context.Context, store UserStore, username, email, password string) (model.User, string, error) {
+	if store == nil {
 		return model.User{}, "", gorm.ErrInvalidDB
 	}
 	username = strings.TrimSpace(username)
@@ -81,16 +81,19 @@ func Register(ctx context.Context, db *gorm.DB, username, email, password string
 		return model.User{}, "", ErrInvalidArgument
 	}
 
-	var existing model.User
-	if err := db.WithContext(ctx).Where("username = ?", username).First(&existing).Error; err == nil {
-		return model.User{}, "", ErrAlreadyExists
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+	exists, err := store.ExistsUserByUsername(ctx, username)
+	if err != nil {
 		return model.User{}, "", err
 	}
-	if err := db.WithContext(ctx).Where("LOWER(TRIM(email)) = ?", emailNorm).First(&existing).Error; err == nil {
+	if exists {
 		return model.User{}, "", ErrAlreadyExists
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+	}
+	exists, err = store.ExistsUserByNormalizedEmail(ctx, emailNorm)
+	if err != nil {
 		return model.User{}, "", err
+	}
+	if exists {
+		return model.User{}, "", ErrAlreadyExists
 	}
 
 	user := model.User{
@@ -100,13 +103,13 @@ func Register(ctx context.Context, db *gorm.DB, username, email, password string
 		Avatar:   "https://picsum.photos/150",
 		IsVip:    false,
 	}
-	if err := db.WithContext(ctx).Create(&user).Error; err != nil {
+	if err := store.CreateUser(ctx, &user); err != nil {
 		return model.User{}, "", err
 	}
-	if _, err := utils.EnsureUserMoeNo(db, user.ID); err != nil {
+	if _, err := utils.EnsureUserMoeNo(store.Raw(), user.ID); err != nil {
 		return model.User{}, "", err
 	}
-	_ = db.WithContext(ctx).First(&user, user.ID).Error
+	user, _ = store.ReloadUser(ctx, user.ID)
 	token, err := utils.GenerateToken(user.ID, user.Username)
 	if err != nil {
 		return model.User{}, "", err
@@ -115,21 +118,20 @@ func Register(ctx context.Context, db *gorm.DB, username, email, password string
 }
 
 // GetByID 按主键查询用户。
-func GetByID(ctx context.Context, db *gorm.DB, userID uint) (model.User, error) {
-	if db == nil {
+func GetByID(ctx context.Context, store UserStore, userID uint) (model.User, error) {
+	if store == nil {
 		return model.User{}, gorm.ErrInvalidDB
 	}
-	var user model.User
-	err := db.WithContext(ctx).First(&user, userID).Error
+	user, err := store.GetUserByID(ctx, userID)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return model.User{}, ErrNotFound
 	}
 	if err != nil {
 		return model.User{}, err
 	}
-	if _, err := utils.EnsureUserMoeNo(db, user.ID); err != nil {
+	if _, err := utils.EnsureUserMoeNo(store.Raw(), user.ID); err != nil {
 		return model.User{}, err
 	}
-	_ = db.WithContext(ctx).First(&user, user.ID).Error
+	user, _ = store.ReloadUser(ctx, user.ID)
 	return user, nil
 }

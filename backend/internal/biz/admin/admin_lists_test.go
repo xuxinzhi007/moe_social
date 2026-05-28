@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	adminbiz "backend/internal/biz/admin"
+	admindata "backend/internal/data/admin"
 	"backend/model"
 
 	"gorm.io/driver/sqlite"
@@ -34,7 +35,7 @@ func TestListUsersKeyword(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	users, total, err := adminbiz.ListUsers(context.Background(), db, adminbiz.UserPage{
+	users, total, err := adminbiz.ListUsers(context.Background(), admindata.NewStore(db), adminbiz.UserPage{
 		Page: 1, PageSize: 10, Keyword: "alice",
 	})
 	if err != nil {
@@ -81,7 +82,7 @@ func TestListMenusOrder(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	items, err := adminbiz.ListMenus(context.Background(), db)
+	items, err := adminbiz.ListMenus(context.Background(), admindata.NewStore(db))
 	if err != nil {
 		t.Fatalf("list menus: %v", err)
 	}

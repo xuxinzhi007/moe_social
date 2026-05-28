@@ -3,10 +3,10 @@ package userbiz
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 
-	"backend/model"
 	"backend/rpc/pb/moe"
 	"backend/utils"
 
@@ -14,9 +14,17 @@ import (
 )
 
 // UpdateUserInfo 更新用户资料字段。
-func UpdateUserInfo(ctx context.Context, db *gorm.DB, in *moe.UpdateUserInfoReq) (*moe.UpdateUserInfoResp, error) {
-	var user model.User
-	if err := db.WithContext(ctx).First(&user, in.GetUserId()).Error; err != nil {
+func UpdateUserInfo(ctx context.Context, store ProfileStore, in *moe.UpdateUserInfoReq) (*moe.UpdateUserInfoResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
+	userID, err := strconv.ParseUint(strings.TrimSpace(in.GetUserId()), 10, 32)
+	if err != nil || userID == 0 {
+		return nil, ErrInvalidArgument
+	}
+
+	user, err := store.GetUserByID(ctx, uint(userID))
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotFound
 		}
@@ -114,12 +122,12 @@ func UpdateUserInfo(ctx context.Context, db *gorm.DB, in *moe.UpdateUserInfoReq)
 	}
 
 	if len(updates) == 0 {
-		_ = db.WithContext(ctx).First(&user, user.ID).Error
+		user, _ = store.ReloadUser(ctx, uint(userID))
 		return &moe.UpdateUserInfoResp{User: ModelToProto(&user)}, nil
 	}
-	if err := db.WithContext(ctx).Model(&user).Updates(updates).Error; err != nil {
+	if err := store.UpdateUserFields(ctx, uint(userID), updates); err != nil {
 		return nil, err
 	}
-	_ = db.WithContext(ctx).First(&user, user.ID).Error
+	user, _ = store.ReloadUser(ctx, uint(userID))
 	return &moe.UpdateUserInfoResp{User: ModelToProto(&user)}, nil
 }

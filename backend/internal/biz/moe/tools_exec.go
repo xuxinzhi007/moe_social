@@ -10,8 +10,6 @@ import (
 	"backend/pkg/moe/postpulse"
 	"backend/pkg/moe/toolaudit"
 	"backend/pkg/moe/tools"
-
-	"gorm.io/gorm"
 )
 
 // ExecuteToolInput 执行 Moe 工具请求。
@@ -41,7 +39,8 @@ type SearchPostsInput struct {
 }
 
 // ExecuteTool 执行工具并写入审计日志。
-func ExecuteTool(ctx context.Context, db *gorm.DB, deps tools.Deps, in ExecuteToolInput) ExecuteToolResult {
+func ExecuteTool(ctx context.Context, st MoeStore, deps tools.Deps, in ExecuteToolInput) ExecuteToolResult {
+	db := dbFromStore(ctx, st)
 	tier := core.DefaultTier
 	botUID := uint(0)
 	agentKey := strings.TrimSpace(in.AgentKey)
@@ -84,7 +83,8 @@ func ExecuteTool(ctx context.Context, db *gorm.DB, deps tools.Deps, in ExecuteTo
 }
 
 // SearchPosts 关键词检索社区帖子。
-func SearchPosts(ctx context.Context, db *gorm.DB, in SearchPostsInput) ([]postpulse.SearchHit, error) {
+func SearchPosts(ctx context.Context, st MoeStore, in SearchPostsInput) ([]postpulse.SearchHit, error) {
+	db := dbFromStore(ctx, st)
 	limit := in.Limit
 	if limit <= 0 {
 		limit = 10

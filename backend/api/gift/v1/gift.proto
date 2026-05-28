@@ -4,17 +4,107 @@ package gift.v1;
 
 option go_package = "backend/api/gift/v1;giftv1";
 
-// GiftApp — 域 SSOT。
-// GET  /api/gifts
-// GET  /api/gifts/:gift_id
-// POST /api/user/:user_id/gifts/send
-// GET  /api/user/:user_id/gifts/records
-// GET  /api/user/:user_id/gifts/purchase-orders
-// POST /api/user/:user_id/gifts/purchase
+// Gift — 域 gRPC SSOT（P4-C；与 Super 并存）。
+// HTTP: GET /api/gifts, GET /api/gifts/:gift_id
+// HTTP: POST /api/user/:user_id/gifts/send|purchase, GET records
 
-message PingRequest {}
-message PingReply {}
+message Gift {
+  uint64 id = 1;
+  string name = 2;
+  int32 price = 3;
+  string icon = 4;
+  string description = 5;
+  string created_at = 6;
+  string updated_at = 7;
+  int32 owned_quantity = 8;
+  string category = 9;
+  int32 sort_order = 10;
+}
 
-service GiftApp {
-  rpc Ping(PingRequest) returns (PingReply);
+message GiftRecord {
+  uint64 id = 1;
+  uint64 from_user_id = 2;
+  string from_user_name = 3;
+  uint64 to_user_id = 4;
+  string to_user_name = 5;
+  uint64 gift_id = 6;
+  Gift gift = 7;
+  int32 quantity = 8;
+  string created_at = 9;
+}
+
+message AchievementUnlock {
+  string badge_id = 1;
+  string name = 2;
+  int32 exp_granted = 3;
+  bool level_up = 4;
+  int32 new_level = 5;
+}
+
+message GetGiftsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string viewer_user_id = 3;
+}
+
+message GetGiftsReply {
+  repeated Gift gifts = 1;
+  int32 total = 2;
+}
+
+message GetGiftRequest {
+  string gift_id = 1;
+}
+
+message GetGiftReply {
+  bool success = 1;
+  string message = 2;
+  Gift gift = 3;
+}
+
+message SendGiftRequest {
+  string from_user_id = 1;
+  string to_user_id = 2;
+  string gift_id = 3;
+  int32 quantity = 4;
+}
+
+message SendGiftReply {
+  bool success = 1;
+  string message = 2;
+  GiftRecord record = 3;
+  repeated AchievementUnlock new_achievements = 4;
+}
+
+message GetGiftRecordsRequest {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetGiftRecordsReply {
+  repeated GiftRecord records = 1;
+  int32 total = 2;
+}
+
+message PurchaseGiftRequest {
+  string user_id = 1;
+  string gift_id = 2;
+  int32 quantity = 3;
+}
+
+message PurchaseGiftReply {
+  bool success = 1;
+  string message = 2;
+  double new_balance = 3;
+  int32 owned_quantity = 4;
+  string order_no = 5;
+}
+
+service GiftService {
+  rpc GetGifts(GetGiftsRequest) returns (GetGiftsReply);
+  rpc GetGift(GetGiftRequest) returns (GetGiftReply);
+  rpc SendGift(SendGiftRequest) returns (SendGiftReply);
+  rpc PurchaseGift(PurchaseGiftRequest) returns (PurchaseGiftReply);
+  rpc GetGiftRecords(GetGiftRecordsRequest) returns (GetGiftRecordsReply);
 }

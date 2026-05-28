@@ -3,14 +3,16 @@ package userbiz
 import (
 	"context"
 
-	"backend/model"
 	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // GetUsers 分页列出用户。
-func GetUsers(ctx context.Context, db *gorm.DB, in *moe.GetUsersReq) (*moe.GetUsersResp, error) {
+func GetUsers(ctx context.Context, store UserStore, in *moe.GetUsersReq) (*moe.GetUsersResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	page := in.GetPage()
 	if page <= 0 {
 		page = 1
@@ -19,14 +21,14 @@ func GetUsers(ctx context.Context, db *gorm.DB, in *moe.GetUsersReq) (*moe.GetUs
 	if pageSize <= 0 {
 		pageSize = 10
 	}
-	offset := (page - 1) * pageSize
+	offset := int((page - 1) * pageSize)
 
-	var users []model.User
-	var total int64
-	if err := db.WithContext(ctx).Model(&model.User{}).Count(&total).Error; err != nil {
+	total, err := store.CountUsers(ctx)
+	if err != nil {
 		return nil, err
 	}
-	if err := db.WithContext(ctx).Offset(int(offset)).Limit(int(pageSize)).Find(&users).Error; err != nil {
+	users, err := store.ListUsers(ctx, offset, int(pageSize))
+	if err != nil {
 		return nil, err
 	}
 
@@ -39,9 +41,12 @@ func GetUsers(ctx context.Context, db *gorm.DB, in *moe.GetUsersReq) (*moe.GetUs
 }
 
 // GetUserCount 返回用户总数。
-func GetUserCount(ctx context.Context, db *gorm.DB, _ *moe.GetUserCountReq) (*moe.GetUserCountResp, error) {
-	var total int64
-	if err := db.WithContext(ctx).Model(&model.User{}).Count(&total).Error; err != nil {
+func GetUserCount(ctx context.Context, store UserStore, _ *moe.GetUserCountReq) (*moe.GetUserCountResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
+	total, err := store.CountUsers(ctx)
+	if err != nil {
 		return nil, err
 	}
 	return &moe.GetUserCountResp{Count: int32(total)}, nil

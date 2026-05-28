@@ -6,45 +6,29 @@ import (
 	"strconv"
 	"strings"
 
-	"backend/model"
 	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // ListHistory 签到历史分页。
-func ListHistory(ctx context.Context, db *gorm.DB, userIDRaw string, page, pageSize int32) ([]*moe.CheckInRecord, int32, error) {
-	if db == nil {
+func ListHistory(ctx context.Context, store CheckInStore, userIDRaw string, page, pageSize int32) ([]*moe.CheckInRecord, int32, error) {
+	if store == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
 	userID, err := strconv.ParseUint(strings.TrimSpace(userIDRaw), 10, 32)
 	if err != nil || userID == 0 {
 		return nil, 0, ErrInvalidUserID
 	}
-	if err := db.WithContext(ctx).Where("id = ?", userID).First(&model.User{}).Error; err != nil {
+	if err := store.UserExists(ctx, uint(userID)); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, 0, ErrUserNotFound
 		}
 		return nil, 0, err
 	}
-	if page <= 0 {
-		page = 1
-	}
-	if pageSize <= 0 {
-		pageSize = 20
-	}
-	if pageSize > 100 {
-		pageSize = 100
-	}
-	var total int64
-	if err := db.WithContext(ctx).Model(&model.UserCheckIn{}).
-		Where("user_id = ?", userID).Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-	var rows []model.UserCheckIn
-	offset := int((page - 1) * pageSize)
-	if err := db.WithContext(ctx).Where("user_id = ?", userID).
-		Order("check_in_date DESC").Limit(int(pageSize)).Offset(offset).Find(&rows).Error; err != nil {
+
+	rows, total, err := store.ListCheckIns(ctx, uint(userID), page, pageSize)
+	if err != nil {
 		return nil, 0, err
 	}
 	out := make([]*moe.CheckInRecord, 0, len(rows))

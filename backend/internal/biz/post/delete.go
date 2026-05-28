@@ -6,14 +6,12 @@ import (
 	"strconv"
 	"strings"
 
-	"backend/model"
-
 	"gorm.io/gorm"
 )
 
 // Delete 软删除帖子（仅作者）。
-func Delete(ctx context.Context, db *gorm.DB, postIDStr, userIDStr string) error {
-	if db == nil {
+func Delete(ctx context.Context, st PostStore, postIDStr, userIDStr string) error {
+	if st == nil {
 		return gorm.ErrInvalidDB
 	}
 	postID, err := strconv.ParseUint(strings.TrimSpace(postIDStr), 10, 64)
@@ -25,8 +23,9 @@ func Delete(ctx context.Context, db *gorm.DB, postIDStr, userIDStr string) error
 		return ErrInvalidUserID
 	}
 
-	var p model.Post
-	if err := db.WithContext(ctx).First(&p, postID).Error; err != nil {
+	st = st.WithContext(ctx)
+	p, err := st.GetPost(ctx, uint(postID))
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrPostNotFound
 		}
@@ -36,9 +35,6 @@ func Delete(ctx context.Context, db *gorm.DB, postIDStr, userIDStr string) error
 		return ErrNotPostOwner
 	}
 
-	db.WithContext(ctx).Where("post_id = ?", p.ID).Delete(&model.PostTopic{})
-	if err := db.WithContext(ctx).Delete(&p).Error; err != nil {
-		return err
-	}
-	return nil
+	st.DeletePostTopics(ctx, p.ID)
+	return st.DeletePost(ctx, &p)
 }

@@ -38,7 +38,7 @@ func (l *LoginLogic) Login(in *moe.LoginReq) (*moe.LoginResp, error) {
 		return nil, errorx.New(400, "用户名或邮箱不能为空")
 	}
 
-	user, token, err := userbiz.Login(l.ctx, l.svcCtx.DB, email, username, in.GetPassword())
+	user, token, err := userbiz.Login(l.ctx, l.svcCtx.UserStore(), email, username, in.GetPassword())
 	if err != nil {
 		if errors.Is(err, userbiz.ErrUnauthorized) {
 			if email != "" || username != "" {

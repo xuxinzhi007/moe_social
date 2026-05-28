@@ -16,7 +16,10 @@ import (
 )
 
 // WechatLogin 微信 OAuth 登录。
-func WechatLogin(ctx context.Context, db *gorm.DB, in *moe.WechatLoginReq) (*moe.WechatLoginResp, error) {
+func WechatLogin(ctx context.Context, store UserStore, in *moe.WechatLoginReq) (*moe.WechatLoginResp, error) {
+	if store == nil {
+		return nil, gorm.ErrInvalidDB
+	}
 	if !viper.GetBool("wechat.enabled") {
 		if !viper.IsSet("wechat.enabled") {
 			return nil, fmt.Errorf("%w: 未配置微信登录", ErrOAuthDisabled)
@@ -37,14 +40,14 @@ func WechatLogin(ctx context.Context, db *gorm.DB, in *moe.WechatLoginReq) (*moe
 		return nil, fmt.Errorf("%w: %s", ErrUnauthorized, msg)
 	}
 
-	user, isNew, err := findOrCreateWechatUser(ctx, db, info)
+	user, isNew, err := findOrCreateWechatUser(ctx, store, info)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := utils.EnsureUserMoeNo(db, user.ID); err != nil {
+	if _, err := utils.EnsureUserMoeNo(store.Raw(), user.ID); err != nil {
 		return nil, err
 	}
-	_ = db.WithContext(ctx).First(&user, user.ID).Error
+	user, _ = store.ReloadUser(ctx, user.ID)
 
 	token, err := utils.GenerateToken(user.ID, user.Username)
 	if err != nil {
@@ -76,16 +79,15 @@ func WechatAuthorizeURL(_ context.Context, in *moe.WechatAuthorizeURLReq) (*moe.
 	return &moe.WechatAuthorizeURLResp{AuthorizeUrl: url}, nil
 }
 
-func findOrCreateWechatUser(ctx context.Context, db *gorm.DB, info utils.WechatOAuthUserInfo) (model.User, bool, error) {
+func findOrCreateWechatUser(ctx context.Context, store UserStore, info utils.WechatOAuthUserInfo) (model.User, bool, error) {
 	openID := strings.TrimSpace(info.OpenID)
-	var user model.User
-	err := db.WithContext(ctx).Where("wechat_open_id = ?", openID).First(&user).Error
+	user, err := store.FindUserByWechatOpenID(ctx, openID)
 	if err == nil {
 		applyWechatProfile(&user, info)
-		if err := syncWechatUsername(ctx, db, &user, info); err != nil {
+		if err := syncWechatUsername(ctx, store, &user, info); err != nil {
 			return model.User{}, false, err
 		}
-		if err := db.WithContext(ctx).Save(&user).Error; err != nil {
+		if err := store.SaveUser(ctx, &user); err != nil {
 			return model.User{}, false, err
 		}
 		return user, false, nil
@@ -94,7 +96,7 @@ func findOrCreateWechatUser(ctx context.Context, db *gorm.DB, info utils.WechatO
 		return model.User{}, false, err
 	}
 
-	username, err := allocateWechatUsername(ctx, db, info.Nickname, openID, 0)
+	username, err := allocateWechatUsername(ctx, store, info.Nickname, openID, 0)
 	if err != nil {
 		return model.User{}, false, err
 	}
@@ -112,7 +114,7 @@ func findOrCreateWechatUser(ctx context.Context, db *gorm.DB, info utils.WechatO
 		WechatOpenID: &openIDCopy,
 	}
 	applyWechatProfile(&user, info)
-	if err := db.WithContext(ctx).Create(&user).Error; err != nil {
+	if err := store.CreateUser(ctx, &user); err != nil {
 		return model.User{}, false, err
 	}
 	return user, true, nil
@@ -135,7 +137,7 @@ func applyWechatProfile(user *model.User, info utils.WechatOAuthUserInfo) {
 	}
 }
 
-func syncWechatUsername(ctx context.Context, db *gorm.DB, user *model.User, info utils.WechatOAuthUserInfo) error {
+func syncWechatUsername(ctx context.Context, store UserStore, user *model.User, info utils.WechatOAuthUserInfo) error {
 	nickname := normalizeWechatDisplayName(info.Nickname)
 	if nickname == "" || !isAutoWechatUsername(user.Username) {
 		return nil
@@ -143,7 +145,7 @@ func syncWechatUsername(ctx context.Context, db *gorm.DB, user *model.User, info
 	if user.Username == nickname {
 		return nil
 	}
-	username, err := allocateWechatUsername(ctx, db, nickname, strings.TrimSpace(info.OpenID), user.ID)
+	username, err := allocateWechatUsername(ctx, store, nickname, strings.TrimSpace(info.OpenID), user.ID)
 	if err != nil {
 		return err
 	}
@@ -151,7 +153,7 @@ func syncWechatUsername(ctx context.Context, db *gorm.DB, user *model.User, info
 	return nil
 }
 
-func allocateWechatUsername(ctx context.Context, db *gorm.DB, nickname, openID string, excludeUserID uint) (string, error) {
+func allocateWechatUsername(ctx context.Context, store UserStore, nickname, openID string, excludeUserID uint) (string, error) {
 	base := normalizeWechatDisplayName(nickname)
 	if base == "" && len(openID) >= 6 {
 		base = "wx_" + openID[len(openID)-6:]
@@ -161,15 +163,11 @@ func allocateWechatUsername(ctx context.Context, db *gorm.DB, nickname, openID s
 	}
 	candidate := base
 	for i := 0; i < 8; i++ {
-		var existing model.User
-		err := db.WithContext(ctx).Where("username = ?", candidate).First(&existing).Error
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return candidate, nil
-		}
+		taken, err := store.UsernameTakenExcept(ctx, candidate, excludeUserID)
 		if err != nil {
 			return "", err
 		}
-		if excludeUserID > 0 && existing.ID == excludeUserID {
+		if !taken {
 			return candidate, nil
 		}
 		suffix, _ := randomOAuthHex(3)

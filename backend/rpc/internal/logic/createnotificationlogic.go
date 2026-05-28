@@ -25,7 +25,7 @@ func NewCreateNotificationLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *CreateNotificationLogic) CreateNotification(in *moe.CreateNotificationReq) (*moe.CreateNotificationResp, error) {
-	if err := notifybiz.CreateInbox(l.ctx, l.svcCtx.DB, in); err != nil {
+	if err := notifybiz.CreateInbox(l.ctx, l.svcCtx.NotifyStore(), in); err != nil {
 		l.Error("创建通知失败:", err)
 		return nil, err
 	}

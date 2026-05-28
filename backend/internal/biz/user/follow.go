@@ -2,7 +2,6 @@ package userbiz
 
 import (
 	"context"
-	"errors"
 	"strconv"
 
 	"backend/model"
@@ -11,67 +10,58 @@ import (
 )
 
 // Follow 关注用户（支持恢复软删除记录）。
-func Follow(ctx context.Context, db *gorm.DB, followerID, followingID uint) error {
-	if db == nil {
+func Follow(ctx context.Context, store UserStore, followerID, followingID uint) error {
+	if store == nil {
 		return gorm.ErrInvalidDB
 	}
 	if followerID == 0 || followingID == 0 {
 		return ErrInvalidArgument
 	}
 
-	var existing model.Follow
-	result := db.WithContext(ctx).Unscoped().
-		Where("follower_id = ? AND following_id = ?", followerID, followingID).
-		First(&existing)
-	if result.Error == nil {
+	existing, found, err := store.FindFollowUnscoped(ctx, followerID, followingID)
+	if err != nil {
+		return err
+	}
+	if found {
 		if existing.DeletedAt.Time.IsZero() {
 			return nil
 		}
-		return db.WithContext(ctx).Unscoped().Model(&existing).
-			Updates(map[string]interface{}{"deleted_at": nil}).Error
-	}
-	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return result.Error
+		return store.RestoreFollow(ctx, &existing)
 	}
 
-	return db.WithContext(ctx).Create(&model.Follow{
+	return store.CreateFollow(ctx, &model.Follow{
 		FollowerID:  followerID,
 		FollowingID: followingID,
-	}).Error
+	})
 }
 
 // Unfollow 取消关注。
-func Unfollow(ctx context.Context, db *gorm.DB, followerID, followingID uint) error {
-	if db == nil {
+func Unfollow(ctx context.Context, store UserStore, followerID, followingID uint) error {
+	if store == nil {
 		return gorm.ErrInvalidDB
 	}
 	if followerID == 0 || followingID == 0 {
 		return ErrInvalidArgument
 	}
-	return db.WithContext(ctx).
-		Where("follower_id = ? AND following_id = ?", followerID, followingID).
-		Delete(&model.Follow{}).Error
+	return store.DeleteFollow(ctx, followerID, followingID)
 }
 
 // IsFollowing 是否已关注。
-func IsFollowing(ctx context.Context, db *gorm.DB, followerID, followingID uint) (bool, error) {
-	if db == nil {
+func IsFollowing(ctx context.Context, store UserStore, followerID, followingID uint) (bool, error) {
+	if store == nil {
 		return false, gorm.ErrInvalidDB
 	}
-	var count int64
-	err := db.WithContext(ctx).Model(&model.Follow{}).
-		Where("follower_id = ? AND following_id = ? AND deleted_at IS NULL", followerID, followingID).
-		Count(&count).Error
+	count, err := store.CountActiveFollow(ctx, followerID, followingID)
 	return count > 0, err
 }
 
 // IsFollowingByStringID 使用字符串 ID 检查关注（与 legacy CheckFollow RPC 一致）。
-func IsFollowingByStringID(ctx context.Context, db *gorm.DB, followerID, followingID string) (bool, error) {
-	if db == nil {
+func IsFollowingByStringID(ctx context.Context, store UserStore, followerID, followingID string) (bool, error) {
+	if store == nil {
 		return false, gorm.ErrInvalidDB
 	}
 	var count int64
-	err := db.WithContext(ctx).Model(&model.Follow{}).
+	err := store.Raw().WithContext(ctx).Model(&model.Follow{}).
 		Where("follower_id = ? AND following_id = ? AND deleted_at IS NULL", followerID, followingID).
 		Count(&count).Error
 	return count > 0, err
@@ -103,21 +93,19 @@ type FollowListResult struct {
 }
 
 // ListFollowers 粉丝列表（following_id = userID）。
-func ListFollowers(ctx context.Context, db *gorm.DB, userID uint, p FollowListPage) (FollowListResult, error) {
-	if db == nil {
+func ListFollowers(ctx context.Context, store UserStore, userID uint, p FollowListPage) (FollowListResult, error) {
+	if store == nil {
 		return FollowListResult{}, gorm.ErrInvalidDB
 	}
 	_, pageSize, offset := normalizeFollowPage(p)
 
-	var total int64
-	base := db.WithContext(ctx).Model(&model.Follow{}).
-		Where("following_id = ? AND deleted_at IS NULL", userID)
-	if err := base.Count(&total).Error; err != nil {
+	total, err := store.CountFollowers(ctx, userID)
+	if err != nil {
 		return FollowListResult{}, err
 	}
 
-	var follows []model.Follow
-	if err := base.Order("created_at DESC").Offset(int(offset)).Limit(int(pageSize)).Find(&follows).Error; err != nil {
+	follows, err := store.ListFollowerRows(ctx, userID, int(offset), int(pageSize))
+	if err != nil {
 		return FollowListResult{}, err
 	}
 
@@ -125,7 +113,7 @@ func ListFollowers(ctx context.Context, db *gorm.DB, userID uint, p FollowListPa
 	for i := range follows {
 		ids[i] = follows[i].FollowerID
 	}
-	users, err := usersInFollowOrder(ctx, db, ids)
+	users, err := usersInFollowOrder(ctx, store, ids)
 	if err != nil {
 		return FollowListResult{}, err
 	}
@@ -133,21 +121,19 @@ func ListFollowers(ctx context.Context, db *gorm.DB, userID uint, p FollowListPa
 }
 
 // ListFollowings 关注列表（follower_id = userID）。
-func ListFollowings(ctx context.Context, db *gorm.DB, userID uint, p FollowListPage) (FollowListResult, error) {
-	if db == nil {
+func ListFollowings(ctx context.Context, store UserStore, userID uint, p FollowListPage) (FollowListResult, error) {
+	if store == nil {
 		return FollowListResult{}, gorm.ErrInvalidDB
 	}
 	_, pageSize, offset := normalizeFollowPage(p)
 
-	var total int64
-	base := db.WithContext(ctx).Model(&model.Follow{}).
-		Where("follower_id = ? AND deleted_at IS NULL", userID)
-	if err := base.Count(&total).Error; err != nil {
+	total, err := store.CountFollowings(ctx, userID)
+	if err != nil {
 		return FollowListResult{}, err
 	}
 
-	var follows []model.Follow
-	if err := base.Order("created_at DESC").Offset(int(offset)).Limit(int(pageSize)).Find(&follows).Error; err != nil {
+	follows, err := store.ListFollowingRows(ctx, userID, int(offset), int(pageSize))
+	if err != nil {
 		return FollowListResult{}, err
 	}
 
@@ -155,19 +141,19 @@ func ListFollowings(ctx context.Context, db *gorm.DB, userID uint, p FollowListP
 	for i := range follows {
 		ids[i] = follows[i].FollowingID
 	}
-	users, err := usersInFollowOrder(ctx, db, ids)
+	users, err := usersInFollowOrder(ctx, store, ids)
 	if err != nil {
 		return FollowListResult{}, err
 	}
 	return FollowListResult{Users: users, Total: total}, nil
 }
 
-func usersInFollowOrder(ctx context.Context, db *gorm.DB, orderIDs []uint) ([]model.User, error) {
+func usersInFollowOrder(ctx context.Context, store UserStore, orderIDs []uint) ([]model.User, error) {
 	if len(orderIDs) == 0 {
 		return nil, nil
 	}
-	var users []model.User
-	if err := db.WithContext(ctx).Where("id IN ?", orderIDs).Find(&users).Error; err != nil {
+	users, err := store.FindUsersByIDs(ctx, orderIDs)
+	if err != nil {
 		return nil, err
 	}
 	userMap := make(map[uint]model.User, len(users))

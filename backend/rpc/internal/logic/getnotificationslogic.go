@@ -23,7 +23,7 @@ func NewGetNotificationsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *GetNotificationsLogic) GetNotifications(in *moe.GetNotificationsReq) (*moe.GetNotificationsResp, error) {
-	items, total, err := notifybiz.ListInbox(l.ctx, l.svcCtx.DB, in.GetUserId(), notifybiz.InboxPage{
+	items, total, err := notifybiz.ListInbox(l.ctx, l.svcCtx.NotifyStore(), in.GetUserId(), notifybiz.InboxPage{
 		Page:     in.GetPage(),
 		PageSize: in.GetPageSize(),
 	})

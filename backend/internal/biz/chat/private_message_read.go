@@ -9,13 +9,11 @@ import (
 
 	"backend/model"
 	"backend/rpc/pb/moe"
-
-	"gorm.io/gorm"
 )
 
 // ListPrivateMessages 分页拉取两人私信历史（viewer 视角）。
-func ListPrivateMessages(ctx context.Context, db *gorm.DB, in *moe.ListPrivateMessagesReq) (*moe.ListPrivateMessagesResp, error) {
-	if db == nil {
+func ListPrivateMessages(ctx context.Context, st PrivateMessageStore, in *moe.ListPrivateMessagesReq) (*moe.ListPrivateMessagesResp, error) {
+	if st == nil {
 		return nil, errors.New("db not ready")
 	}
 	viewer, err := strconv.ParseUint(strings.TrimSpace(in.GetViewerId()), 10, 32)
@@ -39,20 +37,20 @@ func ListPrivateMessages(ctx context.Context, db *gorm.DB, in *moe.ListPrivateMe
 	}
 
 	now := time.Now()
-	q := db.WithContext(ctx).Model(&model.PrivateMessage{}).
-		Where("((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)) AND expires_at > ?",
-			uint(viewer), uint(peer), uint(peer), uint(viewer), now)
+	st = st.WithContext(ctx)
 
+	var beforeID *uint
 	if bid := strings.TrimSpace(in.GetBeforeId()); bid != "" {
 		beforeUint, err := strconv.ParseUint(bid, 10, 32)
 		if err != nil {
 			return nil, errors.New("invalid before_id")
 		}
-		q = q.Where("id < ?", uint(beforeUint))
+		v := uint(beforeUint)
+		beforeID = &v
 	}
 
-	var rows []model.PrivateMessage
-	if err := q.Order("id DESC").Limit(limit + 1).Find(&rows).Error; err != nil {
+	rows, err := st.ListPrivateMessages(ctx, uint(viewer), uint(peer), beforeID, limit+1, now)
+	if err != nil {
 		return nil, errors.New("query failed")
 	}
 
@@ -70,7 +68,7 @@ func ListPrivateMessages(ctx context.Context, db *gorm.DB, in *moe.ListPrivateMe
 	for id := range idSet {
 		ids = append(ids, id)
 	}
-	moeBy := loadMoeNoByUserID(db.WithContext(ctx), ids...)
+	moeBy, _ := st.MoeNoByUserIDs(ctx, ids)
 
 	out := make([]*moe.PrivateMessage, 0, len(rows))
 	for i := len(rows) - 1; i >= 0; i-- {
@@ -81,8 +79,8 @@ func ListPrivateMessages(ctx context.Context, db *gorm.DB, in *moe.ListPrivateMe
 }
 
 // ListPrivateConversations 列出 viewer 的私信会话摘要。
-func ListPrivateConversations(ctx context.Context, db *gorm.DB, in *moe.ListPrivateConversationsReq) (*moe.ListPrivateConversationsResp, error) {
-	if db == nil {
+func ListPrivateConversations(ctx context.Context, st PrivateMessageStore, in *moe.ListPrivateConversationsReq) (*moe.ListPrivateConversationsResp, error) {
+	if st == nil {
 		return nil, errors.New("db not ready")
 	}
 	viewerID, err := strconv.ParseUint(strings.TrimSpace(in.GetViewerId()), 10, 32)
@@ -103,39 +101,15 @@ func ListPrivateConversations(ctx context.Context, db *gorm.DB, in *moe.ListPriv
 	}
 
 	now := time.Now()
-	dbCtx := db.WithContext(ctx)
+	st = st.WithContext(ctx)
 
-	type countRow struct {
-		Total int64 `gorm:"column:total"`
-	}
-	var totalRow countRow
-	countSQL := `
-SELECT COUNT(1) AS total
-FROM (
-  SELECT CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END AS peer_id
-  FROM private_messages
-  WHERE (sender_id = ? OR receiver_id = ?) AND expires_at > ?
-  GROUP BY peer_id
-) t`
-	if err := dbCtx.Raw(countSQL, uint(viewerID), uint(viewerID), uint(viewerID), now).Scan(&totalRow).Error; err != nil {
+	total, err := st.CountPrivateConversations(ctx, uint(viewerID), now)
+	if err != nil {
 		return nil, err
 	}
 
-	type convRow struct {
-		PeerID uint `gorm:"column:peer_id"`
-		LastID uint `gorm:"column:last_id"`
-	}
-	var rows []convRow
-	listSQL := `
-SELECT
-  CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END AS peer_id,
-  MAX(id) AS last_id
-FROM private_messages
-WHERE (sender_id = ? OR receiver_id = ?) AND expires_at > ?
-GROUP BY peer_id
-ORDER BY last_id DESC
-LIMIT ? OFFSET ?`
-	if err := dbCtx.Raw(listSQL, uint(viewerID), uint(viewerID), uint(viewerID), now, limit, offset).Scan(&rows).Error; err != nil {
+	rows, err := st.ListPrivateConversationPeers(ctx, uint(viewerID), limit, offset, now)
+	if err != nil {
 		return nil, err
 	}
 
@@ -151,8 +125,8 @@ LIMIT ? OFFSET ?`
 
 	msgByID := map[uint]model.PrivateMessage{}
 	if len(lastIDs) > 0 {
-		var msgs []model.PrivateMessage
-		if err := dbCtx.Where("id IN ?", lastIDs).Find(&msgs).Error; err != nil {
+		msgs, err := st.GetPrivateMessagesByIDs(ctx, lastIDs)
+		if err != nil {
 			return nil, err
 		}
 		for _, m := range msgs {
@@ -162,8 +136,8 @@ LIMIT ? OFFSET ?`
 
 	userByID := map[uint]model.User{}
 	if len(peerIDs) > 0 {
-		var users []model.User
-		if err := dbCtx.Select("id", "username", "avatar", "moe_no").Where("id IN ?", peerIDs).Find(&users).Error; err != nil {
+		users, err := st.GetUsersByIDs(ctx, peerIDs)
+		if err != nil {
 			return nil, err
 		}
 		for _, u := range users {
@@ -171,24 +145,13 @@ LIMIT ? OFFSET ?`
 		}
 	}
 
-	type unreadRow struct {
-		PeerID      uint  `gorm:"column:peer_id"`
-		UnreadCount int64 `gorm:"column:unread_count"`
-	}
-	unreadByPeer := map[uint]int32{}
-	var unreadRows []unreadRow
-	if err := dbCtx.Model(&model.Notification{}).
-		Select("sender_id AS peer_id, COUNT(1) AS unread_count").
-		Where("user_id = ? AND type = ? AND is_read = ?", uint(viewerID), 6, false).
-		Group("sender_id").
-		Scan(&unreadRows).Error; err != nil {
+	unreadByPeer, err := st.CountPrivateChatUnreadByPeer(ctx, uint(viewerID))
+	if err != nil {
 		return nil, err
 	}
-	for _, row := range unreadRows {
-		unreadByPeer[row.PeerID] = int32(row.UnreadCount)
-	}
 
-	moeBy := loadMoeNoByUserID(dbCtx, append(peerIDs, uint(viewerID))...)
+	moeIDs := append(peerIDs, uint(viewerID))
+	moeBy, _ := st.MoeNoByUserIDs(ctx, moeIDs)
 	out := make([]*moe.PrivateConversation, 0, len(rows))
 	for _, row := range rows {
 		msg, ok := msgByID[row.LastID]
@@ -215,10 +178,10 @@ LIMIT ? OFFSET ?`
 		})
 	}
 
-	hasMore := int64(offset+len(out)) < totalRow.Total
+	hasMore := int64(offset+len(out)) < total
 	return &moe.ListPrivateConversationsResp{
 		Conversations: out,
-		Total:         int32(totalRow.Total),
+		Total:         int32(total),
 		Limit:         int32(limit),
 		Offset:        int32(offset),
 		HasMore:       hasMore,

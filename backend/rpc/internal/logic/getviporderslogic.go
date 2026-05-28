@@ -26,7 +26,7 @@ func NewGetVipOrdersLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetV
 }
 
 func (l *GetVipOrdersLogic) GetVipOrders(in *moe.GetVipOrdersReq) (*moe.GetVipOrdersResp, error) {
-	orders, total, err := userbiz.ListVipOrders(l.ctx, l.svcCtx.DB, in.GetUserId(), userbiz.VipOrdersPage{
+	orders, total, err := userbiz.ListVipOrders(l.ctx, l.svcCtx.UserStore(), in.GetUserId(), userbiz.VipOrdersPage{
 		Page:     in.GetPage(),
 		PageSize: in.GetPageSize(),
 	})

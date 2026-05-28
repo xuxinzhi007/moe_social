@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package landing.v1;
+
+option go_package = "backend/api/landing/v1;landingv1";
+
+// Landing — 域 gRPC SSOT（P4-C 试点；与 Super 并存，Super 仍保留兼容 RPC）。
+// HTTP: POST /api/landing/feedback
+// HTTP: GET  /api/admin/landing/feedback
+
+message SubmitLandingFeedbackRequest {
+  string email = 1;
+  string category = 2;
+  string content = 3;
+  string source = 4;
+  string client_ip = 5;
+  string user_agent = 6;
+}
+
+message SubmitLandingFeedbackReply {
+  uint64 id = 1;
+}
+
+message LandingFeedbackItem {
+  uint64 id = 1;
+  string email = 2;
+  string category = 3;
+  string content = 4;
+  string source = 5;
+  string client_ip = 6;
+  string user_agent = 7;
+  string created_at = 8;
+}
+
+message ListLandingFeedbackRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string category = 3;
+}
+
+message ListLandingFeedbackReply {
+  repeated LandingFeedbackItem items = 1;
+  int32 total = 2;
+}
+
+service Landing {
+  rpc SubmitLandingFeedback(SubmitLandingFeedbackRequest) returns (SubmitLandingFeedbackReply);
+  rpc ListLandingFeedback(ListLandingFeedbackRequest) returns (ListLandingFeedbackReply);
+}

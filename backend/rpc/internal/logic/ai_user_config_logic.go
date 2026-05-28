@@ -27,7 +27,7 @@ func NewAiUserConfigLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AiUs
 }
 
 func (l *AiUserConfigLogic) Get(in *moe.GetAiUserConfigReq) (*moe.GetAiUserConfigResp, error) {
-	resp, err := aibiz.GetAiUserConfig(l.ctx, l.svcCtx.DB, in)
+	resp, err := aibiz.GetAiUserConfig(l.ctx, l.svcCtx.AiStore(), in)
 	if err != nil {
 		if mapped := mapAIResourceErr(err); mapped != nil {
 			return nil, mapped
@@ -38,7 +38,7 @@ func (l *AiUserConfigLogic) Get(in *moe.GetAiUserConfigReq) (*moe.GetAiUserConfi
 }
 
 func (l *AiUserConfigLogic) Upsert(in *moe.UpsertAiUserConfigReq) (*moe.UpsertAiUserConfigResp, error) {
-	resp, err := aibiz.UpsertAiUserConfig(l.ctx, l.svcCtx.DB, in)
+	resp, err := aibiz.UpsertAiUserConfig(l.ctx, l.svcCtx.AiStore(), in)
 	if err != nil {
 		if mapped := mapAIResourceErr(err); mapped != nil {
 			return nil, mapped

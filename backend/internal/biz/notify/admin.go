@@ -11,8 +11,8 @@ import (
 )
 
 // Broadcast 向全部用户广播系统通知。
-func Broadcast(ctx context.Context, db *gorm.DB, title, content string) (int32, error) {
-	if db == nil {
+func Broadcast(ctx context.Context, st NotifyStore, title, content string) (int32, error) {
+	if st == nil {
 		return 0, gorm.ErrInvalidDB
 	}
 	body := SystemNotificationContent(title, content)
@@ -20,8 +20,9 @@ func Broadcast(ctx context.Context, db *gorm.DB, title, content string) (int32, 
 		return 0, ErrEmptyContent
 	}
 
-	var userIDs []uint
-	if err := db.WithContext(ctx).Model(&model.User{}).Pluck("id", &userIDs).Error; err != nil {
+	st = st.WithContext(ctx)
+	userIDs, err := st.ListAllUserIDs(ctx)
+	if err != nil {
 		return 0, err
 	}
 
@@ -34,7 +35,7 @@ func Broadcast(ctx context.Context, db *gorm.DB, title, content string) (int32, 
 			Content:  body,
 			IsRead:   false,
 		}
-		if err := db.WithContext(ctx).Omit("PostID").Create(&n).Error; err != nil {
+		if err := st.CreateNotification(ctx, &n, true); err != nil {
 			continue
 		}
 		created++
@@ -43,8 +44,8 @@ func Broadcast(ctx context.Context, db *gorm.DB, title, content string) (int32, 
 }
 
 // SendToUser 向指定用户发送系统通知。
-func SendToUser(ctx context.Context, db *gorm.DB, userIDRaw, title, content string) (uint, error) {
-	if db == nil {
+func SendToUser(ctx context.Context, st NotifyStore, userIDRaw, title, content string) (uint, error) {
+	if st == nil {
 		return 0, gorm.ErrInvalidDB
 	}
 	userID, err := strconv.ParseUint(strings.TrimSpace(userIDRaw), 10, 64)
@@ -56,11 +57,8 @@ func SendToUser(ctx context.Context, db *gorm.DB, userIDRaw, title, content stri
 		return 0, ErrEmptyContent
 	}
 
-	var user model.User
-	if err := db.WithContext(ctx).First(&user, userID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return 0, ErrUserNotFound
-		}
+	st = st.WithContext(ctx)
+	if _, err := st.GetUser(ctx, uint(userID)); err != nil {
 		return 0, err
 	}
 
@@ -71,7 +69,7 @@ func SendToUser(ctx context.Context, db *gorm.DB, userIDRaw, title, content stri
 		Content:  body,
 		IsRead:   false,
 	}
-	if err := db.WithContext(ctx).Omit("PostID").Create(&n).Error; err != nil {
+	if err := st.CreateNotification(ctx, &n, true); err != nil {
 		return 0, err
 	}
 	return n.ID, nil
