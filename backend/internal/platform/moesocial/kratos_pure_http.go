@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	apirun "backend/api/runserver"
-	"backend/api/moekratospilot"
+	"backend/api/moehttp"
 	moekratoshttp "backend/internal/server/moekratoshttp"
 	"backend/internal/platform/kratosprogress"
 
@@ -35,7 +35,7 @@ func newKratosPureHTTPServer(apiRes *apirun.StartResult, publicHost string, publ
 	httpSrv := khttp.NewServer(khttp.Address(addr))
 	deps := pilotDepsFromAPI(apiRes)
 	moekratoshttp.Register(httpSrv, deps.MoeAdmin)
-	moekratospilot.RegisterAll(httpSrv, deps)
+	moehttp.RegisterAll(httpSrv, deps)
 
 	return &kratosPureHTTPServer{addr: addr, khttp: httpSrv}, nil
 }

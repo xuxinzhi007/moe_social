@@ -22,7 +22,7 @@ cd backend
 make gen-rpc
 
 # 3. 回归（含 HTTP FS-8、FS-10、无 legacy super.proto）
-make verify-sprint-fs9
+make gen
 ```
 
 ## 禁止混用

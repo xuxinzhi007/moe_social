@@ -1,4 +1,4 @@
-// Admin Insights — PK-3 域 SSOT（试点 HTTP 见 moekratospilot/admin_insights_compat.go）。
+// Admin Insights — PK-3 域 SSOT（试点 HTTP 见 api/moehttp/admin_insights_compat.go）。
 // HTTP 路径与 api/defs/admin.api 一致；灰度 moe.kratos_admin_insights_http_enabled
 syntax = "proto3";
 

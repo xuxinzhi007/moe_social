@@ -2,7 +2,7 @@
 package kratosprogress
 
 import (
-	"backend/api/moekratospilot"
+	"backend/api/moehttp"
 	"backend/internal/platform/moewiring"
 )
 
@@ -110,7 +110,7 @@ func bridgeClearedPercent() int {
 	if total <= 0 {
 		return 0
 	}
-	bridge := moekratospilot.TotalBridgeHTTPRoutes()
+	bridge := moehttp.TotalBridgeHTTPRoutes()
 	left := (total - bridge) * 100 / total
 	if left < 0 {
 		return 0
@@ -135,16 +135,16 @@ func rolloutPercent() int {
 }
 
 func httpNativeHandlerPercent() int {
-	p := moekratospilot.HTTPNativeHandlerPercent()
+	p := moehttp.HTTPNativeHandlerPercent()
 	// PK-10b：仅 swagger 留在 bridge 时视为 HTTP 层完成。
-	if moekratospilot.TotalBridgeHTTPRoutes() <= 2 && p >= 95 {
+	if moehttp.TotalBridgeHTTPRoutes() <= 2 && p >= 95 {
 		return 100
 	}
 	return p
 }
 
 func totalHTTPRoutes() int {
-	n := moekratospilot.TotalGoZeroRoutes()
+	n := moehttp.TotalGoZeroRoutes()
 	if n <= 0 {
 		return 268
 	}
@@ -152,14 +152,14 @@ func totalHTTPRoutes() int {
 }
 
 func registeredHTTPRoutes() int {
-	return moekratospilot.RegisteredKratosHTTPRoutes()
+	return moehttp.RegisteredKratosHTTPRoutes()
 }
 
 func httpBridgeHandlerPercent() int {
 	if totalHTTPRoutes() <= 0 {
 		return 0
 	}
-	n := moekratospilot.TotalBridgeHTTPRoutes() * 100 / totalHTTPRoutes()
+	n := moehttp.TotalBridgeHTTPRoutes() * 100 / totalHTTPRoutes()
 	if n < 0 {
 		return 0
 	}
@@ -229,7 +229,7 @@ func transportHTTPRolloutPercent() int {
 }
 
 func httpRouteCoveragePercent() int {
-	return moekratospilot.HTTPRouteCoveragePercent()
+	return moehttp.HTTPRouteCoveragePercent()
 }
 
 func boolPercent(ok bool) int {

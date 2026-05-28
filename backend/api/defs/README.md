@@ -32,7 +32,7 @@ goctl api validate -api api/moe.api
 make gen-api          # 含 prune 孤儿壳
 
 # 3. 合并实现写在 internal/biz + *gw；勿留 goctl 空壳（见 goctl-orphan-stubs.txt）
-make verify-sprint-fs8
+make gen
 ```
 
 ## 禁止混用

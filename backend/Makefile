@@ -2,7 +2,7 @@
 
 
 
-.PHONY: all gen gen-legacy-goctl gen-moe-proto gen-moe-conf gen-moekratospilot-get gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto verify-moe-migration verify-moe-grpc verify-moe-gateway verify-moe-complete verify-domain-vip verify-domain-user verify-domain-misc verify-platform verify-full-site-50 verify-kratos-pilot verify-kratos-50 verify-kratos-60 verify-kratos-80 verify-kratos-100 verify-kratos-pure-50 verify-kratos-pure-80 verify-kratos-pure-90 verify-kratos-pure-100 verify-kratos-rollout-pk0 moe-social-dev verify-kratos-rollout-pk1 verify-kratos-rollout-pk2 verify-kratos-rollout-pk12 verify-kratos-rollout-pk3 verify-kratos-rollout-pk4 verify-kratos-rollout-pk6 verify-kratos-rollout-pk7 verify-kratos-rollout-pk11 verify-kratos-rollout-pk34 verify-kratos-rollout-pk8 verify-kratos-rollout-85 verify-kratos-rollout-70 verify-kratos-rollout-regression verify-kratos-rollout-regression-full moe-social moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
+.PHONY: all gen gen-legacy-goctl gen-moe-proto gen-moe-conf gen-http-routes gen-moekratospilot-get gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto check fs8-split-api fs8-split-super-proto fs9b-rewrite-imports moe-social moe-social-dev moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
 
 	deploy-agent deploy-agent-stop moe-social-stop admin \
 
@@ -20,47 +20,46 @@ all: gen
 
 
 
-# 生成：域 proto + RPC + Kratos 路由注册（PK-8 默认不含 goctl gen-api）
-gen: gen-moe-proto gen-moe-conf gen-rpc gen-moekratospilot-get
+# 生成：域 proto + conf + RPC + Kratos HTTP 路由（PK-8 默认不含 goctl gen-api）
+gen: gen-moe-proto gen-moe-conf gen-rpc gen-http-routes
 
 # 紧急/兼容：goctl api + swagger（需 MOE_ALLOW_GOCTL_API=1）
 gen-legacy-goctl: gen-api gen-swagger
 
 gen-moe-proto:
-	bash scripts/gen-moe-proto.sh
+	bash scripts/gen/moe-proto.sh
 
 gen-moe-conf:
-	bash scripts/gen-moe-conf.sh
+	bash scripts/gen/moe-conf.sh
 
-# PK-10b：从 routes.go 生成 routes_native_gen.go + routes_bridge_gen.go（swagger bridge）
-gen-moekratospilot-get:
-	cd scripts/gen-moekratospilot-get && go run ./
+# 从 api/internal/handler/routes.go → api/moehttp/routes_*_gen.go
+gen-http-routes:
+	cd scripts/gen/http-routes && go run .
+
+# 兼容旧文档 target 名
+gen-moekratospilot-get: gen-http-routes
 
 # --client=false：避免与 pb 包名冲突、生成坏 client
-
 gen-rpc: fs8-assemble-super-proto
-
 	goctl rpc protoc rpc/moe.proto --go_out=. --go-grpc_out=. --zrpc_out=./rpc -I rpc --go_opt=module=backend --go-grpc_opt=module=backend --client=false
 	@rm -f rpc/pb/super/super.pb.go rpc/pb/super/super_grpc.pb.go rpc/pb/super/common.pb.go rpc/pb/super/moe.pb.go rpc/pb/super/moe_grpc.pb.go
-	bash scripts/fs9b-gen-pb-super-shim.sh
-	bash scripts/fs9-fix-rpc-server-import.sh
-	bash scripts/prune-rpc-logic-shells.sh
+	bash scripts/gen/fs9b-pb-shim.sh
+	bash scripts/gen/fs9-fix-rpc-import.sh
+	bash scripts/gen/prune-rpc-logic-shells.sh
 
 fs8-assemble-super-proto:
-	python3 scripts/fs8-assemble-super-proto.py
+	python3 scripts/gen/fs8-assemble-rpc-proto.py
 
 # 仅从单体 moe.proto 重新切分（覆盖 defs 手工编辑，慎用）
 fs8-split-super-proto:
 	python3 scripts/fs8-split-super-proto.py
-	python3 scripts/fs8-assemble-super-proto.py
-
-
+	python3 scripts/gen/fs8-assemble-rpc-proto.py
 
 gen-api:
-	bash scripts/gen-api-guard.sh
+	bash scripts/gen/api-guard.sh
 	cd api && goctl api go -api moe.api -dir ./
-	bash scripts/prune-api-logic-shells.sh
-	$(MAKE) gen-moekratospilot-get
+	bash scripts/gen/prune-api-logic-shells.sh
+	$(MAKE) gen-http-routes
 
 
 
@@ -72,228 +71,21 @@ gen-swagger:
 
 
 
-# Moe 管理台相关：gen + 删除与 moe_admin_logic.go 冲突的空壳 + 编译（见 scripts/gen-moe-admin.sh）
+# Moe 管理台：gen + 删空壳 + 编译（见 scripts/gen/moe-admin.sh）
 gen-moe-admin:
+	bash scripts/gen/moe-admin.sh
 
-	bash scripts/gen-moe-admin.sh
-
-# Moe 域 proto（Kratos 混合迁移 SSOT；可选生成，逻辑层不强制依赖 pb）
 api-moe-proto:
-
-	bash scripts/gen-moe-proto.sh
-
-# 验收门禁（目录 scripts/verify/，说明 scripts/README.md）
-verify:
-
-	bash scripts/verify/kratos-pure-100.sh
-
-verify-kratos-pure-100: verify
-
-verify-kratos-regression:
-
-	bash scripts/verify/kratos-regression.sh
-
-verify-kratos-regression-full:
-
-	bash scripts/verify/kratos-regression-full.sh
-
-verify-kratos-100: verify-kratos-regression-full
-
-verify-moe-migration:
-
-	bash scripts/verify/domain/verify-moe-migration.sh
-
-verify-moe-grpc:
-
-	bash scripts/verify/domain/verify-moe-grpc.sh
-
-verify-moe-gateway:
-
-	bash scripts/verify/domain/verify-moe-gateway.sh
-
-verify-moe-complete:
-
-	bash scripts/verify/domain/verify-moe-complete.sh
-
-verify-domain-vip:
-
-	bash scripts/verify/domain/verify-domain-vip.sh
-
-verify-domain-user:
-
-	bash scripts/verify/domain/verify-domain-user.sh
-
-verify-domain-misc:
-
-	bash scripts/verify/domain/verify-domain-misc.sh
-
-verify-platform:
-
-	bash scripts/verify/domain/verify-platform.sh
-
-verify-full-site-50:
-
-	bash scripts/verify/domain/verify-full-site-50.sh
-
-verify-sprint-regression:
-
-	bash scripts/verify/sprint/regression.sh
-
-verify-sprint-f100-structure:
-
-	bash scripts/verify/sprint/f100-structure.sh
-
-verify-sprint-f102-admin-memory:
-
-ifeq ($(OS),Windows_NT)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f102-admin-memory.ps1
-else
-	bash scripts/verify/sprint/f102-admin-memory.sh
-endif
-
-verify-sprint-f104-admin-insights:
-
-ifeq ($(OS),Windows_NT)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f104-admin-insights.ps1
-else
-	@test -f internal/biz/admin/insights_ops.go
-	@grep -q 'AdminGW.AdminListAiChatSessions' api/internal/logic/admin/admin_insights_logic.go
-	@go build ./api ./rpc
-endif
-
-verify-sprint-f107-chat-read:
-
-ifeq ($(OS),Windows_NT)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f107-chat-read.ps1
-else
-	@test -f internal/biz/chat/private_message_read.go
-	@grep -q 'ChatGW.ListPrivateMessages' api/internal/logic/privatemsg/listprivatemessageslogic.go
-	@grep -q 'ChatGW.ListPrivateConversations' api/internal/logic/privatemsg/listprivateconversationslogic.go
-	@grep -q 'UserGW.GetUser' api/internal/logic/voice/voicecalllogic.go
-	@go build ./api ./rpc
-endif
-
-verify-sprint-f109-user-tail:
-
-ifeq ($(OS),Windows_NT)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f109-user-tail.ps1
-else
-	@! grep -r 'SuperRpcClient' api/internal/logic/user/ 2>/dev/null || true
-	@test -f internal/biz/user/profile.go
-	@test -f internal/biz/llm/memory_read.go
-	@grep -q 'UserGW.GetUsers' api/internal/logic/user/getuserslogic.go
-	@go test ./internal/biz/user/... ./internal/biz/llm/... -count=1
-	@go build ./api ./rpc
-endif
-
-verify-gen-hygiene:
-	bash scripts/verify-gen-hygiene.sh
-
-verify-sprint-fs10-admin-rpc:
-	bash scripts/verify/sprint/fs10-admin-rpc.sh
-	@grep -q 'newAdminApp' rpc/internal/logic/adminlistmemorieslogic.go
-	@grep -q 'newAdminApp' rpc/internal/logic/admindashboardlogic.go
-
-verify-sprint-fs10:
-	bash scripts/verify/sprint/fs10.sh
-	@grep -q 'newLLMApp' rpc/internal/logic/upsertusermemoryembeddinglogic.go
-	@grep -q 'newVipAdminApp' rpc/internal/logic/adminupdatevipplanlogic.go
-	@go build ./api ./rpc
+	bash scripts/gen/moe-proto.sh
 
 # FS-8：仅从单体 moe.api 重新切分 defs（会覆盖 defs 手工编辑，慎用）
 fs8-split-api:
-	python3 scripts/fs8-split-super-api.py
+	python3 scripts/gen/fs8-split-api.py
 
-verify-sprint-fs8:
-	bash scripts/verify/sprint/fs8.sh
-
-verify-sprint-fs8b:
-	bash scripts/verify/sprint/fs8b.sh
-
-verify-sprint-fs9:
-	bash scripts/verify/fs9.sh
-
-verify-sprint-fs9b:
-	bash scripts/verify/fs9b.sh
-
-verify-sprint-f113-rpc-notify:
-	@grep -q 'notifybiz.CreateInbox' rpc/internal/logic/createnotificationlogic.go
-	@go build ./api ./rpc
-
-verify-sprint-f112:
-ifeq ($(OS),Windows_NT)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f112.ps1
-else
-	@test -f internal/biz/admin/auth.go
-	@test -f internal/biz/ai/user_config.go
-	@grep -q 'g.local.AdminLogin' api/internal/admingw/gateway_public.go
-	@grep -q 'g.local.GetAiUserConfig' api/internal/llmgw/gateway.go
-	@grep -q 'ResolveVoiceUserDisplay' api/internal/logic/voice/voicecalllogic.go
-	@bash scripts/verify-gw-local-first.sh
-	@go test ./internal/biz/admin/... ./internal/biz/ai/... -count=1
-	@go build ./api ./rpc
-endif
-
-verify-sprint-f111:
-ifeq ($(OS),Windows_NT)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f111.ps1
-else
-	@test -f internal/biz/admin/audit_write.go
-	@test -f internal/biz/user/avatar.go
-	@test -f api/internal/admingw/gateway_audit.go
-	@grep -q 'AdminGW.RecordAdminAuditLog' api/internal/common/admin_audit_writer.go
-	@! grep -q 'SuperRpcClient' api/internal/common/admin_audit_writer.go
-	@grep -q 'g.local.GetUserAvatar' api/internal/usergw/gateway_f110.go
-	@grep -q 'g.local.ExecuteTool' api/internal/moeadmingw/gateway_tools.go
-	@grep -q 'userbiz.GetUserAvatar' rpc/internal/logic/getuseravatarlogic.go
-	@go test ./internal/biz/user/... ./internal/biz/admin/... -count=1
-	@go build ./api ./rpc
-endif
-
-verify-sprint-f110:
-ifeq ($(OS),Windows_NT)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f110.ps1
-else
-	@! grep -r 'SuperRpcClient' api/internal/logic/ 2>/dev/null || (echo "F110: SuperRpcClient still in api/internal/logic" && exit 1)
-	@test -f api/internal/usergw/gateway_f110.go
-	@test -f api/internal/admingw/gateway_public.go
-	@test -f api/internal/moeadmingw/gateway_tools.go
-	@grep -q 'UpsertAiUserConfig' api/internal/llmgw/gateway.go
-	@grep -q 'UserGW.GetUserAvatar' api/internal/logic/avatar/getuseravatarlogic.go
-	@grep -q 'AdminGW.AdminLogin' api/internal/logic/admin_public/adminloginlogic.go
-	@grep -q 'MoeGW.MoeExecuteTool' api/internal/logic/moe/executemoetoollogic.go
-	@grep -q 'UserGW.CreateNotification' api/internal/logic/chat/private_chat_delivery.go
-	@go build ./api ./rpc
-endif
-
-verify-sprint-f108-admin-tail:
-
-ifeq ($(OS),Windows_NT)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f108-admin-tail.ps1
-else
-	@! grep -r 'SuperRpcClient' api/internal/logic/admin/ 2>/dev/null || true
-	@test -f internal/biz/admin/moderation_lists.go
-	@grep -q 'AdminGW.AdminListFollows' api/internal/logic/admin/adminlistfollowslogic.go
-	@go build ./api ./rpc
-endif
-
-verify-sprint-f100-final:
-
-ifeq ($(OS),Windows_NT)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sprint-f100-final.ps1
-else
-	@test -f internal/biz/admin/insights_ops.go
-	@test -f api/internal/aigw/gateway.go
-	@test -f api/internal/chatgw/gateway.go
-	@test -f api/admin/v1/admin_insights.proto
-	@test -f api/ai/v1/ai_resources.proto
-	@test -f api/llm/v1/llm_chat.proto
-	@test -f api/chat/v1/private_message.proto
-	@grep -q 'AdminGW.AdminListAiChatSessions' api/internal/logic/admin/admin_insights_logic.go
-	@grep -q 'AIGW' api/internal/logic/ai/resource_logic.go
-	@grep -q 'DEPRECATED' api/moe.api rpc/moe.proto
-	@go build ./api ./rpc
-endif
+# 日常检查：编译生产入口 + 核心包单测
+check:
+	go build -o /dev/null ./cmd/moe-social
+	go test ./internal/platform/moesocial/... ./api/moehttp/... ./internal/platform/kratosprogress/... -count=1
 
 moe-social:
 
@@ -318,13 +110,7 @@ moe-platform:
 	go run ./cmd/moe-platform
 
 fs9b-rewrite-imports:
-
-	cd scripts/fs9b-rewrite-imports && go run ./
-
-# 兼容旧文档中的 target 名
-verify-kratos-rollout-regression: verify-kratos-regression
-
-verify-kratos-rollout-regression-full: verify-kratos-regression-full
+	cd scripts/tools/fs9b-rewrite-imports && go run ./
 
 moe-kratos:
 	@echo "DEPRECATED: use make moe-social (Kratos HTTP :8888 + gRPC :8080)."
@@ -552,23 +338,15 @@ help:
 
 	@echo ""
 
-	@echo --- Kratos 迁移 ---
+	@echo --- Kratos 运行时 ---
 
-	@echo make moe-social          - 纯 Kratos 单进程 (:8888 HTTP + :8080 gRPC)，-f config/config.yaml
+	@echo make moe-social          - 单进程 Kratos (:8888 HTTP + :8080 gRPC)，-f config/config.yaml
 	@echo make moe-social-dev      - 同上 + deploy-agent (:19010) + RPC debug (:19011)
-
-	@echo make moe-social-stop     - 释放开发端口（叠跑/Ctrl+C 残留时用）
-
-	@echo make moe-kratos            - 纯 Kratos 试点 (:19031+:19032，并行)
-
-	@echo make verify-kratos-rollout-pk12 - PK-1+PK-2 纯 Kratos 契约与灰度验收
-	@echo make verify-kratos-rollout-pk0  - 纯 Kratos PK-0 基线
-	@echo make verify-kratos-rollout-pk1  - PK-1 域 proto 纪律
-	@echo make verify-kratos-rollout-pk2  - PK-2 Moe/VIP kratos_http 灰度
-	@echo make verify                - 纯 Kratos 100%% 门禁（推荐）
-	@echo make verify-kratos-regression - PK/Kratos PR 轻量回归
-	@echo make verify-kratos-regression-full - 发版：Kratos + F 全量
-	@echo make build-moe-social      - 生产单二进制（:8888+:8080）
+	@echo make moe-social-stop     - 释放开发端口
+	@echo make check               - 编译 cmd/moe-social + 核心包单测
+	@echo make gen                 - proto + conf + rpc + HTTP 路由（scripts/gen/）
+	@echo make gen-http-routes     - routes.go → api/moehttp
+	@echo make build-moe-social    - 生产单二进制
 
 	@echo make moe-platform          - 迁移观测 (:19020)
 
