@@ -25,8 +25,5 @@ func (g *Gateway) MoeExecuteTool(ctx context.Context, in *moe.MoeExecuteToolReq)
 		}
 		return &moe.MoeExecuteToolResp{Ok: res.OK, Result: res.Result, Error: res.Error}, nil
 	}
-	if g.super != nil {
-		return g.super.MoeExecuteTool(ctx, in)
-	}
-	return nil, errNoBackend
+		return nil, errNoBackend
 }

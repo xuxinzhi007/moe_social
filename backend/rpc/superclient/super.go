@@ -2,6 +2,8 @@
 // goctl 1.9.2
 // Source: moe.proto
 
+//go:build hybrid
+
 package superclient
 
 import (

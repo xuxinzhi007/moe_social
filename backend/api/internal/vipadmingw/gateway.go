@@ -7,26 +7,24 @@ import (
 	vipbiz "backend/internal/biz/vip"
 	vipadmin "backend/internal/service/vip"
 	"backend/model"
-	"backend/rpc/pb/moe"
 )
 
 var errNoBackend = errors.New("VIP 后端未配置")
 
-// Gateway Admin / 公开 VIP 套餐路由：kratos HTTP（灰度）→ 进程内 biz → legacy super。
+// Gateway Admin / 公开 VIP 套餐路由：kratos HTTP（灰度）→ 进程内 biz。
 type Gateway struct {
 	kratos *KratosHTTPClient
 	local  *vipadmin.AdminService
-	super  moe.SuperClient
 }
 
 // New 构造网关；kratos 非 nil 且启用时，ListPlans 走纯 Kratos HTTP（PK-2）。
-func New(local *vipadmin.AdminService, legacy moe.SuperClient, kratos *KratosHTTPClient) *Gateway {
-	return &Gateway{local: local, super: legacy, kratos: kratos}
+func New(local *vipadmin.AdminService, kratos *KratosHTTPClient) *Gateway {
+	return &Gateway{local: local, kratos: kratos}
 }
 
 // Available 是否至少有一个后端。
 func (g *Gateway) Available() bool {
-	return g != nil && (g.kratosHTTPReady() || g.local != nil || g.super != nil)
+	return g != nil && (g.kratosHTTPReady() || g.local != nil)
 }
 
 func (g *Gateway) kratosHTTPReady() bool {
@@ -44,9 +42,6 @@ func (g *Gateway) Route() string {
 	if g.local != nil {
 		return "in_process"
 	}
-	if g.super != nil {
-		return "super"
-	}
 	return "none"
 }
 
@@ -60,23 +55,7 @@ func (g *Gateway) ListPlans(ctx context.Context, f vipbiz.ListPlansFilter) ([]mo
 	if g.local != nil {
 		return g.local.ListPlans(ctx, f)
 	}
-	if g.super == nil {
-		return nil, 0, errNoBackend
-	}
-	rep, err := g.super.AdminListVipPlans(ctx, &moe.AdminListVipPlansReq{
-		Page:           int32(f.Page),
-		PageSize:       int32(f.PageSize),
-		Keyword:        f.Keyword,
-		IncludeDeleted: f.IncludeDeleted,
-	})
-	if err != nil {
-		return nil, 0, err
-	}
-	out := make([]model.VipPlan, 0, len(rep.GetPlans()))
-	for _, p := range rep.GetPlans() {
-		out = append(out, vipPlanProtoToModel(p))
-	}
-	return out, int64(rep.GetTotal()), nil
+	return nil, 0, errNoBackend
 }
 
 func (g *Gateway) ListAllPlans(ctx context.Context) ([]model.VipPlan, error) {
@@ -86,18 +65,7 @@ func (g *Gateway) ListAllPlans(ctx context.Context) ([]model.VipPlan, error) {
 	if g.local != nil {
 		return g.local.ListAllPlans(ctx)
 	}
-	if g.super == nil {
-		return nil, errNoBackend
-	}
-	rep, err := g.super.GetVipPlans(ctx, &moe.GetVipPlansReq{})
-	if err != nil {
-		return nil, err
-	}
-	out := make([]model.VipPlan, 0, len(rep.GetPlans()))
-	for _, p := range rep.GetPlans() {
-		out = append(out, vipPlanProtoToModel(p))
-	}
-	return out, nil
+	return nil, errNoBackend
 }
 
 func (g *Gateway) GetPlan(ctx context.Context, planID string) (model.VipPlan, error) {
@@ -111,14 +79,7 @@ func (g *Gateway) GetPlan(ctx context.Context, planID string) (model.VipPlan, er
 	if g.local != nil {
 		return g.local.GetPlan(ctx, id)
 	}
-	if g.super == nil {
-		return model.VipPlan{}, errNoBackend
-	}
-	rep, err := g.super.AdminGetVipPlan(ctx, &moe.AdminGetVipPlanReq{PlanId: planID})
-	if err != nil {
-		return model.VipPlan{}, err
-	}
-	return vipPlanProtoToModel(rep.GetPlan()), nil
+	return model.VipPlan{}, errNoBackend
 }
 
 func (g *Gateway) CreatePlan(ctx context.Context, in vipbiz.CreatePlanInput) (model.VipPlan, error) {
@@ -128,19 +89,7 @@ func (g *Gateway) CreatePlan(ctx context.Context, in vipbiz.CreatePlanInput) (mo
 	if g.local != nil {
 		return g.local.CreatePlan(ctx, in)
 	}
-	if g.super == nil {
-		return model.VipPlan{}, errNoBackend
-	}
-	rep, err := g.super.CreateVipPlan(ctx, &moe.CreateVipPlanReq{
-		Name:         in.Name,
-		Description:  in.Description,
-		Price:        float32(in.Price),
-		DurationDays: int32(in.DurationDays),
-	})
-	if err != nil {
-		return model.VipPlan{}, err
-	}
-	return vipPlanProtoToModel(rep.GetPlan()), nil
+	return model.VipPlan{}, errNoBackend
 }
 
 func (g *Gateway) UpdatePlan(ctx context.Context, planID string, patch vipbiz.UpdatePlanPatch) (model.VipPlan, error) {
@@ -154,24 +103,7 @@ func (g *Gateway) UpdatePlan(ctx context.Context, planID string, patch vipbiz.Up
 		}
 		return g.local.UpdatePlan(ctx, id, patch)
 	}
-	if g.super == nil {
-		return model.VipPlan{}, errNoBackend
-	}
-	rep, err := g.super.AdminUpdateVipPlan(ctx, &moe.AdminUpdateVipPlanReq{
-		PlanId:             planID,
-		Name:               patch.Name,
-		Description:        patch.Description,
-		Price:              float32(patch.Price),
-		DurationDays:       int32(patch.DurationDays),
-		UpdateName:         patch.UpdateName,
-		UpdateDescription:  patch.UpdateDescription,
-		UpdatePrice:        patch.UpdatePrice,
-		UpdateDurationDays: patch.UpdateDurationDays,
-	})
-	if err != nil {
-		return model.VipPlan{}, err
-	}
-	return vipPlanProtoToModel(rep.GetPlan()), nil
+	return model.VipPlan{}, errNoBackend
 }
 
 func (g *Gateway) DeletePlan(ctx context.Context, planID string) error {
@@ -185,11 +117,7 @@ func (g *Gateway) DeletePlan(ctx context.Context, planID string) error {
 		}
 		return g.local.DeletePlan(ctx, id)
 	}
-	if g.super == nil {
-		return errNoBackend
-	}
-	_, err := g.super.AdminDeleteVipPlan(ctx, &moe.AdminDeleteVipPlanReq{PlanId: planID})
-	return err
+	return errNoBackend
 }
 
 func (g *Gateway) BootstrapPlans(ctx context.Context) (int, error) {
@@ -199,12 +127,5 @@ func (g *Gateway) BootstrapPlans(ctx context.Context) (int, error) {
 	if g.local != nil {
 		return g.local.BootstrapPlans(ctx)
 	}
-	if g.super == nil {
-		return 0, errNoBackend
-	}
-	rep, err := g.super.AdminBootstrapVipPlans(ctx, &moe.AdminBootstrapVipPlansReq{})
-	if err != nil {
-		return 0, err
-	}
-	return int(rep.GetCreated()), nil
+	return 0, errNoBackend
 }

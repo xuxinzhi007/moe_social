@@ -1,6 +1,7 @@
 package admingw
 
 import (
+	"backend/api/internal/gwutil"
 	"context"
 
 	"backend/rpc/pb/moe"
@@ -12,8 +13,5 @@ func (g *Gateway) RecordAdminAuditLog(ctx context.Context, in *moe.RecordAdminAu
 	if g != nil && g.local != nil {
 		return g.local.RecordAuditLog(ctx, in)
 	}
-	if g == nil || g.super == nil {
-		return &moe.RecordAdminAuditLogResp{}, nil
-	}
-	return g.super.RecordAdminAuditLog(ctx, in, opts...)
+	return nil, gwutil.ErrUnavailable
 }

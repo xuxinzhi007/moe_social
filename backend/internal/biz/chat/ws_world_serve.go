@@ -12,7 +12,7 @@ import (
 	"backend/utils"
 
 	"github.com/gorilla/websocket"
-	"github.com/zeromicro/go-zero/core/logx"
+	"backend/internal/platform/moelog"
 )
 
 var (
@@ -50,7 +50,7 @@ func (m *worldMember) writeText(data []byte) bool {
 	}
 	_ = m.conn.SetWriteDeadline(time.Now().Add(8 * time.Second))
 	if err := m.conn.WriteMessage(websocket.TextMessage, data); err != nil {
-		logx.Errorf("world ws write: %v", err)
+		moelog.Errorf("world ws write: %v", err)
 		return false
 	}
 	return true
@@ -85,7 +85,7 @@ func ServeWorldWS(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
-		logx.Errorf("world ws upgrade: %v", err)
+		moelog.Errorf("world ws upgrade: %v", err)
 		return
 	}
 
@@ -236,7 +236,7 @@ func worldLeaveRoom(roomID, userID string) {
 func handleWorldWSLoop(roomID, userID string, conn *websocket.Conn) {
 	defer func() {
 		worldLeaveRoom(roomID, userID)
-		logx.Infof("World ws user %s left room %s", userID, roomID)
+		moelog.Infof("World ws user %s left room %s", userID, roomID)
 		worldBroadcast(roomID, "", map[string]interface{}{
 			"type":    "world_peer_left",
 			"user_id": userID,
@@ -253,7 +253,7 @@ func handleWorldWSLoop(roomID, userID string, conn *websocket.Conn) {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				logx.Errorf("World ws read: %v", err)
+				moelog.Errorf("World ws read: %v", err)
 			}
 			break
 		}
@@ -332,7 +332,7 @@ func handleWorldWSMessage(roomID, userID string, message []byte) {
 		if senderUsername == "" {
 			senderUsername = "玩家"
 		}
-		logx.Infof("World chat from %s (%s): %s", userID, senderUsername, content)
+		moelog.Infof("World chat from %s (%s): %s", userID, senderUsername, content)
 		worldBroadcast(roomID, "", map[string]interface{}{
 			"type":     "world_chat",
 			"user_id":  userID,

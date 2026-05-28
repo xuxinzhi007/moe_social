@@ -1,6 +1,7 @@
 package admingw
 
 import (
+	"backend/api/internal/gwutil"
 	"context"
 
 	"backend/rpc/pb/moe"
@@ -12,18 +13,12 @@ func (g *Gateway) AdminLogin(ctx context.Context, in *moe.AdminLoginReq, opts ..
 	if g != nil && g.local != nil {
 		return g.local.AdminLogin(ctx, in)
 	}
-	if g == nil || g.super == nil {
-		return nil, nil
-	}
-	return g.super.AdminLogin(ctx, in, opts...)
+	return nil, gwutil.ErrUnavailable
 }
 
 func (g *Gateway) AdminBootstrapAccount(ctx context.Context, in *moe.AdminBootstrapAccountReq, opts ...grpc.CallOption) (*moe.AdminBootstrapAccountResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.AdminBootstrapAccount(ctx, in)
 	}
-	if g == nil || g.super == nil {
-		return nil, nil
-	}
-	return g.super.AdminBootstrapAccount(ctx, in, opts...)
+	return nil, gwutil.ErrUnavailable
 }

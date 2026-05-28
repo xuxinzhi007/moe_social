@@ -1,3 +1,5 @@
+//go:build hybrid
+
 package runserver
 
 import (
@@ -7,9 +9,7 @@ import (
 	"backend/rpc/internal/bootstrap"
 	"backend/rpc/internal/config"
 	"backend/rpc/internal/debug"
-	"backend/rpc/internal/server"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"github.com/zeromicro/go-zero/core/conf"
@@ -18,13 +18,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
-
-// Options RPC 启动选项。
-type Options struct {
-	ConfigFile    string
-	Migrate       utils.MigrateOptions
-	EnableMonitor bool // 本地 :19011 pprof / JSON stats（moe-admin RPC 监控）
-}
 
 // Start 启动 zrpc（Super + MoeAdmin gRPC），返回 server、ServiceContext 与可选 Monitor。
 func Start(opts Options) (*zrpc.RpcServer, *svc.ServiceContext, *debug.Monitor, error) {
@@ -35,7 +28,6 @@ func Start(opts Options) (*zrpc.RpcServer, *svc.ServiceContext, *debug.Monitor, 
 	bootstrap.RegisterSocialAchievementHooks()
 
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
-		moe.RegisterSuperServer(grpcServer, server.NewSuperServer(ctx))
 		bootstrap.RegisterMoeGRPC(grpcServer, ctx)
 		if c.Mode == service.DevMode || c.Mode == service.TestMode {
 			reflection.Register(grpcServer)

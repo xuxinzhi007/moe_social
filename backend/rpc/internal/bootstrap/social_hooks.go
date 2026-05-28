@@ -5,7 +5,7 @@ import (
 	"backend/pkg/achievement"
 	"backend/rpc/pb/moe"
 
-	"github.com/zeromicro/go-zero/core/logx"
+	"backend/internal/platform/moelog"
 	"gorm.io/gorm"
 )
 
@@ -23,7 +23,7 @@ func RegisterSocialAchievementHooks() {
 			Hour:             achievement.CurrentEventHour(),
 		})
 		if err != nil {
-			logx.Errorf("成就处理失败（帖子仍会发布）: %v", err)
+			moelog.Error("成就处理失败（帖子仍会发布）", "err", err)
 			return nil
 		}
 		return achievement.UnlocksToProto(unlocks)
@@ -34,7 +34,7 @@ func RegisterSocialAchievementHooks() {
 			Type: achievement.EventCommentCreated,
 		})
 		if err != nil {
-			logx.Errorf("成就处理失败（评论仍会发布）: %v", err)
+			moelog.Error("成就处理失败（评论仍会发布）", "err", err)
 			return nil
 		}
 		return achievement.UnlocksToProto(unlocks)
@@ -45,7 +45,7 @@ func RegisterSocialAchievementHooks() {
 			Type:          achievement.EventPostLiked,
 			PostLikeCount: meta.PostLikeCount,
 		}); err != nil {
-			logx.Errorf("成就处理失败（点赞仍会成功）: %v", err)
+			moelog.Error("成就处理失败（点赞仍会成功）", "err", err)
 		}
 	})
 
@@ -54,7 +54,7 @@ func RegisterSocialAchievementHooks() {
 			Type: achievement.EventGiftSent, GiftCount: meta.GiftCount, GiftValue: meta.GiftValue,
 		})
 		if err != nil {
-			logx.Errorf("成就处理失败（送礼仍会成功）: %v", err)
+			moelog.Error("成就处理失败（送礼仍会成功）", "err", err)
 			return nil
 		}
 		return achievement.UnlocksToProto(unlocks)

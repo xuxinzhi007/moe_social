@@ -15,17 +15,21 @@
 | [应用配置与全局常量分层约定.md](./应用配置与全局常量分层约定.md) | 配置分层 |
 | [打包流程.md](./打包流程.md) | 构建发布 |
 
-## Kratos 后端（2026-05-27 当前阶段）
+## Kratos 后端（2026-05-28 · P0–P5 完成）
 
 | 文档 | 用途 |
 |------|------|
+| [kratos-migration-status.md](./kratos-migration-status.md) | **当前 / 下一步**（状态板 SSOT） |
 | [kratos-migration.md](./kratos-migration.md) | **架构 SSOT**（纯 Kratos 生产、`make gen`） |
+| [kratos-p5d-zero-gozero.md](./kratos-p5d-zero-gozero.md) | **P5-D** 生产二进制零 go-zero |
+| [kratos-p5-super-retirement.md](./kratos-p5-super-retirement.md) | P5 Super 退役 |
 | [new-api-kratos.md](./new-api-kratos.md) | **新接口开发**（域 proto，勿扩 defs） |
-| [kratos-migration-status.md](./kratos-migration-status.md) | **当前 / 下一步**（P3✅ · P4 D2+/C pilot/H） |
-| [kratos-p4-post-migration.md](./kratos-p4-post-migration.md) | **P4 洁癖轨道** |
-| [kratos-architecture-complete.md](./kratos-architecture-complete.md) | **架构完整 DoD** |
+| [kratos-architecture-complete.md](./kratos-architecture-complete.md) | 架构完整 DoD |
 | [moe-social-runtime.md](./moe-social-runtime.md) | `make moe-social` 运行时 |
-| [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md) | 存量迁移 SSOT（§0 快照 · compat 清单） |
+| [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md) | 存量 compat 清单（§2 路由表） |
+| [kratos-p4-post-migration.md](./kratos-p4-post-migration.md) | P4 data / gRPC / Hybrid |
+| [kratos-p5-split-deploy.md](./kratos-p5-split-deploy.md) | 分体 api/rpc 部署 |
+| [grpc-smoke-notify-chat-vip.md](./grpc-smoke-notify-chat-vip.md) | 域 gRPC 冒烟 |
 | [../guidelines/parallel-agent-workflow.md](../guidelines/parallel-agent-workflow.md) | 大任务多 Agent + worktree |
 | [kratos-pure-rollout.md](./kratos-pure-rollout.md) | PK 摘要（详情已归档） |
 | [../../backend/LAYOUT.md](../../backend/LAYOUT.md) | 仓库目录 |

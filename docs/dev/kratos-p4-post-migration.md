@@ -26,7 +26,7 @@ P3 完成「生产路径 Kratos 化 + logic 退役」。P4 面向官方分层洁
 
 | **P4-D** | `internal/data` repo 层 | ✅ **~95%** | 20/21 域 · voice 除外 |
 
-| **P4-C** | 契约收敛 FS-8/9 | ✅ **100%** | 12 独立 gRPC + Super 兼容 |
+| **P4-C** | 契约收敛 FS-8/9 | ✅ **100%** | 12 独立 gRPC（Super 已 P5 退役） |
 
 | **P4-H** | go-zero Hybrid 壳 | ✅ build tag | 默认 `!hybrid` 空 stub；回滚 `-tags hybrid` |
 

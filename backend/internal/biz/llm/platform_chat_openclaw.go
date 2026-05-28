@@ -8,7 +8,7 @@ import (
 	"backend/pkg/memory"
 	"backend/rpc/pb/moe"
 
-	"github.com/zeromicro/go-zero/core/logx"
+	"backend/internal/platform/moelog"
 )
 
 // buildOpenClawMemoryBlock 按 OpenClaw 分层注入：精选画像 → 今日/昨日日记 → 检索命中。
@@ -64,7 +64,7 @@ func memoryFlushBeforeCompact(
 	if strings.TrimSpace(userID) == "" || len(segment) == 0 || deps.Gateway == nil {
 		return
 	}
-	logger := logx.WithContext(ctx)
+	logger := moelog.WithContext(ctx)
 
 	for _, m := range segment {
 		if m.Role != "user" {

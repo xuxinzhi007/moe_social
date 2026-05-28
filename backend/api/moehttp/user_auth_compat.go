@@ -8,13 +8,12 @@ import (
 	"backend/api/internal/types"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func userFeishuOAuthCallback() func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.FeishuOAuthCallbackReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return err
 		}
 		userbiz.HandleFeishuOAuthCallback(ctx.Response(), ctx.Request(), userbiz.FeishuOAuthCallbackInput{
@@ -27,7 +26,7 @@ func userFeishuOAuthCallback() func(khttp.Context) error {
 func userWechatOAuthCallback() func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.WechatOAuthCallbackReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return err
 		}
 		userbiz.HandleWechatOAuthCallback(ctx.Response(), ctx.Request(), userbiz.WechatOAuthCallbackInput{

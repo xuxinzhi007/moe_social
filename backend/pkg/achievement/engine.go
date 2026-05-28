@@ -9,7 +9,7 @@ import (
 	"backend/model"
 	"backend/pkg/level"
 
-	"github.com/zeromicro/go-zero/core/logx"
+	"backend/internal/platform/moelog"
 	"gorm.io/gorm"
 )
 
@@ -40,7 +40,7 @@ func (e *Engine) loadDefinitions(tx *gorm.DB) ([]model.AchievementDefinition, er
 		return nil, err
 	}
 	if len(defs) == 0 {
-		logx.Infof("成就定义表为空，请在 Moe Admin 执行「导入默认成就」后再触发成就逻辑")
+		moelog.Infof("成就定义表为空，请在 Moe Admin 执行「导入默认成就」后再触发成就逻辑")
 	}
 	e.mu.Lock()
 	e.definitions = defs
@@ -51,7 +51,7 @@ func (e *Engine) loadDefinitions(tx *gorm.DB) ([]model.AchievementDefinition, er
 // tryBumpDailyActivity 更新日活；失败只记日志，避免评论/发帖/签到主流程回滚。
 func (e *Engine) tryBumpDailyActivity(tx *gorm.DB, userID uint, now time.Time, post, comment, checkIn bool) {
 	if err := e.bumpDailyActivity(tx, userID, now, post, comment, checkIn); err != nil {
-		logx.Errorf("user %d daily activity bump skipped: %v", userID, err)
+		moelog.Errorf("user %d daily activity bump skipped: %v", userID, err)
 	}
 }
 

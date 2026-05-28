@@ -43,8 +43,15 @@ gen-http-routes:
 # 兼容旧文档 target 名
 gen-moekratospilot-get: gen-http-routes
 
-# --client=false：避免与 pb 包名冲突、生成坏 client
+# P5：Super 已退役；仅组装 message-only moe.proto，禁止 goctl --zrpc_out 再生 logic
 gen-rpc: fs8-assemble-super-proto
+	@echo "P5: rpc/moe.proto has no Super service; use domain protos under api/*/v1/ for gRPC."
+	@echo "Frozen pb: rpc/pb/moe/*.pb.go (SuperClient shim for legacy gateways). Run gen-rpc-legacy only if restoring Super."
+
+# 紧急回滚：先从 git 恢复 P5 前的 fs8-assemble-rpc-proto.py 与 defs assemble，再执行（会再生 logic）
+gen-rpc-legacy:
+	@echo "ERROR: restore pre-P5 fs8-assemble-rpc-proto.py from git before gen-rpc-legacy"
+	@exit 1
 	goctl rpc protoc rpc/moe.proto --go_out=. --go-grpc_out=. --zrpc_out=./rpc -I rpc --go_opt=module=backend --go-grpc_opt=module=backend --client=false
 	@rm -f rpc/pb/super/super.pb.go rpc/pb/super/super_grpc.pb.go rpc/pb/super/common.pb.go rpc/pb/super/moe.pb.go rpc/pb/super/moe_grpc.pb.go
 	bash scripts/gen/fs9b-pb-shim.sh

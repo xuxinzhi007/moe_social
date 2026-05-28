@@ -87,42 +87,8 @@ func buildHTTPServer(opts Options, rpcMonitor interface{ Stop() }) (interface {
 		log.Printf("moe-social: pure Kratos HTTP %s (no go-zero rest)", addr)
 		return pure, addr, nil
 	}
-	if moewiring.KratosHTTPFrontEnabled() {
-		internalPort := moewiring.KratosInternalHTTPPort()
-		apiOpts.InternalHTTPPort = internalPort
-		apiOpts.InternalHTTPHost = "127.0.0.1"
-		apiRes, err := apirun.StartWithResult(apiOpts)
-		if err != nil {
-			if rpcMonitor != nil {
-				rpcMonitor.Stop()
-			}
-			return nil, "", fmt.Errorf("api start: %w", err)
-		}
-		front, err := newKratosFrontServer(apiRes, "0.0.0.0", externalHTTPPort(opts.UnifiedConfigFile, opts.APIConfigFile))
-		if err != nil {
-			if apiRes.Server != nil {
-				apiRes.Server.Stop()
-			}
-			if rpcMonitor != nil {
-				rpcMonitor.Stop()
-			}
-			return nil, "", fmt.Errorf("kratos front: %w", err)
-		}
-		addr := fmt.Sprintf("0.0.0.0:%d", externalHTTPPort(opts.UnifiedConfigFile, opts.APIConfigFile))
-		log.Printf("moe-social: PK-4 enabled — Kratos HTTP %s, go-zero 127.0.0.1:%d (fallback)", addr, internalPort)
-		return front, addr, nil
-	}
-	if moewiring.KratosHybridHTTPFallback() {
-		apiSrv, err := apirun.Start(apiOpts)
-		if err != nil {
-			if rpcMonitor != nil {
-				rpcMonitor.Stop()
-			}
-			return nil, "", fmt.Errorf("api start: %w", err)
-		}
-		addr := apiListenAddr(opts.APIConfigFile)
-		log.Printf("moe-social: PK-8 hybrid fallback — go-zero HTTP %s", addr)
-		return wrapREST(apiSrv), addr, nil
+	if moewiring.KratosHTTPFrontEnabled() || moewiring.KratosHybridHTTPFallback() {
+		return buildHTTPServerHybridLegacy(opts, rpcMonitor)
 	}
 	if rpcMonitor != nil {
 		rpcMonitor.Stop()

@@ -1,6 +1,7 @@
 package usergw
 
 import (
+	"backend/api/internal/gwutil"
 	"context"
 
 	notifybiz "backend/internal/biz/notify"
@@ -13,20 +14,14 @@ func (g *Gateway) GetUserAvatar(ctx context.Context, in *moe.GetUserAvatarReq, o
 	if g != nil && g.local != nil {
 		return g.local.GetUserAvatar(ctx, in)
 	}
-	if g == nil || g.super == nil {
-		return nil, nil
-	}
-	return g.super.GetUserAvatar(ctx, in, opts...)
+	return nil, gwutil.ErrUnavailable
 }
 
 func (g *Gateway) UpdateUserAvatar(ctx context.Context, in *moe.UpdateUserAvatarReq, opts ...grpc.CallOption) (*moe.UpdateUserAvatarResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.UpdateUserAvatar(ctx, in)
 	}
-	if g == nil || g.super == nil {
-		return nil, nil
-	}
-	return g.super.UpdateUserAvatar(ctx, in, opts...)
+	return nil, gwutil.ErrUnavailable
 }
 
 func (g *Gateway) CreateNotification(ctx context.Context, in *moe.CreateNotificationReq, opts ...grpc.CallOption) (*moe.CreateNotificationResp, error) {
@@ -36,8 +31,5 @@ func (g *Gateway) CreateNotification(ctx context.Context, in *moe.CreateNotifica
 		}
 		return &moe.CreateNotificationResp{}, nil
 	}
-	if g == nil || g.super == nil {
-		return &moe.CreateNotificationResp{}, nil
-	}
-	return g.super.CreateNotification(ctx, in, opts...)
+	return nil, gwutil.ErrUnavailable
 }

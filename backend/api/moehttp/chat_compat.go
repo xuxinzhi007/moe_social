@@ -13,7 +13,6 @@ import (
 	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 // PilotNativeChatCompatRoutes 私信 + 在线 + WS（tier-A；WS 直挂 chatbiz）。
@@ -46,7 +45,7 @@ func RegisterChatCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 func pmSendPrivateMessage(svcCtx *svc.ServiceContext, app *chatapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.SendPrivateMessageReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.SendPrivateMessageResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -90,7 +89,7 @@ func pmSendPrivateMessage(svcCtx *svc.ServiceContext, app *chatapp.AppService) f
 func pmListPrivateMessages(app *chatapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.ListPrivateMessagesReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.ListPrivateMessagesResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -130,7 +129,7 @@ func pmListPrivateMessages(app *chatapp.AppService) func(khttp.Context) error {
 func pmListPrivateConversations(app *chatapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.ListPrivateConversationsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.ListPrivateConversationsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -172,7 +171,7 @@ func pmListPrivateConversations(app *chatapp.AppService) func(khttp.Context) err
 func chatChatOnline() func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.ChatOnlineReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.ChatOnlineResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -188,7 +187,7 @@ func chatChatOnline() func(khttp.Context) error {
 func chatChatOnlineBatch() func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.ChatOnlineBatchReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.ChatOnlineBatchResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})

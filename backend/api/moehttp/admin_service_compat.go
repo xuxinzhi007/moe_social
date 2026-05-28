@@ -12,7 +12,6 @@ import (
 	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 // PilotNativeAdminServiceCompatRoutes Admin CRUD（直挂 internal/service/admin + vip）。
@@ -84,7 +83,7 @@ func RegisterAdminServiceCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 func adminListAccounts(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminListAccountsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -109,7 +108,7 @@ func adminListAccounts(app *adminapp.AppService) func(khttp.Context) error {
 func adminCreateAccount(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminCreateAccountReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -134,7 +133,7 @@ func adminCreateAccount(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminUpdateAccount(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminUpdateAccountReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -170,7 +169,7 @@ func adminUpdateAccount(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminDeleteAccount(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminDeleteAccountReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -190,7 +189,7 @@ func adminDeleteAccount(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminBootstrapAchievements(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.EmptyReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -217,7 +216,7 @@ func adminBootstrapAchievements(svcCtx *svc.ServiceContext) func(khttp.Context) 
 func adminListAiAgents(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminListAiAgentsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -242,7 +241,7 @@ func adminListAiAgents(app *adminapp.AppService) func(khttp.Context) error {
 func adminDeleteAiAgent(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminDeleteAiAgentReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -264,7 +263,7 @@ func adminDeleteAiAgent(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminListAnnouncements(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminListAnnouncementsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -289,7 +288,7 @@ func adminListAnnouncements(app *adminapp.AppService) func(khttp.Context) error 
 func adminCreateAnnouncement(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminCreateAnnouncementReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -314,7 +313,7 @@ func adminCreateAnnouncement(svcCtx *svc.ServiceContext) func(khttp.Context) err
 func adminGetAnnouncement(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminGetAnnouncementReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -333,7 +332,7 @@ func adminGetAnnouncement(app *adminapp.AppService) func(khttp.Context) error {
 func adminUpdateAnnouncement(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminUpdateAnnouncementReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -365,7 +364,7 @@ func adminUpdateAnnouncement(svcCtx *svc.ServiceContext) func(khttp.Context) err
 func adminDeleteAnnouncement(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminDeleteAnnouncementReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -385,7 +384,7 @@ func adminDeleteAnnouncement(svcCtx *svc.ServiceContext) func(khttp.Context) err
 func adminPublishAnnouncement(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminPublishAnnouncementReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -408,7 +407,7 @@ func adminPublishAnnouncement(svcCtx *svc.ServiceContext) func(khttp.Context) er
 func adminListAuditLogs(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminListAuditLogsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -434,7 +433,7 @@ func adminListAuditLogs(app *adminapp.AppService) func(khttp.Context) error {
 func adminListComments(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminListCommentsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -461,7 +460,7 @@ func adminListComments(app *adminapp.AppService) func(khttp.Context) error {
 func adminDeleteComment(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminDeleteCommentReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -481,7 +480,7 @@ func adminDeleteComment(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminListGroups(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminListGroupsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -508,7 +507,7 @@ func adminListGroups(app *adminapp.AppService) func(khttp.Context) error {
 func adminDeleteGroup(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminDeleteGroupReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -528,7 +527,7 @@ func adminDeleteGroup(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminListGifts(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminListGiftsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -555,7 +554,7 @@ func adminListGifts(app *adminapp.AppService) func(khttp.Context) error {
 func adminCreateGift(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminCreateGiftReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -591,7 +590,7 @@ func adminCreateGift(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminGetGift(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminGetGiftReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -610,7 +609,7 @@ func adminGetGift(app *adminapp.AppService) func(khttp.Context) error {
 func adminUpdateGift(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminUpdateGiftReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -638,7 +637,7 @@ func adminUpdateGift(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminDeleteGift(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminDeleteGiftReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -658,7 +657,7 @@ func adminDeleteGift(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminBootstrapGifts(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.EmptyReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -681,7 +680,7 @@ func adminBootstrapGifts(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminDedupeGifts(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.EmptyReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -704,7 +703,7 @@ func adminDedupeGifts(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminListAchievements(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminListAchievementsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -729,7 +728,7 @@ func adminListAchievements(app *adminapp.AppService) func(khttp.Context) error {
 func adminUpdateAchievement(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminUpdateAchievementReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -757,7 +756,7 @@ func adminUpdateAchievement(svcCtx *svc.ServiceContext) func(khttp.Context) erro
 func adminListLevelConfigs(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.EmptyReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -780,7 +779,7 @@ func adminListLevelConfigs(app *adminapp.AppService) func(khttp.Context) error {
 func adminUpdateLevelConfig(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminUpdateLevelConfigReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -808,7 +807,7 @@ func adminUpdateLevelConfig(svcCtx *svc.ServiceContext) func(khttp.Context) erro
 func adminBootstrapLevels(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.EmptyReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -834,7 +833,7 @@ func adminBootstrapLevels(svcCtx *svc.ServiceContext) func(khttp.Context) error 
 func adminBroadcastNotification(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminBroadcastNotificationReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -868,7 +867,7 @@ func adminBroadcastNotification(svcCtx *svc.ServiceContext) func(khttp.Context) 
 func adminSendNotification(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminSendNotificationReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -902,7 +901,7 @@ func adminSendNotification(svcCtx *svc.ServiceContext) func(khttp.Context) error
 func adminListGiftPurchaseOrders(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminListGiftPurchaseOrdersReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -929,7 +928,7 @@ func adminListGiftPurchaseOrders(app *adminapp.AppService) func(khttp.Context) e
 func adminListVipOrders(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminListVipOrdersReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -956,7 +955,7 @@ func adminListVipOrders(app *adminapp.AppService) func(khttp.Context) error {
 func adminListPostReports(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminListPostReportsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -983,7 +982,7 @@ func adminListPostReports(app *adminapp.AppService) func(khttp.Context) error {
 func adminListPosts(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminListPostsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1011,7 +1010,7 @@ func adminListPosts(app *adminapp.AppService) func(khttp.Context) error {
 func adminDeletePost(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminDeletePostReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1031,7 +1030,7 @@ func adminDeletePost(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminListFollows(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminListFollowsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1056,7 +1055,7 @@ func adminListFollows(app *adminapp.AppService) func(khttp.Context) error {
 func adminDeleteFollow(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminDeleteFollowReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1076,7 +1075,7 @@ func adminDeleteFollow(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminListFriendRequests(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminListFriendRequestsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1101,7 +1100,7 @@ func adminListFriendRequests(app *adminapp.AppService) func(khttp.Context) error
 func adminListTagDictionary(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminListTagDictionaryReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1126,7 +1125,7 @@ func adminListTagDictionary(app *adminapp.AppService) func(khttp.Context) error 
 func adminCreateTagDictionary(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminCreateTagDictionaryReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1152,7 +1151,7 @@ func adminCreateTagDictionary(svcCtx *svc.ServiceContext) func(khttp.Context) er
 func adminUpdateTagDictionary(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminUpdateTagDictionaryReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1182,7 +1181,7 @@ func adminUpdateTagDictionary(svcCtx *svc.ServiceContext) func(khttp.Context) er
 func adminDeleteTagDictionary(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminDeleteTagDictionaryReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1206,7 +1205,7 @@ func adminDeleteTagDictionary(svcCtx *svc.ServiceContext) func(khttp.Context) er
 func adminUpdateTopicTag(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminUpdateTopicTagReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1235,7 +1234,7 @@ func adminUpdateTopicTag(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminDeleteTopicTag(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminDeleteTopicTagReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1259,7 +1258,7 @@ func adminDeleteTopicTag(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminBootstrapTopicTags(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.EmptyReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1286,7 +1285,7 @@ func adminBootstrapTopicTags(svcCtx *svc.ServiceContext) func(khttp.Context) err
 func adminListUsers(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminListUsersReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1313,7 +1312,7 @@ func adminListUsers(app *adminapp.AppService) func(khttp.Context) error {
 func adminGetUser(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminGetUserReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1332,7 +1331,7 @@ func adminGetUser(app *adminapp.AppService) func(khttp.Context) error {
 func adminUpdateUser(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminUpdateUserReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1359,7 +1358,7 @@ func adminUpdateUser(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminGetUserProfile(app *adminapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminGetUserProfileReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1378,7 +1377,7 @@ func adminGetUserProfile(app *adminapp.AppService) func(khttp.Context) error {
 func adminGetVipPlan(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminGetVipPlanReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1402,7 +1401,7 @@ func adminGetVipPlan(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminUpdateVipPlan(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminUpdateVipPlanReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1435,7 +1434,7 @@ func adminUpdateVipPlan(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminDeleteVipPlan(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.AdminDeleteVipPlanReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -1460,7 +1459,7 @@ func adminDeleteVipPlan(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 func adminBootstrapVipPlans(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.EmptyReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})

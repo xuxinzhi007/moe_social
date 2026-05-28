@@ -1,8 +1,8 @@
 # 存量 HTTP 接口迁移评估
 
-> **状态快照更新：2026-05-27**  
+> **状态快照更新：2026-05-28**（P3 + P5 完成）  
 > **状态板（勾选 / 汇报用）**：[kratos-migration-status.md](./kratos-migration-status.md)  
-> SSOT 架构：[kratos-migration.md](./kratos-migration.md) · 新接口：[new-api-kratos.md](./new-api-kratos.md) · 并行协作：[parallel-agent-workflow.md](../guidelines/parallel-agent-workflow.md)  
+> SSOT 架构：[kratos-migration.md](./kratos-migration.md) · 新接口：[new-api-kratos.md](./new-api-kratos.md) · P5-D：[kratos-p5d-zero-gozero.md](./kratos-p5d-zero-gozero.md)  
 > §0 与状态板数字不一致时，**以 `route_stats.go` + `make check` 为准**，并同步两处文档。
 
 ---
@@ -11,83 +11,52 @@
 
 ### 0.1 当前状态（Latest · 2026-05-28）
 
-**阶段名：P2 完成 · P3 logic 退役进行中**
+**阶段名：P3 + P4 + P5 完成 — 存量 HTTP 迁移已收口**
 
 | 维度 | 状态 | 说明 |
 |------|------|------|
-| **传输 / 路由注册** | ✅ 完成 | compat **263**；`native_gen=0`；`bridge=2` |
-| **实现层直挂 App/biz** | ✅ **263 / 263** | A 档 **263** · B 档 **0** · C 档 **0** |
-| **P3 重点桥接** | ✅ WS + platform chat | 4 WS + `ExecutePlatformChat` 已 biz 化 |
-| **biz + GW** | ✅ 完成 | compat 无 logic import |
-| **工程验收** | ✅ | `make check` 通过 |
+| **传输 / 路由注册** | ✅ | compat **263**；`native_gen=0`；`bridge=2` |
+| **实现层** | ✅ | `*_compat.go` → `internal/service/*App` → `internal/biz` |
+| **`api/internal/logic`** | ✅ **0** 文件 | 已物理删除；`make audit-logic-orphans` 通过 |
+| **`rpc/internal/logic`** | ✅ **0** 文件 | P5-B；`moe.proto` 无 `service Super` |
+| **生产零 go-zero** | ✅ | P5-D：`go list -deps ./cmd/moe-social` 无 go-zero |
+| **工程验收** | ✅ | `make check` · `/migration percent=100` |
 
-**2026-05-28 批次（P3-W2/W3）**：chat/presence/world WS → `internal/biz/chat`；platform chat → `llmbiz.ExecutePlatformChat`；`internal/pkg/presence` 抽出。
-
-> 历史批次（P2-A～H、C 档 7 条清零）见 [kratos-migration-status.md](./kratos-migration-status.md)。
-
-**本阶段已交付（2026-05-27 批次）**
-
-- [x] `routes_native_gen` 从 247 → **0**
-- [x] 删除 `user_logic_compat` / `wave2_logic_compat` / `platform_logic_compat` / `admin_logic_compat`
-- [x] 新增并按域注册：`user_compat`、`user_memory_compat`、`community_compat`、`ai_compat`、`chat_compat`、`wave2_misc_compat`、`platform_compat`、`admin_service_compat`、`admin_legacy_compat`
-- [x] 直挂 App：post(9)、gift(6)、comment(2)、community(11) 及波次 1 小域
-- [x] 共享 `compat_invoke.go`；`register_all.go` 注册顺序稳定
-- [x] 文档 / 规则 / `AGENTS.md` 与代码结构对齐
-
-**代码锚点（改前先对表）**
+**代码锚点**
 
 ```text
-backend/api/moehttp/register_all.go   # 注册入口
-backend/api/moehttp/route_stats.go      # PilotNativeCompatRoutes = 263
-backend/api/moehttp/routes_native_gen.go # nativeDomainRouteCount = 0
+backend/api/moehttp/register_all.go    # 注册入口
+backend/api/moehttp/route_stats.go     # PilotNativeCompatRoutes = 263
+backend/api/moehttp/routes_native_gen.go  # nativeDomainRouteCount = 0
+backend/api/internal/logic/            # .gitkeep（已退役）
 ```
 
 ---
 
-### 0.2 下一步状态（Next）
+### 0.2 下一步（维护向）
 
-**阶段名：P3 logic 退役（handler → biz 后删 logic）**
+HTTP 存量迁移**不再**是主轨道。见 [kratos-migration-status.md §下一步](./kratos-migration-status.md#下一步next)：
 
-| 指标 | 当前 | 下一步 |
-|------|------|--------|
-| compat 直挂 App/biz | **263 / 263** | 维持 |
-| compat import logic | **0** | 维持 |
-| `api/internal/logic` 文件 | ~244 | 按域删无引用 + handler 改线 |
-| 审计 | `make audit-logic-orphans` | 每批 PR 必跑 |
+| 优先级 | 任务 |
+|--------|------|
+| 1 | grpc 冒烟 notify / chat / vip |
+| 2 | 分体 api/rpc 联调（若需要） |
+| 3 | 可选：从 `go.mod` 移除 go-zero（需废弃 hybrid 或拆 module） |
 
-**推荐并行子任务（P3-W4b）**
-
-| 轨道 | 范围 | 说明 |
-|------|------|------|
-| **U** | user handler → `UserApp` / biz | 体量最大 |
-| **A** | admin handler → `AdminApp` | 99 个 logic 类型 |
-| **M** | 杂项（notification/voice 等） | 小域快速清 |
-
-**单轨验收**
-
-```bash
-cd backend && make check && make audit-logic-orphans
-```
-
-**阶段顺序建议**
-
-1. **A（admin CRUD）** — 收益最大、面.admin 集中  
-2. **B（user）** — 体量大，可按子域再拆（oauth / vip / 社交）  
-3. **C（ai + chat PM）** — 与 B 弱依赖，可与 A 并行  
-4. **D（platform LLM）** — `ChatLogic` 重，可放在 C 之后  
-5. **收尾**：`wave2_misc_compat`（27）、`admin_legacy_compat`（28）按需直挂或长期保留 handler  
-6. **全站**：删无引用 logic · 补全域 proto RPC · 更新 §0 快照为「实现层 100%」
+新能力：**只**走 [new-api-kratos.md](./new-api-kratos.md)（域 proto + `internal/service`）。
 
 ---
 
 ### 0.3 阶段对照（一眼看懂）
 
 ```text
-[已完成] PK / 传输层     Kratos :8888 全路由 + native_gen=0
-[已完成] compat 拆分    263 条分文件注册 + make check
-[进行中] 实现层直挂      56 → 263（本文件 §0.2）
-[未开始] logic 物理删除  按域确认无引用后删
-[保持]   bridge=2        swagger
+[已完成] PK / 传输层      Kratos :8888 全路由 + native_gen=0
+[已完成] compat 263       分文件注册 + 直挂 service/biz
+[已完成] api logic 清库   0 文件
+[已完成] P5 Super 退役    无 Super gRPC · gateway 无 SuperClient
+[已完成] P5-D 生产依赖    moe-social 依赖树零 go-zero
+[保持]   bridge=2         swagger
+[可选]   hybrid 回滚      go build -tags hybrid
 ```
 
 ---
@@ -97,24 +66,25 @@ cd backend && make check && make audit-logic-orphans
 | 项 | 状态 |
 |----|------|
 | 传输层 Kratos :8888 | ✅ 268 条 goctl 路由均在 Kratos 注册 |
-| `routes_native_gen` | ✅ **0**（无 goctl handler 直挂 gen） |
-| `routes_bridge_gen` | **2**（swagger 文档） |
-| `api/moehttp/*_compat.go` | ✅ **263** 条路由（`PilotNativeCompatRoutes`） |
-| 实现层直挂 `internal/service` | 🔄 **~56** 条已直挂 App；其余经 logic / handler 薄转 |
+| `routes_native_gen` | ✅ **0** |
+| `routes_bridge_gen` | **2**（swagger） |
+| `api/moehttp/*_compat.go` | ✅ **263** 条（`PilotNativeCompatRoutes`） |
+| 实现层 | ✅ 经 `internal/service` / `internal/biz`（**无** `api/internal/logic`） |
+| 生产 go-zero 依赖 | ✅ **0**（P5-D） |
 
-生产已稳定；后续工作是 **HTTP 适配层** 从 logic/handler 收口到 `internal/service`，不改变对外路径与 JSON。
+本文 §2 保留 **compat 文件级路由表**（改路由前对表用）；进度汇报以状态板为准。
 
 ---
 
-## 1. 两套「进度」不要混
+## 1. 三套「进度」不要混
 
 | 口径 | 典型值 | 含义 |
 |------|--------|------|
-| `GET /migration` → `percent` | **100** | PK 权重：Kratos 传输 + biz/GW + 路由挂 Kratos |
-| `http_native_handler_pct` | **100** | 凡在 Kratos 注册的 compat 均计为「native HTTP」 |
-| **实现层直挂 App** | **~21%**（56/263） | `*_compat.go` 内直接调 `*App`，不经 `api/internal/logic` |
+| `GET /migration` → `percent` | **100** | 传输 + biz/GW + 路由挂 Kratos + logic 清库 |
+| `rollout_percent` | **100** | 传输铺轨 |
+| **生产零 go-zero** | **达标** | `go list -deps ./cmd/moe-social` 无 `zeromicro/go-zero`（**不**等于仓库删光 go-zero 源文件） |
 
-代码口径：`backend/api/moehttp/route_stats.go`（`PilotNativeCompatRoutes`、`nativeDomainRouteCount`、`bridgeRouteCount`）。
+代码口径：`backend/api/moehttp/route_stats.go`、`backend/internal/platform/kratosprogress/`。
 
 ---
 
@@ -145,26 +115,28 @@ cd backend && make check && make audit-logic-orphans
 | `comment_compat.go` | 2 | 直挂 | `CommentApp` · `api/comment/v1/` |
 | `post_compat.go` | 9 | 直挂 | `PostApp` + `CommentApp` · `api/post/v1/` |
 | `community_compat.go` | 11 | 直挂 | `CommunityApp` · `api/community/v1/` |
-| `user_compat.go` | 49 | `wrapNativeHTTP` | goctl `handler/user` → logic → `UserGW` |
-| `user_memory_compat.go` | 8 | `wrapNativeHTTP` | 记忆子路径 → `LLMGW` / logic |
-| `ai_compat.go` | 14 | `invokeLogicJSON` | `ailogic` → `AIGW` |
-| `chat_compat.go` | 9 | 混合 | 私信 `invokeLogicJSON`；WS/在线 `wrapNativeHTTP` |
-| `wave2_misc_compat.go` | 27 | `invokeLogicJSON` | avatar/emoji/image/notification/vip 公开/admin 登录等 |
-| `admin_service_compat.go` | 55 | `invokeLogicJSON` | `adminlogic` → `AdminGW`（**待** 内联 `AdminApp`） |
-| `admin_legacy_compat.go` | 28 | `wrapNativeHTTP` | Moe brain/flow、运行时、媒体等 |
-| `platform_compat.go` | 17 | 混合 | LLM chat/agent `invokeLogicJSON`；config/raw/voice/moe `wrapNativeHTTP` |
+| `user_compat.go` | 49 | 直挂 | `UserApp` |
+| `user_memory_compat.go` | 8 | 直挂 | `LLMApp` / 记忆 biz |
+| `ai_compat.go` | 14 | 直挂 | `AIApp` |
+| `chat_compat.go` | 9 | 直挂 | `ChatApp` + WS biz |
+| `wave2_misc_compat.go` | 27 | 直挂 | 杂项 service |
+| `admin_service_compat.go` | 55 | 直挂 | `AdminApp` |
+| `admin_legacy_compat.go` | 28 | 直挂 | Moe brain/flow、运行时、媒体等 |
+| `platform_compat.go` | 17 | 直挂 | `LLMApp` / platform service |
 
-共享辅助：`compat_invoke.go`（`invokeLogicJSON` / `invokeLogicEmpty`）。
+共享辅助：`compat_invoke.go`（遗留命名；生产路径调 `*App`，非 `api/internal/logic`）。
 
 **已删除（勿再引用）**：`user_logic_compat.go`、`wave2_logic_compat.go`、`platform_logic_compat.go`、`admin_logic_compat.go`（admin 已拆为 `admin_service_compat` + `admin_legacy_compat`）。
 
-### 2.2 实现层分档（263 条）
+### 2.2 实现层（263 条 · P3 后）
 
-| 分档 | 约计 | 代表 |
+| 分档 | 数量 | 说明 |
 |------|------|------|
-| **A · 直挂 `internal/service`** | **56** | post、gift、comment、checkin、achievement、behavior、community、landing、llm 读、admin insights/readonly、moe admin 读、vip 读 |
-| **B · `invokeLogicJSON`** | **~107** | ai、wave2_misc、admin CRUD、platform 部分 LLM |
-| **C · `wrapNativeHTTP`** | **~100** | user、user 记忆、chat WS、admin legacy、platform voice/moe |
+| **生产路径** | **263** | `*_compat.go` → `internal/service/*App` → `internal/biz` |
+| **已退役** | **0** | `api/internal/logic` 无业务文件 |
+| **Hybrid 回滚** | 可选 | `api/internal/handler/**` 仅 `//go:build hybrid` |
+
+历史分档 A/B/C（logic 薄转）见 [archive/dev/kratos/](../archive/dev/kratos/) 冲刺文档。
 
 ---
 
@@ -213,26 +185,24 @@ cd backend && make check && make audit-logic-orphans
 
 ---
 
-## 7. 完成定义
+## 7. 完成定义（已达）
 
-### 传输层（已达）
+### 传输层
 
 - [x] 全部存量路径在 Kratos `RegisterAll` 注册
 - [x] `routes_native_gen` = 0
 - [x] 仅 swagger bridge = 2
 
-### 域级 Done（实现层）
+### 实现层（P3）
 
-- [ ] HTTP 在 `*_compat.go` 直挂 `internal/service`（或官方 Kratos service）
-- [ ] `skipExactPaths` 含该域所有 path
-- [ ] `api/<domain>/v1/*.proto` 为契约 SSOT
-- [ ] 对应 `api/internal/logic/<group>` 无活跃引用
-- [ ] `make check` 通过
+- [x] 263 条 compat 经 `internal/service` / `internal/biz`
+- [x] `api/internal/logic` 无业务文件
+- [x] `make check` + `/migration percent=100`
 
-### 全站实现层 100%
+### P5
 
-- [ ] 263 条 compat 均为分档 **A**（直挂 App）
-- [ ] 仅保留 swagger bridge（2）及不可避免的 WS/流式 handler 包装
+- [x] 无 `service Super` · `rpc/internal/logic` 清库
+- [x] 生产 `moe-social` 依赖树零 go-zero（P5-D）
 
 ---
 

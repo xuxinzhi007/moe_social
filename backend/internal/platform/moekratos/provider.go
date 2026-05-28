@@ -102,7 +102,7 @@ func buildMoeAdmin(superRPC string, db *gorm.DB) (*moeadmin.AdminService, error)
 		return nil, fmt.Errorf("super rpc dial %s: %w", superRPC, err)
 	}
 	client := moe.NewSuperClient(conn)
-	admin, err := moewiring.NewAPIAdminService(client)
+	admin, err := moewiring.NewAPIAdminService(client, nil)
 	if err != nil {
 		_ = conn.Close()
 		return nil, err

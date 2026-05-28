@@ -10,7 +10,6 @@ import (
 	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 // PilotNativeCommunityCompatRoutes 社群域 HTTP（internal/service/community）。
@@ -38,7 +37,7 @@ func RegisterCommunityCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 func getGroups(app *communityapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetGroupsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetGroupsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -65,7 +64,7 @@ func getGroups(app *communityapp.AppService) func(khttp.Context) error {
 func createGroup(app *communityapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.CreateGroupReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.CreateGroupResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -87,7 +86,7 @@ func createGroup(app *communityapp.AppService) func(khttp.Context) error {
 func getGroup(app *communityapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetGroupReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetGroupResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -106,7 +105,7 @@ func getGroup(app *communityapp.AppService) func(khttp.Context) error {
 func updateGroup(app *communityapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.UpdateGroupReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.UpdateGroupResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -128,7 +127,7 @@ func updateGroup(app *communityapp.AppService) func(khttp.Context) error {
 func deleteGroup(app *communityapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.DeleteGroupReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -146,7 +145,7 @@ func deleteGroup(app *communityapp.AppService) func(khttp.Context) error {
 func joinGroup(app *communityapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.JoinGroupReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -164,7 +163,7 @@ func joinGroup(app *communityapp.AppService) func(khttp.Context) error {
 func leaveGroup(app *communityapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.LeaveGroupReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -182,7 +181,7 @@ func leaveGroup(app *communityapp.AppService) func(khttp.Context) error {
 func getGroupMembers(app *communityapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetGroupMembersReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetGroupMembersResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -220,7 +219,7 @@ func getGroupMembers(app *communityapp.AppService) func(khttp.Context) error {
 func createGroupPost(app *communityapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.CreateGroupPostReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.CreateGroupPostResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -246,7 +245,7 @@ func createGroupPost(app *communityapp.AppService) func(khttp.Context) error {
 func getGroupPosts(app *communityapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetGroupPostsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetGroupPostsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -272,7 +271,7 @@ func getGroupPosts(app *communityapp.AppService) func(khttp.Context) error {
 func getUserGroups(app *communityapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetUserGroupsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetUserGroupsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})

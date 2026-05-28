@@ -107,9 +107,11 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ...
 这在 **Git Bash / Mac 终端**里没问题；**Windows cmd** 和不少 **make 调用的子 shell** 不支持这种写法，所以 Agent 的 `backend_build_linux` **不再调用 `make build-linux`**，而是直接：
 
 ```text
-go build -o api/... ./api   （进程环境变量 GOOS=linux GOARCH=amd64）
-go build -o rpc/... ./rpc
+go build -o api/moe-social-api ./api   （进程环境变量 GOOS=linux GOARCH=amd64）
+go build -o rpc/moe-social-rpc ./rpc
 ```
+
+勿把 `api/...` 当成路径：在 Windows 上会生成名为 `...` 的目录并导致 `git add` 失败。
 
 与你在 Git Bash 里手动交叉编译效果相同，且不依赖 shell 语法。终端里仍可用 `make build-linux`（建议在 Git Bash 下执行）。
 

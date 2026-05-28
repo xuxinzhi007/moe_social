@@ -64,19 +64,25 @@ func Current() Report {
 			"contract_fs8_fs9":             contract,
 			"kratos_pure_production":       boolPercent(moewiring.KratosPureEnabled()),
 			"kratos_pk8_goctl_retired":     boolPercent(moewiring.KratosPK8GoctlRetired()),
+			"super_grpc_retired_pct":       P5SuperRuntimePercent(),
+			"p5_super_runtime_pct":         P5SuperRuntimePercent(),
+			"rpc_logic_retired_pct":        RPCLegacyLogicRetiredPercent(),
+			"rpc_logic_files_left":         RPCLegacyLogicFileCount(),
 		},
 		PilotDomains: []string{
 			"http: kratos transport/http :8888 (native + compat → biz)",
 			"http.bridge: swagger only (2 routes)",
-			"grpc: kratos transport/grpc :8080 (Super + MoeAdmin)",
+			"grpc: kratos transport/grpc :8080 (12 domain + MoeAdmin; Super optional P5)",
 		},
 		Notes: []string{
-			"percent = 85% transport stack + 15% legacy_logic_retired (baseline 273 files)",
-			"rollout_percent = PK 传输铺轨（可达100，不含 logic 清库）",
+			"percent = 85% transport stack + 15% legacy_logic_retired (baseline 273 api logic files)",
+			"P5-A super_grpc_retired: single_process + moe.super_grpc_retired → no Super register / no zrpc dial",
+			"P5-B rpc_logic_files_left: Super goctl logic 清库（baseline 209）",
+			"rollout_percent = PK 传输铺轨（可达100，不含 rpc logic 清库）",
 			"production: make moe-social — kratos HTTP :8888 + kratos grpc :8080",
-			"Rollback: kratos_pure_enabled=false",
+			"Rollback P5-A: moe.super_grpc_retired=false or single_process=false",
 		},
-		Docs: "docs/dev/kratos-architecture-complete.md",
+		Docs: "docs/dev/kratos-p5-super-retirement.md",
 	}
 }
 
@@ -178,7 +184,11 @@ func httpBridgeHandlerPercent() int {
 }
 
 func grpcMoeServiceLayerPercent() int {
-	// PK-11/12：纯 Kratos 生产下 Super+MoeAdmin 均由 kratos/transport/grpc 暴露（实现仍在 rpc/server + moegrpc）。
+	// P5-A：Super 退役后仅暴露域 gRPC（12/12）+ MoeAdmin。
+	if moewiring.SuperGrpcRetired() {
+		return 100
+	}
+	// PK-11/12：纯 Kratos 生产下 Super+MoeAdmin 均由 kratos/transport/grpc 暴露。
 	if moewiring.KratosPureEnabled() && moewiring.KratosSuperGRPCNative() {
 		return 100
 	}

@@ -1,6 +1,7 @@
 package landinggw
 
 import (
+	"backend/api/internal/gwutil"
 	"context"
 
 	landingapp "backend/internal/service/landing"
@@ -12,12 +13,11 @@ import (
 // Gateway Landing HTTP → biz 或 super RPC 回退。
 type Gateway struct {
 	local *landingapp.AppService
-	super moe.SuperClient
 }
 
 // New 构造网关。
-func New(local *landingapp.AppService, legacy moe.SuperClient) *Gateway {
-	return &Gateway{local: local, super: legacy}
+func New(local *landingapp.AppService) *Gateway {
+	return &Gateway{local: local}
 }
 
 // Route 当前路由模式。
@@ -28,9 +28,6 @@ func (g *Gateway) Route() string {
 	if g.local != nil {
 		return "in_process"
 	}
-	if g.super != nil {
-		return "super"
-	}
 	return "none"
 }
 
@@ -38,12 +35,12 @@ func (g *Gateway) SubmitLandingFeedback(ctx context.Context, in *moe.SubmitLandi
 	if g != nil && g.local != nil {
 		return g.local.Submit(ctx, in)
 	}
-	return g.super.SubmitLandingFeedback(ctx, in, opts...)
+	return nil, gwutil.ErrUnavailable
 }
 
 func (g *Gateway) ListLandingFeedback(ctx context.Context, in *moe.ListLandingFeedbackReq, opts ...grpc.CallOption) (*moe.ListLandingFeedbackResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.List(ctx, in)
 	}
-	return g.super.ListLandingFeedback(ctx, in, opts...)
+	return nil, gwutil.ErrUnavailable
 }

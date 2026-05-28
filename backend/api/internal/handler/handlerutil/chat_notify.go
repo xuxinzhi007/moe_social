@@ -1,3 +1,5 @@
+//go:build hybrid
+
 package handlerutil
 
 import chatbiz "backend/internal/biz/chat"

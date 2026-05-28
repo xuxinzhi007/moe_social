@@ -16,7 +16,6 @@ import (
 	"backend/utils"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func legacyAdminActx(ctx khttp.Context) (context.Context, *types.BaseResp) {
@@ -34,7 +33,7 @@ func adminLegacyUpdateAiAgent(svcCtx *svc.ServiceContext) func(khttp.Context) er
 			return ctx.JSON(http.StatusOK, types.AdminUpdateAiAgentResp{BaseResp: *br})
 		}
 		var req types.AdminUpdateAiAgentReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -97,7 +96,7 @@ func adminLegacyListMediaImages(svcCtx *svc.ServiceContext) func(khttp.Context) 
 			return ctx.JSON(http.StatusOK, types.AdminListMediaImagesResp{BaseResp: *br})
 		}
 		var req types.AdminListMediaImagesReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -160,7 +159,7 @@ func adminLegacyDeleteMediaImage(svcCtx *svc.ServiceContext) func(khttp.Context)
 			return ctx.JSON(http.StatusOK, types.AdminDeleteMediaImageResp{BaseResp: *br})
 		}
 		var req types.AdminDeleteMediaImageReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -182,7 +181,7 @@ func adminLegacyListMemories(app *adminapp.AppService) func(khttp.Context) error
 			return ctx.JSON(http.StatusOK, types.AdminListMemoriesResp{BaseResp: *br})
 		}
 		var req types.AdminListMemoriesReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -215,7 +214,7 @@ func adminLegacyDeleteMemory(app *adminapp.AppService, svcCtx *svc.ServiceContex
 			return ctx.JSON(http.StatusOK, types.AdminDeleteMemoryResp{BaseResp: *br})
 		}
 		var req types.AdminDeleteMemoryReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -275,7 +274,7 @@ func adminLegacyUpsertMenu(app *adminapp.AppService, svcCtx *svc.ServiceContext)
 			return ctx.JSON(http.StatusOK, types.AdminUpsertMenuResp{BaseResp: *br})
 		}
 		var req types.AdminUpsertMenuReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -317,7 +316,7 @@ func adminLegacyDeleteMenu(app *adminapp.AppService, svcCtx *svc.ServiceContext)
 			return ctx.JSON(http.StatusOK, types.AdminDeleteMenuResp{BaseResp: *br})
 		}
 		var req types.AdminDeleteMenuReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})
@@ -378,7 +377,7 @@ func adminLegacyUpdateRuntimeConfig(app *adminapp.AppService, svcCtx *svc.Servic
 			return ctx.JSON(http.StatusOK, types.AdminUpdateRuntimeConfigResp{BaseResp: *br})
 		}
 		var req types.AdminUpdateRuntimeConfigReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.BaseResp{
 				Code: -1, Message: err.Error(), Success: false,
 			})

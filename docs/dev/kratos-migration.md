@@ -1,15 +1,19 @@
 # Kratos 后端架构（SSOT）
 
-> **更新：2026-05-27**  
-> **当前阶段**：**纯 Kratos 生产**（`kratos_pure_enabled: true`）· 单进程 `make moe-social` · HTTP `:8888` + gRPC `:8080`
+> **更新：2026-05-28**  
+> **当前阶段**：**纯 Kratos 生产** · **P5 完成**（Super 退役 + 生产二进制零 go-zero）· `make moe-social` · HTTP `:8888` + gRPC `:8080`
 
 | 文档 | 用途 |
 |------|------|
 | 本文 | 架构、目录、命令 |
-| [kratos-migration-status.md](./kratos-migration-status.md) | **当前 / 下一步**（P3✅ P4 进行中） |
-| [kratos-p4-post-migration.md](./kratos-p4-post-migration.md) | **P4 洁癖轨道**（data / FS-9 / Hybrid） |
+| [kratos-migration-status.md](./kratos-migration-status.md) | **当前 / 下一步**（P0–P5 ✅） |
+| [kratos-p5-super-retirement.md](./kratos-p5-super-retirement.md) | P5-A/B/C Super 退役 |
+| [kratos-p5d-zero-gozero.md](./kratos-p5d-zero-gozero.md) | **P5-D 生产零 go-zero** |
+| [kratos-p4-post-migration.md](./kratos-p4-post-migration.md) | P4 洁癖（data / gRPC / Hybrid） |
 | [kratos-architecture-complete.md](./kratos-architecture-complete.md) | DoD + `/migration` 公式 |
-| [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md) | **存量迁移 SSOT**（§0 状态快照） |
+| [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md) | 存量 compat 清单（历史批次） |
+| [kratos-p5-split-deploy.md](./kratos-p5-split-deploy.md) | 分体 api/rpc 部署 |
+| [grpc-smoke-notify-chat-vip.md](./grpc-smoke-notify-chat-vip.md) | 域 gRPC 冒烟 |
 | [parallel-agent-workflow.md](../guidelines/parallel-agent-workflow.md) | 大任务多 Agent + worktree |
 | [new-api-kratos.md](./new-api-kratos.md) | **新接口开发**（必读） |
 | [moe-social-runtime.md](./moe-social-runtime.md) | 启动与配置 |
@@ -21,8 +25,10 @@
 ## 1. 当前阶段（一句话）
 
 - **运行时**：Kratos 传输层对外；**一个进程** `cmd/moe-social`，配置 SSOT 为 `backend/config/config.yaml`。
-- **业务**：`internal/biz` + `internal/service`；存量 HTTP 在 `*_compat.go` 注册，**263/263 直挂 App/biz**（P2 完成）。
-- **契约**：存量 `api/defs/*.api`（goctl）；**新接口**只加 `api/<domain>/v1/*.proto`。
+- **业务**：`internal/biz` + `internal/service`；HTTP 在 `api/moehttp/*_compat.go`（263 路由，`native_gen=0`）。
+- **gRPC**：12 域独立服务 + `MoeAdmin`；**无** `service Super`（P5-B）。
+- **契约**：新接口只加 `api/<domain>/v1/*.proto`；存量 `api/defs` 仅维护，日常 `make gen` 不跑 goctl api。
+- **go-zero**：生产 `moe-social` **依赖树零 go-zero**（P5-D）；紧急回滚 `go build -tags hybrid`。
 - **验收**：`make check` + `curl /migration`；**已移除** `scripts/verify/*` 与 Makefile `verify-*`。
 
 `make moe-kratos`（:1903x）与 `make verify-*` **已废弃**，勿再写入新文档。
@@ -42,8 +48,8 @@
         │    └─ api/moehttp                     (*_compat.go；native_gen=0)
         │
         └─ Kratos gRPC :8080
-             ├─ internal/server/moegrpc
-             └─ rpc/ (Super / MoeAdmin logic)
+             ├─ internal/server/moegrpc/   # 12 域 + MoeAdmin
+             └─ rpc/internal/bootstrap/    # MoeAdmin / Bot 装配
 
   业务：internal/service/<domain> → internal/biz/<domain> → MySQL
 ```
@@ -63,13 +69,14 @@
 | `internal/server/moekratoshttp/` | 健康检查、迁移进度 |
 | `internal/server/moegrpc/` | Kratos gRPC |
 
-**存量（维护老接口，勿为新能力扩展）**：
+**存量 / 回滚（默认构建不编译）**：
 
 | 路径 | 角色 |
 |------|------|
-| `api/defs/*.api` | goctl HTTP 契约分片 |
-| `api/internal/handler|logic|types` | goctl 生成 + 实现 |
-| `rpc/` | goctl gRPC + Super |
+| `api/defs/*.api` | 存量 HTTP 契约（慎改；`make gen-api`） |
+| `api/internal/handler/**` | `//go:build hybrid` 紧急回滚 |
+| `api/internal/types` | goctl 请求/响应类型（compat 仍用） |
+| `rpc/moe.proto` | message-only（无 `service Super`） |
 
 ---
 
@@ -98,7 +105,7 @@ curl -s http://127.0.0.1:8888/migration | jq .
 |------|------|------|------|
 | **新 HTTP 能力** | `api/<domain>/v1/*.proto` | `make gen` | `internal/service` + `api/moehttp/*_compat.go` |
 | **改老 HTTP** | `api/defs/*.api` | `make gen-api`（慎用） | `api/moehttp` + `internal/service` |
-| **改 gRPC** | `rpc/defs` / `moe.proto` | `make gen-rpc` | `rpc/internal/logic` 或 `internal/service` |
+| **改 gRPC** | `api/<domain>/v1/*.proto` | `make gen` | `internal/server/moegrpc` + `internal/service` |
 
 详见 [new-api-kratos.md](./new-api-kratos.md)。
 
@@ -109,8 +116,10 @@ curl -s http://127.0.0.1:8888/migration | jq .
 | 键 | 生产典型值 | 说明 |
 |----|------------|------|
 | `moe.kratos_pure_enabled` | `true` | 纯 Kratos HTTP，无 go-zero rest 对外 |
+| `moe.single_process` | `true` | 单进程 `moe-social` |
+| `moe.super_grpc_retired` | `true` | 不注册 Super、API 无 Super 回环 |
+| `moe.kratos_super_grpc_native` | `true` | gRPC 用 kratos/transport（非 zrpc） |
 | `moe.kratos_pk8_goctl_retired` | `true` | 日常 `make gen` 不跑 goctl api |
-| `moe.kratos_grpc_managed` | `true` | gRPC 由 Kratos 生命周期管理 |
 | `runtime.http.port` | `8888` | 对外 HTTP |
 | `runtime.grpc.port` | `8080` | 对外 gRPC |
 

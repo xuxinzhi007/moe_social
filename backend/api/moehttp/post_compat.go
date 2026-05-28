@@ -12,7 +12,6 @@ import (
 	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 // PilotNativePostCompatRoutes 帖子域 Kratos HTTP（internal/service/post + comment）。
@@ -40,7 +39,7 @@ func RegisterPostCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 func getPosts(app *postapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetPostsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetPostsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -63,7 +62,7 @@ func getPosts(app *postapp.AppService) func(khttp.Context) error {
 func createPost(app *postapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.CreatePostReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.CreatePostResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -87,7 +86,7 @@ func createPost(app *postapp.AppService) func(khttp.Context) error {
 func getPost(app *postapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.GetPostReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetPostResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -106,7 +105,7 @@ func getPost(app *postapp.AppService) func(khttp.Context) error {
 func updatePost(app *postapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.UpdatePostReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.UpdatePostResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -129,7 +128,7 @@ func updatePost(app *postapp.AppService) func(khttp.Context) error {
 func deletePost(app *postapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.DeletePostReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.DeletePostResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -150,7 +149,7 @@ func getPostComments(app *commentapp.AppService) func(khttp.Context) error {
 			})
 		}
 		var req types.GetPostCommentsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.GetPostCommentsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -175,7 +174,7 @@ func getPostComments(app *commentapp.AppService) func(khttp.Context) error {
 func likePost(app *postapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.LikePostReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.LikePostResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -194,7 +193,7 @@ func likePost(app *postapp.AppService) func(khttp.Context) error {
 func reportPost(app *postapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.ReportPostReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.ReportPostResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})
@@ -214,7 +213,7 @@ func reportPost(app *postapp.AppService) func(khttp.Context) error {
 func searchPosts(app *postapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.SearchPostsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.SearchPostsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})

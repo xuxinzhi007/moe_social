@@ -26,8 +26,9 @@ backend/
 
   ── 存量（勿为新接口扩展）──
   api/defs/*.api               # goctl 巨石分片，仅维护老接口
-  api/internal/handler|logic/  # goctl 生成链
-  rpc/                         # Super/MoeAdmin goctl gRPC
+  api/internal/handler/        # goctl；仅 hybrid 构建
+  api/internal/logic/          # 已退役
+  rpc/                         # 域 proto + MoeAdmin bootstrap（无 Super service）
 ```
 
 **请求路径（生产）**：

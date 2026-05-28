@@ -11,7 +11,6 @@ import (
 	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 // PilotNativeBehaviorCompatRoutes 行为埋点域 Kratos HTTP。
@@ -30,7 +29,7 @@ func RegisterBehaviorCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 func trackBehavior(app *behaviorapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		var req types.TrackUserBehaviorEventsReq
-		if err := httpx.Parse(ctx.Request(), &req); err != nil {
+		if err := bindRequest(ctx, &req); err != nil {
 			return ctx.JSON(http.StatusBadRequest, types.TrackUserBehaviorEventsResp{
 				BaseResp: types.BaseResp{Code: -1, Message: err.Error(), Success: false},
 			})

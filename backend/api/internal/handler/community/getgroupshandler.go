@@ -1,3 +1,5 @@
+//go:build hybrid
+
 package community
 
 import (

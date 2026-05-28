@@ -1,17 +1,21 @@
 # moe-social 运行时
 
-> **更新：2026-05-27** · 架构：[kratos-migration.md](./kratos-migration.md) · 目录：[backend/LAYOUT.md](../../backend/LAYOUT.md)
+> **最后更新：2026-05-28**  
+> 架构：[kratos-migration.md](./kratos-migration.md) · 状态：[kratos-migration-status.md](./kratos-migration-status.md) · P5-D：[kratos-p5d-zero-gozero.md](./kratos-p5d-zero-gozero.md)
 
 ## 是什么？
 
-**一个 OS 进程**，**纯 Kratos 对外传输**（HTTP `:8888` + gRPC `:8080`），内部仍复用 goctl 生成的 handler/logic 与 RPC logic（逐步迁到 `internal/service`）。
+**一个 OS 进程**（`cmd/moe-social`），对外 **纯 Kratos**：
 
 | 维度 | 说明 |
 |------|------|
-| 入口 | `cmd/moe-social`（`-f config/config.yaml`） |
-| 开发附加 | `make moe-social-dev` → deploy-agent `:19010`、RPC debug `:19011` |
+| HTTP | Kratos `:8888` → `api/moehttp`（263 compat 路由） |
+| gRPC | Kratos `:8080` → 12 域服务 + `MoeAdmin`（**无 Super**） |
 | 配置 SSOT | `backend/config/config.yaml` |
-| goctl 片段 | `api/etc/moe.yaml`、`rpc/etc/moe.yaml`（结构/依赖，**不是**端口 SSOT） |
+| go-zero | **默认构建不进入依赖树**（P5-D）；回滚见下文 |
+
+| 开发附加 | `make moe-social-dev` → deploy-agent `:19010`、RPC debug `:19011` |
+| goctl 片段 | `api/etc/moe.yaml`、`rpc/etc/moe.yaml`（结构模板，**端口以 config.yaml 为准**） |
 
 ## 启动
 
@@ -21,41 +25,71 @@ make moe-social
 make moe-social-stop   # 端口占用时
 ```
 
-成功日志含：`pure Kratos HTTP`、`:8888`、`:8080`。
+成功日志应含：`pure Kratos HTTP`、`Kratos gRPC`、`complete 100%`（或相近）。
 
-## 请求路径
+## 请求路径（生产）
 
 ```text
 HTTP  Client → :8888
+              → internal/platform/moesocial（Kratos HTTP）
               → api/moehttp/register_all.go
-              → *_compat.go（263 路由；routes_native_gen=0）
-              → [直挂 ~56] internal/service → biz
-              → [薄转 ~207] handler/logic → *gw (in_process) → biz
+              → *_compat.go（Kratos ctx.Bind → internal/service → biz）
 
-gRPC  Client → :8080 → rpc/logic 或 moegrpc → biz
+gRPC  Client → :8080
+              → internal/server/moegrpc/<domain>
+              → internal/service/<domain> → biz
 ```
 
-compat 文件清单：[kratos-legacy-api-migration.md §2.1](./kratos-legacy-api-migration.md#21-apimoehttp-compat-清单263-路由)
+**不再经过**：go-zero `rest` 对外监听、`Super` gRPC、`api/internal/handler`（默认构建）。
+
+compat 清单：[kratos-legacy-api-migration.md §2.1](./kratos-legacy-api-migration.md#21-apimoehttp-compat-清单263-路由)
+
+## 紧急回滚（go-zero / zrpc）
+
+仅当需要 PK-4 内网回退或旧式双进程调试：
+
+```bash
+cd backend
+go build -tags hybrid -o bin/moe-social-hybrid ./cmd/moe-social
+# 或单独 API/RPC 二进制：见 api/super.go、rpc/super.go（hybrid）
+```
+
+生产配置应保持 `kratos_pure_enabled: true`、`super_grpc_retired: true`。
 
 ## 生成（与运行时无关）
 
 | 改什么 | 命令 |
 |--------|------|
-| 域 proto | `make gen` |
-| 存量 `api/defs` | `make gen-api` |
-| rpc 契约 | `make gen-rpc` |
+| 域 proto + 路由同步 | `make gen` |
+| 存量 `api/defs` | `make gen-api`（慎用；handler 为 hybrid） |
+| rpc message 组装 | `make gen-rpc`（无 goctl zrpc 业务 logic） |
 
 见 [backend/scripts/README.md](../../backend/scripts/README.md)、[new-api-kratos.md](./new-api-kratos.md)。
 
-## 观测
+## 观测与冒烟
 
 ```bash
 curl -s http://127.0.0.1:8888/health
-curl -s http://127.0.0.1:8888/migration
+curl -s http://127.0.0.1:8888/migration | jq '{percent, rollout_percent, breakdown}'
+
+# 域 gRPC（需 grpcurl + 服务已启动）
+cd backend && ./scripts/grpc-smoke-notify-chat-vip.ps1   # Windows
+# 或 bash scripts/grpc-smoke-notify-chat-vip.sh
+```
+
+详见 [grpc-smoke-notify-chat-vip.md](./grpc-smoke-notify-chat-vip.md)。
+
+## 生产零 go-zero 自检
+
+```bash
+cd backend
+go build ./cmd/moe-social
+go list -deps ./cmd/moe-social | grep go-zero   # 应无输出
 ```
 
 ## 已废弃
 
-- 双进程 `make api` + `make rpc` 作为生产形态
+- 双进程 `make api` + `make rpc` 作为**生产**形态
 - `make moe-kratos`（:1903x 试点）
 - `make verify-sprint-fs9` 等验收 target
+- 默认路径依赖 `Super` gRPC 或 `rpc/internal/logic`

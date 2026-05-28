@@ -1,12 +1,13 @@
 package config
 
-import (
-	"github.com/zeromicro/go-zero/rest"
-	"github.com/zeromicro/go-zero/zrpc"
-)
+import "backend/internal/platform/grpcclient"
 
+// Config API 片段（api/etc/moe.yaml）；P5-D 不再嵌入 go-zero RestConf。
 type Config struct {
-	rest.RestConf
+	Name    string `json:"Name" yaml:"Name"`
+	Host    string `json:"Host" yaml:"Host"`
+	Port    int    `json:"Port" yaml:"Port"`
+	Timeout int64  `json:"Timeout" yaml:"Timeout"`
 
 	// JWT 认证配置
 	Auth struct {
@@ -14,8 +15,8 @@ type Config struct {
 		AccessExpire int64
 	} `json:"Auth" yaml:"Auth"`
 
-	// RPC服务配置
-	SuperRpc zrpc.RpcClientConf `json:"SuperRpc" yaml:"SuperRpc"`
+	// RPC 客户端（分体部署 dial MoeAdmin gRPC）
+	SuperRpc grpcclient.Conf `json:"SuperRpc" yaml:"SuperRpc"`
 
 	// LLMInference 本机/内网推理（llama-server OpenAI 兼容）；主配置见 backend/config/config.yaml 的 llm_inference.*
 	LLMInference LLMInferenceConf `json:"LLMInference" yaml:"LLMInference"`

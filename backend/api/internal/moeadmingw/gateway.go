@@ -13,27 +13,25 @@ import (
 	"backend/model"
 	"backend/pkg/moe/brain"
 	"backend/pkg/moe/runtime"
-	"backend/rpc/pb/moe"
 )
 
 var errNoBackend = errors.New("Moe Admin 后端未配置")
 
-// Gateway 统一 Admin Moe 路由：kratos HTTP（灰度）→ 进程内 → moe gRPC → legacy super。
+// Gateway 统一 Admin Moe 路由：kratos HTTP（灰度）→ 进程内 → MoeAdmin gRPC。
 type Gateway struct {
 	kratos  *KratosHTTPClient
 	local   *moeadmin.AdminService
 	moeGRPC moepb.MoeAdminClient
-	super   moe.SuperClient
 }
 
 // New 构造网关；kratos 非 nil 且配置启用时，ListRuntimes/GetBrainPipeline 走纯 Kratos HTTP。
-func New(local *moeadmin.AdminService, moeGRPC moepb.MoeAdminClient, legacy moe.SuperClient, kratos *KratosHTTPClient) *Gateway {
-	return &Gateway{local: local, moeGRPC: moeGRPC, super: legacy, kratos: kratos}
+func New(local *moeadmin.AdminService, moeGRPC moepb.MoeAdminClient, kratos *KratosHTTPClient) *Gateway {
+	return &Gateway{local: local, moeGRPC: moeGRPC, kratos: kratos}
 }
 
 // Available 是否至少有一个后端。
 func (g *Gateway) Available() bool {
-	return g != nil && (g.kratosHTTPReady() || g.local != nil || g.moeGRPC != nil || g.super != nil)
+	return g != nil && (g.kratosHTTPReady() || g.local != nil || g.moeGRPC != nil)
 }
 
 func (g *Gateway) kratosHTTPReady() bool {
@@ -53,9 +51,6 @@ func (g *Gateway) Route() string {
 	}
 	if g.moeGRPC != nil {
 		return "moe_grpc"
-	}
-	if g.super != nil {
-		return "super"
 	}
 	return "none"
 }
@@ -81,23 +76,7 @@ func (g *Gateway) ListRuntimes(ctx context.Context) ([]model.MoeAgentRuntime, er
 		}
 		return out, nil
 	}
-	if g.super != nil {
-		rep, err := g.super.AdminListMoeRuntimes(ctx, &moe.AdminListMoeRuntimesReq{})
-		if err != nil {
-			return nil, err
-		}
-		out := make([]model.MoeAgentRuntime, 0, len(rep.GetItems()))
-		for _, item := range rep.GetItems() {
-			t := moebridge.RuntimeItemFromRPC(item)
-			botUID, _ := moebiz.ParseBotUserID(t.BotUserId)
-			out = append(out, model.MoeAgentRuntime{
-				AgentKey: t.AgentKey, DisplayName: t.DisplayName, BotUserID: botUID,
-				ModelName: t.ModelName, ToolsEnabled: t.ToolsEnabled,
-				PostQuotaDaily: t.PostQuotaDaily, Enabled: t.Enabled,
-			})
-		}
-		return out, nil
-	}
+	
 	return nil, errNoBackend
 }
 
@@ -123,23 +102,7 @@ func (g *Gateway) UpsertRuntime(ctx context.Context, p moebiz.UpsertRuntimeParam
 		}
 		return runtimeModelFromProto(rep.GetItem()), nil
 	}
-	if g.super != nil {
-		rep, err := g.super.AdminUpsertMoeRuntime(ctx, &moe.AdminUpsertMoeRuntimeReq{
-			AgentKey: p.AgentKey, DisplayName: p.DisplayName,
-			BotUserId: fmt.Sprintf("%d", p.BotUserID), CapabilityTier: p.CapabilityTier,
-			ModelName: p.ModelName, ProviderProfileId: p.ProviderProfileID,
-			ToolsEnabled: p.ToolsEnabled, PostQuotaDaily: int32(p.PostQuotaDaily),
-			Enabled: p.Enabled, SystemPrompt: p.SystemPrompt, PostRules: p.PostRules,
-			ForbiddenTags: p.ForbiddenTags, PreferredTags: p.PreferredTags,
-			PostScheduleMode: p.PostScheduleMode, ScheduleCron: p.ScheduleCron,
-		})
-		if err != nil {
-			return model.MoeAgentRuntime{}, err
-		}
-		t := moebridge.RuntimeItemFromRPC(rep.GetItem())
-		botUID, _ := moebiz.ParseBotUserID(t.BotUserId)
-		return model.MoeAgentRuntime{AgentKey: t.AgentKey, DisplayName: t.DisplayName, BotUserID: botUID, ModelName: t.ModelName}, nil
-	}
+	
 	return model.MoeAgentRuntime{}, errNoBackend
 }
 
@@ -160,13 +123,7 @@ func (g *Gateway) GetBrainPipeline(ctx context.Context, agentKey string) (moebiz
 		}
 		return pipelineFromProto(rep), nil
 	}
-	if g.super != nil {
-		rep, err := g.super.AdminGetMoeBrainPipeline(ctx, &moe.AdminGetMoeBrainPipelineReq{AgentKey: agentKey})
-		if err != nil {
-			return moebiz.PipelineSnapshot{}, err
-		}
-		return pipelineFromSuper(rep), nil
-	}
+	
 	return moebiz.PipelineSnapshot{}, errNoBackend
 }
 
@@ -187,21 +144,7 @@ func (g *Gateway) RunAgentOnce(ctx context.Context, agentKey string, async bool)
 			Result: runtime.RunOnceResult{AgentKey: r.AgentKey, OK: r.OK, Detail: r.Detail, PostID: r.PostID},
 		}, nil
 	}
-	if g.super != nil {
-		rep, err := g.super.AdminRunMoeAgentOnce(ctx, &moe.AdminRunMoeAgentOnceReq{AgentKey: agentKey, Async: async})
-		if err != nil {
-			return moeadmin.RunOnceInvokeResult{}, err
-		}
-		if rep.GetAccepted() || rep.GetAlreadyRunning() {
-			return moeadmin.RunOnceInvokeResult{Accepted: rep.GetAccepted(), AlreadyRunning: rep.GetAlreadyRunning()}, nil
-		}
-		return moeadmin.RunOnceInvokeResult{
-			Result: runtime.RunOnceResult{
-				AgentKey: rep.GetAgentKey(), OK: rep.GetOk(),
-				Detail: rep.GetDetail(), PostID: rep.GetPostId(),
-			},
-		}, nil
-	}
+	
 	return moeadmin.RunOnceInvokeResult{}, errNoBackend
 }
 
@@ -219,13 +162,7 @@ func (g *Gateway) GetBrainSnapshot(ctx context.Context, agentKey string) (*brain
 		}
 		return moebridge.BrainSnapshotFromProto(rep), nil
 	}
-	if g.super != nil {
-		rep, err := g.super.AdminGetMoeBrain(ctx, &moe.AdminGetMoeBrainReq{AgentKey: agentKey})
-		if err != nil {
-			return nil, err
-		}
-		return brainDataToSnapshot(moebridge.BrainDataFromRPC(rep)), nil
-	}
+	
 	return nil, errNoBackend
 }
 
@@ -245,15 +182,7 @@ func (g *Gateway) UpdateBrainPolicy(ctx context.Context, agentKey string, forbid
 		}
 		return moebridge.BrainSnapshotFromProto(rep), nil
 	}
-	if g.super != nil {
-		rep, err := g.super.AdminUpdateMoeBrainPolicy(ctx, &moe.AdminUpdateMoeBrainPolicyReq{
-			AgentKey: agentKey, ForbiddenTags: forbidden, PreferredTags: preferred,
-		})
-		if err != nil {
-			return nil, err
-		}
-		return brainDataToSnapshot(moebridge.BrainDataFromRPC(rep)), nil
-	}
+	
 	return nil, errNoBackend
 }
 
@@ -268,10 +197,7 @@ func (g *Gateway) DeleteBrainEpisode(ctx context.Context, id uint) error {
 		_, err := g.moeGRPC.DeleteBrainEpisode(ctx, &moepb.DeleteBrainEpisodeRequest{Id: uint64(id)})
 		return err
 	}
-	if g.super != nil {
-		_, err := g.super.AdminDeleteMoeBrainEpisode(ctx, &moe.AdminDeleteMoeBrainEpisodeReq{Id: uint64(id)})
-		return err
-	}
+	
 	return errNoBackend
 }
 
@@ -296,20 +222,7 @@ func (g *Gateway) RefineBrainEpisode(ctx context.Context, id uint, opt brain.Ref
 			AfterContent: d.AfterContent, Attempts: d.Attempts, Detail: d.Detail,
 		}, nil
 	}
-	if g.super != nil {
-		rep, err := g.super.AdminRefineMoeBrainEpisode(ctx, &moe.AdminRefineMoeBrainEpisodeReq{
-			Id: uint64(id), MaxAttempts: int32(opt.MaxAttempts),
-		})
-		if err != nil {
-			return brain.RefineResult{}, err
-		}
-		d := moebridge.RefineResultFromRPC(rep)
-		return brain.RefineResult{
-			EpisodeID: d.EpisodeId, OK: d.Ok, Approved: d.Approved,
-			QualityScore: d.QualityScore, BeforeContent: d.BeforeContent,
-			AfterContent: d.AfterContent, Attempts: d.Attempts, Detail: d.Detail,
-		}, nil
-	}
+	
 	return brain.RefineResult{}, errNoBackend
 }
 
@@ -330,23 +243,7 @@ func (g *Gateway) CurateBrain(ctx context.Context, agentKey string, opt brain.Cu
 		}
 		return curateResultsFromProto(rep), nil
 	}
-	if g.super != nil {
-		rep, err := g.super.AdminCurateMoeBrain(ctx, &moe.AdminCurateMoeBrainReq{
-			AgentKey: agentKey, MaxEpisodes: int32(opt.MaxEpisodes),
-			MaxAttempts: int32(opt.MaxAttemptsPerEpisode), MinQuality: int32(opt.MinQuality), Force: opt.Force,
-		})
-		if err != nil {
-			return nil, err
-		}
-		out := make([]brain.RefineResult, 0, len(rep.GetResults()))
-		for _, r := range rep.GetResults() {
-			d := moebridge.RefineResultFromRPC(r)
-			out = append(out, brain.RefineResult{
-				EpisodeID: d.EpisodeId, OK: d.Ok, Approved: d.Approved, QualityScore: d.QualityScore, Detail: d.Detail,
-			})
-		}
-		return out, nil
-	}
+	
 	return nil, errNoBackend
 }
 
@@ -381,16 +278,7 @@ func (g *Gateway) QueryToolStats(ctx context.Context, f moebiz.ToolStatsFilter) 
 		}
 		return toolStatsToBiz(moebridge.ToolStatsFromProto(rep)), nil
 	}
-	if g.super != nil {
-		rep, err := g.super.AdminGetMoeToolStats(ctx, &moe.AdminGetMoeToolStatsReq{
-			From: timeFilterStr(f.From), To: timeFilterStr(f.To),
-			AgentKey: f.AgentKey, Tool: f.Tool,
-		})
-		if err != nil {
-			return moebiz.ToolStatsResult{}, err
-		}
-		return toolStatsToBiz(moebridge.ToolStatsFromRPC(rep)), nil
-	}
+	
 	return moebiz.ToolStatsResult{}, errNoBackend
 }
 
@@ -418,19 +306,7 @@ func (g *Gateway) ListToolCalls(ctx context.Context, f moebiz.ToolCallsFilter) (
 		d := moebridge.ToolCallsFromProto(rep)
 		return toolCallsToBiz(d), d.Total, nil
 	}
-	if g.super != nil {
-		rep, err := g.super.AdminListMoeToolCalls(ctx, &moe.AdminListMoeToolCallsReq{
-			From: timeFilterStr(f.From), To: timeFilterStr(f.To),
-			AgentKey: f.AgentKey, Tool: f.Tool, Source: f.Source,
-			ActorUserId: actorStr, OkOnly: f.OkOnly, FailedOnly: f.FailedOnly,
-			Page: int32(f.Page), PageSize: int32(f.PageSize),
-		})
-		if err != nil {
-			return nil, 0, err
-		}
-		d := moebridge.ToolCallsFromRPC(rep)
-		return toolCallsToBiz(d), d.Total, nil
-	}
+	
 	return nil, 0, errNoBackend
 }
 

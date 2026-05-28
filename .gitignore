@@ -138,11 +138,9 @@ backend/api/super.exe
 release.jks.b64
 android/app/release.jks.bak
 backend/.dev/
-backend/api/.../moe-social-api
-backend/api/.../super.api
-backend/api/.../super.go
-backend/api/.../moe.api
-backend/api/.../README.md
+# Accidental output dir when `go build -o api/...` is taken literally (see docs/dev/deploy-platform.md)
+backend/api/.../
+backend/rpc/.../
 
 # Compound Engineering (machine-local preferences)
 .compound-engineering/*.local.yaml

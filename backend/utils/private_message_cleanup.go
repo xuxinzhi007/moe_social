@@ -5,7 +5,7 @@ import (
 
 	"backend/model"
 
-	"github.com/zeromicro/go-zero/core/logx"
+	"backend/internal/platform/moelog"
 	"gorm.io/gorm"
 )
 
@@ -20,11 +20,11 @@ func StartPrivateMessageCleanup(db *gorm.DB) {
 		for range t.C {
 			res := db.Unscoped().Where("expires_at < ?", time.Now()).Delete(&model.PrivateMessage{})
 			if res.Error != nil {
-				logx.Errorf("private_message cleanup: %v", res.Error)
+				moelog.Error("private_message cleanup", "err", res.Error)
 				continue
 			}
 			if res.RowsAffected > 0 {
-				logx.Infof("private_message cleanup: deleted %d rows", res.RowsAffected)
+				moelog.Info("private_message cleanup", "deleted", res.RowsAffected)
 			}
 		}
 	}()

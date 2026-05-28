@@ -2,14 +2,13 @@ package common
 
 import (
 	"context"
+	"encoding/json"
 	"net"
 	"net/http"
 	"strings"
 
 	"backend/api/internal/types"
 	"backend/utils"
-
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 type adminActorContextKey struct{}
@@ -69,7 +68,8 @@ func WriteAdminUnauthorized(w http.ResponseWriter, r *http.Request, br *types.Ba
 	if br == nil {
 		br = &types.BaseResp{Code: -1, Message: "请先登录管理后台", Success: false}
 	}
-	httpx.OkJsonCtx(r.Context(), w, map[string]any{
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": br.Success,
 		"code":    br.Code,
 		"message": br.Message,
